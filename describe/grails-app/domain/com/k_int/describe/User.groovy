@@ -1,6 +1,6 @@
 package com.k_int.describe
 
-class user {
+class User {
 
 	transient springSecurityService
 

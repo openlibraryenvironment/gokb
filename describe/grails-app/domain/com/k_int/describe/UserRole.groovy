@@ -2,10 +2,10 @@ package com.k_int.describe
 
 import org.apache.commons.lang.builder.HashCodeBuilder
 
-class userrole implements Serializable {
+class UserRole implements Serializable {
 
-	user user
-	role role
+	User user
+	Role role
 
 	boolean equals(other) {
 		if (!(other instanceof userrole)) {
@@ -28,12 +28,12 @@ class userrole implements Serializable {
 			[userId: userId, roleId: roleId]
 	}
 
-	static userrole create(user user, role role, boolean flush = false) {
+	static userrole create(User user, Role role, boolean flush = false) {
 		new userrole(user: user, role: role).save(flush: flush, insert: true)
 	}
 
-	static boolean remove(user user, role role, boolean flush = false) {
-		userrole instance = userrole.findByuserAndrole(user, role)
+	static boolean remove(User user, Role role, boolean flush = false) {
+		userrole instance = UserRole.findByuserAndrole(user, role)
 		if (!instance) {
 			return false
 		}
@@ -42,11 +42,11 @@ class userrole implements Serializable {
 		true
 	}
 
-	static void removeAll(user user) {
+	static void removeAll(User user) {
 		executeUpdate 'DELETE FROM userrole WHERE user=:user', [user: user]
 	}
 
-	static void removeAll(role role) {
+	static void removeAll(Role role) {
 		executeUpdate 'DELETE FROM userrole WHERE role=:role', [role: role]
 	}
 

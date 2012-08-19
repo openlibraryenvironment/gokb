@@ -1,6 +1,6 @@
 package com.k_int.describe
 
-class role {
+class Role {
 
 	String authority
 
