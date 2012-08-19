@@ -9,10 +9,13 @@
 
     <div class="row-fluid">
       <div class="wizard">
-        <a><span class="badge">1</span> Original Source File</a>
-        <a><span class="badge">2</span> First Pass</a>
-        <a class="current"><span class="badge badge-inverse">3</span> File Details</a>
-        <a><span class="badge">4</span> Columns </a>
+        <g:link class="current"><span class="badge badge-inverse">1</span>Original Source File</g:link>
+        <g:link><span class="badge">2</span>Chunking</g:link>
+        <g:link><span class="badge">3</span>File Metadata</g:link>
+        <g:link><span class="badge">4</span>Columns</g:link>
+        <g:link><span class="badge">5</span>First Pass Data</g:link>
+        <g:link><span class="badge">6</span>Rules</g:link>
+        <g:link><span class="badge">7</span>Final Data</g:link>
       </div>
     </div>
   </body>
