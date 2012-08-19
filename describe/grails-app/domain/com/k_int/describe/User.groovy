@@ -20,7 +20,7 @@ class User {
 		password column: '`password`'
 	}
 
-	Set<role> getAuthorities() {
+	Set<Role> getAuthorities() {
 		userrole.findAllByuser(this).collect { it.role } as Set
 	}
 

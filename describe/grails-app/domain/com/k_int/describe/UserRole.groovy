@@ -8,7 +8,7 @@ class UserRole implements Serializable {
 	Role role
 
 	boolean equals(other) {
-		if (!(other instanceof userrole)) {
+		if (!(other instanceof UserRole)) {
 			return false
 		}
 
@@ -23,17 +23,17 @@ class UserRole implements Serializable {
 		builder.toHashCode()
 	}
 
-	static userrole get(long userId, long roleId) {
-		find 'from userrole where user.id=:userId and role.id=:roleId',
+	static UserRole get(long userId, long roleId) {
+		find 'from UserRole where user.id=:userId and role.id=:roleId',
 			[userId: userId, roleId: roleId]
 	}
 
-	static userrole create(User user, Role role, boolean flush = false) {
-		new userrole(user: user, role: role).save(flush: flush, insert: true)
+	static UserRole create(User user, Role role, boolean flush = false) {
+		new UserRole(user: user, role: role).save(flush: flush, insert: true)
 	}
 
 	static boolean remove(User user, Role role, boolean flush = false) {
-		userrole instance = UserRole.findByuserAndrole(user, role)
+		UserRole instance = UserRole.findByuserAndrole(user, role)
 		if (!instance) {
 			return false
 		}
@@ -43,11 +43,11 @@ class UserRole implements Serializable {
 	}
 
 	static void removeAll(User user) {
-		executeUpdate 'DELETE FROM userrole WHERE user=:user', [user: user]
+		executeUpdate 'DELETE FROM UserRole WHERE user=:user', [user: user]
 	}
 
 	static void removeAll(Role role) {
-		executeUpdate 'DELETE FROM userrole WHERE role=:role', [role: role]
+		executeUpdate 'DELETE FROM UserRole WHERE role=:role', [role: role]
 	}
 
 	static mapping = {
