@@ -8,7 +8,7 @@
   <body>
 
     <div class="container">
-      <g:form id="upload_new_doc_form" url="[controller:'datafile',action:'new']" method="post" enctype="multipart/form-data">
+      <g:form id="upload_new_doc_form" url="[controller:'datafile',action:'upload']" method="post" enctype="multipart/form-data">
         <dl>
           <dt>
             <label>Ingest New Knowledge Base File:</label>
