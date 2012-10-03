@@ -94,3 +94,4 @@ log4j = {
 grails.plugins.springsecurity.userLookup.userDomainClassName = 'com.k_int.describe.User'
 grails.plugins.springsecurity.userLookup.authorityJoinClassName = 'com.k_int.describe.UserRole'
 grails.plugins.springsecurity.authority.className = 'com.k_int.describe.Role'
+grails.plugins.springsecurity.securityConfigType = "Annotation"
