@@ -7,10 +7,24 @@
 
   <body>
 
-    <div class="row-fluid">
-      <h1>Datafile home</h1>
-      <g:link controller="datafile" action="create">New datafile</g:link>
-      <g:link controller="datafile" action="identification" id="1">Datafile 1</g:link>
+    <div class="container">
+      <g:form id="upload_new_doc_form" url="[controller:'datafile',action:'new']" method="post" enctype="multipart/form-data">
+        <dl>
+          <dt>
+            <label>Ingest New Knowledge Base File:</label>
+          </dt>
+          <dd>
+            <input type="file" name="upload_file" />
+          </dd>
+        </dl>
+        <input type="Submit"/>
+      </g:form>
+    </div>
+      
+
+    
+    <div class="container">
+      -- Previous uploads paginated --
     </div>
   </body>
 </html>
