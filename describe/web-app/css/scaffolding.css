@@ -1,0 +1,175 @@
+body {
+	-webkit-text-size-adjust: none;
+}
+
+@media (min-width:980px) {
+	body { 
+		padding-top: 60px; 
+	}
+}
+
+.btn {
+	vertical-align: middle; /* ensure buttons line up even when they are different tag types [a, button] */
+}
+
+/* index page */
+
+img#github-ribbon {
+	position: absolute; 
+	top: 0; 
+	right: 0; 
+	border: 0;
+	z-index: 1030; /* no idea where this comes from, lowest value that works */
+}
+
+@media (max-width: 768px) {
+	/* prevent the brand name wrapping or overlapping the menu toggle */
+	.navbar .brand {
+		max-width: 75%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	
+	.hero-unit {
+		padding: 20px;
+	}
+
+	#application-status {
+		display: none;
+	}
+}
+
+/* list pages */
+
+table td.link {
+	white-space: nowrap;
+}
+
+table thead th {
+	white-space: nowrap;
+}
+
+/* icons for sorted column headers */
+
+table th.asc a:after,
+table th.desc a:after {
+	content: '';
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	margin-left: 0.3em;
+	vertical-align: text-top;
+	background-image: url(../plugins/twitter-bootstrap-2.0.2.25/img/glyphicons-halflings.png);
+	background-position: 14px 14px;
+	background-repeat: no-repeat;
+}
+
+table th.asc a:after {
+	background-position: -289px -96px;
+}
+
+table th.desc a:after {
+	background-position: -312px -96px;
+}
+
+/* optimized display for small devices */
+
+@media (max-width:480px) {
+	table thead, table td { 
+		display: none;
+	}
+	
+	table tr:first-child td {
+		border-top: none;
+	}
+	
+	table td:first-child, table td:last-child {
+		display: table-cell;
+		vertical-align: middle;
+	}
+	
+	table td:last-child {
+		text-align: right;
+	}
+}
+
+/* error page */
+
+pre.snippet code.line {
+	border: none;
+	display: block;
+}
+
+pre.snippet .lineNumber {
+	display: inline-block;
+	width: 3em;
+}
+
+pre.snippet .error {
+	font-weight: bold;
+}
+
+
+/* MESSAGES AND ERRORS */
+
+.errors,
+.message {
+	font-size: 0.8em;
+	line-height: 2;
+	margin: 1em 2em;
+	padding: 0.25em;
+}
+
+.message {
+	background: #f3f3ff;
+	border: 1px solid #b2d1ff;
+	color: #006dba;
+	   -moz-box-shadow: 0 0 0.25em #b2d1ff;
+	-webkit-box-shadow: 0 0 0.25em #b2d1ff;
+	        box-shadow: 0 0 0.25em #b2d1ff;
+}
+
+.errors, .error {
+	background: #fff3f3;
+	border: 1px solid #ffaaaa;
+	color: #cc0000;
+	   -moz-box-shadow: 0 0 0.25em #ff8888;
+	-webkit-box-shadow: 0 0 0.25em #ff8888;
+	        box-shadow: 0 0 0.25em #ff8888;
+}
+
+.errors ul,
+.message {
+	padding: 0;
+}
+
+.errors li {
+	list-style: none;
+	background: transparent url(../images/skin/exclamation.png) 0.5em 50% no-repeat;
+	text-indent: 2.2em;
+}
+
+.message {
+	background: transparent url(../images/skin/information.png) 0.5em 50% no-repeat;
+	text-indent: 2.2em;
+}
+
+.hero-unit h1 {
+    font-size: 40px;
+}
+
+hr.minimalMargin {
+    margin: 2px 0;
+}
+
+
+p.unimportant {
+    color: #aaaaaa;
+    font-weight: normal;
+    font-size: 1em;
+}
+
+.hero-unit {
+        padding: 20px;
+}
