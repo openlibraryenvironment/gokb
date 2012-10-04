@@ -21,10 +21,26 @@
       </g:form>
     </div>
       
-
-    
     <div class="container">
-      -- Previous uploads paginated --
+      <table  class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Original Filename</th>
+            <th>Uploaded On</th>
+            <th>Checksum</th>
+          </tr>
+        </thead>
+        <tbody>
+          <g:each in="${filepage}" var="file">
+            <tr>
+              <td><g:link controller="datafile" action="identification" id="${file.id}">${file.filename}</g:link></td>
+              <td>${file.uploadTimestamp}</td>
+              <td>${file.md5sum}</td>
+            </tr>
+          </g:each>
+        </tbody>
+      </table>
     </div>
+
   </body>
 </html>
