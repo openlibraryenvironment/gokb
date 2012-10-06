@@ -25,12 +25,16 @@ GoKBExtension.handlers.editIngestProps = function() {
 
   var self = this;
 
+  alert("OK");
+
   // https://code.google.com/p/google-refine/source/browse/trunk/main/webapp/modules/core/scripts/util/dom.js?spec=svn2356&r=2303
   var dialog = $(DOM.loadHTML("freebase", "scripts/dialogs/freebase-loading-dialog.html"));
 
+  alert("OK2");
+
   this.gokb_ingest_dlg_binding = DOM.bind(dialog);
 
-  this.gokb_ingest_dlg_binding.closeButton.click(function() { self._dismiss(); });
+  // this.gokb_ingest_dlg_binding.closeButton.click(function() { self._dismiss(); });
 
   this._ingest_dlg = DialogSystem.showDialog(dialog);
 
