@@ -110,66 +110,18 @@ pre.snippet .error {
 	font-weight: bold;
 }
 
+.wizard a {padding: 12px 12px 10px 12px; margin-right:5px; background:#efefef; position:relative; display:inline-block; }
+.wizard a:before {width:0px; height:0px; border-top: 20px inset transparent; border-bottom: 20px inset transparent; border-left: 20px solid #fff; position: absolute; content: ""; top: 0; left: 0;}
+.wizard a:after {width:0px; height:0px; border-top: 20px inset transparent; border-bottom: 20px inset transparent; border-left: 20px solid #efefef; position: absolute; content: ""; top: 0; right: -20px; z-index:2;}
+.wizard a:first-child:before {border:none;}
+.wizard a:last-child:after {border:none;}
 
-/* MESSAGES AND ERRORS */
+.wizard a:first-child {-moz-border-radius: 4px 0 0 4px; -webkit-border-radius: 4px 0 0 4px; border-radius:   4px 0 0 4px;}
+.wizard a:last-child {-moz-border-radius: 0 4px 4px 0; -webkit-border-radius: 0 4px 4px 0; border-radius:   0 4px 4px 0;}
 
-.errors,
-.message {
-	font-size: 0.8em;
-	line-height: 2;
-	margin: 1em 2em;
-	padding: 0.25em;
-}
+.wizard .badge {margin:0 5px 0 18px; position:relative; top:-1px;}
+.wizard a:first-child .badge {margin-left:0;}
 
-.message {
-	background: #f3f3ff;
-	border: 1px solid #b2d1ff;
-	color: #006dba;
-	   -moz-box-shadow: 0 0 0.25em #b2d1ff;
-	-webkit-box-shadow: 0 0 0.25em #b2d1ff;
-	        box-shadow: 0 0 0.25em #b2d1ff;
-}
+.wizard .current {background:#007ACC; color:#fff;}
+.wizard .current:after {border-left-color:#007ACC;}
 
-.errors, .error {
-	background: #fff3f3;
-	border: 1px solid #ffaaaa;
-	color: #cc0000;
-	   -moz-box-shadow: 0 0 0.25em #ff8888;
-	-webkit-box-shadow: 0 0 0.25em #ff8888;
-	        box-shadow: 0 0 0.25em #ff8888;
-}
-
-.errors ul,
-.message {
-	padding: 0;
-}
-
-.errors li {
-	list-style: none;
-	background: transparent url(../images/skin/exclamation.png) 0.5em 50% no-repeat;
-	text-indent: 2.2em;
-}
-
-.message {
-	background: transparent url(../images/skin/information.png) 0.5em 50% no-repeat;
-	text-indent: 2.2em;
-}
-
-.hero-unit h1 {
-    font-size: 40px;
-}
-
-hr.minimalMargin {
-    margin: 2px 0;
-}
-
-
-p.unimportant {
-    color: #aaaaaa;
-    font-weight: normal;
-    font-size: 1em;
-}
-
-.hero-unit {
-        padding: 20px;
-}
