@@ -19,14 +19,12 @@ GoKBExtension.handlers.browseToDataLoad = function() {
 
   var dialog = $(DOM.loadHTML("gokb", "scripts/dialogs/gokb_ingest.html"));
   var dialog_bindings = DOM.bind(dialog);
-  // dialog_bindings.closeButton.click(function() {
-  //   dismiss();
-  // });
-  var res = DialogSystem.showDialog(dialog);
+  var level = DialogSystem.showDialog(dialog);
+  var dismiss = function() { DialogSystem.dismissUntil(level - 1); };
 
-
-  // dialog.show()
-  alert("done");
+  dialog_bindings.closeButton.click(function() {
+    dismiss();
+  });
 
 
   // $.getJSON(
