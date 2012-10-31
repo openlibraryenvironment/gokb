@@ -47,7 +47,7 @@ function init() {
     "project/scripts",
     module,
     [
-      "scripts/project-injection.js",
+      "scripts/menu.js",
       "scripts/extension.js"
     ]
   );
@@ -57,7 +57,7 @@ function init() {
     "project/styles",
     module,
     [
-      "styles/project-injection.less"
+      "styles/main.less"
     ]
   );
 }
