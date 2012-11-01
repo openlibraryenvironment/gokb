@@ -1,16 +1,18 @@
+var GoKBMenuItems = [
+  {
+	  "id" : "GoKB/file-info",
+	  label: "Suggest Transformations",
+	  click: function() { 
+	    GoKBExtension.handlers.suggest();
+	  }
+  }
+];
+
 /**
- * Suggest Transformation button
+ * GoKB Extension menu entry
  */
 ExtensionBar.addExtensionMenu({
   "id" : "gobk-button-suggest",
   "label" : "Suggest Transformations",
-  "submenu" : [
-    {
-      "id" : "GoKB/file-info",
-      label: "Edit GoKB Ingest Properties",
-      click: function() { 
-        GoKBExtension.handlers.suggest();
-      }
-    }
-  ]
+  "submenu" : GoKBMenuItems
 });
