@@ -1,9 +1,9 @@
-var GoKBExtension = { handlers: {} };
+var GOKbExtension = { handlers: {} };
 
 /**
  * Helper method for dialog creation within this module.
  */
-GoKBExtension.createDialog = function(title, template) {
+GOKbExtension.createDialog = function(title, template) {
   var dialog_obj = $(DOM.loadHTML("gokb", "scripts/dialogs/gokb_dialog.html"));
   var dialog_bindings = DOM.bind(dialog_obj);
   
@@ -41,7 +41,7 @@ GoKBExtension.createDialog = function(title, template) {
 /**
  * Helper method for showing dialogs within this module.
  */
-GoKBExtension.showDialog = function(dialog) {
+GOKbExtension.showDialog = function(dialog) {
   var level = DialogSystem.showDialog(dialog.html);
   dialog.bindings.closeButton.click(function() {
     DialogSystem.dismissUntil(level - 1);
@@ -53,10 +53,10 @@ GoKBExtension.showDialog = function(dialog) {
 /**
  * Handlers
  */
-GoKBExtension.handlers.suggest = function() {
-  var dialog = GoKBExtension.createDialog("Suggested Transformations", "suggest");
+GOKbExtension.handlers.suggest = function() {
+  var dialog = GOKbExtension.createDialog("Suggested Transformations", "suggest");
   
   // Append some content.
-  dialog.bindings.dialogContent.html("<ul><li>One suggestion</li></ul>");
-  GoKBExtension.showDialog(dialog);
+  dialog.bindings.dialogContent.html(JSON.stringify(theProject.columnModel.columns));
+  GOKbExtension.showDialog(dialog);
 };

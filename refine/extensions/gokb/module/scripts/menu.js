@@ -1,9 +1,9 @@
-var GoKBMenuItems = [
+var GOKbMenuItems = [
   {
-	  "id" : "GoKB/file-info",
+	  "id" : "gokb-menu-suggest",
 	  label: "Suggest Transformations",
 	  click: function() { 
-	    GoKBExtension.handlers.suggest();
+		GOKbExtension.handlers.suggest();
 	  }
   }
 ];
@@ -12,7 +12,7 @@ var GoKBMenuItems = [
  * GoKB Extension menu entry
  */
 ExtensionBar.addExtensionMenu({
-  "id" : "gobk-button-suggest",
-  "label" : "Suggest Transformations",
-  "submenu" : GoKBMenuItems
+  "id" : "gokb-menu",
+  "label" : "GOKb",
+  "submenu" : GOKbMenuItems
 });
