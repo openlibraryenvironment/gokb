@@ -6,7 +6,7 @@ GOKbExtension.handlers.suggest = function() {
   // Post the columns to the service
   GOKbExtension.doCommand (
     "describe",
-    {
+    theProject.metadata || {
     	columns : theProject.columnModel.columns,
     },
     {

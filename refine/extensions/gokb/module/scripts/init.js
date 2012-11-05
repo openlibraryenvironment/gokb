@@ -137,4 +137,6 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
       dismissBusy = DialogSystem.showBusy(GOKbExtension.messageBusy);
     }
   }, 500);
+  
+  return remote;
 };

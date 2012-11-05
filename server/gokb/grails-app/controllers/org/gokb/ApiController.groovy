@@ -19,7 +19,7 @@ class ApiController {
 //  @Secured(["ROLE_USER"])
   def describe() {
 
-	log.debug(params)
+	log.debug((params as JSON))
 	  
     def result = apiReturn ( 
       [
@@ -44,7 +44,7 @@ class ApiController {
   def ingest() {
 
     def result = apiReturn (
-      ingestResult: [
+      [
         [ name:'rule1', blurb:'blurb' ],
         [ name:'rule2', blurb:'blurb' ],
         [ name:'rule3', blurb:'blurb' ],
