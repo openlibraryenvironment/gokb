@@ -10,6 +10,7 @@ target
 /web-app/WEB-INF/classes
 .metadata
 Servers
-*/target-eclipse
+*target-eclipse
+*tld
 .directory
 .project

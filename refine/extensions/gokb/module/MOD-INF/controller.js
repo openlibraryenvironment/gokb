@@ -47,7 +47,8 @@ function init() {
     "project/scripts",
     module,
     [
-      "scripts/menu.js",
+     "scripts/menu.js",
+     "scripts/init.js",
       "scripts/extension.js"
     ]
   );
