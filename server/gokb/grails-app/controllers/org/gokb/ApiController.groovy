@@ -19,7 +19,7 @@ class ApiController {
 //  @Secured(["ROLE_USER"])
   def describe() {
 
-//	log.debug(request.JSON)
+	log.debug(params)
 	  
     def result = apiReturn ( 
       [
@@ -30,8 +30,12 @@ class ApiController {
       ]
     )
 	
-	def json = result as JSON
-	render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
+	renderJSONP (result)
+  }
+  
+  def renderJSONP(data) {
+    def json = data as JSON
+    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
 
 
