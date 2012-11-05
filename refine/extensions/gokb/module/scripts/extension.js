@@ -2,17 +2,19 @@
  * Handlers
  */
 GOKbExtension.handlers.suggest = function() {
-  
+	// Merge the meta-data and columns together.
+	var params = $.extend({}, theProject.metadata,{
+  	columns : theProject.columnModel.columns,
+  });
+	
   // Post the columns to the service
   GOKbExtension.doCommand (
     "describe",
-    theProject.metadata || {
-    	columns : theProject.columnModel.columns,
-    },
+    params,
     {
     	onDone : function (data) {
     		
-    		// Create html list of returned items.
+    		// Create HTML list of returned items.
     		var list = $("<ul></ul>");
     		$.each(data.result, function() {
     			$("<li>")
