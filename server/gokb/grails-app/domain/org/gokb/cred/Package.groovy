@@ -17,7 +17,7 @@ class Package extends KBComponent {
   static hasMany = [tipps: TitleInstancePackagePlatform, 
                     orgs: OrgRole]
 
-  static mappedBy = [tipps: 'pkg'] //, orgs: 'pkg']
+  static mappedBy = [tipps: 'pkg', orgs: 'linkedComponent']
 
 
   static mapping = {
