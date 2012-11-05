@@ -24,4 +24,20 @@ class ApiController {
     render result as JSON
   }
 
+
+  @Secured(["ROLE_USER"])
+  def ingest() {
+
+    def result = [
+      ingestResult: [
+        [ name:'rule1', blurb:'blurb' ],
+        [ name:'rule2', blurb:'blurb' ],
+        [ name:'rule3', blurb:'blurb' ],
+        [ name:'rule4', blurb:'blurb' ],
+      ]
+    ]
+
+    render result as JSON
+  }
+
 }
