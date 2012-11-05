@@ -74,7 +74,7 @@ GOKbExtension.showDialog = function(dialog) {
  * Callbacks should be contain at least an onDone property and can contain an onError
  * function. These callbacks will be triggered by the successful return of a JSON object
  * from the service. If the return has the property .code set to "error" then teh onError
- * callback will be triggered, otherwise the onDone is run. 
+ * callback will be triggered,code otherwise the onDone is run. 
  */
 GOKbExtension.doCommand = function(command, params, callbacks) {
   callbacks = callbacks || {};
@@ -94,7 +94,7 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
     timeout: GOKbExtension.timeout,
     success : function (data) {
 
-      if (data.code == "error") {
+      if (data.status == "error") {
         if ("onError" in callbacks) {
           try {
             callbacks.onError(data);

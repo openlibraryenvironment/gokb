@@ -6,9 +6,9 @@ import grails.converters.JSON
 
 class ApiController {
   // Internal API return object that 
-  def apiReturn = {result, String code = "success" ->
+  def apiReturn = {result, String status = "success" ->
 	  return [
-		code : (code),
+		status : (status),
 		result : (result),
       ]
   }
