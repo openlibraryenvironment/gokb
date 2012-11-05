@@ -15,7 +15,7 @@ class Org extends KBComponent{
 
   Set ids = []
 
-  static mappedBy = [ids: 'org', 
+  static mappedBy = [ids: 'component', 
                      outgoingCombos: 'fromOrg', 
                      incomingCombos:'toOrg',
                      links: 'org' ]

@@ -1,6 +1,6 @@
 package org.gokb.cred
 
-class TitleInstance {
+class TitleInstance extends KBComponent {
 
   String title
   String impId
@@ -9,7 +9,7 @@ class TitleInstance {
   Date dateCreated
   Date lastUpdated
 
-  static mappedBy = [tipps: 'title', ids: 'ti', orgs: 'title']
+  static mappedBy = [tipps: 'title', ids: 'component', orgs: 'linkedComponent']
   static hasMany = [tipps: TitleInstancePackagePlatform, ids: IdentifierOccurrence, orgs: OrgRole]
 
 
