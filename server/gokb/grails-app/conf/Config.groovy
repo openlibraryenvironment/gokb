@@ -94,3 +94,13 @@ log4j = {
 grails.plugins.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.User'
 grails.plugins.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
 grails.plugins.springsecurity.authority.className = 'org.gokb.cred.Role'
+
+//Enable Basic Auth Filter
+grails.plugins.springsecurity.useBasicAuth = true
+grails.plugins.springsecurity.basic.realmName = "GOKb API Authentication Required"
+//Exclude normal controllers from basic auth filter. Just the JSON API is included
+grails.plugins.springsecurity.filterChain.chainMap = [
+'/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
+'/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
+]
+
