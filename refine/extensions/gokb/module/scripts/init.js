@@ -1,7 +1,7 @@
 var GOKbExtension = {
   // Server
   api : "http://localhost:8080/gokb/api/",
-  messageBusy : "Contacting GOKb please wait...",
+  messageBusy : "Contacting GOKb",
   timeout : 10000, // 10 seconds timeout.
   handlers: {}
 };
@@ -84,7 +84,7 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
   var dismissBusy = null;
   
   // Use the built in UI to show ajax in progress.
-  Refine.setAjaxInProgress(GOKbExtension.messageBusy);
+  Refine.setAjaxInProgress();
 
   // Do the post and check the returned JSON for error.
   var remote = $.ajax({
@@ -131,10 +131,10 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
     dataType : "jsonp"
   });
 
-  // Check to see if AJAX post has completed yet.
+  // Show waiting message if function has not completed.
   window.setTimeout(function() {
     if (!done) {
-      dismissBusy = DialogSystem.showBusy();
+      dismissBusy = DialogSystem.showBusy(GOKbExtension.messageBusy);
     }
   }, 500);
 };
