@@ -18,16 +18,14 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   TitleInstancePackagePlatform derivedFrom
 
-  static mappedBy = [ids: 'tipp', additionalPlatforms: 'tipp']
-  static hasMany = [ids: IdentifierOccurrence, 
-                    additionalPlatforms: PlatformTIPP]
+  static mappedBy = [ids: 'component']
+  static hasMany = [ids: IdentifierOccurrence]
 
 
   static belongsTo = [
     pkg:Package,
     platform:Platform,
-    title:TitleInstance,
-    sub:Subscription
+    title:TitleInstance
   ]
 
   static mapping = {
@@ -49,7 +47,6 @@ class TitleInstancePackagePlatform extends KBComponent {
            status column:'tipp_status_rv_fk'
            option column:'tipp_option_rv_fk'
   hostPlatformURL column:'tipp_host_platform_url'
-              sub column:'tipp_sub_fk'
       derivedFrom column:'tipp_derived_from'
   }
 
@@ -66,7 +63,6 @@ class TitleInstancePackagePlatform extends KBComponent {
     impId(nullable:true, blank:true);
     status(nullable:true, blank:false);
     option(nullable:true, blank:false);
-    sub(nullable:true, blank:false);
     hostPlatformURL(nullable:true, blank:true);
     derivedFrom(nullable:true, blank:true);
   }
