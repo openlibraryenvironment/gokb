@@ -33,7 +33,8 @@ class ApiController {
 	renderJSONP (result)
   }
   
-  def renderJSONP(data) {
+  // Helper to render the data as JSONP to allow cross-domain JSON.
+  void renderJSONP(data) {
     def json = data as JSON
     render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
