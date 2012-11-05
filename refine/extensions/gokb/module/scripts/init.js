@@ -2,6 +2,7 @@ var GOKbExtension = {
   // Server
   api : "http://localhost:8080/gokb/api/",
   messageBusy : "Contacting GOKb please wait...",
+  timeout : 10000, // 10 seconds timeout.
   handlers: {}
 };
 
@@ -90,7 +91,7 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
   	cache : false,
     url : GOKbExtension.api + command,
     data : params,
-    timeout: 3000,
+    timeout: GOKbExtension.timeout,
     success : function (data) {
 
       if (data.code == "error") {
