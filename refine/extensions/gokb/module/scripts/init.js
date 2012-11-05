@@ -1,6 +1,7 @@
 var GOKbExtension = {
   // Server
-  url : "http://localhost:8080/gokb/",
+  api : "http://localhost:8080/gokb/api/",
+  messageBusy : "Contacting GOKb please wait...",
   handlers: {}
 };
 
@@ -43,6 +44,18 @@ GOKbExtension.createDialog = function(title, template) {
 };
 
 /**
+ * Helper method for error dialog creation within this module.
+ */
+GOKbExtension.createErrorDialog = function(title, template) {
+	
+	// Temporary set to same as dialog.
+	var error = GOKbExtension.createDialog(title, template);
+	error.html.addClass("error");
+	error.bindings.closeButton.text("OK");
+	return error;
+};
+
+/**
  * Helper method for showing dialogs within this module.
  */
 GOKbExtension.showDialog = function(dialog) {
@@ -56,52 +69,66 @@ GOKbExtension.showDialog = function(dialog) {
 
 /**
  * Helper method for sending data to GOKb service and acting on it.
+ * 
+ * Callbacks should be contain at least an onDone property and can contain an onError
+ * function. These callbacks will be triggered by the successful return of a JSON object
+ * from the service. If the return has the property .code set to "error" then teh onError
+ * callback will be triggered, otherwise the onDone is run. 
  */
 GOKbExtension.doCommand = function(command, params, callbacks) {
   callbacks = callbacks || {};
-
   params = params || {};
 
   var done = false;
   var dismissBusy = null;
   
   // Use the built in UI to show ajax in progress.
-  Refine.setAjaxInProgress();
+  Refine.setAjaxInProgress(GOKbExtension.messageBusy);
 
   // Do the post and check the returned JSON for error.
-  $.post(
-    "command/" + moduleName + "/" + command + "?" + $.param(params),
-    body,
-    function (o) {
-    	done = true;
-      if (dismissBusy) {
-        dismissBusy();
-      }
+  var remote = $.ajax({
+  	cache : false,
+    url : GOKbExtension.api + command,
+    data : params,
+    timeout: 3000,
+    success : function (data) {
 
-      Refine.clearAjaxInProgress();
-
-      if (o.code == "error") {
+      if (data.code == "error") {
         if ("onError" in callbacks) {
           try {
-            callbacks.onError(o);
+            callbacks.onError(data);
           } catch (e) {
             Refine.reportException(e);
           }
         } else {
-          alert(o.message);
+          alert(data.message);
         }
       } else {
         if ("onDone" in callbacks) {
           try {
-            callbacks.onDone(o);
+            callbacks.onDone(data);
           } catch (e) {
             Refine.reportException(e);
           }
         }
       }
     },
-    "json"
-  );
+    complete : function (jqXHR, status) {
+    	done = true;
+      if (dismissBusy) {
+        dismissBusy();
+      }
+      Refine.clearAjaxInProgress();
+      
+      if (status == 'error' || status == 'timeout') {
+	      // Display an error message to the user.
+	      var error = GOKbExtension.createErrorDialog("Communications Error")
+	      error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
+	      GOKbExtension.showDialog(error);
+      }
+    },
+    dataType : "jsonp"
+  });
 
   // Check to see if AJAX post has completed yet.
   window.setTimeout(function() {
