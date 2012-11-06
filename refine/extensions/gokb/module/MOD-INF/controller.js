@@ -48,8 +48,8 @@ function init() {
     module,
     [
      "scripts/menu.js",
-     "scripts/init.js",
-      "scripts/extension.js"
+     "scripts/extension.js",
+     "scripts/handlers.js"
     ]
   );
 
