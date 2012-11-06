@@ -89,8 +89,7 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
   // Do the post and check the returned JSON for error.
   var remote = $.ajax({
   	cache : false,
-    url : GOKbExtension.api + command,
-    data : params,
+    url : GOKbExtension.api + command + "?" + $.param(params),
     timeout: GOKbExtension.timeout,
     success : function (data) {
 
@@ -141,16 +140,15 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
   return remote;
 };
 
-
-GOKbExtension.getAppliedOpperations = function() {
-	$.getJSON(
-    "command/core/get-operations?" + $.param({ project: theProject.id }), 
+/**
+ * Helper method to execute a command in the Refine backend
+ */
+GOKbExtension.doRefineCommand = function(command, params, callbacks) {
+	
+	return $.getJSON(
+    "command/" + command + "?" + $.param(params), 
     null,
-    function(data) {
-      if ("entries" in data) {
-        self._showExtractOperationsDialog(data);
-      }
-    },
+    callbacks,
     "jsonp"
   );
-};
+}
