@@ -1,0 +1,68 @@
+[{
+	"DataSpecification": "package",
+	"SpecVersion": "3.0",
+	"P_OrgName": "Springer",
+	"P_OrgID": "springer",
+	"P_OrgURI": "uri://kbplus/org/springer",
+	"PackageName": "Open Access Hybrid",
+	"PackageID": "springer.open_access_hybrid",
+	"SOName": "Springer Open Access 2011-2012 NESLI2",
+	"SOID": "springer_open_access_2011-2012_nesli2",
+	"SubTermStartDate": "2011-01-01",
+	"SubTermEndDate": "2012-12-31",
+	"C_OrgName": "NESLi2",
+	"C_OrgID": "nesli2",
+	"C_OrgURI": "uri://kbplus/org/nesli2",
+	"TIPPs": [{
+		"PublicationTitle": "3 Biotech",
+		"TitleIdentifiers": [{
+			"TitleIdentifierNamespace": "eissn",
+			"TitleIdentifier": "2190-5738"
+			},
+			{
+			"TitleIdentifierNamespace": "springer",
+			"TitleIdentifier": "13205"				
+			}
+		],
+		"DateFirstPackageIssue": "2011-01-01",
+		"VolumeFirstPackageIssue": "1",
+		"pub_OrgName": "Springer Berlin Heidelberg",
+		"pub_OrgID": "springer_berlin_heidelberg",
+		"pub_OrgURI": "uri://kbplus/org/springer_berlin_heidelberg",
+		"Platforms": [{
+			"PlatformName": "SpringerLink",
+			"PlatformID": "springerlink",
+			"PlatformURI": "uri://kbplus/platform/springerlink",
+			"PlatformRole": "host",
+			"platform_title_url": "http://www.springerlink.com/content/2190-5738/"
+		}, {
+			"PlatformName": "SpringerLink",
+			"PlatformID": "springerlink",
+			"PlatformURI": "uri://kbplus/platform/springerlink",
+			"PlatformRole": "administrative"
+		}]
+	}, {
+		"PublicationTitle": "Advances in Difference Equations",
+		"TitleIdentifiers": [{
+			"TitleIdentifierNamespace": "eissn",
+			"TitleIdentifier": "1687-1847"
+		}],
+		"DateFirstPackageIssue": "2011-01-01",
+		"VolumeFirstPackageIssue": "2011",
+		"pub_OrgName": "Springer International Publishing, CH",
+		"pub_OrgID": "springer_international_publishering,_ch",
+		"pub_OrgURI": "uri://kbplus/org/springer_international_publishering,_ch",
+		"Platforms": [{
+			"PlatformName": "SpringerLink",
+			"PlatformID": "springerlink",
+			"PlatformURI": "uri://kbplus/platform/springerlink",
+			"PlatformRole": "host",
+			"platform_title_url": "http://www.springerlink.com/content/1687-1847/"
+		}, {
+			"PlatformName": "SpringerLink",
+			"PlatformID": "springerlink",
+			"PlatformURI": "uri://kbplus/platform/springerlink",
+			"PlatformRole": "administrative"
+		}]
+	}]
+}]
