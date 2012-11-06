@@ -151,4 +151,26 @@ GOKbExtension.doRefineCommand = function(command, params, callbacks) {
     callbacks,
     "jsonp"
   );
-}
+};
+
+
+/**
+ * Use the DataTable JQuery plugin to return a data-table.
+ */
+GOKbExtension.toTable = function (header, data) {
+	var head = [];
+	$.each(header, function() {
+		head.push({ title : this });
+	});
+	
+	// Create a correctly formatted object
+	var DTData = {
+		aoColumns : head,
+		aaData : data
+	};
+	
+	// Create the table object and return.
+	var table = $('<table cellpadding="0" cellspacing="0" border="0" ></table>');
+	$(table).dataTable( DTData );
+	return table;
+};

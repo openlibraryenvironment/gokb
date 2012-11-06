@@ -47,6 +47,7 @@ function init() {
     "project/scripts",
     module,
     [
+     "scripts/jquery.dataTables.min.js",
      "scripts/menu.js",
      "scripts/extension.js",
      "scripts/handlers.js"
@@ -58,7 +59,8 @@ function init() {
     "project/styles",
     module,
     [
-      "styles/main.less"
+      "styles/main.less",
+      "styles/jquery.dataTables.css"
     ]
   );
 }

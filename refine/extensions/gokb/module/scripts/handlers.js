@@ -16,17 +16,21 @@ GOKbExtension.handlers.suggest = function() {
     {
     	onDone : function (data) {
     		
-    		// Create HTML list of returned items.
-    		var list = $("<ul></ul>");
-    		$.each(data.result, function() {
-    			$("<li>")
-    				.text(this.name)
-    			.appendTo(list);
-    		});
+    		// Create data.
+    		var DTDdata = [];
+  			$.each(data.result, function () {
+  				DTDdata.push([this.name]);
+  			});
+  			
+  			// Create the Table.
+  			var table = GOKbExtension.toTable (
+   			  ["Rule"],
+   			  DTDdata
+   			);
     		
     		// Create and show a dialog with the returned list attached.
     		var dialog = GOKbExtension.createDialog("Suggested Transformations", "suggest");
-    		list.appendTo(dialog.bindings.dialogContent);
+    		table.appendTo(dialog.bindings.dialogContent);
     		GOKbExtension.showDialog(dialog);
     	}
   	}
@@ -38,7 +42,24 @@ GOKbExtension.handlers.getOperations = function() {
 	GOKbExtension.doRefineCommand("core/get-operations", {project: theProject.id}, function(data){
 		if ("entries" in data) {
 			var ops = GOKbExtension.createDialog("Workflow");
-			ops.bindings.dialogContent.html(JSON.stringify(data.entries));
+			
+			// Build a JSON data object to display to the user.
+			var DTDdata = [];
+			$.each(data.entries, function () {
+				if ("operation" in this) {
+					
+					// Include only operations.
+					DTDdata.push([this.description, JSON.stringify(this.operation)]);
+				}
+			});
+			
+			// Create a table from the data.
+			var table = GOKbExtension.toTable (
+			  ["Description", "Operation"],
+			  DTDdata
+			);
+			
+			table.appendTo(ops.bindings.dialogContent);
 	  } else {
 	  	ops.bindings.dialogContent.html("<p>No entries were found</p>");
 	  }
