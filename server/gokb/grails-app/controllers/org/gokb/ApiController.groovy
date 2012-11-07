@@ -5,7 +5,7 @@ import grails.converters.JSON
 
 
 class ApiController {
-  // Internal API return object that 
+  // Internal API return object that ensures consistent formatting of API return objects
   def apiReturn = {result, String status = "success" ->
 	  return [
 		status : (status),
@@ -20,7 +20,7 @@ class ApiController {
   def describe() {
 
 	log.debug((params as JSON))
-	  
+	
     def result = apiReturn ( 
       [
         [ name:'rule1', description:'blurb' ],
