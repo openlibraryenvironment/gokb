@@ -166,22 +166,44 @@ GOKbExtension.doRefineCommand = function(command, params, callbacks) {
 
 
 /**
- * Use the DataTable JQuery plugin to return a data-table.
+ * Return a data-table.
  */
 GOKbExtension.toTable = function (header, data) {
-	var head = [];
+	
+	// Create the header object.
+	var head = $("<tr></tr>");
 	$.each(header, function() {
-		head.push({ title : this });
+		
+		// Append header element.
+		head.append(
+		  $("<th></th>").text(this)
+    );
+	});	
+	head = $("<thead></thead>").append(head);
+	
+	// Create the tbody
+	var body = $("<tbody></tbody>");
+	var stripe = false;
+	$.each(data, function() {
+		var row = $("<tr></tr>").appendTo(body).addClass( ( stripe ? "even" : "odd" ) );
+		stripe = !stripe;
+		$.each(this, function() {
+			// Append element.
+			row.append($("<td></td>").text(this));
+		});
 	});
-	
-	// Create a correctly formatted object
-	var DTData = {
-		aoColumns : head,
-		aaData : data
-	};
-	
+		
 	// Create the table object and return.
-	var table = $('<table cellpadding="0" cellspacing="0" border="0" ></table>');
-	$(table).dataTable( DTData );
+	var table = $('<table class="data-table" cellpadding="0" cellspacing="0" border="0" ></table>')
+		.append(head)
+		.append(body)
+	;
+	
+	// Use fixed header plugin to always keep header visible.
+	table.fixedHeaderTable({
+		footer						: true,
+		cloneHeadToFoot		: true,
+		fixedColumn				: false
+	});
 	return table;
 };
