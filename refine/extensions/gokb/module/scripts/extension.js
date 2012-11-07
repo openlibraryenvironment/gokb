@@ -69,6 +69,42 @@ GOKbExtension.showDialog = function(dialog) {
 };
 
 /**
+ * Helper method to show a "waiting" spinner while completing an AJAX task. 
+ */
+GOKbExtension.ajaxWaiting = function (jqXHR, message) {
+	var done = false;
+  var dismissBusy = null;
+  
+  // Use the built in UI to show AJAX in progress.
+  Refine.setAjaxInProgress();
+
+  // Add a complete function to remove the waiting box.
+  jqXHR.complete(function (jqXHR, status) {
+		done = true;
+	  if (dismissBusy) {
+	    dismissBusy();
+	  }
+	  Refine.clearAjaxInProgress();
+	  
+	  if (status == 'error' || status == 'timeout') {
+	    // Display an error message to the user.
+	    var error = GOKbExtension.createErrorDialog("Communications Error")
+	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
+	    GOKbExtension.showDialog(error);
+	  }
+	});
+  
+  // Show waiting message if function has not completed.
+  window.setTimeout(function() {
+    if (!done) {
+      dismissBusy = DialogSystem.showBusy(message);
+    }
+  }, 500);
+  
+  return jqXHR;
+};
+
+/**
  * Helper method for sending data to GOKb service and acting on it.
  * 
  * Callbacks should be contain at least an onDone property and can contain an onError
@@ -79,12 +115,6 @@ GOKbExtension.showDialog = function(dialog) {
 GOKbExtension.doCommand = function(command, params, callbacks) {
   callbacks = callbacks || {};
   params = params || {};
-
-  var done = false;
-  var dismissBusy = null;
-  
-  // Use the built in UI to show ajax in progress.
-  Refine.setAjaxInProgress();
 
   // Do the post and check the returned JSON for error.
   var remote = $.ajax({
@@ -113,31 +143,11 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
         }
       }
     },
-    complete : function (jqXHR, status) {
-    	done = true;
-      if (dismissBusy) {
-        dismissBusy();
-      }
-      Refine.clearAjaxInProgress();
-      
-      if (status == 'error' || status == 'timeout') {
-	      // Display an error message to the user.
-	      var error = GOKbExtension.createErrorDialog("Communications Error")
-	      error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
-	      GOKbExtension.showDialog(error);
-      }
-    },
     dataType : "jsonp"
   });
-
-  // Show waiting message if function has not completed.
-  window.setTimeout(function() {
-    if (!done) {
-      dismissBusy = DialogSystem.showBusy(GOKbExtension.messageBusy);
-    }
-  }, 500);
   
-  return remote;
+  // Show the GOKb waiting message
+  return GOKbExtension.ajaxWaiting (remote, GOKbExtension.messageBusy);
 };
 
 /**
@@ -145,12 +155,13 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
  */
 GOKbExtension.doRefineCommand = function(command, params, callbacks) {
 	
-	return $.getJSON(
+	// Show default waiting message
+	return GOKbExtension.ajaxWaiting ($.getJSON(
     "command/" + command + "?" + $.param(params), 
     null,
     callbacks,
     "jsonp"
-  );
+  ));
 };
 
 
