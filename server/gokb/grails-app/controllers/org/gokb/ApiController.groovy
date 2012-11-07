@@ -5,12 +5,20 @@ import grails.converters.JSON
 
 
 class ApiController {
+  
   // Internal API return object that ensures consistent formatting of API return objects
-  def apiReturn = {result, String status = "success" ->
+  def apiReturn = {result, String message = "", String status = "success" ->
 	  return [
-		status : (status),
-		result : (result),
+		status		: (status),
+		result		: (result),
+		message		: (message),
       ]
+  }
+  
+  // Helper to render the data as JSONP to allow cross-domain JSON.
+  void renderJSONP(data) {
+    def json = data as JSON
+    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
 
   def index() { 
@@ -21,7 +29,7 @@ class ApiController {
 
 	log.debug((params as JSON))
 	
-    def result = apiReturn ( 
+    def result = apiReturn (
       [
         [ name:'rule1', description:'blurb' ],
         [ name:'rule2', description:'blurb' ],
@@ -31,12 +39,6 @@ class ApiController {
     )
 	
 	renderJSONP (result)
-  }
-  
-  // Helper to render the data as JSONP to allow cross-domain JSON.
-  void renderJSONP(data) {
-    def json = data as JSON
-    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
 
 

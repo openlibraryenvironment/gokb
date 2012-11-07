@@ -49,7 +49,7 @@ GOKbExtension.handlers.getOperations = function() {
 				if ("operation" in this) {
 					
 					// Include only operations.
-					DTDdata.push([this.description, JSON.stringify(this.operation)]);
+					DTDdata.push([this.description, JSON.stringify(this)]);
 				}
 			});
 			
