@@ -198,12 +198,5 @@ GOKbExtension.toTable = function (header, data) {
 		.append(head)
 		.append(body)
 	;
-	
-	// Use fixed header plugin to always keep header visible.
-	table.fixedHeaderTable({
-		footer						: true,
-		cloneHeadToFoot		: true,
-		fixedColumn				: false
-	});
 	return table;
 };
