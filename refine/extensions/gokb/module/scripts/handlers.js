@@ -38,10 +38,10 @@ GOKbExtension.handlers.suggest = function() {
 };
 
 // Display a list of operations applied to this project
-GOKbExtension.handlers.getOperations = function() {
+GOKbExtension.handlers.history = function() {
 	GOKbExtension.doRefineCommand("core/get-operations", {project: theProject.id}, function(data){
 		if ("entries" in data) {
-			var ops = GOKbExtension.createDialog("Workflow");
+			var ops = GOKbExtension.createDialog("Applied Operations");
 			
 			// Build a JSON data object to display to the user.
 			var DTDdata = [];
@@ -49,13 +49,13 @@ GOKbExtension.handlers.getOperations = function() {
 				if ("operation" in this) {
 					
 					// Include only operations.
-					DTDdata.push([this.description, JSON.stringify(this)]);
+					DTDdata.push([this.description]);
 				}
 			});
 			
 			// Create a table from the data.
 			var table = GOKbExtension.toTable (
-			  ["Description", "Operation"],
+			  ["Operation"],
 			  DTDdata
 			);
 			

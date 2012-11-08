@@ -9,7 +9,7 @@ import org.gokb.refine.RefineOperation
 class ApiController {
   
   // Internal API return object that ensures consistent formatting of API return objects
-  def apiReturn = {result, String message = "", String status = "success" ->
+  private def apiReturn = {result, String message = "", String status = "success" ->
 	  return [
 		status		: (status),
 		result		: (result),
@@ -18,9 +18,8 @@ class ApiController {
   }
   
   // Helper to render the data as JSONP to allow cross-domain JSON.
-  void renderJSONP(data) {
+  private void renderJSONP(data) {
     def json = data as JSON
-	log.debug(json)
     render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
 
@@ -30,9 +29,7 @@ class ApiController {
 //  @Secured(["ROLE_USER"])
   def describe() {
 	
-//	JSONObject json = JSON.parse("{\"description\":\"Rename column Title to Name\",\"operation\":{\"op\":\"core/column-rename\",\"description\":\"Rename column Title to Name\",\"oldColumnName\":\"Title\",\"newColumnName\":\"Name\"}}")
-	// Create a Refine Operation
-	
+	// Return list of refine Operations
 	def result = [
 	    new RefineOperation(
 			JSON.parse("{\"description\":\"Rename column Title to Name\",\"operation\":{\"op\":\"core/column-rename\",\"description\":\"Rename column Title to Name\",\"oldColumnName\":\"Title\",\"newColumnName\":\"Name\"}}")
@@ -46,6 +43,10 @@ class ApiController {
 	]
 	
 	renderJSONP (apiReturn(result))
+  }
+  
+  def saveOperations() {
+	  log.debug(JSON.parse(request))
   }
 
 
