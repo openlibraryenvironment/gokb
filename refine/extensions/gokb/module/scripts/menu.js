@@ -1,9 +1,16 @@
 var GOKbMenuItems = [
   {
 	  "id" : "gokb-menu-suggest",
-	  label: "Suggest Transformations",
+	  label: "Suggest Operations",
 	  click: function() { 
-		GOKbExtension.handlers.suggest();
+		  GOKbExtension.handlers.suggest();
+	  }
+  },
+  {
+	  "id" : "gokb-menu-history",
+	  label: "Show Applied Operations",
+	  click: function() { 
+	  	GOKbExtension.handlers.history();
 	  }
   }
 ];

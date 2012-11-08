@@ -47,9 +47,10 @@ function init() {
     "project/scripts",
     module,
     [
+     "scripts/jquery.plugin.selectablerows.js",
      "scripts/menu.js",
-     "scripts/init.js",
-      "scripts/extension.js"
+     "scripts/extension.js",
+     "scripts/handlers.js"
     ]
   );
 
@@ -62,26 +63,3 @@ function init() {
     ]
   );
 }
-
-/*
- * Function invoked to handle each request in a custom way.
- */
-//function process(path, request, response) {
-//  // Analyze path and handle this request yourself.
-//
-//  if (path == "/" || path == "") {
-//	  
-//	Packages.java.lang.System.err.println("Initializing GOKb");
-//    var context = {};
-//    // here's how to pass things into the .vt templates
-//    context.someList = ["Superior","Michigan","Huron","Erie","Ontario"];
-//    context.someString = "foo";
-//    context.someInt = Packages.com.google.refine.sampleExtension.SampleUtil.stringArrayLength(context.someList);
-//
-//    send(request, response, "index.vt", context);
-//  }
-//}
-//
-//function send(request, response, template, context) {
-//  butterfly.sendTextFromTemplate(request, response, context, template, encoding, html);
-//}
