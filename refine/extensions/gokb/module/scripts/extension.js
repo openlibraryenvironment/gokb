@@ -112,7 +112,7 @@ GOKbExtension.ajaxWaiting = function (jqXHR, message) {
  * from the service. If the return has the property .code set to "error" then teh onError
  * callback will be triggered,code otherwise the onDone is run. 
  */
-GOKbExtension.doCommand = function(command, params, callbacks) {
+GOKbExtension.doCommand = function(command, params, data, callbacks) {
   callbacks = callbacks || {};
   params = params || {};
 
@@ -153,14 +153,14 @@ GOKbExtension.doCommand = function(command, params, callbacks) {
 /**
  * Helper method to execute a command in the Refine backend
  */
-GOKbExtension.doRefineCommand = function(command, params, callbacks) {
+GOKbExtension.doRefineCommand = function(command, params, data, callbacks) {
 	
 	// Show default waiting message
 	return GOKbExtension.ajaxWaiting ($.getJSON(
     "command/" + command + "?" + $.param(params), 
-    null,
+    data,
     callbacks,
-    "jsonp"
+    "json"
   ));
 };
 
