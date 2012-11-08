@@ -19,17 +19,17 @@ GOKbExtension.handlers.suggest = function() {
     		// Create data.
     		var DTDdata = [];
   			$.each(data.result, function () {
-  				DTDdata.push([this.name]);
+  				DTDdata.push([this.description]);
   			});
   			
   			// Create the Table.
   			var table = GOKbExtension.toTable (
-   			  ["Rule"],
+   			  ["Operation"],
    			  DTDdata
    			);
     		
     		// Create and show a dialog with the returned list attached.
-    		var dialog = GOKbExtension.createDialog("Suggested Transformations", "suggest");
+    		var dialog = GOKbExtension.createDialog("Suggested Operations", "suggest");
     		table.appendTo(dialog.bindings.dialogContent);
     		GOKbExtension.showDialog(dialog);
     	}

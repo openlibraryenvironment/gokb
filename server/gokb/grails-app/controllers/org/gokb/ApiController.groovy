@@ -2,6 +2,8 @@ package org.gokb
 
 import grails.plugins.springsecurity.Secured
 import grails.converters.JSON
+import org.codehaus.groovy.grails.web.json.JSONObject
+import org.gokb.refine.RefineOperation
 
 
 class ApiController {
@@ -18,6 +20,7 @@ class ApiController {
   // Helper to render the data as JSONP to allow cross-domain JSON.
   void renderJSONP(data) {
     def json = data as JSON
+	log.debug(json)
     render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
 
@@ -26,19 +29,23 @@ class ApiController {
   
 //  @Secured(["ROLE_USER"])
   def describe() {
-
-	log.debug((params as JSON))
 	
-    def result = apiReturn (
-      [
-        [ name:'rule1', description:'blurb' ],
-        [ name:'rule2', description:'blurb' ],
-        [ name:'rule3', description:'blurb' ],
-        [ name:'rule4', description:'blurb' ],
-      ]
-    )
+//	JSONObject json = JSON.parse("{\"description\":\"Rename column Title to Name\",\"operation\":{\"op\":\"core/column-rename\",\"description\":\"Rename column Title to Name\",\"oldColumnName\":\"Title\",\"newColumnName\":\"Name\"}}")
+	// Create a Refine Operation
 	
-	renderJSONP (result)
+	def result = [
+	    new RefineOperation(
+			JSON.parse("{\"description\":\"Rename column Title to Name\",\"operation\":{\"op\":\"core/column-rename\",\"description\":\"Rename column Title to Name\",\"oldColumnName\":\"Title\",\"newColumnName\":\"Name\"}}")
+		),
+		new RefineOperation(
+			JSON.parse('{\"description\":\"Text transform on 539 cells in column Electronic ISSN: grel:split(value,\'-\')[0]+ \\\"*\\\" + split(value,\'-\')[1]\",\"operation\":{\"op\":\"core/text-transform\",\"description\":\"Text transform on cells in column Electronic ISSN using expression grel:split(value,\'-\')[0]+ \\\"*\\\" + split(value,\'-\')[1]\",\"engineConfig\":{\"facets\":[],\"mode\":\"record-based\"},\"columnName\":\"Electronic ISSN\",\"expression\":\"grel:split(value,\'-\')[0]+ \\\"*\\\" + split(value,\'-\')[1]\",\"onError\":\"keep-original\",\"repeat\":false,\"repeatCount\":10}}')
+		),
+		new RefineOperation(
+			JSON.parse('{\"description\":\"Create new column Test based on column Frequency by filling 500 rows with grel:value+1\",\"operation\":{\"op\":\"core/column-addition\",\"description\":\"Create column Test at index 3 based on column Frequency using expression grel:value+1\",\"engineConfig\":{\"facets\":[],\"mode\":\"record-based\"},\"newColumnName\":\"Test\",\"columnInsertIndex\":3,\"baseColumnName\":\"Frequency\",\"expression\":\"grel:value+1\",\"onError\":\"set-to-blank\"}}')
+		),
+	]
+	
+	renderJSONP (apiReturn(result))
   }
 
 
