@@ -47,6 +47,7 @@ function init() {
     "project/scripts",
     module,
     [
+     "scripts/jquery.plugin.selectablerows.js",
      "scripts/menu.js",
      "scripts/extension.js",
      "scripts/handlers.js"

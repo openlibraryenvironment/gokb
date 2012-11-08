@@ -99,7 +99,7 @@ GOKbExtension.ajaxWaiting = function (jqXHR, message) {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 500);
+  }, 300);
   
   return jqXHR;
 };
@@ -171,30 +171,30 @@ GOKbExtension.doRefineCommand = function(command, params, callbacks) {
 GOKbExtension.toTable = function (header, data) {
 	
 	// Create the header object.
-	var head = $("<tr></tr>");
+	var head = $("<tr />");
 	$.each(header, function() {
 		
 		// Append header element.
 		head.append(
-		  $("<th></th>").text(this)
+		  $("<th />").text(this)
     );
 	});	
-	head = $("<thead></thead>").append(head);
+	head = $("<thead />").append(head);
 	
 	// Create the tbody
-	var body = $("<tbody></tbody>");
+	var body = $("<tbody />");
 	var stripe = false;
 	$.each(data, function() {
-		var row = $("<tr></tr>").appendTo(body).addClass( ( stripe ? "even" : "odd" ) );
+		var row = $("<tr />").appendTo(body).addClass( ( stripe ? "even" : "odd" ) );
 		stripe = !stripe;
 		$.each(this, function() {
 			// Append element.
-			row.append($("<td></td>").text(this));
+			row.append($("<td />").text(this));
 		});
 	});
 		
 	// Create the table object and return.
-	var table = $('<table class="data-table" cellpadding="0" cellspacing="0" border="0" ></table>')
+	var table = $('<table class="data-table" cellpadding="0" cellspacing="0" border="0" />')
 		.append(head)
 		.append(body)
 	;

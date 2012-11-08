@@ -27,6 +27,9 @@ GOKbExtension.handlers.suggest = function() {
    			  ["Operation"],
    			  DTDdata
    			);
+  			
+  			// Add selection checkboxes
+  			table.selectableRows();
     		
     		// Create and show a dialog with the returned list attached.
     		var dialog = GOKbExtension.createDialog("Suggested Operations", "suggest");
@@ -40,8 +43,8 @@ GOKbExtension.handlers.suggest = function() {
 // Display a list of operations applied to this project
 GOKbExtension.handlers.history = function() {
 	GOKbExtension.doRefineCommand("core/get-operations", {project: theProject.id}, function(data){
-		if ("entries" in data) {
-			var ops = GOKbExtension.createDialog("Applied Operations");
+		var ops = GOKbExtension.createDialog("Applied Operations");
+		if ("entries" in data && data.entries.length > 0) {
 			
 			// Build a JSON data object to display to the user.
 			var DTDdata = [];
@@ -61,7 +64,8 @@ GOKbExtension.handlers.history = function() {
 			
 			table.appendTo(ops.bindings.dialogContent);
 	  } else {
-	  	ops.bindings.dialogContent.html("<p>No entries were found</p>");
+	  	// Just output 
+	  	ops.bindings.dialogContent.html("<p>No operations have been applied yet.</p>");
 	  }
 		GOKbExtension.showDialog(ops);
 	});
