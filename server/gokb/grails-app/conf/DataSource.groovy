@@ -44,17 +44,23 @@ environments {
     production {
         dataSource {
             dbCreate = "update"
-            url = "jdbc:h2:prodDb;MVCC=TRUE;LOCK_TIMEOUT=10000"
+            driverClassName = "com.mysql.jdbc.Driver"
+            dialect=org.hibernate.dialect.MySQL5Dialect
+            username = "k-int"
+            password = "k-int"
+            url = "jdbc:mysql://localhost/GoKBProd?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
+            // logSql = true
+            // formatSql = true
             properties {
-               maxActive = -1
-               minEvictableIdleTimeMillis=1800000
-               timeBetweenEvictionRunsMillis=1800000
-               numTestsPerEvictionRun=3
-               testOnBorrow=true
-               testWhileIdle=true
-               testOnReturn=true
-               validationQuery="SELECT 1"
+                maxActive = -1
+                minEvictableIdleTimeMillis=1800000
+                timeBetweenEvictionRunsMillis=1800000
+                numTestsPerEvictionRun=3
+                testOnBorrow=true
+                testWhileIdle=true
+                testOnReturn=true
+                validationQuery="select 1"
             }
         }
     }
