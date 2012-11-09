@@ -99,7 +99,7 @@ GOKbExtension.ajaxWaiting = function (jqXHR, message) {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 300);
+  }, 100);
   
   return jqXHR;
 };
