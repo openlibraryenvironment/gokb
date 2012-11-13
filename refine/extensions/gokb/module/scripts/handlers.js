@@ -114,6 +114,28 @@ GOKbExtension.handlers.history = function() {
 			
 			// Append the table
 			table.appendTo(dialog.bindings.dialogContent);
+			
+			// Add a button to send the data up to the GOKb server.
+			$("<button>Send Operations</button>").addClass("button").click(function() {
+				GOKbExtension.doCommand(
+				  "saveOperations",
+				  {},
+				  {
+				  	// Entries.
+				  	operations : JSON.stringify(data.entries)
+				  },
+				  {
+				  	onDone : function () {
+				  		
+				  		// Close the dialog
+	  					DialogSystem.dismissUntil(dialog.level - 1);
+				    }
+				  }
+				);
+			}).appendTo(
+			  // Append to the footer.
+			  dialog.bindings.dialogFooter
+			);
 	  } else {
 	  	// Just output nothing found.
 	  	dialog.bindings.dialogContent.html("<p>No operations have been applied yet.</p>");

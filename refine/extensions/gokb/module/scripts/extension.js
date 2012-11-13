@@ -121,22 +121,23 @@ GOKbExtension.doCommand = function(command, params, data, callbacks) {
   	cache : false,
     url : GOKbExtension.api + command + "?" + $.param(params),
     timeout: GOKbExtension.timeout,
-    success : function (data) {
+    data : data,
+    success : function (dataR) {
 
-      if (data.status == "error") {
+      if (dataR.status == "error") {
         if ("onError" in callbacks) {
           try {
-            callbacks.onError(data);
+            callbacks.onError(dataR);
           } catch (e) {
             Refine.reportException(e);
           }
         } else {
-          alert(data.message);
+          alert(dataR.message);
         }
       } else {
         if ("onDone" in callbacks) {
           try {
-            callbacks.onDone(data);
+            callbacks.onDone(dataR);
           } catch (e) {
             Refine.reportException(e);
           }
