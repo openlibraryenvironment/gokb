@@ -1,8 +1,11 @@
 package com.k_int.gokb.refine;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -42,20 +45,37 @@ public class ProjectUtil {
     }
     
     public static byte[] fingerprintProjectData(Project project) throws IOException, NoSuchAlgorithmException {
-                
+
         // Create the digest.
         MessageDigest md = MessageDigest.getInstance(DIGEST_TYPE);
+        
+        DigestOutputStream out = new DigestOutputStream(
+          new FileOutputStream(new File("/home/sosguthorpe/Groovy_Grails/gokb-phase1/debug/test_undo.txt")),
+          md
+        );
         
         // Add each Cell to the Digest.
         for ( Row row : project.rows ) {
             for (Cell cell : row.cells) {
-                Serializable val = null;
-                if (cell != null && cell.value != null) val = cell.value.toString();
-                val = (val == null ? "|" : val + "|");
-                md.update(val.toString().getBytes());
+                // Completely ignore "null" cells as these are left behind as a result of 
+                // undoing the addition of an extra cell. Ignoring these ensures that the
+                // data in refine is compared as best as can be.
+                if (cell != null) {
+                    Serializable val = null;
+                    if (cell.value != null) val = cell.value.toString();
+                    val = (val == null ? "|" : val + "|");
+                    
+                    // Write the file and simultaneously update the digest.
+                    out.write(val.toString().getBytes());
+                
+                    //md.update(val.toString().getBytes());
+                }
             }
-            md.update("\n".getBytes());
+//            md.update("\\n".getBytes());
+            out.write("\n".getBytes());
         }
+        
+        out.close();
         
         // Digest the data.
         return md.digest();

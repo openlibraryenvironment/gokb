@@ -32,8 +32,11 @@ class ApiController {
   
   def saveOperations() {
 	  // Get the operations as a list.
-	  def ops = params.operations.replaceAll("\\\\\"", "\\\\\\\\\\\\\"")
-	  ops = JSON.parse(ops)
+	  
+	  // The line below looks like it replaces like with like but because the
+	  // second parameter is a regex it gets double escaped. 
+	  def ops = params.operations.replaceAll("\\\\\"", "\\\\\"")
+	  ops = JSON.parse(params.operations)
 
 	  // Save each operation to the database
 	  ops.each {

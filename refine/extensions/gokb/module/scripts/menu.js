@@ -1,5 +1,12 @@
 var GOKbMenuItems = [
   {
+	  "id" : "gokb-menu-describe",
+	  label: "Show Applied Operations",
+	  click: function() { 
+	  	GOKbExtension.handlers.history();
+	  }
+  },
+  {
 	  "id" : "gokb-menu-suggest",
 	  label: "Suggest Operations",
 	  click: function() { 
