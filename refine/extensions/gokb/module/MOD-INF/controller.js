@@ -58,6 +58,7 @@ function init() {
     module,
     [
      "scripts/jquery.plugin.selectablerows.js",
+     "scripts/jquery.uniform.min.js",
      "scripts/menu.js",
      "scripts/extension.js",
      "scripts/handlers.js"
@@ -69,6 +70,8 @@ function init() {
     "project/styles",
     module,
     [
+      "styles/uniform.default.css",
+      "styles/uniform.aristo.css",
       "styles/main.less"
     ]
   );

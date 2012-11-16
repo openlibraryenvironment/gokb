@@ -1,9 +1,9 @@
 var GOKbMenuItems = [
   {
 	  "id" : "gokb-menu-describe",
-	  label: "Show Applied Operations",
+	  label: "Describe Document",
 	  click: function() { 
-	  	GOKbExtension.handlers.history();
+	  	GOKbExtension.handlers.describe();
 	  }
   },
   {

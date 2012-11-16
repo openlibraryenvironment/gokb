@@ -60,6 +60,12 @@ GOKbExtension.createErrorDialog = function(title, template) {
  * Helper method for showing dialogs within this module.
  */
 GOKbExtension.showDialog = function(dialog) {
+	
+	// Run uniform on any form elements
+  if (dialog.bindings.form) {
+  	$("select, input, button, textarea", dialog.bindings.form).uniform();
+  }
+  
   var level = DialogSystem.showDialog(dialog.html);
   dialog.bindings.closeButton.click(function() {
     DialogSystem.dismissUntil(level - 1);
