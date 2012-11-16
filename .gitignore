@@ -12,5 +12,7 @@ target
 Servers
 *target-eclipse
 *tld
-.directory
-.project
+*.directory
+*.project
+*.class
+*.directory
