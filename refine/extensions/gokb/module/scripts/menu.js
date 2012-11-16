@@ -12,7 +12,14 @@ var GOKbMenuItems = [
 	  click: function() { 
 	  	GOKbExtension.handlers.history();
 	  }
-  }
+  },
+  {
+	  "id" : "gokb-menu-fingerprint",
+	  label: "Fingerprint",
+	  click: function() {
+	  	GOKbExtension.handlers.fingerprint();
+	  }
+  },
 ];
 
 /**

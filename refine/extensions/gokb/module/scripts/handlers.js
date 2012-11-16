@@ -143,3 +143,9 @@ GOKbExtension.handlers.history = function() {
 		GOKbExtension.showDialog(dialog);
 	});
 }
+
+GOKbExtension.handlers.fingerprint = function() {
+	GOKbExtension.doRefineCommand("gokb/get-fingerprint", {project: theProject.id}, null, function(data){
+		alert (JSON.stringify(data));
+	});
+}
