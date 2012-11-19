@@ -1,3 +1,5 @@
+@form-field-width: 20%;
+
 #gokb-dialog {
   width : 70%;
   
@@ -10,5 +12,33 @@
 	  td {
 	  	padding 5px;
 	  }
+	}
+	
+	form {
+		input, textarea {
+		  width : 50%;
+		}
+		
+	  padding: 10px;
+	  fieldset {
+	    padding: 7px;
+	    border:1px solid #000;
+	  } 
+		.form-row {
+		  padding: 5px 0 5px 0;
+		  label {
+		    text-align: right;
+		    float : left;
+		    width : @form-field-width;
+		    margin: 0.6em 10px 0 0;
+		  }
+		}
+		div.selector {
+			margin-bottom:0;
+		}
+		
+		input.text, input.email, input.password, textarea.uniform {
+		  margin: 0.3em 0 0 3px;
+		}
 	}
 }

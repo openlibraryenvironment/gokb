@@ -1,5 +1,12 @@
 var GOKbMenuItems = [
   {
+	  "id" : "gokb-menu-describe",
+	  label: "Describe Document",
+	  click: function() { 
+	  	GOKbExtension.handlers.describe();
+	  }
+  },
+  {
 	  "id" : "gokb-menu-suggest",
 	  label: "Suggest Operations",
 	  click: function() { 
@@ -12,7 +19,14 @@ var GOKbMenuItems = [
 	  click: function() { 
 	  	GOKbExtension.handlers.history();
 	  }
-  }
+  },
+  {
+	  "id" : "gokb-menu-fingerprint",
+	  label: "Fingerprint",
+	  click: function() {
+	  	GOKbExtension.handlers.fingerprint();
+	  }
+  },
 ];
 
 /**

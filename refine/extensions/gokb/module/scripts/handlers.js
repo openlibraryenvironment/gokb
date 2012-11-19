@@ -143,3 +143,33 @@ GOKbExtension.handlers.history = function() {
 		GOKbExtension.showDialog(dialog);
 	});
 }
+
+GOKbExtension.handlers.fingerprint = function() {
+	GOKbExtension.doRefineCommand("gokb/get-fingerprint", {project: theProject.id}, null, function(data){
+		alert (JSON.stringify(data));
+	});
+}
+
+/**
+ * Prompt the user to describe the document.
+ */
+
+GOKbExtension.handlers.describe = function() {
+	// Create the form to collect some basic data about this document.
+	var dialog = GOKbExtension.createDialog("Suggested Operations", "form_description");
+	
+	// List of orgs :To be retrieved from GOKb.
+	var orgs = {org1 : "oranisation1",org2 : "oranisation2",org3 : "oranisation3"};
+	
+	// Add the organisations.
+	var orgList = $('#organisation', dialog.bindings.form);
+	$.each(orgs, function (value, display) {
+		orgList.append(
+		  $('<option />', {"value" : value})
+		  .text(display)
+		);
+	});
+	
+	// Show the form.
+	GOKbExtension.showDialog(dialog);
+}

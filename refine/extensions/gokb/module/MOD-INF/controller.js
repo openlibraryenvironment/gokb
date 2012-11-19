@@ -36,11 +36,21 @@ var encoding = "UTF-8";
 var ClientSideResourceManager = Packages.com.google.refine.ClientSideResourceManager;
 
 /*
+ * Register our custom commands.
+ */
+function registerCommands() {
+  Packages.java.lang.System.err.println("Registering commands...");
+  var RS = Packages.com.google.refine.RefineServlet;
+  RS.registerCommand(module, "get-fingerprint", new Packages.com.k_int.gokb.refine.commands.FingerprintProjectCommand());
+}
+
+/*
  * Function invoked to initialize the extension.
  */
 function init() {
   Packages.java.lang.System.err.println("Initializing GOKb");
   Packages.java.lang.System.err.println(module.getMountPoint());
+  registerCommands();
 
   // Script files to inject into /project page
   ClientSideResourceManager.addPaths(
@@ -48,6 +58,7 @@ function init() {
     module,
     [
      "scripts/jquery.plugin.selectablerows.js",
+     "scripts/jquery.uniform.min.js",
      "scripts/menu.js",
      "scripts/extension.js",
      "scripts/handlers.js"
@@ -59,6 +70,8 @@ function init() {
     "project/styles",
     module,
     [
+      "styles/uniform.default.css",
+      "styles/uniform.aristo.css",
       "styles/main.less"
     ]
   );
