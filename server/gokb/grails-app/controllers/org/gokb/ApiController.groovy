@@ -67,5 +67,14 @@ class ApiController {
     )
 
     render result as JSON
-  }
+	}
+
+	def projectList() {
+		def result = apiReturn ([
+			[ id: 1, name:'project 1', description:'desc', locked : true ],
+			[ id: 2, name:'project 2', description:'desc', locked : false ],
+			[ id: 3, name:'project 3', description:'desc', locked : false ],
+			[ id: 5, name:'project 4', description:'desc', locked : false ],
+		])
+	}
 }
