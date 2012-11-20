@@ -1,16 +1,19 @@
-var GOKbExtension = {
+var GOKb = {
   // Server
   api : "http://localhost:8080/gokb/api/",
   messageBusy : "Contacting GOKb",
   timeout : 10000, // 10 seconds timeout.
-  handlers: {}
+  handlers: {},
+	menuItems: [],
+  ui: {},
+  api:{},
 };
 
 /**
  * Helper method for dialog creation within this module.
  */
-GOKbExtension.createDialog = function(title, template) {
-  var dialog_obj = $(DOM.loadHTML("gokb", "scripts/dialogs/gokb_dialog.html"));
+GOKb.createDialog = function(title, template) {
+  var dialog_obj = $(DOM.loadHTML("gokb", "scripts/dialogs/main.html"));
   var dialog_bindings = DOM.bind(dialog_obj);
   
   // Set title if present
@@ -20,7 +23,7 @@ GOKbExtension.createDialog = function(title, template) {
   
   // Set the content of the dialog if a template was supplied.
   if (template) {
-		var body_template = $(DOM.loadHTML("gokb", "scripts/dialogs/gokb_dialog_" + template + ".html")); 
+		var body_template = $(DOM.loadHTML("gokb", "scripts/dialogs/" + template + ".html")); 
 		dialog_bindings.dialogLayout.prepend(body_template);
 		
 		// Add body template bindings.
@@ -47,10 +50,10 @@ GOKbExtension.createDialog = function(title, template) {
 /**
  * Helper method for error dialog creation within this module.
  */
-GOKbExtension.createErrorDialog = function(title, template) {
+GOKb.createErrorDialog = function(title, template) {
 	
 	// Temporary set to same as dialog.
-	var error = GOKbExtension.createDialog(title, template);
+	var error = GOKb.createDialog(title, template);
 	error.html.addClass("error");
 	error.bindings.closeButton.text("OK");
 	return error;
@@ -59,7 +62,7 @@ GOKbExtension.createErrorDialog = function(title, template) {
 /**
  * Helper method for showing dialogs within this module.
  */
-GOKbExtension.showDialog = function(dialog) {
+GOKb.showDialog = function(dialog) {
 	
 	// Run uniform on any form elements
   if (dialog.bindings.form) {
@@ -77,7 +80,7 @@ GOKbExtension.showDialog = function(dialog) {
 /**
  * Helper method to show a "waiting" spinner while completing an AJAX task. 
  */
-GOKbExtension.ajaxWaiting = function (jqXHR, message) {
+GOKb.ajaxWaiting = function (jqXHR, message) {
 	var done = false;
   var dismissBusy = null;
   
@@ -94,9 +97,9 @@ GOKbExtension.ajaxWaiting = function (jqXHR, message) {
 	  
 	  if (status == 'error' || status == 'timeout') {
 	    // Display an error message to the user.
-	    var error = GOKbExtension.createErrorDialog("Communications Error")
+	    var error = GOKb.createErrorDialog("Communications Error")
 	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
-	    GOKbExtension.showDialog(error);
+	    GOKb.showDialog(error);
 	  }
 	});
   
@@ -118,15 +121,15 @@ GOKbExtension.ajaxWaiting = function (jqXHR, message) {
  * from the service. If the return has the property .code set to "error" then teh onError
  * callback will be triggered,code otherwise the onDone is run. 
  */
-GOKbExtension.doCommand = function(command, params, data, callbacks) {
+GOKb.doCommand = function(command, params, data, callbacks) {
   callbacks = callbacks || {};
   params = params || {};
 
   // Do the post and check the returned JSON for error.
   var remote = $.ajax({
   	cache : false,
-    url : GOKbExtension.api + command + "?" + $.param(params),
-    timeout: GOKbExtension.timeout,
+    url : GOKb.api + command + "?" + $.param(params),
+    timeout: GOKb.timeout,
     data : data,
     success : function (dataR) {
 
@@ -154,16 +157,16 @@ GOKbExtension.doCommand = function(command, params, data, callbacks) {
   });
   
   // Show the GOKb waiting message
-  return GOKbExtension.ajaxWaiting (remote, GOKbExtension.messageBusy);
+  return GOKb.ajaxWaiting (remote, GOKb.messageBusy);
 };
 
 /**
  * Helper method to execute a command in the Refine backend
  */
-GOKbExtension.doRefineCommand = function(command, params, data, callbacks) {
+GOKb.doRefineCommand = function(command, params, data, callbacks) {
 	
 	// Show default waiting message
-	return GOKbExtension.ajaxWaiting ($.getJSON(
+	return GOKb.ajaxWaiting ($.getJSON(
     "command/" + command + "?" + $.param(params), 
     data,
     callbacks,
@@ -175,7 +178,7 @@ GOKbExtension.doRefineCommand = function(command, params, data, callbacks) {
 /**
  * Return a data-table.
  */
-GOKbExtension.toTable = function (header, data) {
+GOKb.toTable = function (header, data) {
 	
 	// Create the header object.
 	var head = $("<tr />");
@@ -196,7 +199,7 @@ GOKbExtension.toTable = function (header, data) {
 		stripe = !stripe;
 		$.each(this, function() {
 			// Append element.
-			row.append($("<td />").text(this));
+			row.append($("<td />").html(this));
 		});
 	});
 		
@@ -206,4 +209,16 @@ GOKbExtension.toTable = function (header, data) {
 		.append(body)
 	;
 	return table;
+};
+
+/**
+ * Utils for the main index page.
+ */
+GOKb.api.getProjects = function (params, callbacks) {
+	GOKb.doCommand (
+    "getProjects",
+    params,
+    null,
+    callbacks
+  );
 };

@@ -3,14 +3,14 @@
  */
 
 // Send of project meta-data and receive back a list of suggested transformations.
-GOKbExtension.handlers.suggest = function() {
+GOKb.handlers.suggest = function() {
 	// Merge the meta-data and columns together.
 	var params = $.extend({}, theProject.metadata,{
   	columns : theProject.columnModel.columns,
   });
 	
   // Post the columns to the service
-  GOKbExtension.doCommand (
+  GOKb.doCommand (
     "describe",
     params,
     null,
@@ -18,7 +18,7 @@ GOKbExtension.handlers.suggest = function() {
     	onDone : function (data) {
     		
     		// Create and show a dialog with the returned list attached.
-    		var dialog = GOKbExtension.createDialog("Suggested Operations", "suggest");
+    		var dialog = GOKb.createDialog("Suggested Operations", "suggest");
     		
     		if ("result" in data) {
     		
@@ -29,7 +29,7 @@ GOKbExtension.handlers.suggest = function() {
 	  			});
 	  			
 	  			// Create the Table.
-	  			var table = GOKbExtension.toTable (
+	  			var table = GOKb.toTable (
 	   			  ["Operation"],
 	   			  DTData
 	   			);
@@ -84,16 +84,16 @@ GOKbExtension.handlers.suggest = function() {
     		}
     		
     		// Show the dialog.
-    		GOKbExtension.showDialog(dialog);
+    		GOKb.showDialog(dialog);
     	}
   	}
   );
 };
 
 // Display a list of operations applied to this project
-GOKbExtension.handlers.history = function() {
-	GOKbExtension.doRefineCommand("core/get-operations", {project: theProject.id}, null, function(data){
-		var dialog = GOKbExtension.createDialog("Applied Operations");
+GOKb.handlers.history = function() {
+	GOKb.doRefineCommand("core/get-operations", {project: theProject.id}, null, function(data){
+		var dialog = GOKb.createDialog("Applied Operations");
 		if ("entries" in data && data.entries.length > 0) {
 			
 			// Build a JSON data object to display to the user.
@@ -107,7 +107,7 @@ GOKbExtension.handlers.history = function() {
 			});
 			
 			// Create a table from the data.
-			var table = GOKbExtension.toTable (
+			var table = GOKb.toTable (
 			  ["Operation"],
 			  DTDdata
 			);
@@ -117,7 +117,7 @@ GOKbExtension.handlers.history = function() {
 			
 			// Add a button to send the data up to the GOKb server.
 			$("<button>Send Operations</button>").addClass("button").click(function() {
-				GOKbExtension.doCommand(
+				GOKb.doCommand(
 				  "saveOperations",
 				  {},
 				  {
@@ -140,12 +140,12 @@ GOKbExtension.handlers.history = function() {
 	  	// Just output nothing found.
 	  	dialog.bindings.dialogContent.html("<p>No operations have been applied yet.</p>");
 	  }
-		GOKbExtension.showDialog(dialog);
+		GOKb.showDialog(dialog);
 	});
 }
 
-GOKbExtension.handlers.fingerprint = function() {
-	GOKbExtension.doRefineCommand("gokb/get-fingerprint", {project: theProject.id}, null, function(data){
+GOKb.handlers.fingerprint = function() {
+	GOKb.doRefineCommand("gokb/get-fingerprint", {project: theProject.id}, null, function(data){
 		alert (JSON.stringify(data));
 	});
 }
@@ -154,9 +154,9 @@ GOKbExtension.handlers.fingerprint = function() {
  * Prompt the user to describe the document.
  */
 
-GOKbExtension.handlers.describe = function() {
+GOKb.handlers.describe = function() {
 	// Create the form to collect some basic data about this document.
-	var dialog = GOKbExtension.createDialog("Suggested Operations", "form_description");
+	var dialog = GOKb.createDialog("Suggested Operations", "form_description");
 	
 	// List of orgs :To be retrieved from GOKb.
 	var orgs = {org1 : "oranisation1",org2 : "oranisation2",org3 : "oranisation3"};
@@ -171,5 +171,5 @@ GOKbExtension.handlers.describe = function() {
 	});
 	
 	// Show the form.
-	GOKbExtension.showDialog(dialog);
+	GOKb.showDialog(dialog);
 }

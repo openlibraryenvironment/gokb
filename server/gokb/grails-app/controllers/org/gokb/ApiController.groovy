@@ -71,10 +71,8 @@ class ApiController {
 
 	def projectList() {
 		def result = apiReturn ([
-			[ id: 1, name:'project 1', description:'desc', locked : true ],
-			[ id: 2, name:'project 2', description:'desc', locked : false ],
-			[ id: 3, name:'project 3', description:'desc', locked : false ],
-			[ id: 5, name:'project 4', description:'desc', locked : false ],
+			[ id: 1, name:'muse_journal_metadata_2012 xls', description:'desc', modified: "2012-11-16T15:15:42Z", locked : true ],
+			[ id: 2, name:'Freedom collection 2007 xls', description:'desc', modified: "2012-11-20T16:11:52Z", locked : false ],
 		])
 	}
 }

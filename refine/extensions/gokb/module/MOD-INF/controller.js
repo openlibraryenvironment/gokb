@@ -39,16 +39,17 @@ var ClientSideResourceManager = Packages.com.google.refine.ClientSideResourceMan
  * Register our custom commands.
  */
 function registerCommands() {
-  Packages.java.lang.System.out.println("Registering commands...");
+  Packages.java.lang.System.out.print("\tRegistering commands...");
   var RS = Packages.com.google.refine.RefineServlet;
   RS.registerCommand(module, "get-fingerprint", new Packages.com.k_int.gokb.refine.commands.FingerprintProjectCommand());
+  Packages.java.lang.System.out.println("done");
 }
 
 /*
  * Function invoked to initialize the extension.
  */
 function init() {
-  Packages.java.lang.System.out.println("Initializing GOKb");
+  Packages.java.lang.System.out.println("Initializing GOKb...");
   Packages.java.lang.System.out.println(module.getMountPoint());
   registerCommands();
   
@@ -56,7 +57,8 @@ function init() {
 		 "index/scripts",
 		 module,
 		 [
-	     "scripts/index/ui-extensions.js",
+	     "scripts/common.js",
+	     "scripts/index/ui-open-project.js",
 		 ]
 	);
 
@@ -67,9 +69,9 @@ function init() {
     [
      "scripts/jquery.plugin.selectablerows.js",
      "scripts/jquery.uniform.min.js",
-     "scripts/menu.js",
-     "scripts/extension.js",
+     "scripts/common.js",
      "scripts/handlers.js",
+     "scripts/menu.js",
     ]
   );
 

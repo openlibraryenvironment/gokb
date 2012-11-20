@@ -14,7 +14,7 @@ class RefineProject extends KBComponent {
 	
 	static hasMany = [metadata: Serializable]
 	static mapping = {
-					 metadata type:'java.util.Map'
+					 metadata type:'serializable'
 						 id column:'proj_id'
 					version column:'proj_version'
 		   		description column:'proj_description', index:'doc_checksum_idx'

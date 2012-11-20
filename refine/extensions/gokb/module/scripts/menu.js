@@ -1,4 +1,4 @@
-var GOKbMenuItems = [
+GOKb.menuItems.concat([
   {
 	  "id" : "gokb-menu-describe",
 	  label: "Describe Document",
@@ -27,7 +27,7 @@ var GOKbMenuItems = [
 	  	GOKbExtension.handlers.fingerprint();
 	  }
   },
-];
+]);
 
 /**
  * GoKB Extension menu entry
@@ -35,5 +35,5 @@ var GOKbMenuItems = [
 ExtensionBar.addExtensionMenu({
   "id" : "gokb-menu",
   "label" : "GOKb",
-  "submenu" : GOKbMenuItems
+  "submenu" : GOKb.menuItems
 });
