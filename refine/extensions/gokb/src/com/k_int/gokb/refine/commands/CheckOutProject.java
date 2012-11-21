@@ -2,6 +2,7 @@ package com.k_int.gokb.refine.commands;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Properties;
@@ -10,6 +11,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,10 +26,10 @@ public class CheckOutProject extends Command {
     final static Logger logger = LoggerFactory.getLogger("GOKb-checkout-project_command");
 
     @Override
-    public void doPost(HttpServletRequest request, HttpServletResponse response)
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        ProjectManager.singleton.setBusy(true);
+        ProjectManager pm = ProjectManager.singleton;
+        pm.setBusy(true);
         try {
             Properties options = ParsingUtilities.parseUrlParameters(request);
 
@@ -36,28 +38,38 @@ public class CheckOutProject extends Command {
 
             downloadGOKbProject(request, options, projectID);
 
-            ProjectManager.singleton.loadProjectMetadata(projectID);
-
-            ProjectMetadata pm = ProjectManager.singleton.getProjectMetadata(projectID);
-            if (pm != null) {
-                if (options.containsKey("project-name")) {
-                    String projectName = options.getProperty("project-name");
-                    if (projectName != null && projectName.length() > 0) {
-                        pm.setName(projectName);
-                    }
-                }
-
-                redirect(response, "/project?project=" + projectID);
+            pm.loadProjectMetadata(projectID);
+            
+            ProjectMetadata meta = pm.getProjectMetadata(projectID);
+            
+            if (meta != null) {
+                 // Write the JSON out.
+                response.setCharacterEncoding("UTF-8");
+                response.setHeader("Content-Type", "application/json");
+                
+                Writer w = response.getWriter();
+                JSONWriter writer = new JSONWriter(w);
+                
+                writer.object();
+                writer.key("id");
+                writer.value(projectID);
+                writer.endObject();
+                
+                w.flush();
+                w.close();
             } else {
-                respondWithErrorPage(request, response, "Failed to import project. Reason unknown.", null);
+                logger.error("Failed to import project. Reason unknown.");
             }
         } catch (Exception e) {
-            respondWithErrorPage(request, response, "Failed to import project", e);
+            respondException(response, e);
         } finally {
             ProjectManager.singleton.setBusy(false);
         }
     }
     
+    /**
+     * Import the Project from the GOKb repository
+     */
     protected void downloadGOKbProject (
             HttpServletRequest    request,
             Properties            options,
@@ -70,14 +82,14 @@ public class CheckOutProject extends Command {
               (!"".equals(urlString) ? "&" : "?") + key + "=" + ParsingUtilities.encode(options.getProperty((String)key, ""));
         }
         
-        urlString = "http://localhost:8080/api/downloadProject" + urlString;
+        urlString = "http://localhost:8080/gokb/api/projectCheckout" + urlString;
         
         URL url = new URL(urlString);
         URLConnection connection = null;
 
         try {
             connection = url.openConnection();
-            connection.setConnectTimeout(5000);
+            connection.setConnectTimeout(10000);
             connection.connect();
         } catch (Exception e) {
             throw new Exception("Cannot connect to " + urlString, e);

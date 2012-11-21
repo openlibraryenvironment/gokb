@@ -62,9 +62,20 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 		.css("visibility", "hidden") 
 		.addClass("control")
 		.text("Check-Out")
-		.click(function(){
+		.click(function() {
+			
 			// Do some stuff...
-			alert("Check out project " + $(this).attr("href"));
+			GOKb.checkoutProject(
+			  {projectID : $(this).attr("href")},
+			  {
+			  	onDone : function (data) {
+			  		if ("id" in data) {
+			  			// Forward to the projects page.
+			  			window.location.replace("project?project" + data.id);
+			  		}
+			  	}
+			  }
+			);
 			self.resize();
 			return false;
 		})

@@ -23,11 +23,16 @@ class ApiController {
   }
   
   private def getFileRepo() {
-	File f = new File("./filestore");
+	  
+	String fs = "./project-files/"
+	File f = new File(fs)
     if ( ! f.exists() ) {
       log.debug("Creating upload directory path")
-      f.mkdirs();
+      f.mkdirs()
     }
+	
+	// Return the filestore
+	fs
   }
 
   def index() { 
@@ -77,18 +82,22 @@ class ApiController {
     render result as JSON
 	}
 
+  	private def projects = [
+		[ id: 1, name:'muse_journal_metadata_2012 xls', description:'desc', modified: "2012-11-16T15:15:42Z", locked : true, file: "muse_journal_metadata_2012-xls.openrefine.tar.gz"],
+		[ id: 2, name:'Freedom collection 2007 xls', description:'desc', modified: "2012-11-20T16:11:52Z", locked : false, file: "Freedom-collection-2007-xls.openrefine.tar.gz"],
+	]
+  
 	def projectList() {
-		def result = apiReturn ([
-			[ id: 1, name:'muse_journal_metadata_2012 xls', description:'desc', modified: "2012-11-16T15:15:42Z", locked : true ],
-			[ id: 2, name:'Freedom collection 2007 xls', description:'desc', modified: "2012-11-20T16:11:52Z", locked : false ],
-		])
+		def result = apiReturn (projects)
 	}
 	
-	def downloadProject() {
+	def projectCheckout() {
 		
-		if (params.project) {
-			// Get the project file. 
-			def file = new File(getFileRepo())
+		if (params.projectID) {
+			// Get the project file.
+			int projectID = params.int("projectID")
+			def project = projects[(projectID - 1)]
+			def file = new File(getFileRepo() + project.file)
 			response.setContentType("application/octet-stream")
 			response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
 			response.outputStream << file.newInputStream()

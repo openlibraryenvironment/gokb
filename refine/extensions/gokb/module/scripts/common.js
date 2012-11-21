@@ -7,6 +7,7 @@ var GOKb = {
   api:{
   	url : "http://localhost:8080/gokb/api/"
   },
+  refine:{}
 };
 
 GOKb.setAjaxInProgress = function() {
@@ -128,7 +129,7 @@ GOKb.ajaxWaiting = function (jqXHR, message) {
 	  
 	  if (status == 'error' || status == 'timeout') {
 	    // Display an error message to the user.
-	    var error = GOKb.createErrorDialog("Communications Error")
+	    var error = GOKb.createErrorDialog("Communications Error");
 	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
 	    GOKb.showDialog(error);
 	  }
@@ -139,7 +140,7 @@ GOKb.ajaxWaiting = function (jqXHR, message) {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 1000);  
+  }, 2000);  
   return jqXHR;
 };
 
