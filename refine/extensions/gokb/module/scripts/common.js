@@ -163,7 +163,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
     data : data,
     success : function (dataR) {
 
-      if (dataR.status == "error") {
+      if (dataR.code == "error") {
         if ("onError" in callbacks) {
           try {
             callbacks.onError(dataR);

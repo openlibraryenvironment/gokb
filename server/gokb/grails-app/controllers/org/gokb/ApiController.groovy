@@ -12,7 +12,7 @@ class ApiController {
   // Internal API return object that ensures consistent formatting of API return objects
   private def apiReturn = {result, String message = "", String status = "success" ->
 	  def data = [
-		status		: (status),
+		code		: (status),
 		result		: (result),
 		message		: (message),
       ]

@@ -34,7 +34,7 @@ public class CheckOutProject extends Command {
             long projectID = Project.generateID();
             logger.info("Checking out GOKb project into Refine project {}", projectID);
 
-            downloadGOKbProject(request, options);
+            downloadGOKbProject(request, options, projectID);
 
             ProjectManager.singleton.loadProjectMetadata(projectID);
 
@@ -60,10 +60,17 @@ public class CheckOutProject extends Command {
     
     protected void downloadGOKbProject (
             HttpServletRequest    request,
-            Properties            options
+            Properties            options,
+            long projectID
     ) throws Exception {
         
-        url
+        String urlString = "";
+        for (Object key : options.keySet()) {
+            urlString += 
+              (!"".equals(urlString) ? "&" : "?") + key + "=" + ParsingUtilities.encode(options.getProperty((String)key, ""));
+        }
+        
+        urlString = "http://localhost:8080/api/downloadProject" + urlString;
         
         URL url = new URL(urlString);
         URLConnection connection = null;
