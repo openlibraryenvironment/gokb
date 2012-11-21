@@ -21,6 +21,14 @@ class ApiController {
 	  log.debug (json)
 	  render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
+  
+  private def getFileRepo() {
+	File f = new File("./filestore");
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
+    }
+  }
 
   def index() { 
   }
@@ -74,5 +82,17 @@ class ApiController {
 			[ id: 1, name:'muse_journal_metadata_2012 xls', description:'desc', modified: "2012-11-16T15:15:42Z", locked : true ],
 			[ id: 2, name:'Freedom collection 2007 xls', description:'desc', modified: "2012-11-20T16:11:52Z", locked : false ],
 		])
+	}
+	
+	def downloadProject() {
+		
+		if (params.project) {
+			// Get the project file. 
+			def file = new File(getFileRepo())
+			response.setContentType("application/octet-stream")
+			response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
+			response.outputStream << file.newInputStream()
+			
+		} else response.status = 404;
 	}
 }

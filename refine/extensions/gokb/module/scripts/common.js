@@ -1,12 +1,43 @@
 var GOKb = {
-  // Server
-  api : "http://localhost:8080/gokb/api/",
   messageBusy : "Contacting GOKb",
   timeout : 10000, // 10 seconds timeout.
   handlers: {},
 	menuItems: [],
   ui: {},
-  api:{},
+  api:{
+  	url : "http://localhost:8080/gokb/api/"
+  },
+};
+
+GOKb.setAjaxInProgress = function() {
+	// If defined on the refine object then use that...
+	if (Refine.setAjaxInProgress) {
+		Refine.setAjaxInProgress();
+	} else {
+		
+		// Just add the class.
+	  $(document.body).attr("ajax_in_progress", "true");
+	}
+};
+
+GOKb.clearAjaxInProgress = function() {
+	// If defined on the refine object then use that...
+	if (Refine.clearAjaxInProgress) {
+		Refine.clearAjaxInProgress();
+	} else {
+		// Just add the class.
+	  $(document.body).attr("ajax_in_progress", "false");
+	}
+};
+
+GOKb.reportException = function(e) {
+	
+	if (Refine.reportException) {
+		Refine.reportException(e);
+		
+	} else if (window.console) {
+    console.log(e);
+  }
 };
 
 /**
@@ -85,7 +116,7 @@ GOKb.ajaxWaiting = function (jqXHR, message) {
   var dismissBusy = null;
   
   // Use the built in UI to show AJAX in progress.
-  Refine.setAjaxInProgress();
+  GOKb.setAjaxInProgress();
 
   // Add a complete function to remove the waiting box.
   jqXHR.complete(function (jqXHR, status) {
@@ -93,7 +124,7 @@ GOKb.ajaxWaiting = function (jqXHR, message) {
 	  if (dismissBusy) {
 	    dismissBusy();
 	  }
-	  Refine.clearAjaxInProgress();
+	  GOKb.clearAjaxInProgress();
 	  
 	  if (status == 'error' || status == 'timeout') {
 	    // Display an error message to the user.
@@ -108,8 +139,7 @@ GOKb.ajaxWaiting = function (jqXHR, message) {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 100);
-  
+  }, 1000);  
   return jqXHR;
 };
 
@@ -128,7 +158,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
   // Do the post and check the returned JSON for error.
   var remote = $.ajax({
   	cache : false,
-    url : GOKb.api + command + "?" + $.param(params),
+    url : GOKb.api.url + command + "?" + $.param(params),
     timeout: GOKb.timeout,
     data : data,
     success : function (dataR) {
@@ -138,7 +168,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
           try {
             callbacks.onError(dataR);
           } catch (e) {
-            Refine.reportException(e);
+          	GOKb.reportException(e);
           }
         } else {
           alert(dataR.message);
@@ -148,7 +178,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
           try {
             callbacks.onDone(dataR);
           } catch (e) {
-            Refine.reportException(e);
+          	GOKb.reportException(e);
           }
         }
       }
@@ -176,18 +206,30 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
 
 
 /**
- * Return a data-table.
+ * Return a data-table JQuery object.
  */
-GOKb.toTable = function (header, data) {
+GOKb.toTable = function (header, data, addStripe) {
+	
+	// Default stripe to true.
+	addStripe = (typeof addStripe !== 'undefined' ? addStripe : true);
 	
 	// Create the header object.
 	var head = $("<tr />");
 	$.each(header, function() {
 		
 		// Append header element.
-		head.append(
-		  $("<th />").text(this)
-    );
+		var th = $("<th />").appendTo(head);
+		if ($.type(this) === "string") {
+			// Use the HTML method to allow us to include special HTML chars like
+			// &nbsp;
+			th.html(this.toString());
+			
+		} else {
+			// Append each element
+			$.each(this, function(){
+				th.append(this);
+			});
+		}
 	});	
 	head = $("<thead />").append(head);
 	
@@ -195,11 +237,23 @@ GOKb.toTable = function (header, data) {
 	var body = $("<tbody />");
 	var stripe = false;
 	$.each(data, function() {
-		var row = $("<tr />").appendTo(body).addClass( ( stripe ? "even" : "odd" ) );
-		stripe = !stripe;
+		var row = $("<tr />").appendTo(body);
+		if (addStripe) {
+			row.addClass( ( stripe ? "even" : "odd" ) );
+			stripe = !stripe;
+		}
 		$.each(this, function() {
 			// Append element.
-			row.append($("<td />").html(this));
+			var td = $("<td />").appendTo(row);
+			if ($.type(this) === "string") {
+				td.html(this.toString());
+				
+			} else {
+				// Append each element
+				$.each(this, function(){
+					td.append(this);
+				});
+			}
 		});
 	});
 		
@@ -209,16 +263,4 @@ GOKb.toTable = function (header, data) {
 		.append(body)
 	;
 	return table;
-};
-
-/**
- * Utils for the main index page.
- */
-GOKb.api.getProjects = function (params, callbacks) {
-	GOKb.doCommand (
-    "getProjects",
-    params,
-    null,
-    callbacks
-  );
 };

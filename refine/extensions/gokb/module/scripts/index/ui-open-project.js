@@ -1,15 +1,16 @@
 // Create GOKb Project UI
-GOKb.ui.openProject = function (elmt) {
+
+GOKb.ui.projects = function (elmt) {
   var self = this;
 	elmt.html(DOM.loadHTML("gokb", "scripts/index/ui-open-project.html"));
 	this._elmt = elmt;
   this._elmts = DOM.bind(elmt);
+  
+  // Get the projects list from GOKb.
   GOKb.api.getProjects(
     {},
 	  {
-	  	onDone : function (data) {
-	  		
-	  		var data = null;
+    	onDone : function (data) {
 	  		
 	  		if ("result" in data && data.result.length > 0) {
 	  			var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
@@ -17,63 +18,77 @@ GOKb.ui.openProject = function (elmt) {
 	  			
 	    		// Add each project to the projects screen.
 	  			$.each(data.result, function () {
-	  				
-	  				var row[];
-	  				
-	  				var checkoutLink = $('<a></a>')
-		  	      .attr("title","Checkout this project from GOKb to work on it.")
-		  	      .attr("href","")
-		  	      .css("visibility", "hidden") 
-		  	      .addClass("controls")
-		  	      .text("Check Out")
-		  	      .click(function(){
-		  	      	// Do some stuff...
-		  	      	
-		  	        self.resize();
-		  	      	return false;
-		  	      })
-		  	    ;
-	  				
-	  				// Add the link to the data.
-	  				row.push(checkoutLink);
 		  	    
-	  				row.concat([
+	  				// Add the row.
+	  				var row = [
+	  				  self.getProjectControls(this),
 	  				  this.name,
 	  				  this.description,
 	  				  (this.locked ? "locked" : "unlocked"),
-	  				  this.modified
-	  				]);
+	  				  formatRelativeDate(this.modified)
+	  				];
 	  				
 	  				// Push the row to the body.
 	  				body.push(row);
 	  			});
 	  			
-	  			// Now we have the data create the table
-		  		data = GOKb.toTable(head, body);
+	  			// Now we have the data create the table.
+		  		var table = GOKb.toTable(head, body, false);
 
-		  		// Add show/hide to controls
-		  		$(tr, data).mouseenter(function() {
-		  			$('.controls', this).css("visibility", "visible");
+		  		// Add show/hide to controls.
+		  		$("tr", table).mouseenter(function() {
+		  			$('.control', this).css("visibility", "visible");
 		      }).mouseleave(function() {
-		  			$('.controls', this).css("visibility", "hidden");
+		  			$('.control', this).css("visibility", "hidden");
 		      });
+		  		
+		  		// Write the table as the contents of the main window.
+		  		self._elmts.projects.html(table);
+
+			  	// Default to this action area.
+			  	Refine.selectActionArea("gokb");
 	  		}
 	  	}
 		}
   );
 };
 
-// Allow resizing of this element.
-GOKb.ui.openProject.prototype.resize = function() {
+GOKb.ui.projects.prototype.getProjectControls = function(project) {
+	var controls = [];
+	var self = this;
+	controls.push($('<a></a>')
+		.attr("title","Checkout this project from GOKb to work on it.")
+		.attr("href",project.id)
+		.css("visibility", "hidden") 
+		.addClass("control")
+		.text("Check-Out")
+		.click(function(){
+			// Do some stuff...
+			alert("Check out project " + $(this).attr("href"));
+			self.resize();
+			return false;
+		})
+	);
+	
+	return controls;
+};
+
+// Resize called to ensure all elements are correctly positioned.
+GOKb.ui.projects.prototype.resize = function() {
   var height = this._elmt.height();
   var width = this._elmt.width();
-  this._elmts.gokbProjects
-  .css("height", (height - DOM.getVPaddings(this._elmts.gokbProjects)) + "px");
+  var controlsHeight = this._elmts.controls.outerHeight();
+  this._elmts.controls
+		.css("width", (width - DOM.getHPaddings(this._elmts.controls)) + "px");
+  
+  this._elmts.projects
+  	.css("height", (height - controlsHeight - DOM.getVPaddings(this._elmts.projects)) + "px");
+  
 };
 
 // Push the to the action areas.
 Refine.actionAreas.push({
-  id: "gokb-projects",
-  label: "GOKb Projects",
-  uiClass: GOKb.ui.openProject
+  id: "gokb",
+  label: "GOKb",
+  uiClass: GOKb.ui.projects
 });
