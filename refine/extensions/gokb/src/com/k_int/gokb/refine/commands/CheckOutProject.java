@@ -2,7 +2,6 @@ package com.k_int.gokb.refine.commands;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Properties;
@@ -11,7 +10,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,20 +41,8 @@ public class CheckOutProject extends Command {
             ProjectMetadata meta = pm.getProjectMetadata(projectID);
             
             if (meta != null) {
-                 // Write the JSON out.
-                response.setCharacterEncoding("UTF-8");
-                response.setHeader("Content-Type", "application/json");
-                
-                Writer w = response.getWriter();
-                JSONWriter writer = new JSONWriter(w);
-                
-                writer.object();
-                writer.key("id");
-                writer.value(projectID);
-                writer.endObject();
-                
-                w.flush();
-                w.close();
+                 // Move to project page.
+                redirect(response, "/project?project=" + projectID);
             } else {
                 logger.error("Failed to import project. Reason unknown.");
             }
@@ -89,7 +75,7 @@ public class CheckOutProject extends Command {
 
         try {
             connection = url.openConnection();
-            connection.setConnectTimeout(10000);
+            connection.setConnectTimeout(180000);
             connection.connect();
         } catch (Exception e) {
             throw new Exception("Cannot connect to " + urlString, e);

@@ -1,6 +1,6 @@
 var GOKb = {
   messageBusy : "Contacting GOKb",
-  timeout : 10000, // 10 seconds timeout.
+  timeout : 1800000, // 3 mins timeout.
   handlers: {},
 	menuItems: [],
   ui: {},
@@ -140,7 +140,7 @@ GOKb.ajaxWaiting = function (jqXHR, message) {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 2000);  
+  }, 500);  
   return jqXHR;
 };
 

@@ -9,15 +9,3 @@ GOKb.api.getProjects = function (params, callbacks) {
     callbacks
   );
 };
-
-/**
- * Checkout project.
- */
-GOKb.checkoutProject = function (params, callbacks) {
-	GOKb.doRefineCommand (
-    "gokb/project-checkout",
-    params,
-    null,
-    callbacks
-  );
-};

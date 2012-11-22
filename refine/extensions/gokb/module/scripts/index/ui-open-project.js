@@ -58,27 +58,29 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 	var self = this;
 	controls.push($('<a></a>')
 		.attr("title","Checkout this project from GOKb to work on it.")
-		.attr("href",project.id)
+		.attr("href", 'command/gokb/project-checkout?projectID=' + project.id)
 		.css("visibility", "hidden") 
 		.addClass("control")
 		.text("Check-Out")
-		.click(function() {
-			
-			// Do some stuff...
-			GOKb.checkoutProject(
-			  {projectID : $(this).attr("href")},
-			  {
-			  	onDone : function (data) {
-			  		if ("id" in data) {
-			  			// Forward to the projects page.
-			  			window.location.replace("project?project" + data.id);
-			  		}
-			  	}
-			  }
-			);
-			self.resize();
-			return false;
-		})
+//		.click(function(event) {
+//			
+//			// Stop the anchor moving to a different location.
+//			event.preventDefault();
+//			
+//			// Do some stuff...
+//			GOKb.checkoutProject(
+//			  {projectID : $(this).attr("href")},
+//			  {
+//			  	onDone : function (data) {
+//			  		if ("id" in data) {
+//			  			
+//			  			// Forward to the projects page.
+//			  			window.location.replace("project?project" + data.id);
+//			  		}
+//			  	}
+//			  }
+//			);
+//		})
 	);
 	
 	return controls;
