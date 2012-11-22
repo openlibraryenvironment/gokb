@@ -8,7 +8,7 @@ GOKb.ui.projects = function (elmt) {
   
   // Get the projects list from GOKb.
   GOKb.api.getProjects(
-    {},
+    { checkedIn : true },
 	  {
     	onDone : function (data) {
 	  		
@@ -18,13 +18,13 @@ GOKb.ui.projects = function (elmt) {
 	  			
 	    		// Add each project to the projects screen.
 	  			$.each(data.result, function () {
-		  	    
+	  				
 	  				// Add the row.
 	  				var row = [
 	  				  self.getProjectControls(this),
 	  				  this.name,
 	  				  this.description,
-	  				  (this.locked ? "locked" : "unlocked"),
+	  				  this.checkedIn ? "Checked In" : "Checked Out by " + this.checkedOutBy,
 	  				  formatRelativeDate(this.modified)
 	  				];
 	  				
