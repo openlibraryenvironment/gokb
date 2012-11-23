@@ -19,6 +19,6 @@ public class RefineAPICallback {
     }
     
     protected void complete(InputStream result) throws Exception {
-        result.close();
+        if (result != null) result.close();
     }
 }

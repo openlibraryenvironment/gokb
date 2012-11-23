@@ -8,7 +8,7 @@ GOKb.ui.projects = function (elmt) {
   
   // Get the projects list from GOKb.
   GOKb.api.getProjects(
-    { checkedIn : true },
+    { checkedIn : "True" },
 	  {
     	onDone : function (data) {
 	  		
@@ -62,25 +62,23 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 		.css("visibility", "hidden") 
 		.addClass("control")
 		.text("Check-Out")
-//		.click(function(event) {
-//			
-//			// Stop the anchor moving to a different location.
-//			event.preventDefault();
-//			
-//			// Do some stuff...
-//			GOKb.checkoutProject(
-//			  {projectID : $(this).attr("href")},
-//			  {
-//			  	onDone : function (data) {
-//			  		if ("id" in data) {
-//			  			
-//			  			// Forward to the projects page.
-//			  			window.location.replace("project?project" + data.id);
-//			  		}
-//			  	}
-//			  }
-//			);
-//		})
+		.click(function(event) {
+			
+			// Stop the anchor moving to a different location.
+			event.preventDefault();
+			
+			// Create checkout dialog.
+			var dialog = GOKb.createDialog("Checkout GOKb project", "form_project_checkout");
+			
+			// Set the value of the ProjectID field.
+			dialog.bindings.projectID.val(project.id);
+			
+			// Rename close button to cancel.
+			dialog.bindings.closeButton.text("Cancel");
+			
+			// Show dialog.
+			GOKb.showDialog(dialog);
+		})
 	);
 	
 	return controls;

@@ -17,20 +17,19 @@ import com.k_int.gokb.refine.RefineAPICallback;
 import com.google.refine.ProjectManager;
 import com.google.refine.ProjectMetadata;
 import com.google.refine.model.Project;
-import com.google.refine.util.ParsingUtilities;
 
 
 public class CheckOutProject extends A_RefineAPIBridge {
     final static Logger logger = LoggerFactory.getLogger("GOKb-checkout-project_command");
 
     @Override
-    public void doGet(final HttpServletRequest request, final HttpServletResponse response)
+    public void doPost(final HttpServletRequest request, final HttpServletResponse response)
             throws ServletException, IOException {       
 
         final ProjectManager pm = ProjectManager.singleton;
         pm.setBusy(true);
         try {
-            Properties params = ParsingUtilities.parseUrlParameters(request);
+            Properties params = parseParameters(request);
 
             final long projectID = Project.generateID();
             logger.info("Checking out GOKb project into Refine project {}", projectID);

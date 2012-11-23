@@ -25,6 +25,7 @@ function init() {
 		 "index/scripts",
 		 module,
 		 [
+	     "scripts/plugins/jquery.uniform.min.js",
 	     "scripts/common.js",
 	     "scripts/index.js",
 	     "scripts/index/ui-open-project.js",
@@ -36,6 +37,8 @@ function init() {
     "index/styles",
     module,
     [
+     "styles/uniform.default.css",
+     "styles/uniform.aristo.css",
      "styles/common.less",
      "styles/index.less",
     ]

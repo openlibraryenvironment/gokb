@@ -84,18 +84,25 @@ class ApiController {
 	}
 
 	def projectList() {
-		apiReturn ( RefineProject.findAll (params) )
+		apiReturn (RefineProject.findAll() )
 	}
 
 	def projectCheckout() {
 
-		if (params.projectID) {
-			// Get the project file.
+		if (params.projectID && params.checkOutName && params.checkOutEmail) {
+			
+			// Get the project.
 			def project = RefineProject.load(params.long("projectID"))
+			
+			// Get the file and send the file to the client.
 			def file = new File(getFileRepo() + project.file)
 			response.setContentType("application/octet-stream")
 			response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
 			response.outputStream << file.newInputStream()
+			
+			// Set the checkout deatails.
+			project.setCheckedOutBy("${params.checkOutName} (${params.checkOutEmail})")
+			project.setCheckedIn(false)
 
 		} else response.status = 404;
 	}

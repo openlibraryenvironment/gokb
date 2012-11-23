@@ -7,7 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
 import java.util.Properties;
+
+import javax.servlet.http.HttpServletRequest;
 
 import com.google.refine.commands.Command;
 import com.google.refine.util.ParsingUtilities;
@@ -22,6 +25,7 @@ public abstract class A_RefineAPIBridge extends Command {
     private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
     private static final int    PROP_TIMEOUT          = 1800000;
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
+    
     private static void postFilesAndParams(HttpURLConnection conn, Properties params, File[] files) throws IOException {
 
         DataOutputStream dos = new DataOutputStream( conn.getOutputStream() ); 
@@ -92,6 +96,21 @@ public abstract class A_RefineAPIBridge extends Command {
             }
         }
         return pString;
+    }
+    
+    // TODO This Method only works with single parameter values. We should start
+    // using the map internally instead of the Properties to allow for multiple values.
+    protected static Properties parseParameters(HttpServletRequest request) {
+        Properties props = new Properties ();
+        
+        @SuppressWarnings("unchecked")
+        Map<String, String[]> params = request.getParameterMap();
+        
+        for (String key : params.keySet()) {
+            props.put(key, params.get(key)[0]);
+        }
+        
+        return props;
     }
     
     protected final void doAPIGet (String apiMethodCall, Properties params) throws Exception{
@@ -167,5 +186,25 @@ public abstract class A_RefineAPIBridge extends Command {
         } finally {
             callback.complete(inputStream);
         }
+    }
+    
+    protected final void doAPIPost (String apiMethodCall, Properties params, File[] files) throws Exception {
+        doAPIPost (apiMethodCall, params, files, new RefineAPICallback());
+    }
+    
+    protected final void doAPIPost (String apiMethodCall, Properties params) throws Exception {
+        doAPIPost (apiMethodCall, params, (File[])null);
+    }
+    
+    protected final void doAPIPost (String apiMethodCall, Properties params, RefineAPICallback callback) throws Exception {
+        doAPIPost (apiMethodCall, params, null, callback);
+    }
+    
+    protected final void doAPIPost (String apiMethodCall, File[] files) throws Exception {
+        doAPIPost (apiMethodCall, null, files);
+    }
+    
+    protected final void doAPIPost (String apiMethodCall, File[] files, RefineAPICallback callback) throws Exception {
+        doAPIPost (apiMethodCall, null, files, callback);
     }
 }
