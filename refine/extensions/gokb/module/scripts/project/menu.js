@@ -1,33 +1,33 @@
-var GOKbMenuItems = [
+GOKb.menuItems = GOKb.menuItems.concat([
   {
 	  "id" : "gokb-menu-describe",
 	  label: "Describe Document",
 	  click: function() { 
-	  	GOKbExtension.handlers.describe();
+	  	GOKb.handlers.describe();
 	  }
   },
   {
 	  "id" : "gokb-menu-suggest",
 	  label: "Suggest Operations",
 	  click: function() { 
-		  GOKbExtension.handlers.suggest();
+		  GOKb.handlers.suggest();
 	  }
   },
   {
 	  "id" : "gokb-menu-history",
 	  label: "Show Applied Operations",
 	  click: function() { 
-	  	GOKbExtension.handlers.history();
+	  	GOKb.handlers.history();
 	  }
   },
   {
 	  "id" : "gokb-menu-fingerprint",
 	  label: "Fingerprint",
 	  click: function() {
-	  	GOKbExtension.handlers.fingerprint();
+	  	GOKb.handlers.fingerprint();
 	  }
   },
-];
+]);
 
 /**
  * GoKB Extension menu entry
@@ -35,5 +35,5 @@ var GOKbMenuItems = [
 ExtensionBar.addExtensionMenu({
   "id" : "gokb-menu",
   "label" : "GOKb",
-  "submenu" : GOKbMenuItems
+  "submenu" : GOKb.menuItems
 });
