@@ -2,7 +2,6 @@ package com.k_int.gokb.refine.commands;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Properties;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -29,13 +28,12 @@ public class CheckOutProject extends A_RefineAPIBridge {
         final ProjectManager pm = ProjectManager.singleton;
         pm.setBusy(true);
         try {
-            Properties params = parseParameters(request);
 
             final long projectID = Project.generateID();
             logger.info("Checking out GOKb project into Refine project {}", projectID);
 
             // Call the project download method with our callback to import the project.
-            doAPIGet("projectCheckout", params, new RefineAPICallback() {
+            doAPIGet("projectCheckout", request, new RefineAPICallback() {
 
                 @Override
                 protected void onSuccess(InputStream result) throws Exception {

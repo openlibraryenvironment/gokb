@@ -89,10 +89,11 @@ class ApiController {
 
 	def projectCheckout() {
 
+		log.debug(params)
 		if (params.projectID && params.checkOutName && params.checkOutEmail) {
 			
 			// Get the project.
-			def project = RefineProject.load(params.long("projectID"))
+			def project = RefineProject.load(params.projectID)
 			
 			// Get the file and send the file to the client.
 			def file = new File(getFileRepo() + project.file)

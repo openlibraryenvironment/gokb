@@ -53,33 +53,61 @@ GOKb.ui.projects = function (elmt) {
   );
 };
 
+GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, title) {
+	return $('<a></a>')
+		.attr("title",(title ? title : text))
+		.attr("href", loc)
+		.attr("rel", project.id)
+		.css("visibility", "hidden")
+		.addClass("control")
+		.text(text)
+	;
+};
+
 GOKb.ui.projects.prototype.getProjectControls = function(project) {
+	
+	var createControlL
+	
 	var controls = [];
 	var self = this;
-	controls.push($('<a></a>')
-		.attr("title","Checkout this project from GOKb to work on it.")
-		.attr("href", 'command/gokb/project-checkout?projectID=' + project.id)
-		.css("visibility", "hidden") 
-		.addClass("control")
-		.text("Check-Out")
-		.click(function(event) {
-			
-			// Stop the anchor moving to a different location.
-			event.preventDefault();
-			
-			// Create checkout dialog.
-			var dialog = GOKb.createDialog("Checkout GOKb project", "form_project_checkout");
-			
-			// Set the value of the ProjectID field.
-			dialog.bindings.projectID.val(project.id);
-			
-			// Rename close button to cancel.
-			dialog.bindings.closeButton.text("Cancel");
-			
-			// Show dialog.
-			GOKb.showDialog(dialog);
-		})
-	);
+	
+	// If the project is checked in add the check-out link.
+	if (project.checkedIn) {
+		controls.push(
+		  this.createControlLink(
+		    project,
+		    '#' + project.id,
+		    "Check-Out",
+		    "Checkout this project from GOKb to work on it."
+		  )
+			.click(function(event) {
+				
+				// Stop the anchor moving to a different location.
+				event.preventDefault();
+				
+				// Create checkout dialog.
+				var dialog = GOKb.createDialog("Checkout GOKb project", "form_project_checkout");
+				
+				// Set the value of the ProjectID field.
+				dialog.bindings.projectID.val($(this).attr('rel'));
+				
+				// Rename close button to cancel.
+				dialog.bindings.closeButton.text("Cancel");
+				
+				// Show dialog.
+				GOKb.showDialog(dialog);
+			})
+		);
+	} else {
+		
+		// Add the link to open the project.
+//		createControlLink(
+//			project,
+//			'/project?project=',
+//			"Open",
+//			"Open this project in refine to make changes."
+//	  )
+	}
 	
 	return controls;
 };
