@@ -12,6 +12,8 @@ target
 Servers
 *target-eclipse
 *tld
-.directory
-.project
+*.directory
+*.project
 debug
+/openrefine
+*.class
