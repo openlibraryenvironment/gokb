@@ -74,7 +74,7 @@ public abstract class A_RefineAPIBridge extends Command {
                 }
             };
             
-            params = request.getParameterMap();
+            params = new HashMap<String, String[]> (request.getParameterMap());
         }
     }
     private RequestObjects reqObj;
@@ -235,7 +235,7 @@ public abstract class A_RefineAPIBridge extends Command {
     	toAPI(METHOD_TYPE.GET, apiMethod, params, null, callback);    	
     }
 
-    private Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
+    protected Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
         return req(request).params;
     }
 

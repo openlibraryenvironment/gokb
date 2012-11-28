@@ -2,6 +2,7 @@ package com.k_int.gokb.refine.commands;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -32,21 +33,29 @@ public class CheckOutProject extends A_RefineAPIBridge {
             final long projectID = Project.generateID();
             logger.info("Checking out GOKb project into Refine project {}", projectID);
 
+            // Get all params from the current request.
+            final Map<String, String[]> params = params(request);
+            
+            // Add the local generated project ID.
+            params.put("localProjectID", new String[]{"" + projectID});
+            
             // Call the project download method with our callback to import the project.
-            this.forwardToAPIGet("projectCheckout", request, new RefineAPICallback() {
+            postToAPI("projectCheckout", params, null, new RefineAPICallback() {
 
                 @Override
                 protected void onSuccess(InputStream result) throws Exception {
 
                     // Import the project
                     pm.importProject(projectID, result, true);
-
-                    // Trya and load the meta-data
-                    pm.loadProjectMetadata(projectID);
-
-                    ProjectMetadata meta = pm.getProjectMetadata(projectID);
-
-                    if (meta != null) {
+                    
+                    // Try and load the meta-data
+                    ProjectMetadata meta;
+                    if (pm.loadProjectMetadata(projectID) && (meta = pm.getProjectMetadata(projectID)) != null) {
+                        
+                        // Now we have the meta data, set the GOKb specifics.
+                        meta.setCustomMetadata("gokb", true);
+                        meta.setCustomMetadata("gokb-id", params.get("projectID"));
+                        
                         // Move to project page.
                         redirect(response, "/project?project=" + projectID);
                     } else {

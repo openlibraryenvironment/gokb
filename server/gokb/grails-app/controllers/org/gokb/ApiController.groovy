@@ -88,7 +88,9 @@ class ApiController {
 	}
 
 	def projectCheckout() {
-
+		
+		def flagSent = false;
+		
 		log.debug(params)
 		if (params.projectID && params.checkOutName && params.checkOutEmail) {
 			
@@ -99,6 +101,9 @@ class ApiController {
 			
 				// Get the file and send the file to the client.
 				def file = new File(getFileRepo() + project.file)
+				
+				
+				// Send the file.
 				response.setContentType("application/octet-stream")
 				response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
 				response.outputStream << file.newInputStream()
@@ -106,11 +111,13 @@ class ApiController {
 				// Set the checkout details.
 				project.setCheckedOutBy("${params.checkOutName} (${params.checkOutEmail})")
 				project.setCheckedIn(false)
-				return
+				project.setLocalProjectID(params.long("localProjectID"))
+				
+				flagSent = true;
 			}
 		}
 		
 		// Send 404 if not found.
-		response.status = 404;
+		if (!flagSent) response.status = 404;
 	}
 }

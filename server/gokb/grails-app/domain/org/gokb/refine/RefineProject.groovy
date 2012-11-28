@@ -13,4 +13,5 @@ class RefineProject {
 	String 	file
 	Boolean	checkedIn
 	String 	checkedOutBy
+	Long localProjectID
 }

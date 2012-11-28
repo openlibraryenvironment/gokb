@@ -6,51 +6,63 @@ GOKb.ui.projects = function (elmt) {
 	this._elmt = elmt;
   this._elmts = DOM.bind(elmt);
   
-  // Get the projects list from GOKb.
-  GOKb.api.getProjects(
-    { checkedIn : "True" },
-	  {
-    	onDone : function (data) {
-	  		
-	  		if ("result" in data && data.result.length > 0) {
-	  			var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
-	  			var body = [];
-	  			
-	    		// Add each project to the projects screen.
-	  			$.each(data.result, function () {
-	  				
-	  				// Add the row.
-	  				var row = [
-	  				  self.getProjectControls(this),
-	  				  this.name,
-	  				  this.description,
-	  				  this.checkedIn ? "Checked In" : "Checked Out by " + this.checkedOutBy,
-	  				  formatRelativeDate(this.modified)
-	  				];
-	  				
-	  				// Push the row to the body.
-	  				body.push(row);
-	  			});
-	  			
-	  			// Now we have the data create the table.
-		  		var table = GOKb.toTable(head, body, false);
-
-		  		// Add show/hide to controls.
-		  		$("tr", table).mouseenter(function() {
-		  			$('.control', this).css("visibility", "visible");
-		      }).mouseleave(function() {
-		  			$('.control', this).css("visibility", "hidden");
-		      });
-		  		
-		  		// Write the table as the contents of the main window.
-		  		self._elmts.projects.html(table);
-
-			  	// Default to this action area.
-			  	Refine.selectActionArea("gokb");
-	  		}
-	  	}
-		}
+  // Testing.
+  GOKb.doRefineCommand(
+     "core/get-all-project-metadata",
+     {},
+     null,
+     {
+    	 onDone : function (data) {
+    		 alert("Here");
+    	 }
+     }
   );
+  
+  // Get the projects list from GOKb.
+//  GOKb.api.getProjects(
+//    { checkedIn : "True" },
+//	  {
+//    	onDone : function (data) {
+//	  		
+//	  		if ("result" in data && data.result.length > 0) {
+//	  			var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
+//	  			var body = [];
+//	  			
+//	    		// Add each project to the projects screen.
+//	  			$.each(data.result, function () {
+//	  				
+//	  				// Add the row.
+//	  				var row = [
+//	  				  self.getProjectControls(this),
+//	  				  this.name,
+//	  				  this.description,
+//	  				  this.checkedIn ? "Checked In" : "Checked Out by " + this.checkedOutBy,
+//	  				  formatRelativeDate(this.modified)
+//	  				];
+//	  				
+//	  				// Push the row to the body.
+//	  				body.push(row);
+//	  			});
+//	  			
+//	  			// Now we have the data create the table.
+//		  		var table = GOKb.toTable(head, body, false);
+//
+//		  		// Add show/hide to controls.
+//		  		$("tr", table).mouseenter(function() {
+//		  			$('.control', this).css("visibility", "visible");
+//		      }).mouseleave(function() {
+//		  			$('.control', this).css("visibility", "hidden");
+//		      });
+//		  		
+//		  		// Write the table as the contents of the main window.
+//		  		self._elmts.projects.html(table);
+//
+//			  	// Default to this action area.
+//			  	Refine.selectActionArea("gokb");
+//	  		}
+//	  	}
+//		}
+//  );
 };
 
 GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, title) {
