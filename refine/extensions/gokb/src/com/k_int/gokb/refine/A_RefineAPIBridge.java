@@ -1,8 +1,11 @@
 package com.k_int.gokb.refine;
 
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InvalidClassException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
@@ -22,6 +25,10 @@ import com.google.refine.util.ParsingUtilities;
 
 
 public abstract class A_RefineAPIBridge extends Command {
+
+    private enum METHOD_TYPE {
+        POST, GET
+    }
 
     private class RequestObjects {
         private Map<String, FileItem> files = null;
@@ -69,25 +76,9 @@ public abstract class A_RefineAPIBridge extends Command {
             
             params = request.getParameterMap();
         }
-
-        private String toParamString() {
-            String pString = "";
-            if (params != null) {
-                for (Object key : params.keySet()) {
-
-                    String[] vals = params.get(key);
-                    for (String val : vals) {
-
-                        pString += 
-                                (!"".equals(pString) ? "&" : "?") + key + "=" + ParsingUtilities.encode(val);
-                    }
-                }
-            }
-            return pString;
-        }
     }
-
     private RequestObjects reqObj;
+
     private static final String POST_LINE_END         = "\r\n";
 
     private static final String POST_HYPHENS          = "--";
@@ -95,62 +86,226 @@ public abstract class A_RefineAPIBridge extends Command {
     private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
 
     private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
-
     private static final int    PROP_TIMEOUT          = 1800000;
+    
+    
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
-    protected final void doAPIGet (String apiMethodCall, HttpServletRequest request) throws Exception{
-        doAPIGet (apiMethodCall, request, new RefineAPICallback());
+    
+    private static void postFilesAndParams(HttpURLConnection conn, Map<String, String[]> params, Map<String, ?> files) throws IOException, FileUploadException {
+        DataOutputStream dos = new DataOutputStream( conn.getOutputStream() ); 
+        try {
+
+            // Add the params.
+            if (params != null) {
+                for (String key : params.keySet()) {
+                    String[] vals = params.get(key);
+                    for (String val : vals) {
+                        dos.writeBytes(POST_HYPHENS + POST_BOUNDARY + POST_LINE_END); 
+                        dos.writeBytes("Content-Disposition: form-data; name=\"" + key + "\"" + POST_LINE_END + POST_LINE_END);
+                        dos.writeBytes(val + POST_LINE_END);
+                    }
+                }
+            }
+
+            // Add the file data based on the type.
+            if (files != null) {
+                for (String name : files.keySet()) {
+                	Object fileData = files.get(name);
+                	
+                	if (fileData instanceof InputStream) {
+                		
+                		writeFileData (dos, name, (InputStream)fileData);
+                		
+                	} else if (fileData instanceof File) {
+                		
+                		writeFileData (dos, name, (File)fileData);
+                		
+                	} else if (fileData instanceof FileItem) {
+                		
+                		writeFileData (dos, name, (FileItem)fileData);
+                	} else {
+                		throw new InvalidClassException("Can't post file data for key " + name);
+                	}
+                }
+            }
+
+            dos.writeBytes(POST_HYPHENS + POST_BOUNDARY + POST_HYPHENS + POST_LINE_END);
+            dos.flush();
+        } finally {
+            // Close the data stream.
+            dos.close();
+        }
     }
-    protected final void doAPIGet (String apiMethodCall, HttpServletRequest request, RefineAPICallback callback) throws Exception {
+    
+    private static void writeFileData(DataOutputStream out, String name, File file) throws IOException {
+    	writeFileData (out, name, new FileInputStream (file));
+    }
+    
+    private static void writeFileData(DataOutputStream out, String name, FileItem file) throws IOException {
+    	writeFileData (out, name, file.getInputStream());
+    }
+    
+    private static void writeFileData(DataOutputStream out, String name, InputStream in) throws IOException {
+    	
+    	try {
+	        // Send a binary file
+	        out.writeBytes(POST_HYPHENS + POST_BOUNDARY + POST_LINE_END); 
+	        out.writeBytes("Content-Disposition: form-data; name=\"uploadedfile\";filename=\"" + name +"\"" + POST_LINE_END); 
+	        out.writeBytes(POST_LINE_END); 
+	
+	        // create a buffer of maximum size
+	        int bytesAvailable = in.available(); 
+	        int bufferSize = Math.min(bytesAvailable, POST_MAX_FILE_BUFFER); 
+	        byte[] buffer = new byte[bufferSize]; 
+	
+	        // read file and write it into form... 
+	
+	        int bytesRead = in.read(buffer, 0, bufferSize); 
+	
+	        while (bytesRead > 0) 
+	        { 
+	            out.write(buffer, 0, bufferSize); 
+	            bytesAvailable = in.available(); 
+	            bufferSize = Math.min(bytesAvailable, POST_MAX_FILE_BUFFER); 
+	            bytesRead = in.read(buffer, 0, bufferSize); 
+	        } 
+	
+	        // send multipart form data necesssary after file data... 
+	
+	        out.writeBytes(POST_LINE_END);
+    	} finally {
+    		in.close();
+    	}
+    }
+    
+    protected Map<String, FileItem> files(HttpServletRequest request) throws FileUploadException {
+        return req(request).files;
+    }
+    
+    protected final void forwardToAPIGet (String apiMethod, HttpServletRequest request) throws Exception{
+        forwardToAPIGet (apiMethod, request, new RefineAPICallback());
+    }
+    
+    protected final void forwardToAPIGet (String apiMethod, HttpServletRequest request, RefineAPICallback callback) throws Exception {
 
         // Do the API get call.
-        doAPIMethod(METHOD_TYPE.GET, apiMethodCall, request, callback);
-    }
-    protected final void doAPIPost (String apiMethodCall, HttpServletRequest request) throws Exception {
-        doAPIPost (apiMethodCall, request, new RefineAPICallback());
+        toAPI(METHOD_TYPE.GET, apiMethod, params(request), files(request), callback);
     }
     
-    private enum METHOD_TYPE {
-        POST, GET
+    protected final void forwardToAPIPost (String apiMethod, HttpServletRequest request) throws Exception {
+        forwardToAPIPost (apiMethod, request, new RefineAPICallback());
     }
     
-    private final void doAPIMethod (METHOD_TYPE type, String apiMethodCall, HttpServletRequest request, RefineAPICallback callback) throws Exception {
+    protected final void forwardToAPIPost (String apiMethod, HttpServletRequest request, RefineAPICallback callback) throws Exception {
+
+    	// Do the API get call.
+        toAPI(METHOD_TYPE.POST, apiMethod, params(request), files(request), callback);
+    }
+    
+    protected HttpURLConnection getAPIConnection(METHOD_TYPE type, URL url) throws FileUploadException, IOException {
+    	
+        HttpURLConnection connection = null;
+        
+    	connection = (HttpURLConnection) url.openConnection();
+        connection.setDoOutput(true);
+        connection.setUseCaches(false);
+        connection.setConnectTimeout(PROP_TIMEOUT);
+        connection.setRequestProperty("Connection", "Keep-Alive");
+        
+        if (type == METHOD_TYPE.POST) {
+            connection.setDoInput(true);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "multipart/form-data;boundary="+POST_BOUNDARY);
+        }
+        
+        // Connect to the service.
+        connection.connect();
+        
+        return connection;
+    }
+
+    protected void getFromAPI (String apiMethod, Map<String, String[]> params) throws Exception {
+    	// Get from API method.
+    	getFromAPI(apiMethod, params, null);	
+    }
+
+    protected void getFromAPI (String apiMethod, Map<String, String[]> params, RefineAPICallback callback) throws Exception {
+    	// Get from API method.
+    	if (callback == null) callback = new RefineAPICallback();
+    	toAPI(METHOD_TYPE.GET, apiMethod, params, null, callback);    	
+    }
+
+    private Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
+        return req(request).params;
+    }
+
+    private String paramString(Map<String, String[]> params) throws FileUploadException {
+    	
+    	// Parameter string.
+    	String pString = "";
+    	if (params != null) {
+    		for (String key : params.keySet()) {
+
+    			// Get multiple values per parameter.
+    			String[] vals = params.get(key);
+    			for (String val : vals) {
+    				
+    				// Append each key, value pair to the string.
+    				pString += 
+    						(!"".equals(pString) ? "&" : "?") + key + "=" + ParsingUtilities.encode(val);
+    			}
+    		}
+    	}
+    	return pString;
+    }
+
+    protected void postToAPI (String apiMethod, Map<String, String[]> params) throws Exception {
+    	// Post to API method.
+    	postToAPI(apiMethod, params, null, null);
+    }
+    
+    protected void postToAPI (String apiMethod, Map<String, String[]> params, Map<String, ?> fileData) throws Exception {
+    	// Post to API method.
+    	postToAPI(apiMethod, params, fileData, null);
+    }
+    
+    protected void postToAPI (String apiMethod, Map<String, String[]> params, Map<String, ?> fileData, RefineAPICallback callback) throws Exception {
+    	// Post to API method.
+    	if (callback == null) callback = new RefineAPICallback();
+    	toAPI(METHOD_TYPE.POST, apiMethod, params, fileData, callback);
+    }
+    
+    private RequestObjects req(HttpServletRequest request) throws FileUploadException {
+        if (reqObj == null) {
+            reqObj = new RequestObjects (request);
+        }
+        return reqObj;
+    }
+
+    private final void toAPI (METHOD_TYPE type, String apiMethod, Map<String, String[]> params, Map<String, ?> fileData, RefineAPICallback callback) throws Exception {
         
         // Return input stream.
         InputStream inputStream = null;
 
         // construct the url String
-        String urlString = PROP_API_URL + apiMethodCall;
+        String urlString = PROP_API_URL + apiMethod;
         
         // If get then append the param string here.
         if (type == METHOD_TYPE.GET) {
-            urlString += paramString(request);
+            urlString += paramString(params);
         }
 
         // Create a URL object.
         URL url = new URL(urlString);
-        HttpURLConnection connection = null;
 
         try {
+        	HttpURLConnection connection = getAPIConnection(type, url);
+        	
             try {
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setDoOutput(true);
-                connection.setUseCaches(false);
-                connection.setConnectTimeout(PROP_TIMEOUT);
-                connection.setRequestProperty("Connection", "Keep-Alive");
-                
-                if (type == METHOD_TYPE.POST) {
-                    connection.setDoInput(true);
-                    connection.setRequestMethod("POST");
-                    connection.setRequestProperty("Content-Type", "multipart/form-data;boundary="+POST_BOUNDARY);
-                }
-                
-                // Connect to the service.
-                connection.connect();
                 
                 if (type == METHOD_TYPE.POST) {
                     // Do the POST.
-                    postFilesAndParams (connection, request);
+                    postFilesAndParams (connection, params, fileData);
                 }
             } catch (Exception e) {
                 callback.onError (inputStream, new IOException("Cannot connect to " + urlString, e));
@@ -172,97 +327,5 @@ public abstract class A_RefineAPIBridge extends Command {
             // Run the complete handler of the callback.
             callback.complete(inputStream);
         }
-    }
-
-    protected final void doAPIPost (String apiMethodCall, HttpServletRequest request, RefineAPICallback callback) throws Exception {
-
-     // Do the API get call.
-        doAPIMethod(METHOD_TYPE.POST, apiMethodCall, request, callback);
-    }
-
-    protected Map<String, FileItem> files(HttpServletRequest request) throws FileUploadException {
-        return req(request).files;
-    }
-
-    private Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
-        return req(request).params;
-    }
-
-    private String paramString(HttpServletRequest request) throws FileUploadException {
-        return req(request).toParamString();
-    }
-
-    private void postFilesAndParams(HttpURLConnection conn, HttpServletRequest request ) throws IOException, FileUploadException {
-        DataOutputStream dos = new DataOutputStream( conn.getOutputStream() ); 
-        try {
-            Map<String, String[]> params = params(request);
-
-            // Add the params.
-            if (params != null) {
-                for (String key : params.keySet()) {
-                    String[] vals = params.get(key);
-                    for (String val : vals) {
-                        dos.writeBytes(POST_HYPHENS + POST_BOUNDARY + POST_LINE_END); 
-                        dos.writeBytes("Content-Disposition: form-data; name=\"" + key + "\"" + POST_LINE_END + POST_LINE_END);
-                        dos.writeBytes(val + POST_LINE_END);
-                    }
-                }
-            }    
-
-            // Get the list of submitted files.
-            Map<String, FileItem> files = files(request);
-
-            // Add the files.
-            if (files != null) {
-                for (FileItem file : files.values()) {
-
-                    InputStream fileInputStream = file.getInputStream();
-
-                    try {
-                        // Send a binary file
-                        dos.writeBytes(POST_HYPHENS + POST_BOUNDARY + POST_LINE_END); 
-                        dos.writeBytes("Content-Disposition: form-data; name=\"uploadedfile\";filename=\"" + file.getName() +"\"" + POST_LINE_END); 
-                        dos.writeBytes(POST_LINE_END); 
-
-                        // create a buffer of maximum size
-                        int bytesAvailable = fileInputStream.available(); 
-                        int bufferSize = Math.min(bytesAvailable, POST_MAX_FILE_BUFFER); 
-                        byte[] buffer = new byte[bufferSize]; 
-
-                        // read file and write it into form... 
-
-                        int bytesRead = fileInputStream.read(buffer, 0, bufferSize); 
-
-                        while (bytesRead > 0) 
-                        { 
-                            dos.write(buffer, 0, bufferSize); 
-                            bytesAvailable = fileInputStream.available(); 
-                            bufferSize = Math.min(bytesAvailable, POST_MAX_FILE_BUFFER); 
-                            bytesRead = fileInputStream.read(buffer, 0, bufferSize); 
-                        } 
-
-                        // send multipart form data necesssary after file data... 
-
-                        dos.writeBytes(POST_LINE_END);
-                    } finally {
-                        // close streams 
-                        fileInputStream.close();
-                    }
-                }
-            }
-
-            dos.writeBytes(POST_HYPHENS + POST_BOUNDARY + POST_HYPHENS + POST_LINE_END);
-            dos.flush();
-        } finally {
-            // Close the data stream.
-            dos.close();
-        }
-    }
-
-    private RequestObjects req(HttpServletRequest request) throws FileUploadException {
-        if (reqObj == null) {
-            reqObj = new RequestObjects (request);
-        }
-        return reqObj;
     }
 }

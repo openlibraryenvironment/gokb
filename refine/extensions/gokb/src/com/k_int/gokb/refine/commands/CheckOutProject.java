@@ -33,7 +33,7 @@ public class CheckOutProject extends A_RefineAPIBridge {
             logger.info("Checking out GOKb project into Refine project {}", projectID);
 
             // Call the project download method with our callback to import the project.
-            doAPIGet("projectCheckout", request, new RefineAPICallback() {
+            this.forwardToAPIGet("projectCheckout", request, new RefineAPICallback() {
 
                 @Override
                 protected void onSuccess(InputStream result) throws Exception {

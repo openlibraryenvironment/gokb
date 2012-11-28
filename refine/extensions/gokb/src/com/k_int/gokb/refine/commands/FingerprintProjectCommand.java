@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.json.JSONWriter;
 
-import com.k_int.gokb.refine.ProjectUtil;
+import com.k_int.gokb.refine.RefineUtil;
 
 import com.google.refine.commands.Command;
 import com.google.refine.model.Project;
@@ -21,7 +21,7 @@ public class FingerprintProjectCommand extends Command {
             throws ServletException, IOException {
         try {
             Project project = getProject(request);
-            byte[] fp = ProjectUtil.fingerprintProjectData(project);
+            byte[] fp = RefineUtil.fingerprintProjectData(project);
             
             // Convert the byte array to a Hex String
             StringBuilder hexString = new StringBuilder();
