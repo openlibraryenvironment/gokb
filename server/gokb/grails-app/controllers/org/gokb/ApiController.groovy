@@ -120,4 +120,37 @@ class ApiController {
 		// Send 404 if not found.
 		if (!flagSent) response.status = 404;
 	}
+	
+	def projectCheckin() {
+		
+		def f = request.getFile('projectFile')
+		
+		log.debug(params)
+		if (!f.empty && params.projectID) {
+			
+			// Get the project.
+			def project = RefineProject.load(params.projectID)
+			
+			if (project) {
+			
+				// Save the file.
+				f.transferTo(getFileRepo() + project.file)
+				
+				// Send the file.
+				response.setContentType("application/octet-stream")
+				response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
+				response.outputStream << file.newInputStream()
+				
+				// Set the checkout details.
+				project.setCheckedOutBy("${params.checkOutName} (${params.checkOutEmail})")
+				project.setCheckedIn(false)
+				project.setLocalProjectID(params.long("localProjectID"))
+				
+				flagSent = true;
+			}
+		}
+		
+		// Send 404 if not found.
+		if (!flagSent) response.status = 404;
+	}
 }
