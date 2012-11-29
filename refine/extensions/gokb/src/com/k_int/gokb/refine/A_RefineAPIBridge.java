@@ -1,5 +1,7 @@
 package com.k_int.gokb.refine;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,13 +29,14 @@ import com.google.refine.util.ParsingUtilities;
 public abstract class A_RefineAPIBridge extends Command {
 
     private enum METHOD_TYPE {
-        POST, GET
+        //TODO: Implement the other request methods in the framework. 
+        POST, GET, PUT, HEAD, DELETE
     }
 
     private class RequestObjects {
-        private Map<String, FileItem> files = null;
+        private Map<String, Object> files = new HashMap<String, Object> ();
 
-        private Map<String, String[]> params = null;
+        private Map<String, String[]> params = new HashMap<String, String[]> ();
 
         @SuppressWarnings("unchecked")
         private RequestObjects (HttpServletRequest request) throws FileUploadException {
@@ -51,7 +54,7 @@ public abstract class A_RefineAPIBridge extends Command {
 
                 // Create a map of name -> FileItems 
                 if (fileItems.size() > 0) {
-                    files = new HashMap<String, FileItem> (fileItems.size());
+                    files = new HashMap<String, Object> (fileItems.size());
                     for (FileItem file : fileItems) {
                         files.put(file.getFieldName(), file);
                     }
@@ -74,7 +77,7 @@ public abstract class A_RefineAPIBridge extends Command {
                 }
             };
             
-            params = new HashMap<String, String[]> (request.getParameterMap());
+            params.putAll(request.getParameterMap());
         }
     }
     private RequestObjects reqObj;
@@ -114,16 +117,34 @@ public abstract class A_RefineAPIBridge extends Command {
                 	
                 	if (fileData instanceof InputStream) {
                 		
-                		writeFileData (dos, name, (InputStream)fileData);
+                		writeFileData (dos, name, name, (InputStream)fileData);
                 		
-                	} else if (fileData instanceof File) {
-                		
-                		writeFileData (dos, name, (File)fileData);
+                	} else if (fileData instanceof ByteArrayOutputStream) {    
+                	    // Copy data to a byteArrayInputStream...
+                	    ByteArrayOutputStream out = (ByteArrayOutputStream)fileData;
+                	    
+                	    try {
+                                writeFileData (
+                                   dos,
+                                   name,
+                                   name,
+                                   new ByteArrayInputStream(
+                                      ((ByteArrayOutputStream)fileData).toByteArray()
+                                   )
+                                );
+                	    } finally {
+                            
+                                // Close the output stream.
+                                out.close();
+                            }
+                        } else if (fileData instanceof File) {
+                            File f = (File)fileData;
+                            writeFileData (dos, f.getName() ,name, f);
                 		
                 	} else if (fileData instanceof FileItem) {
-                		
-                		writeFileData (dos, name, (FileItem)fileData);
-                	} else {
+                	    FileItem f = (FileItem)fileData;
+                            writeFileData (dos, f.getName(), name, f);
+                        } else {
                 		throw new InvalidClassException("Can't post file data for key " + name);
                 	}
                 }
@@ -137,20 +158,20 @@ public abstract class A_RefineAPIBridge extends Command {
         }
     }
     
-    private static void writeFileData(DataOutputStream out, String name, File file) throws IOException {
-    	writeFileData (out, name, new FileInputStream (file));
+    private static void writeFileData(DataOutputStream out, String fileName, String paramName, File file) throws IOException {
+    	writeFileData (out, fileName, paramName, new FileInputStream (file));
     }
     
-    private static void writeFileData(DataOutputStream out, String name, FileItem file) throws IOException {
-    	writeFileData (out, name, file.getInputStream());
+    private static void writeFileData(DataOutputStream out, String fileName, String paramName, FileItem file) throws IOException {
+    	writeFileData (out, fileName, paramName, file.getInputStream());
     }
     
-    private static void writeFileData(DataOutputStream out, String name, InputStream in) throws IOException {
+    private static void writeFileData(DataOutputStream out, String fileName, String paramName, InputStream in) throws IOException {
     	
     	try {
 	        // Send a binary file
 	        out.writeBytes(POST_HYPHENS + POST_BOUNDARY + POST_LINE_END); 
-	        out.writeBytes("Content-Disposition: form-data; name=\"uploadedfile\";filename=\"" + name +"\"" + POST_LINE_END); 
+	        out.writeBytes("Content-Disposition: form-data; name=\"" + paramName + "\";filename=\"" + fileName +"\"" + POST_LINE_END); 
 	        out.writeBytes(POST_LINE_END); 
 	
 	        // create a buffer of maximum size
@@ -178,7 +199,7 @@ public abstract class A_RefineAPIBridge extends Command {
     	}
     }
     
-    protected Map<String, FileItem> files(HttpServletRequest request) throws FileUploadException {
+    protected Map<String, Object> files(HttpServletRequest request) throws FileUploadException {
         return req(request).files;
     }
     
@@ -264,12 +285,12 @@ public abstract class A_RefineAPIBridge extends Command {
     	postToAPI(apiMethod, params, null, null);
     }
     
-    protected void postToAPI (String apiMethod, Map<String, String[]> params, Map<String, ?> fileData) throws Exception {
+    protected void postToAPI (String apiMethod, Map<String, String[]> params, Map<String, Object> fileData) throws Exception {
     	// Post to API method.
     	postToAPI(apiMethod, params, fileData, null);
     }
     
-    protected void postToAPI (String apiMethod, Map<String, String[]> params, Map<String, ?> fileData, RefineAPICallback callback) throws Exception {
+    protected void postToAPI (String apiMethod, Map<String, String[]> params, Map<String, Object> fileData, RefineAPICallback callback) throws Exception {
     	// Post to API method.
     	if (callback == null) callback = new RefineAPICallback();
     	toAPI(METHOD_TYPE.POST, apiMethod, params, fileData, callback);
@@ -312,8 +333,11 @@ public abstract class A_RefineAPIBridge extends Command {
             }
             try {
 
-                // Get an input stream for the API response.
-                inputStream = connection.getInputStream();
+                if (connection.getContentLengthLong() != 0) {
+                
+                    // Get an input stream for the API response.
+                    inputStream = connection.getInputStream();
+                }
 
                 // Run the success handler of the callback.
                 callback.onSuccess(inputStream);

@@ -84,7 +84,7 @@ GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, tit
 		.attr("rel", project.id)
 		.css("visibility", "hidden")
 		.addClass("control")
-		.text(text)
+		.html(text)
 	;
 };
 
@@ -105,7 +105,7 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		  this.createControlLink(
 		    project,
 		    '#' + project.id,
-		    "check-out",
+		    "check&#45;out",
 		    "Checkout this project from GOKb to work on it."
 		  )
 			.click(function(event) {
@@ -130,14 +130,39 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		
 		// Check if local project matches this project.
 		if (this.isLocalProject(project, localProjects)) {
-			controls.push(
+			controls = controls.concat([
 			  this.createControlLink(
 					project,
-					'#check-in',
-					"check-in",
+					'command/gokb/project-checkin?project=' + project.localProjectID + "&projectID=" + project.id + "&update=true",
+					"check&#45;in",
 					"Check the current project into GOKb along with any changes that you have made."
+			  ),
+			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
+			  this.createControlLink(
+					project,
+					'command/gokb/project-checkin?project=' + project.localProjectID + "&projectID=" + project.id,
+					"cancel",
+					"Check the current project into GOKb, but ignore any changes made."
 			  )
-			);
+			]);
+			
+			// Also need to remove the links from the normal open-project tab.
+			for (var i = 0; i < Refine.actionAreas.length; i++) {
+				var actionArea = Refine.actionAreas[i];
+				if ("open-project" == actionArea.id) {
+				  $('a[href*="' + project.localProjectID + '"]', actionArea.bodyElmt).each(function() {
+				  	var row = $(this).closest("tr");
+				  	var firstCell = row.children(":first");
+				  	firstCell.html("");
+				  	
+				  	// Remove all secondary controls too!
+				  	$('a.secondary', row).remove();
+				  	
+				  	// Add a rollover.
+				  	row.attr("title", "This is a GOKb project and can be managed through the GOKb tab.")
+				  });
+				}
+			}
 		}
 	}
 	

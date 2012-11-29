@@ -8,6 +8,12 @@ import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 
 
+/**
+ * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
+ * 
+ * @author Steve Osguthorpe
+ */
+
 class ApiController {
 
 	// Internal API return object that ensures consistent formatting of API return objects
@@ -84,12 +90,10 @@ class ApiController {
 	}
 
 	def projectList() {
-		apiReturn (RefineProject.findAll() )
+		apiReturn ( RefineProject.findAll() )
 	}
 
 	def projectCheckout() {
-		
-		def flagSent = false;
 		
 		log.debug(params)
 		if (params.projectID && params.checkOutName && params.checkOutEmail) {
@@ -113,12 +117,12 @@ class ApiController {
 				project.setCheckedIn(false)
 				project.setLocalProjectID(params.long("localProjectID"))
 				
-				flagSent = true;
+				return
 			}
 		}
 		
 		// Send 404 if not found.
-		if (!flagSent) response.status = 404;
+		response.status = 404;
 	}
 	
 	def projectCheckin() {
@@ -126,31 +130,50 @@ class ApiController {
 		def f = request.getFile('projectFile')
 		
 		log.debug(params)
-		if (!f.empty && params.projectID) {
+		if (f && !f.empty) {
 			
 			// Get the project.
-			def project = RefineProject.load(params.projectID)
+			def project = (params.projectID ? RefineProject.load(params.projectID) : new RefineProject())
 			
 			if (project) {
 			
+				// Generate a filename...
+				def fileName = "project-${project.getId()}-v${project.getVersion()}.tar.gz"
+				
 				// Save the file.
-				f.transferTo(getFileRepo() + project.file)
+				f.transferTo(new File(getFileRepo() + fileName))
 				
-				// Send the file.
-				response.setContentType("application/octet-stream")
-				response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
-				response.outputStream << file.newInputStream()
+				// Set the file property.
+				project.setFile(fileName)
 				
-				// Set the checkout details.
-				project.setCheckedOutBy("${params.checkOutName} (${params.checkOutEmail})")
-				project.setCheckedIn(false)
-				project.setLocalProjectID(params.long("localProjectID"))
+				// Update other project properties.
+				if (params.projectDescription) project.setDescription(params.projectDescription)
+				if (params.projectName) project.setName(params.projectName)
+				project.setCheckedIn(true)
+				project.setCheckedOutBy("")
+				project.setLocalProjectID(0)
+				project.setModified(new Date())
 				
-				flagSent = true;
+				project.save(flush: true, failOnError: true)
+				apiReturn(project)
+				return
+			}
+		} else if (params.projectID) {
+			// Check in with no changes. (In effect we are just removing the lock)
+			def project = RefineProject.load(params.projectID)
+			if (project) {
+				
+				// Remove lock properties and return the project state.
+				project.setCheckedIn(true)
+				project.setCheckedOutBy("")
+				project.setLocalProjectID(0)
+				project.save(flush: true, failOnError: true)
+				apiReturn(project)
+				return
 			}
 		}
 		
 		// Send 404 if not found.
-		if (!flagSent) response.status = 404;
+		response.status = 404;
 	}
 }
