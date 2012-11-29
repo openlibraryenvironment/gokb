@@ -4,10 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.tools.tar.TarOutputStream;
 
@@ -16,7 +18,7 @@ import com.google.refine.model.Cell;
 import com.google.refine.model.Project;
 import com.google.refine.model.Row;
 
-public class ProjectUtil {
+public class RefineUtil {
     
     private static final String DIGEST_TYPE = "MD5";
 
@@ -79,5 +81,37 @@ public class ProjectUtil {
         
         // Digest the data.
         return md.digest();
+    }
+    
+    public static void gzipTarProjectToOutputStream(Project project, OutputStream os) throws IOException {
+    	gzipTarProjectToOutputStream(project, os);
+    }
+    
+    public static void gzipTarProjectToOutputStream(Project project, OutputStream os, MessageDigest digest) throws IOException {
+        GZIPOutputStream gos = new GZIPOutputStream(os);
+        try {
+        	tarProjectToOutputStream(project, gos, digest);
+        } finally {
+            gos.close();
+        }
+    }
+
+    public static void tarProjectToOutputStream(Project project, OutputStream os) throws IOException {
+    	tarProjectToOutputStream(project, os);
+    }
+    
+    public static void tarProjectToOutputStream(Project project, OutputStream os, MessageDigest digest) throws IOException {
+    	TarOutputStream tos;
+    	if (digest != null) {
+    		tos = new TarOutputStream(new DigestOutputStream(os, digest));
+    	} else {
+    		tos = new TarOutputStream(os);
+    	}
+        
+        try {
+            ProjectManager.singleton.exportProject(project.id, tos);
+        } finally {
+            tos.close();
+        }
     }
 }

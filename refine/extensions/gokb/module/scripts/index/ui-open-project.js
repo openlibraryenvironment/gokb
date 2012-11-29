@@ -6,53 +6,77 @@ GOKb.ui.projects = function (elmt) {
 	this._elmt = elmt;
   this._elmts = DOM.bind(elmt);
   
-  // Get the projects list from GOKb.
-  GOKb.api.getProjects(
-    { checkedIn : "True" },
-	  {
-    	onDone : function (data) {
-	  		
-	  		if ("result" in data && data.result.length > 0) {
-	  			var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
-	  			var body = [];
-	  			
-	    		// Add each project to the projects screen.
-	  			$.each(data.result, function () {
-	  				
-	  				// Add the row.
-	  				var row = [
-	  				  self.getProjectControls(this),
-	  				  this.name,
-	  				  this.description,
-	  				  this.checkedIn ? "Checked In" : "Checked Out by " + this.checkedOutBy,
-	  				  formatRelativeDate(this.modified)
-	  				];
-	  				
-	  				// Push the row to the body.
-	  				body.push(row);
-	  			});
-	  			
-	  			// Now we have the data create the table.
-		  		var table = GOKb.toTable(head, body, false);
+  // Testing.
+  GOKb.doRefineCommand(
+     "core/get-all-project-metadata",
+     {},
+     null,
+     {
+    	 onDone : function (localProjects) {
+    		 
+    		 if ("projects" in localProjects) localProjects = localProjects.projects;
+    		 
+    		 	// Get the projects list from GOKb.
+    		  GOKb.api.getProjects(
+    		    { checkedIn : "True" },
+    			  {
+    		    	onDone : function (data) {
+    			  		
+    			  		if ("result" in data && data.result.length > 0) {
+    			  			var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
+    			  			var body = [];
+    			  			
+    			    		// Add each project to the projects screen.
+    			  			$.each(data.result, function () {
+    			  				
+    			  				var name = this.name;
+    			  				if (self.isLocalProject(this, localProjects)) {
+    			  					// Name need to link to current local project.
+    			  					name = $('<a />')
+    			  					  .attr('href', '/project?project=' + this.localProjectID)
+    			  					  .text(name)
+    			  					  .attr('title', 'Open project to make changes.')
+    			  					;
+    			  				}
+    			  				
+    			  				// Add the row.
+    			  				var row = [
+    			  				  self.getProjectControls(this, localProjects),
+    			  				  name,
+    			  				  this.description,
+    			  				  this.checkedIn ? "Checked In" : "Checked Out by " + this.checkedOutBy,
+    			  				  formatRelativeDate(this.modified)
+    			  				];
+    			  				
+    			  				// Push the row to the body.
+    			  				body.push(row);
+    			  			});
+    			  			
+    			  			// Now we have the data create the table.
+    				  		var table = GOKb.toTable(head, body, false);
 
-		  		// Add show/hide to controls.
-		  		$("tr", table).mouseenter(function() {
-		  			$('.control', this).css("visibility", "visible");
-		      }).mouseleave(function() {
-		  			$('.control', this).css("visibility", "hidden");
-		      });
-		  		
-		  		// Write the table as the contents of the main window.
-		  		self._elmts.projects.html(table);
+    				  		// Add show/hide to controls.
+    				  		$("tr", table).mouseenter(function() {
+    				  			$('.control', this).css("visibility", "visible");
+    				      }).mouseleave(function() {
+    				  			$('.control', this).css("visibility", "hidden");
+    				      });
+    				  		
+    				  		// Write the table as the contents of the main window.
+    				  		self._elmts.projects.html(table);
 
-			  	// Default to this action area.
-			  	Refine.selectActionArea("gokb");
-	  		}
-	  	}
-		}
+    					  	// Default to this action area.
+    					  	Refine.selectActionArea("gokb");
+    			  		}
+    			  	}
+    				}
+    		  );
+    	 }
+     }
   );
 };
 
+// Return a control link.
 GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, title) {
 	return $('<a></a>')
 		.attr("title",(title ? title : text))
@@ -60,13 +84,17 @@ GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, tit
 		.attr("rel", project.id)
 		.css("visibility", "hidden")
 		.addClass("control")
-		.text(text)
+		.html(text)
 	;
 };
 
-GOKb.ui.projects.prototype.getProjectControls = function(project) {
-	
-	var createControlL
+// Check to see if the supplied GOKb project matches a local project.
+// In other words is this project checked out by teh current user?
+GOKb.ui.projects.prototype.isLocalProject = function(project, localProjects) {
+	return (project.localProjectID != 0 && localProjects[project.localProjectID] && localProjects[project.localProjectID].customMetadata["gokb-id"] == project.id);
+};
+
+GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects) {
 	
 	var controls = [];
 	var self = this;
@@ -77,7 +105,7 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 		  this.createControlLink(
 		    project,
 		    '#' + project.id,
-		    "Check-Out",
+		    "check&#45;out",
 		    "Checkout this project from GOKb to work on it."
 		  )
 			.click(function(event) {
@@ -100,13 +128,42 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 		);
 	} else {
 		
-		// Add the link to open the project.
-//		createControlLink(
-//			project,
-//			'/project?project=',
-//			"Open",
-//			"Open this project in refine to make changes."
-//	  )
+		// Check if local project matches this project.
+		if (this.isLocalProject(project, localProjects)) {
+			controls = controls.concat([
+			  this.createControlLink(
+					project,
+					'command/gokb/project-checkin?project=' + project.localProjectID + "&projectID=" + project.id + "&update=true",
+					"check&#45;in",
+					"Check the current project into GOKb along with any changes that you have made."
+			  ),
+			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
+			  this.createControlLink(
+					project,
+					'command/gokb/project-checkin?project=' + project.localProjectID + "&projectID=" + project.id,
+					"cancel",
+					"Check the current project into GOKb, but ignore any changes made."
+			  )
+			]);
+			
+			// Also need to remove the links from the normal open-project tab.
+			for (var i = 0; i < Refine.actionAreas.length; i++) {
+				var actionArea = Refine.actionAreas[i];
+				if ("open-project" == actionArea.id) {
+				  $('a[href*="' + project.localProjectID + '"]', actionArea.bodyElmt).each(function() {
+				  	var row = $(this).closest("tr");
+				  	var firstCell = row.children(":first");
+				  	firstCell.html("");
+				  	
+				  	// Remove all secondary controls too!
+				  	$('a.secondary', row).remove();
+				  	
+				  	// Add a rollover.
+				  	row.attr("title", "This is a GOKb project and can be managed through the GOKb tab.")
+				  });
+				}
+			}
+		}
 	}
 	
 	return controls;

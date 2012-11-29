@@ -200,7 +200,27 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
 	return GOKb.ajaxWaiting ($.getJSON(
     "command/" + command + "?" + $.param(params), 
     data,
-    callbacks,
+    function (dataR) {
+      if (dataR.code == "error") {
+        if ("onError" in callbacks) {
+          try {
+            callbacks.onError(dataR);
+          } catch (e) {
+          	GOKb.reportException(e);
+          }
+        } else {
+          alert(dataR.message);
+        }
+      } else {
+        if ("onDone" in callbacks) {
+          try {
+            callbacks.onDone(dataR);
+          } catch (e) {
+          	GOKb.reportException(e);
+          }
+        }
+      }
+    },
     "json"
   ));
 };
