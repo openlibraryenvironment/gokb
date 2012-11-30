@@ -4,10 +4,6 @@ import java.io.InputStream;
 
 
 public class RefineAPICallback {
-    protected Object[] args = null;
-    public RefineAPICallback (Object... args) {
-        this.args = args;
-    }
     protected void onSuccess(InputStream result) throws Exception {
         /* Do Nothing */
     }

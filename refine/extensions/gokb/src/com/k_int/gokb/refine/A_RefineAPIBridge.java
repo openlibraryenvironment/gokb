@@ -42,7 +42,6 @@ public abstract class A_RefineAPIBridge extends Command {
         private RequestObjects (HttpServletRequest request) throws FileUploadException {
 
             files = new HashMap<String, Object> ();
-            params = new HashMap<String, String[]> ();
             
             // Check that it is multipart
             if (ServletFileUpload.isMultipartContent(request)) {
@@ -90,7 +89,7 @@ public abstract class A_RefineAPIBridge extends Command {
 
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
 
-    private static final String PROP_API_URL          = "http://gokb.k-int.com:8080/gokb/api/";
+    private static final String PROP_API_URL          = "http://gokb.k-int.com/gokb/api/";
 
     private static final int    PROP_TIMEOUT          = 60000;
     
@@ -199,12 +198,8 @@ public abstract class A_RefineAPIBridge extends Command {
     	}
     }
     
-    private RequestObjects reqObj = null;
-    
-    private HttpServletRequest request = null;
-    
     protected Map<String, Object> files(HttpServletRequest request) throws FileUploadException {
-        return req(request).files;
+        return new HashMap<String, Object> (req(request).files);
     }
     
     protected final void forwardToAPIGet (String apiMethod, HttpServletRequest request) throws Exception{
@@ -261,7 +256,7 @@ public abstract class A_RefineAPIBridge extends Command {
     }
 
     protected Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
-        return req(request).params;
+        return new HashMap<String, String[]> (req(request).params);
     }
 
     private String paramString(Map<String, String[]> params) throws FileUploadException {
@@ -301,11 +296,10 @@ public abstract class A_RefineAPIBridge extends Command {
     }
     
     private RequestObjects req(HttpServletRequest request) throws FileUploadException {
-        if (this.request == null || this.request != request) {
-            reqObj = new RequestObjects (request);
-            this.request = request; 
-        }
-        return reqObj;
+        // TODO: Fix this method to make sure the request is only parsed once. This class is reused for every
+        // call and therefore the request object should be used to ensure params and files are only available for
+        // the one request.
+        return new RequestObjects (request);
     }
 
     private final void toAPI (METHOD_TYPE type, String apiMethod, Map<String, String[]> params, Map<String, ?> fileData, RefineAPICallback callback) throws Exception {
