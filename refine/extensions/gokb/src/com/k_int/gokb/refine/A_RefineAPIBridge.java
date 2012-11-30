@@ -92,7 +92,7 @@ public abstract class A_RefineAPIBridge extends Command {
 
     private static final String PROP_API_URL          = "http://gokb.k-int.com:8080/gokb/api/";
 
-    private static final int    PROP_TIMEOUT          = 1800000;
+    private static final int    PROP_TIMEOUT          = 60000;
     
     private static void postFilesAndParams(HttpURLConnection conn, Map<String, String[]> params, Map<String, ?> files) throws IOException, FileUploadException {
         DataOutputStream dos = new DataOutputStream( conn.getOutputStream() ); 

@@ -1,6 +1,6 @@
 var GOKb = {
   messageBusy : "Contacting GOKb",
-  timeout : 1800000, // 3 mins timeout.
+  timeout : 60000, // 1 min timeout.
   handlers: {},
 	menuItems: [],
   ui: {},
