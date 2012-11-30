@@ -96,7 +96,7 @@ class ApiController {
 	def projectCheckout() {
 		
 		log.debug(params)
-		if (params.projectID && params.checkOutName && params.checkOutEmail) {
+		if (params.projectID) {
 			
 			// Get the project.
 			def project = RefineProject.load(params.projectID)
@@ -108,12 +108,14 @@ class ApiController {
 				
 				
 				// Send the file.
-				response.setContentType("application/octet-stream")
+				response.setContentType("application/x-gzip")
 				response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
 				response.outputStream << file.newInputStream()
 				
 				// Set the checkout details.
-				project.setCheckedOutBy("${params.checkOutName} (${params.checkOutEmail})")
+				def chOut = (params.checkOutName ?: "No Name Given") +
+					" (" + (params.checkOutEmail ?: "No Email Given") + ")"
+				project.setCheckedOutBy(chOut)
 				project.setCheckedIn(false)
 				project.setLocalProjectID(params.long("localProjectID"))
 				
@@ -138,7 +140,7 @@ class ApiController {
 			if (project) {
 			
 				// Generate a filename...
-				def fileName = "project-${project.getId()}-v${project.getVersion()}.tar.gz"
+				def fileName = "project-${project.getId()}.tar.gz"
 				
 				// Save the file.
 				f.transferTo(new File(getFileRepo() + fileName))
@@ -159,6 +161,7 @@ class ApiController {
 				return
 			}
 		} else if (params.projectID) {
+		
 			// Check in with no changes. (In effect we are just removing the lock)
 			def project = RefineProject.load(params.projectID)
 			if (project) {

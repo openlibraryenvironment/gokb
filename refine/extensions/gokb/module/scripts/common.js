@@ -5,7 +5,7 @@ var GOKb = {
 	menuItems: [],
   ui: {},
   api:{
-  	url : "http://localhost:8080/gokb/api/"
+  	url : "http://gokb.k-int.com:8080/gokb/api/"
   },
   refine:{}
 };

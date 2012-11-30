@@ -1,4 +1,5 @@
 GOKb.menuItems = GOKb.menuItems.concat([
+  /** comment switch for prototype menu ** /  
   {
 	  "id" : "gokb-menu-describe",
 	  label: "Describe Document",
@@ -27,6 +28,18 @@ GOKb.menuItems = GOKb.menuItems.concat([
 	  	GOKb.handlers.fingerprint();
 	  }
   },
+  /*/
+  
+	
+  {
+	  "id" : "gokb-menu-suggest",
+	  label: "Suggest Operations",
+	  click: function() { 
+		  GOKb.handlers.suggest();
+	  }
+  },
+
+  /**/
 ]);
 
 /**
