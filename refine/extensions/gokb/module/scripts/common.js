@@ -114,12 +114,28 @@ GOKb.showDialog = function(dialog) {
 /**
  * Helper method to show a "waiting" spinner while completing an AJAX task. 
  */
-GOKb.ajaxWaiting = function (jqXHR, message) {
+GOKb.ajaxWaiting = function (ajaxObj, message) {
 	var done = false;
   var dismissBusy = null;
   
   // Use the built in UI to show AJAX in progress.
   GOKb.setAjaxInProgress();
+  
+  // Complete callback.
+  var complete = function (jqXHR, status) {
+		done = true;
+	  if (dismissBusy) {
+	    dismissBusy();
+	  }
+	  GOKb.clearAjaxInProgress();
+	  
+	  if (status == 'error' || status == 'timeout') {
+	    // Display an error message to the user.
+	    var error = GOKb.createErrorDialog("Communications Error");
+	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
+	    GOKb.showDialog(error);
+	  }
+	};
   
   // Get the version of jQuery and check if greater than 1.5
   var version = jQuery.fn.jquery.match(/(\d+\.\d+)/ig);
@@ -130,47 +146,23 @@ GOKb.ajaxWaiting = function (jqXHR, message) {
   }
 
   if (useAlways) {
-  	// Add an always function to remove the waiting box.
-    jqXHR.always(function (jqXHR, status) {
-  		done = true;
-  	  if (dismissBusy) {
-  	    dismissBusy();
-  	  }
-  	  GOKb.clearAjaxInProgress();
-  	  
-  	  if (status == 'error' || status == 'timeout') {
-  	    // Display an error message to the user.
-  	    var error = GOKb.createErrorDialog("Communications Error");
-  	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
-  	    GOKb.showDialog(error);
-  	  }
-  	});
+  	// call the always function to remove the waiting box with our custom function.
+  	ajaxObj.always(complete);
   } else {
   	
-  	// Set the complete method.
-    jqXHR.complete = function (jqXHR, status) {
-  		done = true;
-  	  if (dismissBusy) {
-  	    dismissBusy();
-  	  }
-  	  GOKb.clearAjaxInProgress();
-  	  
-  	  if (status == 'error' || status == 'timeout') {
-  	    // Display an error message to the user.
-  	    var error = GOKb.createErrorDialog("Communications Error");
-  	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
-  	    GOKb.showDialog(error);
-  	  }
-  	};
+  	// Set the complete method equal to our callback.
+  	ajaxObj.complete = complete;
   }
   
-  // Show waiting message if function has not completed.
+  // Fire the ajax.
+  $.ajax(ajaxObj);
+  
+  // Show waiting message if function has not completed within half a second.
   window.setTimeout(function() {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 1000);  
-  return jqXHR;
+  }, 500);
 };
 
 /**
@@ -185,8 +177,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
   callbacks = callbacks || {};
   params = params || {};
 
-  // Do the post and check the returned JSON for error.
-  var remote = $.ajax({
+  var ajaxObj = {
   	cache : false,
     url : GOKb.api.url + command + "?" + $.param(params),
     timeout: GOKb.timeout,
@@ -214,10 +205,10 @@ GOKb.doCommand = function(command, params, data, callbacks) {
       }
     },
     dataType : "jsonp"
-  });
+  };
   
   // Show the GOKb waiting message
-  return GOKb.ajaxWaiting (remote, GOKb.messageBusy);
+  return GOKb.ajaxWaiting (ajaxObj, GOKb.messageBusy);
 };
 
 /**
@@ -225,13 +216,12 @@ GOKb.doCommand = function(command, params, data, callbacks) {
  */
 GOKb.doRefineCommand = function(command, params, data, callbacks) {
 	
-	// Show default waiting message
-	return GOKb.ajaxWaiting ($.ajax({
+	var ajaxObj = {
   	cache 		: false,
     url 			: "command/" + command + "?" + $.param(params), 
     data 			: data,
     timeout		: GOKb.timeout,
-    dataType 	: "json"
+    dataType 	: "json",
     success	: function (dataR) {
       if (dataR.code == "error") {
         if ("onError" in callbacks) {
@@ -253,7 +243,10 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
         }
       }
     }
-  ));
+	};
+	
+	// Show default waiting message
+	return GOKb.ajaxWaiting (ajaxObj);
 };
 
 
@@ -271,7 +264,7 @@ GOKb.toTable = function (header, data, addStripe) {
 		
 		// Append header element.
 		var th = $("<th />").appendTo(head);
-		if ($.type(this) === "string") {
+		if (this instanceof String || typeof this === 'string') {
 			// Use the HTML method to allow us to include special HTML chars like
 			// &nbsp;
 			th.html(this.toString());
@@ -297,7 +290,7 @@ GOKb.toTable = function (header, data, addStripe) {
 		$.each(this, function() {
 			// Append element.
 			var td = $("<td />").appendTo(row);
-			if ($.type(this) === "string") {
+			if (this instanceof String || typeof this === 'string') {
 				td.html(this.toString());
 				
 			} else {
