@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InvalidClassException;
@@ -332,11 +333,14 @@ public abstract class A_RefineAPIBridge extends Command {
                 callback.onError (inputStream, new IOException("Cannot connect to " + urlString, e));
             }
             try {
-
-                if (connection.getContentLength() != 0) {
-                
-                    // Get an input stream for the API response.
+                try {
                     inputStream = connection.getInputStream();
+                } catch (Exception e) {
+                    if (e instanceof FileNotFoundException) {
+                        // ignore
+                        inputStream = null;
+                    }
+                    else throw e;
                 }
 
                 // Run the success handler of the callback.

@@ -146,16 +146,19 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
   }
 
   if (useAlways) {
-  	// call the always function to remove the waiting box with our custom function.
-  	ajaxObj.always(complete);
+  	
+  	// Fire the ajax and attach the always function.
+    $.ajax(ajaxObj)
+    	.always(complete)
+    ;
   } else {
   	
   	// Set the complete method equal to our callback.
   	ajaxObj.complete = complete;
+  	
+  	// fire the ajax request.
+  	$.ajax(ajaxObj);
   }
-  
-  // Fire the ajax.
-  $.ajax(ajaxObj);
   
   // Show waiting message if function has not completed within half a second.
   window.setTimeout(function() {
