@@ -333,7 +333,7 @@ public abstract class A_RefineAPIBridge extends Command {
             }
             try {
 
-                if (connection.getContentLengthLong() != 0) {
+                if (connection.getContentLength() != 0) {
                 
                     // Get an input stream for the API response.
                     inputStream = connection.getInputStream();
