@@ -30,14 +30,14 @@ public class CheckOutProject extends A_RefineAPIBridge {
         pm.setBusy(true);
         try {
 
-            final long projectID = Project.generateID();
-            logger.info("Checking out GOKb project into Refine project {}", projectID);
+            final long localID = Project.generateID();
+            logger.info("Checking out GOKb project into Refine project {}", localID);
 
             // Get all params from the current request.
             final Map<String, String[]> params = params(request);
             
             // Add the local generated project ID.
-            params.put("localProjectID", new String[]{"" + projectID});
+            params.put("localProjectID", new String[]{"" + localID});
             
             // Call the project download method with our callback to import the project.
             postToAPI("projectCheckout", params, null, new RefineAPICallback() {
@@ -46,18 +46,18 @@ public class CheckOutProject extends A_RefineAPIBridge {
                 protected void onSuccess(InputStream result) throws Exception {
 
                     // Import the project
-                    pm.importProject(projectID, result, true);
+                    pm.importProject(localID, result, true);
                     
                     // Try and load the meta-data
                     ProjectMetadata meta;
-                    if (pm.loadProjectMetadata(projectID) && (meta = pm.getProjectMetadata(projectID)) != null) {
+                    if (pm.loadProjectMetadata(localID) && (meta = pm.getProjectMetadata(localID)) != null) {
                         
                         // Now we have the meta data, set the GOKb specifics.
                         meta.setCustomMetadata("gokb", true);
                         meta.setCustomMetadata("gokb-id", params.get("projectID")[0]);
                         
                         // Move to project page.
-                        redirect(response, "/project?project=" + projectID);
+                        redirect(response, "/project?project=" + localID);
                     } else {
                         logger.error("Failed to import project. Reason unknown.");
                     }

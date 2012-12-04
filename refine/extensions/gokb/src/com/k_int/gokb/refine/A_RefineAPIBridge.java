@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InvalidClassException;
@@ -89,7 +90,7 @@ public abstract class A_RefineAPIBridge extends Command {
     private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
 
     private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
-    private static final int    PROP_TIMEOUT          = 1800000;
+    private static final int    PROP_TIMEOUT          = 60000;
     
     
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
@@ -300,7 +301,7 @@ public abstract class A_RefineAPIBridge extends Command {
         if (reqObj == null) {
             reqObj = new RequestObjects (request);
         }
-        return reqObj;
+        return new RequestObjects (request);
     }
 
     private final void toAPI (METHOD_TYPE type, String apiMethod, Map<String, String[]> params, Map<String, ?> fileData, RefineAPICallback callback) throws Exception {
@@ -332,11 +333,14 @@ public abstract class A_RefineAPIBridge extends Command {
                 callback.onError (inputStream, new IOException("Cannot connect to " + urlString, e));
             }
             try {
-
-                if (connection.getContentLengthLong() != 0) {
-                
-                    // Get an input stream for the API response.
+                try {
                     inputStream = connection.getInputStream();
+                } catch (Exception e) {
+                    if (e instanceof FileNotFoundException) {
+                        // ignore
+                        inputStream = null;
+                    }
+                    else throw e;
                 }
 
                 // Run the success handler of the callback.
