@@ -89,7 +89,7 @@ public abstract class A_RefineAPIBridge extends Command {
     private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
 
     private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
-    private static final int    PROP_TIMEOUT          = 1800000;
+    private static final int    PROP_TIMEOUT          = 60000;
     
     
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;

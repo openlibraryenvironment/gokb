@@ -26,7 +26,6 @@ function init() {
 		 "index/scripts",
 		 module,
 		 [
-		   "scripts/jquery-1.8.3.min.js",
 	     "scripts/plugins/jquery.uniform.min.js",
 	     "scripts/common.js",
 	     "scripts/index.js",
