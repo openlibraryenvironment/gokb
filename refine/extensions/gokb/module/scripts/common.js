@@ -226,10 +226,13 @@ GOKb.doCommand = function(command, params, data, callbacks) {
 GOKb.doRefineCommand = function(command, params, data, callbacks) {
 	
 	// Show default waiting message
-	return GOKb.ajaxWaiting ($.getJSON(
-    "command/" + command + "?" + $.param(params), 
-    data,
-    function (dataR) {
+	return GOKb.ajaxWaiting ($.ajax({
+  	cache 		: false,
+    url 			: "command/" + command + "?" + $.param(params), 
+    data 			: data,
+    timeout		: GOKb.timeout,
+    dataType 	: "json"
+    success	: function (dataR) {
       if (dataR.code == "error") {
         if ("onError" in callbacks) {
           try {
@@ -249,8 +252,7 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
           }
         }
       }
-    },
-    "json"
+    }
   ));
 };
 
