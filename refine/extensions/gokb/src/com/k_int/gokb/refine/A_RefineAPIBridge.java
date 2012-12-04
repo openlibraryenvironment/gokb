@@ -301,7 +301,7 @@ public abstract class A_RefineAPIBridge extends Command {
         if (reqObj == null) {
             reqObj = new RequestObjects (request);
         }
-        return reqObj;
+        return new RequestObjects (request);
     }
 
     private final void toAPI (METHOD_TYPE type, String apiMethod, Map<String, String[]> params, Map<String, ?> fileData, RefineAPICallback callback) throws Exception {
