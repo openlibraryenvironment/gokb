@@ -30,7 +30,7 @@ import com.google.refine.util.ParsingUtilities;
 public abstract class A_RefineAPIBridge extends Command {
 
     private enum METHOD_TYPE {
-        //TODO: Implement the other request methods in the framework. 
+        // TODO: Implement the other request methods in the framework. 
         POST, GET, PUT, HEAD, DELETE
     }
 
@@ -81,7 +81,6 @@ public abstract class A_RefineAPIBridge extends Command {
             params.putAll(request.getParameterMap());
         }
     }
-    private RequestObjects reqObj;
 
     private static final String POST_LINE_END         = "\r\n";
 
@@ -89,7 +88,7 @@ public abstract class A_RefineAPIBridge extends Command {
 
     private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
 
-    private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
+    private static final String PROP_API_URL          = "http://gokb.k-int.com/gokb/api/";
     private static final int    PROP_TIMEOUT          = 60000;
     
     
