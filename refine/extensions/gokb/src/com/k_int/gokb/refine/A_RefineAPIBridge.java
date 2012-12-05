@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InvalidClassException;
@@ -29,20 +30,18 @@ import com.google.refine.util.ParsingUtilities;
 public abstract class A_RefineAPIBridge extends Command {
 
     private enum METHOD_TYPE {
-        DELETE, GET, HEAD, //TODO: Implement the other request methods in the framework. 
-        POST, PUT
+        //TODO: Implement the other request methods in the framework. 
+        POST, GET, PUT, HEAD, DELETE
     }
 
     private class RequestObjects {
-        private Map<String, Object> files;
+        private Map<String, Object> files = new HashMap<String, Object> ();
 
-        private Map<String, String[]> params;
+        private Map<String, String[]> params = new HashMap<String, String[]> ();
 
         @SuppressWarnings("unchecked")
         private RequestObjects (HttpServletRequest request) throws FileUploadException {
 
-            files = new HashMap<String, Object> ();
-            
             // Check that it is multipart
             if (ServletFileUpload.isMultipartContent(request)) {
 
@@ -82,16 +81,19 @@ public abstract class A_RefineAPIBridge extends Command {
             params.putAll(request.getParameterMap());
         }
     }
-    private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
-    private static final String POST_HYPHENS          = "--";
+    private RequestObjects reqObj;
 
     private static final String POST_LINE_END         = "\r\n";
 
-    private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
+    private static final String POST_HYPHENS          = "--";
 
-    private static final String PROP_API_URL          = "http://gokb.k-int.com/gokb/api/";
+    private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
 
+    private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
     private static final int    PROP_TIMEOUT          = 60000;
+    
+    
+    private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
     
     private static void postFilesAndParams(HttpURLConnection conn, Map<String, String[]> params, Map<String, ?> files) throws IOException, FileUploadException {
         DataOutputStream dos = new DataOutputStream( conn.getOutputStream() ); 
@@ -199,7 +201,7 @@ public abstract class A_RefineAPIBridge extends Command {
     }
     
     protected Map<String, Object> files(HttpServletRequest request) throws FileUploadException {
-        return new HashMap<String, Object> (req(request).files);
+        return req(request).files;
     }
     
     protected final void forwardToAPIGet (String apiMethod, HttpServletRequest request) throws Exception{
@@ -256,7 +258,7 @@ public abstract class A_RefineAPIBridge extends Command {
     }
 
     protected Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
-        return new HashMap<String, String[]> (req(request).params);
+        return req(request).params;
     }
 
     private String paramString(Map<String, String[]> params) throws FileUploadException {
@@ -332,11 +334,14 @@ public abstract class A_RefineAPIBridge extends Command {
                 callback.onError (inputStream, new IOException("Cannot connect to " + urlString, e));
             }
             try {
-
-                if (connection.getContentLengthLong() != 0) {
-                
-                    // Get an input stream for the API response.
+                try {
                     inputStream = connection.getInputStream();
+                } catch (Exception e) {
+                    if (e instanceof FileNotFoundException) {
+                        // ignore
+                        inputStream = null;
+                    }
+                    else throw e;
                 }
 
                 // Run the success handler of the callback.
