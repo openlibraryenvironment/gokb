@@ -140,7 +140,7 @@ class ApiController {
 			if (project) {
 			
 				// Generate a filename...
-				def fileName = "project-${project.getId()}-v${project.getVersion()}.tar.gz"
+				def fileName = "project-${project.getId()}.tar.gz"
 				
 				// Save the file.
 				f.transferTo(new File(getFileRepo() + fileName))
@@ -161,6 +161,7 @@ class ApiController {
 				return
 			}
 		} else if (params.projectID) {
+		
 			// Check in with no changes. (In effect we are just removing the lock)
 			def project = RefineProject.load(params.projectID)
 			if (project) {

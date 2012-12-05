@@ -1,13 +1,11 @@
-// Make sure variable is in global scope.
-
 var GOKb = {
   messageBusy : "Contacting GOKb",
-  timeout : 60000, // 1 mins timeout.
+  timeout : 60000, // 1 min timeout.
   handlers: {},
 	menuItems: [],
   ui: {},
   api:{
-  	url : "http://localhost:8080/gokb/api/"
+  	url : "http://gokb.k-int.com/gokb/api/"
   },
   refine:{}
 };
@@ -136,16 +134,18 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	    GOKb.showDialog(error);
 	  }
 	};
+	
+	/*
+	 * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
+	 * could attach the complete callback to by use of the always method.
+	 * 
+	 * So here we need to check the version and attach our callback to the initial
+	 * ajax object if we are using jQuery 1.5 or lower.
+	 */
   
   // Get the version of jQuery and check if greater than 1.5
   var version = jQuery.fn.jquery.match(/(\d+\.\d+)/ig);
-  
-  var useAlways = false;
   if (version > 1.5) {
-  	useAlways = true;
-  }
-
-  if (useAlways) {
   	
   	// Fire the ajax and attach the always function.
     $.ajax(ajaxObj)

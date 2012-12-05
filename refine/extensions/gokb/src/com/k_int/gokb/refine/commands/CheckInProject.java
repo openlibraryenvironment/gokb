@@ -88,6 +88,7 @@ public class CheckInProject extends A_RefineAPIBridge {
             
             // Respond with the error page.
             respondWithErrorPage(request, response, e.getLocalizedMessage(), e);
+            
         } finally {
             // Make sure we clear the busy flag.
             pm.setBusy(false);

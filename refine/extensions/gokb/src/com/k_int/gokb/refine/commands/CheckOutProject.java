@@ -54,6 +54,8 @@ public class CheckOutProject extends A_RefineAPIBridge {
                         
                         // Now we have the meta data, set the GOKb specifics.
                         meta.setCustomMetadata("gokb", true);
+                        
+                        // Add the submitted GOKb id here.
                         meta.setCustomMetadata("gokb-id", params.get("projectID")[0]);
                         
                         // Move to project page.
