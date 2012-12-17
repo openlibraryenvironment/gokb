@@ -110,11 +110,12 @@ public class GOKbImportingController extends DefaultImportingController {
 
                         // Add the hash to the project metadata.
                         Long pid = job.config.getLong("projectID");
-                        logger.info("Project ID: " + pid);
+                        logger.debug("Project ID: " + pid);
 
                         if (pid != null) {
+                            
+                            // Load the metadata and add the hash.
                             ProjectMetadata md = ProjectManager.singleton.getProjectMetadata(pid);
-
                             md.setCustomMetadata("hash", job.config.getString("hash"));
                         }
                     } catch (Exception e) {
