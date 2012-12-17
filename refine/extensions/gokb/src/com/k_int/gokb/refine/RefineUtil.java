@@ -22,7 +22,7 @@ public class RefineUtil {
     
     private static final String DIGEST_TYPE = "MD5";
     
-    public static String hashFile (File f) throws IOException, NoSuchAlgorithmException {
+    public static byte[] hashFile (File f) throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance(DIGEST_TYPE);
         
         FileInputStream is = null;                                
@@ -36,7 +36,7 @@ public class RefineUtil {
         } finally {
             if (is != null) is.close();
         }
-        return byteArrayToHex(md.digest());
+        return md.digest();
     }
     
     public static String byteArrayToHex(byte[] data) {
