@@ -7,7 +7,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +22,13 @@ import com.google.refine.util.ParsingUtilities;
 
 
 public class GOKbImportingController extends DefaultImportingController {
-    
+
     final static Logger logger = LoggerFactory.getLogger("GOKb-importing-controller");
 
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response)
-        throws ServletException, IOException {
-        
+            throws ServletException, IOException {
+
         // Do the default action first.
         super.doPost(request, response);
 
@@ -41,80 +40,84 @@ public class GOKbImportingController extends DefaultImportingController {
          */        
         Properties parameters = ParsingUtilities.parseUrlParameters(request);
         String subCommand = parameters.getProperty("subCommand");
-        
-        long jobID = Long.parseLong(parameters.getProperty("jobID"));
-        final ImportingJob job = ImportingManager.getJob(jobID);
-        
+
+        // The Job ID
+        final long jobID = Long.parseLong(parameters.getProperty("jobID"));
+
         if ("load-raw-data".equals(subCommand)) {
-            // We are creating a project. Need to get at the job and parameters,
-            // to get the file for MD5 hashing.
-            
-            if (job != null) {
-            
-                // MD5 has in another thread.
-                new Thread() {
-                    
-                    @Override
-                    public void run(){
-                        try {
-                            JSONObject conf = job.config;
-                            
-                            // Examine the job and wait for the project to be updated.
-                            String state = (String) conf.get("state");
-                            while (job.updating) {
-                                /* Do nothing */
-                            }
-                            
-                            // If the only one file has been uploaded then let's MD5 it.
-                            JSONObject rec = conf.getJSONObject("retrievalRecord");
-                            if ("ready".equals(state) && rec.getInt("uploadCount") == 1) {
-                                
-                                // We have only 1 file uploaded.
-                                JSONObject file = (JSONObject)rec.getJSONArray("files").get(0);
-                            
-                                if (file.get("location") != null) {
-                                    
-                                    String MD5 = RefineUtil.byteArrayToHex(
-                                       RefineUtil.hashFile(
-                                           ImportingUtilities.getFile(job, file.getString("location"))
-                                       )
-                                    );
-                                    
-                                    // Add to the Job Config so it does not get deleted.
-                                    JSONUtilities.safePut(conf, "hash", MD5);
-                                }
-                            }
-                        } catch (Exception e) {
-                            logger.error("Error while trying to create file MD5 hash.", e);
-                        }
-                    }
-                }.start();
-                
-            }
-        } else if ("create-project".equals(subCommand)) {
-            
+
+            // MD5 hash in another thread.
             new Thread() {
-                
+
                 @Override
                 public void run(){
-            
-                    // Wait for the project to be created and then set our MD5 metadata attribute.
-                    while (job.updating) {
-                        /* Do nothing */
-                    }
-                    
-                    // Add the hash to the project metadata.
-                    // Start another thread that will wait for the project to finish updating.
                     try {
-                        
+                        ImportingJob job = ImportingManager.getJob(jobID);
+                        JSONObject conf = job.config;
+
+                        // Examine the job and wait for the project to be updated.
+                        String state = (String) conf.get("state");
+                        while (job.updating) {
+                            // Just keep refreshing the job.
+                            job = ImportingManager.getJob(jobID);
+                        }
+
+                        // If the only one file has been uploaded then let's MD5 it.
+                        JSONObject rec = conf.getJSONObject("retrievalRecord");
+                        if ("ready".equals(state) && rec.getInt("uploadCount") == 1) {
+
+                            // We have only 1 file uploaded.
+                            JSONObject file = (JSONObject)rec.getJSONArray("files").get(0);
+
+                            logger.debug(file.getString("location"));
+
+                            if (file.get("location") != null) {
+
+                                String MD5 = RefineUtil.byteArrayToHex(
+                                    RefineUtil.hashFile(
+                                        ImportingUtilities.getFile(job, file.getString("location"))
+                                    )
+                                );
+
+                                logger.debug(MD5);
+
+                                // Add to the Job Config so it does not get deleted.
+                                JSONUtilities.safePut(conf, "hash", MD5);
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error while trying to create file MD5 hash.", e);
+                    }
+                }
+            }.start();
+            
+        } else if ("create-project".equals(subCommand)) {
+
+            new Thread() {
+
+                @Override
+                public void run() {
+
+                    // Wait for the project to finish updating.
+                    try {
+                        ImportingJob job = ImportingManager.getJob(jobID);
+
+                        // Wait for the project to be created and then set our MD5 metadata attribute.
+                        while (job.updating) {
+                            // Just keep refreshing the job.
+                            job = ImportingManager.getJob(jobID);
+                        }
+
+                        // Add the hash to the project metadata.
                         Long pid = job.config.getLong("projectID");
-                        
+                        logger.info("Project ID: " + pid);
+
                         if (pid != null) {
                             ProjectMetadata md = ProjectManager.singleton.getProjectMetadata(pid);
 
                             md.setCustomMetadata("hash", job.config.getString("hash"));
                         }
-                    } catch (JSONException e) {
+                    } catch (Exception e) {
                         logger.error("Error while trying to set the MD5 hash.", e);
                     }
                 }
