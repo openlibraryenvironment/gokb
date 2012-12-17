@@ -61,8 +61,8 @@ public class GOKbImportingController extends DefaultImportingController {
                             
                             // Examine the job and wait for the project to be updated.
                             String state = (String) conf.get("state");
-                            while (job.updating) { 
-                              sleep(100);
+                            while (job.updating) {
+                                /* Do nothing */
                             }
                             
                             // If the only one file has been uploaded then let's MD5 it.
@@ -93,24 +93,32 @@ public class GOKbImportingController extends DefaultImportingController {
             }
         } else if ("create-project".equals(subCommand)) {
             
-            // Wait for the project to be created and then set our MD5 metadata attribute.
-            while (job.updating) {
-                /* Do nothing */
-            }
+            new Thread() {
+                
+                @Override
+                public void run(){
             
-            // Add the hash to the project metadata.            
-            try {
-                
-                Long pid = job.config.getLong("projectID");
-                
-                if (pid != null) {
-                    ProjectMetadata md = ProjectManager.singleton.getProjectMetadata(pid);
+                    // Wait for the project to be created and then set our MD5 metadata attribute.
+                    while (job.updating) {
+                        /* Do nothing */
+                    }
                     
-                    md.setCustomMetadata("hash", job.config.getString("hash"));
+                    // Add the hash to the project metadata.
+                    // Start another thread that will wait for the project to finish updating.
+                    try {
+                        
+                        Long pid = job.config.getLong("projectID");
+                        
+                        if (pid != null) {
+                            ProjectMetadata md = ProjectManager.singleton.getProjectMetadata(pid);
+
+                            md.setCustomMetadata("hash", job.config.getString("hash"));
+                        }
+                    } catch (JSONException e) {
+                        logger.error("Error while trying to set the MD5 hash.", e);
+                    }
                 }
-            } catch (JSONException e) {
-                logger.error("Error while trying to set the MD5 hash.", e);
-            }
+            }.start();
         }
     }
 }
