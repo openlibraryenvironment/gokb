@@ -144,12 +144,6 @@ GOKb.handlers.history = function() {
 	});
 }
 
-GOKb.handlers.fingerprint = function() {
-	GOKb.doRefineCommand("gokb/get-fingerprint", {project: theProject.id}, null, function(data){
-		alert (JSON.stringify(data));
-	});
-}
-
 /**
  * Prompt the user to describe the document.
  */
@@ -172,4 +166,22 @@ GOKb.handlers.describe = function() {
 	
 	// Show the form.
 	GOKb.showDialog(dialog);
+}
+
+
+/**
+ * Check in the project for the first time and add to the repository.
+ */
+GOKb.handlers.addToRepo = function() {
+	
+	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
+	
+	GOKb.doRefineCommand("gokb/project-checkin", params, null, 
+	{
+  	onDone : function () {
+  		
+  		// Redirect to the home page.
+  		window.location = "/";
+    }
+  });
 }

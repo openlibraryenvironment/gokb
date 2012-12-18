@@ -1,10 +1,5 @@
 package org.gokb.refine
 
-import java.io.Serializable
-import java.util.Map
-
-import org.gokb.cred.KBComponent
-
 class RefineProject {
 
 	String 	name
@@ -13,5 +8,13 @@ class RefineProject {
 	String 	file
 	Boolean	checkedIn
 	String 	checkedOutBy
-	Long localProjectID
+	Long 	localProjectID
+	String 	hash
+	
+	static constraints = {
+		hash 			nullable: true
+		checkedOutBy 	nullable: true
+		description 	nullable: true
+		localProjectID 	nullable: true
+	}
 }

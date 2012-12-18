@@ -312,3 +312,15 @@ GOKb.toTable = function (header, data, addStripe) {
 	;
 	return table;
 };
+
+GOKb.projectDataAsParams = function (project) {
+	var params = jQuery.extend({}, theProject.metadata.customMetadata, theProject.metadata);
+	
+	// Clean up by removing unneeded params.
+	delete params.id;
+	delete params.customMetadata;
+	params.project = project.id;
+	
+	// Return.
+	return params;
+};
