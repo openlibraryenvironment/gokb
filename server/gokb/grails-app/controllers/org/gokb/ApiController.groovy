@@ -1,13 +1,11 @@
 package org.gokb
 
-import grails.plugins.springsecurity.Secured
+import static java.util.UUID.randomUUID
 import grails.converters.JSON
+import grails.plugins.springsecurity.Secured
 
-import org.codehaus.groovy.grails.web.json.JSONObject
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
-
-
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
  * 
@@ -15,6 +13,28 @@ import org.gokb.refine.RefineProject
  */
 
 class ApiController {
+	
+	
+	/**
+	 * TODO: The below versionCheck and before interceptor code checks for a custom request header.
+	 * Cross-domain AJAX calls using JSONP strip out custom headers and so the code fails when it shouldn't.
+	 * The code will work once all ajax requests are proxied through the custom refine code as the custom headers,
+	 * are not stripped from the request.  
+	 */
+	
+//	def beforeInterceptor = [action: this.&versionCheck]
+//	
+//	// defined with private scope, so it's not considered an action 
+//	private versionCheck() {
+//		def gokbVersion = request.getHeader("GOKb-version")
+//		if (gokbVersion != 0.3) {
+//		  apiReturn("", "You are using an out of date version of the GOKb extension. " +
+//			  "Please download and install the latest version. From http://gokb.k-int.com/extension/latest",
+//			  "error"
+//		  )		  
+//		  return false
+//		}
+//	}
 
 	// Internal API return object that ensures consistent formatting of API return objects
 	private def apiReturn = {result, String message = "", String status = "success" ->
@@ -118,7 +138,6 @@ class ApiController {
 				project.setCheckedOutBy(chOut)
 				project.setCheckedIn(false)
 				project.setLocalProjectID(params.long("localProjectID"))
-				
 				return
 			}
 		}
@@ -135,12 +154,20 @@ class ApiController {
 		if (f && !f.empty) {
 			
 			// Get the project.
-			def project = (params.projectID ? RefineProject.load(params.projectID) : new RefineProject())
+			def project
+			if (params.projectID) {
+				project = RefineProject.load(params.projectID)
+			} else {
+			
+				// Creating new project.
+				project = new RefineProject()
+				project.setHash(params.hash ?: null)
+			}
 			
 			if (project) {
-			
+				
 				// Generate a filename...
-				def fileName = "project-${project.getId()}.tar.gz"
+				def fileName = "project-${randomUUID()}.tar.gz"
 				
 				// Save the file.
 				f.transferTo(new File(getFileRepo() + fileName))
@@ -149,14 +176,16 @@ class ApiController {
 				project.setFile(fileName)
 				
 				// Update other project properties.
-				if (params.projectDescription) project.setDescription(params.projectDescription)
-				if (params.projectName) project.setName(params.projectName)
+				if (params.description) project.setDescription(params.description)
+				if (params.name) project.setName(params.name)
 				project.setCheckedIn(true)
-				project.setCheckedOutBy("")
-				project.setLocalProjectID(0)
+				project.setCheckedOutBy(null)
+				project.setLocalProjectID(null)
 				project.setModified(new Date())
 				
+				// Save and flush.
 				project.save(flush: true, failOnError: true)
+				
 				apiReturn(project)
 				return
 			}
@@ -168,7 +197,7 @@ class ApiController {
 				
 				// Remove lock properties and return the project state.
 				project.setCheckedIn(true)
-				project.setCheckedOutBy("")
+				project.setCheckedOutBy(null)
 				project.setLocalProjectID(0)
 				project.save(flush: true, failOnError: true)
 				apiReturn(project)

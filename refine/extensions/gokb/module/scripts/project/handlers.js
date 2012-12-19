@@ -144,32 +144,57 @@ GOKb.handlers.history = function() {
 	});
 }
 
-GOKb.handlers.fingerprint = function() {
-	GOKb.doRefineCommand("gokb/get-fingerprint", {project: theProject.id}, null, function(data){
-		alert (JSON.stringify(data));
-	});
-}
-
 /**
- * Prompt the user to describe the document.
+ * Prompt the user to check project properties and then check in the project.
  */
 
-GOKb.handlers.describe = function() {
+GOKb.handlers.checkInWithProps = function() {
 	// Create the form to collect some basic data about this document.
-	var dialog = GOKb.createDialog("Suggested Operations", "form_description");
+	var dialog = GOKb.createDialog("Suggested Operations", "form_project_properties");
+	
+	// Change the location to send the data to project check-in.
+	dialog.bindings.form.attr("action", "command/gokb/project-checkin");
+	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
+	
+	// Add the project params as hidden fields to the form.
+	GOKb.paramsAsHiddenFields(dialog.bindings.form, params);
+	
+	// Change the submit button text to be check-in
+	dialog.bindings.submit.attr("value", "Save and Check-in");
 	
 	// List of orgs :To be retrieved from GOKb.
-	var orgs = {org1 : "oranisation1",org2 : "oranisation2",org3 : "oranisation3"};
+//	var orgs = {org1 : "oranisation1",org2 : "oranisation2",org3 : "oranisation3"};
+//	
+//	// Add the organisations.
+//	var orgList = $('#organisation', dialog.bindings.form);
+//	$.each(orgs, function (value, display) {
+//		orgList.append(
+//		  $('<option />', {"value" : value})
+//		  .text(display)
+//		);
+//	});
 	
-	// Add the organisations.
-	var orgList = $('#organisation', dialog.bindings.form);
-	$.each(orgs, function (value, display) {
-		orgList.append(
-		  $('<option />', {"value" : value})
-		  .text(display)
-		);
-	});
+	// Rename close button to cancel.
+	dialog.bindings.closeButton.text("Cancel");
 	
 	// Show the form.
 	GOKb.showDialog(dialog);
+}
+
+
+/**
+ * Check in the project for the first time and add to the repository.
+ */
+GOKb.handlers.addToRepo = function() {
+	
+	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
+	
+	GOKb.doRefineCommand("gokb/project-checkin", params, null, 
+	{
+  	onDone : function (data) {
+  		
+  		// Redirect to the home page.
+  		window.location = "/";
+    }
+  });
 }
