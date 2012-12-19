@@ -32,7 +32,7 @@ GOKb.doRefineCommand("core/get-project-metadata",{ project: theProject.id }, nul
 			var cusMd = theProject.metadata.customMetadata;
 			if (!cusMd.gokb || cusMd.gokb != true) {
 				// It's not a GOKb project file, so add "Add to Repo" link.
-				GOKb.menuItems.push({
+				GOKb.menuItems.unshift({
 					"id" : "gokb-menu-add-to-repo",
 				  label: "Check-in this project for the first time",
 				  click: function() { 
