@@ -1,7 +1,7 @@
 package com.k_int.gokb.refine;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,38 +21,40 @@ import com.google.refine.model.Row;
 public class RefineUtil {
     
     private static final String DIGEST_TYPE = "MD5";
-
-    public static byte[] fingerprintProject(Project project) throws IOException, NoSuchAlgorithmException {
-        ProjectManager pm = ProjectManager.singleton;
-        
-        // Ensure that the project has been saved.
-        pm.ensureProjectSaved(project.id);
-        
-        // Raw byte output stream.
-        ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-        
-        // Tar output stream for refine.
-        TarOutputStream projOut = new TarOutputStream(
-           rawOut
-        );
-        
-        // Create the digest.
+    
+    public static byte[] hashFile (File f) throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance(DIGEST_TYPE);
         
-        // Set our project to export to the output stream.
-        pm.exportProject(project.id, projOut);
-        
-        // Digest the project file.
-        return md.digest(rawOut.toByteArray());
+        FileInputStream is = null;                                
+        byte[] buffer = new byte[8192];
+        try {
+            is = new FileInputStream(f);
+            int read = 0;
+            while( (read = is.read(buffer)) > 0) {
+                md.update(buffer, 0, read);
+            }    
+        } finally {
+            if (is != null) is.close();
+        }
+        return md.digest();
     }
     
-    public static byte[] fingerprintProjectData(Project project) throws IOException, NoSuchAlgorithmException {
+    public static String byteArrayToHex(byte[] data) {
+        String result = "";
+
+        for (int i=0; i < data.length; i++) {
+            result += Integer.toString( ( data[i] & 0xff ) + 0x100, 16).substring( 1 );
+        }
+        return result;
+    }
+    
+    public static byte[] hashProjectData(Project project, File directory) throws IOException, NoSuchAlgorithmException {
 
         // Create the digest.
         MessageDigest md = MessageDigest.getInstance(DIGEST_TYPE);
         
         DigestOutputStream out = new DigestOutputStream(
-          new FileOutputStream(new File("/home/sosguthorpe/Groovy_Grails/gokb-phase1/debug/test_undo.txt")),
+          new FileOutputStream(new File(directory, project.id + ".txt")),
           md
         );
         
@@ -69,11 +71,8 @@ public class RefineUtil {
                     
                     // Write the file and simultaneously update the digest.
                     out.write(val.toString().getBytes());
-                
-                    //md.update(val.toString().getBytes());
                 }
             }
-//            md.update("\\n".getBytes());
             out.write("\n".getBytes());
         }
         
