@@ -1,14 +1,11 @@
 package org.gokb
 
+import static java.util.UUID.randomUUID
+import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 
-import grails.converters.JSON
-
-import org.codehaus.groovy.grails.web.json.JSONObject
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
-
-import static java.util.UUID.randomUUID
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
  * 
@@ -161,7 +158,7 @@ class ApiController {
 				if (params.name) project.setName(params.name)
 				project.setCheckedIn(true)
 				project.setCheckedOutBy(null)
-				project.setLocalProjectID(0)
+				project.setLocalProjectID(null)
 				project.setModified(new Date())
 				
 				// Save and flush.

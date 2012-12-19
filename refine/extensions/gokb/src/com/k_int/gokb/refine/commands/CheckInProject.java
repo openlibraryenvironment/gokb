@@ -24,11 +24,21 @@ import com.google.refine.model.Project;
 public class CheckInProject extends A_RefineAPIBridge {
     final static Logger logger = LoggerFactory.getLogger("GOKb-checkin-project_command");
 
+    
     @Override
-    public void doGet(final HttpServletRequest request, final HttpServletResponse response)
-            throws ServletException, IOException {       
-
-    	// Get the project manager and flag that it is busy.
+    public void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        handleRequest(request, response);
+    }
+    
+    @Override
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        handleRequest(request, response);
+    }
+    
+    private void handleRequest (final HttpServletRequest request, final HttpServletResponse response) {
+     // Get the project manager and flag that it is busy.
         final ProjectManager pm = ProjectManager.singleton;
         pm.setBusy(true);
         try {
@@ -83,7 +93,7 @@ public class CheckInProject extends A_RefineAPIBridge {
                 }
                 
             });
-        	
+                
         } catch (Exception e) {
             
             // Respond with the error page.

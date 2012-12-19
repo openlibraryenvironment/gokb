@@ -21,19 +21,29 @@ var standardMenuItems = [
 	  }
 	},
 ];
+	
+// Load the project metadata.
+GOKb.doRefineCommand("core/get-project-metadata",{ project: theProject.id }, null,
+  {
+		onDone: function(data) {
+			theProject.metadata = data;
+			
+			// Create menu items that are contextual.
+			var cusMd = theProject.metadata.customMetadata;
+			if (!cusMd.gokb || cusMd.gokb != true) {
+				// It's not a GOKb project file, so add "Add to Repo" link.
+				GOKb.menuItems.push({
+					"id" : "gokb-menu-add-to-repo",
+				  label: "Check-in this project for the first time",
+				  click: function() { 
+					  GOKb.handlers.checkInWithProps();
+				  }
+				});
+			}
+		}
+  }
+);
 
-// Create menu items that are contextual.
-//var cusMd = theProject.metadata.customMetadata;
-//if (!cusMd.gokb || cusMd.gokb != true) {
-	// It's not a GOKb project file, so add "Add to Repo" link.
-	GOKb.menuItems.push({
-		"id" : "gokb-menu-add-to-repo",
-	  label: "Check-in this project for the first time",
-	  click: function() { 
-		  GOKb.handlers.addToRepo();
-	  }
-	});
-//}
 
 // Add the standard Items to the menu.
 GOKb.menuItems = GOKb.menuItems.concat(standardMenuItems);

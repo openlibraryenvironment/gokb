@@ -1,13 +1,15 @@
 var GOKb = {
+	version : 0.2,
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
 	menuItems: [],
   ui: {},
+  jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   api:{
   	url : "http://localhost:8080/gokb/api/"
   },
-  refine:{}
+  refine:{},
 };
 
 GOKb.setAjaxInProgress = function() {
@@ -143,22 +145,20 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	 * ajax object if we are using jQuery 1.5 or lower.
 	 */
   
-  // Get the version of jQuery and check if greater than 1.5
-  var version = jQuery.fn.jquery.match(/(\d+\.\d+)/ig);
-  if (version > 1.5) {
-  	
-  	// Fire the ajax and attach the always function.
-    $.ajax(ajaxObj)
-    	.always(complete)
-    ;
-  } else {
-  	
-  	// Set the complete method equal to our callback.
-  	ajaxObj.complete = complete;
-  	
-  	// fire the ajax request.
-  	$.ajax(ajaxObj);
-  }
+	if (GOKB.jqVersion > 1.5) {
+		
+		// Fire the ajax and attach the always function.
+	  $.ajax(ajaxObj)
+	  	.always(complete)
+	  ;
+	} else {
+		
+		// Set the complete method equal to our callback.
+		ajaxObj.complete = complete;
+		
+		// fire the ajax request.
+		$.ajax(ajaxObj);
+	}
   
   // Show waiting message if function has not completed within half a second.
   window.setTimeout(function() {
@@ -254,7 +254,7 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
 
 
 /**
- * Return a data-table JQuery object.
+ * Return a data-table jQuery object.
  */
 GOKb.toTable = function (header, data, addStripe) {
 	
@@ -313,6 +313,9 @@ GOKb.toTable = function (header, data, addStripe) {
 	return table;
 };
 
+/**
+ * Return an object with parameters of the project set. Including the custom ones.
+ */
 GOKb.projectDataAsParams = function (project) {
 	var params = jQuery.extend({}, theProject.metadata.customMetadata, theProject.metadata);
 	
@@ -324,3 +327,17 @@ GOKb.projectDataAsParams = function (project) {
 	// Return.
 	return params;
 };
+
+/**
+ * Add the parameters object as a series of hidden fields to the form.
+ */
+GOKb.paramsAsHiddenFields = function (form, params) {
+	for(var key in params) {
+		form.append(
+		  $("<input />")
+		    .attr('type', 'hidden')
+		    .attr('name', key)
+		    .attr('value', params[key])
+		);
+	}
+}
