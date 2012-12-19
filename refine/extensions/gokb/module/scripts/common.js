@@ -1,5 +1,5 @@
 var GOKb = {
-	version : 0.2,
+	version : 0.3,
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
@@ -143,6 +143,11 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	var done = false;
   var dismissBusy = null;
   
+  ajaxObj.beforeSend = function (request)
+  {
+    request.setRequestHeader("GOKb-version", GOKb.version);
+  };
+  
   // Use the built in UI to show AJAX in progress.
   GOKb.setAjaxInProgress();
   
@@ -218,7 +223,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
           	GOKb.reportException(e);
           }
         } else {
-        	GOKb.defaultError();
+        	GOKb.defaultError(dataR);
         }
       } else {
         if ("onDone" in callbacks) {
@@ -257,7 +262,7 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
           	GOKb.reportException(e);
           }
         } else {
-        	GOKb.defaultError();
+        	GOKb.defaultError(dataR);
         }
       } else {
         if ("onDone" in callbacks) {

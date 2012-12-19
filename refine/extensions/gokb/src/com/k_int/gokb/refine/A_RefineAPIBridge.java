@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 
+import com.google.refine.RefineServlet;
 import com.google.refine.commands.Command;
 import com.google.refine.util.ParsingUtilities;
 
@@ -29,8 +30,6 @@ public abstract class A_RefineAPIBridge extends Command {
         POST, GET, PUT, HEAD, DELETE
     }
 
-    
-
     private static final String POST_LINE_END         = "\r\n";
 
     private static final String POST_HYPHENS          = "--";
@@ -39,7 +38,6 @@ public abstract class A_RefineAPIBridge extends Command {
 
     private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
     private static final int    PROP_TIMEOUT          = 60000;
-    
     
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
     
@@ -181,6 +179,12 @@ public abstract class A_RefineAPIBridge extends Command {
         connection.setUseCaches(false);
         connection.setConnectTimeout(PROP_TIMEOUT);
         connection.setRequestProperty("Connection", "Keep-Alive");
+        
+        // Set the user-agent
+        RefineServlet.setUserAgent(connection);
+        
+        // Set the custom refine extension property.
+        connection.setRequestProperty("GOKb-version", "0.3");
         
         if (type == METHOD_TYPE.POST) {
             connection.setDoInput(true);
