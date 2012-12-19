@@ -12,6 +12,25 @@ var GOKb = {
   refine:{},
 };
 
+/**
+ * Default callback object that displays an error if one was sent through.
+ */
+
+GOKb.defaultError = function (data) {
+	var error = GOKb.createErrorDialog("Error");
+	var msg;
+	if  (data && "message" in data ) {
+		msg = data.message;
+	} else {
+		msg = "There was an error contacting the GOKb server.";
+	}
+	error.bindings.dialogContent.html("<p>" + msg + "</p>");
+  return GOKb.showDialog(error);
+};
+
+/**
+ * Set ajax in progress.
+ */
 GOKb.setAjaxInProgress = function() {
 	// If defined on the refine object then use that...
 	if (Refine.setAjaxInProgress) {
@@ -23,6 +42,9 @@ GOKb.setAjaxInProgress = function() {
 	}
 };
 
+/**
+ * Clear ajax in progress.
+ */
 GOKb.clearAjaxInProgress = function() {
 	// If defined on the refine object then use that...
 	if (Refine.clearAjaxInProgress) {
@@ -33,6 +55,9 @@ GOKb.clearAjaxInProgress = function() {
 	}
 };
 
+/**
+ * Report an exception from the system.
+ */
 GOKb.reportException = function(e) {
 	
 	if (Refine.reportException) {
@@ -130,10 +155,8 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	  GOKb.clearAjaxInProgress();
 	  
 	  if (status == 'error' || status == 'timeout') {
-	    // Display an error message to the user.
-	    var error = GOKb.createErrorDialog("Communications Error");
-	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
-	    GOKb.showDialog(error);
+	    // Display an error message to the user.	    
+	    GOKb.defaultError();
 	  }
 	};
 	
@@ -145,7 +168,7 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	 * ajax object if we are using jQuery 1.5 or lower.
 	 */
   
-	if (GOKB.jqVersion > 1.5) {
+	if (GOKb.jqVersion > 1.5) {
 		
 		// Fire the ajax and attach the always function.
 	  $.ajax(ajaxObj)
@@ -195,7 +218,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
           	GOKb.reportException(e);
           }
         } else {
-          alert(dataR.message);
+        	GOKb.defaultError();
         }
       } else {
         if ("onDone" in callbacks) {
@@ -234,7 +257,7 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
           	GOKb.reportException(e);
           }
         } else {
-          alert(dataR.message);
+        	GOKb.defaultError();
         }
       } else {
         if ("onDone" in callbacks) {
@@ -341,3 +364,11 @@ GOKb.paramsAsHiddenFields = function (form, params) {
 		);
 	}
 }
+
+/**
+ * Check versions match every minute.
+ */
+//(GOKb.checkVersion = function() {
+//  // do some stuff
+//  setTimeout(GOKb.checkVersion, 60000);
+//})();
