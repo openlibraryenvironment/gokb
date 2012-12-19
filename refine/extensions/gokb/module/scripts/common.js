@@ -1,15 +1,36 @@
 var GOKb = {
+	version : 0.3,
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
 	menuItems: [],
   ui: {},
+  jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   api:{
   	url : "http://localhost:8080/gokb/api/"
   },
-  refine:{}
+  refine:{},
 };
 
+/**
+ * Default callback object that displays an error if one was sent through.
+ */
+
+GOKb.defaultError = function (data) {
+	var error = GOKb.createErrorDialog("Error");
+	var msg;
+	if  (data && "message" in data ) {
+		msg = data.message;
+	} else {
+		msg = "There was an error contacting the GOKb server.";
+	}
+	error.bindings.dialogContent.html("<p>" + msg + "</p>");
+  return GOKb.showDialog(error);
+};
+
+/**
+ * Set ajax in progress.
+ */
 GOKb.setAjaxInProgress = function() {
 	// If defined on the refine object then use that...
 	if (Refine.setAjaxInProgress) {
@@ -21,6 +42,9 @@ GOKb.setAjaxInProgress = function() {
 	}
 };
 
+/**
+ * Clear ajax in progress.
+ */
 GOKb.clearAjaxInProgress = function() {
 	// If defined on the refine object then use that...
 	if (Refine.clearAjaxInProgress) {
@@ -31,6 +55,9 @@ GOKb.clearAjaxInProgress = function() {
 	}
 };
 
+/**
+ * Report an exception from the system.
+ */
 GOKb.reportException = function(e) {
 	
 	if (Refine.reportException) {
@@ -116,6 +143,11 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	var done = false;
   var dismissBusy = null;
   
+  ajaxObj.beforeSend = function (request)
+  {
+    request.setRequestHeader("GOKb-version", GOKb.version);
+  };
+  
   // Use the built in UI to show AJAX in progress.
   GOKb.setAjaxInProgress();
   
@@ -128,10 +160,8 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	  GOKb.clearAjaxInProgress();
 	  
 	  if (status == 'error' || status == 'timeout') {
-	    // Display an error message to the user.
-	    var error = GOKb.createErrorDialog("Communications Error");
-	    error.bindings.dialogContent.html("<p>There was an error contacting the GOKb server.</p>");
-	    GOKb.showDialog(error);
+	    // Display an error message to the user.	    
+	    GOKb.defaultError();
 	  }
 	};
 	
@@ -143,22 +173,20 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	 * ajax object if we are using jQuery 1.5 or lower.
 	 */
   
-  // Get the version of jQuery and check if greater than 1.5
-  var version = jQuery.fn.jquery.match(/(\d+\.\d+)/ig);
-  if (version > 1.5) {
-  	
-  	// Fire the ajax and attach the always function.
-    $.ajax(ajaxObj)
-    	.always(complete)
-    ;
-  } else {
-  	
-  	// Set the complete method equal to our callback.
-  	ajaxObj.complete = complete;
-  	
-  	// fire the ajax request.
-  	$.ajax(ajaxObj);
-  }
+	if (GOKb.jqVersion > 1.5) {
+		
+		// Fire the ajax and attach the always function.
+	  $.ajax(ajaxObj)
+	  	.always(complete)
+	  ;
+	} else {
+		
+		// Set the complete method equal to our callback.
+		ajaxObj.complete = complete;
+		
+		// fire the ajax request.
+		$.ajax(ajaxObj);
+	}
   
   // Show waiting message if function has not completed within half a second.
   window.setTimeout(function() {
@@ -195,7 +223,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
           	GOKb.reportException(e);
           }
         } else {
-          alert(dataR.message);
+        	GOKb.defaultError(dataR);
         }
       } else {
         if ("onDone" in callbacks) {
@@ -234,7 +262,7 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
           	GOKb.reportException(e);
           }
         } else {
-          alert(dataR.message);
+        	GOKb.defaultError(dataR);
         }
       } else {
         if ("onDone" in callbacks) {
@@ -254,7 +282,7 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
 
 
 /**
- * Return a data-table JQuery object.
+ * Return a data-table jQuery object.
  */
 GOKb.toTable = function (header, data, addStripe) {
 	
@@ -312,3 +340,40 @@ GOKb.toTable = function (header, data, addStripe) {
 	;
 	return table;
 };
+
+/**
+ * Return an object with parameters of the project set. Including the custom ones.
+ */
+GOKb.projectDataAsParams = function (project) {
+	var params = jQuery.extend({}, theProject.metadata.customMetadata, theProject.metadata);
+	
+	// Clean up by removing unneeded params.
+	delete params.id;
+	delete params.customMetadata;
+	params.project = project.id;
+	
+	// Return.
+	return params;
+};
+
+/**
+ * Add the parameters object as a series of hidden fields to the form.
+ */
+GOKb.paramsAsHiddenFields = function (form, params) {
+	for(var key in params) {
+		form.append(
+		  $("<input />")
+		    .attr('type', 'hidden')
+		    .attr('name', key)
+		    .attr('value', params[key])
+		);
+	}
+}
+
+/**
+ * Check versions match every minute.
+ */
+//(GOKb.checkVersion = function() {
+//  // do some stuff
+//  setTimeout(GOKb.checkVersion, 60000);
+//})();

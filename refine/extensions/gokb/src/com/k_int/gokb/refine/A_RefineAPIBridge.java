@@ -11,18 +11,14 @@ import java.io.InputStream;
 import java.io.InvalidClassException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.FileCleaningTracker;
 
+import com.google.refine.RefineServlet;
 import com.google.refine.commands.Command;
 import com.google.refine.util.ParsingUtilities;
 
@@ -34,54 +30,6 @@ public abstract class A_RefineAPIBridge extends Command {
         POST, GET, PUT, HEAD, DELETE
     }
 
-    private class RequestObjects {
-        private Map<String, Object> files = new HashMap<String, Object> ();
-
-        private Map<String, String[]> params = new HashMap<String, String[]> ();
-
-        @SuppressWarnings("unchecked")
-        private RequestObjects (HttpServletRequest request) throws FileUploadException {
-
-            // Check that it is multipart
-            if (ServletFileUpload.isMultipartContent(request)) {
-
-                // Create a factory for disk-based file items.
-                DiskFileItemFactory fileItemFactory = new DiskFileItemFactory();
-                fileItemFactory.setFileCleaningTracker(new FileCleaningTracker());
-                ServletFileUpload upload = new ServletFileUpload(fileItemFactory);
-
-                // Parse the files from the request
-                List<FileItem> fileItems = upload.parseRequest(request);
-
-                // Create a map of name -> FileItems 
-                if (fileItems.size() > 0) {
-                    files = new HashMap<String, Object> (fileItems.size());
-                    for (FileItem file : fileItems) {
-                        files.put(file.getFieldName(), file);
-                    }
-                }
-            }
-
-            // Create params and ensure they are decoded.
-            params = new HashMap<String, String[]>() {
-                private static final long serialVersionUID = 6346625315535415606L;
-
-                @Override
-                public String[] get(Object key) {
-                    String[] value = super.get(key);
-                    if (value != null) {
-                        for (int i=0; i< value.length; i++) {
-                            value[i] = ParsingUtilities.decode(value[i]);
-                        }
-                    }
-                    return value;
-                }
-            };
-            
-            params.putAll(request.getParameterMap());
-        }
-    }
-
     private static final String POST_LINE_END         = "\r\n";
 
     private static final String POST_HYPHENS          = "--";
@@ -90,7 +38,6 @@ public abstract class A_RefineAPIBridge extends Command {
 
     private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
     private static final int    PROP_TIMEOUT          = 60000;
-    
     
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
     
@@ -200,7 +147,7 @@ public abstract class A_RefineAPIBridge extends Command {
     }
     
     protected Map<String, Object> files(HttpServletRequest request) throws FileUploadException {
-        return req(request).files;
+        return RequestParser.parse(request).getFiles();
     }
     
     protected final void forwardToAPIGet (String apiMethod, HttpServletRequest request) throws Exception{
@@ -233,6 +180,12 @@ public abstract class A_RefineAPIBridge extends Command {
         connection.setConnectTimeout(PROP_TIMEOUT);
         connection.setRequestProperty("Connection", "Keep-Alive");
         
+        // Set the user-agent
+        RefineServlet.setUserAgent(connection);
+        
+        // Set the custom refine extension property.
+        connection.setRequestProperty("GOKb-version", "0.3");
+        
         if (type == METHOD_TYPE.POST) {
             connection.setDoInput(true);
             connection.setRequestMethod("POST");
@@ -257,7 +210,7 @@ public abstract class A_RefineAPIBridge extends Command {
     }
 
     protected Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
-        return req(request).params;
+        return RequestParser.parse(request).getParams();
     }
 
     private String paramString(Map<String, String[]> params) throws FileUploadException {
@@ -294,13 +247,6 @@ public abstract class A_RefineAPIBridge extends Command {
     	// Post to API method.
     	if (callback == null) callback = new RefineAPICallback();
     	toAPI(METHOD_TYPE.POST, apiMethod, params, fileData, callback);
-    }
-    
-    private RequestObjects req(HttpServletRequest request) throws FileUploadException {
-        // TODO: Fix this method to make sure the request is only parsed once. This class is reused for every
-        // call and therefore the request object should be used to ensure params and files are only available for
-        // the one request.
-        return new RequestObjects (request);
     }
 
     private final void toAPI (METHOD_TYPE type, String apiMethod, Map<String, String[]> params, Map<String, ?> fileData, RefineAPICallback callback) throws Exception {

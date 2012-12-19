@@ -91,7 +91,7 @@ GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, tit
 // Check to see if the supplied GOKb project matches a local project.
 // In other words is this project checked out by teh current user?
 GOKb.ui.projects.prototype.isLocalProject = function(project, localProjects) {
-	return (project.localProjectID != 0 && localProjects[project.localProjectID] && localProjects[project.localProjectID].customMetadata["gokb-id"] == project.id);
+	return (project.localProjectID && project.localProjectID != 0 && localProjects[project.localProjectID] && localProjects[project.localProjectID].customMetadata["gokb-id"] == project.id);
 };
 
 GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects) {
@@ -130,17 +130,25 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		
 		// Check if local project matches this project.
 		if (this.isLocalProject(project, localProjects)) {
+			
+			// Get project params...
+			var theProject = localProjects[project.localProjectID];
+			var params = {
+		  	project 		: project.localProjectID,
+		  	projectID		: project.id,
+		  };
+			
 			controls = controls.concat([
 			  this.createControlLink(
 					project,
-					'command/gokb/project-checkin?project=' + project.localProjectID + "&projectID=" + project.id + "&update=true",
+					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name}, params)),
 					"check&#45;in",
 					"Check the current project into GOKb along with any changes that you have made."
 			  ),
 			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
 			  this.createControlLink(
 					project,
-					'command/gokb/project-checkin?project=' + project.localProjectID + "&projectID=" + project.id,
+					'command/gokb/project-checkin?' + $.param(params),
 					"cancel",
 					"Check the current project into GOKb, but ignore any changes made."
 			  )
