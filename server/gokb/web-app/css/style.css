@@ -1,0 +1,9 @@
+/**
+ *  Local gokb overrides for bootstrap
+ */
+
+.navbar-push {
+  clear: both;
+  padding-top: 45px;
+}
+

@@ -10,11 +10,15 @@
     <title><g:layoutTitle default="GoKB"/></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
+
     <g:layoutHead/>
     <r:layoutResources />
+
   </head>
+
   <body>
-    <div class="navbar navbar-fixed-top">
+
+    <div class="navbar navbar-fixed-top navbar-inverse">
       <div class="navbar-inner navbar-public">
         <div class="container">
           <div class="nav-collapse">
@@ -27,6 +31,8 @@
         </div>           
       </div>
     </div>
+
+    <div class="navbar-push"></div>
 
     <g:layoutBody/>
 
