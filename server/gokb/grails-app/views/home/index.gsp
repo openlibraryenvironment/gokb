@@ -8,13 +8,7 @@
   <body>
 
     <div class="container">
-      <p>This is text contentTextTextText</p>
-      <p>This is text contentTextTextText</p>
-      <p>This is text contentTextTextText</p>
-      <p>This is text contentTextTextText</p>
-      <p>This is text contentTextTextText</p>
-      <p>This is text contentTextTextText</p>
-      <p>This is text contentTextTextText</p>
+      <p>GOKb home page</p>
     </div>
 
   </body>
