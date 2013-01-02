@@ -13,36 +13,20 @@
     <g:layoutHead/>
     <r:layoutResources />
   </head>
-  <body class="public">
+  <body>
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner navbar-public">
         <div class="container">
-          <!--
-          <img class="brand" alt="Knowledge Base + logo" src="images/gokb_logo_small.png" />
-          -->
           <div class="nav-collapse">
             <ul class="nav">
               <li>
-                <a href="/kbplus/"> Home </a>
-              </li>
-              <li class="active">
-                <a href="/kbplus/about"> About KB+ </a>
-              </li>
-              <li>
-                <a href="/kbplus/signup"> Sign Up </a>
-              </li>
-              <li>
-                <a href="/kbplus/publicExport"> Exports </a>
-              </li>
-              <li class="last">
-                <a href="/kbplus/contact-us"> Contact Us </a>
+                <g:link controller="home" action="index">Home</g:link>
               </li>
             </ul>           
           </div>
         </div>           
       </div>
     </div>
-    <div class="navbar-push-public"></div>
 
     <g:layoutBody/>
 
