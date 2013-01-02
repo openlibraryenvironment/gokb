@@ -2,6 +2,8 @@ import org.gokb.cred.*;
 
 class BootStrap {
 
+  def grailsApplication
+
   def init = { servletContext ->
     // Global System Roles
     def userRole = Role.findByAuthority('ROLE_USER') ?: new Role(authority: 'ROLE_USER', roleType:'global').save(failOnError: true)
@@ -27,6 +29,15 @@ class BootStrap {
     if (!adminUser.authorities.contains(userRole)) {
       UserRole.create adminUser, userRole
     }
+
+    log.debug("Make sure project files directory exists, config says it's at ${grailsApplication.config.project_dir}");
+    String fs = grailsApplication.config.project_dir
+    File f = new File(fs)
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs()
+    }
+
   }
 
 
