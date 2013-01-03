@@ -175,9 +175,10 @@ class ApiController {
         // Save and flush.
         project.save(flush: true, failOnError: true)
 
-        def validationResult = ingestService.validate(project)
+        def parsed_data = ingestService.extractRefineproject(project.file)
+        def validationResult = ingestService.validate(parsed_data)
         if ( validationResult.status == true ) {
-          ingestService.ingest(project)
+          ingestService.ingest(parsed_data, project)
         }
         
         apiReturn(project)

@@ -4,14 +4,22 @@ import org.gokb.refine.*;
 import org.apache.commons.compress.compressors.gzip.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
+import grails.converters.JSON
 
 class IngestService {
 
+  // Automatically injected services from grails-app/services
   def grailsApplication
+  def titleLookupService
+  def sessionFactory
 
-  def validate(RefineProject p) {
+  /**
+   *  Validate a parsed project. 
+   *  @param project_data Parsed map of project data
+   */
+  def validate(project_data) {
     log.debug("Validate");
-    def project_data = extractRefineproject(p.file);
+    // def project_data = extractRefineproject(p.file);
 
     def result = [:]
     result.status = project_data ? true : false
@@ -20,16 +28,57 @@ class IngestService {
     result
   }
 
-  def ingest(RefineProject p) {
+  /**
+   *  ingest a parsed project. 
+   *  @param project_data Parsed map of project data
+   */
+  def ingest(project_data, project) {
     log.debug("Ingest");
-    def project_data = extractRefineproject(p.file);
+    // def project_data = extractRefineproject(p.file);
 
     def result = [:]
     result.status = project_data ? true : false
 
+    int title_index=0
+    int issn_index=1
+    int eissn_index=2
+    int ctr = 0
+    project_data.rowData.each { datarow ->
+      if ( datarow.cells[title_index] ) {
+        def title_info = titleLookupService.find(jsonv(datarow.cells[title_index]),
+                                                 jsonv(datarow.cells[issn_index]),
+                                                 jsonv(datarow.cells[eissn_index]));
+        // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
+        // instances we've just looked up.
+        if ( ctr % 100 == 0 )
+          cleanUpGorm()
+      }
+      else {
+        log.debug("Row ${ctr} seems to be a null row. Skipping");
+      }
+      ctr++
+    }
+
     result
   }
 
+  def jsonv(v) {
+    def result = null
+    if ( v ) {
+      if ( !v.equals(null) ) {
+        result = v.v
+      }
+    }
+    result
+  }
+
+
+  /**
+   *  Read an uploaded refine .tar.gz file, uncompress and create a map containing all the data. This is in memory,
+   *  but our package files should never be large enough to cause a problem.
+   *  @param zipFilename .tar.gz file to extract.
+   *  @return Map containing parsed project data
+   */
   def extractRefineproject(String zipFilename) {
     def result = null;
 
@@ -132,7 +181,7 @@ class IngestService {
     result.columnDefinitions = []
     for ( int i=0; i<result.columnCount; i++ ) {
       log.debug("Reading column ${i}");
-      result.columnDefinitions.add(bis.readLine());
+      result.columnDefinitions.add(JSON.parse(bis.readLine()));
     }
 
     result.columnGroupCount = Integer.decode(valuePart(bis.readLine()))
@@ -165,9 +214,12 @@ class IngestService {
 
     result.overlayModel = valuePart(bis.readLine())
     result.rowCount = Integer.decode(valuePart(bis.readLine()))
+    result.rowData = []
+
     for (int i=0; i<result.rowCount; i++ ) {
       def row = bis.readLine()
       log.debug("Row ${i}");
+      result.rowData.add(JSON.parse(row))
       // Skipping row
     }
 
@@ -179,6 +231,15 @@ class IngestService {
     def result = s.substring(equalsPos+1, s.length());
     log.debug("valuePart(${s})=${result}");
     result;
+  }
+
+
+  def cleanUpGorm() {
+    log.debug("Clean up GORM");
+    def session = sessionFactory.currentSession
+    session.flush()
+    session.clear()
+    propertyInstanceMap.get().clear()
   }
 
 }
