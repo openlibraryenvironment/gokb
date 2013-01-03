@@ -291,6 +291,7 @@ class IngestService {
 
     // First line is the refine version
     result.refineVersion = bis.readLine()
+    log.debug("Reported refine version is ${result.refineVersion}");
 
     // 2.5
 
@@ -334,9 +335,24 @@ class IngestService {
     if ( bis.readLine() != '/e/' ) {
       log.error("Unexpected row!");
     }
+    else {
+      log.debug("Encountered second /e/ in correct position, in to overlay model and rowCount");
+    }
 
-    result.overlayModel = valuePart(bis.readLine())
-    result.rowCount = Integer.decode(valuePart(bis.readLine()))
+    def next_param = bis.readLine()
+    if ( next_param.startsWith('overlayModel') ) {
+      result.overlayModel = valuePart(bis.readLine())
+      next_param = bis.readLine()
+    }
+
+    if (  next_param.startsWith('rowCount') ) {
+      result.rowCount = Integer.decode(valuePart(next_param))
+    }
+    else {
+      log.error("expected row count, got row ${next_param}");
+      result.rowCount = 0;
+    }
+
     result.rowData = []
 
     for (int i=0; i<result.rowCount; i++ ) {

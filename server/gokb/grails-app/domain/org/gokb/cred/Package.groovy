@@ -3,7 +3,6 @@ package org.gokb.cred
 class Package extends KBComponent {
 
   String identifier
-  String name
   RefdataValue packageType
   RefdataValue packageStatus
   RefdataValue packageListStatus
@@ -18,7 +17,6 @@ class Package extends KBComponent {
 
   static mapping = {
            identifier column:'pkg_identifier'
-                 name column:'pkg_name'
           packageType column:'pkg_type_rv_fk'
         packageStatus column:'pkg_status_rv_fk'
     packageListStatus column:'pkg_list_status_rv_fk'
