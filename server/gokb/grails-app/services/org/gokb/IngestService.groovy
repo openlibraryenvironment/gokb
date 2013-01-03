@@ -6,6 +6,8 @@ import org.apache.commons.compress.compressors.gzip.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
 import grails.converters.JSON
+import java.text.SimpleDateFormat
+
 
 class IngestService {
 
@@ -14,6 +16,13 @@ class IngestService {
   def titleLookupService
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+  def possible_date_formats = [
+    new SimpleDateFormat('dd/MM/yyyy'),
+    new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('dd/MM/yy'),
+    new SimpleDateFormat('yyyy/MM'),
+    new SimpleDateFormat('yyyy')
+  ];
 
   /**
    *  Validate a parsed project. 
@@ -111,9 +120,11 @@ class IngestService {
         def host_platform_name = jsonv(datarow.cells[col_positions['platform.host.name']])
         def host_norm_platform_name = host_platform_name.toLowerCase().trim();
         log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
-        def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
+        // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
+        def platform_info = Platform.findByNormname(host_norm_platform_name) 
         if ( !platform_info ) {
-          platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+          // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+          platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
           if (! platform_info.save(flush:true) ) {
             platform_info.errors.each { e ->
               log.error(e);
@@ -127,6 +138,29 @@ class IngestService {
         def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
         if ( !tipp ) {
           log.debug("Create new tipp");
+          def start_date = parseDate(jsonv(datarow.cells[col_positions['date_first_issue_online']]))
+          def end_date = parseDate(jsonv(datarow.cells[col_positions['date_last_issue_online']]))
+
+          tipp = new TitleInstancePackagePlatform(title:title_info,
+                                                  pkg:pkg,
+                                                  platform:platform_info,
+                                                  startDate:start_date,
+                                                  startVolume: jsonv(datarow.cells[col_positions['num_first_vol_online']]),
+                                                  startIssue:jsonv(datarow.cells[col_positions['num_first_issue_online']]),
+                                                  endDate:end_date,
+                                                  endVolume:jsonv(datarow.cells[col_positions['num_last_vol_online']]),
+                                                  endIssue:jsonv(datarow.cells[col_positions['num_last_issue_online']]),
+                                                  embargo:jsonv(datarow.cells[col_positions['embargo_info']]),
+                                                  coverageDepth:jsonv(datarow.cells[col_positions['coverage_depth']]),
+                                                  coverageNote:jsonv(datarow.cells[col_positions['coverage_notes']]),
+                                                  hostPlatformURL:host_platform_url).save()
+
+
+          // publication_title print_identifier online_identifier date_first_issue_online num_first_vol_online num_first_issue_online date_last_issue_online num_last_vol_online num_last_issue_online title_id embargo_info coverage_depth coverage_notes publisher_name DOI platform_name platform_role platform_title_url platform_name2 platform_role2 platform_title_url2
+
+        }
+        else {
+          log.debug("TIPP already present");
         }
 
         // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
@@ -154,7 +188,7 @@ class IngestService {
     def result = null
     if ( v ) {
       if ( !v.equals(null) ) {
-        result = v.v
+        result = "${v.v}"
       }
     }
     result
@@ -329,6 +363,19 @@ class IngestService {
     session.flush()
     session.clear()
     propertyInstanceMap.get().clear()
+  }
+
+  def parseDate(datestr) {
+    def parsed_date = null;
+    if ( datestr && ( datestr.length() > 0 ) )
+    for(Iterator i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
+      try {
+        parsed_date = i.next().parse(datestr);
+      }
+      catch ( Exception e ) {
+      }
+    }
+    parsed_date
   }
 
 }
