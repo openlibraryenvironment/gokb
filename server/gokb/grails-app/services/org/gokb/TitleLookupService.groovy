@@ -5,24 +5,32 @@ import org.gokb.cred.*;
 class TitleLookupService {
 
     def find(title, issn, eissn) {
+
+      def result = null
+
       log.debug("find(${title},${issn},${eissn})");
       def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null;
       def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null;
 
-      /*
-      def titles = TitleInstance.findAll {
+      def tq = TitleInstance.createCriteria()
+      def titles = tq.listDistinct {
         ids {
-          ( ( identifier == issn ) || ( identifier == eissn ) ) 
+          or {
+            'in'('identifier',[issn_identifier,eissn_identifier])
+            // eq('identifier',issn_identifier)
+            // eq('identifier',eissn_identifier)
+          }
         }
       }
 
       if ( titles ) {
         switch ( titles.size() ) {
           case 0:
-            log.debug("New title.. create");
+            log.error("Should not be here, this case should result in the outer else below");
             break;
           case 1:
             log.debug("Exact match");
+            result = titles.get(0);
             break;
           default:
             log.debug("Duplicate matches.. error");
@@ -31,10 +39,21 @@ class TitleLookupService {
         }
       }
       else {
-        log.error("Title lookupquery returned null. error!");
+        log.error("No result, create a new title")
+        result = new TitleInstance(title:title);
+        if ( ! result.ids )
+          result.ids = []
+        result.save(flush:true);
+
+        if ( issn_identifier )
+          new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
+        if ( eissn_identifier )
+          new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
       }
-      */
+
       // May double check with porter stemmer in the future.. see
       // https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_3/lucene/src/java/org/apache/lucene/analysis/PorterStemmer.java
+
+      result;
     }
 }
