@@ -86,9 +86,15 @@ class IngestService {
 
     log.debug("Using col positions: ${col_positions}");
 
-    // int title_index=0
-    // int issn_index=1
-    // int eissn_index=2
+    def pkg = Package.findByIdentifier("project:${project.id}");
+    if (!pkg) {
+      log.debug("New package with identifier project:${project.id}");
+      pkg = new Package(identifier:"project:${project.id}", name:"project:${project.id}").save(flush:true);
+    }
+    else {
+      log.debug("Got existing package");
+    }
+
     int ctr = 0
     project_data.rowData.each { datarow ->
       log.debug("Row ${ctr}");
@@ -115,14 +121,20 @@ class IngestService {
           }
         }
 
-        // Package
+        // Package is done above this for loop
 
         // TIPP
+        def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
+        if ( !tipp ) {
+          log.debug("Create new tipp");
+        }
 
         // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
         // instances we've just looked up.
-        if ( ctr % 250 == 0 )
+        if ( ctr % 250 == 0 ) {
           cleanUpGorm()
+          pkg = Package.findByIdentifier("project:${project.id}");
+        }
       }
       else {
         log.debug("Row ${ctr} seems to be a null row. Skipping");

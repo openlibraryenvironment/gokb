@@ -84,7 +84,6 @@ class ApiController {
   }
 
 
-  @Secured(["ROLE_USER"])
   def ingest() {
 
     def result = apiReturn (
