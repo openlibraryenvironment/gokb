@@ -12,6 +12,7 @@ class IngestService {
   def grailsApplication
   def titleLookupService
   def sessionFactory
+  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
   /**
    *  Validate a parsed project. 
