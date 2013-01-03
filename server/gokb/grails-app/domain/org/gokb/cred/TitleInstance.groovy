@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+
 class TitleInstance extends KBComponent {
 
   String title
@@ -9,8 +11,8 @@ class TitleInstance extends KBComponent {
   Date dateCreated
   Date lastUpdated
 
-  static mappedBy = [tipps: 'title', ids: 'component', orgs: 'linkedComponent']
-  static hasMany = [tipps: TitleInstancePackagePlatform, ids: IdentifierOccurrence, orgs: OrgRole]
+  static mappedBy = [tipps: 'title']
+  static hasMany = [tipps: TitleInstancePackagePlatform]
 
 
   static mapping = {
@@ -29,15 +31,7 @@ class TitleInstance extends KBComponent {
     title(nullable:true, blank:false,maxSize:1024);
   }
 
-  String getIdentifierValue(idtype) {
-    def result=null
-    ids?.each { id ->
-      if ( id.identifier?.ns?.ns == idtype )
-        result = id.identifier?.value
-    }
-    result
-  }
-
+  @Transient
   Org getPublisher() {
     def result = null;
     orgs.each { o ->

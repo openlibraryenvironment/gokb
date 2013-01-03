@@ -51,7 +51,7 @@ class IngestService {
                                                  jsonv(datarow.cells[eissn_index]));
         // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
         // instances we've just looked up.
-        if ( ctr % 100 == 0 )
+        if ( ctr % 250 == 0 )
           cleanUpGorm()
       }
       else {
