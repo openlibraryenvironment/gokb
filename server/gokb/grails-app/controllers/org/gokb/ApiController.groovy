@@ -3,9 +3,10 @@ package org.gokb
 import static java.util.UUID.randomUUID
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
-
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
+import org.gokb.cred.Org;
+
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
  * 
@@ -135,6 +136,9 @@ class ApiController {
     response.status = 404;
   }
   
+  /**
+   * #FixMe - Provider should come from initial refine request and not be defaulted in here.
+   */
   def projectCheckin() {
     
     def f = request.getFile('projectFile')
@@ -154,6 +158,13 @@ class ApiController {
       }
       
       if (project) {
+
+         // A quick hack to set the project provider, this should come from refine, but for testing purposes, we set this to Wiley
+         if ( !project.provider ) {
+           log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
+           project.provider = Org.findByName('Wiley') ?: new Org(name:'Wiley').save();
+         }
+
         
         // Generate a filename...
         def fileName = "project-${randomUUID()}.tar.gz"

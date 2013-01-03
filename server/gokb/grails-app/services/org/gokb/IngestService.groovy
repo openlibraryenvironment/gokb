@@ -1,6 +1,7 @@
 package org.gokb
 
 import org.gokb.refine.*;
+import org.gokb.cred.*;
 import org.apache.commons.compress.compressors.gzip.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
@@ -23,9 +24,45 @@ class IngestService {
     // def project_data = extractRefineproject(p.file);
 
     def result = [:]
-    result.status = project_data ? true : false
+    result.status = true
     result.messages = []
-    result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
+
+    def print_identifier_col = null;
+    def online_identifier_col = null;
+    def publication_title_col = null;
+    def platform_host_name_col = null;
+    def platform_host_url_col = null;
+
+    int i=0;
+    def col_positions = [:]
+    project_data.columnDefinitions.each { cd ->
+      log.debug("Assinging col ${cd.name} to position ${i}");
+      col_positions[cd.name] = i++;
+    }
+
+    if ( col_positions['print_identifier'] == null )
+      result.messages.add([text:'Import does not specify a print_identifier column']);
+
+    if ( col_positions['online_identifier'] == null )
+      result.messages.add([text:'Import does not specify an online_identifier column']);
+
+    if ( col_positions['publication_title'] == null )
+      result.messages.add([text:'Import does not specify a publication_title column']);
+
+    if ( col_positions['platform.host.name'] == null )
+      result.messages.add([text:'Import does not specify a platform.host.name column']);
+
+    if ( col_positions['platform.host.url'] == null )
+      result.messages.add([text:'Import does not specify a platform.host.url column']);
+
+    if ( result.messages.size() > 0 ) {
+      log.error("validation has messages: a failure: ${result.messages}");
+      result.status = false;
+    }
+    else {
+      result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
+    }
+
     result
   }
 
@@ -40,15 +77,48 @@ class IngestService {
     def result = [:]
     result.status = project_data ? true : false
 
-    int title_index=0
-    int issn_index=1
-    int eissn_index=2
+
+    int i=0;
+    def col_positions = [:]
+    project_data.columnDefinitions.each { cd ->
+      col_positions[cd.name] = i++;
+    }
+
+    log.debug("Using col positions: ${col_positions}");
+
+    // int title_index=0
+    // int issn_index=1
+    // int eissn_index=2
     int ctr = 0
     project_data.rowData.each { datarow ->
-      if ( datarow.cells[title_index] ) {
-        def title_info = titleLookupService.find(jsonv(datarow.cells[title_index]),
-                                                 jsonv(datarow.cells[issn_index]),
-                                                 jsonv(datarow.cells[eissn_index]));
+      log.debug("Row ${ctr}");
+      if ( datarow.cells[col_positions['publication_title']] ) {
+
+        // Title Instance
+        log.debug("Looking up title...");
+        def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions['publication_title']]),   // jsonv(datarow.cells[title_index]),
+                                                 jsonv(datarow.cells[col_positions['print_identifier']]),    // jsonv(datarow.cells[issn_index]) 
+                                                 jsonv(datarow.cells[col_positions['online_identifier']]));  // jsonv(datarow.cells[eissn_index]));
+
+        // Platform
+        def host_platform_url = jsonv(datarow.cells[col_positions['platform.host.url']])
+        def host_platform_name = jsonv(datarow.cells[col_positions['platform.host.name']])
+        def host_norm_platform_name = host_platform_name.toLowerCase().trim();
+        log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
+        def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
+        if ( !platform_info ) {
+          platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+          if (! platform_info.save(flush:true) ) {
+            platform_info.errors.each { e ->
+              log.error(e);
+            }
+          }
+        }
+
+        // Package
+
+        // TIPP
+
         // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
         // instances we've just looked up.
         if ( ctr % 250 == 0 )
@@ -58,6 +128,11 @@ class IngestService {
         log.debug("Row ${ctr} seems to be a null row. Skipping");
       }
       ctr++
+    }
+
+    // finally, rules extraction
+    project_data.pastEntryList.each { r ->
+      log.debug("Consider rule: ${r}");
     }
 
     result
@@ -198,9 +273,10 @@ class IngestService {
     result.history = valuePart(bis.readLine())
 
     result.pastEntryCount = Integer.decode(valuePart(bis.readLine()))
+    result.pastEntryList = []
     for (int i=0; i<result.pastEntryCount; i++ ) {
       // Skipping past entry
-      def row = bis.readLine()
+      result.pastEntryList.add(JSON.parse(bis.readLine()));
     }
 
     result.futureEntryCount = Integer.decode(valuePart(bis.readLine()))
@@ -219,7 +295,7 @@ class IngestService {
 
     for (int i=0; i<result.rowCount; i++ ) {
       def row = bis.readLine()
-      log.debug("Row ${i}");
+      // log.debug("Row ${i}");
       result.rowData.add(JSON.parse(row))
       // Skipping row
     }
