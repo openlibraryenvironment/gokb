@@ -116,6 +116,12 @@ class SearchController {
       baseclass:'org.gokb.cred.Org',
       qbeConfig:[
         qbeForm:[
+          [
+            prompt:'Name or Title',
+            property:'name',
+            qparam:'qp_name',
+            placeholder:'Name or title of item'
+          ],
         ],
         qbeResults:[]
       ]
@@ -124,14 +130,26 @@ class SearchController {
       baseclass:'org.gokb.cred.Platform',
       qbeConfig:[
         qbeForm:[
+          [
+            prompt:'Name or Title',
+            property:'name',
+            qparam:'qp_name',
+            placeholder:'Name or title of item'
+          ],
         ],
         qbeResults:[]
       ]
     ],
     'titles':[
-      baseclass:'org.gokb.cred.Title',
+      baseclass:'org.gokb.cred.TitleInstance',
       qbeConfig:[
         qbeForm:[
+          [
+            prompt:'Name or Title',
+            property:'name',
+            qparam:'qp_name',
+            placeholder:'Name or title of item'
+          ],
         ],
         qbeResults:[]
       ]
@@ -141,9 +159,10 @@ class SearchController {
 
   // Types: staticgsp: under views/templates, dyngsp: in database, dynamic:full dynamic generation, other...
   def globalDisplayTemplates = [
-    'org.gokb.cred.Package': [
-      type:'staticgsp',
-      rendername:'package'
-    ]
+    'org.gokb.cred.Package': [ type:'staticgsp', rendername:'package' ],
+    'org.gokb.cred.Org': [ type:'staticgsp', rendername:'org' ],
+    'org.gokb.cred.Platform': [ type:'staticgsp', rendername:'platform' ],
+    'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
+    'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ]
   ]
 }
