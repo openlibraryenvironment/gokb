@@ -4,7 +4,7 @@ import javax.persistence.Transient
 
 class TitleInstance extends KBComponent {
 
-  String title
+  // title is now NAME in the base component class... String title
   String impId
   RefdataValue status
   RefdataValue type
@@ -17,7 +17,6 @@ class TitleInstance extends KBComponent {
 
   static mapping = {
          id column:'ti_id'
-      title column:'ti_title'
     version column:'ti_version'
       impId column:'ti_imp_id', index:'ti_imp_id_idx'
      status column:'ti_status_rv_fk'
@@ -28,7 +27,6 @@ class TitleInstance extends KBComponent {
   static constraints = {
     status(nullable:true, blank:false);
     type(nullable:true, blank:false);
-    title(nullable:true, blank:false,maxSize:1024);
   }
 
   @Transient

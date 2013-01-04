@@ -25,9 +25,9 @@ class KBComponent {
 
   static constraints = {
     impId(nullable:true, blank:false)
-    name(nullable:true, blank:false)
+    name(nullable:true, blank:false, maxSize:1024)
     shortcode(nullable:true, blank:false)
-    normname(nullable:true, blank:false)
+    normname(nullable:true, blank:false, maxSize:1024)
   }
 
   @Transient
@@ -36,18 +36,6 @@ class KBComponent {
     ids?.each { id ->
       if ( id.identifier?.ns?.ns == idtype )
         result = id.identifier?.value
-    }
-    result
-  }
-
-  // Included for backward compat.. deprecated
-  @Transient
-  def getIdentifierByType(idtype) {
-    def result = null
-    ids.each { id ->
-      if ( id.identifier.ns.ns == idtype ) {
-        result = id.identifier;
-      }
     }
     result
   }

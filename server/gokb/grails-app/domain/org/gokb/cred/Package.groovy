@@ -21,7 +21,7 @@ class Package extends KBComponent {
         packageStatus column:'pkg_status_rv_fk'
     packageListStatus column:'pkg_list_status_rv_fk'
       nominalPlatform column:'pkg_nominal_platform_fk'
-                tipps sort:'title.title', order: 'asc'
+                tipps sort:'title.name', order: 'asc'
   }
 
   static constraints = {

@@ -153,7 +153,13 @@ class IngestService {
                                                   embargo:jsonv(datarow.cells[col_positions['embargo_info']]),
                                                   coverageDepth:jsonv(datarow.cells[col_positions['coverage_depth']]),
                                                   coverageNote:jsonv(datarow.cells[col_positions['coverage_notes']]),
-                                                  hostPlatformURL:host_platform_url).save()
+                                                  hostPlatformURL:host_platform_url)
+
+          if ( !tipp.save() ) {
+            tipp.errors.each { e ->
+              log.error("problem ${e}");
+            }
+          }
 
 
           // publication_title print_identifier online_identifier date_first_issue_online num_first_vol_online num_first_issue_online date_last_issue_online num_last_vol_online num_last_issue_online title_id embargo_info coverage_depth coverage_notes publisher_name DOI platform_name platform_role platform_title_url platform_name2 platform_role2 platform_title_url2

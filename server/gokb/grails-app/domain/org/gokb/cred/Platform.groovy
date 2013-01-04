@@ -19,7 +19,7 @@ class Platform extends KBComponent {
         primaryUrl column:'plat_primary_url'
               type column:'plat_type_rv_fk'
             status column:'plat_status_rv_fk'
-             tipps sort: 'title.title', order: 'asc'
+             tipps sort: 'title.name', order: 'asc'
   }
 
   static constraints = {

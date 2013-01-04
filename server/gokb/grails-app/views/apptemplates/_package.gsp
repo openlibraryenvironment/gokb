@@ -17,14 +17,27 @@
 <table class="table table-striped">
   <thead>
     <tr>
-      <th>Info</th>
-      <th>More info</th>
+      <th>Title</th>
+      <th>Start Date</th>
+      <th>Start Volume</th>
+      <th>Start Issue</th>
+      <th>End Date</th>
+      <th>End Volume</th>
+      <th>End Issue</th>
+      <th>Embargo</th>
     </tr>
   </thead>
   <tbody>
     <g:each in="${d.tipps}" var="tipp">
       <tr>
-        <td>${tipp}</td>
+        <td>${tipp.title.name}</td>
+        <td><g:formatDate format="dd MMMM yyyy" date="${tipp.startDate}"/></td>
+        <td>${tipp.startVolume}</td>
+        <td>${tipp.startIssue}</td>
+        <td><g:formatDate format="dd MMMM yyyy" date="${tipp.endDate}"/></td>
+        <td>${tipp.endVolume}</td>
+        <td>${tipp.endIssue}</td>
+        <td>${tipp.embargo}</td>
       </tr>
     </g:each>
   </tbody>

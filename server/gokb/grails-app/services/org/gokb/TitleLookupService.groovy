@@ -40,7 +40,7 @@ class TitleLookupService {
       }
       else {
         log.error("No result, create a new title")
-        result = new TitleInstance(title:title);
+        result = new TitleInstance(name:title);
         if ( ! result.ids )
           result.ids = []
         result.save(flush:true);
