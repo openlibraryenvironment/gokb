@@ -7,9 +7,13 @@
   </head>
   <body>
 
-    <div class="container">
-      <p>GOKb home page</p>
-    </div>
-
+   <div class="container-fluid">
+     <div class="row-fluid">
+       <div id="sidebar" class="span12">
+         Home page
+       </div>
+     </div>
+   </div>
+  
   </body>
 </html>
