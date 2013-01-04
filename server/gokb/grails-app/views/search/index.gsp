@@ -39,9 +39,8 @@
           <div class="well">
             <g:if test="${displayobj != null}">
               <g:if test="${displaytemplate != null}">
-                Got display template: ${displaytemplate}
                 <g:if test="${displaytemplate.type=='staticgsp'}">
-                  <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${displayobj}"/>
+                  <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj]}"/>
                 </g:if>
               </g:if>
               <g:else>

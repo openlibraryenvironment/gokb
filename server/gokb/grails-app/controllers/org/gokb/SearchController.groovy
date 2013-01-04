@@ -42,12 +42,14 @@ class SearchController {
 
     // reuse from sip : ./sip/grails-app/controllers/com/k_int/sim/SearchController.groovy
     // def recset = c.list(max: 5, offset: 10) {
+    log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
     result.recset = c.list(max: 20) {
       and {
-        qbetemplate.qbeForm.each { ap ->
+        qbetemplate.qbeConfig.qbeForm.each { ap ->
+          log.debug("testing ${ap}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
             // if ( ap.proptype=='string' ) {
-              like(ap.property,params[ap.qparam])
+              ilike(ap.property,params[ap.qparam])
             // }
             // else if ( ap.proptype=='long' ) {
             //   eq(ap.propname,new Long(Long.parseLong(params[ap.propname])))
