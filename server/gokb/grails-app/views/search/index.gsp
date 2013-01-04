@@ -24,7 +24,7 @@
         <div id="mainarea" class="span5">
           <div class="well">
             <g:if test="${qbetemplate==null}">
-              Please select a search template from the left nav bar
+              Please select a template from the navigation menu
             </g:if>
             <g:else>
               <h1>${qbetemplate.title?:'Search'}</h1>
@@ -37,11 +37,18 @@
         </div>
         <div id="mainarea" class="span5">
           <div class="well">
-            <g:if test="${activerecord==null}">
-             Selected records details will appear here
-           </g:if>
-           <g:else>
-           </g:else>
+            <g:if test="${displayobj != null}">
+              <g:if test="${displaytemplate != null}">
+                Got display template: ${displaytemplate}
+                <g:if test="${displaytemplate.type=='staticgsp'}">
+                  <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${displayobj}"/>
+                </g:if>
+              </g:if>
+              <g:else>
+                No template currenly available for instances of ${displayobjclassname}
+                ${displayobj as grails.converters.JSON}
+              </g:else>
+            </g:if>
           </div>
         </div>
       </div>

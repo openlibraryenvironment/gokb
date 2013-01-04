@@ -2,7 +2,10 @@ package org.gokb
 
 class SearchController {
 
+  def genericOIDService
+
   def index() { 
+    log.debug("index...");
     def result = [:]
     if ( params.qbe ) {
       if ( params.qbe.startsWith('g:') ) {
@@ -15,6 +18,15 @@ class SearchController {
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate ) {
         result.hits = doQuery(result.qbetemplate, params, result)
+      }
+
+      if ( params.displayoid ) {
+        log.debug("Attempt to retrieve ${params.displayoid} and find a global template for it");
+        result.displayobj = genericOIDService.resolveOID(params.displayoid)
+        if ( result.displayobj ) {
+          result.displayobjclassname = result.displayobj.class.name
+          result.displaytemplate = globalDisplayTemplates[result.displayobjclassname]
+        }
       }
     }
     result
@@ -81,6 +93,7 @@ class SearchController {
     ],
     'packages':[      
       baseclass:'org.gokb.cred.Package',
+      title:'Package Search',
       qbeConfig:[
         qbeForm:[
          [
@@ -120,6 +133,15 @@ class SearchController {
         ],
         qbeResults:[]
       ]
+    ]
+  ]
+
+
+  // Types: staticgsp: under views/templates, dyngsp: in database, dynamic:full dynamic generation, other...
+  def globalDisplayTemplates = [
+    'org.gokb.cred.Package': [
+      type:'staticgsp',
+      rendername:'package'
     ]
   ]
 }
