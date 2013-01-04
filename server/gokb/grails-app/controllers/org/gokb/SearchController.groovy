@@ -114,6 +114,7 @@ class SearchController {
     ],
     'orgs':[
       baseclass:'org.gokb.cred.Org',
+      title:'Organisation Search',
       qbeConfig:[
         qbeForm:[
           [
@@ -123,11 +124,16 @@ class SearchController {
             placeholder:'Name or title of item'
           ],
         ],
-        qbeResults:[]
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
       ]
     ],
     'platforms':[
       baseclass:'org.gokb.cred.Platform',
+      title:'Platform Search',
       qbeConfig:[
         qbeForm:[
           [
@@ -137,11 +143,16 @@ class SearchController {
             placeholder:'Name or title of item'
           ],
         ],
-        qbeResults:[]
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
       ]
     ],
     'titles':[
       baseclass:'org.gokb.cred.TitleInstance',
+      title:'Title Search',
       qbeConfig:[
         qbeForm:[
           [
@@ -151,7 +162,11 @@ class SearchController {
             placeholder:'Name or title of item'
           ],
         ],
-        qbeResults:[]
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
       ]
     ]
   ]
