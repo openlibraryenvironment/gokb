@@ -30,7 +30,7 @@
               <h1>${qbetemplate.title?:'Search'}</h1>
               <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}"/>
               <g:if test="${recset != null}">
-                <g:render template="qberesult" contextPath="." model="${[formdefn:qbetemplate.qbeConfig, rows:recset]}"/>
+                <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset]}"/>
               </g:if>
             </g:else>
           </div>

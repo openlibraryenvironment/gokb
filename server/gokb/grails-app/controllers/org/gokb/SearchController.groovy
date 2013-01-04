@@ -72,15 +72,29 @@ class SearchController {
             placeholder:'ID of item'
           ]
         ],
-        qbeResults:[]
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
       ]
     ],
     'packages':[      
       baseclass:'org.gokb.cred.Package',
       qbeConfig:[
         qbeForm:[
+         [
+            prompt:'Name of Package',
+            property:'name',
+            qparam:'qp_name',
+            placeholder:'Package Name'
+          ]
         ],
-        qbeResults:[]
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
       ]
     ],
     'orgs':[
