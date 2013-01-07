@@ -218,4 +218,28 @@ class ApiController {
     // Send 404 if not found.
     response.status = 404;
   }
+
+
+
+  // II: Just mocked this up for now.
+  def refdata() {
+    def result = [:];
+
+    // should take a type parameter and do the right thing. Initially only do one type
+    switch ( params.type ) {
+      case 'cp' :
+        log.debug("Request for content providers...");
+        result.datalist=[
+          ['10':'Wiley'],
+          ['11':'OtherProvider']
+        ]
+        break;
+      default:
+        break;
+    }
+
+    apiReturn(result)
+  }
+
+
 }
