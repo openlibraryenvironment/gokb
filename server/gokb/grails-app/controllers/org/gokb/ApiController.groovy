@@ -219,20 +219,25 @@ class ApiController {
     response.status = 404;
   }
 
-
-
-  // II: Just mocked this up for now.
   def refdata() {
     def result = [:];
 
     // should take a type parameter and do the right thing. Initially only do one type
     switch ( params.type ) {
       case 'cp' :
-        log.debug("Request for content providers...");
-        result.datalist=[
-          ['10':'Wiley'],
-          ['11':'OtherProvider']
-        ]
+        def oq = Org.createCriteria()
+        def orgs = oq.listDistinct {
+          tags {
+            owner {
+              eq('desc','Org Role');
+            }
+            eq('value','Content Provider');
+          }
+        }
+        result.datalist=[:]
+        orgs.each { o ->
+          result.datalist["${o.id}"] = o.name
+        }
         break;
       default:
         break;

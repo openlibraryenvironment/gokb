@@ -9,9 +9,10 @@ class KBComponent {
   String name
   String normname
   String shortcode
+  Set tags = []
 
   static mappedBy = [ids: 'component',  orgs: 'linkedComponent']
-  static hasMany = [ids: IdentifierOccurrence, orgs: OrgRole]
+  static hasMany = [ids: IdentifierOccurrence, orgs: OrgRole, tags:RefdataValue]
 
   static mapping = {
            id column:'kbc_id'
@@ -20,7 +21,7 @@ class KBComponent {
          name column:'kbc_name'
      normname column:'kbc_normname'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
-
+         tags joinTable: [name: 'kb_component_refdata_value', key: 'kbcrdv_kbc_id', column: 'kbcrdv_rdv_id']
   }
 
   static constraints = {

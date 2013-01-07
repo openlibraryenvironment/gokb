@@ -38,6 +38,21 @@ class BootStrap {
       f.mkdirs()
     }
 
+
+    assertPublisher('Wiley');
+    assertPublisher('Random House');
+    assertPublisher('Test Publisher 3');
+  }
+
+  def assertPublisher(name) {
+    def p = Org.findByName(name)
+    if ( !p ) {
+      def content_provider_role = RefdataCategory.lookupOrCreate('Org Role','Content Provider');
+      p = new Org(name:name)
+      p.tags.add(content_provider_role);
+      p.save(flush:true);
+    }
+
   }
 
 
