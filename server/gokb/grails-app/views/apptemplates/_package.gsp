@@ -10,6 +10,14 @@
   <dd>${d.name}</dd>
   <dt>Shortcode</dt>
   <dd>${d.shortcode}</dd>
+  <dt>Tags</dt>
+  <dd>
+    <ul>
+      <g:each in="${d.tags}" var="t">
+        <li>${t.value}</li>
+      </g:each>
+    </ul>
+  </dd>
 </dl>
 
 <h2>Titles in this package</h2>

@@ -25,10 +25,9 @@
           <div class="nav-collapse">
             <ul class="nav">
               <li class="active"><g:link controller="home" action="index">Home</g:link></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#contact">Contact</a></li>
+              <li class="active"><g:link controller="search" action="index">Search</g:link></li>
             </ul>
-            <p class="navbar-text pull-right">Logged in as <a href="#">username</a></p>
+            <p class="navbar-text pull-right">Not logged in</p>
           </div>
         </div>
       </div>
