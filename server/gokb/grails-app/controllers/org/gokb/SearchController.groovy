@@ -168,6 +168,44 @@ class SearchController {
           [heading:'Name/Title', property:'name']
         ]
       ]
+    ],
+    'rules':[
+      baseclass:'org.gokb.refine.Rule',
+      title:'Rule Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Description',
+            property:'description',
+            qparam:'qp_description',
+            placeholder:'Rule Description'
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Fingerprint', property:'fingerprint'],
+          [heading:'Description', property:'description']
+        ]
+      ]
+    ],
+    'projects':[
+      baseclass:'org.gokb.refine.RefineProject',
+      title:'Import Project Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name',
+            property:'name',
+            qparam:'qp_name',
+            placeholder:'Project Name'
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name', property:'name'],
+          [heading:'Provider', property:'provider.name']
+        ]
+      ]
     ]
   ]
 
@@ -178,6 +216,8 @@ class SearchController {
     'org.gokb.cred.Org': [ type:'staticgsp', rendername:'org' ],
     'org.gokb.cred.Platform': [ type:'staticgsp', rendername:'platform' ],
     'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
-    'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ]
+    'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
+    'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
+    'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ]
   ]
 }

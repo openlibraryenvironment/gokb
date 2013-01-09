@@ -18,6 +18,8 @@
               <li><g:link controller="search" action="index" params="${[qbe:'g:orgs']}">Orgs</g:link></li>
               <li><g:link controller="search" action="index" params="${[qbe:'g:platforms']}">Platforms</g:link></li>
               <li><g:link controller="search" action="index" params="${[qbe:'g:titles']}">Titles</g:link></li>
+              <li><g:link controller="search" action="index" params="${[qbe:'g:rules']}">Rules</g:link></li>
+              <li><g:link controller="search" action="index" params="${[qbe:'g:projects']}">Projects</g:link></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
