@@ -1,3 +1,22 @@
+
+SET foreign_key_checks = 0;
+truncate table combo;
+truncate table document;
+truncate table identifier_occurrence;
+truncate table kb_component_refdata_value;
+truncate table org_role;
+truncate table refine_operation;
+truncate table refine_project;
+truncate table registration_code;
+truncate table user_role;
+truncate table user;
+truncate table role;
+truncate table identifier;
+truncate table identifier_namespace;
+truncate table kbcomponent;
+truncate table refdata_value;
+truncate table refdata_category;
+
 drop table combo;
 drop table document;
 drop table identifier_occurrence;
@@ -14,3 +33,4 @@ drop table identifier_namespace;
 drop table kbcomponent;
 drop table refdata_value;
 drop table refdata_category;
+SET foreign_key_checks = 1;

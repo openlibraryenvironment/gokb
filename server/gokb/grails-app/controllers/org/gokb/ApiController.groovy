@@ -135,9 +135,6 @@ class ApiController {
     response.status = 404;
   }
   
-  /**
-   * #FixMe - Provider should come from initial refine request and not be defaulted in here.
-   */
   def projectCheckin() {
     
     def f = request.getFile('projectFile')
@@ -150,21 +147,20 @@ class ApiController {
       if (params.projectID) {
         project = RefineProject.load(params.projectID)
       } else {
-      
         // Creating new project.
         project = new RefineProject()
         project.setHash(params.hash ?: null)
-		
-		// Set the org too.
-		log.debug("Setting provider from submission.");
-		Org org = Org.get(params.org)
-		if (org) {
-			project.provider = org
-		}
+    
+        // Set the org too.
+        log.debug("Setting provider from submission.");
+        Org org = Org.get(params.org)
+        if (org) {
+          project.provider = org
+        }
       }
       
       if (project) {
-		  
+      
          // A quick hack to set the project provider, this should come from refine, but for testing purposes, we set this to Wiley
          if ( !project.provider ) {
            log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
@@ -197,11 +193,12 @@ class ApiController {
 
         log.debug("Validate");
         def validationResult = ingestService.validate(parsed_data)
+        project.lastValidationResult = validationResult.messages
+        project.save(flush: true, failOnError: true)
 
         if ( validationResult.status == true ) {
-          log.debug("ingesting refine project");
           ingestService.extractRules(parsed_data, project)
-          ingestService.ingest(parsed_data, project)
+          doIngest(parsed_data, project);
         }
         else {
           log.debug("validation failed, not ingesting");
@@ -224,9 +221,11 @@ class ApiController {
         // Avoid trying to process the file on first checkin... only allow processing request from checked in projects.
         def parsed_data = ingestService.extractRefineproject(project.file)
         def validationResult = ingestService.validate(parsed_data)
+        project.lastValidationResult = validationResult.messages
+        project.save(flush: true, failOnError: true)
         if ( validationResult.status == true ) {
           ingestService.extractRules(parsed_data, project)
-          ingestService.ingest(parsed_data)
+          doIngest(parsed_data, project);
         }
 
         apiReturn(project)
@@ -236,6 +235,13 @@ class ApiController {
     
     // Send 404 if not found.
     response.status = 404;
+  }
+
+  def doIngest(parsed_data, project) {
+    log.debug("ingesting refine project.. kicking off background task");
+    runAsync {
+      ingestService.ingest(parsed_data, project)
+    }
   }
 
   def refdata() {
