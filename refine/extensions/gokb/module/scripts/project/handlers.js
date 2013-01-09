@@ -162,17 +162,22 @@ GOKb.handlers.checkInWithProps = function() {
 	// Change the submit button text to be check-in
 	dialog.bindings.submit.attr("value", "Save and Check-in");
 	
-	// List of orgs :To be retrieved from GOKb.
-//	var orgs = {org1 : "oranisation1",org2 : "oranisation2",org3 : "oranisation3"};
-//	
-//	// Add the organisations.
-//	var orgList = $('#organisation', dialog.bindings.form);
-//	$.each(orgs, function (value, display) {
-//		orgList.append(
-//		  $('<option />', {"value" : value})
-//		  .text(display)
-//		);
-//	});
+	// Get list of Orgs
+	GOKb.doCommand ("refdata", {type: "cp"}, null, {
+		onDone : function (data) {
+			
+			if ("result" in data && "datalist" in data.result) {
+			
+				var orgList = $('#org', dialog.bindings.form);
+				$.each(data.result.datalist, function (value, display) {
+					orgList.append(
+					  $('<option />', {"value" : value})
+					  .text(display)
+					);
+				});
+			}
+		}
+	});
 	
 	// Rename close button to cancel.
 	dialog.bindings.closeButton.text("Cancel");

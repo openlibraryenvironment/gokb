@@ -154,10 +154,17 @@ class ApiController {
         // Creating new project.
         project = new RefineProject()
         project.setHash(params.hash ?: null)
+		
+		// Set the org too.
+		log.debug("Setting provider from submission.");
+		Org org = Org.get(params.org)
+		if (org) {
+			project.provider = org
+		}
       }
       
       if (project) {
-
+		  
          // A quick hack to set the project provider, this should come from refine, but for testing purposes, we set this to Wiley
          if ( !project.provider ) {
            log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
@@ -222,7 +229,7 @@ class ApiController {
   def refdata() {
     def result = [:];
 
-    // should take a type parameter and do the right thing. Initially only do one type
+    // Should take a type parameter and do the right thing. Initially only do one type
     switch ( params.type ) {
       case 'cp' :
         def oq = Org.createCriteria()
