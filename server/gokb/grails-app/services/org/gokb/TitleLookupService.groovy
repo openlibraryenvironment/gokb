@@ -39,11 +39,20 @@ class TitleLookupService {
         }
       }
       else {
-        log.error("No result, create a new title")
+        log.debug("No result, create a new title")
         result = new TitleInstance(name:title);
+
         if ( ! result.ids )
           result.ids = []
-        result.save(flush:true);
+
+        if ( result.save(flush:true) ) {
+          log.debug("New title: ${result.id}");
+        }
+        else {
+          result.errors.each { e ->
+            log.error("Problem saving title: ${e}");
+          }
+        }
 
         if ( issn_identifier )
           new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);

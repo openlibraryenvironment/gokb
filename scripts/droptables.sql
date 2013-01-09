@@ -1,0 +1,17 @@
+drop table combo;
+drop table document;
+drop table identifier_occurrence;
+drop table kb_component_refdata_value;
+drop table org_role;
+drop table refine_operation;
+drop table refine_operation_operation;
+drop table refine_project;
+drop table registration_code;
+drop table user_role;
+drop table user;
+drop table role;
+drop table identifier;
+drop table identifier_namespace;
+drop table kbcomponent;
+drop table refdata_category;
+drop table refdata_value;

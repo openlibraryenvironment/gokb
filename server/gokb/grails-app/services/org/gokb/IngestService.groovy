@@ -157,7 +157,7 @@ class IngestService {
 
           if ( !tipp.save() ) {
             tipp.errors.each { e ->
-              log.error("problem ${e}");
+              log.error("problem saving tipp ${e}");
             }
           }
 
