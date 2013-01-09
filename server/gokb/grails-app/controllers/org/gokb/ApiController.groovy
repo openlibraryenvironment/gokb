@@ -192,10 +192,19 @@ class ApiController {
         // Save and flush.
         project.save(flush: true, failOnError: true)
 
+        log.debug("extract refine project");
         def parsed_data = ingestService.extractRefineproject(project.file)
+
+        log.debug("Validate");
         def validationResult = ingestService.validate(parsed_data)
+
         if ( validationResult.status == true ) {
+          log.debug("ingesting refine project");
+          ingestService.extractRules(parsed_data, project)
           ingestService.ingest(parsed_data, project)
+        }
+        else {
+          log.debug("validation failed, not ingesting");
         }
         
         apiReturn(project)
@@ -212,9 +221,12 @@ class ApiController {
         project.setLocalProjectID(0)
         project.save(flush: true, failOnError: true)
 
-        def validationResult = ingestService.validate(project)
+        // Avoid trying to process the file on first checkin... only allow processing request from checked in projects.
+        def parsed_data = ingestService.extractRefineproject(project.file)
+        def validationResult = ingestService.validate(parsed_data)
         if ( validationResult.status == true ) {
-          ingestService.ingest(project)
+          ingestService.extractRules(parsed_data, project)
+          ingestService.ingest(parsed_data)
         }
 
         apiReturn(project)

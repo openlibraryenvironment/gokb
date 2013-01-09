@@ -2,7 +2,7 @@ package org.gokb.refine;
 
 import org.gokb.cred.*;
 
-public class Rule extends KBComponent {
+public class Rule {
 
   String scope   // File, Provider, Global
      Org provider // For provider scope rules
