@@ -89,107 +89,117 @@ class IngestService {
    *  @param project_data Parsed map of project data
    */
   def ingest(project_data, project) {
-    log.debug("Ingest");
-
-    def result = [:]
-    result.status = project_data ? true : false
-
-
-    int i=0;
-    def col_positions = [:]
-    project_data.columnDefinitions.each { cd ->
-      col_positions[cd.name] = i++;
-    }
-
-    log.debug("Using col positions: ${col_positions}");
-
-    def pkg = Package.findByIdentifier("project:${project.id}");
-    if (!pkg) {
-      log.debug("New package with identifier project:${project.id}");
-      pkg = new Package(identifier:"project:${project.id}", name:"project:${project.id}").save(flush:true);
-    }
-    else {
-      log.debug("Got existing package");
-    }
-
-    int ctr = 0
-    project_data.rowData.each { datarow ->
-      log.debug("Row ${ctr}");
-      if ( datarow.cells[col_positions['publication_title']] ) {
-
-        // Title Instance
-        log.debug("Looking up title...");
-        def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions['publication_title']]),   // jsonv(datarow.cells[title_index]),
-                                                 jsonv(datarow.cells[col_positions['print_identifier']]),    // jsonv(datarow.cells[issn_index]) 
-                                                 jsonv(datarow.cells[col_positions['online_identifier']]));  // jsonv(datarow.cells[eissn_index]));
-
-        // Platform
-        def host_platform_url = jsonv(datarow.cells[col_positions['platform.host.url']])
-        def host_platform_name = jsonv(datarow.cells[col_positions['platform.host.name']])
-        def host_norm_platform_name = host_platform_name.toLowerCase().trim();
-        log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
-        // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
-        def platform_info = Platform.findByNormname(host_norm_platform_name) 
-        if ( !platform_info ) {
-          // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
-          platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
-          if (! platform_info.save(flush:true) ) {
-            platform_info.errors.each { e ->
-              log.error(e);
-            }
-          }
-        }
-
-        // Package is done above this for loop
-
-        // TIPP
-        def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
-        if ( !tipp ) {
-          log.debug("Create new tipp");
-          def start_date = parseDate(jsonv(datarow.cells[col_positions['date_first_issue_online']]))
-          def end_date = parseDate(jsonv(datarow.cells[col_positions['date_last_issue_online']]))
-
-          tipp = new TitleInstancePackagePlatform(title:title_info,
-                                                  pkg:pkg,
-                                                  platform:platform_info,
-                                                  startDate:start_date,
-                                                  startVolume: jsonv(datarow.cells[col_positions['num_first_vol_online']]),
-                                                  startIssue:jsonv(datarow.cells[col_positions['num_first_issue_online']]),
-                                                  endDate:end_date,
-                                                  endVolume:jsonv(datarow.cells[col_positions['num_last_vol_online']]),
-                                                  endIssue:jsonv(datarow.cells[col_positions['num_last_issue_online']]),
-                                                  embargo:jsonv(datarow.cells[col_positions['embargo_info']]),
-                                                  coverageDepth:jsonv(datarow.cells[col_positions['coverage_depth']]),
-                                                  coverageNote:jsonv(datarow.cells[col_positions['coverage_notes']]),
-                                                  hostPlatformURL:host_platform_url)
-
-          if ( !tipp.save() ) {
-            tipp.errors.each { e ->
-              log.error("problem saving tipp ${e}");
-            }
-          }
-
-
-          // publication_title print_identifier online_identifier date_first_issue_online num_first_vol_online num_first_issue_online date_last_issue_online num_last_vol_online num_last_issue_online title_id embargo_info coverage_depth coverage_notes publisher_name DOI platform_name platform_role platform_title_url platform_name2 platform_role2 platform_title_url2
-
-        }
-        else {
-          log.debug("TIPP already present");
-        }
-
-        // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
-        // instances we've just looked up.
-        if ( ctr % 250 == 0 ) {
-          cleanUpGorm()
-          pkg = Package.findByIdentifier("project:${project.id}");
-        }
+    try {
+      log.debug("Ingest");
+  
+      def result = [:]
+      result.status = project_data ? true : false
+  
+      project.progress = 0;
+      project.save(flush:true)
+  
+      int i=0;
+      def col_positions = [:]
+      project_data.columnDefinitions.each { cd ->
+        col_positions[cd.name] = i++;
+      }
+  
+      log.debug("Using col positions: ${col_positions}");
+  
+      def pkg = Package.findByIdentifier("project:${project.id}");
+      if (!pkg) {
+        log.debug("New package with identifier project:${project.id}");
+        pkg = new Package(identifier:"project:${project.id}", name:"project:${project.id}").save(flush:true);
       }
       else {
-        log.debug("Row ${ctr} seems to be a null row. Skipping");
+        log.debug("Got existing package");
       }
-      ctr++
+  
+      int ctr = 0
+      project_data.rowData.each { datarow ->
+        log.debug("Row ${ctr}");
+        if ( datarow.cells[col_positions['publication_title']] ) {
+  
+          // Title Instance
+          log.debug("Looking up title...");
+          def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions['publication_title']]),   // jsonv(datarow.cells[title_index]),
+                                                   jsonv(datarow.cells[col_positions['print_identifier']]),    // jsonv(datarow.cells[issn_index]) 
+                                                   jsonv(datarow.cells[col_positions['online_identifier']]));  // jsonv(datarow.cells[eissn_index]));
+  
+          // Platform
+          def host_platform_url = jsonv(datarow.cells[col_positions['platform.host.url']])
+          def host_platform_name = jsonv(datarow.cells[col_positions['platform.host.name']])
+          def host_norm_platform_name = host_platform_name.toLowerCase().trim();
+          log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
+          // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
+          def platform_info = Platform.findByNormname(host_norm_platform_name) 
+          if ( !platform_info ) {
+            // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+            platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
+            if (! platform_info.save(flush:true) ) {
+              platform_info.errors.each { e ->
+                log.error(e);
+              }
+            }
+          }
+  
+          // Package is done above this for loop
+  
+          // TIPP
+          def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
+          if ( !tipp ) {
+            log.debug("Create new tipp");
+            def start_date = parseDate(jsonv(datarow.cells[col_positions['date_first_issue_online']]))
+            def end_date = parseDate(jsonv(datarow.cells[col_positions['date_last_issue_online']]))
+  
+            tipp = new TitleInstancePackagePlatform(title:title_info,
+                                                    pkg:pkg,
+                                                    platform:platform_info,
+                                                    startDate:start_date,
+                                                    startVolume: jsonv(datarow.cells[col_positions['num_first_vol_online']]),
+                                                    startIssue:jsonv(datarow.cells[col_positions['num_first_issue_online']]),
+                                                    endDate:end_date,
+                                                    endVolume:jsonv(datarow.cells[col_positions['num_last_vol_online']]),
+                                                    endIssue:jsonv(datarow.cells[col_positions['num_last_issue_online']]),
+                                                    embargo:jsonv(datarow.cells[col_positions['embargo_info']]),
+                                                    coverageDepth:jsonv(datarow.cells[col_positions['coverage_depth']]),
+                                                    coverageNote:jsonv(datarow.cells[col_positions['coverage_notes']]),
+                                                    hostPlatformURL:host_platform_url)
+  
+            if ( !tipp.save() ) {
+              tipp.errors.each { e ->
+                log.error("problem saving tipp ${e}");
+              }
+            }
+  
+  
+            // publication_title print_identifier online_identifier date_first_issue_online num_first_vol_online num_first_issue_online date_last_issue_online num_last_vol_online num_last_issue_online title_id embargo_info coverage_depth coverage_notes publisher_name DOI platform_name platform_role platform_title_url platform_name2 platform_role2 platform_title_url2
+  
+          }
+          else {
+            log.debug("TIPP already present");
+          }
+  
+          // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
+          // instances we've just looked up.
+          if ( ctr % 250 == 0 ) {
+            cleanUpGorm()
+            pkg = Package.findByIdentifier("project:${project.id}");
+            // Update project progress indicator, save in db so any observers can see progress
+            def project_info = RefineProject.get(project.id)
+            project_info.progress = ( ctr / project_data.rowData.size() * 100 )
+            project_info.save(flush:true);
+          }
+        }
+        else {
+          log.debug("Row ${ctr} seems to be a null row. Skipping");
+        }
+        ctr++
+      }
     }
-
+    catch ( Exception e ) {
+      log.error("Problem processing project ingest.",e);
+    }
 
     result
   }

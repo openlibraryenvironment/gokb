@@ -7,5 +7,14 @@
   <dd>${d.name}</dd>
   <dt>Description</dt>
   <dd>${d.description}</dd>
+  <dt>Provider</dt>
+  <dd>${d.provider?.name}</dd>
+  <dt>Checked In?</dt>
+  <dd>${d.checkedIn}</dd>
+  <dt>Checked Out By</dt>
+  <dd>${d.checkedOutBy}</dd>
+  <hr/>
+  <dt>Last validation result</dt>
+  <dd>${d.lastValidationResult}</dd>
 </dl>
 

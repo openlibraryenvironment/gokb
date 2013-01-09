@@ -14,6 +14,7 @@ class RefineProject {
    String hash
       Org provider
    String lastValidationResult
+     Long progress
 
   static mapping = {
     table 'refine_project'
@@ -28,6 +29,7 @@ class RefineProject {
                     hash column: 'rp_hash'
                 provider column: 'rp_prov_fk'
     lastValidationResult column: 'rp_last_validation_result', type: 'text'
+                progress column: 'rp_progress'
   }
 
   
@@ -38,5 +40,6 @@ class RefineProject {
           localProjectID nullable: true
     lastValidationResult nullable: true
                 provider nullable: true
+                progress nullable: true
   }
 }
