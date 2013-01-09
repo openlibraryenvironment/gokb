@@ -36,6 +36,15 @@ class IngestService {
     result.status = true
     result.messages = []
 
+    if ( project_data?.processingCompleted ) {
+      log.debug("Processing of ingest file completed ok, validating");
+    }
+    else {
+      log.debug("Processing of ingest file completed ok, validating");
+      result.messages.add([text:'Unable to process ingest file at this time']);
+      return result
+    }
+
     def print_identifier_col = null;
     def online_identifier_col = null;
     def publication_title_col = null;
@@ -44,7 +53,7 @@ class IngestService {
 
     int i=0;
     def col_positions = [:]
-    project_data.columnDefinitions.each { cd ->
+    project_data.columnDefinitions?.each { cd ->
       log.debug("Assinging col ${cd.name} to position ${i}");
       col_positions[cd.name] = i++;
     }
@@ -69,6 +78,7 @@ class IngestService {
       result.status = false;
     }
     else {
+      log.debug("No messages, file valid");
       result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
     }
 
@@ -210,7 +220,6 @@ class IngestService {
   def extractRefineproject(String zipFilename) {
     def result = null;
 
-
     try {
       def full_filename = grailsApplication.config.project_dir + zipFilename
 
@@ -253,6 +262,7 @@ class IngestService {
                 if ( ze ) {
                     log.debug("Got data.txt");
                   result=[:]
+                  result.processingCompleted = false;
                   processData(result, zf.getInputStream(ze));
                 }
                 else {
@@ -307,6 +317,7 @@ class IngestService {
     result.keyColumnIndex=valuePart(bis.readLine())
     result.columnCount=Integer.decode(valuePart(bis.readLine()))
 
+    log.debug("Setting up column definitions");
     result.columnDefinitions = []
     for ( int i=0; i<result.columnCount; i++ ) {
       log.debug("Reading column ${i}");
@@ -367,6 +378,8 @@ class IngestService {
       result.rowData.add(JSON.parse(row))
       // Skipping row
     }
+
+    result.processingCompleted = true;
 
     bis.close();
   }
