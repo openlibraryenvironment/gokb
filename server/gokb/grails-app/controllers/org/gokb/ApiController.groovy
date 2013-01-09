@@ -193,6 +193,7 @@ class ApiController {
 
         if ( validationResult.status == true ) {
           log.debug("ingesting refine project");
+          ingestService.extractRules(parsed_data, project)
           ingestService.ingest(parsed_data, project)
         }
         else {
@@ -217,6 +218,7 @@ class ApiController {
         def parsed_data = ingestService.extractRefineproject(project.file)
         def validationResult = ingestService.validate(parsed_data)
         if ( validationResult.status == true ) {
+          ingestService.extractRules(parsed_data, project)
           ingestService.ingest(parsed_data)
         }
 

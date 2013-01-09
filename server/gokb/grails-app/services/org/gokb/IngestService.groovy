@@ -30,7 +30,6 @@ class IngestService {
    */
   def validate(project_data) {
     log.debug("Validate");
-    // def project_data = extractRefineproject(p.file);
 
     def result = [:]
     result.status = true
@@ -91,7 +90,6 @@ class IngestService {
    */
   def ingest(project_data, project) {
     log.debug("Ingest");
-    // def project_data = extractRefineproject(p.file);
 
     def result = [:]
     result.status = project_data ? true : false
@@ -192,10 +190,6 @@ class IngestService {
       ctr++
     }
 
-    // finally, rules extraction
-    project_data.pastEntryList.each { r ->
-      log.debug("Consider rule: ${r}");
-    }
 
     result
   }
@@ -411,6 +405,41 @@ class IngestService {
       }
     }
     parsed_date
+  }
+
+  def extractRules(parsed_data, project) {
+    // finally, rules extraction
+    parsed_data.pastEntryList.each { r ->
+      log.debug("Consider rule: ${r}");
+      if ( r.operation ) {
+        switch ( r.operation.op ) {
+          case 'core/column-rename':
+            def fingerprint = "${r.operation.op}:${r.operation.oldColumnName}"
+            // II: For now, default scope for column rename rules is provider
+            def rule_in_db = Rule.findByScopeAndProviderAndFingerprint('provider',project.provider,fingerprint)
+            if ( !rule_in_db ) {
+              rule_in_db = new Rule(
+                                 scope:'provider',
+                                 provider: project.provider,
+                                 fingerprint: fingerprint,
+                                 ruleJson: "${r.operation as JSON}",
+                                 description: "${r.operation.description}"
+              )
+              if ( rule_in_db.save(flush:true) ) {
+              }
+              else {
+                rule_in_db.errors.each { e ->
+                  log.error("${e}");
+                }
+              }
+            }
+            break;
+          default:
+            log.debug("Generic rules handling");
+            break;
+        }
+      }
+    }
   }
 
 }
