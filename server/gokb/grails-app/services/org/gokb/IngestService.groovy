@@ -196,6 +196,10 @@ class IngestService {
         }
         ctr++
       }
+
+      def project_info = RefineProject.get(project.id)
+      project_info.progress = 100;
+      project_info.save(flush:true);
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);

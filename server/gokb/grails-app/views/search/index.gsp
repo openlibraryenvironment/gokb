@@ -37,8 +37,10 @@
             </g:else>
           </div>
         </div>
+
         <div id="mainarea" class="span5">
           <div class="well">
+          <g:render template="object_header" contextPath="../apptemplates" model="${[d:displayobj]}"/>
             <g:if test="${displayobj != null}">
               <g:if test="${displaytemplate != null}">
                 <g:if test="${displaytemplate.type=='staticgsp'}">
@@ -52,6 +54,7 @@
             </g:if>
           </div>
         </div>
+
       </div>
     </div>
   </body>
