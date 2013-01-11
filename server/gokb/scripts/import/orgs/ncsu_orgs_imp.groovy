@@ -25,7 +25,7 @@ import java.text.SimpleDateFormat
 
 
 // Load the fam reconcilliation data
-// def target_service = new RESTClient('http://metadata.ukfederation.org.uk')
+def target_service = new HTTPBuilder('http://localhost:8080/gokb/integration/assertOrg')
 
 // try {
 //   target_service.request(GET, ContentType.XML) { request ->
@@ -58,13 +58,13 @@ nl = r.readNext()
 println("Column heads: ${nl}");
 
 while ((nl = r.readNext()) != null) {
-  // println("Process line ${nl}");
+  println("Process line ${nl}");
   // Internal ID,Parent Org. ID,Authorized Name,Organization Name,Provider,Vendor,Publisher,Licensor
   def org_assert = [    
     name:nl[3],
     description:nl[3],
     customIdentifers:[
-      [identifierType:'ncsu-internal',identifierValue:"ncsu:nl[0]"]
+      [identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[0]}".toString()]
     ],
     combos:[],
     flags:[]
@@ -72,7 +72,7 @@ while ((nl = r.readNext()) != null) {
 
   if ( nl[0] != nl [1] ) {
     // Add a combo that links to the parent org
-    org_assert.combos.add([linkTo:[identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}"], linkType:'ParentOrg'])
+    org_assert.combos.add([linkTo:[identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}".toString()], linkType:'HasParent'])
   }
 
   if ( nl[4] == 'Y' )
@@ -90,5 +90,15 @@ while ((nl = r.readNext()) != null) {
   org_assert.flags.add([flagType:'Authorized',flagValue:nl[2]])
 
 
+
   println("assert that : ${org_assert}");
+
+
+  // Post the json document
+  target_service.request( POST, JSON ) { req ->
+    body = org_assert
+    response.success = { resp, json ->
+      println("OK");
+    }
+  }
 }

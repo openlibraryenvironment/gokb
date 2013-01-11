@@ -86,4 +86,18 @@ class KBComponent {
     result;
   }
 
+  def lookupByIdentifier(idtype, idvalue) {
+    def crit = KBComponent.createCriteria()
+    def result = crit.get {
+      ids {
+        identifier {
+          ns {
+            eq('ns',idtype)
+          }
+          eq('value',idvalue)
+        }
+      }
+    }
+    result
+  }
 }

@@ -9,9 +9,18 @@
   <dd>
     <ul>
       <g:each in="${d.tags}" var="t">
-        <li>${t.value}</li>
+        <li>${t.owner.desc} : ${t.value}</li>
       </g:each>
     </ul>
   </dd>
+  <dt>Identifiers</dt>
+  <dd>
+    <ul>
+      <g:each in="${d.ids}" var="id">
+        <li>${id.identifier.ns.ns}:${id.identifier.value}</li>
+      </g:each>
+    </ul>
+  </dd>
+
 </dl>
 
