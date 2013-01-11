@@ -21,7 +21,7 @@
         </g:each>
         <td>
           <g:link class="btn" controller="resource" action="show" id="${r.class.name+':'+r.id}">Show</g:link>
-          <g:link class="btn" controller="search" action="index" params="${params+['displayoid':r.class.name+':'+r.id]}">Preview -></g:link>
+          <g:link class="btn" controller="search" action="index" params="${params+['det':counter]}">Preview -></g:link>
         </td>
       </tr>
     </g:each>

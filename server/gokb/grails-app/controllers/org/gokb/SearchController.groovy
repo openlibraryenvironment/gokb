@@ -5,11 +5,14 @@ class SearchController {
   def genericOIDService
 
   def index() { 
-    log.debug("index...");
+    log.debug("enter SearchController::index...");
     def result = [:]
 
     result.max = params.max ? Integer.parseInt(params.max) : 10;
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+
+    if ( params.det )
+      result.det = Integer.parseInt(params.det)
 
     if ( params.qbe ) {
       if ( params.qbe.startsWith('g:') ) {
@@ -32,7 +35,15 @@ class SearchController {
           result.displaytemplate = globalDisplayTemplates[result.displayobjclassname]
         }
       }
+
+      if ( result.det && result.recset ) {
+        int recno = result.det - result.offset - 1
+        result.displayobj = result.recset.get(recno)
+        result.displayobjclassname = result.displayobj.class.name
+        result.displaytemplate = globalDisplayTemplates[result.displayobjclassname]
+      }
     }
+    log.debug("leaving SearchController::index...");
     result
   }
 
@@ -40,14 +51,11 @@ class SearchController {
     // We are going to build up a critera query based on the base class specified in the config, and the properties listed
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
     
-    def c = target_class.getClazz().createCriteria()
-
-    log.debug("Created criteria against target classs: ${c}")
-
+    // def c = target_class.getClazz().createCriteria()
     // reuse from sip : ./sip/grails-app/controllers/com/k_int/sim/SearchController.groovy
     // def recset = c.list(max: 5, offset: 10) {
     log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
-    result.recset = c.list(max: result.max, offset:result.offset) {
+    def dcrit = new grails.gorm.DetachedCriteria(target_class.getClazz() ).build {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap}");
@@ -66,7 +74,10 @@ class SearchController {
       }
     }
 
-
+    log.debug("Execute count");
+    result.reccount = dcrit.count()
+    log.debug("Execute query");
+    result.recset = dcrit.list(max: result.max, offset: result.offset)
   }
 
   def globalSearchTemplates = [
