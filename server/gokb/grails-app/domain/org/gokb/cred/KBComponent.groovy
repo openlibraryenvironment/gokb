@@ -11,8 +11,16 @@ class KBComponent {
   String shortcode
   Set tags = []
 
-  static mappedBy = [ids: 'component',  orgs: 'linkedComponent']
-  static hasMany = [ids: IdentifierOccurrence, orgs: OrgRole, tags:RefdataValue]
+  static mappedBy = [ids: 'component',  
+                     outgoingCombos: 'from',
+                     incomingCombos:'to',
+                     orgs: 'linkedComponent']
+
+  static hasMany = [ids: IdentifierOccurrence, 
+                    orgs: OrgRole, 
+                    tags:RefdataValue,
+                    outgoingCombos:Combo,
+                    incomingCombos:Combo]
 
   static mapping = {
            id column:'kbc_id'

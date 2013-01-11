@@ -7,6 +7,8 @@ class UrlMappings {
 			}
 		}
 
+                "/resource/$oid?/$subpage?"(controller:'home',action:'index')
+              
 		"/"(controller:'home',action:'index')
 		"500"(view:'/error')
 	}
