@@ -1,8 +1,11 @@
 
+<g:set var="counter" value="${offset}" />
+
 <table class="table table-striped">
  <caption>Search results</caption>
   <thead>
     <tr>
+      <th></th>
       <g:each in="${qbeConfig.qbeResults}" var="c">
         <th>${c.heading}</th>
       </g:each>
@@ -12,6 +15,7 @@
   <tbody>
     <g:each in="${rows}" var="r">
       <tr>
+        <td>${++counter}</td>
         <g:each in="${qbeConfig.qbeResults}" var="c">
           <td>${groovy.util.Eval.x(r, 'x.' + c.property)}</td>
         </g:each>

@@ -26,6 +26,7 @@
   <thead>
     <tr>
       <th>Title</th>
+      <th>Package</th>
       <th>Start Date</th>
       <th>Start Volume</th>
       <th>Start Issue</th>
@@ -38,11 +39,12 @@
   <tbody>
     <g:each in="${d.tipps}" var="tipp">
       <tr>
-        <td>${tipp.title.name}</td>
-        <td><g:formatDate format="dd MMMM yyyy" date="${tipp.startDate}"/></td>
+        <td><g:link controller="resource" action="show" id="${tipp.title.class.name+':'+tipp.title.id}">${tipp.title.name}</g:link></td>
+        <td><g:link controller="resource" action="show" id="${tipp.pkg.class.name+':'+tipp.title.id}">${tipp.pkg.name}</g:link></td>
+        <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${tipp.startDate}"/></td>
         <td>${tipp.startVolume}</td>
         <td>${tipp.startIssue}</td>
-        <td><g:formatDate format="dd MMMM yyyy" date="${tipp.endDate}"/></td>
+        <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${tipp.endDate}"/></td>
         <td>${tipp.endVolume}</td>
         <td>${tipp.endIssue}</td>
         <td>${tipp.embargo}</td>

@@ -37,7 +37,7 @@
               </div>
               <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}"/>
               <g:if test="${recset != null}">
-                <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset]}"/>
+                <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset]}"/>
               </g:if>
             </g:else>
           </div>
@@ -46,7 +46,13 @@
         <g:if test="${displayobj != null}">
           <div id="mainarea" class="span5">
             <div class="well">
-              <g:render template="object_header" contextPath="../apptemplates" model="${[d:displayobj]}"/>
+
+              <div class="navbar">
+                <div class="navbar-inner">
+                  <a class="brand" href="#">Result Record : next - prev</a>
+                </div>
+              </div>
+
               <g:if test="${displaytemplate != null}">
                 <g:if test="${displaytemplate.type=='staticgsp'}">
                   <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj]}"/>

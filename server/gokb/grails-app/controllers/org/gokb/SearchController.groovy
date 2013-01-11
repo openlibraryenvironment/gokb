@@ -7,6 +7,10 @@ class SearchController {
   def index() { 
     log.debug("index...");
     def result = [:]
+
+    result.max = params.max ? Integer.parseInt(params.max) : 10;
+    result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+
     if ( params.qbe ) {
       if ( params.qbe.startsWith('g:') ) {
         // Global template, look in config
@@ -43,7 +47,7 @@ class SearchController {
     // reuse from sip : ./sip/grails-app/controllers/com/k_int/sim/SearchController.groovy
     // def recset = c.list(max: 5, offset: 10) {
     log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
-    result.recset = c.list(max: 20) {
+    result.recset = c.list(max: result.max, offset:result.offset) {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap}");
