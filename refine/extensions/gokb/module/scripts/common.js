@@ -8,6 +8,7 @@ var GOKb = {
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   api:{
   	url : "http://localhost:8080/gokb/api/"
+  	// url : "http://gokb.k-int.com/gokb/api/"
   },
   refine:{},
 };

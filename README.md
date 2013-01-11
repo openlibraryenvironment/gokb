@@ -12,6 +12,11 @@ gokb-phase1
 Copy (Or arrange to symlink) the gokb directory to your local equivalent of ~/google-refine-2.5/webapp/extensions/ 
 
 
+I packaged up the gokb extension with #
+
+ zip -r gokb.zip ./gokb
+
+
 ## Server side component (dev)
 
 from gokb-phase1/server/gokb
@@ -20,3 +25,5 @@ grails run-app
 
 
 # First run
+
+
