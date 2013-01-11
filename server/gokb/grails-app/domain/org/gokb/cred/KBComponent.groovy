@@ -35,7 +35,7 @@ class KBComponent {
   static constraints = {
     impId(nullable:true, blank:false)
     name(nullable:true, blank:false, maxSize:2048)
-    shortcode(nullable:true, blank:false, maxSize:2048)
+    shortcode(nullable:true, blank:false, maxSize:128)
     normname(nullable:true, blank:false, maxSize:2048)
   }
 
@@ -69,6 +69,10 @@ class KBComponent {
 
   def generateShortcode(name) {
     def candidate = name.trim().replaceAll(" ","_")
+
+    if ( candidate.length() > 100 )
+      candidate = candidate.substring(0,100)
+
     return incUntilUnique(candidate);
   }
 
@@ -87,20 +91,27 @@ class KBComponent {
   }
 
   @Transient
-  static def lookupByIdentifier(String idtype, String idvalue) {
-    // log.debug("lookupByIdentifier(${idtype},${idvalue})");
+  static def lookupByIO(String idtype, String idvalue) {
+    // println("lookupByIdentifier(${idtype},${idvalue})");
+    def result = null
     def crit = KBComponent.createCriteria()
-    def result = crit.get {
+    def lr = crit.list {
       ids {
         identifier {
-          ns {
-            eq('ns',idtype)
-          }
           eq('value',idvalue)
+          ns {
+             eq('ns',idtype)
+          }
         }
       }
     }
-    // log.debug("result: ${result}");
+
+    // println("res: ${lr}");
+
+    if ( lr && lr.size() == 1 )
+      result=lr.get(0);
+
+    // println("result: ${result}");
     result
   }
 }

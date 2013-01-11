@@ -422,37 +422,44 @@ class IngestService {
   }
 
   def extractRules(parsed_data, project) {
-    // finally, rules extraction
-    parsed_data.pastEntryList.each { r ->
-      log.debug("Consider rule: ${r}");
-      if ( r.operation ) {
-        switch ( r.operation.op ) {
-          case 'core/column-rename':
-            def fingerprint = "${r.operation.op}:${r.operation.oldColumnName}"
-            // II: For now, default scope for column rename rules is provider
-            def rule_in_db = Rule.findByScopeAndProviderAndFingerprint('provider',project.provider,fingerprint)
-            if ( !rule_in_db ) {
-              rule_in_db = new Rule(
-                                 scope:'provider',
-                                 provider: project.provider,
-                                 fingerprint: fingerprint,
-                                 ruleJson: "${r.operation as JSON}",
-                                 description: "${r.operation.description}"
-              )
-              if ( rule_in_db.save(flush:true) ) {
-              }
-              else {
-                rule_in_db.errors.each { e ->
-                  log.error("${e}");
+    if ( project.provider ) {
+      log.debug("extracting rules, provider is ${project.provider.id}");
+      def provider = Org.get(project.provider.id)
+      // finally, rules extraction
+      parsed_data.pastEntryList.each { r ->
+        log.debug("Consider rule: ${r}");
+        if ( r.operation ) {
+          switch ( r.operation.op ) {
+            case 'core/column-rename':
+              def fingerprint = "${r.operation.op}:${r.operation.oldColumnName}"
+              // II: For now, default scope for column rename rules is provider
+              def rule_in_db = Rule.findByScopeAndProviderAndFingerprint('provider',provider,fingerprint)
+              if ( !rule_in_db ) {
+                rule_in_db = new Rule(
+                                   scope:'provider',
+                                   provider: provider,
+                                   fingerprint: fingerprint,
+                                   ruleJson: "${r.operation as JSON}",
+                                   description: "${r.operation.description}"
+                )
+                if ( rule_in_db.save(flush:true) ) {
+                }
+                else {
+                  rule_in_db.errors.each { e ->
+                    log.error("${e}");
+                  }
                 }
               }
-            }
-            break;
-          default:
-            log.debug("Generic rules handling");
-            break;
+              break;
+            default:
+              log.debug("Generic rules handling");
+              break;
+          }
         }
       }
+    }
+    else {
+      log.error("Provider not set, cannot establish rules!");
     }
   }
 

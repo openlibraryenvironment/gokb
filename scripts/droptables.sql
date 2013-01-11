@@ -16,6 +16,7 @@ truncate table identifier_namespace;
 truncate table kbcomponent;
 truncate table refdata_value;
 truncate table refdata_category;
+truncate table rule;
 
 drop table combo;
 drop table document;
@@ -33,4 +34,5 @@ drop table identifier_namespace;
 drop table kbcomponent;
 drop table refdata_value;
 drop table refdata_category;
+drop table rule;
 SET foreign_key_checks = 1;

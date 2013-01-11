@@ -29,7 +29,10 @@ class IntegrationController {
     if ( located_or_new_org == null ) {
       log.debug("Create new org with identifiers ${request.JSON.customIdentifers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
       located_or_new_org = new Org(name:request.JSON.name)
-      if ( located_or_new_org.save(flush:true) ) {
+
+      log.debug("Attempt to save - validate: ${located_or_new_org}");
+
+      if ( located_or_new_org.save(flush:true, failOnError : true) ) {
         log.debug("Saved ok");
       }
       else {
@@ -44,27 +47,33 @@ class IntegrationController {
       }
 
       // Identifiers
+      log.debug("Identifier processing ${request.JSON.customIdentifers}");
       request.JSON.customIdentifers.each { ci ->
+        log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})");
         def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-        def id_occur = new IdentifierOccurrence(identifier:canonical_identifier, component:located_or_new_org).save(flush:true);
+        def id_occur = new IdentifierOccurrence(identifier:canonical_identifier, component:located_or_new_org).save(flush:true, failOnError : true);
       }
 
       // flags
+      log.debug("Flag Processing: ${request.JSON.flags}");
       request.JSON.flags.each { f ->
+        log.debug("Adding flag ${f.flagType},${f.flagValue}");
         def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue);
         located_or_new_org.tags.add(flag);
       }
-      located_or_new_org.save(flush:true);
+      located_or_new_org.save(flush:true, failOnError : true);
+
+      log.debug("Combo processing: ${request.JSON.combos}");
 
       // combos
       request.JSON.combos.each { c ->
         log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
-        def located_component = KBComponent.lookupByIdentifier(c.linkTo.identifierType,c.linkTo.identifierValue)
+        def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
         // def reloaded_from = KBComponent.get(located_or_new_org.id)
         def reloaded_from = located_or_new_org.refresh();
         if ( ( located_component != null ) && ( reloaded_from != null ) ) {
           def combo_type = RefdataCategory.lookupOrCreate('ComboType',c.linkType);
-          def combo = new Combo(from:reloaded_from,to:located_component,type:combo_type).save(flush:true);
+          def combo = new Combo(from:reloaded_from,to:located_component,type:combo_type).save(flush:true, failOnError : true);
         }
         else {
           log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");
@@ -85,7 +94,7 @@ class IntegrationController {
       if ( located_or_new_org ) {
         // We've already located an org for this identifier, the new identifier should be new (And therefore added to this org) or
         // resolve to this org. If it resolves to some other org, then there is a conflict and we fail!
-        def located_component = KBComponent.lookupByIdentifier(ci.identifierType,ci.identifierValue)
+        def located_component = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
         if ( located_component ) {
           log.debug("Matched something...");
           if ( !located_or_new_org ) {
@@ -102,12 +111,13 @@ class IntegrationController {
         }
         else {
           // No match.. candidate identifier
+          log.debug("No match for ${ci.identifierType}:${ci.identifierValue}");
         }
       }
       else {
+        located_or_new_org = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
       }
     }
-    log.debug("Result of lookup for ${idlist} : ${located_or_new_org}");
     located_or_new_org
   }
 }

@@ -152,22 +152,18 @@ class ApiController {
         project.setHash(params.hash ?: null)
     
         // Set the org too.
-        log.debug("Setting provider from submission.");
+        log.debug("Setting provider from submission. ${params.org}");
         Org org = Org.get(params.org)
         if (org) {
           project.provider = org
+        }
+        else {
+          log.warn("Unable to set provider!!");
         }
       }
       
       if (project) {
       
-         // A quick hack to set the project provider, this should come from refine, but for testing purposes, we set this to Wiley
-         if ( !project.provider ) {
-           log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
-           project.provider = Org.findByName('Wiley') ?: new Org(name:'Wiley').save();
-         }
-
-        
         // Generate a filename...
         def fileName = "project-${randomUUID()}.tar.gz"
         

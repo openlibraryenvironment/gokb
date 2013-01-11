@@ -15,7 +15,7 @@ public class Rule {
         version column:'rule_version'
        provider column:'rule_prov_scope_fk'
           scope column:'rule_scope'
-    description column:'rule_description', index:'doc_description_idx'
+    description column:'rule_description'
     fingerprint column:'rule_fp', index:'doc_fp_contents'
        ruleJson column:'rule_json'
   }
