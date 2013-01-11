@@ -21,6 +21,21 @@
       </g:each>
     </ul>
   </dd>
-
+  <dt>Incoming Combos</dt>
+  <dd>
+    <ul>
+      <g:each in="${d.incomingCombos}" var="c">
+        <li>${c.from.name} -- ${c.type?.value} --> This Org</li>
+      </g:each>
+    </ul>
+  </dd>
+  <dt>Outgoing Combos</dt>
+  <dd>
+    <ul>
+      <g:each in="${d.outgoingCombos}" var="c">
+        <li>This Org -- ${c.type?.value} -->  ${c.to.name}</li>
+      </g:each>
+    </ul>
+  </dd>
 </dl>
 

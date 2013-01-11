@@ -27,8 +27,21 @@ class IntegrationController {
     def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.customIdentifers);
 
     if ( located_or_new_org == null ) {
-      log.debug("Create new org with identifiers ${request.JSON.customIdentifers}");
-      located_or_new_org = new Org(name:request.JSON.name, desc:request.JSON.name).save(flush:true);
+      log.debug("Create new org with identifiers ${request.JSON.customIdentifers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
+      located_or_new_org = new Org(name:request.JSON.name)
+      if ( located_or_new_org.save(flush:true) ) {
+        log.debug("Saved ok");
+      }
+      else {
+        log.debug("Save failed ${located_or_new_org}");
+        result.errors = []
+        located_or_new_org.errors.each { e ->
+          log.error("Problem saving new org record",e);
+          result.errors.add("${e}".toString());
+        }
+        result.status = false;
+        return
+      }
 
       // Identifiers
       request.JSON.customIdentifers.each { ci ->
@@ -45,11 +58,16 @@ class IntegrationController {
 
       // combos
       request.JSON.combos.each { c ->
-        log.debug("lookup item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
+        log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
         def located_component = KBComponent.lookupByIdentifier(c.linkTo.identifierType,c.linkTo.identifierValue)
-        if ( located_component ) {
+        // def reloaded_from = KBComponent.get(located_or_new_org.id)
+        def reloaded_from = located_or_new_org.refresh();
+        if ( ( located_component != null ) && ( reloaded_from != null ) ) {
           def combo_type = RefdataCategory.lookupOrCreate('ComboType',c.linkType);
-          def combo = new Combo(from:located_or_new_org,to:located_component,type:combo_type)
+          def combo = new Combo(from:reloaded_from,to:located_component,type:combo_type).save(flush:true);
+        }
+        else {
+          log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");
         }
       }
     }
@@ -78,7 +96,7 @@ class IntegrationController {
               log.debug("Matched an identifier");
             }
             else {
-              result.status = false
+              log.error("**CONFLICT**");
             }
           }
         }
@@ -89,6 +107,7 @@ class IntegrationController {
       else {
       }
     }
+    log.debug("Result of lookup for ${idlist} : ${located_or_new_org}");
     located_or_new_org
   }
 }

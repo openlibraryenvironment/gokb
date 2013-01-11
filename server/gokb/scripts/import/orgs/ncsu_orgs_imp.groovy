@@ -58,7 +58,7 @@ nl = r.readNext()
 println("Column heads: ${nl}");
 
 while ((nl = r.readNext()) != null) {
-  println("Process line ${nl}");
+  // println("Process line ${nl}");
   // Internal ID,Parent Org. ID,Authorized Name,Organization Name,Provider,Vendor,Publisher,Licensor
   def org_assert = [    
     name:nl[3],
@@ -89,16 +89,14 @@ while ((nl = r.readNext()) != null) {
 
   org_assert.flags.add([flagType:'Authorized',flagValue:nl[2]])
 
-
-
-  println("assert that : ${org_assert}");
+  // println("assert that : ${org_assert}");
 
 
   // Post the json document
   target_service.request( POST, JSON ) { req ->
     body = org_assert
     response.success = { resp, json ->
-      println("OK");
+      println(json);
     }
   }
 }

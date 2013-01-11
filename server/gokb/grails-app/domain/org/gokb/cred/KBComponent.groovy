@@ -27,16 +27,16 @@ class KBComponent {
       version column:'kbc_version'
         impId column:'kbc_imp_id', index:'kbc_imp_id_idx'
          name column:'kbc_name'
-     normname column:'kbc_normname'
+     normname column:'kbc_normname' 
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
          tags joinTable: [name: 'kb_component_refdata_value', key: 'kbcrdv_kbc_id', column: 'kbcrdv_rdv_id']
   }
 
   static constraints = {
     impId(nullable:true, blank:false)
-    name(nullable:true, blank:false, maxSize:1024)
-    shortcode(nullable:true, blank:false)
-    normname(nullable:true, blank:false, maxSize:1024)
+    name(nullable:true, blank:false, maxSize:2048)
+    shortcode(nullable:true, blank:false, maxSize:2048)
+    normname(nullable:true, blank:false, maxSize:2048)
   }
 
   @Transient
@@ -86,7 +86,9 @@ class KBComponent {
     result;
   }
 
-  def lookupByIdentifier(idtype, idvalue) {
+  @Transient
+  static def lookupByIdentifier(String idtype, String idvalue) {
+    // log.debug("lookupByIdentifier(${idtype},${idvalue})");
     def crit = KBComponent.createCriteria()
     def result = crit.get {
       ids {
@@ -98,6 +100,7 @@ class KBComponent {
         }
       }
     }
+    // log.debug("result: ${result}");
     result
   }
 }

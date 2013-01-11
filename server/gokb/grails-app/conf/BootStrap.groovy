@@ -39,10 +39,10 @@ class BootStrap {
     }
 
 
-    assertPublisher('Wiley');
-    assertPublisher('Random House');
-    assertPublisher('Cambridge University Press');
-    assertPublisher('Sage');
+    // assertPublisher('Wiley');
+    // assertPublisher('Random House');
+    // assertPublisher('Cambridge University Press');
+    // assertPublisher('Sage');
   }
 
   def assertPublisher(name) {
