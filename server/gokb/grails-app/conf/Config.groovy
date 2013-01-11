@@ -100,6 +100,7 @@ log4j = {
           'grails.app.services',
           'grails.app.domain',
           'grails.app.tagLib',
+          'grails.app.filters',
           // 'grails.app.conf',
           'grails.app.jobs' // ,
 
@@ -119,3 +120,7 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
 ]
 
+
+appDefaultPrefs {
+  globalDateFormat='dd MMMM yyyy'
+}
