@@ -2,16 +2,28 @@ package org.gokb
 
 class ResourceController {
 
-  def index() { 
+  def genericOIDService
 
-    if ( params.oid ) {
-      log.debug("Attempt to retrieve ${params.displayoid} and find a global template for it");
-      result.displayobj = genericOIDService.resolveOID(params.displayoid)
+  def index() { 
+  }
+
+  def show() {
+    def result = [:]
+
+    if ( params.id ) {
+      log.debug("Attempt to retrieve ${params.id} and find a global template for it");
+      result.displayobj = genericOIDService.resolveOID(params.id)
       if ( result.displayobj ) {
         result.displayobjclassname = result.displayobj.class.name
         result.displaytemplate = globalDisplayTemplates[result.displayobjclassname]
+        log.debug("resutl of lookup: ${result}");
+      }
+      else {
+        log.debug("unable to resolve object");
       }
     }
+
+    result
   }
 
   // Types: staticgsp: under views/templates, dyngsp: in database, dynamic:full dynamic generation, other...
