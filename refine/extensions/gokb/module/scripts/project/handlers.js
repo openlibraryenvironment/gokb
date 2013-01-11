@@ -162,8 +162,8 @@ GOKb.handlers.checkInWithProps = function() {
 	// Change the submit button text to be check-in
 	dialog.bindings.submit.attr("value", "Save and Check-in");
 	
-	// Get list of Orgs
-	GOKb.doCommand ("refdata", {type: "cp"}, null, {
+	// Get the refdata from GOKb service.
+	GOKb.getRefData ({type: "cp"}, {
 		onDone : function (data) {
 			
 			if ("result" in data && "datalist" in data.result) {
@@ -177,7 +177,7 @@ GOKb.handlers.checkInWithProps = function() {
 				});
 			}
 		}
-	});
+	); 
 	
 	// Rename close button to cancel.
 	dialog.bindings.closeButton.text("Cancel");

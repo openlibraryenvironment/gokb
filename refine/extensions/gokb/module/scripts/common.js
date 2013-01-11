@@ -369,7 +369,14 @@ GOKb.paramsAsHiddenFields = function (form, params) {
 		    .attr('value', params[key])
 		);
 	}
-}
+};
+
+/**
+ * Get ref data from GOKb
+ */
+GOKb.getRefData = function (params, callbacks) {
+	GOKb.doCommand ("refdata", params, null, callbacks);
+};
 
 /**
  * Check versions match every minute.
