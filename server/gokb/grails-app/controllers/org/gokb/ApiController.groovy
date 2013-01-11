@@ -25,19 +25,19 @@ class ApiController {
    * are not stripped from the request.  
    */
   
-//  def beforeInterceptor = [action: this.&versionCheck]
-//  
-//  // defined with private scope, so it's not considered an action 
-//  private versionCheck() {
-//    def gokbVersion = request.getHeader("GOKb-version")
-//    if (gokbVersion != 0.3) {
-//      apiReturn("", "You are using an out of date version of the GOKb extension. " +
-//        "Please download and install the latest version. From http://gokb.k-int.com/extension/latest",
-//        "error"
-//      )      
-//      return false
-//    }
-//  }
+  def beforeInterceptor = [action: this.&versionCheck]
+  
+  // defined with private scope, so it's not considered an action 
+  private versionCheck() {
+    def gokbVersion = request.getHeader("GOKb-version")
+    if (gokbVersion != "0.5") {
+      apiReturn("", "You are using an out of date version of the GOKb extension. " +
+        "Please download and install the latest version. From http://gokb.k-int.com/extension/latest",
+        "error"
+      )      
+      return false
+    }
+  }
 
   // Internal API return object that ensures consistent formatting of API return objects
   private def apiReturn = {result, String message = "", String status = "success" ->
@@ -49,7 +49,8 @@ class ApiController {
 
     def json = data as JSON
     log.debug (json)
-    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
+	render json
+//    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
 
   def index() {

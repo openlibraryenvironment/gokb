@@ -1,5 +1,4 @@
 var GOKb = {
-	version : 0.3,
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
@@ -144,11 +143,6 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	var done = false;
   var dismissBusy = null;
   
-  ajaxObj.beforeSend = function (request)
-  {
-    request.setRequestHeader("GOKb-version", GOKb.version);
-  };
-  
   // Use the built in UI to show AJAX in progress.
   GOKb.setAjaxInProgress();
   
@@ -206,7 +200,11 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
  * callback will be triggered,code otherwise the onDone is run. 
  */
 GOKb.doCommand = function(command, params, data, callbacks) {
-  callbacks = callbacks || {};
+	
+	return GOKb.doRefineCommand ("gokb/" + command, params, data, callbacks);
+  /*
+	
+	callbacks = callbacks || {};
   params = params || {};
 
   var ajaxObj = {
@@ -241,6 +239,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
   
   // Show the GOKb waiting message
   return GOKb.ajaxWaiting (ajaxObj, GOKb.messageBusy);
+  */
 };
 
 /**

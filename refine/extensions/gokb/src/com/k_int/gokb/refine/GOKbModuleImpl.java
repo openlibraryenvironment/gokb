@@ -3,11 +3,15 @@ package com.k_int.gokb.refine;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.List;
 
 import javax.servlet.ServletConfig;
 
 import org.apache.commons.collections.ExtendedProperties;
 
+import com.k_int.gokb.refine.commands.GerericProxiedCommand;
+
+import com.google.refine.RefineServlet;
 import com.google.refine.importing.ImportingManager;
 
 import edu.mit.simile.butterfly.ButterflyModule;
@@ -29,11 +33,24 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         extendModuleProperties();
         swapImportControllers();
         
+        // Add our proxied Commands from the config file.
+        addProxiedCommands();
+        
         // Set the singleton.
         singleton = this;
         
         // Set the properties
         properties = singleton.getProperties();
+    }
+    
+    private void addProxiedCommands() {
+        @SuppressWarnings("unchecked")
+        List<String> commands = getProperties().getList("proxyCommands");
+        
+        // Register each command from the list.
+        for (String command : commands) {
+            RefineServlet.registerCommand(this, command, new GerericProxiedCommand(command));
+        }
     }
     
     private void extendModuleProperties() {

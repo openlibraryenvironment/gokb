@@ -181,7 +181,7 @@ public abstract class A_RefineAPIBridge extends Command {
         RefineServlet.setUserAgent(connection);
         
         // Set the custom refine extension property.
-        connection.setRequestProperty("GOKb-version", "0.3");
+        connection.setRequestProperty("GOKb-version", GOKbModuleImpl.properties.getString("version"));
         
         if (type == METHOD_TYPE.POST) {
             connection.setDoInput(true);
@@ -203,7 +203,7 @@ public abstract class A_RefineAPIBridge extends Command {
     protected void getFromAPI (String apiMethod, Map<String, String[]> params, RefineAPICallback callback) throws Exception {
     	// Get from API method.
     	if (callback == null) callback = new RefineAPICallback();
-    	toAPI(METHOD_TYPE.GET, apiMethod, params, null, callback);    	
+    	toAPI(METHOD_TYPE.GET, apiMethod, params, null, callback);
     }
 
     protected Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
