@@ -1,6 +1,7 @@
 package org.gokb.refine
 
 import org.gokb.cred.Org
+import javax.persistence.Transient
 
 class RefineProject {
 
@@ -15,6 +16,9 @@ class RefineProject {
       Org provider
    String lastValidationResult
      Long progress
+
+  @Transient
+  def lastValidationResultAsMap = null
 
   static mapping = {
     table 'refine_project'
@@ -41,5 +45,13 @@ class RefineProject {
     lastValidationResult nullable: true
                 provider nullable: true
                 progress nullable: true
+  }
+
+  @Transient
+  lastValidationAsMap() {
+    if ( lastValidationResult && ( lastValidationResultAsMap == null ) ) {
+      lastValidationResultAsMap = org.codehaus.groovy.grails.web.converters.AbstractConverter.parse(lastValidationResult)
+    }
+    lastValidationResultAsMap
   }
 }
