@@ -14,8 +14,8 @@
   </thead>
   <tbody>
     <g:each in="${rows}" var="r">
-      <tr>
-        <td>${++counter}</td>
+      <tr class="${++counter==det ? 'success':''}">
+        <td>${counter}</td>
         <g:each in="${qbeConfig.qbeResults}" var="c">
           <td>${groovy.util.Eval.x(r, 'x.' + c.property)}</td>
         </g:each>

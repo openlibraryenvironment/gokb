@@ -13,10 +13,9 @@
       </g:each>
     </ul>
   </dd>
-  <dt>Appears in packages</dt>
+  <dt>Package Appearences</dt>
   <dd>
     <table class="table table-striped">
-     <caption>Search results</caption>
       <thead>
         <tr>
           <th>Package</th>

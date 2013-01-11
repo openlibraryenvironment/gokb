@@ -37,7 +37,7 @@
               </div>
               <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}"/>
               <g:if test="${recset != null}">
-                <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset]}"/>
+                <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det]}"/>
               </g:if>
             </g:else>
           </div>
@@ -49,10 +49,12 @@
 
               <div class="navbar">
                 <div class="navbar-inner">
-                  <a class="brand" href="#">Result Record : next - prev</a>
-                </div>
-              </div>
-
+                  <div class="brand">Record ${det} of ${reccount}</div>
+                  <ul class="nav pull-right">
+                    <li><g:link controller="search" action="index" params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}">Prev</g:link></li>
+                    <li class="divider-vertical"></li>
+                    <li><g:link controller="search" action="index" params="${params+['det':det+1, offset:((int)(det / max))*max]}">Next</g:link></li>
+                  </ul></div></div>
               <g:if test="${displaytemplate != null}">
                 <g:if test="${displaytemplate.type=='staticgsp'}">
                   <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj]}"/>
