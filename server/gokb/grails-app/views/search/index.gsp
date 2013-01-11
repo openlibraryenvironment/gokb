@@ -23,13 +23,18 @@
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
-        <div id="mainarea" class="span5">
+
+        <div id="mainarea" class="${displayobj != null ? 'span5' : 'span10'}">
           <div class="well">
             <g:if test="${qbetemplate==null}">
               Please select a template from the navigation menu
             </g:if>
             <g:else>
-              <h1>${qbetemplate.title?:'Search'}</h1>
+              <div class="navbar">
+                <div class="navbar-inner">
+                  <div class="brand">${qbetemplate.title?:'Search'}</div>
+                </div>
+              </div>
               <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}"/>
               <g:if test="${recset != null}">
                 <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset]}"/>
@@ -38,10 +43,10 @@
           </div>
         </div>
 
-        <div id="mainarea" class="span5">
-          <div class="well">
-          <g:render template="object_header" contextPath="../apptemplates" model="${[d:displayobj]}"/>
-            <g:if test="${displayobj != null}">
+        <g:if test="${displayobj != null}">
+          <div id="mainarea" class="span5">
+            <div class="well">
+              <g:render template="object_header" contextPath="../apptemplates" model="${[d:displayobj]}"/>
               <g:if test="${displaytemplate != null}">
                 <g:if test="${displaytemplate.type=='staticgsp'}">
                   <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj]}"/>
@@ -51,9 +56,9 @@
                 No template currenly available for instances of ${displayobjclassname}
                 ${displayobj as grails.converters.JSON}
               </g:else>
-            </g:if>
+            </div>
           </div>
-        </div>
+        </g:if>
 
       </div>
     </div>

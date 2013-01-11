@@ -107,8 +107,8 @@ class SearchController {
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Type', property:'class.name'],
-          [heading:'Name/Title', property:'name']
+          [heading:'Package Name', property:'name'],
+          [heading:'Nominal Platform', property:'nominalPlatform?.name']
         ]
       ]
     ],
