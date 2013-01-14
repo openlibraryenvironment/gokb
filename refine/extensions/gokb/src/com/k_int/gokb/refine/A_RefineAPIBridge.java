@@ -181,7 +181,7 @@ public abstract class A_RefineAPIBridge extends Command {
         RefineServlet.setUserAgent(connection);
         
         // Set the custom refine extension property.
-        connection.setRequestProperty("GOKb-version", GOKbModuleImpl.properties.getString("version"));
+        connection.setRequestProperty("GOKb-version", GOKbModuleImpl.VERSION);
         
         if (type == METHOD_TYPE.POST) {
             connection.setDoInput(true);
