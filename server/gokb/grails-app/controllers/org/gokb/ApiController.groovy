@@ -14,30 +14,30 @@ import org.gokb.cred.Org;
  */
 
 class ApiController {
+	
+  private static final String REQUIRED_EXTENSION_VERSION = "0.5"
   
   def ingestService
   def grailsApplication
   
   /**
-   * TODO: The below versionCheck and before interceptor code checks for a custom request header.
-   * Cross-domain AJAX calls using JSONP strip out custom headers and so the code fails when it shouldn't.
-   * The code will work once all ajax requests are proxied through the custom refine code as the custom headers,
-   * are not stripped from the request.  
+   * Before interceptor to check the current version of the refine
+   * plugin that is being used.
    */
   
-//  def beforeInterceptor = [action: this.&versionCheck]
-//  
-//  // defined with private scope, so it's not considered an action 
-//  private versionCheck() {
-//    def gokbVersion = request.getHeader("GOKb-version")
-//    if (gokbVersion != 0.3) {
-//      apiReturn("", "You are using an out of date version of the GOKb extension. " +
-//        "Please download and install the latest version. From http://gokb.k-int.com/extension/latest",
-//        "error"
-//      )      
-//      return false
-//    }
-//  }
+  def beforeInterceptor = [action: this.&versionCheck]
+  
+  // defined with private scope, so it's not considered an action 
+  private versionCheck() {
+    def gokbVersion = request.getHeader("GOKb-version")
+    if (gokbVersion != REQUIRED_EXTENSION_VERSION) {
+      apiReturn([:], "You are using an out of date version of the GOKb extension. " +
+        "Please download and install the latest version. From http://gokb.k-int.com/extension/latest",
+        "error"
+      )      
+      return false
+    }
+  }
 
   // Internal API return object that ensures consistent formatting of API return objects
   private def apiReturn = {result, String message = "", String status = "success" ->
@@ -49,7 +49,8 @@ class ApiController {
 
     def json = data as JSON
     log.debug (json)
-    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
+	render json
+//    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
 
   def index() {

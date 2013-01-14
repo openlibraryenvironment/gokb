@@ -35,10 +35,6 @@ public abstract class A_RefineAPIBridge extends Command {
     private static final String POST_HYPHENS          = "--";
 
     private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
-
-    private static final String PROP_API_URL          = "http://localhost:8080/gokb/api/";
-    // private static final String PROP_API_URL          = "http://gokb.k-int.com/gokb/api/";
-    private static final int    PROP_TIMEOUT          = 60000;
     
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
     
@@ -178,14 +174,14 @@ public abstract class A_RefineAPIBridge extends Command {
     	connection = (HttpURLConnection) url.openConnection();
         connection.setDoOutput(true);
         connection.setUseCaches(false);
-        connection.setConnectTimeout(PROP_TIMEOUT);
+        connection.setConnectTimeout(GOKbModuleImpl.properties.getInt("timeout"));
         connection.setRequestProperty("Connection", "Keep-Alive");
         
         // Set the user-agent
         RefineServlet.setUserAgent(connection);
         
         // Set the custom refine extension property.
-        connection.setRequestProperty("GOKb-version", "0.3");
+        connection.setRequestProperty("GOKb-version", GOKbModuleImpl.VERSION);
         
         if (type == METHOD_TYPE.POST) {
             connection.setDoInput(true);
@@ -207,7 +203,7 @@ public abstract class A_RefineAPIBridge extends Command {
     protected void getFromAPI (String apiMethod, Map<String, String[]> params, RefineAPICallback callback) throws Exception {
     	// Get from API method.
     	if (callback == null) callback = new RefineAPICallback();
-    	toAPI(METHOD_TYPE.GET, apiMethod, params, null, callback);    	
+    	toAPI(METHOD_TYPE.GET, apiMethod, params, null, callback);
     }
 
     protected Map<String, String[]> params(HttpServletRequest request) throws FileUploadException {
@@ -256,7 +252,7 @@ public abstract class A_RefineAPIBridge extends Command {
         InputStream inputStream = null;
 
         // construct the url String
-        String urlString = PROP_API_URL + apiMethod;
+        String urlString = GOKbModuleImpl.properties.getString("api.url") + apiMethod;
         
         // If get then append the param string here.
         if (type == METHOD_TYPE.GET) {
