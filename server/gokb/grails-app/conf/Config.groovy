@@ -124,3 +124,14 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 appDefaultPrefs {
   globalDateFormat='dd MMMM yyyy'
 }
+
+validationRules = [
+  [
+    ruletype:'OneOfColMustExist',
+    colnames:['print_identifier']
+  ],
+  [
+    ruletype:'OneOfColMustExist',
+    colnames:['online_identifier']
+  ],
+]
