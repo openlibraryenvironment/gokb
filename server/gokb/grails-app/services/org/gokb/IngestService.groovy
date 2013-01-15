@@ -180,9 +180,9 @@ class IngestService {
             log.debug("TIPP already present");
           }
   
-          // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
+          // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
           // instances we've just looked up.
-          if ( ctr % 250 == 0 ) {
+          if ( ctr % 25 == 0 ) {
             cleanUpGorm()
             pkg = Package.findByIdentifier("project:${project.id}");
             // Update project progress indicator, save in db so any observers can see progress
