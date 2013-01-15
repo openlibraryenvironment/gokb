@@ -285,7 +285,7 @@ class IngestService {
       fin.close();
     }
     catch ( Exception e ) {
-      log.error("Unexpected error trying to extrat refine data.",e);
+      log.error("Unexpected error trying to extract refine data.",e);
       e.printStackTrace();
     }
     
@@ -312,8 +312,10 @@ class IngestService {
 		}
 	  }
 	  else {
-		log.debug("zip file is null");
+		log.debug("extractRefineDataZip: zip file is null");
 	  }
+	  
+	  result
   }
   
   
