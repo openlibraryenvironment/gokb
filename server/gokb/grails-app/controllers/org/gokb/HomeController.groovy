@@ -1,6 +1,15 @@
 package org.gokb
 
+
 class HomeController {
 
-    def index() { }
+  def grailsApplication
+
+  def index() { }
+
+  def showRules() {
+    def result=[:]
+    result.rules = grailsApplication.config.validationRules
+    result
+  }
 }
