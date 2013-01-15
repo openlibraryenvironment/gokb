@@ -126,9 +126,9 @@ appDefaultPrefs {
 }
 
 validationRules = [
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'print_identifier'] ] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'online_identifier'] ] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'publication_title'] ] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] ]
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'print_identifier'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'online_identifier'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'publication_title'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] 
 ]
