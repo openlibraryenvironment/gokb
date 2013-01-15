@@ -261,25 +261,8 @@ class IngestService {
               }
               fos.flush()
               fos.close();
-  
-              // Open temp zip file as a zip object
-              if ( temp_data_zipfile ) {
-                java.util.zip.ZipFile zf = new java.util.zip.ZipFile(temp_data_zipfile)
-                log.debug("Getting data.txt");
-                java.util.zip.ZipEntry ze = zf.getEntry('data.txt');
-                if ( ze ) {
-                    log.debug("Got data.txt");
-                  result=[:]
-                  result.processingCompleted = false;
-                  processData(result, zf.getInputStream(ze));
-                }
-                else {
-                  log.error("Problem getting data.txt");
-                }
-              }
-              else {
-                log.debug("zip file is null");
-              }
+			  
+			  result = extractRefineDataZip(temp_data_zipfile)
             }
             finally {
               if ( temp_data_zipfile ) {
@@ -309,6 +292,31 @@ class IngestService {
     result
   }
 
+  def extractRefineDataZip (def zip_file) {
+
+	  def result=null
+	  
+	  // Open temp zip file as a zip object
+	  if ( zip_file ) {
+		java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zip_file)
+		log.debug("Getting data.txt")
+		java.util.zip.ZipEntry ze = zf.getEntry('data.txt')
+		if ( ze ) {
+		  log.debug("Got data.txt")
+		  result = [:]
+		  result.processingCompleted = false;
+		  processData(result, zf.getInputStream(ze));
+		}
+		else {
+		  log.error("Problem getting data.txt");
+		}
+	  }
+	  else {
+		log.debug("zip file is null");
+	  }
+  }
+  
+  
   def processData(result, is) {
     log.debug("processing refine data.txt");
     def bis = new BufferedReader(new InputStreamReader(is));
@@ -455,5 +463,4 @@ class IngestService {
       }
     }
   }
-
 }
