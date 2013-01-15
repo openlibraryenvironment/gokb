@@ -122,6 +122,9 @@ class ApiController {
 
   def projectCheckin() {
 
+	
+	log.debug(params)
+	
 	def f = request.getFile('projectFile')
 
 	if (f && !f.empty) {
@@ -146,10 +149,10 @@ class ApiController {
 	  if (project) {
 
 		// A quick hack to set the project provider, this should come from refine, but for testing purposes, we set this to Wiley
-		if ( !project.provider ) {
-		  log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
-		  project.provider = Org.findByName('Wiley') ?: new Org(name:'Wiley').save();
-		}
+//		if ( !project.provider ) {
+//		  log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
+//		  project.provider = Org.findByName('Wiley') ?: new Org(name:'Wiley').save();
+//		}
 
 		// Generate a filename...
 		def fileName = "project-${randomUUID()}.tar.gz"
@@ -168,7 +171,9 @@ class ApiController {
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
 		
-		if (params.ingest == true) {
+		// Make sure we null the progress...
+		project.setProgress(null)
+		if (params.ingest) {
 		  // Try and ingest the project too!
 		  projectIngest(project)
 		}
@@ -176,6 +181,7 @@ class ApiController {
 		// Save and flush.
 		project.save(flush: true, failOnError: true)
 
+		// Return the project data.
 		apiReturn(project)
 		return
 	  }
@@ -200,7 +206,7 @@ class ApiController {
   }
 
   private def projectIngest (RefineProject project) {
-	if (project.isCheckedIn()) {
+	if (project.getCheckedIn()) {
 
 	  // Do the ingest.
 	  log.debug("extract refine project");

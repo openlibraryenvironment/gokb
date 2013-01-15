@@ -147,6 +147,13 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 			  ),
 			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
 			  this.createControlLink(
+ 					project,
+ 					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name, ingest : true}, params)),
+ 					"ingest",
+ 					"Check the current project into GOKb along with any changes that you have made, and begin the ingest process."
+ 			  ),
+ 			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
+			  this.createControlLink(
 					project,
 					'command/gokb/project-checkin?' + $.param(params),
 					"cancel",

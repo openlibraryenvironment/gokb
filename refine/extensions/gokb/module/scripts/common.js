@@ -352,6 +352,8 @@ GOKb.projectDataAsParams = function (project) {
 	delete params.customMetadata;
 	params.project = project.id;
 	
+	if (params['gokb-id']) params.projectID = params['gokb-id'];
+	
 	// Return.
 	return params;
 };
