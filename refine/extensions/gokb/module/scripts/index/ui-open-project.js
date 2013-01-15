@@ -41,20 +41,19 @@ GOKb.ui.projects = function (elmt) {
     			  				
     			  				var status = $('<span />').attr("id", "projectStatus" + this.id);
     			  				if (this.checkedIn) {
-    			  					status.html("Checked In");
-    			  					if (this.progress) {
+    			  					status.text("Checked In");
+    			  					if ("progress" in this && this.progress != null) {
     			  						if (this.progress < 100) {
     			  							// Being ingested...
-    			  							status.html("Ingesting (" + this.progress + "%)");
-    			  							
+    			  							status.text("Ingesting (" + this.progress + "%)");
     			  						} else {
     			  							
     			  							// Ingested.
-    			  							status.html("Checked In (ingested)");
+    			  							status.text("Checked In (ingested)");
     			  						}
     			  					}
     			  				} else {
-    			  					status.html("Checked Out by " + this.checkedOutBy;
+    			  					status.text("Checked Out by " + this.checkedOutBy);
     			  				}
     			  				
     			  				// Add the row.
@@ -157,39 +156,28 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		  };
 			
 			// Check in link.
-			controls.push(
+			controls = controls.concat([
 			  this.createControlLink(
 					project,
 					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name}, params)),
 					"check&#45;in",
 					"Check the current project into GOKb along with any changes that you have made."
+			  ),
+			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
+			  this.createControlLink(
+ 					project,
+ 					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name, ingest : true}, params)),
+ 					"ingest",
+ 					"Check the current project into GOKb along with any changes that you have made, and begin the ingest process."
+ 			  ),
+ 			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
+			  this.createControlLink(
+					project,
+					'command/gokb/project-checkin?' + $.param(params),
+					"cancel",
+					"Check the current project into GOKb, but ignore any changes made."
 			  )
-			);
-			
-			// If the progress is null there are some none-ingested changes.
-//			if (!project.progress || project.progress == null) {
-//			
-//				controls = controls.concat([
-//				  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
-//				  this.createControlLink(
-//	 					project,
-//	 					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name, ingest : true}, params)),
-//	 					"ingest",
-//	 					"Check the current project into GOKb along with any changes that you have made, and begin the ingest process."
-//	 			  )
-//	 			]);
-//			}
-//			
-//			// Add the cancel link.
-//			controls = controls.concat([
-// 			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
-//			  this.createControlLink(
-//					project,
-//					'command/gokb/project-checkin?' + $.param(params),
-//					"cancel",
-//					"Check the current project into GOKb, but ignore any changes made."
-//			  )
-//			]);
+			]);
 			
 			// Also need to remove the links from the normal open-project tab.
 			for (var i = 0; i < Refine.actionAreas.length; i++) {
