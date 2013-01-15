@@ -124,7 +124,6 @@ class ApiController {
 
 	def f = request.getFile('projectFile')
 
-	log.debug(params)
 	if (f && !f.empty) {
 
 	  // Get the project.
@@ -171,7 +170,7 @@ class ApiController {
 		
 		if (params.ingest == true) {
 		  // Try and ingest the project too!
-		  projectIngest(project) 
+		  projectIngest(project)
 		}
 
 		// Save and flush.
@@ -220,6 +219,23 @@ class ApiController {
 	  }
 	} else {
 	  log.debug ("Attempted to ingest checked-out project.")
+	}
+  }
+  
+  def projectDataValid() {
+	def f = request.getFile('projectDataZip')
+
+	def validationResult = [:]
+	
+	if (f && !f.empty) {
+	  def parsed_data = extractRefineDataZip(f)
+	  
+	  log.debug("Validate the data in the zip");
+	  validationResult = ingestService.validate(parsed_data)
+	  apiReturn(validationResult)
+	} else {
+	  
+	  log.debug("No file sent to be validated.")
 	}
   }
 

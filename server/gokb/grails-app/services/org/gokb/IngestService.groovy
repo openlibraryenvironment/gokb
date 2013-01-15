@@ -53,7 +53,7 @@ class IngestService {
     int i=0;
     def col_positions = [:]
     project_data.columnDefinitions?.each { cd ->
-      log.debug("Assinging col ${cd.name} to position ${i}");
+      log.debug("Assigning col ${cd.name} to position ${i}");
       col_positions[cd.name] = i++;
     }
 
