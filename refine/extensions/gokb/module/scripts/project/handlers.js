@@ -177,7 +177,7 @@ GOKb.handlers.checkInWithProps = function() {
 				});
 			}
 		}
-	); 
+	}); 
 	
 	// Rename close button to cancel.
 	dialog.bindings.closeButton.text("Cancel");

@@ -1,4 +1,5 @@
 import org.gokb.cred.*;
+import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
 
 class BootStrap {
 
@@ -30,14 +31,14 @@ class BootStrap {
       UserRole.create adminUser, userRole
     }
 
-    log.debug("Make sure project files directory exists, config says it's at ${grailsApplication.config.project_dir}");
-    String fs = grailsApplication.config.project_dir
+	String fs = grailsApplication.config.project_dir
+	
+    log.debug("Make sure project files directory exists, config says it's at ${fs}");
     File f = new File(fs)
     if ( ! f.exists() ) {
-      log.debug("Creating upload directory path")
+      log.debug("Creating upload directory path.")
       f.mkdirs()
     }
-
 
     assertPublisher('Wiley');
     assertPublisher('Random House');

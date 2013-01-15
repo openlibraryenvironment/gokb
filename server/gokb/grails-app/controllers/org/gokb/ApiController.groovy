@@ -116,7 +116,6 @@ class ApiController {
         // Get the file and send the file to the client.
         def file = new File(grailsApplication.config.project_dir + project.file)
         
-        
         // Send the file.
         response.setContentType("application/x-gzip")
         response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
