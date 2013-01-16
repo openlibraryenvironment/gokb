@@ -53,7 +53,7 @@ class IngestService {
     int i=0;
     def col_positions = [:]
     project_data.columnDefinitions?.each { cd ->
-      log.debug("Assinging col ${cd.name} to position ${i}");
+      log.debug("Assigning col ${cd.name} to position ${i}");
       col_positions[cd.name] = i++;
     }
 
@@ -180,9 +180,9 @@ class IngestService {
             log.debug("TIPP already present");
           }
   
-          // Every 100 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
+          // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
           // instances we've just looked up.
-          if ( ctr % 250 == 0 ) {
+          if ( ctr % 25 == 0 ) {
             cleanUpGorm()
             pkg = Package.findByIdentifier("project:${project.id}");
             // Update project progress indicator, save in db so any observers can see progress
@@ -261,25 +261,8 @@ class IngestService {
               }
               fos.flush()
               fos.close();
-  
-              // Open temp zip file as a zip object
-              if ( temp_data_zipfile ) {
-                java.util.zip.ZipFile zf = new java.util.zip.ZipFile(temp_data_zipfile)
-                log.debug("Getting data.txt");
-                java.util.zip.ZipEntry ze = zf.getEntry('data.txt');
-                if ( ze ) {
-                    log.debug("Got data.txt");
-                  result=[:]
-                  result.processingCompleted = false;
-                  processData(result, zf.getInputStream(ze));
-                }
-                else {
-                  log.error("Problem getting data.txt");
-                }
-              }
-              else {
-                log.debug("zip file is null");
-              }
+			  
+			  result = extractRefineDataZip(temp_data_zipfile)
             }
             finally {
               if ( temp_data_zipfile ) {
@@ -302,13 +285,40 @@ class IngestService {
       fin.close();
     }
     catch ( Exception e ) {
-      log.error("Unexpected error trying to extrat refine data.",e);
+      log.error("Unexpected error trying to extract refine data.",e);
       e.printStackTrace();
     }
     
     result
   }
 
+  def extractRefineDataZip (def zip_file) {
+
+	  def result=null
+	  
+	  // Open temp zip file as a zip object
+	  if ( zip_file ) {
+		java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zip_file)
+		log.debug("Getting data.txt")
+		java.util.zip.ZipEntry ze = zf.getEntry('data.txt')
+		if ( ze ) {
+		  log.debug("Got data.txt")
+		  result = [:]
+		  result.processingCompleted = false;
+		  processData(result, zf.getInputStream(ze));
+		}
+		else {
+		  log.error("Problem getting data.txt");
+		}
+	  }
+	  else {
+		log.debug("extractRefineDataZip: zip file is null");
+	  }
+	  
+	  result
+  }
+  
+  
   def processData(result, is) {
     log.debug("processing refine data.txt");
     def bis = new BufferedReader(new InputStreamReader(is));
@@ -462,5 +472,4 @@ class IngestService {
       log.error("Provider not set, cannot establish rules!");
     }
   }
-
 }

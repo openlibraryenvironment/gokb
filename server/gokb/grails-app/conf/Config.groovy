@@ -11,8 +11,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
 
-
-project_dir='./project-files/'
+project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format

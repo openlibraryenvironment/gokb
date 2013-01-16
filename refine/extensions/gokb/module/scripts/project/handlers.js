@@ -142,7 +142,7 @@ GOKb.handlers.history = function() {
 	  }
 		GOKb.showDialog(dialog);
 	});
-}
+};
 
 /**
  * Prompt the user to check project properties and then check in the project.
@@ -156,9 +156,6 @@ GOKb.handlers.checkInWithProps = function() {
 	dialog.bindings.form.attr("action", "command/gokb/project-checkin");
 	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
 	
-	// Add the project params as hidden fields to the form.
-	GOKb.paramsAsHiddenFields(dialog.bindings.form, params);
-	
 	// Change the submit button text to be check-in
 	dialog.bindings.submit.attr("value", "Save and Check-in");
 	
@@ -170,36 +167,30 @@ GOKb.handlers.checkInWithProps = function() {
 			
 				var orgList = $('#org', dialog.bindings.form);
 				$.each(data.result.datalist, function (value, display) {
+					var opt = $('<option />', {"value" : value})
+						.text(display)
+					;
+					
+					// Select the current value...
+					if (value == params.org) {
+						opt.attr('selected', 'selected');
+					}
+					
+					// Append the arguments...
 					orgList.append(
-					  $('<option />', {"value" : value})
-					  .text(display)
+					  opt
 					);
 				});
+				
+				// Add the project params as hidden fields to the form.
+				GOKb.paramsAsHiddenFields(dialog.bindings.form, params);
 			}
 		}
-	); 
+	}); 
 	
 	// Rename close button to cancel.
 	dialog.bindings.closeButton.text("Cancel");
 	
 	// Show the form.
 	GOKb.showDialog(dialog);
-}
-
-
-/**
- * Check in the project for the first time and add to the repository.
- */
-GOKb.handlers.addToRepo = function() {
-	
-	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
-	
-	GOKb.doRefineCommand("gokb/project-checkin", params, null, 
-	{
-  	onDone : function (data) {
-  		
-  		// Redirect to the home page.
-  		window.location = "/";
-    }
-  });
-}
+};

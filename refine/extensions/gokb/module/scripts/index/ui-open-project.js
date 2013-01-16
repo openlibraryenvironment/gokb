@@ -39,12 +39,32 @@ GOKb.ui.projects = function (elmt) {
     			  					;
     			  				}
     			  				
+    			  				var status = $('<span />').attr("id", "projectStatus" + this.id).attr("ref", this.id);
+    			  				if (this.checkedIn) {
+    			  					status.text("Checked In");
+    			  					if ("progress" in this && this.progress != null) {
+    			  						if (this.progress < 100) {
+    			  							// Being ingested...
+    			  							status.text("Ingesting (" + this.progress + "%)");
+    			  							
+    			  							// Set the class so we know to update this status.
+    			  							status.addClass("ingesting");
+    			  						} else {
+    			  							
+    			  							// Ingested.
+    			  							status.text("Checked In (ingested)");
+    			  						}
+    			  					}
+    			  				} else {
+    			  					status.text("Checked Out by " + this.checkedOutBy);
+    			  				}
+    			  				
     			  				// Add the row.
     			  				var row = [
     			  				  self.getProjectControls(this, localProjects),
     			  				  name,
     			  				  this.description,
-    			  				  this.checkedIn ? "Checked In" : "Checked Out by " + this.checkedOutBy,
+    			  				  status,
     			  				  formatRelativeDate(this.modified)
     			  				];
     			  				
@@ -88,6 +108,41 @@ GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, tit
 	;
 };
 
+// Update the status of the project.
+GOKb.ui.projects.prototype.updateStatus = function (statusElem) {
+	var status = $(statusElem);
+	var id = status.attr('ref');
+	GOKb.doCommand("projectIngestProgress", {projectID : id}, null, {
+		onDone : function(data) {
+			if ("result" in data && "progress" in data.result) {
+				
+				var progress = data.result.progress;
+				if (progress < 100) {
+
+					// Hide anything that should not be seen while ingesting.
+					$('.ingestingHidden', status.parents('tr')).hide();
+					
+					// Being ingested...
+					status.text("Ingesting (" + progress + "%)");
+					
+					// Set the class so we know to update this status.
+					status.addClass("ingesting");
+				} else {
+					
+					// Finished.
+					// Show anything hidden while ingesting.
+					$('.ingestingHidden', status.parents('tr')).show();
+					
+					status.text("Checked In (Ingested)");
+					
+					// Set the class so we know to update this status.
+					status.removeClass("ingesting");
+				}
+			}
+		}
+	});
+};
+
 // Check to see if the supplied GOKb project matches a local project.
 // In other words is this project checked out by teh current user?
 GOKb.ui.projects.prototype.isLocalProject = function(project, localProjects) {
@@ -108,6 +163,7 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		    "check&#45;out",
 		    "Checkout this project from GOKb to work on it."
 		  )
+		  .addClass( "ingestingHidden" )
 			.click(function(event) {
 				
 				// Stop the anchor moving to a different location.
@@ -138,6 +194,7 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		  	projectID		: project.id,
 		  };
 			
+			// Check in link.
 			controls = controls.concat([
 			  this.createControlLink(
 					project,
@@ -146,6 +203,13 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 					"Check the current project into GOKb along with any changes that you have made."
 			  ),
 			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
+			  this.createControlLink(
+ 					project,
+ 					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name, ingest : true}, params)),
+ 					"ingest",
+ 					"Check the current project into GOKb along with any changes that you have made, and begin the ingest process."
+ 			  ),
+ 			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
 			  this.createControlLink(
 					project,
 					'command/gokb/project-checkin?' + $.param(params),
@@ -188,6 +252,22 @@ GOKb.ui.projects.prototype.resize = function() {
   this._elmts.projects
   	.css("height", (height - controlsHeight - DOM.getVPaddings(this._elmts.projects)) + "px");
   
+  // We know this method is called just before the draw of the UI,
+  // so lets add some monitoring code here, that fires every 60 seconds.
+  var theUi = this;
+  
+  // The method to do the update.
+  var updateStatus = function() {
+  	$('.ingesting', theUi._elmts.projects).each(function() {
+	  	theUi.updateStatus(this);
+	  });
+  };
+  
+  // Dothe update.
+  updateStatus();
+  
+  // Set to repeat every 5 seconds.
+  setInterval(updateStatus, 5000);
 };
 
 // Push the to the action areas.
