@@ -28,12 +28,12 @@
 
     <property name="fullname" value="${name}-${version}-${revision}" />
     
-    <property name="refine.dir" value="${basedir}/../../main" />
+    <property name="refine.dir" value="${basedir}/../../main"/>
     <property name="refine.webinf.dir" value="${refine.dir}/webapp/WEB-INF" />
     <property name="refine.modinf.dir" value="${refine.dir}/webapp/modules/core/MOD-INF" />
     <property name="refine.classes.dir" value="${refine.webinf.dir}/classes" />
     <property name="refine.lib.dir" value="${refine.webinf.dir}/lib" />
-    <property name="server.dir" value="${basedir}/../../server" />
+    <property name="server.dir" value="${basedir}/../../server"/>
     <property name="server.lib.dir" value="${server.dir}/lib" />
     
     <property name="src.dir" value="${basedir}/src" />
@@ -57,6 +57,7 @@
             
     <target name="build_java">
         <mkdir dir="${classes.dir}" />
+        <mkdir dir="${lib.dir}" />
         <javac encoding="utf-8" destdir="${classes.dir}" debug="true" includeAntRuntime="no">
             <src path="${src.dir}"/>
             <classpath refid="class.path" />

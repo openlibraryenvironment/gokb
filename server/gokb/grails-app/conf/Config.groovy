@@ -2,14 +2,16 @@
 // config files can be ConfigSlurper scripts, Java properties files, or classes
 // in the classpath in ConfigSlurper format
 
-// grails.config.locations = [ "classpath:${appName}-config.properties",
-//                             "classpath:${appName}-config.groovy",
-//                             "file:${userHome}/.grails/${appName}-config.properties",
-//                             "file:${userHome}/.grails/${appName}-config.groovy"]
+grails.config.locations = [ "classpath:${appName}-config.properties",
+                            "classpath:${appName}-config.groovy",
+                            "file:${userHome}/.grails/${appName}-config.properties",
+                            "file:${userHome}/.grails/${appName}-config.groovy"]
 
 // if (System.properties["${appName}.config.location"]) {
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
+
+project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -76,6 +78,9 @@ log4j = {
     //appenders {
     //    console name:'stdout', layout:pattern(conversionPattern: '%c{2} %m%n')
     //}
+    appenders {
+        console name: "stdout", threshold: org.apache.log4j.Level.ALL
+    }
 
     error  'org.codehaus.groovy.grails.web.servlet',        // controllers
            'org.codehaus.groovy.grails.web.pages',          // GSP
@@ -89,7 +94,15 @@ log4j = {
            'org.hibernate',
            'net.sf.ehcache.hibernate'
 		   
-	debug  'grails.app'
+   debug  'grails.app.controllers',
+          'grails.app.service',
+          'grails.app.services',
+          'grails.app.domain',
+          'grails.app.tagLib',
+          'grails.app.filters',
+          // 'grails.app.conf',
+          'grails.app.jobs' // ,
+
 }
 
 // Added by the Spring Security Core plugin:
@@ -106,3 +119,15 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
 ]
 
+
+appDefaultPrefs {
+  globalDateFormat='dd MMMM yyyy'
+}
+
+validationRules = [
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'print_identifier'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'online_identifier'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'publication_title'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] 
+]

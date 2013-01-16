@@ -2,7 +2,7 @@ package org.gokb.refine;
 
 import org.gokb.cred.KBComponent;
 
-public class Document extends KBComponent {
+public class Document {
 
 //	String fingerprintStructure
 	String fingerprintContents

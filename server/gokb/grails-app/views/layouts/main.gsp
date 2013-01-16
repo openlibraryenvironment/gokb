@@ -10,39 +10,30 @@
     <title><g:layoutTitle default="GoKB"/></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
+
     <g:layoutHead/>
     <r:layoutResources />
+
   </head>
-  <body class="public">
+
+  <body>
+
     <div class="navbar navbar-fixed-top">
-      <div class="navbar-inner navbar-public">
-        <div class="container">
-          <!--
-          <img class="brand" alt="Knowledge Base + logo" src="images/gokb_logo_small.png" />
-          -->
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">GOKb</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li>
-                <a href="/kbplus/"> Home </a>
-              </li>
-              <li class="active">
-                <a href="/kbplus/about"> About KB+ </a>
-              </li>
-              <li>
-                <a href="/kbplus/signup"> Sign Up </a>
-              </li>
-              <li>
-                <a href="/kbplus/publicExport"> Exports </a>
-              </li>
-              <li class="last">
-                <a href="/kbplus/contact-us"> Contact Us </a>
-              </li>
-            </ul>           
+              <li class="active"><g:link controller="home" action="index">Home</g:link></li>
+              <li class="active"><g:link controller="search" action="index">Search</g:link></li>
+            </ul>
+            <p class="navbar-text pull-right">Not logged in</p>
           </div>
-        </div>           
+        </div>
       </div>
     </div>
-    <div class="navbar-push-public"></div>
+
+<div class="navbar-push"></div>
 
     <g:layoutBody/>
 

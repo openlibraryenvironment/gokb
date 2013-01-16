@@ -1,5 +1,4 @@
 var GOKb = {
-	version : 0.3,
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
@@ -7,7 +6,8 @@ var GOKb = {
   ui: {},
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   api:{
-  	url : "http://gokb.k-int.com/gokb/api/"
+  	url : "http://localhost:8080/gokb/api/"
+  	// url : "http://gokb.k-int.com/gokb/api/"
   },
   refine:{},
 };
@@ -143,11 +143,6 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	var done = false;
   var dismissBusy = null;
   
-  ajaxObj.beforeSend = function (request)
-  {
-    request.setRequestHeader("GOKb-version", GOKb.version);
-  };
-  
   // Use the built in UI to show AJAX in progress.
   GOKb.setAjaxInProgress();
   
@@ -205,7 +200,11 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
  * callback will be triggered,code otherwise the onDone is run. 
  */
 GOKb.doCommand = function(command, params, data, callbacks) {
-  callbacks = callbacks || {};
+	
+	return GOKb.doRefineCommand ("gokb/" + command, params, data, callbacks);
+  /*
+	
+	callbacks = callbacks || {};
   params = params || {};
 
   var ajaxObj = {
@@ -240,6 +239,7 @@ GOKb.doCommand = function(command, params, data, callbacks) {
   
   // Show the GOKb waiting message
   return GOKb.ajaxWaiting (ajaxObj, GOKb.messageBusy);
+  */
 };
 
 /**
@@ -352,6 +352,8 @@ GOKb.projectDataAsParams = function (project) {
 	delete params.customMetadata;
 	params.project = project.id;
 	
+	if (params['gokb-id']) params.projectID = params['gokb-id'];
+	
 	// Return.
 	return params;
 };
@@ -368,7 +370,14 @@ GOKb.paramsAsHiddenFields = function (form, params) {
 		    .attr('value', params[key])
 		);
 	}
-}
+};
+
+/**
+ * Get ref data from GOKb
+ */
+GOKb.getRefData = function (params, callbacks) {
+	GOKb.doCommand ("refdata", params, null, callbacks);
+};
 
 /**
  * Check versions match every minute.

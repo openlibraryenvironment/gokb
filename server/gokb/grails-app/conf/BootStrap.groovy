@@ -1,6 +1,9 @@
 import org.gokb.cred.*;
+import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
 
 class BootStrap {
+
+  def grailsApplication
 
   def init = { servletContext ->
     // Global System Roles
@@ -27,6 +30,32 @@ class BootStrap {
     if (!adminUser.authorities.contains(userRole)) {
       UserRole.create adminUser, userRole
     }
+
+	String fs = grailsApplication.config.project_dir
+	
+    log.debug("Make sure project files directory exists, config says it's at ${fs}");
+    File f = new File(fs)
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path.")
+      f.mkdirs()
+    }
+
+
+    // assertPublisher('Wiley');
+    // assertPublisher('Random House');
+    // assertPublisher('Cambridge University Press');
+    // assertPublisher('Sage');
+  }
+
+  def assertPublisher(name) {
+    def p = Org.findByName(name)
+    if ( !p ) {
+      def content_provider_role = RefdataCategory.lookupOrCreate('Org Role','Content Provider');
+      p = new Org(name:name)
+      p.tags.add(content_provider_role);
+      p.save(flush:true);
+    }
+
   }
 
 

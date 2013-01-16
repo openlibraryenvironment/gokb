@@ -142,7 +142,7 @@ GOKb.handlers.history = function() {
 	  }
 		GOKb.showDialog(dialog);
 	});
-}
+};
 
 /**
  * Prompt the user to check project properties and then check in the project.
@@ -156,45 +156,41 @@ GOKb.handlers.checkInWithProps = function() {
 	dialog.bindings.form.attr("action", "command/gokb/project-checkin");
 	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
 	
-	// Add the project params as hidden fields to the form.
-	GOKb.paramsAsHiddenFields(dialog.bindings.form, params);
-	
 	// Change the submit button text to be check-in
 	dialog.bindings.submit.attr("value", "Save and Check-in");
 	
-	// List of orgs :To be retrieved from GOKb.
-//	var orgs = {org1 : "oranisation1",org2 : "oranisation2",org3 : "oranisation3"};
-//	
-//	// Add the organisations.
-//	var orgList = $('#organisation', dialog.bindings.form);
-//	$.each(orgs, function (value, display) {
-//		orgList.append(
-//		  $('<option />', {"value" : value})
-//		  .text(display)
-//		);
-//	});
+	// Get the refdata from GOKb service.
+	GOKb.getRefData ({type: "cp"}, {
+		onDone : function (data) {
+			
+			if ("result" in data && "datalist" in data.result) {
+			
+				var orgList = $('#org', dialog.bindings.form);
+				$.each(data.result.datalist, function (value, display) {
+					var opt = $('<option />', {"value" : value})
+						.text(display)
+					;
+					
+					// Select the current value...
+					if (value == params.org) {
+						opt.attr('selected', 'selected');
+					}
+					
+					// Append the arguments...
+					orgList.append(
+					  opt
+					);
+				});
+				
+				// Add the project params as hidden fields to the form.
+				GOKb.paramsAsHiddenFields(dialog.bindings.form, params);
+			}
+		}
+	}); 
 	
 	// Rename close button to cancel.
 	dialog.bindings.closeButton.text("Cancel");
 	
 	// Show the form.
 	GOKb.showDialog(dialog);
-}
-
-
-/**
- * Check in the project for the first time and add to the repository.
- */
-GOKb.handlers.addToRepo = function() {
-	
-	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
-	
-	GOKb.doRefineCommand("gokb/project-checkin", params, null, 
-	{
-  	onDone : function (data) {
-  		
-  		// Redirect to the home page.
-  		window.location = "/";
-    }
-  });
-}
+};
