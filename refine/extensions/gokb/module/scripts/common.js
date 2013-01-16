@@ -4,8 +4,10 @@ var GOKb = {
   handlers: {},
 	menuItems: [],
   ui: {},
+  api : {},
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   refine:{},
+  versionError : false,
 };
 
 /**
@@ -17,6 +19,15 @@ GOKb.defaultError = function (data) {
 	var msg;
 	if  (data && "message" in data ) {
 		msg = data.message;
+		
+		// Check for the special case version error.
+		if ("result" in data && "errorType" in data.result && data.result.errorType == "versionError") {
+			
+			// Remove close button.
+			error.bindings.closeButton.hide();
+			
+			GOKb.versionError = true;
+		}
 	} else {
 		msg = "There was an error contacting the GOKb server.";
 	}
@@ -107,18 +118,19 @@ GOKb.createDialog = function(title, template) {
  */
 GOKb.createErrorDialog = function(title, template) {
 	
-	// Temporary set to same as dialog.
-	var error = GOKb.createDialog(title, template);
-	error.html.addClass("error");
-	error.bindings.closeButton.text("OK");
-	return error;
+	if (!GOKb.versionError) {
+		// Temporary set to same as dialog.
+		var error = GOKb.createDialog(title, template);
+		error.html.addClass("error");
+		error.bindings.closeButton.text("OK");
+		return error;
+	}
 };
 
 /**
  * Helper method for showing dialogs within this module.
  */
 GOKb.showDialog = function(dialog) {
-	
 	// Run uniform on any form elements
   if (dialog.bindings.form) {
   	$("select, input, button, textarea", dialog.bindings.form).uniform();
@@ -205,37 +217,40 @@ GOKb.doCommand = function(command, params, data, callbacks) {
  */
 GOKb.doRefineCommand = function(command, params, data, callbacks) {
 	
-	var ajaxObj = {
-  	cache 		: false,
-    url 			: "command/" + command + "?" + $.param(params), 
-    data 			: data,
-    timeout		: GOKb.timeout,
-    dataType 	: "json",
-    success	: function (dataR) {
-      if (dataR.code == "error") {
-        if ("onError" in callbacks) {
-          try {
-            callbacks.onError(dataR);
-          } catch (e) {
-          	GOKb.reportException(e);
-          }
-        } else {
-        	GOKb.defaultError(dataR);
-        }
-      } else {
-        if ("onDone" in callbacks) {
-          try {
-            callbacks.onDone(dataR);
-          } catch (e) {
-          	GOKb.reportException(e);
-          }
-        }
-      }
-    }
-	};
+	if (!GOKb.versionError) {
 	
-	// Show default waiting message
-	return GOKb.ajaxWaiting (ajaxObj);
+		var ajaxObj = {
+	  	cache 		: false,
+	    url 			: "command/" + command + "?" + $.param(params), 
+	    data 			: data,
+	    timeout		: GOKb.timeout,
+	    dataType 	: "json",
+	    success	: function (dataR) {
+	      if (dataR.code == "error") {
+	        if ("onError" in callbacks) {
+	          try {
+	            callbacks.onError(dataR);
+	          } catch (e) {
+	          	GOKb.reportException(e);
+	          }
+	        } else {
+	        	GOKb.defaultError(dataR);
+	        }
+	      } else {
+	        if ("onDone" in callbacks) {
+	          try {
+	            callbacks.onDone(dataR);
+	          } catch (e) {
+	          	GOKb.reportException(e);
+	          }
+	        }
+	      }
+	    }
+		};
+		
+		// Show default waiting message
+		return GOKb.ajaxWaiting (ajaxObj);
+	}
 };
 
 
@@ -338,9 +353,17 @@ GOKb.getRefData = function (params, callbacks) {
 };
 
 /**
- * Check versions match every minute.
+ * Check for access to API.
  */
-//(GOKb.checkVersion = function() {
-//  // do some stuff
-//  setTimeout(GOKb.checkVersion, 60000);
-//})();
+(GOKb.checkIsUp = function() {
+	
+	// Just call with empty callbacks. If the api is not up there will be a timeout.
+	// If the versions are wrong then the default error callback will be fired and the,
+	// version missmatch reported to the user.
+	GOKb.doCommand("isUp", {}, {}, {});
+	
+	if (!GOKb.versionError) {
+		// Check again in 30 seconds.
+		setTimeout(GOKb.checkIsUp, 60000);
+	}
+})();

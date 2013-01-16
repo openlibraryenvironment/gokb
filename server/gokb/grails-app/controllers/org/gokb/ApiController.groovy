@@ -15,7 +15,7 @@ import org.gokb.cred.Org;
 
 class ApiController {
 
-  private static final String REQUIRED_EXTENSION_VERSION = "0.5"
+  private final String REQUIRED_EXTENSION_VERSION = "0.5"
 
   def ingestService
   def grailsApplication
@@ -31,12 +31,20 @@ class ApiController {
   private versionCheck() {
 	def gokbVersion = request.getHeader("GOKb-version")
 	if (gokbVersion != REQUIRED_EXTENSION_VERSION) {
-	  apiReturn([:], "You are using an out of date version of the GOKb extension. " +
-		  "Please download and install the latest version. From <a href='http://gokb.k-int.com/extension/latest' >gokb.k-int.com/extension/latest</a>",
+	  apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
+		  "Please download and install the latest version from <a href='http://gokb.k-int.com/extension/latest' >gokb.k-int.com/extension/latest</a>." +
+		  "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
 		  "error"
 	  )
 	  return false
 	}
+  }
+  
+  /**
+   * Check if the api is up. Just return true.
+   */
+  def isUp() {
+	apiReturn(["isUp" : true])
   }
 
   // Internal API return object that ensures consistent formatting of API return objects
