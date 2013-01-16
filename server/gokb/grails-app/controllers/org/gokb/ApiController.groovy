@@ -102,7 +102,7 @@ class ApiController {
 	if (params.projectID) {
 
 	  // Get the project.
-	  def project = RefineProject.load(params.projectID)
+	  def project = RefineProject.get(params.projectID)
 
 	  if (project) {
 		
