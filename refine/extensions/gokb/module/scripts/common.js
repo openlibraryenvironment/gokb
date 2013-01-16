@@ -363,7 +363,7 @@ GOKb.getRefData = function (params, callbacks) {
 	GOKb.doCommand("isUp", {}, {}, {});
 	
 	if (!GOKb.versionError) {
-		// Check again in 30 seconds.
+		// Check again in 1 minute.
 		setTimeout(GOKb.checkIsUp, 60000);
 	}
 })();
