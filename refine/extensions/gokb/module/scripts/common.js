@@ -5,10 +5,6 @@ var GOKb = {
 	menuItems: [],
   ui: {},
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
-  api:{
-  	url : "http://localhost:8080/gokb/api/"
-  	// url : "http://gokb.k-int.com/gokb/api/"
-  },
   refine:{},
 };
 
@@ -202,44 +198,6 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 GOKb.doCommand = function(command, params, data, callbacks) {
 	
 	return GOKb.doRefineCommand ("gokb/" + command, params, data, callbacks);
-  /*
-	
-	callbacks = callbacks || {};
-  params = params || {};
-
-  var ajaxObj = {
-  	cache : false,
-    url : GOKb.api.url + command + "?" + $.param(params),
-    timeout: GOKb.timeout,
-    data : data,
-    success : function (dataR) {
-
-      if (dataR.code == "error") {
-        if ("onError" in callbacks) {
-          try {
-            callbacks.onError(dataR);
-          } catch (e) {
-          	GOKb.reportException(e);
-          }
-        } else {
-        	GOKb.defaultError(dataR);
-        }
-      } else {
-        if ("onDone" in callbacks) {
-          try {
-            callbacks.onDone(dataR);
-          } catch (e) {
-          	GOKb.reportException(e);
-          }
-        }
-      }
-    },
-    dataType : "jsonp"
-  };
-  
-  // Show the GOKb waiting message
-  return GOKb.ajaxWaiting (ajaxObj, GOKb.messageBusy);
-  */
 };
 
 /**
