@@ -97,22 +97,28 @@ class ApiController {
 	  def project = RefineProject.load(params.projectID)
 
 	  if (project) {
+		
+		if (project.getCheckedIn()) {
 
-		// Get the file and send the file to the client.
-		def file = new File(grailsApplication.config.project_dir + project.file)
-
-		// Send the file.
-		response.setContentType("application/x-gzip")
-		response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
-		response.outputStream << file.newInputStream()
-
-		// Set the checkout details.
-		def chOut = (params.checkOutName ?: "No Name Given") +
-			" (" + (params.checkOutEmail ?: "No Email Given") + ")"
-		project.setCheckedOutBy(chOut)
-		project.setCheckedIn(false)
-		project.setLocalProjectID(params.long("localProjectID"))
-		return
+    		// Get the file and send the file to the client.
+    		def file = new File(grailsApplication.config.project_dir + project.file)
+    
+    		// Send the file.
+    		response.setContentType("application/x-gzip")
+    		response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
+    		response.outputStream << file.newInputStream()
+    
+    		// Set the checkout details.
+    		def chOut = (params.checkOutName ?: "No Name Given") +
+    			" (" + (params.checkOutEmail ?: "No Email Given") + ")"
+    		project.setCheckedOutBy(chOut)
+    		project.setCheckedIn(false)
+    		project.setLocalProjectID(params.long("localProjectID"))
+    		return
+		} else {
+			// Project already checked out.
+			log.debug ("Project already checked out")
+		}
 	  }
 	}
 

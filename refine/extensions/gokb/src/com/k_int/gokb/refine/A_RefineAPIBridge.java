@@ -1,5 +1,6 @@
 package com.k_int.gokb.refine;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -8,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.InvalidClassException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -17,6 +19,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.google.refine.RefineServlet;
 import com.google.refine.commands.Command;
@@ -37,6 +41,16 @@ public abstract class A_RefineAPIBridge extends Command {
     private static final String POST_BOUNDARY         = "*****-REFINE_API_BRIDGE_BOUNDARY-*****";
     
     private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
+    
+    protected static String getJSONFromStream(InputStream is) throws IOException, JSONException {
+      BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+      StringBuilder sb = new StringBuilder();
+      int cp;
+      while ((cp = rd.read()) != -1) {
+        sb.append((char) cp);
+      }
+      return (new JSONObject(sb.toString())).toString();
+    }
     
     private static void postFilesAndParams(HttpURLConnection conn, Map<String, String[]> params, Map<String, ?> files) throws IOException, FileUploadException {
         DataOutputStream dos = new DataOutputStream( conn.getOutputStream() ); 

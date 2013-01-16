@@ -39,6 +39,8 @@ public class CheckOutProject extends A_RefineAPIBridge {
             // Add the local generated project ID.
             params.put("localProjectID", new String[]{"" + localID});
             
+            
+            
             // Call the project download method with our callback to import the project.
             postToAPI("projectCheckout", params, null, new RefineAPICallback() {
 
