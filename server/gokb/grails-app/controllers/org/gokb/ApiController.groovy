@@ -32,9 +32,9 @@ class ApiController {
 	def gokbVersion = request.getHeader("GOKb-version")
 	if (gokbVersion != REQUIRED_EXTENSION_VERSION) {
 	  apiReturn([:], "You are using an out of date version of the GOKb extension. " +
-		  "Please download and install the latest version. From http://gokb.k-int.com/extension/latest",
+		  "Please download and install the latest version. From <a href='http://gokb.k-int.com/extension/latest' >gokb.k-int.com/extension/latest</a>",
 		  "error"
-		  )
+	  )
 	  return false
 	}
   }
