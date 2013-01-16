@@ -278,4 +278,21 @@ class ApiController {
 
 	apiReturn(result)
   }
+  
+  def projectIngestProgress() {
+	if (params.projectID) {
+	  
+	  // Get the project.
+	  def project = RefineProject.get(params.projectID)
+
+	  if (project) {
+		// Return the progress.
+		apiReturn ( [progress : project.getProgress()] )
+		return
+	  }
+	  
+	  // Return a 404.
+	  response.status = 404;
+	}
+  }
 }
