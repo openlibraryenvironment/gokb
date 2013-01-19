@@ -309,4 +309,24 @@ class ApiController {
 	  response.status = 404;
 	}
   }
+
+  /**
+   *   Return a JSON structured array of the fields that should be collected when a project is checked in for the
+   *   first time
+   */
+  def getProjectProfileProperties {
+    def result = [
+      // Fiels 1 - Provider
+      [
+        label:'Provider',
+        type:'refdata',
+        refdataType:'cp'
+      ],
+      [
+        label:'Notes',
+        type:'string'
+      ]
+    ]
+    apiReturn(result)
+  }
 }
