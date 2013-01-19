@@ -314,7 +314,7 @@ class ApiController {
    *   Return a JSON structured array of the fields that should be collected when a project is checked in for the
    *   first time
    */
-  def getProjectProfileProperties {
+  def getProjectProfileProperties() {
     def result = [
       // Fiels 1 - Provider
       [
