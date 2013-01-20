@@ -185,11 +185,18 @@ class ApiController {
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
 		
+	        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
+                // suggesting rules or validation.
+      	        log.debug("parse refine project");
+	        def parsed_project_file = ingestService.extractRefineproject(project.file)
+
+                def possible_rules = ingestService.findRules(parsed_project_file)
+
 		// Make sure we null the progress...
 		project.setProgress(null)
 		if (params.ingest) {
 		  // Try and ingest the project too!
-		  projectIngest(project)
+		  projectIngest(project,parsed_project_file)
 		}
 
 		// Save and flush.
@@ -219,13 +226,9 @@ class ApiController {
 	response.status = 404;
   }
 
-  private def projectIngest (RefineProject project) {
+  private def projectIngest (RefineProject project, parsed_data) {
+
 	if (project.getCheckedIn()) {
-
-	  // Do the ingest.
-	  log.debug("extract refine project");
-	  def parsed_data = ingestService.extractRefineproject(project.file)
-
 	  log.debug("Validate the project");
 	  def validationResult = ingestService.validate(parsed_data)
 	  project.lastValidationResult = validationResult.messages

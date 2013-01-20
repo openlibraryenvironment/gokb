@@ -472,4 +472,15 @@ class IngestService {
       log.error("Provider not set, cannot establish rules!");
     }
   }
+
+
+  /**
+   *  Look at the project header, extract fingerprints, try to find matching rules that could be applied
+   *  to this upload
+   */
+
+  def findRules(parsed_project_file) {
+    // Iterate over columns
+  }
+
 }
