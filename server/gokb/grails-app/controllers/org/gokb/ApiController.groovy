@@ -190,7 +190,13 @@ class ApiController {
       	        log.debug("parse refine project");
 	        def parsed_project_file = ingestService.extractRefineproject(project.file)
 
-                def possible_rules = ingestService.findRules(parsed_project_file)
+                try {
+                  def possible_rules = ingestService.findRules(parsed_project_file)
+                  project.possibleRulesString = possible_rules as JSON
+                }
+                catch ( Exception e ) {
+                  log.error("Problem trying to match rules",e)
+                }
 
 		// Make sure we null the progress...
 		project.setProgress(null)

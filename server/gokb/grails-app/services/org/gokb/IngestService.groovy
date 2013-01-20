@@ -480,7 +480,30 @@ class IngestService {
    */
 
   def findRules(parsed_project_file) {
+
+    def result = []
+    def extracted_fingerprints = []
+
     // Iterate over columns
+    parsed_project_file.columnDefinitions.each { cd ->
+      log.debug("Considering column ${cd.name}");
+      def fingerprint="core/column-rename:${cd.name}"
+      extracted_fingerprints.add(fingerprint)
+    }
+
+    extracted_fingerprints.each { fp ->
+      findRulesByFingerprint('provider',provider,fp,result);
+      findRulesByFingerprint('global',null,fp,result);
+    }
+  }
+
+  def findRulesByFingerprint(scope,provider,fp,ruleset) {
+    log.debug("Looking for rules ${scope}:${provider}:${fp}");
+    def rule_in_db = Rule.findByScopeAndProviderAndFingerprint(scope,provider,fp)
+    if ( rule_in_db ) {
+      log.debug("got matching rule ${rule_in_db}";
+      ruleset.add(rule_in_db)
+    }
   }
 
 }
