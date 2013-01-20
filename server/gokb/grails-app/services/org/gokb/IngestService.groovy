@@ -479,7 +479,7 @@ class IngestService {
    *  to this upload
    */
 
-  def findRules(parsed_project_file) {
+  def findRules(parsed_project_file, provider) {
 
     def result = []
     def extracted_fingerprints = []

@@ -191,7 +191,7 @@ class ApiController {
 	        def parsed_project_file = ingestService.extractRefineproject(project.file)
 
                 try {
-                  def possible_rules = ingestService.findRules(parsed_project_file)
+                  def possible_rules = ingestService.findRules(parsed_project_file, project.provider )
                   project.possibleRulesString = possible_rules as JSON
                 }
                 catch ( Exception e ) {
