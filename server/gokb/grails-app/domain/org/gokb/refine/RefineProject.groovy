@@ -20,6 +20,8 @@ class RefineProject {
 
   @Transient
   def lastValidationResultAsMap = null
+  @Transient
+  def possibleRulesResultAsList = null
 
   static mapping = {
     table 'refine_project'
@@ -53,8 +55,17 @@ class RefineProject {
   @Transient
   lastValidationAsMap() {
     if ( lastValidationResult && ( lastValidationResultAsMap == null ) ) {
-      lastValidationResultAsMap = org.codehaus.groovy.grails.web.converters.AbstractConverter.parse(lastValidationResult)
+      lastValidationResultAsMap = grails.converters.JSON.parse(lastValidationResult)
     }
     lastValidationResultAsMap
   }
+
+  @Transient
+  possibleRulesAsList() {
+    if ( possibleRulesString && ( possibleRulesResultAsList == null ) ) {
+      possibleRulesResultAsList = grails.converters.JSON.parse(possibleRulesString)
+    }
+    possibleRulesResultAsList
+  }
+
 }

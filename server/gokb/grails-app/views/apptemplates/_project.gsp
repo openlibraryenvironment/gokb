@@ -16,5 +16,15 @@
   <hr/>
   <dt>Last validation result</dt>
   <dd>${d.lastValidationResult}</dd>
+  <dt>Candidate Rules</dt>
+  <dd>
+    <table class="table">
+      <tbody>
+        <g:each in="${d.possibleRulesAsList()}" var="r">
+          <tr><td>${r}</td></tr>
+        </g:each>
+      </tbody>
+    <table>
+  </dd>
 </dl>
 

@@ -495,6 +495,8 @@ class IngestService {
       findRulesByFingerprint('provider',provider,fp,result);
       findRulesByFingerprint('global',null,fp,result);
     }
+
+    result
   }
 
   def findRulesByFingerprint(scope,provider,fp,ruleset) {
