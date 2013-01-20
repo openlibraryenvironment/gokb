@@ -501,7 +501,7 @@ class IngestService {
     log.debug("Looking for rules ${scope}:${provider}:${fp}");
     def rule_in_db = Rule.findByScopeAndProviderAndFingerprint(scope,provider,fp)
     if ( rule_in_db ) {
-      log.debug("got matching rule ${rule_in_db}";
+      log.debug("got matching rule ${rule_in_db}");
       ruleset.add(rule_in_db)
     }
   }
