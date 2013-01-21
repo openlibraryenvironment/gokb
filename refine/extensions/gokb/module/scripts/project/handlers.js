@@ -3,24 +3,109 @@
  */
 
 // Send of project meta-data and receive back a list of suggested transformations.
+//GOKb.handlers.suggest = function() {
+//	// Merge the meta-data and columns together.
+//	var params = $.extend({}, theProject.metadata,{
+//  	columns : theProject.columnModel.columns,
+//  });
+//	
+//  // Post the columns to the service
+//  GOKb.doCommand (
+//    "describe",
+//    params,
+//    null,
+//    {
+//    	onDone : function (data) {
+//    		
+//    		// Create and show a dialog with the returned list attached.
+//    		var dialog = GOKb.createDialog("Suggested Operations", "suggest");
+//    		
+//    		if ("result" in data) {
+//    		
+//	    		// Create data.
+//	    		var DTData = [];
+//	  			$.each(data.result, function () {
+//	  				DTData.push([this.description]);
+//	  			});
+//	  			
+//	  			// Create the Table.
+//	  			var table = GOKb.toTable (
+//	   			  ["Operation"],
+//	   			  DTData
+//	   			);
+//	  			
+//	  			// Add selection checkboxes
+//	  			table.selectableRows();
+//	    		
+//	    		table.appendTo(dialog.bindings.dialogContent);
+//	  			
+//	  			// Create an apply rules button
+//	  			$("<button>Apply Operations</button>").addClass("button").click(function() {
+//	  				
+//	  				// Get the indexes of the selected elements.
+//	  				var selected = table.selectableRows("getSelected");
+//	  				
+//	  				var confirmed = confirm("Are you sure you wish to apply these " + selected.length + " operations to your document?");
+//	  				
+//	  				if (confirmed) {
+//	  					
+//	  					var ops = [];
+//	  					
+//	  					// Get the selected rules from the data.
+//	  					$.each(selected, function () {
+//	  						ops.push(data.result[Number(this)].operation);
+//	  	  			});
+//	  					
+//	  					// Apply the rules through the existing api method.
+//	  					Refine.postCoreProcess(
+//	  					  "apply-operations",
+//	  					  {},
+//	  					  { operations: JSON.stringify(ops) },
+//	  					  { everythingChanged: true },
+//	  					  {
+//	  					  	onDone: function(o) {
+//	  					  		if (o.code == "pending") {
+//	  					  			// Something might have already been done and so it's good to update.
+//	  					  			Refine.update({ everythingChanged: true });
+//	  					  		}
+//	  					  	}
+//	  					  }
+//	  					);
+//	  					
+//	  					// Close the dialog
+//	  					DialogSystem.dismissUntil(dialog.level - 1);
+//	  				}
+//	  			}).appendTo(
+//	  			  dialog.bindings.dialogFooter
+//	  			);
+//    		} else {
+//    			// Just output nothing found.
+//    			dialog.bindings.dialogContent.html("<p>No operations have been applied yet.</p>");
+//    		}
+//    		
+//    		// Show the dialog.
+//    		GOKb.showDialog(dialog);
+//    	}
+//  	}
+//  );
+//};
+
 GOKb.handlers.suggest = function() {
 	// Merge the meta-data and columns together.
-	var params = $.extend({}, theProject.metadata,{
-  	columns : theProject.columnModel.columns,
-  });
+	var params = {"project" : theProject.id};
 	
   // Post the columns to the service
   GOKb.doCommand (
-    "describe",
+    "rules-suggest",
     params,
     null,
     {
     	onDone : function (data) {
     		
     		// Create and show a dialog with the returned list attached.
-    		var dialog = GOKb.createDialog("Suggested Operations", "suggest");
+    		var dialog = GOKb.createDialog("Suggested Rules", "suggest");
     		
-    		if ("result" in data) {
+    		if ("result" in data && data.result.length > 0) {
     		
 	    		// Create data.
 	    		var DTData = [];
@@ -30,7 +115,7 @@ GOKb.handlers.suggest = function() {
 	  			
 	  			// Create the Table.
 	  			var table = GOKb.toTable (
-	   			  ["Operation"],
+	   			  ["Rule"],
 	   			  DTData
 	   			);
 	  			
@@ -40,7 +125,7 @@ GOKb.handlers.suggest = function() {
 	    		table.appendTo(dialog.bindings.dialogContent);
 	  			
 	  			// Create an apply rules button
-	  			$("<button>Apply Operations</button>").addClass("button").click(function() {
+	  			$("<button>Apply Rules</button>").addClass("button").click(function() {
 	  				
 	  				// Get the indexes of the selected elements.
 	  				var selected = table.selectableRows("getSelected");
@@ -53,7 +138,8 @@ GOKb.handlers.suggest = function() {
 	  					
 	  					// Get the selected rules from the data.
 	  					$.each(selected, function () {
-	  						ops.push(data.result[Number(this)].operation);
+	  						var op = JSON.parse (data.result[Number(this)].ruleJson);
+	  						ops.push(op);
 	  	  			});
 	  					
 	  					// Apply the rules through the existing api method.
@@ -80,7 +166,7 @@ GOKb.handlers.suggest = function() {
 	  			);
     		} else {
     			// Just output nothing found.
-    			dialog.bindings.dialogContent.html("<p>No operations have been applied yet.</p>");
+    			dialog.bindings.dialogContent.html("<p>No rule suggestions have been found for the current standing of this document.</p>");
     		}
     		
     		// Show the dialog.

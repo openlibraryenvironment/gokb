@@ -55,6 +55,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         }
     }
     
+    public static File getTemporaryDirectory() {
+        return singleton.getTemporaryDir();
+    }
+    
     private void extendModuleProperties() {
         // The module path
         File f = getPath();
