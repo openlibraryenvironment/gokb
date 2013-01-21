@@ -25,9 +25,11 @@
              <li>an identifier with associated namespace, eg 
                        <g:link controller="coreference" action="index" params="${[nspart:'eissn',idpart:'1600-0390']}">Namespace "eissn", Identifier "1600-0390" (Without quotes)</g:link> - 
                        <g:link controller="coreference" action="index" params="${[nspart:'eissn',idpart:'1600-0390',format:'json']}">[json]</g:link> - 
+                       <g:link controller="coreference" action="index" params="${[nspart:'eissn',idpart:'1600-0390',format:'xml']}">[xml]</g:link> - 
                        will lookup specific instances of "ACTA ARCHAEOLOGICA". Searching for 
                        <g:link controller="coreference" action="index" params="${[nspart:'ncsu-internal',idpart:'ncsu:2']}">Namespace "ncsu-internal", Identifier "ncsu:2" (Without quotes)</g:link> 
-                       <g:link controller="coreference" action="index" params="${[nspart:'ncsu-internal',idpart:'ncsu:2',format:'json']}"></g:link> 
+                       <g:link controller="coreference" action="index" params="${[nspart:'ncsu-internal',idpart:'ncsu:2',format:'json']}">[json]</g:link> 
+                       <g:link controller="coreference" action="index" params="${[nspart:'ncsu-internal',idpart:'ncsu:2',format:'xml']}">[xml]</g:link> 
                        will lookup specific occurences within the ncsu-internal namespace.
              </li>
            </ul>

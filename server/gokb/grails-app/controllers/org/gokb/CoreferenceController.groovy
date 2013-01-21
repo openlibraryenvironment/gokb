@@ -39,15 +39,15 @@ class CoreferenceController {
       }
     }
 
-    def json_response;
-    if ( response.format == 'json' ) {
-      json_response = ['requestedNS':params.nspart, 
+    def api_response;
+    if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
+      api_response = ['requestedNS':params.nspart,
                        'requestedID':params.idpart, 
                        'gokbIdentifier': result.identifier ? "${result.identifier.class.name}:${result.identifier.id}" : "UNKNOWN",
                        'count':result.count ?: 0,
                        'records':[]]
       result.records?.each { r ->
-        json_response.records.add(['type':r.class.name,
+        api_response.records.add(['type':r.class.name,
                                    'id':r.id,
                                    'name':r.name,
                                    'gokbIdentifier':"${r.class.name}:${r.id}"])
@@ -57,7 +57,8 @@ class CoreferenceController {
     
     withFormat {
       html result
-      json { render json_response as JSON }
+      json { render api_response as JSON }
+      xml { render api_response as XML }
     }
   }
 }
