@@ -10,6 +10,7 @@ function registerCommands() {
   var RS = Packages.com.google.refine.RefineServlet;
   RS.registerCommand(module, "project-checkout", new Packages.com.k_int.gokb.refine.commands.CheckOutProject());
   RS.registerCommand(module, "project-checkin", new Packages.com.k_int.gokb.refine.commands.CheckInProject());
+  RS.registerCommand(module, "rules-suggest", new Packages.com.k_int.gokb.refine.commands.SuggestRules());
   Packages.java.lang.System.out.println("done");
 }
 

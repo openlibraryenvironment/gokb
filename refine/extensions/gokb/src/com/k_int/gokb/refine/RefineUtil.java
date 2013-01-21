@@ -12,15 +12,41 @@ import java.security.NoSuchAlgorithmException;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.tools.tar.TarOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.refine.ProjectManager;
+import com.google.refine.io.ProjectUtilities;
 import com.google.refine.model.Cell;
 import com.google.refine.model.Project;
 import com.google.refine.model.Row;
 
-public class RefineUtil {
+public class RefineUtil extends ProjectUtilities {
+    
+    final static Logger logger = LoggerFactory.getLogger("GOKb-refine_util");
     
     private static final String DIGEST_TYPE = "MD5";
+    
+    public static File projectToDataZip (Project project) throws IOException {
+        long id = project.id;
+
+        // Create a temporary file in the temporary dir.
+        File tempFile = File.createTempFile(
+          "gokb.data." + id + ".temp", "zip", GOKbModuleImpl.getTemporaryDirectory()
+        );
+        
+        // Try and save the project data to our temporary file.
+        try {
+            saveToFile(project, tempFile);
+            
+            return tempFile;
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            logger.warn("Failed to save project {}", id);
+            return null;
+        }
+    }
     
     public static byte[] hashFile (File f) throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance(DIGEST_TYPE);
