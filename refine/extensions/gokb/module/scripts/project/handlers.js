@@ -2,94 +2,6 @@
  * Handlers
  */
 
-// Send of project meta-data and receive back a list of suggested transformations.
-//GOKb.handlers.suggest = function() {
-//	// Merge the meta-data and columns together.
-//	var params = $.extend({}, theProject.metadata,{
-//  	columns : theProject.columnModel.columns,
-//  });
-//	
-//  // Post the columns to the service
-//  GOKb.doCommand (
-//    "describe",
-//    params,
-//    null,
-//    {
-//    	onDone : function (data) {
-//    		
-//    		// Create and show a dialog with the returned list attached.
-//    		var dialog = GOKb.createDialog("Suggested Operations", "suggest");
-//    		
-//    		if ("result" in data) {
-//    		
-//	    		// Create data.
-//	    		var DTData = [];
-//	  			$.each(data.result, function () {
-//	  				DTData.push([this.description]);
-//	  			});
-//	  			
-//	  			// Create the Table.
-//	  			var table = GOKb.toTable (
-//	   			  ["Operation"],
-//	   			  DTData
-//	   			);
-//	  			
-//	  			// Add selection checkboxes
-//	  			table.selectableRows();
-//	    		
-//	    		table.appendTo(dialog.bindings.dialogContent);
-//	  			
-//	  			// Create an apply rules button
-//	  			$("<button>Apply Operations</button>").addClass("button").click(function() {
-//	  				
-//	  				// Get the indexes of the selected elements.
-//	  				var selected = table.selectableRows("getSelected");
-//	  				
-//	  				var confirmed = confirm("Are you sure you wish to apply these " + selected.length + " operations to your document?");
-//	  				
-//	  				if (confirmed) {
-//	  					
-//	  					var ops = [];
-//	  					
-//	  					// Get the selected rules from the data.
-//	  					$.each(selected, function () {
-//	  						ops.push(data.result[Number(this)].operation);
-//	  	  			});
-//	  					
-//	  					// Apply the rules through the existing api method.
-//	  					Refine.postCoreProcess(
-//	  					  "apply-operations",
-//	  					  {},
-//	  					  { operations: JSON.stringify(ops) },
-//	  					  { everythingChanged: true },
-//	  					  {
-//	  					  	onDone: function(o) {
-//	  					  		if (o.code == "pending") {
-//	  					  			// Something might have already been done and so it's good to update.
-//	  					  			Refine.update({ everythingChanged: true });
-//	  					  		}
-//	  					  	}
-//	  					  }
-//	  					);
-//	  					
-//	  					// Close the dialog
-//	  					DialogSystem.dismissUntil(dialog.level - 1);
-//	  				}
-//	  			}).appendTo(
-//	  			  dialog.bindings.dialogFooter
-//	  			);
-//    		} else {
-//    			// Just output nothing found.
-//    			dialog.bindings.dialogContent.html("<p>No operations have been applied yet.</p>");
-//    		}
-//    		
-//    		// Show the dialog.
-//    		GOKb.showDialog(dialog);
-//    	}
-//  	}
-//  );
-//};
-
 GOKb.handlers.suggest = function() {
 	// Merge the meta-data and columns together.
 	var params = {"project" : theProject.id};
@@ -272,7 +184,7 @@ GOKb.handlers.checkInWithProps = function() {
 				GOKb.paramsAsHiddenFields(dialog.bindings.form, params);
 			}
 		}
-	}); 
+	});
 	
 	// Rename close button to cancel.
 	dialog.bindings.closeButton.text("Cancel");
