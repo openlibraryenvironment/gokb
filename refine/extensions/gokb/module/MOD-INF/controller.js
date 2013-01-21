@@ -53,6 +53,8 @@ function init() {
      "scripts/plugins/jquery.plugin.selectablerows.js",
      "scripts/plugins/jquery.uniform.min.js",
      "scripts/common.js",
+     "scripts/project/validation-panel.js",
+     "scripts/project.js",
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
     ]
