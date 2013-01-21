@@ -2,10 +2,9 @@ package org.gokb.cred
 
 class IdentifierOccurrence {
 
-  Identifier identifier
-
   static belongsTo = [
-    component:KBComponent
+    component:KBComponent,
+    identifier:Identifier
   ]
 
   static mapping = {
