@@ -318,7 +318,6 @@ class IngestService {
 	  result
   }
   
-  
   def processData(result, is) {
     log.debug("processing refine data.txt");
     def bis = new BufferedReader(new InputStreamReader(is));
@@ -409,7 +408,6 @@ class IngestService {
     result;
   }
 
-
   def cleanUpGorm() {
     log.debug("Clean up GORM");
     def session = sessionFactory.currentSession
@@ -479,7 +477,7 @@ class IngestService {
    *  to this upload
    */
 
-  def findRules(parsed_project_file, provider) {
+  def findRules(parsed_project_file, provider = null) {
 
     def result = []
     def extracted_fingerprints = []

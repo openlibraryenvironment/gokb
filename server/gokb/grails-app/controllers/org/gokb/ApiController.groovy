@@ -135,7 +135,6 @@ class ApiController {
   }
 
   def projectCheckin() {
-
 	
 	log.debug(params)
 	
@@ -186,8 +185,8 @@ class ApiController {
 		project.setModified(new Date())
 		
 	        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
-                // suggesting rules or validation.
-      	        log.debug("parse refine project");
+            // suggesting rules or validation.
+      	    log.debug("parse refine project");
 	        def parsed_project_file = ingestService.extractRefineproject(project.file)
 
                 try {
