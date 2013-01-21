@@ -23,8 +23,12 @@
                  identifier is "2" and this query will return many objects.
                  </li>
              <li>an identifier with associated namespace, eg 
-                       <g:link controller="coreference" action="index" params="${[nspart:'eissn',idpart:'1600-0390']}">Namespace "eissn", Identifier "1600-0390" (Without quotes)</g:link> - will lookup specific instances of "ACTA ARCHAEOLOGICA". Searching for 
-                       <g:link controller="coreference" action="index" params="${[nspart:'ncsu-internal',idpart:'ncsu:2']}">Namespace "ncsu-internal", Identifier "ncsu:2" (Without quotes)</g:link> - will lookup specific occurences within the ncsu-internal namespace.
+                       <g:link controller="coreference" action="index" params="${[nspart:'eissn',idpart:'1600-0390']}">Namespace "eissn", Identifier "1600-0390" (Without quotes)</g:link> - 
+                       <g:link controller="coreference" action="index" params="${[nspart:'eissn',idpart:'1600-0390',format:'json']}">[json]</g:link> - 
+                       will lookup specific instances of "ACTA ARCHAEOLOGICA". Searching for 
+                       <g:link controller="coreference" action="index" params="${[nspart:'ncsu-internal',idpart:'ncsu:2']}">Namespace "ncsu-internal", Identifier "ncsu:2" (Without quotes)</g:link> 
+                       <g:link controller="coreference" action="index" params="${[nspart:'ncsu-internal',idpart:'ncsu:2',format:'json']}"></g:link> 
+                       will lookup specific occurences within the ncsu-internal namespace.
              </li>
            </ul>
          </p>
@@ -38,9 +42,19 @@
          <h2>Located ${count} objects for identifier "${params.idpart}" (namespace:${params.nspart?:'None'})</h2>
          <hr/>
          <table class="table">
-           <g:each in="${records}" var="i">
-             <tr><td>${i.class.name}</td><td>${i.name}</td><td>${i.id}</td><td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}">Details</g:link></td></tr>
-           </g:each>
+           <thead>
+             <tr>
+               <th>Object type</th>
+               <th>Name/Title</th>
+               <th>Internal Id</th>
+               <th>Details</th>
+             </tr>
+           </thead>
+           <tbody>
+             <g:each in="${records}" var="i">
+               <tr><td>${i.class.name}</td><td>${i.name}</td><td>${i.id}</td><td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}">Details</g:link></td></tr>
+             </g:each>
+           </tbody>
          </table>
        </div>
      </g:if>

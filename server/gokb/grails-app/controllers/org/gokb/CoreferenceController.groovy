@@ -2,6 +2,7 @@ package org.gokb
 
 import org.gokb.cred.*;
 import grails.gorm.*
+import grails.converters.*
 
 class CoreferenceController {
 
@@ -37,6 +38,26 @@ class CoreferenceController {
         log.debug("result: ${result.identifier} ${result.count} ${result.records}");
       }
     }
-    result
+
+    def json_response;
+    if ( response.format == 'json' ) {
+      json_response = ['requestedNS':params.nspart, 
+                       'requestedID':params.idpart, 
+                       'gokbIdentifier': result.identifier ? "${result.identifier.class.name}:${result.identifier.id}" : "UNKNOWN",
+                       'count':result.count ?: 0,
+                       'records':[]]
+      result.records?.each { r ->
+        json_response.records.add(['type':r.class.name,
+                                   'id':r.id,
+                                   'name':r.name,
+                                   'gokbIdentifier':"${r.class.name}:${r.id}"])
+      }
+    }
+
+    
+    withFormat {
+      html result
+      json { render json_response as JSON }
+    }
   }
 }
