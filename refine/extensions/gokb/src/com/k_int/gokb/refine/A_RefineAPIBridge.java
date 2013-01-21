@@ -15,7 +15,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
@@ -50,6 +52,14 @@ public abstract class A_RefineAPIBridge extends Command {
         sb.append((char) cp);
       }
       return (new JSONObject(sb.toString())).toString();
+    }
+    
+    protected static void proxyReturn (HttpServletResponse clientResponse, InputStream apiResponse) throws IOException, JSONException, ServletException {
+        // Get the JSON back...
+        String json = getJSONFromStream(apiResponse);
+        
+        // Send to the calling client.
+        respond(clientResponse, json);
     }
     
     private static void postFilesAndParams(HttpURLConnection conn, Map<String, String[]> params, Map<String, ?> files) throws IOException, FileUploadException {

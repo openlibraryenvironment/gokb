@@ -34,11 +34,8 @@ public class GerericProxiedCommand extends A_RefineAPIBridge {
                 protected void onSuccess(InputStream result)
                         throws Exception {
                     
-                    // Get the JSON back...
-                    String json = getJSONFromStream(result);
-                    
-                    // Send to the calling client.
-                    respond(response, json);
+                    // Just send the api response through to the client.
+                    proxyReturn (response, result);
                 }
                 
             });

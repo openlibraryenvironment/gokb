@@ -188,15 +188,8 @@ class ApiController {
             // suggesting rules or validation.
       	    log.debug("parse refine project");
 	        def parsed_project_file = ingestService.extractRefineproject(project.file)
-
-                try {
-                  def possible_rules = ingestService.findRules(parsed_project_file, project.provider )
-                  project.possibleRulesString = possible_rules as JSON
-                }
-                catch ( Exception e ) {
-                  log.error("Problem trying to match rules",e)
-                }
-
+			project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file) as JSON
+			
 		// Make sure we null the progress...
 		project.setProgress(null)
 		if (params.ingest) {
@@ -337,4 +330,55 @@ class ApiController {
     ]
     apiReturn(result)
   }
+  
+  /**
+   * Suggest the rules that might apply to the data.txt within this zip file.
+   * @param dataZip
+   */
+  def suggestRulesFromData() {	
+	
+	log.debug ("Attempting to get rule suggestions from data zip.")
+	
+	def f = request.getFile('dataZip')
+	def rules = [:]
+	if (f && !f.empty) {
+	  Org provider = null;
+	  if (params.providerID) {
+		provider = Org.get(params.providerID)
+	  }
+	  
+	  def temp_data_zipfile
+	  try {
+		
+		temp_data_zipfile = File.createTempFile('gokb_','_refinedata.zip',null)
+		f.transferTo(temp_data_zipfile)
+		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+		rules = suggestRulesFromParsedData ( parsed_project_file, provider )
+		
+	  } finally {
+		if ( temp_data_zipfile ) {
+		  try {
+			temp_data_zipfile.delete();
+		  }
+		  catch ( Throwable t ) {
+		  }
+		}
+	  }
+	} else {
+	  log.debug("No dataZip file request attribute supplied.")
+	}
+	
+	apiReturn ( rules )
+  }
+  
+  private def suggestRulesFromParsedData (parsed_project_file, provider) {
+	log.debug ("Suggesting rules from parsed data.")
+	try {
+	  def possible_rules = ingestService.findRules(parsed_project_file, provider )
+	  return possible_rules
+	}
+	catch ( Exception e ) {
+	  log.error("Problem trying to match rules",e)
+	}
+  }  
 }

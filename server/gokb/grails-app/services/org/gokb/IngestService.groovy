@@ -477,7 +477,7 @@ class IngestService {
    *  to this upload
    */
 
-  def findRules(parsed_project_file, provider = null) {
+  def findRules(parsed_project_file, provider) {
 
     def result = []
     def extracted_fingerprints = []
@@ -490,20 +490,25 @@ class IngestService {
     }
 
     extracted_fingerprints.each { fp ->
-      findRulesByFingerprint('provider',provider,fp,result);
-      findRulesByFingerprint('global',null,fp,result);
+	  if (provider) findRulesByFingerprint('provider',provider,fp,result)
+      findRulesByFingerprint('global',null,fp,result)
     }
 
     result
   }
 
   def findRulesByFingerprint(scope,provider,fp,ruleset) {
-    log.debug("Looking for rules ${scope}:${provider}:${fp}");
-    def rule_in_db = Rule.findByScopeAndProviderAndFingerprint(scope,provider,fp)
+	def rule_in_db
+	if ( provider ) {
+      log.debug("Looking for rules ${scope}:${provider}:${fp}")
+      rule_in_db = Rule.findByScopeAndProviderAndFingerprint(scope,provider,fp)
+	  
+	} else {
+	  rule_in_db = Rule.findByScopeAndFingerprint(scope,fp)
+	}
     if ( rule_in_db ) {
       log.debug("got matching rule ${rule_in_db}");
       ruleset.add(rule_in_db)
     }
   }
-
 }
