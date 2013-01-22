@@ -20,8 +20,15 @@ var standardMenuItems = [
 		  GOKb.handlers.suggest();
 	  }
 	},
+	{
+	  "id" : "gokb-menu-validate",
+	  label: "Validate",
+	  click: function() { 
+	  	GOKb.handlers.validate();
+	  }
+	},
 ];
-	
+
 // Load the project metadata.
 GOKb.doRefineCommand("core/get-project-metadata",{ project: theProject.id }, null,
   {

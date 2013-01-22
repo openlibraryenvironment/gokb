@@ -244,20 +244,39 @@ class ApiController {
   }
   
   def projectDataValid() {
-	def f = request.getFile('projectDataZip')
-
+	
+	log.debug("Try to validate data in zip file.")
+	def f = request.getFile('dataZip')
 	def validationResult = [:]
 	
 	if (f && !f.empty) {
-	  def parsed_data = extractRefineDataZip(f)
 	  
-	  log.debug("Validate the data in the zip");
-	  validationResult = ingestService.validate(parsed_data)
-	  apiReturn(validationResult)
+	  // Save the file temporarily...
+	  def temp_data_zipfile
+	  try {
+		temp_data_zipfile = File.createTempFile(
+		  Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
+		)
+		f.transferTo(temp_data_zipfile)
+		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+		
+		log.debug("Validate the data in the zip");
+		validationResult = ingestService.validate(parsed_project_file)
+		
+	  } finally {
+		if ( temp_data_zipfile ) {
+		  try {
+			temp_data_zipfile.delete();
+		  }
+		  catch ( Throwable t ) {
+		  }
+		}
+	  }
 	} else {
-	  
-	  log.debug("No file sent to be validated.")
+	  log.debug("No dataZip file request attribute supplied.")
 	}
+	
+	apiReturn ( validationResult )
   }
 
   private def doIngest(parsed_data, project) {
@@ -350,7 +369,9 @@ class ApiController {
 	  def temp_data_zipfile
 	  try {
 		
-		temp_data_zipfile = File.createTempFile('gokb_','_refinedata.zip',null)
+		temp_data_zipfile = File.createTempFile(
+		  Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
+		);
 		f.transferTo(temp_data_zipfile)
 		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
 		rules = suggestRulesFromParsedData ( parsed_project_file, provider )
