@@ -81,7 +81,21 @@ ValidationPanel.prototype._render = function() {
   		
 			// Set the header error count to the correct number.
   		self._tabHeader.html('Errors <span class="error count">0</span>');
-  		elmts.validationContent.html("<p>The current project has passed all validation rules. You can now begin the ingest process from the main <a href='/'>project screen</a>.</p>");
+  		elmts.validationContent
+  			.html("<p>The current project has passed all validation rules.</p>")
+  			.append(
+  			  $('<p />').append(
+			  		$('<a />')
+			  			.attr("href", "#")
+			  			.text("Begin ingest process")
+			  			.click(function() {
+			  				var dialog = GOKb.handlers.checkInWithProps();
+			  				dialog.bindings.submit.attr("value", "Save and begin ingest");
+			  				alert (JSON.stringify(theProject));
+			  			})
+			  	)
+		  	)
+  		;
   		$('h1', elmts.panelContent).show();
   	}
   } else {

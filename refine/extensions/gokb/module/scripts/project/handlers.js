@@ -190,5 +190,5 @@ GOKb.handlers.checkInWithProps = function() {
 	dialog.bindings.closeButton.text("Cancel");
 	
 	// Show the form.
-	GOKb.showDialog(dialog);
+	return GOKb.showDialog(dialog);
 };
