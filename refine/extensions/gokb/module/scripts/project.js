@@ -11,7 +11,7 @@ initializeUI = function (uiState) {
 	GOKb.currentInitUI(uiState);
 	
 	// The Validation tab.
-	var vTab = $('<a>Errors <span class="error count">0</span></a>')
+	var vTab = $('<a>Errors <span class="count">0</span></a>')
 	  .attr("id", "gokb-validation-tab")
 	  .attr("href", "#gokb-validation-panel")
 	  .appendTo($("<li />").appendTo( $('ul.ui-tabs-nav', ui.leftPanelTabs)) )

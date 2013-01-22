@@ -80,7 +80,7 @@ ValidationPanel.prototype._render = function() {
   	} else {
   		
 			// Set the header error count to the correct number.
-  		self._tabHeader.html('Errors <span class="error count">0</span>');
+  		self._tabHeader.html('Errors <span class="count">0</span>');
   		elmts.validationContent
   			.html("<p>The current project has passed all validation rules.</p>")
   			.append(
@@ -99,7 +99,7 @@ ValidationPanel.prototype._render = function() {
   		$('h1', elmts.panelContent).show();
   	}
   } else {
-  	self._tabHeader.html('Errors <span class="error count">0</span>');
+  	self._tabHeader.html('Errors <span class="count error">0</span>');
 		elmts.validationContent.html("<p>Unable to contact the GOKb service for validation information..</p>");
   }
 
