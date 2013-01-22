@@ -29,6 +29,7 @@ function init() {
 		 [
 	     "scripts/plugins/jquery.uniform.min.js",
 	     "scripts/common.js",
+	     "scripts/forms.js",
 	     "scripts/index.js",
 	     "scripts/index/ui-open-project.js",
 		 ]
@@ -42,6 +43,7 @@ function init() {
      "styles/uniform.default.css",
      "styles/uniform.aristo.css",
      "styles/common.less",
+     "scripts/forms.js",
      "styles/index.less",
     ]
   );

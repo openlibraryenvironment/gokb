@@ -336,17 +336,16 @@ class ApiController {
    */
   def getProjectProfileProperties() {
     def result = [
-      // Fiels 1 - Provider
       [
         label:'Provider',
         type:'refdata',
         refdataType:'cp',
-		name:'org'
+		name:'provider',
       ],
       [
         label:'Notes',
         type:'text',
-		name: 'notes'
+		name: 'notes',
       ]
     ]
     apiReturn(result)

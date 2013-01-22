@@ -332,20 +332,6 @@ GOKb.projectDataAsParams = function (project) {
 };
 
 /**
- * Add the parameters object as a series of hidden fields to the form.
- */
-GOKb.paramsAsHiddenFields = function (form, params) {
-	for(var key in params) {
-		form.append(
-		  $("<input />")
-		    .attr('type', 'hidden')
-		    .attr('name', key)
-		    .attr('value', params[key])
-		);
-	}
-};
-
-/**
  * Get ref data from GOKb
  */
 GOKb.getRefData = function (params, callbacks) {
