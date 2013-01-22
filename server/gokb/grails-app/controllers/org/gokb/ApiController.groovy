@@ -188,7 +188,7 @@ class ApiController {
             // suggesting rules or validation.
       	    log.debug("parse refine project");
 	        def parsed_project_file = ingestService.extractRefineproject(project.file)
-			project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file) as JSON
+			project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
 			
 		// Make sure we null the progress...
 		project.setProgress(null)
@@ -340,11 +340,13 @@ class ApiController {
       [
         label:'Provider',
         type:'refdata',
-        refdataType:'cp'
+        refdataType:'cp',
+		name:'org'
       ],
       [
         label:'Notes',
-        type:'string'
+        type:'text',
+		name: 'notes'
       ]
     ]
     apiReturn(result)
