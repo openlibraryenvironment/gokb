@@ -15,7 +15,7 @@ ValidationPanel.prototype.resize = function() {
   }
 };
 
-ValidationPanel.prototype.update = function(onDone) {
+ValidationPanel.prototype.update = function(onDoneFunc) {
   var self = this;
   
   // Set the _data attribute to the data.
@@ -35,6 +35,10 @@ ValidationPanel.prototype.update = function(onDone) {
     			
     		  // Then render.
     		  self._render();
+    		}
+    		
+    		if (onDoneFunc) {
+    			onDoneFunc();
     		}
     	}
   	}
@@ -62,7 +66,7 @@ ValidationPanel.prototype._render = function() {
   			});
   			
   			var table = GOKb.toTable (
-  			  ["Validation message"],
+  			  ["Error messages"],
   			  tData
   			);
   			
@@ -71,12 +75,14 @@ ValidationPanel.prototype._render = function() {
   			
   			// Append the table to the dialog...
   			elmts.validationContent.html(table);
+  			$('h1', elmts.panelContent).hide();
   		}
   	} else {
   		
 			// Set the header error count to the correct number.
   		self._tabHeader.html('Errors <span class="error count">0</span>');
   		elmts.validationContent.html("<p>The current project has passed all validation rules. You can now begin the ingest process from the main <a href='/'>project screen</a>.</p>");
+  		$('h1', elmts.panelContent).show();
   	}
   } else {
   	self._tabHeader.html('Errors <span class="error count">0</span>');

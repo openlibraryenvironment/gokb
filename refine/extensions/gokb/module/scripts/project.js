@@ -35,3 +35,24 @@ initializeUI = function (uiState) {
   resizeTabs();
 	GOKb.validationPanel.resize();
 };
+
+// Replace the current CreateUpdate function.
+GOKb.currentCreateUpdateFunction = (Refine.createUpdateFunction);
+
+Refine.createUpdateFunction = function(options, onFinallyDone) {
+	
+	var functions = [GOKb.currentCreateUpdateFunction(options, onFinallyDone)];
+	
+	// Start by running the original method.
+	
+	// Push our update function to list of functions to be executed.
+	if (options.everythingChanged || options.modelsChanged || options.rowsChanged || options.rowMetadataChanged || options.cellsChanged || options.engineChanged) {
+		
+		functions.unshift(function() {
+			GOKb.validationPanel.update(functions[1]);
+    });
+	}
+	
+	// Execute our first function.
+	return functions[0];
+};
