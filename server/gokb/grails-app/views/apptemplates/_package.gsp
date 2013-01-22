@@ -11,6 +11,21 @@
   <dt>Shortcode</dt>
   <dd>${d.shortcode}</dd>
   <dt>Tags</dt>
+  <dt>Status</dt>
+  <dd>${d.packageStatus?.value?:'Not Set'}</dd>
+  <dt>Scope</dt>
+  <dd>${d.packageScope?.value?:'Not Set'}</dd>
+  <dt>Breakable</dt>
+  <dd>${d.breakable?.value?:'Not Set'}</dd>
+  <dt>Parent</dt>
+  <dd>${d.parent?.value?:'Not Set'}</dd>
+  <dt>Global</dt>
+  <dd>${d.global?.value?:'Not Set'}</dd>
+  <dt>Fixed</dt>
+  <dd>${d.fixed?.value?:'Not Set'}</dd>
+  <dt>Consistent</dt>
+  <dd>${d.consistent?.value?:'Not Set'}</dd>
+
   <dd>
     <ul>
       <g:each in="${d.tags}" var="t">

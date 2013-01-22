@@ -112,8 +112,8 @@ class IngestService {
         pkg = new Package(
                           identifier:"project:${project.id}", 
                           name:"project:${project.id}",
-                          status:RefdataCategory.lookupOrCreate("Package Status", "Current"),
-                          scope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
+                          packageStatus:RefdataCategory.lookupOrCreate("Package Status", "Current"),
+                          packageScope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
                           breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
                           parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
                           global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
