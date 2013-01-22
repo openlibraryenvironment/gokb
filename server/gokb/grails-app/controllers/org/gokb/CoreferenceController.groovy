@@ -47,10 +47,16 @@ class CoreferenceController {
                        'count':result.count ?: 0,
                        'records':[]]
       result.records?.each { r ->
+        def rec_identifiers = []
+        rec_identifiers.add(['namespace':'gokb','identifier':"${result.identifier.class.name}:${result.identifier.id}"])
+        r.ids.each { rid ->
+          rec_identifiers.add(['namespace':rid.identifier.ns.ns,'identifier':rid.identifier.value])
+        }
         api_response.records.add(['type':r.class.name,
                                    'id':r.id,
                                    'name':r.name,
-                                   'gokbIdentifier':"${r.class.name}:${r.id}"])
+                                   'gokbIdentifier':"${r.class.name}:${r.id}",
+                                   'sameAs':rec_identifiers])
       }
     }
 

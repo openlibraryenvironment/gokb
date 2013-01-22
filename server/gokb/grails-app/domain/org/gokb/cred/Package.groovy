@@ -2,10 +2,25 @@ package org.gokb.cred
 
 class Package extends KBComponent {
 
+  // Owens defaults:
+  // Status default to 'Current'
+  // Scope default to 'Front File'
+  // Breakable?: Y
+  // Parent?: N
+  // Global?: Y
+  // Fixed?: Y
+  // Consistent?: N
+
   String identifier
   RefdataValue packageType
   RefdataValue packageStatus
   RefdataValue packageListStatus
+  RefdataValue packageScope
+  RefdataValue breakable
+  RefdataValue parent
+  RefdataValue global
+  RefdataValue fixed
+  RefdataValue consistent
   Platform nominalPlatform
   Date dateCreated
   Date lastUpdated

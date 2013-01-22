@@ -46,15 +46,21 @@
          <table class="table">
            <thead>
              <tr>
-               <th>Object type</th>
+               <th>GOKb Canonical</th>
                <th>Name/Title</th>
-               <th>Internal Id</th>
-               <th>Details</th>
+               <th>External Identifiers</th>
              </tr>
            </thead>
            <tbody>
              <g:each in="${records}" var="i">
-               <tr><td>${i.class.name}</td><td>${i.name}</td><td>${i.id}</td><td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}">Details</g:link></td></tr>
+               <tr><td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}">${i.class.name}:${i.id}</g:link></td>
+                   <td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}">${i.name}</g:link></td>
+                   <td>
+                     <g:each in="${i.ids}" var="sa">
+                       <g:link controller="coreference" action="index" params="${[nspart:sa.identifier.ns.ns,idpart:sa.identifier.value]}">${sa.identifier.ns.ns} ${sa.identifier.value}</g:link>
+                       <br/>
+                     </g:each>
+                   </td>
              </g:each>
            </tbody>
          </table>

@@ -109,7 +109,16 @@ class IngestService {
       def pkg = Package.findByIdentifier("project:${project.id}");
       if (!pkg) {
         log.debug("New package with identifier project:${project.id}");
-        pkg = new Package(identifier:"project:${project.id}", name:"project:${project.id}").save(flush:true);
+        pkg = new Package(
+                          identifier:"project:${project.id}", 
+                          name:"project:${project.id}",
+                          status:RefdataCategory.lookupOrCreate("Package Status", "Current"),
+                          scope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
+                          breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
+                          parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
+                          global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
+                          fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
+                          consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
       }
       else {
         log.debug("Got existing package");
