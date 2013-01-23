@@ -89,9 +89,7 @@ ValidationPanel.prototype._render = function() {
 			  			.attr("href", "#")
 			  			.text("Begin ingest process")
 			  			.click(function() {
-			  				var dialog = GOKb.handlers.checkInWithProps();
-			  				dialog.bindings.submit.attr("value", "Save and begin ingest");
-			  				alert (JSON.stringify(theProject));
+			  				GOKb.handlers.checkInWithProps({ingest : true});
 			  			})
 			  	)
 		  	)

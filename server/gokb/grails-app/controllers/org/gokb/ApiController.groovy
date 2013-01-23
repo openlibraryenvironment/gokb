@@ -153,7 +153,7 @@ class ApiController {
 
 		// Set the org too.
 		log.debug("Setting provider from submission.");
-		Org org = Org.get(params.org)
+		Org org = Org.get(params.provider)
 		if (org) {
 		  project.provider = org
 		}
@@ -183,6 +183,7 @@ class ApiController {
 		project.setCheckedOutBy(null)
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
+		if (params.notes) project.setNotes(params.notes)
 		
 	        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
             // suggesting rules or validation.
@@ -300,10 +301,14 @@ class ApiController {
 			}
 			eq('value','Content Provider');
 		  }
+		  order("name", "asc")
 		}
-		result.datalist=[:]
+		result.datalist=[]
 		orgs.each { o ->
-		  result.datalist["${o.id}"] = o.name
+		  result.datalist.add([
+			"value" : "${o.id}",
+			"name" : (o.name)
+		  ])
 		}
 		break;
 	  default:
@@ -335,20 +340,38 @@ class ApiController {
    *   first time
    */
   def getProjectProfileProperties() {
-    def result = [
-      // Fiels 1 - Provider
-      [
-        label:'Provider',
-        type:'refdata',
-        refdataType:'cp',
-		name:'org'
-      ],
-      [
-        label:'Notes',
-        type:'text',
-		name: 'notes'
-      ]
-    ]
+	def result = [
+	  [
+    	type : "fieldset",
+    	children : [
+	  		[
+	  		  type : 'legend',
+	  		  text : 'Properties'
+	  		],
+	  		[
+	  		  label:'Provider',
+	  		  type:'refdata',
+	  		  refdataType:'cp',
+	  		  name:'provider',
+	  		],
+	  		[
+	  		  label:'Name',
+	  		  type:'text',
+	  		  name: 'name',
+	  		],
+	  		[
+	  		  label:'Description',
+	  		  type:'text',
+	  		  name: 'description',
+	  		],
+	  		[
+	  		  label:'Notes',
+	  		  type:'textarea',
+	  		  name: 'notes',
+	  		]
+  	  	]
+	  ]
+	]
     apiReturn(result)
   }
   

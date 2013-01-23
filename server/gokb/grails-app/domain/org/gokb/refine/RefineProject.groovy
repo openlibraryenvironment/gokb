@@ -17,6 +17,7 @@ class RefineProject {
    String lastValidationResult
      Long progress
    String possibleRulesString
+   String notes
 
   @Transient
   def lastValidationResultAsMap = null
@@ -38,6 +39,7 @@ class RefineProject {
     lastValidationResult column: 'rp_last_validation_result', type: 'text'
                 progress column: 'rp_progress'
      possibleRulesString column: 'rp_matching_rules', type: 'text'
+     			   notes column: 'rp_notes'
   }
 
   
@@ -50,6 +52,7 @@ class RefineProject {
                 provider nullable: true
                 progress nullable: true
      possibleRulesString nullable: true
+     			   notes nullable: true
   }
 
   @Transient

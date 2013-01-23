@@ -207,19 +207,20 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
  * from the service. If the return has the property .code set to "error" then the onError
  * callback will be triggered,code otherwise the onDone is run. 
  */
-GOKb.doCommand = function(command, params, data, callbacks) {
+GOKb.doCommand = function(command, params, data, callbacks, ajaxOpts) {
 	
-	return GOKb.doRefineCommand ("gokb/" + command, params, data, callbacks);
+	return GOKb.doRefineCommand ("gokb/" + command, params, data, callbacks, ajaxOpts);
 };
 
 /**
  * Helper method to execute a command in the Refine backend
  */
-GOKb.doRefineCommand = function(command, params, data, callbacks) {
+GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
+	ajaxOpts = ajaxOpts || {};
 	
 	if (!GOKb.versionError) {
 	
-		var ajaxObj = {
+		var ajaxObj = $.extend(ajaxOpts, {
 	  	cache 		: false,
 	    url 			: "command/" + command + "?" + $.param(params), 
 	    data 			: data,
@@ -246,7 +247,7 @@ GOKb.doRefineCommand = function(command, params, data, callbacks) {
 	        }
 	      }
 	    }
-		};
+		});
 		
 		// Show default waiting message
 		return GOKb.ajaxWaiting (ajaxObj);
@@ -332,24 +333,10 @@ GOKb.projectDataAsParams = function (project) {
 };
 
 /**
- * Add the parameters object as a series of hidden fields to the form.
- */
-GOKb.paramsAsHiddenFields = function (form, params) {
-	for(var key in params) {
-		form.append(
-		  $("<input />")
-		    .attr('type', 'hidden')
-		    .attr('name', key)
-		    .attr('value', params[key])
-		);
-	}
-};
-
-/**
  * Get ref data from GOKb
  */
-GOKb.getRefData = function (params, callbacks) {
-	GOKb.doCommand ("refdata", params, null, callbacks);
+GOKb.getRefData = function (type, callbacks, ajaxOpts) {
+	GOKb.doCommand ("refdata", {"type" : type }, null, callbacks, ajaxOpts);
 };
 
 /**
