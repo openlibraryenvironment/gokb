@@ -40,7 +40,7 @@ GOKb.forms.build = function(def, action, attr, validate) {
 	form_def = def.concat(GOKb.forms.defaultElems);
 	
 	// Default attributes
-	attr = $.extend({"bind" : "form"}, (attr || {}));
+	attr = $.extend({"method" : "post"}, (attr || {}));
 	
 	// The form element.
 	var theForm = $('<form />');
@@ -96,6 +96,9 @@ GOKb.forms.build = function(def, action, attr, validate) {
 	$.each(form_def, function(){
 		GOKb.forms.addDefinedElement(theForm, this);
 	});
+	
+	// Add the bindings to the form.
+	theForm.bindings = DOM.bind(theForm);
 	
 	return theForm;
 };

@@ -195,7 +195,7 @@ GOKb.handlers.checkInWithProps = function() {
 
 GOKb.handlers.test = function() {
 	// Create the form to collect some basic data about this document.
-	var dialog = GOKb.createDialog("Suggested Operations");
+	var dialog = GOKb.createDialog("Project Properties");
 	
 	var form = GOKb.forms.build([
 	  {
@@ -220,10 +220,8 @@ GOKb.handlers.test = function() {
 	  }
 	], "/command/gokb/project-checkin");
 	
-	var formBindings = DOM.bind(form);
-
 	dialog.bindings.dialogContent.append(form);
-	$.extend(dialog.bindings, formBindings);
+	$.extend(dialog.bindings, {"form" : form});
 	
 	// Change the submit button text to be check-in
 //	dialog.bindings.submit.attr("value", "Save and Check-in");
