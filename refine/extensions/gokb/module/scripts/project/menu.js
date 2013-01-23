@@ -6,6 +6,13 @@ var standardMenuItems = [
 		  GOKb.handlers.suggest();
 	  }
 	},
+	{
+	  "id" : "gokb-menu-test",
+	  label: "Test",
+	  click: function() { 
+		  GOKb.handlers.test();
+	  }
+	},
 ];
 
 // Load the project metadata.

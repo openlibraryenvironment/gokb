@@ -335,19 +335,28 @@ class ApiController {
    *   first time
    */
   def getProjectProfileProperties() {
-    def result = [
-      [
-        label:'Provider',
-        type:'refdata',
-        refdataType:'cp',
-		name:'provider',
-      ],
-      [
-        label:'Notes',
-        type:'text',
-		name: 'notes',
-      ]
-    ]
+	def result = [
+	  [
+		type : "fieldset",
+		children : [
+		  [
+			type : 'legend',
+			text : 'Properties'
+		  ],
+		  [
+			label:'Provider',
+			type:'refdata',
+			refdataType:'cp',
+			name:'provider',
+		  ],
+		  [
+			label:'Notes',
+			type:'textarea',
+			name: 'notes',
+		  ]
+		]
+	  ]
+	]
     apiReturn(result)
   }
   

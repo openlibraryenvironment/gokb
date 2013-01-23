@@ -181,10 +181,52 @@ GOKb.handlers.checkInWithProps = function() {
 				});
 				
 				// Add the project params as hidden fields to the form.
-				GOKb.paramsAsHiddenFields(dialog.bindings.form, params);
+				GOKb.forms.paramsAsHiddenFields(dialog.bindings.form, params);
 			}
 		}
 	});
+	
+	// Rename close button to cancel.
+	dialog.bindings.closeButton.text("Cancel");
+	
+	// Show the form.
+	return GOKb.showDialog(dialog);
+};
+
+GOKb.handlers.test = function() {
+	// Create the form to collect some basic data about this document.
+	var dialog = GOKb.createDialog("Suggested Operations");
+	
+	var form = GOKb.forms.build([
+	  {
+  	  type : "fieldset",
+  	  children : [
+	  		{
+	  		  type : 'legend',
+	  		  text : 'Properties'
+	  		},
+	  		{
+	  		  label:'Provider',
+	  		  type:'refdata',
+	  		  refdataType:'cp',
+	  		  name:'provider',
+	  		},
+	  		{
+	  		  label:'Notes',
+	  		  type:'textarea',
+	  		  name: 'notes',
+	  		}
+  	  ]
+	  }
+	], "/command/gokb/project-checkin");
+	
+	var formBindings = DOM.bind(form);
+
+	dialog.bindings.dialogContent.append(form);
+	$.extend(dialog.bindings, formBindings);
+	
+	// Change the submit button text to be check-in
+//	dialog.bindings.submit.attr("value", "Save and Check-in");
 	
 	// Rename close button to cancel.
 	dialog.bindings.closeButton.text("Cancel");

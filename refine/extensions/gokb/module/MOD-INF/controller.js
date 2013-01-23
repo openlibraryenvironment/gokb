@@ -43,7 +43,6 @@ function init() {
      "styles/uniform.default.css",
      "styles/uniform.aristo.css",
      "styles/common.less",
-     "scripts/forms.js",
      "styles/index.less",
     ]
   );
@@ -56,6 +55,7 @@ function init() {
      "scripts/plugins/jquery.plugin.selectablerows.js",
      "scripts/plugins/jquery.uniform.min.js",
      "scripts/common.js",
+     "scripts/forms.js",
      "scripts/project/validation-panel.js",
      "scripts/project.js",
      "scripts/project/handlers.js",
