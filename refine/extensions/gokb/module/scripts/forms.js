@@ -46,6 +46,10 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
 	var theForm = $('<form />').attr({"id" : name, "name" : (name)});
 	
 	var submitFunction = function (callback) {
+		
+		// Always store the values.
+		GOKb.forms.saveValues(theForm);
+		
 		if (!validate || !$.isFunction(validate) || validate(theForm)) {
 			
 			// Check for callback.
@@ -58,7 +62,7 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
 			
 			// We have no callback and either we don't have a validation method,
 			// or validation has succeeded.
-			return true;
+			return (callback != false);
 		}
 		
 		// As validation failed and there is no callback method.
@@ -66,7 +70,7 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
 	};
 	
 	// Add the correct submit behaviour.
-	if ($.isFunction(action)) {
+	if (action == false || $.isFunction(action)) {
 		// Need to add on submit...
 		theForm.submit(function(e) {
 			if (!submitFunction(action)) {
@@ -79,6 +83,7 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
 	} else {
 		// set the action parameter..
 		theForm.submit(function(e) {
+			
 			if (!submitFunction()) {
 				e.preventDefault();
 				return false;
@@ -130,9 +135,9 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 			GOKb.getRefData ("cp", {
 				onDone : function (data) {
 					if ("result" in data && "datalist" in data.result) {
-						$.each(data.result.datalist, function (value, display) {
-							var opt = $('<option />', {"value" : value})
-								.text(display)
+						$.each(data.result.datalist, function () {
+							var opt = $('<option />', {"value" : this.value})
+								.text(this.name)
 							;
 							
 							// Append the arguments...
@@ -160,7 +165,8 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 			elem = $("<" + def.type + " />");
 			break;
 	
-	
+		case 'hidden' :
+			add_to = parent;
 		default :
 			
 			// Default behaviour.
@@ -204,30 +210,23 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 	}
 };
 
-GOKb.forms.setCurrentValue = function (elem, def) {
-	switch (def.type) {
-		case 'refdata' :
-			
-		case 'select' :
-			elem = $("<select />");
-		break;
-	
-		case 'legend'		:
-		case 'fieldset' :
-			add_to = parent;
-		case 'textarea' :
-			elem = $("<" + def.type + " />");
-		break;
-	
-	
-		default :
-			
-			// Default behaviour.
-			elem = $("<input />")
-				.attr ({type : def.type, value : def.value});
-		break;
+/**
+ * Get the location where form data is to be stored within this project metadata
+ */
+GOKb.forms.ds = null;
+
+GOKb.forms.getDataStore = function() {
+	if (GOKb.forms.ds == null) {
+		if ('gokb-data' in theProject.metadata.customMetadata) {
+			GOKb.forms.ds = theProject.metadata.customMetadata['gokb-data'];
+		} else {
+			GOKb.forms.ds = {};
+		}
 	}
-};
+	
+	// The data store object.
+	return GOKb.forms.ds;
+}; 
 
 /**
  * Retrieve the value set currently in the metadata.
@@ -235,21 +234,44 @@ GOKb.forms.setCurrentValue = function (elem, def) {
 GOKb.forms.addSavedValue = function (theForm, def) {
 	var form_name = theForm.attr("name"); 
 	if (def.name && form_name) {
-		// Set the metadata object if not already present.
-		if (!('gokb-data' in theProject.metadata.customMetadata)) {
-			theProject.metadata.customMetadata.gokb-data = {};
-		}
 		
 		// The data store object.
-		var data_store = theProject.metadata.customMetadata.gokb-data;
+		var data_store = GOKb.forms.getDataStore();
 		
-		var store_id = form_name + "-_-" + def.name;
+		var store_id = form_name + "_" + def.name;
 		
 		// Try and read the object back.
 		if (store_id in data_store) {
 			
 			// Set the currentVal.
-			def.currentVal = data_store[store_id];
+			def.currentValue = data_store[store_id];
 		}
 	}
-}
+};
+
+/**
+ * Save the values of the form in our data store.
+ */
+GOKb.forms.saveValues = function(form) {
+	
+	// The data store object.
+	var data_store = GOKb.forms.getDataStore();
+	
+	// Elements
+	$('input, select, textarea', form).each(function() {
+		var store_id = form.attr('name') + "_" + $(this).attr('name');
+		data_store[store_id] = $(this).val();
+	});
+	
+	// Save to the metadata.
+	GOKb.doCommand(
+	  "datastore-save",
+	  {},
+	  {project : theProject.id, ds : JSON.stringify(data_store)},
+	  {
+	  	onDone : function () {
+	  		(Refine.createUpdateFunction({everythingChanged : true}))();
+	  	}
+	  }
+	);
+};

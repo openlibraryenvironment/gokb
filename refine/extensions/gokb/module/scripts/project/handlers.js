@@ -194,41 +194,40 @@ GOKb.handlers.checkInWithProps = function() {
 };
 
 GOKb.handlers.test = function() {
-	// Create the form to collect some basic data about this document.
-	var dialog = GOKb.createDialog("Project Properties");
 	
-	var form = GOKb.forms.build([
-	  {
-  	  type : "fieldset",
-  	  children : [
-	  		{
-	  		  type : 'legend',
-	  		  text : 'Properties'
-	  		},
-	  		{
-	  		  label:'Provider',
-	  		  type:'refdata',
-	  		  refdataType:'cp',
-	  		  name:'provider',
-	  		},
-	  		{
-	  		  label:'Notes',
-	  		  type:'textarea',
-	  		  name: 'notes',
-	  		}
-  	  ]
-	  }
-	], "/command/gokb/project-checkin");
-	
-	dialog.bindings.dialogContent.append(form);
-	$.extend(dialog.bindings, {"form" : form});
-	
-	// Change the submit button text to be check-in
-//	dialog.bindings.submit.attr("value", "Save and Check-in");
-	
-	// Rename close button to cancel.
-	dialog.bindings.closeButton.text("Cancel");
-	
-	// Show the form.
-	return GOKb.showDialog(dialog);
+	// Get the dynamic form...
+	GOKb.doCommand("getProjectProfileProperties", {}, {}, {
+		onDone : function (data) {
+			if ("result" in data) {
+				
+				// Try and build the form.
+				var dialog = GOKb.createDialog("Project Properties");
+				
+				var form = GOKb.forms.build("project-properties", data.result, "/command/gokb/project-checkin");
+				
+				// Bind the form.
+				dialog.bindings.dialogContent.append(form);
+				$.extend(dialog.bindings, {"form" : form});
+				
+				// Add the project params to the footer
+				var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
+				
+				// Add the hidden fields.
+				GOKb.forms.paramsAsHiddenFields(
+				  dialog.bindings.form,
+				  dialog.bindings.form.bindings.footer,
+				  params
+				);
+				
+				// Change the submit button text to be check-in
+				dialog.bindings.form.bindings.submit.attr("value", "Save and Check-in");
+				
+				// Rename close button to cancel.
+				dialog.bindings.closeButton.text("Cancel");
+				
+				// Show the form.
+				return GOKb.showDialog(dialog);
+			}
+		}
+	});
 };

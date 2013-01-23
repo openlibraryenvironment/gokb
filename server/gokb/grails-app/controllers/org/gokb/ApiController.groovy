@@ -300,10 +300,14 @@ class ApiController {
 			}
 			eq('value','Content Provider');
 		  }
+		  order("name", "asc")
 		}
-		result.datalist=[:]
+		result.datalist=[]
 		orgs.each { o ->
-		  result.datalist["${o.id}"] = o.name
+		  result.datalist.add([
+			"value" : "${o.id}",
+			"name" : (o.name)
+		  ])
 		}
 		break;
 	  default:
@@ -337,24 +341,24 @@ class ApiController {
   def getProjectProfileProperties() {
 	def result = [
 	  [
-		type : "fieldset",
-		children : [
-		  [
-			type : 'legend',
-			text : 'Properties'
-		  ],
-		  [
-			label:'Provider',
-			type:'refdata',
-			refdataType:'cp',
-			name:'provider',
-		  ],
-		  [
-			label:'Notes',
-			type:'textarea',
-			name: 'notes',
-		  ]
-		]
+    	type : "fieldset",
+    	children : [
+	  		[
+	  		  type : 'legend',
+	  		  text : 'Properties'
+	  		],
+	  		[
+	  		  label:'Provider',
+	  		  type:'refdata',
+	  		  refdataType:'cp',
+	  		  name:'provider',
+	  		],
+	  		[
+	  		  label:'Notes',
+	  		  type:'textarea',
+	  		  name: 'notes',
+	  		]
+  	  	]
 	  ]
 	]
     apiReturn(result)
