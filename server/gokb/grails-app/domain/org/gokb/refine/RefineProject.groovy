@@ -16,9 +16,13 @@ class RefineProject {
       Org provider
    String lastValidationResult
      Long progress
+   String possibleRulesString
+   String notes
 
   @Transient
   def lastValidationResultAsMap = null
+  @Transient
+  def possibleRulesResultAsList = null
 
   static mapping = {
     table 'refine_project'
@@ -34,6 +38,8 @@ class RefineProject {
                 provider column: 'rp_prov_fk'
     lastValidationResult column: 'rp_last_validation_result', type: 'text'
                 progress column: 'rp_progress'
+     possibleRulesString column: 'rp_matching_rules', type: 'text'
+     			   notes column: 'rp_notes'
   }
 
   
@@ -45,13 +51,24 @@ class RefineProject {
     lastValidationResult nullable: true
                 provider nullable: true
                 progress nullable: true
+     possibleRulesString nullable: true
+     			   notes nullable: true
   }
 
   @Transient
   lastValidationAsMap() {
     if ( lastValidationResult && ( lastValidationResultAsMap == null ) ) {
-      lastValidationResultAsMap = org.codehaus.groovy.grails.web.converters.AbstractConverter.parse(lastValidationResult)
+      lastValidationResultAsMap = grails.converters.JSON.parse(lastValidationResult)
     }
     lastValidationResultAsMap
   }
+
+  @Transient
+  possibleRulesAsList() {
+    if ( possibleRulesString && ( possibleRulesResultAsList == null ) ) {
+      possibleRulesResultAsList = grails.converters.JSON.parse(possibleRulesString)
+    }
+    possibleRulesResultAsList
+  }
+
 }

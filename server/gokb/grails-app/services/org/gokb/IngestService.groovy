@@ -109,7 +109,16 @@ class IngestService {
       def pkg = Package.findByIdentifier("project:${project.id}");
       if (!pkg) {
         log.debug("New package with identifier project:${project.id}");
-        pkg = new Package(identifier:"project:${project.id}", name:"project:${project.id}").save(flush:true);
+        pkg = new Package(
+                          identifier:"project:${project.id}", 
+                          name:"project:${project.id}",
+                          packageStatus:RefdataCategory.lookupOrCreate("Package Status", "Current"),
+                          packageScope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
+                          breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
+                          parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
+                          global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
+                          fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
+                          consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
       }
       else {
         log.debug("Got existing package");
@@ -318,7 +327,6 @@ class IngestService {
 	  result
   }
   
-  
   def processData(result, is) {
     log.debug("processing refine data.txt");
     def bis = new BufferedReader(new InputStreamReader(is));
@@ -409,7 +417,6 @@ class IngestService {
     result;
   }
 
-
   def cleanUpGorm() {
     log.debug("Clean up GORM");
     def session = sessionFactory.currentSession
@@ -470,6 +477,47 @@ class IngestService {
     }
     else {
       log.error("Provider not set, cannot establish rules!");
+    }
+  }
+
+
+  /**
+   *  Look at the project header, extract fingerprints, try to find matching rules that could be applied
+   *  to this upload
+   */
+
+  def findRules(parsed_project_file, provider) {
+
+    def result = []
+    def extracted_fingerprints = []
+
+    // Iterate over columns
+    parsed_project_file.columnDefinitions.each { cd ->
+      log.debug("Considering column ${cd.name}");
+      def fingerprint="core/column-rename:${cd.name}"
+      extracted_fingerprints.add(fingerprint)
+    }
+
+    extracted_fingerprints.each { fp ->
+	  if (provider) findRulesByFingerprint('provider',provider,fp,result)
+      findRulesByFingerprint('global',null,fp,result)
+    }
+
+    result
+  }
+
+  def findRulesByFingerprint(scope,provider,fp,ruleset) {
+	def rule_in_db
+	if ( provider ) {
+      log.debug("Looking for rules ${scope}:${provider}:${fp}")
+      rule_in_db = Rule.findByScopeAndProviderAndFingerprint(scope,provider,fp)
+	  
+	} else {
+	  rule_in_db = Rule.findByScopeAndFingerprint(scope,fp)
+	}
+    if ( rule_in_db ) {
+      log.debug("got matching rule ${rule_in_db}");
+      ruleset.add(rule_in_db)
     }
   }
 }

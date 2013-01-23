@@ -13,4 +13,5 @@ drop table registration_code;
 drop table role;
 drop table user;
 drop table user_role;
-
+drop table kb_component_refdata_value;
+drop table rule;

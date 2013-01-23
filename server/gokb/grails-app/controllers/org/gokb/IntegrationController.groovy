@@ -80,6 +80,9 @@ class IntegrationController {
         }
       }
     }
+    else {
+      log.debug("Located existing record..");
+    }
 
     render result as JSON
   }

@@ -102,7 +102,6 @@ GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, tit
 		.attr("title",(title ? title : text))
 		.attr("href", loc)
 		.attr("rel", project.id)
-		.css("visibility", "hidden")
 		.addClass("control")
 		.html(text)
 	;
@@ -119,8 +118,8 @@ GOKb.ui.projects.prototype.updateStatus = function (statusElem) {
 				var progress = data.result.progress;
 				if (progress < 100) {
 
-					// Hide anything that should not be seen while ingesting.
-					$('.ingestingHidden', status.parents('tr')).hide();
+					// Hide controls while ingesting.
+					$('.control', status.parents('tr')).hide();
 					
 					// Being ingested...
 					status.text("Ingesting (" + progress + "%)");
@@ -131,7 +130,8 @@ GOKb.ui.projects.prototype.updateStatus = function (statusElem) {
 					
 					// Finished.
 					// Show anything hidden while ingesting.
-					$('.ingestingHidden', status.parents('tr')).show();
+//					$('.ingestingHidden', status.parents('tr')).show();
+					$('.control', status.parents('tr')).show();
 					
 					status.text("Checked In (Ingested)");
 					
@@ -163,7 +163,7 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		    "check&#45;out",
 		    "Checkout this project from GOKb to work on it."
 		  )
-		  .addClass( "ingestingHidden" )
+//		  .addClass( "ingestingHidden" )
 			.click(function(event) {
 				
 				// Stop the anchor moving to a different location.
@@ -202,13 +202,13 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 					"check&#45;in",
 					"Check the current project into GOKb along with any changes that you have made."
 			  ),
-			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
-			  this.createControlLink(
- 					project,
- 					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name, ingest : true}, params)),
- 					"ingest",
- 					"Check the current project into GOKb along with any changes that you have made, and begin the ingest process."
- 			  ),
+//			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
+//			  this.createControlLink(
+// 					project,
+// 					'command/gokb/project-checkin?' + $.param($.extend({update : true, name	: theProject.name, ingest : true}, params)),
+// 					"ingest",
+// 					"Check the current project into GOKb along with any changes that you have made, and begin the ingest process."
+// 			  ),
  			  $("<span>&nbsp;&nbsp;&nbsp;</span>"),
 			  this.createControlLink(
 					project,

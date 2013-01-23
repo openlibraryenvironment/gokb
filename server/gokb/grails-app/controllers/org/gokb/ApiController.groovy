@@ -135,7 +135,6 @@ class ApiController {
   }
 
   def projectCheckin() {
-
 	
 	log.debug(params)
 	
@@ -154,7 +153,7 @@ class ApiController {
 
 		// Set the org too.
 		log.debug("Setting provider from submission.");
-		Org org = Org.get(params.org)
+		Org org = Org.get(params.provider)
 		if (org) {
 		  project.provider = org
 		}
@@ -184,12 +183,19 @@ class ApiController {
 		project.setCheckedOutBy(null)
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
+		if (params.notes) project.setNotes(params.notes)
 		
+	        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
+            // suggesting rules or validation.
+      	    log.debug("parse refine project");
+	        def parsed_project_file = ingestService.extractRefineproject(project.file)
+			project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
+			
 		// Make sure we null the progress...
 		project.setProgress(null)
 		if (params.ingest) {
 		  // Try and ingest the project too!
-		  projectIngest(project)
+		  projectIngest(project,parsed_project_file)
 		}
 
 		// Save and flush.
@@ -219,13 +225,9 @@ class ApiController {
 	response.status = 404;
   }
 
-  private def projectIngest (RefineProject project) {
+  private def projectIngest (RefineProject project, parsed_data) {
+
 	if (project.getCheckedIn()) {
-
-	  // Do the ingest.
-	  log.debug("extract refine project");
-	  def parsed_data = ingestService.extractRefineproject(project.file)
-
 	  log.debug("Validate the project");
 	  def validationResult = ingestService.validate(parsed_data)
 	  project.lastValidationResult = validationResult.messages
@@ -243,20 +245,39 @@ class ApiController {
   }
   
   def projectDataValid() {
-	def f = request.getFile('projectDataZip')
-
+	
+	log.debug("Try to validate data in zip file.")
+	def f = request.getFile('dataZip')
 	def validationResult = [:]
 	
 	if (f && !f.empty) {
-	  def parsed_data = extractRefineDataZip(f)
 	  
-	  log.debug("Validate the data in the zip");
-	  validationResult = ingestService.validate(parsed_data)
-	  apiReturn(validationResult)
+	  // Save the file temporarily...
+	  def temp_data_zipfile
+	  try {
+		temp_data_zipfile = File.createTempFile(
+		  Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
+		)
+		f.transferTo(temp_data_zipfile)
+		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+		
+		log.debug("Validate the data in the zip");
+		validationResult = ingestService.validate(parsed_project_file)
+		
+	  } finally {
+		if ( temp_data_zipfile ) {
+		  try {
+			temp_data_zipfile.delete();
+		  }
+		  catch ( Throwable t ) {
+		  }
+		}
+	  }
 	} else {
-	  
-	  log.debug("No file sent to be validated.")
+	  log.debug("No dataZip file request attribute supplied.")
 	}
+	
+	apiReturn ( validationResult )
   }
 
   private def doIngest(parsed_data, project) {
@@ -280,10 +301,14 @@ class ApiController {
 			}
 			eq('value','Content Provider');
 		  }
+		  order("name", "asc")
 		}
-		result.datalist=[:]
+		result.datalist=[]
 		orgs.each { o ->
-		  result.datalist["${o.id}"] = o.name
+		  result.datalist.add([
+			"value" : "${o.id}",
+			"name" : (o.name)
+		  ])
 		}
 		break;
 	  default:
@@ -309,4 +334,97 @@ class ApiController {
 	  response.status = 404;
 	}
   }
+
+  /**
+   *   Return a JSON structured array of the fields that should be collected when a project is checked in for the
+   *   first time
+   */
+  def getProjectProfileProperties() {
+	def result = [
+	  [
+    	type : "fieldset",
+    	children : [
+	  		[
+	  		  type : 'legend',
+	  		  text : 'Properties'
+	  		],
+	  		[
+	  		  label:'Provider',
+	  		  type:'refdata',
+	  		  refdataType:'cp',
+	  		  name:'provider',
+	  		],
+	  		[
+	  		  label:'Name',
+	  		  type:'text',
+	  		  name: 'name',
+	  		],
+	  		[
+	  		  label:'Description',
+	  		  type:'text',
+	  		  name: 'description',
+	  		],
+	  		[
+	  		  label:'Notes',
+	  		  type:'textarea',
+	  		  name: 'notes',
+	  		]
+  	  	]
+	  ]
+	]
+    apiReturn(result)
+  }
+  
+  /**
+   * Suggest the rules that might apply to the data.txt within this zip file.
+   * @param dataZip
+   */
+  def suggestRulesFromData() {	
+	
+	log.debug ("Attempting to get rule suggestions from data zip.")
+	
+	def f = request.getFile('dataZip')
+	def rules = [:]
+	if (f && !f.empty) {
+	  Org provider = null;
+	  if (params.providerID) {
+		provider = Org.get(params.providerID)
+	  }
+	  
+	  def temp_data_zipfile
+	  try {
+		
+		temp_data_zipfile = File.createTempFile(
+		  Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
+		);
+		f.transferTo(temp_data_zipfile)
+		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+		rules = suggestRulesFromParsedData ( parsed_project_file, provider )
+		
+	  } finally {
+		if ( temp_data_zipfile ) {
+		  try {
+			temp_data_zipfile.delete();
+		  }
+		  catch ( Throwable t ) {
+		  }
+		}
+	  }
+	} else {
+	  log.debug("No dataZip file request attribute supplied.")
+	}
+	
+	apiReturn ( rules )
+  }
+  
+  private def suggestRulesFromParsedData (parsed_project_file, provider) {
+	log.debug ("Suggesting rules from parsed data.")
+	try {
+	  def possible_rules = ingestService.findRules(parsed_project_file, provider )
+	  return possible_rules
+	}
+	catch ( Exception e ) {
+	  log.error("Problem trying to match rules",e)
+	}
+  }  
 }

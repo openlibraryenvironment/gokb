@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat
 
 // Load the fam reconcilliation data
 def target_service = new HTTPBuilder('http://localhost:8080/gokb/integration/assertOrg')
+// def target_service = new HTTPBuilder('http://gokb.k-int.com/gokb/integration/assertOrg')
 
 // try {
 //   target_service.request(GET, ContentType.XML) { request ->

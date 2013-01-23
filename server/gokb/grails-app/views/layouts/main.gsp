@@ -26,6 +26,8 @@
             <ul class="nav">
               <li class="active"><g:link controller="home" action="index">Home</g:link></li>
               <li class="active"><g:link controller="search" action="index">Search</g:link></li>
+              <li class="active"><g:link controller="home" action="showRules">Validation Rules</g:link></li>
+              <li class="active"><g:link controller="coreference" action="index">Coreference</g:link></li>
             </ul>
             <p class="navbar-text pull-right">Not logged in</p>
           </div>

@@ -1,18 +1,4 @@
 var standardMenuItems = [
-//  {
-//	  "id" : "gokb-menu-describe",
-//	  label: "Describe Document",
-//	  click: function() { 
-//	  	GOKb.handlers.describe();
-//	  }
-//  },
-//  {
-//	  "id" : "gokb-menu-history",
-//	  label: "Show Applied Operations",
-//	  click: function() {
-//	  	GOKb.handlers.history();
-//	  }
-//  },
 	{
 	  "id" : "gokb-menu-suggest",
 	  label: "Suggest Operations",
@@ -21,7 +7,7 @@ var standardMenuItems = [
 	  }
 	},
 ];
-	
+
 // Load the project metadata.
 GOKb.doRefineCommand("core/get-project-metadata",{ project: theProject.id }, null,
   {

@@ -27,3 +27,14 @@ grails run-app
 # First run
 
 
+
+
+# Orgs Import
+
+A script is provdied to import the ncsu orgs list, run from gokb-phase1/scripts/import/orgs as follows:
+
+./ncsu_orgs_imp.groovy ./ncsu-auth-orgs-roles-2013-01-11.csv 
+
+
+
+
