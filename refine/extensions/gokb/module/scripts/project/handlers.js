@@ -146,54 +146,54 @@ GOKb.handlers.history = function() {
  * Prompt the user to check project properties and then check in the project.
  */
 
-GOKb.handlers.checkInWithProps = function() {
-	// Create the form to collect some basic data about this document.
-	var dialog = GOKb.createDialog("Suggested Operations", "form_project_properties");
-	
-	// Change the location to send the data to project check-in.
-	dialog.bindings.form.attr("action", "command/gokb/project-checkin");
-	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
-	
-	// Change the submit button text to be check-in
-	dialog.bindings.submit.attr("value", "Save and Check-in");
-	
-	// Get the refdata from GOKb service.
-	GOKb.getRefData ("cp", {
-		onDone : function (data) {
-			
-			if ("result" in data && "datalist" in data.result) {
-			
-				var orgList = $('#org', dialog.bindings.form);
-				$.each(data.result.datalist, function (value, display) {
-					var opt = $('<option />', {"value" : value})
-						.text(display)
-					;
-					
-					// Select the current value...
-					if (value == params.org) {
-						opt.attr('selected', 'selected');
-					}
-					
-					// Append the arguments...
-					orgList.append(
-					  opt
-					);
-				}, {async : false});
-				
-				// Add the project params as hidden fields to the form.
-				GOKb.forms.paramsAsHiddenFields(dialog.bindings.form, dialog.bindings.form, params);
-			}
-		}
-	});
-	
-	// Rename close button to cancel.
-	dialog.bindings.closeButton.text("Cancel");
-	
-	// Show the form.
-	return GOKb.showDialog(dialog);
-};
+//GOKb.handlers.checkInWithProps = function() {
+//	// Create the form to collect some basic data about this document.
+//	var dialog = GOKb.createDialog("Suggested Operations", "form_project_properties");
+//	
+//	// Change the location to send the data to project check-in.
+//	dialog.bindings.form.attr("action", "command/gokb/project-checkin");
+//	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
+//	
+//	// Change the submit button text to be check-in
+//	dialog.bindings.submit.attr("value", "Save and Check-in");
+//	
+//	// Get the refdata from GOKb service.
+//	GOKb.getRefData ("cp", {
+//		onDone : function (data) {
+//			
+//			if ("result" in data && "datalist" in data.result) {
+//			
+//				var orgList = $('#org', dialog.bindings.form);
+//				$.each(data.result.datalist, function (value, display) {
+//					var opt = $('<option />', {"value" : value})
+//						.text(display)
+//					;
+//					
+//					// Select the current value...
+//					if (value == params.org) {
+//						opt.attr('selected', 'selected');
+//					}
+//					
+//					// Append the arguments...
+//					orgList.append(
+//					  opt
+//					);
+//				}, {async : false});
+//				
+//				// Add the project params as hidden fields to the form.
+//				GOKb.forms.paramsAsHiddenFields(dialog.bindings.form, dialog.bindings.form, params);
+//			}
+//		}
+//	});
+//	
+//	// Rename close button to cancel.
+//	dialog.bindings.closeButton.text("Cancel");
+//	
+//	// Show the form.
+//	return GOKb.showDialog(dialog);
+//};
 
-GOKb.handlers.test = function() {
+GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 	
 	// Get the dynamic form...
 	GOKb.doCommand("getProjectProfileProperties", {}, {}, {
@@ -210,7 +210,8 @@ GOKb.handlers.test = function() {
 				$.extend(dialog.bindings, {"form" : form});
 				
 				// Add the project params to the footer
-				var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
+				hiddenProperties = hiddenProperties || {};
+				var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject), hiddenProperties);
 				
 				// Add the hidden fields.
 				GOKb.forms.paramsAsHiddenFields(

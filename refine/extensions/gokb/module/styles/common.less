@@ -23,7 +23,16 @@
 	  fieldset {
 	    padding: 7px;
 	    border:1px solid #000;
-	  } 
+	  }
+	  
+	  fieldset.footer {
+	  	border: none;
+	  	padding: none;
+	  	legend {
+	  	  display : none;
+	  	}
+	  }
+	   
 		.form-row {
 		  padding: 5px 0 5px 0;
 		  label {
@@ -39,6 +48,10 @@
 		
 		input.text, input.email, input.password, textarea.uniform {
 		  margin: 0.3em 0 0 3px;
+		}
+		
+		textarea.uniform {
+			height : 200px;
 		}
 	}
 }

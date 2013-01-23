@@ -116,95 +116,98 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
  */
 GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 	
-	// Add the current value to the definition.
-	GOKb.forms.addSavedValue (theForm, def);
+	if (!def.name || def.name != "gokb-data") {
 	
-	// Create the form row.
-	var add_to = $('<div />')
-		.attr({
-			'class' : 'form-row'
-		})
-	;
-	
-	// Add the element based on the def.
-	var	elem, opts;
-	switch (def.type) {
-		case 'refdata' :
-			
-			// Create the select element.
-			elem = $("<select />");
-			
-			// Bind the refdata to the dropdown.
-			GOKb.getRefData ("cp", {
-				onDone : function (data) {
-					if ("result" in data && "datalist" in data.result) {
-						$.each(data.result.datalist, function () {
-							var opt = $('<option />', {"value" : this.value})
-								.text(this.name)
-							;
-							
-							// Append the arguments...
-							elem.append(
-							  opt
-							);
-						});
+		// Add the current value to the definition.
+		GOKb.forms.addSavedValue (theForm, def);
+		
+		// Create the form row.
+		var add_to = $('<div />')
+			.attr({
+				'class' : 'form-row'
+			})
+		;
+		
+		// Add the element based on the def.
+		var	elem, opts;
+		switch (def.type) {
+			case 'refdata' :
+				
+				// Create the select element.
+				elem = $("<select />");
+				
+				// Bind the refdata to the dropdown.
+				GOKb.getRefData ("cp", {
+					onDone : function (data) {
+						if ("result" in data && "datalist" in data.result) {
+							$.each(data.result.datalist, function () {
+								var opt = $('<option />', {"value" : this.value})
+									.text(this.name)
+								;
+								
+								// Append the arguments...
+								elem.append(
+								  opt
+								);
+							});
+						}
 					}
-				}
-			}, {async : false});
-			break;
-		case 'select' :
-			elem = $("<select />");
-			break;
-
-		case 'legend'		:
-		case 'fieldset' :
-			add_to = parent;
-		case 'textarea' :
-			elem = $("<" + def.type + " />");
-			break;
+				}, {async : false});
+				break;
+			case 'select' :
+				elem = $("<select />");
+				break;
 	
-		case 'hidden' :
-			add_to = parent;
-		default :
-			
-			// Default behaviour.
-			elem = $("<input />")
-				.attr ({type : def.type, value : def.value});
-			break;
-	}
-	
-	if (def.text) elem.text(def.text);
-	
-	// Label first
-	if (def.label) {
-		add_to.append($("<label />").text(def.label).attr({
-			"for" : def.name
-		}));
-	}
-	
-	if (def.value) {
-		elem.attr ("value", def.value);
-	}
-	
-	// Add any attributes.
-	elem.attr($.extend((def.attr || {}), {id : def.name, name : def.name}));
-	
-	// Append the element.
-	add_to.append(elem);
-	
-	// If add_to different to parent then add that to the parent.
-	if (add_to != parent) parent.append(add_to);
-	
-	// Render the current value.
-	if (def.currentValue) {
-		elem.val(def.currentValue);
-	}
-	
-	// Lastly add any children this element may have.
-	if (def.children) {
-		$.each(def.children, function(){
-			GOKb.forms.addDefinedElement(theForm, elem, this);
-		});
+			case 'legend'		:
+			case 'fieldset' :
+				add_to = parent;
+			case 'textarea' :
+				elem = $("<" + def.type + " />");
+				break;
+		
+			case 'hidden' :
+				add_to = parent;
+			default :
+				
+				// Default behaviour.
+				elem = $("<input />")
+					.attr ({type : def.type, value : def.value});
+				break;
+		}
+		
+		if (def.text) elem.text(def.text);
+		
+		// Label first
+		if (def.label) {
+			add_to.append($("<label />").text(def.label).attr({
+				"for" : def.name
+			}));
+		}
+		
+		if (def.value) {
+			elem.attr ("value", def.value);
+		}
+		
+		// Add any attributes.
+		elem.attr($.extend((def.attr || {}), {id : def.name, name : def.name}));
+		
+		// Append the element.
+		add_to.append(elem);
+		
+		// If add_to different to parent then add that to the parent.
+		if (add_to != parent) parent.append(add_to);
+		
+		// Render the current value.
+		if (def.currentValue) {
+			elem.val(def.currentValue);
+		}
+		
+		// Lastly add any children this element may have.
+		if (def.children) {
+			$.each(def.children, function(){
+				GOKb.forms.addDefinedElement(theForm, elem, this);
+			});
+		}
 	}
 };
 
@@ -231,7 +234,7 @@ GOKb.forms.getDataStore = function() {
  */
 GOKb.forms.addSavedValue = function (theForm, def) {
 	var form_name = theForm.attr("name"); 
-	if (def.name && form_name && def.type != "hidden") {
+	if (def.name && def.name != "gokb-data" && form_name && def.type != "hidden") {
 		
 		// Special case for project name
 		if (def.name == "name") {
@@ -265,7 +268,7 @@ GOKb.forms.saveValues = function(form) {
 	var data_store = GOKb.forms.getDataStore();
 	
 	// none-hidden elements. 
-	$('input[type!="value"], select, textarea', form).each(function() {
+	$('input[type!="hidden"], select, textarea', form).each(function() {
 		var store_id = form.attr('name') + "_" + $(this).attr('name');
 		data_store[store_id] = $(this).val();
 	});
@@ -276,6 +279,6 @@ GOKb.forms.saveValues = function(form) {
 	  {},
 	  {project : theProject.id, ds : JSON.stringify(data_store)},
 	  {},
-	  {async : false}
+	  {async : false, type : "post"}
 	);
 };
