@@ -24,11 +24,14 @@ GOKb.forms = {
  */
 GOKb.forms.paramsAsHiddenFields = function (theForm, elem, params) {
 	for(var key in params) {
-		GOKb.forms.addDefinedElement(theForm, elem, {
-			type : 'hidden',
-			name : (key),
-			value : params[key],
-		});
+		
+		if ($('[name="' + key + '"]', theForm).length < 1) {
+			GOKb.forms.addDefinedElement(theForm, elem, {
+				type : 'hidden',
+				name : (key),
+				value : params[key],
+			});
+		}
 	}
 };
 
@@ -145,14 +148,9 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 							  opt
 							);
 						});
-						
-						// Select the current one...
-						if (def.currentValue) {
-							elem.val(def.currentValue);
-						}
 					}
 				}
-			});
+			}, {async : false});
 			break;
 		case 'select' :
 			elem = $("<select />");
@@ -218,7 +216,7 @@ GOKb.forms.ds = null;
 GOKb.forms.getDataStore = function() {
 	if (GOKb.forms.ds == null) {
 		if ('gokb-data' in theProject.metadata.customMetadata) {
-			GOKb.forms.ds = theProject.metadata.customMetadata['gokb-data'];
+			GOKb.forms.ds = JSON.parse(theProject.metadata.customMetadata['gokb-data']);
 		} else {
 			GOKb.forms.ds = {};
 		}
@@ -233,18 +231,27 @@ GOKb.forms.getDataStore = function() {
  */
 GOKb.forms.addSavedValue = function (theForm, def) {
 	var form_name = theForm.attr("name"); 
-	if (def.name && form_name) {
+	if (def.name && form_name && def.type != "hidden") {
 		
-		// The data store object.
-		var data_store = GOKb.forms.getDataStore();
-		
-		var store_id = form_name + "_" + def.name;
-		
-		// Try and read the object back.
-		if (store_id in data_store) {
+		// Special case for project name
+		if (def.name == "name") {
 			
-			// Set the currentVal.
-			def.currentValue = data_store[store_id];
+			// Add the project name as the default.
+			def.currentValue = theProject.metadata["name"];
+			
+		} else {
+		
+			// The data store object.
+			var data_store = GOKb.forms.getDataStore();
+			
+			var store_id = form_name + "_" + def.name;
+			
+			// Try and read the object back.
+			if (store_id in data_store) {
+				
+				// Set the currentVal.
+				def.currentValue = data_store[store_id];
+			}
 		}
 	}
 };
@@ -257,8 +264,8 @@ GOKb.forms.saveValues = function(form) {
 	// The data store object.
 	var data_store = GOKb.forms.getDataStore();
 	
-	// Elements
-	$('input, select, textarea', form).each(function() {
+	// none-hidden elements. 
+	$('input[type!="value"], select, textarea', form).each(function() {
 		var store_id = form.attr('name') + "_" + $(this).attr('name');
 		data_store[store_id] = $(this).val();
 	});
@@ -268,10 +275,7 @@ GOKb.forms.saveValues = function(form) {
 	  "datastore-save",
 	  {},
 	  {project : theProject.id, ds : JSON.stringify(data_store)},
-	  {
-	  	onDone : function () {
-	  		(Refine.createUpdateFunction({everythingChanged : true}))();
-	  	}
-	  }
+	  {},
+	  {async : false}
 	);
 };

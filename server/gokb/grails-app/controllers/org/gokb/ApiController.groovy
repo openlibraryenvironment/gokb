@@ -153,7 +153,7 @@ class ApiController {
 
 		// Set the org too.
 		log.debug("Setting provider from submission.");
-		Org org = Org.get(params.org)
+		Org org = Org.get(params.provider)
 		if (org) {
 		  project.provider = org
 		}
@@ -183,6 +183,7 @@ class ApiController {
 		project.setCheckedOutBy(null)
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
+		if (params.notes) project.setNotes(params.notes)
 		
 	        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
             // suggesting rules or validation.
@@ -352,6 +353,16 @@ class ApiController {
 	  		  type:'refdata',
 	  		  refdataType:'cp',
 	  		  name:'provider',
+	  		],
+	  		[
+	  		  label:'Name',
+	  		  type:'text',
+	  		  name: 'name',
+	  		],
+	  		[
+	  		  label:'Description',
+	  		  type:'text',
+	  		  name: 'description',
 	  		],
 	  		[
 	  		  label:'Notes',

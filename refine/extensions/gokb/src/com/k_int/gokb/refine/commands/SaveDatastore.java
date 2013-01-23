@@ -1,13 +1,11 @@
 package com.k_int.gokb.refine.commands;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.mortbay.util.ajax.JSON;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,11 +43,10 @@ public class SaveDatastore extends A_RefineAPIBridge {
             if (dataStore != null && dataStore.length == 1 ) {
                 // Set the metadata.
                 project.getMetadata().setCustomMetadata(
-                  "gokb-data", (Serializable) JSON.parse(dataStore[0])
+                  "gokb-data", dataStore[0]
                 );
 
                 // Ensure project & Metadata is saved.
-                pm.ensureProjectSaved(project.id);
                 respond(response, "{ \"code\" : \"success\"}");
             }
 

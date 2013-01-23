@@ -178,7 +178,7 @@ GOKb.handlers.checkInWithProps = function() {
 					orgList.append(
 					  opt
 					);
-				});
+				}, {async : false});
 				
 				// Add the project params as hidden fields to the form.
 				GOKb.forms.paramsAsHiddenFields(dialog.bindings.form, dialog.bindings.form, params);
