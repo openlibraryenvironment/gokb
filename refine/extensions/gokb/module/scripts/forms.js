@@ -22,9 +22,9 @@ GOKb.forms = {
 /**
  * Add the parameters object as a series of hidden fields to the form.
  */
-GOKb.forms.paramsAsHiddenFields = function (elem, params) {
+GOKb.forms.paramsAsHiddenFields = function (theForm, elem, params) {
 	for(var key in params) {
-		GOKb.forms.addDefinedElement(elem, {
+		GOKb.forms.addDefinedElement(theForm, elem, {
 			type : 'hidden',
 			name : (key),
 			value : params[key],
@@ -35,7 +35,7 @@ GOKb.forms.paramsAsHiddenFields = function (elem, params) {
 /**
  * Build a for from a definition array.
  */
-GOKb.forms.build = function(def, action, attr, validate) {
+GOKb.forms.build = function(name, def, action, attr, validate) {
 	
 	form_def = def.concat(GOKb.forms.defaultElems);
 	
@@ -43,7 +43,7 @@ GOKb.forms.build = function(def, action, attr, validate) {
 	attr = $.extend({"method" : "post"}, (attr || {}));
 	
 	// The form element.
-	var theForm = $('<form />');
+	var theForm = $('<form />').attr({"id" : name, "name" : (name)});
 	
 	var submitFunction = function (callback) {
 		if (!validate || !$.isFunction(validate) || validate(theForm)) {
@@ -94,7 +94,7 @@ GOKb.forms.build = function(def, action, attr, validate) {
 	
 	// Add each form item in turn.
 	$.each(form_def, function(){
-		GOKb.forms.addDefinedElement(theForm, this);
+		GOKb.forms.addDefinedElement(theForm, theForm, this);
 	});
 	
 	// Add the bindings to the form.
@@ -106,7 +106,10 @@ GOKb.forms.build = function(def, action, attr, validate) {
 /**
  * Add a single defined element to the parent.
  */
-GOKb.forms.addDefinedElement = function (parent, def) {
+GOKb.forms.addDefinedElement = function (theForm, parent, def) {
+	
+	// Add the current value to the definition.
+	GOKb.forms.addSavedValue (theForm, def);
 	
 	// Create the form row.
 	var add_to = $('<div />')
@@ -116,19 +119,46 @@ GOKb.forms.addDefinedElement = function (parent, def) {
 	;
 	
 	// Add the element based on the def.
-	var	elem;
+	var	elem, opts;
 	switch (def.type) {
 		case 'refdata' :
+			
+			// Create the select element.
+			elem = $("<select />");
+			
+			// Bind the refdata to the dropdown.
+			GOKb.getRefData ("cp", {
+				onDone : function (data) {
+					if ("result" in data && "datalist" in data.result) {
+						$.each(data.result.datalist, function (value, display) {
+							var opt = $('<option />', {"value" : value})
+								.text(display)
+							;
+							
+							// Append the arguments...
+							elem.append(
+							  opt
+							);
+						});
+						
+						// Select the current one...
+						if (def.currentValue) {
+							elem.val(def.currentValue);
+						}
+					}
+				}
+			});
+			break;
 		case 'select' :
 			elem = $("<select />");
-		break;
+			break;
 
 		case 'legend'		:
 		case 'fieldset' :
 			add_to = parent;
 		case 'textarea' :
 			elem = $("<" + def.type + " />");
-		break;
+			break;
 	
 	
 		default :
@@ -136,7 +166,7 @@ GOKb.forms.addDefinedElement = function (parent, def) {
 			// Default behaviour.
 			elem = $("<input />")
 				.attr ({type : def.type, value : def.value});
-		break;
+			break;
 	}
 	
 	if (def.text) elem.text(def.text);
@@ -161,10 +191,65 @@ GOKb.forms.addDefinedElement = function (parent, def) {
 	// If add_to different to parent then add that to the parent.
 	if (add_to != parent) parent.append(add_to);
 	
+	// Render the current value.
+	if (def.currentValue) {
+		elem.val(def.currentValue);
+	}
+	
 	// Lastly add any children this element may have.
 	if (def.children) {
 		$.each(def.children, function(){
-			GOKb.forms.addDefinedElement(elem, this);
+			GOKb.forms.addDefinedElement(theForm, elem, this);
 		});
 	}
 };
+
+GOKb.forms.setCurrentValue = function (elem, def) {
+	switch (def.type) {
+		case 'refdata' :
+			
+		case 'select' :
+			elem = $("<select />");
+		break;
+	
+		case 'legend'		:
+		case 'fieldset' :
+			add_to = parent;
+		case 'textarea' :
+			elem = $("<" + def.type + " />");
+		break;
+	
+	
+		default :
+			
+			// Default behaviour.
+			elem = $("<input />")
+				.attr ({type : def.type, value : def.value});
+		break;
+	}
+};
+
+/**
+ * Retrieve the value set currently in the metadata.
+ */
+GOKb.forms.addSavedValue = function (theForm, def) {
+	var form_name = theForm.attr("name"); 
+	if (def.name && form_name) {
+		// Set the metadata object if not already present.
+		if (!('gokb-data' in theProject.metadata.customMetadata)) {
+			theProject.metadata.customMetadata.gokb-data = {};
+		}
+		
+		// The data store object.
+		var data_store = theProject.metadata.customMetadata.gokb-data;
+		
+		var store_id = form_name + "-_-" + def.name;
+		
+		// Try and read the object back.
+		if (store_id in data_store) {
+			
+			// Set the currentVal.
+			def.currentVal = data_store[store_id];
+		}
+	}
+}

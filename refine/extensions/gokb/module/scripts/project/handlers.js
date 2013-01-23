@@ -158,7 +158,7 @@ GOKb.handlers.checkInWithProps = function() {
 	dialog.bindings.submit.attr("value", "Save and Check-in");
 	
 	// Get the refdata from GOKb service.
-	GOKb.getRefData ({type: "cp"}, {
+	GOKb.getRefData ("cp", {
 		onDone : function (data) {
 			
 			if ("result" in data && "datalist" in data.result) {
@@ -181,7 +181,7 @@ GOKb.handlers.checkInWithProps = function() {
 				});
 				
 				// Add the project params as hidden fields to the form.
-				GOKb.forms.paramsAsHiddenFields(dialog.bindings.form, params);
+				GOKb.forms.paramsAsHiddenFields(dialog.bindings.form, dialog.bindings.form, params);
 			}
 		}
 	});

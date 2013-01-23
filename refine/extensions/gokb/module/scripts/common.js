@@ -334,8 +334,8 @@ GOKb.projectDataAsParams = function (project) {
 /**
  * Get ref data from GOKb
  */
-GOKb.getRefData = function (params, callbacks) {
-	GOKb.doCommand ("refdata", params, null, callbacks);
+GOKb.getRefData = function (type, callbacks) {
+	GOKb.doCommand ("refdata", {"type" : type }, null, callbacks);
 };
 
 /**
