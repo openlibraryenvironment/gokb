@@ -306,7 +306,7 @@ class ApiController {
 		  }
 		  order("name", "asc")
 		}
-		result.datalist=[]
+		result.datalist=new java.util.ArrayList()
 		orgs.each { o ->
 		  result.datalist.add([
 			"value" : "${o.id}",
