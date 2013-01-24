@@ -9,7 +9,7 @@ class TitleAugmentService {
   def grailsApplication
   def edinaPublicationsAPIService
 
-  def augment(titleInstance) {
+    def augment(titleInstance) {
     // If the title does have a suncat-id
       if ( titleInstance.getIdentifierValue('SUNCAT' ) == null ) {
         def lookupResult = edinaPublicationsAPIService.lookup(titleInstance.title)
@@ -44,6 +44,5 @@ class TitleAugmentService {
         }
       }
     }
-  }
 
 }
