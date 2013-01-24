@@ -151,7 +151,7 @@ class IngestService {
   
       int ctr = 0
       project_data.rowData.each { datarow ->
-        log.debug("Row ${ctr}");
+        log.debug("Row ${ctr} ${datarow}");
         if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
   
           // Title Instance
