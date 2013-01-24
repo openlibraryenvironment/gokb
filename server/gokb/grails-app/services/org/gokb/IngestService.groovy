@@ -451,11 +451,11 @@ class IngestService {
           switch ( r.operation.op ) {
             case 'core/column-rename':
               // Column Rename
-              def fingerprint = "${r.operation.op}:${r.operation.oldColumnName}"
+              fingerprint = "${r.operation.op}:${r.operation.oldColumnName}"
               break;
             case 'core/text-transform':
             case 'core/mass-edit':
-              def fingerprint = "${r.operation.op}:${r.operation.columnName}"
+              fingerprint = "${r.operation.op}:${r.operation.columnName}"
               break
             default:
               log.debug("Generic rules handling");
