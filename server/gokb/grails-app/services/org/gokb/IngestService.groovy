@@ -92,7 +92,7 @@ class IngestService {
     try {
       log.debug("Ingest");
   
-      project = Project.get(project_id);
+      project = RefineProject.get(project_id);
 
       def result = [:]
       result.status = project_data ? true : false
