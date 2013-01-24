@@ -4,6 +4,8 @@ import org.gokb.cred.*;
 
 class TitleLookupService {
 
+  def titleAugmentService
+
     def find(title, issn, eissn) {
 
       def result = null
@@ -58,6 +60,9 @@ class TitleLookupService {
           new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
         if ( eissn_identifier )
           new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
+
+        titleAugmentService.augment(result);
+
       }
 
       // May double check with porter stemmer in the future.. see
