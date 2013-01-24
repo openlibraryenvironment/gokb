@@ -71,12 +71,10 @@ class IngestService {
     def platform_host_name_col = null;
     def platform_host_url_col = null;
 
-    int i=0;
     def col_positions = [:]
     project_data.columnDefinitions?.each { cd ->
-      log.debug("Assigning col ${cd.name} to position ${i}");
-      col_positions[cd.name?.toLowerCase()] = i;
-      i++
+      log.debug("Assigning col ${cd.name} to position ${cd.cellIndex}");
+      col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
     }
 
     if ( col_positions[PRINT_IDENTIFIER] == null )
@@ -122,11 +120,9 @@ class IngestService {
       project.progress = 0;
       project.save(flush:true)
   
-      int i=0;
       def col_positions = [:]
       project_data.columnDefinitions.each { cd ->
-        col_positions[cd.name?.toLowerCase()] = i;
-        i++;
+        col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
       }
   
       log.debug("Using col positions: ${col_positions}");
