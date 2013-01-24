@@ -445,34 +445,45 @@ class IngestService {
       // finally, rules extraction
       parsed_data.pastEntryList.each { r ->
         log.debug("Consider rule: ${r}");
+        def fingerprint = null
+        def scope = "provider" // default scope to provider
         if ( r.operation ) {
           switch ( r.operation.op ) {
             case 'core/column-rename':
+              // Column Rename
               def fingerprint = "${r.operation.op}:${r.operation.oldColumnName}"
-              // II: For now, default scope for column rename rules is provider
-              def rule_in_db = Rule.findByScopeAndProviderAndFingerprint('provider',provider,fingerprint)
-              if ( !rule_in_db ) {
-                rule_in_db = new Rule(
-                                   scope:'provider',
-                                   provider: provider,
-                                   fingerprint: fingerprint,
-                                   ruleJson: "${r.operation as JSON}",
-                                   description: "${r.operation.description}"
-                )
-                if ( rule_in_db.save(flush:true) ) {
-                }
-                else {
-                  rule_in_db.errors.each { e ->
-                    log.error("${e}");
-                  }
-                }
-              }
               break;
+            case: 'core/text-transform':
+            case: 'core/mass-edit':
+              def fingerprint = "${r.operation.op}:${r.operation.columnName}"
+              break
             default:
               log.debug("Generic rules handling");
               break;
           }
         }
+
+        if ( fingerprint ) {
+          def rule_in_db = Rule.findByScopeAndProviderAndFingerprint('provider',provider,fingerprint)
+          if ( !rule_in_db ) {
+            rule_in_db = new Rule(
+                                 scope:scope,
+                                 provider: provider,
+                                 fingerprint: fingerprint,
+                                 ruleJson: "${r.operation as JSON}",
+                                 description: "${r.operation.description}"
+            )
+            if ( rule_in_db.save(flush:true) ) {
+            }
+            else {
+              rule_in_db.errors.each { e ->
+                log.error("${e}");
+              }
+            }
+          }
+        }
+
+
       }
     }
     else {
