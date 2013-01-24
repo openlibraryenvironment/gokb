@@ -392,6 +392,7 @@ class ApiController {
 	  Org provider = null;
 	  if (params.providerID) {
 		provider = Org.get(params.providerID)
+		log.debug("Provider to use in rules is: '" + provider.name + "'")
 	  }
 	  
 	  def temp_data_zipfile
