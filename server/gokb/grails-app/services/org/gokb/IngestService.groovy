@@ -181,25 +181,18 @@ class IngestService {
           def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
           if ( !tipp ) {
             log.debug("Create new tipp");
-            def start_date = parseDate(jsonv(datarow.cells[col_positions[DATE_FIRST_PACKAGE_ISSUE]]))
-
-            def end_date = null
-
-            if ( col_positions[DATE_LAST_PACKAGE_ISSUE] )
-              end_date = parseDate(jsonv(datarow.cells[col_positions[DATE_LAST_PACKAGE_ISSUE]]))
-  
             tipp = new TitleInstancePackagePlatform(title:title_info,
                                                     pkg:pkg,
                                                     platform:platform_info,
-                                                    startDate:start_date,
-                                                    startVolume: jsonv(datarow.cells[col_positions[VOLUME_FIRST_PACKAGE_ISSUE]]),
-                                                    startIssue:jsonv(datarow.cells[col_positions[NUMBER_FIRST_PACKAGE_ISSUE]]),
-                                                    endDate:end_date,
-                                                    endVolume:jsonv(datarow.cells[col_positions[VOLUME_LAST_PACKAGE_ISSUE]]),
-                                                    endIssue:jsonv(datarow.cells[col_positions[NUMBER_LAST_PACKAGE_ISSUE]]),
-                                                    embargo:jsonv(datarow.cells[col_positions[EMBARGO_INFO]]),
-                                                    coverageDepth:jsonv(datarow.cells[col_positions[COVERAGE_DEPTH]]),
-                                                    coverageNote:jsonv(datarow.cells[col_positions[COVERAGE_NOTES]]),
+                                                    startDate:getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)
+                                                    startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+                                                    startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+                                                    endDate:getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE),
+                                                    endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+                                                    endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+                                                    embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+                                                    coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+                                                    coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
                                                     hostPlatformURL:host_platform_url)
   
             if ( !tipp.save() ) {
@@ -241,6 +234,14 @@ class IngestService {
       log.error("Problem processing project ingest.",e);
     }
 
+    result
+  }
+
+  def getRowValue(datarow, col_positions, colname) {
+    def result = null
+    if ( col_positions[colname] != null ) {
+      result = jsonv(datarow.cells[col_positions[colname]])
+    }
     result
   }
 
