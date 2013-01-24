@@ -10,7 +10,7 @@ class TitleAugmentService {
   def edinaPublicationsAPIService
 
     def augment(titleInstance) {
-    // If the title does have a suncat-id
+      // If the title does have a suncat-id
       if ( titleInstance.getIdentifierValue('SUNCAT' ) == null ) {
         def lookupResult = edinaPublicationsAPIService.lookup(titleInstance.title)
         if ( lookupResult ) {
