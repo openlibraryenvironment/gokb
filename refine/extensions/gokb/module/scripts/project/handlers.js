@@ -6,6 +6,12 @@ GOKb.handlers.suggest = function() {
 	// Merge the meta-data and columns together.
 	var params = {"project" : theProject.id};
 	
+	var dataStore = GOKb.forms.getDataStore();
+	
+	if ("project-properties_provider" in dataStore) {
+		params['providerID'] = dataStore['project-properties_provider'];
+	}
+	
   // Post the columns to the service
   GOKb.doCommand (
     "rules-suggest",
