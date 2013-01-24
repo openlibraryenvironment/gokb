@@ -54,10 +54,10 @@ public class CheckInProject extends A_RefineAPIBridge {
             if ("true".equalsIgnoreCase(request.getParameter("update"))) {
                 
                 // Set the special-case name param first.
-                String[] nameParam;
-                if ((nameParam = params.get("name")) != null && nameParam.length == 1) {
+                String name;
+                if ((name = request.getParameter("name")) != null) {
                     // Set the name.
-                    pm.getProjectMetadata(project.id).setName(nameParam[0]);
+                    pm.getProjectMetadata(project.id).setName(name);
                 }
                 
                 // Ensure the project has been saved.

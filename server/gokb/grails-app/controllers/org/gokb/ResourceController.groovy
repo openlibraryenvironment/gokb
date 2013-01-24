@@ -16,7 +16,7 @@ class ResourceController {
       if ( result.displayobj ) {
         result.displayobjclassname = result.displayobj.class.name
         result.displaytemplate = globalDisplayTemplates[result.displayobjclassname]
-        log.debug("resutl of lookup: ${result}");
+        log.debug("result of lookup: ${result}");
       }
       else {
         log.debug("unable to resolve object");
