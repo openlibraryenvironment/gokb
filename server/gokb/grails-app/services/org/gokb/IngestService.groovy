@@ -163,7 +163,11 @@ class IngestService {
           // Platform
           def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
           def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-          def host_norm_platform_name = host_platform_name?.toLowerCase().trim();
+          def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+
+          if ( host_platform_name == null ) {
+            throw new RuntimeException("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
+          }
 
           log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
           // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
@@ -235,6 +239,8 @@ class IngestService {
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);
+      project_info.progress = 100;
+      project_info.save(flush:true);
     }
 
     result
