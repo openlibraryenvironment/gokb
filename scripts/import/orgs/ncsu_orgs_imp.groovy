@@ -90,7 +90,7 @@ while ((nl = r.readNext()) != null) {
 
   org_assert.flags.add([flagType:'Authorized',flagValue:nl[2]])
 
-  // println("assert that : ${org_assert}");
+  println("assert that : ${org_assert}");
 
 
   // Post the json document

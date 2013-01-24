@@ -88,10 +88,12 @@ class IngestService {
    *  ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project) {
+  def ingest(project_data, project_id) {
     try {
       log.debug("Ingest");
   
+      project = Project.get(project_id);
+
       def result = [:]
       result.status = project_data ? true : false
   

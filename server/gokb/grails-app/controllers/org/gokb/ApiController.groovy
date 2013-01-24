@@ -286,7 +286,7 @@ class ApiController {
   private def doIngest(parsed_data, project) {
 	log.debug("ingesting refine project.. kicking off background task");
 	runAsync {
-	  ingestService.ingest(parsed_data, project)
+	  ingestService.ingest(parsed_data, project.id)
 	}
   }
 
