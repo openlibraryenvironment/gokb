@@ -20,7 +20,7 @@ class AugmentJob {
     log.debug("Processing ${titles_without_suncat_id.size()}");
 
     titles_without_suncat_id.each { ti ->
-      log.debug("Attempting augment on ${ti.id} ${ti.title}");
+      log.debug("Attempting augment on ${ti.id} ${ti.name}");
       titleAugmentService(ti)
     }
   }

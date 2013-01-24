@@ -34,7 +34,7 @@ class TitleAugmentService {
               titleInstance.save(flush:true);
             }
             else {
-              log.debug("No match for title ${titleInstance.title}, ${titleInstance.id}");
+              log.debug("No match for title ${titleInstance.name}, ${titleInstance.id}");
             }
           }
           else {
