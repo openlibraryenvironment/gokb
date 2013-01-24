@@ -71,12 +71,10 @@ class IngestService {
     def platform_host_name_col = null;
     def platform_host_url_col = null;
 
-    int i=0;
     def col_positions = [:]
     project_data.columnDefinitions?.each { cd ->
-      log.debug("Assigning col ${cd.name} to position ${i}");
-      col_positions[cd.name?.toLowerCase()] = i;
-      i++
+      log.debug("Assigning col ${cd.name} to position ${cd.cellIndex}");
+      col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
     }
 
     if ( col_positions[PRINT_IDENTIFIER] == null )
@@ -122,11 +120,9 @@ class IngestService {
       project.progress = 0;
       project.save(flush:true)
   
-      int i=0;
       def col_positions = [:]
       project_data.columnDefinitions.each { cd ->
-        col_positions[cd.name?.toLowerCase()] = i;
-        i++;
+        col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
       }
   
       log.debug("Using col positions: ${col_positions}");
@@ -151,7 +147,7 @@ class IngestService {
   
       int ctr = 0
       project_data.rowData.each { datarow ->
-        log.debug("Row ${ctr}");
+        log.debug("Row ${ctr} ${datarow}");
         if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
   
           // Title Instance
@@ -163,7 +159,11 @@ class IngestService {
           // Platform
           def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
           def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-          def host_norm_platform_name = host_platform_name?.toLowerCase()?.trim();
+          def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+
+          if ( host_platform_name == null ) {
+            throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
+          }
 
           log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
           // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
@@ -235,6 +235,8 @@ class IngestService {
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);
+      project_info.progress = 100;
+      project_info.save(flush:true);
     }
 
     result
