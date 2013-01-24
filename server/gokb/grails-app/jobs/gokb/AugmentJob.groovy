@@ -21,7 +21,7 @@ class AugmentJob {
 
     titles_without_suncat_id.each { ti ->
       log.debug("Attempting augment on ${ti.id} ${ti.name}");
-      titleAugmentService(ti)
+      titleAugmentService.augment(ti)
     }
   }
 }

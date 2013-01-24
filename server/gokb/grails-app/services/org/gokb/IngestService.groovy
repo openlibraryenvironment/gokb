@@ -182,7 +182,11 @@ class IngestService {
           if ( !tipp ) {
             log.debug("Create new tipp");
             def start_date = parseDate(jsonv(datarow.cells[col_positions[DATE_FIRST_PACKAGE_ISSUE]]))
-            def end_date = parseDate(jsonv(datarow.cells[col_positions[DATE_LAST_PACKAGE_ISSUE]]))
+
+            def end_date = null
+
+            if ( col_positions[DATE_LAST_PACKAGE_ISSUE] )
+              end_date = parseDate(jsonv(datarow.cells[col_positions[DATE_LAST_PACKAGE_ISSUE]]))
   
             tipp = new TitleInstancePackagePlatform(title:title_info,
                                                     pkg:pkg,
