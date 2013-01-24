@@ -125,9 +125,9 @@ appDefaultPrefs {
 }
 
 validationRules = [
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'print_identifier'] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'online_identifier'] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'publication_title'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'title.identifier.issn'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'title.identifier.eissn'] ],
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'publicationtitle'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] 
 ]

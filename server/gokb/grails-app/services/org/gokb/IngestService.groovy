@@ -24,6 +24,27 @@ class IngestService {
     new SimpleDateFormat('yyyy')
   ];
 
+
+  static String PUBLICATION_TITLE = 'publicationtitle'
+  static String DATE_FIRST_PACKAGE_ISSUE = 'datefirstpackageissue'
+  static String VOLUME_FIRST_PACKAGE_ISSUE = 'volumefirstpackageissue'
+  static String NUMBER_FIRST_PACKAGE_ISSUE = 'numberfirstpackageissue'
+  static String DATE_LAST_PACKAGE_ISSUE = 'datelastpackageissue'
+  static String VOLUME_LAST_PACKAGE_ISSUE = 'volumelastpackageissue'
+  static String NUMBER_LAST_PACKAGE_ISSUE = 'numberlastpackageissue'
+
+  static String PRINT_IDENTIFIER = 'title.identifier.issn'
+  static String ONLINE_IDENTIFIER = 'title.identifier.eissn'
+  static String HOST_PLATFORM_NAME = 'platform.host.name'
+  static String HOST_PLATFORM_URL = 'platform.host.url'
+
+  static String COVERAGE_DEPTH = 'coveragedepth'
+  static String COVERAGE_NOTES = 'coveragenotes'
+  static String EMBARGO_INFO = 'kbartembargo'
+
+  static String PACKAGE_NAME = 'package.name'
+  static String PUBLISHER_NAME = 'org.publisher.name'
+
   /**
    *  Validate a parsed project. 
    *  @param project_data Parsed map of project data
@@ -54,22 +75,22 @@ class IngestService {
     def col_positions = [:]
     project_data.columnDefinitions?.each { cd ->
       log.debug("Assigning col ${cd.name} to position ${i}");
-      col_positions[cd.name] = i++;
+      col_positions[cd.name.toLowerCase()] = i++;
     }
 
-    if ( col_positions['print_identifier'] == null )
+    if ( col_positions[PRINT_IDENTIFIER] == null )
       result.messages.add([text:'Import does not specify a print_identifier column']);
 
-    if ( col_positions['online_identifier'] == null )
+    if ( col_positions[ONLINE_IDENTIFIER] == null )
       result.messages.add([text:'Import does not specify an online_identifier column']);
 
-    if ( col_positions['publication_title'] == null )
+    if ( col_positions[PUBLICATION_TITLE] == null )
       result.messages.add([text:'Import does not specify a publication_title column']);
 
-    if ( col_positions['platform.host.name'] == null )
+    if ( col_positions[HOST_PLATFORM_NAME] == null )
       result.messages.add([text:'Import does not specify a platform.host.name column']);
 
-    if ( col_positions['platform.host.url'] == null )
+    if ( col_positions[HOST_PLATFORM_URL] == null )
       result.messages.add([text:'Import does not specify a platform.host.url column']);
 
     if ( result.messages.size() > 0 ) {
@@ -103,7 +124,7 @@ class IngestService {
       int i=0;
       def col_positions = [:]
       project_data.columnDefinitions.each { cd ->
-        col_positions[cd.name] = i++;
+        col_positions[cd.name.toLowerCase()] = i++;
       }
   
       log.debug("Using col positions: ${col_positions}");
@@ -129,17 +150,17 @@ class IngestService {
       int ctr = 0
       project_data.rowData.each { datarow ->
         log.debug("Row ${ctr}");
-        if ( datarow.cells[col_positions['publication_title']] ) {
+        if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
   
           // Title Instance
           log.debug("Looking up title...");
-          def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions['publication_title']]),   // jsonv(datarow.cells[title_index]),
-                                                   jsonv(datarow.cells[col_positions['print_identifier']]),    // jsonv(datarow.cells[issn_index]) 
-                                                   jsonv(datarow.cells[col_positions['online_identifier']]));  // jsonv(datarow.cells[eissn_index]));
+          def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),   // jsonv(datarow.cells[title_index]),
+                                                   jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),    // jsonv(datarow.cells[issn_index]) 
+                                                   jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]));  // jsonv(datarow.cells[eissn_index]));
   
           // Platform
-          def host_platform_url = jsonv(datarow.cells[col_positions['platform.host.url']])
-          def host_platform_name = jsonv(datarow.cells[col_positions['platform.host.name']])
+          def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
+          def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
           def host_norm_platform_name = host_platform_name.toLowerCase().trim();
           log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
           // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
@@ -160,21 +181,21 @@ class IngestService {
           def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
           if ( !tipp ) {
             log.debug("Create new tipp");
-            def start_date = parseDate(jsonv(datarow.cells[col_positions['date_first_issue_online']]))
-            def end_date = parseDate(jsonv(datarow.cells[col_positions['date_last_issue_online']]))
+            def start_date = parseDate(jsonv(datarow.cells[col_positions[DATE_FIRST_PACKAGE_ISSUE]]))
+            def end_date = parseDate(jsonv(datarow.cells[col_positions[DATE_LAST_PACKAGE_ISSUE]]))
   
             tipp = new TitleInstancePackagePlatform(title:title_info,
                                                     pkg:pkg,
                                                     platform:platform_info,
                                                     startDate:start_date,
-                                                    startVolume: jsonv(datarow.cells[col_positions['num_first_vol_online']]),
-                                                    startIssue:jsonv(datarow.cells[col_positions['num_first_issue_online']]),
+                                                    startVolume: jsonv(datarow.cells[col_positions[VOLUME_FIRST_PACKAGE_ISSUE]]),
+                                                    startIssue:jsonv(datarow.cells[col_positions[NUMBER_FIRST_PACKAGE_ISSUE]]),
                                                     endDate:end_date,
-                                                    endVolume:jsonv(datarow.cells[col_positions['num_last_vol_online']]),
-                                                    endIssue:jsonv(datarow.cells[col_positions['num_last_issue_online']]),
-                                                    embargo:jsonv(datarow.cells[col_positions['embargo_info']]),
-                                                    coverageDepth:jsonv(datarow.cells[col_positions['coverage_depth']]),
-                                                    coverageNote:jsonv(datarow.cells[col_positions['coverage_notes']]),
+                                                    endVolume:jsonv(datarow.cells[col_positions[VOLUME_LAST_PACKAGE_ISSUE]]),
+                                                    endIssue:jsonv(datarow.cells[col_positions[NUMBER_LAST_PACKAGE_ISSUE]]),
+                                                    embargo:jsonv(datarow.cells[col_positions[EMBARGO_INFO]]),
+                                                    coverageDepth:jsonv(datarow.cells[col_positions[COVERAGE_DEPTH]]),
+                                                    coverageNote:jsonv(datarow.cells[col_positions[COVERAGE_NOTES]]),
                                                     hostPlatformURL:host_platform_url)
   
             if ( !tipp.save() ) {
