@@ -191,12 +191,12 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 		$.ajax(ajaxObj);
 	}
   
-  // Show waiting message if function has not completed within half a second.
+  // Show waiting message if function has not completed within a second.
   window.setTimeout(function() {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 500);
+  }, 1000);
 };
 
 /**
