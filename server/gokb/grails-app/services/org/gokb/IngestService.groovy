@@ -453,8 +453,8 @@ class IngestService {
               // Column Rename
               def fingerprint = "${r.operation.op}:${r.operation.oldColumnName}"
               break;
-            case: 'core/text-transform':
-            case: 'core/mass-edit':
+            case 'core/text-transform':
+            case 'core/mass-edit':
               def fingerprint = "${r.operation.op}:${r.operation.columnName}"
               break
             default:
