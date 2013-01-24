@@ -48,8 +48,17 @@ public class CheckInProject extends A_RefineAPIBridge {
             // Get files sent to this method.
             Map<String, Object> files = files(request);
             
+            Map<String, String[]> params = params(request);
+            
             // Should the changes made to this project be sent back up to the server?
-            if ("true".equalsIgnoreCase(request.getParameter("update"))) { 
+            if ("true".equalsIgnoreCase(request.getParameter("update"))) {
+                
+                // Set the special-case name param first.
+                String[] nameParam;
+                if ((nameParam = params.get("name")) != null && nameParam.length == 1) {
+                    // Set the name.
+                    pm.getProjectMetadata(project.id).setName(nameParam[0]);
+                }
                 
                 // Ensure the project has been saved.
                 pm.ensureProjectSaved(project.id);
@@ -79,7 +88,7 @@ public class CheckInProject extends A_RefineAPIBridge {
             }
             
             // Now we need to pass the data to the API.
-            postToAPI("projectCheckin", params(request), files, new RefineAPICallback(){
+            postToAPI("projectCheckin", params, files, new RefineAPICallback(){
 
                 @Override
                 protected void onSuccess(InputStream result)
