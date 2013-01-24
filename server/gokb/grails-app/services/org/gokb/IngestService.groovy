@@ -79,19 +79,19 @@ class IngestService {
     }
 
     if ( col_positions[PRINT_IDENTIFIER] == null )
-      result.messages.add([text:'Import does not specify a print_identifier column']);
+      result.messages.add([text:'Import does not specify a ${PRINT_IDENTIFIER} column']);
 
     if ( col_positions[ONLINE_IDENTIFIER] == null )
-      result.messages.add([text:'Import does not specify an online_identifier column']);
+      result.messages.add([text:'Import does not specify an ${ONLINE_IDENTIFIER} column']);
 
     if ( col_positions[PUBLICATION_TITLE] == null )
-      result.messages.add([text:'Import does not specify a publication_title column']);
+      result.messages.add([text:'Import does not specify a ${PUBLICATION_TITLE} column']);
 
     if ( col_positions[HOST_PLATFORM_NAME] == null )
-      result.messages.add([text:'Import does not specify a platform.host.name column']);
+      result.messages.add([text:'Import does not specify a ${HOST_PLATFORM_NAME} column']);
 
     if ( col_positions[HOST_PLATFORM_URL] == null )
-      result.messages.add([text:'Import does not specify a platform.host.url column']);
+      result.messages.add([text:'Import does not specify a ${HOST_PLATFORM_URL} column']);
 
     if ( result.messages.size() > 0 ) {
       log.error("validation has messages: a failure: ${result.messages}");
