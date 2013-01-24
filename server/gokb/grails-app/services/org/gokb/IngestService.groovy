@@ -75,7 +75,8 @@ class IngestService {
     def col_positions = [:]
     project_data.columnDefinitions?.each { cd ->
       log.debug("Assigning col ${cd.name} to position ${i}");
-      col_positions[cd.name.toLowerCase()] = i++;
+      col_positions[cd.name?.toLowerCase()] = i;
+      i++
     }
 
     if ( col_positions[PRINT_IDENTIFIER] == null )
@@ -124,7 +125,8 @@ class IngestService {
       int i=0;
       def col_positions = [:]
       project_data.columnDefinitions.each { cd ->
-        col_positions[cd.name.toLowerCase()] = i++;
+        col_positions[cd.name?.toLowerCase()] = i;
+        i++;
       }
   
       log.debug("Using col positions: ${col_positions}");
@@ -162,6 +164,7 @@ class IngestService {
           def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
           def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
           def host_norm_platform_name = host_platform_name?.toLowerCase().trim();
+
           log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
           // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
           def platform_info = Platform.findByNormname(host_norm_platform_name) 
