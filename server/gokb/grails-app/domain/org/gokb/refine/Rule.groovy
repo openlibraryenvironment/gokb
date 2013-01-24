@@ -9,7 +9,7 @@ public class Rule {
   String fingerprint
   String description
   String ruleJson
-  
+
   static mapping = {
              id column:'rule_id'
         version column:'rule_version'
@@ -17,6 +17,6 @@ public class Rule {
           scope column:'rule_scope'
     description column:'rule_description'
     fingerprint column:'rule_fp', index:'doc_fp_contents'
-       ruleJson column:'rule_json'
+       ruleJson column:'rule_json', type:'text'
   }
 }

@@ -39,5 +39,4 @@ class TitleInstance extends KBComponent {
     }
     result
   }
-
 }
