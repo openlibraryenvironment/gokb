@@ -184,7 +184,7 @@ class IngestService {
             tipp = new TitleInstancePackagePlatform(title:title_info,
                                                     pkg:pkg,
                                                     platform:platform_info,
-                                                    startDate:getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)
+                                                    startDate:getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE),
                                                     startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
                                                     startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
                                                     endDate:getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE),
