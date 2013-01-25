@@ -76,7 +76,7 @@ class SearchController {
       }
     }
 
-    log.debug("Execute count detached criteria: ${dcrit.toString()}");
+    log.debug("Execute count detached criteria");
     result.reccount = dcrit.count()
     log.debug("Execute query");
     result.recset = dcrit.list(max: result.max, offset: result.offset)
@@ -84,14 +84,15 @@ class SearchController {
 
   def addParamInContext(qry,paramdef,value,contextTree) {
     if ( ( contextTree ) && ( contextTree.size() > 0 ) ) {
-      log.debug("Create context ${contextTree}");
       def new_tree = []
       new_tree.addAll(contextTree)
       def head_of_tree = new_tree.remove(0)
+      log.debug("Add context ${head_of_tree} - tail = ${new_tree}");
+      def new_ctx = qry.property(head_of_tree.prop)
+      addParamInContext(new_ctx,paramdef,value,new_tree);
       // qry.createCriteria(head_of_tree.prop) {
-      qry."${head_of_tree.prop}" {
-        addParamInContext(qry,paramdef,value,new_tree);
-      }
+      //   addParamInContext(qry,paramdef,value,new_tree);
+      // }
     }
     else {
       log.debug("addParamInContext(${paramdef.property},${value})");
