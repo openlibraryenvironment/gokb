@@ -12,8 +12,8 @@ class KBComponent {
   Set tags = []
 
   static mappedBy = [ids: 'component',  
-                     outgoingCombos: 'from',
-                     incomingCombos:'to',
+                     outgoingCombos: 'fromComponent',
+                     incomingCombos:'toComponent',
                      orgs: 'linkedComponent']
 
   static hasMany = [ids: IdentifierOccurrence, 

@@ -142,8 +142,8 @@ class IngestService {
                           consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
 
         // create a Combo linking this package to it's content provider
-        def cp_combo = new Combo(from:project.provider,
-                                 to:pkg,
+        def cp_combo = new Combo(fromComponent:project.provider,
+                                 toComponent:pkg,
                                  type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
                                  status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
         

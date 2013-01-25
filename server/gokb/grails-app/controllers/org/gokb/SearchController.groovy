@@ -71,7 +71,7 @@ class SearchController {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
-            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
+            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree,'')
             // if ( ap.proptype=='string' ) {
               // ilike(ap.property,params[ap.qparam])
             // }
@@ -92,19 +92,21 @@ class SearchController {
     result.recset = dcrit.list(max: result.max, offset: result.offset)
   }
 
-  def addParamInContext(qry,paramdef,value,contextTree) {
-    log.debug("addParamInContext ${qry.toString()}");
+  def addParamInContext(qry,paramdef,value,contextTree,indent) {
+    log.debug("addParamInContext ${qry.persistentEntity?.name} qry=${qry.toString()}: ${indent}");
     if ( ( contextTree ) && ( contextTree.size() > 0 ) ) {
       def new_tree = []
       new_tree.addAll(contextTree)
       def head_of_tree = new_tree.remove(0)
       log.debug("Add context ${head_of_tree} - tail = ${new_tree}");
+      log.debug("Looking for property called ${head_of_tree.prop} of context class ${qry.persistentEntity?.name}");
+
       qry."${head_of_tree.prop}" {
-        addParamInContext(delegate,paramdef,value,new_tree)
+        return addParamInContext(delegate,paramdef,value,new_tree,"${indent}${head_of_tree.prop}.")
       }
     }
     else {
-      log.debug("addParamInContext(${paramdef.property},${value})");
+      log.debug("${indent} - addParamInContext(${paramdef.property},${value}) class of delegate is ${qry.persistentEntity?.name}");
       qry.ilike(paramdef.property,value)
     }
   }
@@ -270,7 +272,7 @@ class SearchController {
             placeholder:'Content Provider Name',
             contextTree:[['ctxtp':'property','prop':'pkg'],
                          ['ctxtp':'property','prop':'incomingCombos'],
-                         ['ctxtp':'property','prop':'from']] // Context tree makes property name into package.incomingCombos.from.name
+                         ['ctxtp':'property','prop':'fromComponent']] // Context tree makes property name into package.incomingCombos.from.name
           ],
         ],
         qbeResults:[

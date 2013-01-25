@@ -74,7 +74,7 @@ class IntegrationController {
           def reloaded_from = located_or_new_org.refresh();
           if ( ( located_component != null ) && ( reloaded_from != null ) ) {
             def combo_type = RefdataCategory.lookupOrCreate('ComboType',c.linkType);
-            def combo = new Combo(from:reloaded_from,to:located_component,type:combo_type).save(flush:true, failOnError : true);
+            def combo = new Combo(fromComponent:reloaded_from,toComponent:located_component,type:combo_type).save(flush:true, failOnError : true);
           }
           else {
             log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");
