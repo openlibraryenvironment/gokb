@@ -1,5 +1,7 @@
 package org.gokb
 
+import grails.converters.*
+
 class SearchController {
 
   def genericOIDService
@@ -44,7 +46,15 @@ class SearchController {
       }
     }
     log.debug("leaving SearchController::index...");
-    result
+
+    if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
+    }
+
+    withFormat {
+      html result
+      json { render result as JSON }
+      xml { render result as XML }
+    }
   }
 
   def doQuery(qbetemplate, params, result) {
@@ -83,7 +93,7 @@ class SearchController {
   }
 
   def addParamInContext(qry,paramdef,value,contextTree) {
-    log.debug("addParamInContext(${paramdef})");
+    log.debug("addParamInContext ${qry.toString()}");
     if ( ( contextTree ) && ( contextTree.size() > 0 ) ) {
       def new_tree = []
       new_tree.addAll(contextTree)
@@ -92,9 +102,6 @@ class SearchController {
       qry."${head_of_tree.prop}" {
         addParamInContext(delegate,paramdef,value,new_tree)
       }
-      // qry.createCriteria(head_of_tree.prop) {
-      //   addParamInContext(qry,paramdef,value,new_tree);
-      // }
     }
     else {
       log.debug("addParamInContext(${paramdef.property},${value})");
@@ -255,6 +262,15 @@ class SearchController {
             qparam:'qp_title',
             placeholder:'Title',
             contextTree:[['ctxtp':'property','prop':'title']] // Context tree makes property name into title.name
+          ],
+          [
+            prompt:'Content Provider',
+            property:'name',
+            qparam:'qp_cp_name',
+            placeholder:'Content Provider Name',
+            contextTree:[['ctxtp':'property','prop':'pkg'],
+                         ['ctxtp':'property','prop':'incomingCombos'],
+                         ['ctxtp':'property','prop':'from']] // Context tree makes property name into package.incomingCombos.from.name
           ],
         ],
         qbeResults:[
