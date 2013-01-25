@@ -55,13 +55,15 @@ class SearchController {
     // reuse from sip : ./sip/grails-app/controllers/com/k_int/sim/SearchController.groovy
     // def recset = c.list(max: 5, offset: 10) {
     log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
-    def dcrit = new grails.gorm.DetachedCriteria(target_class.getClazz() ).build {
+    def dbuilder = new grails.gorm.DetachedCriteria(target_class.getClazz() )
+    def dcrit = dbuilder.build {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
-          log.debug("testing ${ap}");
+          log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
+            addParamInContext(owner,ap,params[ap.qparam])
             // if ( ap.proptype=='string' ) {
-              ilike(ap.property,params[ap.qparam])
+              // ilike(ap.property,params[ap.qparam])
             // }
             // else if ( ap.proptype=='long' ) {
             //   eq(ap.propname,new Long(Long.parseLong(params[ap.propname])))
@@ -74,10 +76,15 @@ class SearchController {
       }
     }
 
-    log.debug("Execute count");
+    log.debug("Execute count detached criteria: ${dcrit.toString()}");
     result.reccount = dcrit.count()
     log.debug("Execute query");
     result.recset = dcrit.list(max: result.max, offset: result.offset)
+  }
+
+  def addParamInContext(qry,paramdef,value) {
+    log.debug("addParamInContext(${paramdef.property},${value})");
+    qry.ilike(paramdef.property,value)
   }
 
   def globalSearchTemplates = [
@@ -219,6 +226,25 @@ class SearchController {
           [heading:'Id', property:'id'],
           [heading:'Name', property:'name'],
           [heading:'Provider', property:'provider.name']
+        ]
+      ]
+    ],
+    'tipps':[
+      baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
+      title:'TIPP Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Title',
+            property:'name',
+            qparam:'qp_title',
+            placeholder:'Title',
+            contextTree:[['ctxtp':'property','prop':'title']] // Context tree makes property name into title.name
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Title', property:'title.name']
         ]
       ]
     ]

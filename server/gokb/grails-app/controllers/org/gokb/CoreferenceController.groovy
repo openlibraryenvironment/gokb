@@ -67,4 +67,7 @@ class CoreferenceController {
       xml { render api_response as XML }
     }
   }
+
+  def search() {
+  }
 }
