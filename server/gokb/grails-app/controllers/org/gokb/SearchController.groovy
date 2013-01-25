@@ -61,7 +61,7 @@ class SearchController {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
-            addParamInContext(owner,ap,params[ap.qparam])
+            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
             // if ( ap.proptype=='string' ) {
               // ilike(ap.property,params[ap.qparam])
             // }
@@ -82,9 +82,21 @@ class SearchController {
     result.recset = dcrit.list(max: result.max, offset: result.offset)
   }
 
-  def addParamInContext(qry,paramdef,value) {
-    log.debug("addParamInContext(${paramdef.property},${value})");
-    qry.ilike(paramdef.property,value)
+  def addParamInContext(qry,paramdef,value,contextTree) {
+    if ( ( contextTree ) && ( contextTree.size() > 0 ) ) {
+      log.debug("Create context ${contextTree}");
+      def new_tree = []
+      new_tree.addAll(contextTree)
+      def head_of_tree = new_tree.remove(0)
+      // qry.createCriteria(head_of_tree.prop) {
+      qry."${head_of_tree.prop}" {
+        addParamInContext(qry,paramdef,value,new_tree);
+      }
+    }
+    else {
+      log.debug("addParamInContext(${paramdef.property},${value})");
+      qry.ilike(paramdef.property,value)
+    }
   }
 
   def globalSearchTemplates = [
