@@ -1,5 +1,7 @@
 package org.gokb
 
+import grails.converters.*
+
 class SearchController {
 
   def genericOIDService
@@ -44,7 +46,15 @@ class SearchController {
       }
     }
     log.debug("leaving SearchController::index...");
-    result
+
+    if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
+    }
+
+    withFormat {
+      html result
+      json { render result as JSON }
+      xml { render result as XML }
+    }
   }
 
   def doQuery(qbetemplate, params, result) {
@@ -55,13 +65,15 @@ class SearchController {
     // reuse from sip : ./sip/grails-app/controllers/com/k_int/sim/SearchController.groovy
     // def recset = c.list(max: 5, offset: 10) {
     log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
-    def dcrit = new grails.gorm.DetachedCriteria(target_class.getClazz() ).build {
+    def dbuilder = new grails.gorm.DetachedCriteria(target_class.getClazz() )
+    def dcrit = dbuilder.build {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
-          log.debug("testing ${ap}");
+          log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
+            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
             // if ( ap.proptype=='string' ) {
-              ilike(ap.property,params[ap.qparam])
+              // ilike(ap.property,params[ap.qparam])
             // }
             // else if ( ap.proptype=='long' ) {
             //   eq(ap.propname,new Long(Long.parseLong(params[ap.propname])))
@@ -74,10 +86,27 @@ class SearchController {
       }
     }
 
-    log.debug("Execute count");
+    log.debug("Execute count detached criteria");
     result.reccount = dcrit.count()
     log.debug("Execute query");
     result.recset = dcrit.list(max: result.max, offset: result.offset)
+  }
+
+  def addParamInContext(qry,paramdef,value,contextTree) {
+    log.debug("addParamInContext ${qry.toString()}");
+    if ( ( contextTree ) && ( contextTree.size() > 0 ) ) {
+      def new_tree = []
+      new_tree.addAll(contextTree)
+      def head_of_tree = new_tree.remove(0)
+      log.debug("Add context ${head_of_tree} - tail = ${new_tree}");
+      qry."${head_of_tree.prop}" {
+        addParamInContext(delegate,paramdef,value,new_tree)
+      }
+    }
+    else {
+      log.debug("addParamInContext(${paramdef.property},${value})");
+      qry.ilike(paramdef.property,value)
+    }
   }
 
   def globalSearchTemplates = [
@@ -219,6 +248,34 @@ class SearchController {
           [heading:'Id', property:'id'],
           [heading:'Name', property:'name'],
           [heading:'Provider', property:'provider.name']
+        ]
+      ]
+    ],
+    'tipps':[
+      baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
+      title:'TIPP Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Title',
+            property:'name',
+            qparam:'qp_title',
+            placeholder:'Title',
+            contextTree:[['ctxtp':'property','prop':'title']] // Context tree makes property name into title.name
+          ],
+          [
+            prompt:'Content Provider',
+            property:'name',
+            qparam:'qp_cp_name',
+            placeholder:'Content Provider Name',
+            contextTree:[['ctxtp':'property','prop':'pkg'],
+                         ['ctxtp':'property','prop':'incomingCombos'],
+                         ['ctxtp':'property','prop':'from']] // Context tree makes property name into package.incomingCombos.from.name
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Title', property:'title.name']
         ]
       ]
     ]

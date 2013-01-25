@@ -140,6 +140,15 @@ class IngestService {
                           global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
                           fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
                           consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
+
+        // create a Combo linking this package to it's content provider
+        def cp_combo = new Combo(from:project.provider,
+                                 to:pkg,
+                                 type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
+                                 status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
+        
+
+        cp_combo.save()
       }
       else {
         log.debug("Got existing package");
@@ -237,6 +246,7 @@ class IngestService {
       log.error("Problem processing project ingest.",e);
       project_info.progress = 100;
       project_info.save(flush:true);
+      //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
     }
 
     result
