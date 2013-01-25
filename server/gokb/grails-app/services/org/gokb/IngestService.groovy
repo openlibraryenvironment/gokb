@@ -144,6 +144,9 @@ class IngestService {
                           global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
                           fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
                           consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
+
+        // create a Combo linking this package to it's content provider
+        def cp_combo = new Combo(from:project.,to:type:status:)
       }
       else {
         log.debug("Got existing package");
