@@ -55,15 +55,29 @@ class SearchController {
       }
     }
 
+    def apiresponse = null
     if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
+      apiresponse = [:]
+      apiresponse.count = result.reccount
+      apiresponse.max = result.max
+      apiresponse.offset = result.offset
+      apiresponse.records = []
+      result.recset.each { r ->
+        def response_record = [:]
+        response_record.oid = "${r.class.name}:${r.id}"
+        result.qbetemplate.qbeConfig.qbeResults.each { rh ->
+          response_record[rh.heading] = groovy.util.Eval.x(r, 'x.' + rh.property)
+        }
+        apiresponse.records.add(response_record);
+      }
     }
 
     log.debug("leaving SearchController::index...");
 
     withFormat {
       html result
-      json { render result as JSON }
-      xml { render result as XML }
+      json { render apiresponse as JSON }
+      xml { render apiresponse as XML }
     }
 
   }
