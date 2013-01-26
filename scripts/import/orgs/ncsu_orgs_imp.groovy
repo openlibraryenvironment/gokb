@@ -24,9 +24,15 @@ import au.com.bytecode.opencsv.CSVReader
 import java.text.SimpleDateFormat
 
 
+if ( args.length != 2 ) {
+  println("usage: ncsu_orgs_imp.groovy csv_orgs_file url of deposit system");
+  println("Examples: ./ncsu_orgs_imp.groovy ./ncsu-auth-orgs-roles-2013-01-11.csv \"http://localhost:8080/gokb/integration/assertOrg\"");
+  println("Examples: ./ncsu_orgs_imp.groovy ./ncsu-auth-orgs-roles-2013-01-11.csv \"http://gokb.k-int.com/gokb/integration/assertOrg\"");
+  System.exit(1)
+}
 // Load the fam reconcilliation data
-def target_service = new HTTPBuilder('http://localhost:8080/gokb/integration/assertOrg')
-// def target_service = new HTTPBuilder('http://gokb.k-int.com/gokb/integration/assertOrg')
+// def target_service = new HTTPBuilder('http://localhost:8080/gokb/integration/assertOrg')
+def target_service = new HTTPBuilder(args[1])
 
 // try {
 //   target_service.request(GET, ContentType.XML) { request ->
