@@ -22,11 +22,17 @@ class SearchController {
         def global_qbe_template_shortcode = params.qbe.substring(2,params.qbe.length());
         log.debug("Looking up global template ${global_qbe_template_shortcode}");
         result.qbetemplate = globalSearchTemplates[global_qbe_template_shortcode]
+        log.debug("Using template: ${result.qbetemplate}");
       }
 
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate ) {
-        result.hits = doQuery(result.qbetemplate, params, result)
+        log.debug("Execute query");
+        doQuery(result.qbetemplate, params, result)
+        result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
+      }
+      else {
+        log.debug("no template");
       }
 
       if ( params.displayoid ) {
@@ -40,21 +46,26 @@ class SearchController {
 
       if ( result.det && result.recset ) {
         int recno = result.det - result.offset - 1
+        if ( ( recno < 0 ) || ( recno > result.max ) ) {
+          recno = 0;
+        }
         result.displayobj = result.recset.get(recno)
         result.displayobjclassname = result.displayobj.class.name
         result.displaytemplate = globalDisplayTemplates[result.displayobjclassname]
       }
     }
-    log.debug("leaving SearchController::index...");
 
     if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
     }
+
+    log.debug("leaving SearchController::index...");
 
     withFormat {
       html result
       json { render result as JSON }
       xml { render result as XML }
     }
+
   }
 
   def doQuery(qbetemplate, params, result) {
@@ -68,7 +79,7 @@ class SearchController {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
-            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
+            processContextTree(owner, ap.contextTree, params[ap.qparam], ap.property)
           }
         }
       }
@@ -80,14 +91,37 @@ class SearchController {
     log.debug("criteria result: ${count_result}");
 
     c = target_class.getClazz().createCriteria()
-    result.recset = c.list {
+    result.recset = c.list(max: result.max, offset: result.offset) {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
-            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
+            // addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
+            processContextTree(owner, ap.contextTree, params[ap.qparam], ap.property)
           }
         }
+      }
+    }
+  }
+
+  def  processContextTree(qry, contextTree, value, paramdef) {
+    if ( contextTree ) {
+      switch ( contextTree.ctxtp ) {
+        case 'assoc':
+          qry."${contextTree.prop}" {
+            processContextTree(delegate, contextTree.children, value, paramdef)
+            contextTree.filters.each { f ->
+              qry.ilike(f.field,f.value)
+            }
+          }
+          break;
+        case 'filter':
+          qry.ilike(contextTree.prop,contextTree.value)
+          break;
+        case 'qry':
+          qry.ilike(contextTree.prop,value)
+          break;
+      
       }
     }
   }
@@ -102,7 +136,10 @@ class SearchController {
       // log.debug("Looking for property called ${head_of_tree.prop} of context class ${qry.persistentEntity?.name}");
 
       qry."${head_of_tree.prop}" {
-        return addParamInContext(delegate,paramdef,value,new_tree)
+        addParamInContext(delegate,paramdef,value,new_tree)
+        head_of_tree.qualifiers.each { q ->
+          // qry.ilike(q.field,q.value)
+        }
       }
     }
     else {
@@ -121,15 +158,15 @@ class SearchController {
         qbeForm:[
           [
             prompt:'Name or Title',
-            property:'name',
             qparam:'qp_name',
-            placeholder:'Name or title of item'
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'prop':'name']
           ],
           [ 
             prompt:'ID',
-            property:'id',
             qparam:'qp_id',
-            placeholder:'ID of item'
+            placeholder:'ID of item',
+            contextTree:['ctxtp':'qry', 'prop':'id']
           ]
         ],
         qbeResults:[
@@ -146,9 +183,9 @@ class SearchController {
         qbeForm:[
          [
             prompt:'Name of Package',
-            property:'name',
             qparam:'qp_name',
-            placeholder:'Package Name'
+            placeholder:'Package Name',
+            contextTree:['ctxtp':'qry', 'prop':'name']
           ]
         ],
         qbeResults:[
@@ -165,9 +202,9 @@ class SearchController {
         qbeForm:[
           [
             prompt:'Name or Title',
-            property:'name',
             qparam:'qp_name',
-            placeholder:'Name or title of item'
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -184,9 +221,9 @@ class SearchController {
         qbeForm:[
           [
             prompt:'Name or Title',
-            property:'name',
             qparam:'qp_name',
-            placeholder:'Name or title of item'
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -203,9 +240,9 @@ class SearchController {
         qbeForm:[
           [
             prompt:'Name or Title',
-            property:'name',
             qparam:'qp_name',
-            placeholder:'Name or title of item'
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -222,9 +259,9 @@ class SearchController {
         qbeForm:[
           [
             prompt:'Description',
-            property:'description',
             qparam:'qp_description',
-            placeholder:'Rule Description'
+            placeholder:'Rule Description',
+            contextTree:['ctxtp':'qry', 'prop':'description']
           ],
         ],
         qbeResults:[
@@ -241,9 +278,9 @@ class SearchController {
         qbeForm:[
           [
             prompt:'Name',
-            property:'name',
             qparam:'qp_name',
-            placeholder:'Project Name'
+            placeholder:'Project Name',
+            contextTree:['ctxtp':'qry', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -260,19 +297,36 @@ class SearchController {
         qbeForm:[
           [
             prompt:'Title',
-            property:'name',
             qparam:'qp_title',
             placeholder:'Title',
-            contextTree:[['ctxtp':'property','prop':'title']] // Context tree makes property name into title.name
+            contextTree:[['ctxtp':'property','prop':'title','children':[
+                           'ctxtp':'qry', 'prop':'name']]]
           ],
           [
             prompt:'Content Provider',
-            property:'name',
             qparam:'qp_cp_name',
             placeholder:'Content Provider Name',
-            contextTree:[['ctxtp':'property','prop':'pkg'],
-                         ['ctxtp':'property','prop':'incomingCombos'],
-                         ['ctxtp':'property','prop':'fromComponent']] // Context tree makes property name into package.incomingCombos.from.name
+            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
+                            ['ctxtp':'assoc','prop':'type','children':[
+                              ['ctxtp':'assoc','prop':'owner','children':[
+                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
+                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
+                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
+                              ['ctxtp':'qry', 'prop':'name']]]]]]]
+          ],
+          [
+            prompt:'Content Provider ID',
+            qparam:'qp_cp_name_id',
+            placeholder:'Content Provider ID',
+            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
+                            ['ctxtp':'assoc','prop':'type','children':[
+                              ['ctxtp':'assoc','prop':'owner','children':[
+                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
+                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
+                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
+                              ['ctxtp':'qry', 'prop':'id']]]]]]]
           ],
         ],
         qbeResults:[

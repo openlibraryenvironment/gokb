@@ -33,7 +33,16 @@
             <g:else>
               <div class="navbar">
                 <div class="navbar-inner">
-                  <div class="brand">${qbetemplate.title?:'Search'}</div>
+                  <div class="brand">${qbetemplate.title?:'Search'}
+                    <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}</g:if>
+                  </div>
+                  <g:if test="${recset != null}">
+                    <ul class="nav pull-right">
+                      <li><g:link controller="search" action="index" params="${params+[offset:(offset-max),det:null]}">Prev</g:link></li>
+                      <li class="divider-vertical"></li>
+                      <li><g:link controller="search" action="index" params="${params+[offset:(offset+max),det:null]}">Next</g:link></li>
+                    </ul>
+                  </g:if>
                 </div>
               </div>
               <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}"/>
