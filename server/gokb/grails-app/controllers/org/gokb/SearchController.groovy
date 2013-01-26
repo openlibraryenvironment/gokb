@@ -58,55 +58,55 @@ class SearchController {
   }
 
   def doQuery(qbetemplate, params, result) {
-    // We are going to build up a critera query based on the base class specified in the config, and the properties listed
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
-    
-    // def c = target_class.getClazz().createCriteria()
-    // reuse from sip : ./sip/grails-app/controllers/com/k_int/sim/SearchController.groovy
-    // def recset = c.list(max: 5, offset: 10) {
+
     log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
-    def dbuilder = new grails.gorm.DetachedCriteria(target_class.getClazz() )
-    def dcrit = dbuilder.build {
+    def c = target_class.getClazz().createCriteria()
+
+    def count_result = c.get {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
-            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree,'')
-            // if ( ap.proptype=='string' ) {
-              // ilike(ap.property,params[ap.qparam])
-            // }
-            // else if ( ap.proptype=='long' ) {
-            //   eq(ap.propname,new Long(Long.parseLong(params[ap.propname])))
-            // }
-            // else {
-            //   eq(ap.propname,"${params[ap.propname]}")
-            // }
+            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
+          }
+        }
+      }
+      projections {
+        rowCount()
+      }
+    }
+    result.reccount = count_result;
+    log.debug("criteria result: ${count_result}");
+
+    c = target_class.getClazz().createCriteria()
+    result.recset = c.list {
+      and {
+        qbetemplate.qbeConfig.qbeForm.each { ap ->
+          log.debug("testing ${ap} : ${params[ap.qparam]}");
+          if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
+            addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
           }
         }
       }
     }
-
-    log.debug("Execute count detached criteria");
-    result.reccount = dcrit.count()
-    log.debug("Execute query");
-    result.recset = dcrit.list(max: result.max, offset: result.offset)
   }
 
-  def addParamInContext(qry,paramdef,value,contextTree,indent) {
-    log.debug("addParamInContext ${qry.persistentEntity?.name} qry=${qry.toString()}: ${indent}");
+  def addParamInContext(qry,paramdef,value,contextTree) {
+    // log.debug("addParamInContext ${qry.persistentEntity?.name} qry=${qry.toString()}: ${indent}");
     if ( ( contextTree ) && ( contextTree.size() > 0 ) ) {
       def new_tree = []
       new_tree.addAll(contextTree)
       def head_of_tree = new_tree.remove(0)
-      log.debug("Add context ${head_of_tree} - tail = ${new_tree}");
-      log.debug("Looking for property called ${head_of_tree.prop} of context class ${qry.persistentEntity?.name}");
+      // log.debug("Add context ${head_of_tree} - tail = ${new_tree}");
+      // log.debug("Looking for property called ${head_of_tree.prop} of context class ${qry.persistentEntity?.name}");
 
       qry."${head_of_tree.prop}" {
-        return addParamInContext(delegate,paramdef,value,new_tree,"${indent}${head_of_tree.prop}.")
+        return addParamInContext(delegate,paramdef,value,new_tree)
       }
     }
     else {
-      log.debug("${indent} - addParamInContext(${paramdef.property},${value}) class of delegate is ${qry.persistentEntity?.name}");
+      // log.debug("${indent} - addParamInContext(${paramdef.property},${value}) class of delegate is ${qry.persistentEntity?.name}");
       qry.ilike(paramdef.property,value)
     }
   }
@@ -249,7 +249,7 @@ class SearchController {
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Name', property:'name'],
-          [heading:'Provider', property:'provider.name']
+          [heading:'Provider', property:'provider?.name']
         ]
       ]
     ],
