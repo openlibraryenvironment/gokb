@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+
 class Org extends KBComponent{
 
   String address
@@ -32,4 +34,11 @@ class Org extends KBComponent{
     shortcode(nullable:true, blank:true, maxSize:128);
     scope(nullable:true, blank:true, maxSize:128);
   }
+
+  @Transient
+  def getPermissableCombos() {
+    [
+    ]
+  }
+
 }

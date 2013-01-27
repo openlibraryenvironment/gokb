@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+
 class Platform extends KBComponent {
 
   // String impId
@@ -29,4 +31,11 @@ class Platform extends KBComponent {
     type(nullable:true, blank:false)
     status(nullable:true, blank:false)
   }
+
+  @Transient
+  def getPermissableCombos() {
+    [
+    ]
+  }
+
 }

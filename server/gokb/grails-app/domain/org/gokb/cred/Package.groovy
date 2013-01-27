@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+
 class Package extends KBComponent {
 
   // Owens defaults:
@@ -45,4 +47,11 @@ class Package extends KBComponent {
       nominalPlatform(nullable:true, blank:false)
     packageListStatus(nullable:true, blank:false)
   }
+
+  @Transient
+  def getPermissableCombos() {
+    [
+    ]
+  }
+
 }

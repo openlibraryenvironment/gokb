@@ -114,4 +114,7 @@ class KBComponent {
     // println("result: ${result}");
     result
   }
+
+  @Transient
+  abstract getPermissableCombos();
 }

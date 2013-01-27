@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+
 class TitleInstancePackagePlatform extends KBComponent {
 
   Date startDate
@@ -68,6 +70,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   
+  @Transient
   def getHostPlatform() {
     def result = null;
     additionalPlatforms.each { p ->
@@ -77,4 +80,11 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
     result
   }
+
+  @Transient
+  def getPermissableCombos() {
+    [
+    ]
+  }
+
 }

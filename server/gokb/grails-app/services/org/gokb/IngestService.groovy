@@ -127,33 +127,6 @@ class IngestService {
   
       log.debug("Using col positions: ${col_positions}");
   
-      def pkg = Package.findByIdentifier("project:${project.id}");
-      if (!pkg) {
-        log.debug("New package with identifier project:${project.id}");
-        pkg = new Package(
-                          identifier:"project:${project.id}", 
-                          name:"project:${project.id}",
-                          packageStatus:RefdataCategory.lookupOrCreate("Package Status", "Current"),
-                          packageScope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
-                          breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
-                          parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
-                          global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
-                          fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
-                          consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
-
-        // create a Combo linking this package to it's content provider
-        def cp_combo = new Combo(fromComponent:project.provider,
-                                 toComponent:pkg,
-                                 type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
-                                 status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
-        
-
-        cp_combo.save()
-      }
-      else {
-        log.debug("Got existing package");
-      }
-  
       int ctr = 0
       project_data.rowData.each { datarow ->
         log.debug("Row ${ctr} ${datarow}");
@@ -187,7 +160,10 @@ class IngestService {
             }
           }
   
-          // Package is done above this for loop
+          // Does the row specify a package?
+          def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
+          pkg_id = "${project.provider.name}:${pkg_name_from_row}"
+          def pkg = getOrCreatePackage(pkg_id,project);
   
           // TIPP
           def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
@@ -573,5 +549,35 @@ class IngestService {
       log.debug("got matching rule ${rule_in_db}");
       ruleset.add(rule_in_db)
     }
+  }
+
+  def getOrCreatePackage(identifier, project) {
+    def pkg = Package.findByIdentifier(identifier);
+    if (!pkg) {
+      log.debug("New package with identifier ${identifier}");
+      pkg = new Package(
+                        identifier:identifier,
+                        name:identifier,
+                        packageStatus:RefdataCategory.lookupOrCreate("Package Status", "Current"),
+                        packageScope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
+                        breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
+                        parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
+                        global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
+                        fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
+                        consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
+
+      // create a Combo linking this package to it's content provider
+      def cp_combo = new Combo(fromComponent:project.provider,
+                               toComponent:pkg,
+                               type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
+                               status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
+
+
+      cp_combo.save()
+    }
+    else {
+      log.debug("Got existing package");
+    }
+    pkg
   }
 }

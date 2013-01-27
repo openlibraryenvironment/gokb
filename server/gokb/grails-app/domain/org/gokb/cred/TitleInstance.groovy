@@ -39,4 +39,12 @@ class TitleInstance extends KBComponent {
     }
     result
   }
+
+  @Transient
+  def getPermissableCombos() {
+    [
+      [category:'TIPP',type:'HasTitle',impl:'localSet',targetClass:TitleInstancePackagePlatform.class,setName:'tipps',direction:'in']
+    ]
+  }
+
 }
