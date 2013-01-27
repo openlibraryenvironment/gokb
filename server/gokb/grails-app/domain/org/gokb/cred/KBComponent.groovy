@@ -2,7 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 
-class KBComponent {
+abstract class KBComponent {
 
   String impId
   // Canonical name field - title for a title instance, name for an org, etc, etc, etc
