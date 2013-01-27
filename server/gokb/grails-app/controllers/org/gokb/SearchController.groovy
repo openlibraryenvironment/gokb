@@ -331,7 +331,7 @@ class SearchController {
           ],
           [
             prompt:'Content Provider ID',
-            qparam:'qp_cp_name_id',
+            qparam:'qp_cp_id',
             placeholder:'Content Provider ID',
             contextTree:['ctxtp':'assoc','prop':'pkg','children':[
                           ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
@@ -341,6 +341,13 @@ class SearchController {
                               ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
                             ['ctxtp':'assoc','prop':'fromComponent', 'children':[
                               ['ctxtp':'qry', 'prop':'id']]]]]]]
+          ],
+          [
+            prompt:'Package ID',
+            qparam:'qp_pkg_id',
+            placeholder:'Package ID',
+            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+                              ['ctxtp':'qry', 'prop':'id']]]
           ],
         ],
         qbeResults:[
