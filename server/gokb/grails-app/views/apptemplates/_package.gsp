@@ -6,59 +6,33 @@
                    data-url="<g:createLink controller='ajaxSupport' action='edit'/>" 
                    data-original-title="ProjectName">${d.name}</span> </h1>
 
-<dl>
-  <dt>Internal ID</dt>
-  <dd>${d.id}</dd>
-  <dt>Package Identifier</dt>
-  <dd>${d.identifier}</dd>
-  <dt>Package Name</dt>
-  <dd>${d.name}</dd>
-  <dt>Shortcode</dt>
-  <dd>${d.shortcode}</dd>
-  <dt>Tags</dt>
-  <dt>Status</dt>
-  <dd>${d.packageStatus?.value?:'Not Set'}</dd>
-  <dt>Scope</dt>
-  <dd>${d.packageScope?.value?:'Not Set'}</dd>
-  <dt>Breakable</dt>
-  <dd>${d.breakable?.value?:'Not Set'}</dd>
-  <dt>Parent</dt>
-  <dd>${d.parent?.value?:'Not Set'}</dd>
-  <dt>Global</dt>
-  <dd>${d.global?.value?:'Not Set'}</dd>
-  <dt>Fixed</dt>
-  <dd>${d.fixed?.value?:'Not Set'}</dd>
-  <dt>Consistent</dt>
-  <dd>${d.consistent?.value?:'Not Set'}</dd>
-  <dt>Last Project</dt>
-  <dd><g:link controller="resource" action="show" id="${d.lastProject?.class?.name+':'+d.lastProject?.id}">${d.lastProject?.name}</g:link></dd>
-
-  <dd>
-    <ul>
-      <g:each in="${d.tags}" var="t">
-        <li>${t.value}</li>
-      </g:each>
-    </ul>
-  </dd>
-
-  <dt>Other Incoming Combos</dt>
-  <dd>
+<table><tbody>
+  <tr><td>Internal Id</td>            <td>${d.id}</td></tr>
+  <tr><td>Package Identifier</td>     <td>${d.identifier}</td></tr>
+  <tr><td>Package Name</td>           <td>${d.name}</td></tr>
+  <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
+  <tr><td>Tags</td>                   <td>${d.shortcode}</td></tr>
+  <tr><td>Status</td>                 <td>${d.packageStatus?.value?:'Not Set'}</td></tr>
+  <tr><td>Breakable</td>              <td>${d.breakable?.value?:'Not Set'}</td></tr>
+  <tr><td>Parent</td>                 <td>${d.parent?.value?:'Not Set'}</td></tr>
+  <tr><td>Global</td>                 <td>${d.global?.value?:'Not Set'}</td></tr>
+  <tr><td>Fixed</td>                  <td>${d.fixed?.value?:'Not Set'}</td></tr>
+  <tr><td>Consistent</td>             <td>${d.consistent?.value?:'Not Set'}</td></tr>
+  <tr><td>Last Project</td>           <td><g:link controller="resource" action="show" id="${d.lastProject?.class?.name+':'+d.lastProject?.id}">${d.lastProject?.name}</g:link></td></tr>
+  <tr><td>Tags</td>                   <td><ul><g:each in="${d.tags}" var="t"><li>${t.value}</li></g:each></ul></td></tr>
+  <tr><td>Incoming Combos</td>        <td>
     <ul>
       <g:each in="${d.incomingCombos}" var="c">
         <li><g:link controller="resource" action="show" id="${c.fromComponent.class.name+':'+c.fromComponent.id}">${c.fromComponent.name}</g:link> -- ${c.type?.value} --> This Org</li>
       </g:each>
-    </ul>
-  </dd>
-  <dt>Other Outgoing Combos</dt>
-  <dd>
+    </ul></td></tr>
+  <tr><td>Outgoing Combos</td>        <td>
     <ul>
       <g:each in="${d.outgoingCombos}" var="c">
         <li>This Org -- ${c.type?.value} -->  <g:link controller="resource" action="show" id="${c.toComponent.class.name+':'+c.toComponent.id}">${c.toComponent.name}</g:link></li>
       </g:each>
-    </ul>
-  </dd>
-
-</dl>
+    </ul></td></tr>
+</tbody></table>
 
 <h2>Titles in this package</h2>
 
