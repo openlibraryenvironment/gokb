@@ -128,7 +128,7 @@ class IngestService {
       // Track any additional title identifiers
       def additional_identifiers = []
       project_data.columnDefinitions?.each { cd ->
-        cn = cd.name?.toLowerCase()
+        def cn = cd.name?.toLowerCase()
         if (cn.startsWith('title.identifier.') ) {
           def idparts = cn.split(cn,'.')
           if ( idparts.size==3 ) {
