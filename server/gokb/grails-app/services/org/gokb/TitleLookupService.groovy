@@ -5,6 +5,10 @@ import org.gokb.cred.*;
 class TitleLookupService {
 
     def find(title, issn, eissn) {
+      find(title, issn, eissn)
+    }
+
+    def find(title, issn, eissn, extra_ids) {
 
       def result = null
 
@@ -58,6 +62,11 @@ class TitleLookupService {
           new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
         if ( eissn_identifier )
           new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
+
+        extra_ids.each { ei ->
+          additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
+          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
+        }
       }
 
       // May double check with porter stemmer in the future.. see

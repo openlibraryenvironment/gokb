@@ -77,6 +77,24 @@ class IngestService {
       col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
     }
 
+    // Track any additional title identifiers
+    def result.additional_identifiers = []
+    project_data.columnDefinitions?.each { cd ->
+      cn = cd.name?.toLowerCase()
+      if (cn.startsWith('title.identifier.') ) {
+        def idparts = cn.split(cn,'.')
+        if ( idparts.size==3 ) {
+          if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'issn') ) {
+            // Skip issn/eissn
+          }
+          else {
+            additional_identifiers.add(['name':idparts[2],cd.cellIndex])
+          }
+        }
+      }
+    }
+ 
+
     if ( col_positions[PRINT_IDENTIFIER] == null )
       result.messages.add([text:"Import does not specify a ${PRINT_IDENTIFIER} column"]);
 
@@ -124,19 +142,44 @@ class IngestService {
       project_data.columnDefinitions.each { cd ->
         col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
       }
+
+      // Track any additional title identifiers
+      def additional_identifiers = []
+      project_data.columnDefinitions?.each { cd ->
+        cn = cd.name?.toLowerCase()
+        if (cn.startsWith('title.identifier.') ) {
+          def idparts = cn.split(cn,'.')
+          if ( idparts.size==3 ) {
+            if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'issn') ) {
+              // Skip issn/eissn
+            }
+            else {
+              additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
+            }
+          }
+        }
+      }
   
-      log.debug("Using col positions: ${col_positions}");
+      log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
   
       int ctr = 0
       project_data.rowData.each { datarow ->
         log.debug("Row ${ctr} ${datarow}");
         if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
   
+          def extra_ids = []
+          additional_identifiers.each { ai ->
+            extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+          }
+
           // Title Instance
           log.debug("Looking up title...");
           def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),   // jsonv(datarow.cells[title_index]),
                                                    jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),    // jsonv(datarow.cells[issn_index]) 
-                                                   jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]));  // jsonv(datarow.cells[eissn_index]));
+                                                   jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),   // jsonv(datarow.cells[eissn_index]));
+                                                   extra_ids);
+
+          addAdditionalIdentifiers(title_info,datarow.cells)
   
           // Platform
           def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
@@ -579,5 +622,12 @@ class IngestService {
       log.debug("Got existing package");
     }
     pkg
+  }
+
+  def addAdditionalIdentifiers(title_info,row) {
+    log.debug("Adding any additional identifiers")
+    row.each { c ->
+      if ( c.startsWith('title.identifier')
+    }
   }
 }
