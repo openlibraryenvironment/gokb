@@ -1,5 +1,10 @@
 
-<h1>Package: ${d.name}</h1>
+<h1>Package: <span class="ipe" 
+                   data-type="text" 
+                   data-pk="${d.class.name}:${d.id}" 
+                   data-name="name" 
+                   data-url="<g:createLink controller='ajaxSupport' action='edit'/>" 
+                   data-original-title="ProjectName">${d.name}</span> </h1>
 
 <dl>
   <dt>Internal ID</dt>
@@ -87,3 +92,11 @@
     </g:each>
   </tbody>
 </table>
+
+<script language="JavaScript">
+  $(document).ready(function() {
+    $.fn.editable.defaults.mode = 'inline';
+    $('.ipe').editable();
+  });
+</script>
+
