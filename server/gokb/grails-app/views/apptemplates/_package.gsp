@@ -53,7 +53,9 @@
   <tbody>
     <g:each in="${d.tipps}" var="tipp">
       <tr>
-        <td><g:link controller="resource" action="show" id="${tipp.title.class.name+':'+tipp.title.id}">${tipp.title.name}</g:link></td>
+        <td><g:link controller="resource" action="show" id="${tipp.title.class.name+':'+tipp.title.id}">${tipp.title.name}</g:link>
+        <g:link controller="resource" action="show" id="${tipp.class.name+':'+tipp.id}">(tipp)</g:link>
+        </td>
         <td><g:link controller="resource" action="show" id="${tipp.platform.class.name+':'+tipp.platform.id}">${tipp.platform.name}</g:link></td>
         <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${tipp.startDate}"/></td>
         <td>${tipp.startVolume}</td>

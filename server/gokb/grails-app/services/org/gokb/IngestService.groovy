@@ -161,8 +161,6 @@ class IngestService {
                                                    jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),   // jsonv(datarow.cells[eissn_index]));
                                                    extra_ids);
 
-          addAdditionalIdentifiers(title_info,datarow.cells)
-  
           // Platform
           def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
           def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
