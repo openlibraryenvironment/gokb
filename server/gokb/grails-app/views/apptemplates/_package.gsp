@@ -6,7 +6,7 @@
                    data-url="<g:createLink controller='ajaxSupport' action='edit'/>" 
                    data-original-title="ProjectName">${d.name}</span> </h1>
 
-<table><tbody>
+<table class="table table-bordered table-striped" style="clear: both"><tbody>
   <tr><td>Internal Id</td>            <td>${d.id}</td></tr>
   <tr><td>Package Identifier</td>     <td>${d.identifier}</td></tr>
   <tr><td>Package Name</td>           <td>${d.name}</td></tr>
