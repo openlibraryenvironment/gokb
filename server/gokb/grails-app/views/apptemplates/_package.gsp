@@ -12,7 +12,12 @@
   <tr><td>Package Name</td>           <td>${d.name}</td></tr>
   <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
   <tr><td>Tags</td>                   <td>${d.shortcode}</td></tr>
-  <tr><td>Status</td>                 <td>${d.packageStatus?.value?:'Not Set'}</td></tr>
+  <tr><td>Status</td>                 <td><span class="ipe" 
+                                                data-pk="${d.class.name}:${d.id}" 
+                                                data-type="select" 
+                                                data-name="packageStatus"
+                                                data-url="<g:createLink controller='ajaxSupport' action='setRef'/>",
+                                                data-source="<g:createLink controller='ajaxSupport' action='getRefdata' id='PackageStatus'/>">${d.packageStatus?.value?:'Not Set'}</span></td></tr>
   <tr><td>Breakable</td>              <td>${d.breakable?.value?:'Not Set'}</td></tr>
   <tr><td>Parent</td>                 <td>${d.parent?.value?:'Not Set'}</td></tr>
   <tr><td>Global</td>                 <td>${d.global?.value?:'Not Set'}</td></tr>
