@@ -116,6 +116,7 @@ class IngestService {
 
       def result = [:]
       result.status = project_data ? true : false
+      result.messages = []
   
       project.progress = 0;
       project.save(flush:true)
@@ -148,91 +149,99 @@ class IngestService {
       project_data.rowData.each { datarow ->
         log.debug("Row ${ctr} ${datarow}");
         if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
-  
-          def extra_ids = []
-          additional_identifiers.each { ai ->
-            extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
-          }
 
-          // Title Instance
-          log.debug("Looking up title...");
-          def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),   // jsonv(datarow.cells[title_index]),
-                                                   jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),    // jsonv(datarow.cells[issn_index]) 
-                                                   jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),   // jsonv(datarow.cells[eissn_index]));
-                                                   extra_ids);
+          try {
+            def extra_ids = []
+            additional_identifiers.each { ai ->
+              extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+            }
 
-          // Platform
-          def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
-          def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-          def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+            // Title Instance
+            log.debug("Looking up title...");
+            def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),   // jsonv(datarow.cells[title_index]),
+                                                     jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),    // jsonv(datarow.cells[issn_index]) 
+                                                     jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),   // jsonv(datarow.cells[eissn_index]));
+                                                     extra_ids);
 
-          if ( host_platform_name == null ) {
-            throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
-          }
+            // Platform
+            def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
+            def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+            def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
 
-          log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
-          // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
-          def platform_info = Platform.findByNormname(host_norm_platform_name) 
-          if ( !platform_info ) {
-            // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
-            platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
-            if (! platform_info.save(flush:true) ) {
-              platform_info.errors.each { e ->
-                log.error(e);
+            if ( host_platform_name == null ) {
+              throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
+            }
+
+            log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
+            // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
+            def platform_info = Platform.findByNormname(host_norm_platform_name) 
+            if ( !platform_info ) {
+              // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+              platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
+              if (! platform_info.save(flush:true) ) {
+                platform_info.errors.each { e ->
+                  log.error(e);
+                }
               }
             }
-          }
+    
+            // Does the row specify a package?
+            def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
+            def pkg_id = "${project.provider.name}:${pkg_name_from_row}"
+            def pkg = getOrCreatePackage(pkg_id,project);
   
-          // Does the row specify a package?
-          def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
-          def pkg_id = "${project.provider.name}:${pkg_name_from_row}"
-          def pkg = getOrCreatePackage(pkg_id,project);
+            // TIPP
+            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
+            if ( !tipp ) {
+              log.debug("Create new tipp");
+              tipp = new TitleInstancePackagePlatform(title:title_info,
+                                                      pkg:pkg,
+                                                      platform:platform_info,
+                                                      startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+                                                      startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+                                                      startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+                                                      endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+                                                      endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+                                                      endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+                                                      embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+                                                      coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+                                                      coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+                                                      hostPlatformURL:host_platform_url)
   
-          // TIPP
-          def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
-          if ( !tipp ) {
-            log.debug("Create new tipp");
-            tipp = new TitleInstancePackagePlatform(title:title_info,
-                                                    pkg:pkg,
-                                                    platform:platform_info,
-                                                    startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-                                                    startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-                                                    startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-                                                    endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-                                                    endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-                                                    endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-                                                    embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-                                                    coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-                                                    coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-                                                    hostPlatformURL:host_platform_url)
-  
-            if ( !tipp.save() ) {
-              tipp.errors.each { e ->
-                log.error("problem saving tipp ${e}");
+              if ( !tipp.save() ) {
+                tipp.errors.each { e ->
+                  log.error("problem saving tipp ${e}");
+                }
               }
-            }
   
   
             // publication_title print_identifier online_identifier date_first_issue_online num_first_vol_online num_first_issue_online date_last_issue_online num_last_vol_online num_last_issue_online title_id embargo_info coverage_depth coverage_notes publisher_name DOI platform_name platform_role platform_title_url platform_name2 platform_role2 platform_title_url2
   
-          }
-          else {
-            log.debug("TIPP already present");
-          }
+            }
+            else {
+              log.debug("TIPP already present");
+            }
   
-          // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
-          // instances we've just looked up.
-          if ( ctr % 25 == 0 ) {
-            cleanUpGorm()
-            pkg = Package.findByIdentifier("project:${project.id}");
-            // Update project progress indicator, save in db so any observers can see progress
-            def project_info = RefineProject.get(project.id)
-            project_info.progress = ( ctr / project_data.rowData.size() * 100 )
-            project_info.save(flush:true);
+            // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
+            // instances we've just looked up.
+            if ( ctr % 25 == 0 ) {
+              cleanUpGorm()
+              pkg = Package.findByIdentifier("project:${project.id}");
+              // Update project progress indicator, save in db so any observers can see progress
+              def project_info = RefineProject.get(project.id)
+              project_info.progress = ( ctr / project_data.rowData.size() * 100 )
+              project_info.save(flush:true);
+            }
+
+          } 
+          catch ( Exception e ) {
+            log.error("Row level exception",e)
+            result.messages.add([text:"Problem processing row ${e}"])
           }
         }
         else {
           log.debug("Row ${ctr} seems to be a null row. Skipping");
+          result.messages.add([text:"Row ${ctr} seems to be a null row. Skipping"]);
         }
         ctr++
       }
@@ -243,9 +252,13 @@ class IngestService {
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);
+      result.messages.add([text:"Problem processing project ingest. ${e}"])
       project_info.progress = 100;
       project_info.save(flush:true);
       //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
+    }
+    finally {
+      log.debug("Ingest complete");
     }
 
     result
