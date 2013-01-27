@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import org.gokb.refine.*
 
 class Package extends KBComponent {
 
@@ -26,7 +27,7 @@ class Package extends KBComponent {
   Platform nominalPlatform
   Date dateCreated
   Date lastUpdated
-
+  RefineProject lastProject
 
   static hasMany = [tipps: TitleInstancePackagePlatform]
   static mappedBy = [tipps: 'pkg']
@@ -38,6 +39,7 @@ class Package extends KBComponent {
         packageStatus column:'pkg_status_rv_fk'
     packageListStatus column:'pkg_list_status_rv_fk'
       nominalPlatform column:'pkg_nominal_platform_fk'
+          lastProject column:'pkg_refine_project_fk'
                 tipps sort:'title.name', order: 'asc'
   }
 
@@ -46,6 +48,7 @@ class Package extends KBComponent {
         packageStatus(nullable:true, blank:false)
       nominalPlatform(nullable:true, blank:false)
     packageListStatus(nullable:true, blank:false)
+          lastProject(nullable:true, blank:false)
   }
 
   @Transient

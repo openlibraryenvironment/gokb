@@ -77,24 +77,6 @@ class IngestService {
       col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
     }
 
-    // Track any additional title identifiers
-    def additional_identifiers = []
-    project_data.columnDefinitions?.each { cd ->
-      cn = cd.name?.toLowerCase()
-      if (cn.startsWith('title.identifier.') ) {
-        def idparts = cn.split(cn,'.')
-        if ( idparts.size==3 ) {
-          if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'issn') ) {
-            // Skip issn/eissn
-          }
-          else {
-            additional_identifiers.add(['name':idparts[2],cd.cellIndex])
-          }
-        }
-      }
-    }
- 
-
     if ( col_positions[PRINT_IDENTIFIER] == null )
       result.messages.add([text:"Import does not specify a ${PRINT_IDENTIFIER} column"]);
 
@@ -607,7 +589,8 @@ class IngestService {
                         parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
                         global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
                         fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
-                        consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N")).save(flush:true);
+                        consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
+                        lastProject:project).save(flush:true);
 
       // create a Combo linking this package to it's content provider
       def cp_combo = new Combo(fromComponent:project.provider,

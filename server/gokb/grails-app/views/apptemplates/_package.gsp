@@ -25,6 +25,8 @@
   <dd>${d.fixed?.value?:'Not Set'}</dd>
   <dt>Consistent</dt>
   <dd>${d.consistent?.value?:'Not Set'}</dd>
+  <dt>Last Project</dt>
+  <dd><g:link controller="resource" action="show" id="${d.lastProject?.class?.name+':'+d.lastProject?.id}">${d.lastProject?.name}</g:link></dd>
 
   <dd>
     <ul>
@@ -59,7 +61,7 @@
   <thead>
     <tr>
       <th>Title</th>
-      <th>Package</th>
+      <th>Platform</th>
       <th>Start Date</th>
       <th>Start Volume</th>
       <th>Start Issue</th>
@@ -73,7 +75,7 @@
     <g:each in="${d.tipps}" var="tipp">
       <tr>
         <td><g:link controller="resource" action="show" id="${tipp.title.class.name+':'+tipp.title.id}">${tipp.title.name}</g:link></td>
-        <td><g:link controller="resource" action="show" id="${tipp.pkg.class.name+':'+tipp.title.id}">${tipp.pkg.name}</g:link></td>
+        <td><g:link controller="resource" action="show" id="${tipp.platform.class.name+':'+tipp.platform.id}">${tipp.platform.name}</g:link></td>
         <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${tipp.startDate}"/></td>
         <td>${tipp.startVolume}</td>
         <td>${tipp.startIssue}</td>

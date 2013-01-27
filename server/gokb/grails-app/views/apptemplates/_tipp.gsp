@@ -5,6 +5,16 @@
   <dt>Internal ID</dt>
   <dd>${d.id}</dd>
 
+  <dt>Title</dt>
+  <dd><g:link controller="resource" action="show" id="${d.title?.class.name+':'+d.title?.id}">${d.title?.name}</g:link></dd>
+
+  <dt>Package</dt>
+  <dd><g:link controller="resource" action="show" id="${d.pkg?.class.name+':'+d.pkg?.id}">${d.pkg?.name}</g:link></dd>
+
+  <dt>Platform</dt>
+  <dd><g:link controller="resource" action="show" id="${d.platform?.class.name+':'+d.platform?.id}">${d.platform?.name}</g:link></dd>
+
+
   <dt>Other Incoming Combos</dt>
   <dd>
     <ul>
