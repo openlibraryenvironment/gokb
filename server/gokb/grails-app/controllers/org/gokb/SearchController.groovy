@@ -355,7 +355,26 @@ class SearchController {
           [heading:'Title', property:'title.name']
         ]
       ]
-    ]
+    ],
+    'refdataCategories':[
+      baseclass:'org.gokb.cred.RefdataCategory',
+      title:'Refdata Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Description',
+            qparam:'qp_desc',
+            placeholder:'Category Description',
+            contextTree:['ctxtp':'qry', 'prop':'desc']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Description', property:'desc']
+        ]
+      ]
+    ],
+
   ]
 
 
@@ -367,6 +386,7 @@ class SearchController {
     'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
     'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
     'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
-    'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ]
+    'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
+    'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ]
   ]
 }

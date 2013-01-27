@@ -3,12 +3,21 @@ package org.gokb.cred
 class RefdataCategory {
 
   String desc
+  Set values
 
   static mapping = {
          id column:'rdc_id'
     version column:'rdc_version'
        desc column:'rdc_description', index:'rdc_description_idx'
   }
+
+  static hasMany = [
+    values:RefdataValue
+  ]
+
+  static mappedBy = [
+    values:'owner'
+  ]
 
   static constraints = {
   }
