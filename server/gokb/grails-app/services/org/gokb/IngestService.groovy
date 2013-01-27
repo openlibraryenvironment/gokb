@@ -78,7 +78,7 @@ class IngestService {
     }
 
     // Track any additional title identifiers
-    def result.additional_identifiers = []
+    def additional_identifiers = []
     project_data.columnDefinitions?.each { cd ->
       cn = cd.name?.toLowerCase()
       if (cn.startsWith('title.identifier.') ) {
@@ -622,12 +622,5 @@ class IngestService {
       log.debug("Got existing package");
     }
     pkg
-  }
-
-  def addAdditionalIdentifiers(title_info,row) {
-    log.debug("Adding any additional identifiers")
-    row.each { c ->
-      if ( c.startsWith('title.identifier')
-    }
   }
 }
