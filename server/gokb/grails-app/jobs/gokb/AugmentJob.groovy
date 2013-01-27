@@ -12,6 +12,10 @@ class AugmentJob {
   }
 
   def execute() {
+    log.debug("Not doing augment for now");
+  }
+
+  def aug() {
     log.debug("Attempting to augment titles");
 
     // find the next 100 titles that don't have a suncat ID
