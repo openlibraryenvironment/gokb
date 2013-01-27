@@ -185,7 +185,7 @@ class IngestService {
   
           // Does the row specify a package?
           def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
-          pkg_id = "${project.provider.name}:${pkg_name_from_row}"
+          def pkg_id = "${project.provider.name}:${pkg_name_from_row}"
           def pkg = getOrCreatePackage(pkg_id,project);
   
           // TIPP
