@@ -10,17 +10,20 @@ abstract class KBComponent {
   String normname
   String shortcode
   Set tags = []
+  List additionalProperties = []
 
   static mappedBy = [ids: 'component',  
                      outgoingCombos: 'fromComponent',
                      incomingCombos:'toComponent',
-                     orgs: 'linkedComponent']
+                     orgs: 'linkedComponent',
+                     additionalProperties: 'fromComponent']
 
   static hasMany = [ids: IdentifierOccurrence, 
                     orgs: OrgRole, 
                     tags:RefdataValue,
                     outgoingCombos:Combo,
-                    incomingCombos:Combo]
+                    incomingCombos:Combo,
+                    additionalProperties:KBComponentAdditionalProperty]
 
   static mapping = {
            id column:'kbc_id'
