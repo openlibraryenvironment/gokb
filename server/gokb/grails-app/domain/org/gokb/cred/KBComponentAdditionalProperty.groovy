@@ -2,9 +2,10 @@ package org.gokb.cred
 
 class KBComponentAdditionalProperty {
 
-  KBComponent fromComponent
   AdditionalPropertyDefinition propertyDefn
   String apValue
+
+  static belongsTo = [ fromComponent:KBComponent ]
 
   static mapping = {
               id column:'kbcap_id'

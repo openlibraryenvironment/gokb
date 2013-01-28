@@ -142,6 +142,17 @@ class IngestService {
           }
         }
       }
+
+      // Extract any gokb scoped fields we are going to store as extra properties
+      def gokb_additional_props = []
+      project_data.columnDefinitions?.each { cd ->
+        def cn = cd.name?.toLowerCase()
+        if (cn.startsWith('gokb.') ) {
+          def prop_name = cn.substring(5,cn.length());
+          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true);
+          gokb_additional_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
+        }
+      }
   
       log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
   
@@ -157,11 +168,12 @@ class IngestService {
             }
 
             // Title Instance
-            log.debug("Looking up title...");
-            def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),   // jsonv(datarow.cells[title_index]),
-                                                     jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),    // jsonv(datarow.cells[issn_index]) 
-                                                     jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),   // jsonv(datarow.cells[eissn_index]));
-                                                     extra_ids);
+            log.debug("Looking up title...(extra ids: ${extra_ids})");
+            def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+                                                     jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
+                                                     jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
+                                                     extra_ids,
+                                                     jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
 
             // Platform
             def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
@@ -207,6 +219,13 @@ class IngestService {
                                                       coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
                                                       coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
                                                       hostPlatformURL:host_platform_url)
+
+              gokb_additional_props.each { apd ->
+                tipp.additionalProperties.add(new KBComponentAdditionalProperty(fromComponent:tipp, 
+                                                                                propertyDefn:apd.pd,
+                                                                                apValue:getRowValue(datarow,apd.col)))
+              }
+              
   
               if ( !tipp.save() ) {
                 tipp.errors.each { e ->
