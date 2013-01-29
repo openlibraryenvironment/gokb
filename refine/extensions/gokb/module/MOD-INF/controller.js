@@ -21,9 +21,13 @@ function registerCommands() {
  */
 function registerFunctions() {
 	Packages.java.lang.System.out.print("\tRegistering functions...");
-	var FR = com.google.refine.grel.ControlFunctionRegistry;
-	FR.registerFunction("GOKbExtractHost", new com.k_int.gokb.refine.functions.ExtractHost());
+	registerFunction("ExtractHost", new com.k_int.gokb.refine.functions.ExtractHost());
 	Packages.java.lang.System.out.println("done");
+}
+
+function registerFunction (name, clazz) {
+	var FR = com.google.refine.grel.ControlFunctionRegistry;
+	FR.registerFunction(module.getName() + name, clazz);
 }
 
 
