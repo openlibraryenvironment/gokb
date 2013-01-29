@@ -8,10 +8,14 @@ import java.util.List;
 import javax.servlet.ServletConfig;
 
 import org.apache.commons.collections.ExtendedProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
+import com.k_int.gokb.refine.functions.GenericMatchRegex;
 
 import com.google.refine.RefineServlet;
+import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 
 import edu.mit.simile.butterfly.ButterflyModule;
@@ -19,6 +23,8 @@ import edu.mit.simile.butterfly.ButterflyModuleImpl;
 
 
 public class GOKbModuleImpl extends ButterflyModuleImpl {
+	
+	final static Logger _logger = LoggerFactory.getLogger("GOKb-ModuleImpl");
     
     public static GOKbModuleImpl singleton;
     public static ExtendedProperties properties;
@@ -38,6 +44,9 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         // Add our proxied Commands from the config file.
         addProxiedCommands();
         
+        // Add the generic regex functions.
+        addRegexFunctions();
+        
         // Set the singleton.
         singleton = this;
         
@@ -46,12 +55,47 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     }
     
     private void addProxiedCommands() {
+    	
+    	_logger.debug("Adding proxied commands from the properties.");
+    	
         @SuppressWarnings("unchecked")
         List<String> commands = getProperties().getList("proxyCommands");
         
         // Register each command from the list.
         for (String command : commands) {
             RefineServlet.registerCommand(this, command, new GerericProxiedCommand(command));
+        }
+    }
+    
+    private void addRegexFunctions() {
+    	
+    	_logger.info("Adding regex functions from the properties.");
+        @SuppressWarnings("unchecked")
+        List<String> names = getProperties().getList("regex.name");
+        
+        @SuppressWarnings("unchecked")
+		List<String> patterns = getProperties().getList("regex.pattern");
+        
+        @SuppressWarnings("unchecked")
+		List<String> offsets = getProperties().getList("regex.skip");
+        
+        if (names.size() == patterns.size() && patterns.size() == offsets.size()) {
+        	// Register each regex function from the properties.
+            for (int i=0; i<names.size(); i++) {
+            	
+            	try {
+	            	ControlFunctionRegistry.registerFunction(
+	            		this.getName() + "Match" + names.get(i),
+	            		new GenericMatchRegex (patterns.get(i), Integer.parseInt(offsets.get(i)))
+	            	);
+            	} catch (Exception e){
+            		
+            		// Log the error 
+            		_logger.error(e.getLocalizedMessage(), e);
+            	}
+            }
+        } else {
+        	_logger.error("regex items need to declare name, pattern and skip");
         }
     }
     

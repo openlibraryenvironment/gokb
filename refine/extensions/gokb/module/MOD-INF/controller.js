@@ -25,6 +25,9 @@ function registerFunctions() {
 	Packages.java.lang.System.out.println("done");
 }
 
+/*
+ * Register a single GREL function extension.
+ */
 function registerFunction (name, clazz) {
 	var FR = com.google.refine.grel.ControlFunctionRegistry;
 	FR.registerFunction(module.getName() + name, clazz);
