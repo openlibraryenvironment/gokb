@@ -210,7 +210,10 @@ public abstract class A_RefineAPIBridge extends Command {
         if (type == METHOD_TYPE.POST) {
             connection.setDoInput(true);
             connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "multipart/form-data;boundary="+POST_BOUNDARY);
+            connection.setRequestProperty("Content-Type", "multipart/form-data; charset=UTF-8; boundary="+POST_BOUNDARY);
+        } else if (type == METHOD_TYPE.GET) {
+        	connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-Type", "text/plain; charset=utf-8");
         }
         
         // Connect to the service.
