@@ -80,6 +80,7 @@ function init() {
      "scripts/project.js",
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
+     "scripts/project/title-complete.js",
     ]
   );
 
