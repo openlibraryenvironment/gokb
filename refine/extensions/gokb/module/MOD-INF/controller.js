@@ -17,12 +17,24 @@ function registerCommands() {
 }
 
 /*
+ * Register new functions that extend the GREL language.
+ */
+function registerFunctions() {
+	Packages.java.lang.System.out.print("\tRegistering functions...");
+	var FR = com.google.refine.grel.ControlFunctionRegistry;
+	FR.registerFunction("GOKbExtractHost", new com.k_int.gokb.refine.functions.ExtractOrg());
+	Packages.java.lang.System.out.println("done");
+}
+
+
+/*
  * Function invoked to initialize the extension.
  */
 function init() {
   Packages.java.lang.System.out.println("Initializing GOKb...");
   Packages.java.lang.System.out.println(module.getMountPoint());
   registerCommands();
+  registerFunctions();
   
   ClientSideResourceManager.addPaths(
 		 "index/scripts",
