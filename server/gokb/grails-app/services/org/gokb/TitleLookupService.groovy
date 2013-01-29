@@ -8,7 +8,7 @@ class TitleLookupService {
       find(title, issn, eissn)
     }
 
-    def find(title, issn, eissn, extra_ids) {
+    def find(title, issn, eissn, extra_ids, publisher_name) {
 
       def result = null
 
@@ -60,6 +60,7 @@ class TitleLookupService {
 
         if ( issn_identifier )
           new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
+
         if ( eissn_identifier )
           new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
 
