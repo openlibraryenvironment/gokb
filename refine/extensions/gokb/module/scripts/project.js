@@ -1,14 +1,13 @@
 /**
  * Default project screen include.
  */
-
-GOKb.currentInitUI = (initializeUI);
+GOKb.kidnapFunction ((initializeUI), "initializeUI");
 
 // Replace the initializeUI method.
 initializeUI = function (uiState) {
 	
-	// Call the current method, but also add our extras.
-	GOKb.currentInitUI(uiState);
+	// Call the old method.
+	GOKb.runKidnappedFunction('initializeUI', uiState);
 	
 	// The Validation tab.
 	var vTab = $('<a>Errors <span class="count">0</span></a>')

@@ -8,12 +8,37 @@ var GOKb = {
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   refine:{},
   versionError : false,
+  hijacked : [],
+};
+
+/**
+ * Run a stored method.
+ */
+GOKb.runKidnappedFunction = function () {
+	// First argument is method name.
+	var methodName = arguments[0];
+	
+	var args = [];
+	for (i=1; i<arguments.length; i++){
+		args[(i-1)] = arguments[i];
+	}
+	
+	// Run the method with the rest of the supplied arguments.
+	return (GOKb.hijacked[methodName]).apply(this, args);
+};
+
+/**
+ * Store the method.
+ */
+GOKb.kidnapFunction = function(method, methodName) {
+	
+	// Save hijackedMethod
+	GOKb.hijacked[methodName] = method;
 };
 
 /**
  * Default callback object that displays an error if one was sent through.
  */
-
 GOKb.defaultError = function (data) {
 	var error = GOKb.createErrorDialog("Error");
 	var msg;
