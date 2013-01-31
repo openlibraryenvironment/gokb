@@ -12,28 +12,40 @@ var GOKb = {
 };
 
 /**
- * Run a stored method.
+ * Replace an existing function with your custom code.
+ * The old function is appended to the arguments and therefore
+ * can be called from within your new code where necessary.
+ * 
+ * Use the syntax:
+ * function ([params...], oldFunction) {
+ * 	oldFunction.apply(this, arguments);
+ * }
+ * 
+ * Using the apply method ensures that the old method's context
+ * is correct.
  */
-GOKb.runKidnappedFunction = function () {
-	// First argument is method name.
-	var methodName = arguments[0];
+GOKb.hijackFunction = function(functionName, replacement) {
 	
-	var args = [];
-	for (i=1; i<arguments.length; i++){
-		args[(i-1)] = arguments[i];
+	// Save the old function so we can still use it in our new function.
+	GOKb.hijacked[functionName] = eval(functionName);
+	
+	// New method...
+	var repMeth = function() {
+		// All arguments passed to this method will be passed to replacement.
+		var args = [];
+		for (i=0; i<arguments.length; i++){
+			args[i] = arguments[i];
+		}
+		
+		// Also pass the old method too.
+		args.push(GOKb.hijacked[functionName]);
+		
+		// Then execute the replacement.
+		return (replacement).apply(this, args);
 	}
 	
-	// Run the method with the rest of the supplied arguments.
-	return (GOKb.hijacked[methodName]).apply(this, args);
-};
-
-/**
- * Store the method.
- */
-GOKb.kidnapFunction = function(method, methodName) {
-	
-	// Save hijackedMethod
-	GOKb.hijacked[methodName] = method;
+	// Generate source to replace old method with the new code.
+	eval(functionName + " = " + repMeth.toString());
 };
 
 /**
@@ -362,6 +374,60 @@ GOKb.projectDataAsParams = function (project) {
  */
 GOKb.getRefData = function (type, callbacks, ajaxOpts) {
 	GOKb.doCommand ("refdata", {"type" : type }, null, callbacks, ajaxOpts);
+};
+
+/**
+ * Single value auto-complete.
+ */
+GOKb.autoComplete = function(elements, data) {
+	elements.autocomplete({
+		source: data,
+	});
+};
+
+/**
+ * Function to add multi-value auto-complete to the supplied jquery matches.
+ */
+GOKb.multiAutoComplete = function(elements, data, separator) {
+
+	separator = separator || ",";
+	
+	// Split function to split at our separator.
+	var split = function( val ) {
+		return val.split( separator );
+	};
+	
+	// Extract the last term in the list.
+	var extractLast = function ( term ) {
+		 return split( term ).pop();
+	};
+	
+	elements.autocomplete({
+		source: function( request, response ) {
+			// delegate back to autocomplete, but extract the last term
+			response( $.ui.autocomplete.filter(
+			  data, extractLast( request.term ) ) );
+		},
+		focus: function() {
+			// prevent value inserted on focus
+			return false;
+		},
+		select: function( event, ui ) {
+			var terms = split( this.value );
+			// remove the current input
+			terms.pop();
+			
+			if (ui && ui.item) {
+				// add the selected item
+				terms.push( ui.item.value );
+			}
+			
+			// add placeholder to get the comma-and-space at the end
+			terms.push( "" );
+			this.value = terms.join( separator );
+			return false;
+		}
+	});
 };
 
 /**

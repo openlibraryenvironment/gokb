@@ -1,20 +1,23 @@
-var testData = [
-  {
-	label	: "A previously ingested name",
-	value	: "guid:1234-5678-91011",
-  },
-  {
-	label	: "Previous document name",
-	value	: "docrow:10",
-  },
-];
+// Replace the _startEdit function on the DataTableCellUI object.
 
-// add the autocomplete
-$(document).ready(function(){
-	
-	$(".data-table-cell-editor-editor").each(function(){
-		$(this).autocomplete({
-			  source: testData
-		});
-	});
-});
+GOKb.hijackFunction(
+  'DataTableCellUI.prototype._startEdit',
+  function(elmt, oldFunction) {
+  	
+  	// Run the original.
+  	oldFunction.apply(this, arguments);
+  	
+  	// Get the current column.
+//  	var column = Refine.cellIndexToColumn(this._cellIndex);
+//  	
+//  	// If the current column name is the title one then add here.
+//  	if (column.name == "publication_title") {
+//  		// We are in the correct column, add the auto-complete.
+//  		GOKb.multiAutoComplete (
+//  		  $(".data-table-cell-editor-editor"),
+//  		  ["a test", "second one"],
+//  		  "->"
+//  		);
+//  	}
+  }
+);
