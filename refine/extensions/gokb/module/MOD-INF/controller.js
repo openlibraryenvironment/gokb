@@ -60,6 +60,7 @@ function init() {
     "index/styles",
     module,
     [
+     "styles/jqui/jquery-ui.css",
      "styles/uniform.default.css",
      "styles/uniform.aristo.css",
      "styles/common.less",
@@ -89,6 +90,7 @@ function init() {
     "project/styles",
     module,
     [
+      "styles/jqui/jquery-ui.css",
       "styles/uniform.default.css",
       "styles/uniform.aristo.css",
       "styles/common.less",
