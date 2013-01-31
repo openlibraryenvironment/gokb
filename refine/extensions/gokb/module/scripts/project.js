@@ -43,7 +43,7 @@ GOKb.hijackFunction (
 		var functions = [oldFunction.apply(this, arguments)];
 		
 		// Push our update function to list of functions to be executed.
-		if (options.everythingChanged || options.rowsChanged || options.rowMetadataChanged || options.cellsChanged) {
+		if (options.everythingChanged || options.modelsChanged || options.rowsChanged || options.rowMetadataChanged || options.cellsChanged) {
 			
 			// If one of the above flags is true then we need to update the validation tab.
 			functions.unshift(function() {

@@ -1,9 +1,15 @@
+/**
+ * Validation panel constructor.
+ */	
 function ValidationPanel(div, tabHeader) {
   this._div = div;
   this._tabHeader = tabHeader;
   this.update();
 }
 
+/**
+ * Resize this panel to fit it's contents.
+ */
 ValidationPanel.prototype.resize = function() {
   var body = this._div.find(".validation-panel-body");
   
@@ -15,6 +21,9 @@ ValidationPanel.prototype.resize = function() {
   }
 };
 
+/**
+ * Update the panel data.
+ */
 ValidationPanel.prototype.update = function(onDoneFunc) {
   var self = this;
   
@@ -45,6 +54,9 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
   );
 };
 
+/**
+ * Render this panel.
+ */
 ValidationPanel.prototype._render = function() {
   var self = this;
 
@@ -62,11 +74,24 @@ ValidationPanel.prototype._render = function() {
   		var tData = [];
   		if ("messages" in data) {
   			$.each(data.messages, function() {
-  				tData.push([this.text]);
+  				
+  				// Get the message.
+  				var message = this;
+  				
+  				// The link to display the menu.
+  				var menuLink = $("<a class='button' href='javascript:{}' ><img src='images/right-arrow.png'></a>")
+  					.appendTo($("<div class='gokb-message-actions' />"))
+  					.click(function() {
+  						ValidationPanel.messages.getActions(message, $(this));
+  					});
+  				;
+  				
+  				// Push the data to the table.
+  				tData.push([message.text, menuLink]);
   			});
   			
   			var table = GOKb.toTable (
-  			  ["Error messages"],
+  			  ["Error messages", ""],
   			  tData
   			);
   			
@@ -103,4 +128,100 @@ ValidationPanel.prototype._render = function() {
 
   // Resize the panel.
   this.resize();
+};
+
+/**
+ * Messages namespace for validation panel.
+ */
+ValidationPanel.messages = {};
+
+/**
+ * Quick Resolution - Rename
+ */
+ValidationPanel.messages.renameColumn = function (message) {
+	
+	// Show a list of all the columns.
+	var opts = [];
+	var cols = theProject.columnModel.columns;
+	for (i=0; i<cols.length; i++) {
+		var col = cols[i];
+		var index = col.cellIndex;
+		var renameCol = function () {
+			if (message !== null && message.col) {
+	      Refine.postCoreProcess(
+	        "rename-column", 
+	        {
+	          oldColumnName: cols[index].name,
+	          newColumnName: message.col
+	        },
+	        null,
+	        { modelsChanged: true }
+	      );
+	    }
+		};
+		opts.push({
+			id 		: "col-list-" + index,
+			label : col.name,
+			click : renameCol
+		});
+	}
+	
+	return opts;
+};
+
+/**
+ * Get quick resolution options.
+ */
+ValidationPanel.messages.getQR = function (message) {
+	
+	var opts = [];
+	
+	switch (message.type) {
+		case 'missing_column' :
+			
+			// Suggest adding column or renaming column.
+			opts = opts.concat (
+			  [
+			   	{
+			   		id 		: message.type + "rename",
+			   		label : "Rename a column",
+			   		submenu: ValidationPanel.messages.renameColumn(message),
+			    },
+			    {
+			   		id 		: message.type + "create",
+			   		label : "Create a column",
+			    },
+			  ]
+			);
+			
+			break;
+	}
+	
+	return opts;
+}
+
+/**
+ * Get the actions menu for the message supplied.
+ */
+ValidationPanel.messages.getActions = function (message, elem) {
+	
+	// Create the menu to show.
+	var menu = [];
+	
+	// Check for quick resolve links
+	var qr = ValidationPanel.messages.getQR(message);
+	if (qr.length > 0) {
+		menu.push({
+	  	"id" : "message-quick-reolution",
+	  	label: "Quick Resolution",
+      submenu: qr,
+	  });
+	}
+	
+	// Do the actual menu creation.
+	MenuSystem.createAndShowStandardMenu(
+	  menu,
+	  elem,
+	  { width: "120px", horizontal: false }
+	);
 };

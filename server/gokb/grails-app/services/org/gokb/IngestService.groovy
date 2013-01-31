@@ -78,19 +78,21 @@ class IngestService {
     }
 
     if ( col_positions[PRINT_IDENTIFIER] == null )
-      result.messages.add([text:"Import does not specify a ${PRINT_IDENTIFIER} column"]);
+      result.messages.add(
+		[text:"Import does not specify a ${PRINT_IDENTIFIER} column", type:"missing_column", col: "${PRINT_IDENTIFIER}"]
+	  );
 
     if ( col_positions[ONLINE_IDENTIFIER] == null )
-      result.messages.add([text:"Import does not specify an ${ONLINE_IDENTIFIER} column"]);
+      result.messages.add([text:"Import does not specify an ${ONLINE_IDENTIFIER} column", type:"missing_column", col: "${ONLINE_IDENTIFIER}"]);
 
     if ( col_positions[PUBLICATION_TITLE] == null )
-      result.messages.add([text:"Import does not specify a ${PUBLICATION_TITLE} column"]);
+      result.messages.add([text:"Import does not specify a ${PUBLICATION_TITLE} column", type:"missing_column", col: "${PUBLICATION_TITLE}"]);
 
     if ( col_positions[HOST_PLATFORM_NAME] == null )
-      result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_NAME} column"]);
+      result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_NAME} column", type:"missing_column", col: "${HOST_PLATFORM_NAME}"]);
 
     if ( col_positions[HOST_PLATFORM_URL] == null )
-      result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column"]);
+      result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
 
     if ( result.messages.size() > 0 ) {
       log.error("validation has messages: a failure: ${result.messages}");
