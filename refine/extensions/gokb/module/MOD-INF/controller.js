@@ -78,6 +78,7 @@ function init() {
      "scripts/common.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
+     "scripts/project/validation-panel-messages.js",
      "scripts/project.js",
      "scripts/project/handlers.js",
      "scripts/project/menu.js",

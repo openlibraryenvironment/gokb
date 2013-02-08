@@ -1,4 +1,4 @@
-var GOKb = {
+  var GOKb = {
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
@@ -17,7 +17,7 @@ var GOKb = {
  * can be called from within your new code where necessary.
  * 
  * Use the syntax:
- * function ([params...], oldFunction) {
+ * function ([params...,] oldFunction) {
  * 	oldFunction.apply(this, arguments);
  * }
  * 
@@ -173,11 +173,16 @@ GOKb.showDialog = function(dialog) {
   	$("select, input, button, textarea", dialog.bindings.form).uniform();
   }
   
-  var level = DialogSystem.showDialog(dialog.html);
-  dialog.bindings.closeButton.click(function() {
-    DialogSystem.dismissUntil(level - 1);
-  });
-  dialog.level = level;
+  // Open the dialog and record the level (Z-Axis) at which it is displayed.
+  dialog.level = DialogSystem.showDialog(dialog.html);
+  
+  // Add a close method to this dialog.
+  dialog.close = function () {
+  	DialogSystem.dismissUntil(dialog.level - 1);
+  }
+  
+  // Add the close method as the onclick of the close button.
+  dialog.bindings.closeButton.click(dialog.close);
   return dialog;
 };
 
