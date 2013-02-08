@@ -20,12 +20,17 @@ public class RequestParser {
         return new RequestParser (request);
     }
     
+    // The files uploaded.
     private Map<String, Object> files = new HashMap<String, Object> ();
 
-    
+    // The text parameters
     private Map<String, String[]> params = new HashMap<String, String[]> ();
 
+    // The last request to ask for the parameters.
+    // Used to keep the parameters for access throughout the request,
+    // and not re-parse.
     private HttpServletRequest request = null;
+    
     @SuppressWarnings("unchecked")
     private RequestParser (HttpServletRequest request) throws FileUploadException {
 
@@ -76,10 +81,14 @@ public class RequestParser {
         }
     }
     
+    // Method to get the files either by parsing the request or by
+    // supplying the ones parsed from this request earlier.
     public Map<String, Object> getFiles() {
         return files;
     }
     
+    // Method to get the parameters either by parsing the request or by
+    // supplying the ones parsed from this request earlier. 
     public Map<String, String[]> getParams() {
         return params;
     }
