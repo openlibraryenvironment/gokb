@@ -136,18 +136,11 @@ abstract class KBComponent {
     )
     
     // See if the combo already exists.
-    def combo = Combo.find(
+    def combo = Combo.findOrSaveWhere(
       fromComponent : newCombo.fromComponent,
       toComponent   : newCombo.toComponent,
       type          : newCombo.type
     )
-    
-    // No combo already exists.
-    if (!combo) {
-      
-      // Save the new Combo and use that instead.
-      combo = newCombo.save(flush : true)
-    }
     
     combo;
   }
