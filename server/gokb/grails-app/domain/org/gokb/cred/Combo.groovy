@@ -54,7 +54,7 @@ class Combo {
   /**
    * Override constructor so we can derive type if not present.
    */
-  public Combo (Map parmeters = null) {
+  public Combo (Map parmeters) {
 	
 	// Ensure we set the parameters from the map in the normal way.
 	parmeters?.each { k,v ->
