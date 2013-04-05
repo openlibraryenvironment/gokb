@@ -1,5 +1,9 @@
 package org.gokb.cred
 
+/**
+ * @author sosguthorpe
+ *
+ */
 class Combo {
 
   RefdataValue status
@@ -25,5 +29,36 @@ class Combo {
     type(nullable:true, blank:false)
     fromComponent(nullable:true, blank:false)
     toComponent(nullable:true, blank:false)
+  }
+  
+  private void defaultValues () {
+	
+	// Default to active if not present.
+	status ?: RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+	
+	// Check type.
+	if (!type && fromComponent && toComponent) {
+	  
+	  // Use the class names to create the combo type.
+	  String typeName = fromComponent.class.getName() + "->" + toComponent.class.getName()
+	  
+	  // Set the type.
+	  type = RefdataCategory.lookupOrCreate("Combo.Type", typeName)
+	}
+  }
+  
+  
+  /**
+   * Override constructor so we can derive type if not present.
+   */
+  public Combo (Map parmeters = null) {
+	
+	// Ensure we set the parameters from the map in the normal way.
+	parmeters?.each { k,v ->
+	  this."$k" = v
+	}
+	
+	// Set the default if it isn't already.
+	defaultValues();
   }
 }
