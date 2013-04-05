@@ -12,27 +12,27 @@ abstract class KBComponent {
   Set tags = []
   List additionalProperties = []
 
-  static mappedBy = [ids: 'component',  
-                     outgoingCombos: 'fromComponent',
-                     incomingCombos:'toComponent',
-                     orgs: 'linkedComponent',
-                     additionalProperties: 'fromComponent']
+  static mappedBy = [ids: 'component',
+    outgoingCombos: 'fromComponent',
+    incomingCombos:'toComponent',
+    orgs: 'linkedComponent',
+    additionalProperties: 'fromComponent']
 
-  static hasMany = [ids: IdentifierOccurrence, 
-                    orgs: OrgRole, 
-                    tags:RefdataValue,
-                    outgoingCombos:Combo,
-                    incomingCombos:Combo,
-                    additionalProperties:KBComponentAdditionalProperty]
+  static hasMany = [ids: IdentifierOccurrence,
+    orgs: OrgRole,
+    tags:RefdataValue,
+    outgoingCombos:Combo,
+    incomingCombos:Combo,
+    additionalProperties:KBComponentAdditionalProperty]
 
   static mapping = {
-           id column:'kbc_id'
-      version column:'kbc_version'
-        impId column:'kbc_imp_id', index:'kbc_imp_id_idx'
-         name column:'kbc_name'
-     normname column:'kbc_normname' 
+    id column:'kbc_id'
+    version column:'kbc_version'
+    impId column:'kbc_imp_id', index:'kbc_imp_id_idx'
+    name column:'kbc_name'
+    normname column:'kbc_normname'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
-         tags joinTable: [name: 'kb_component_refdata_value', key: 'kbcrdv_kbc_id', column: 'kbcrdv_rdv_id']
+    tags joinTable: [name: 'kb_component_refdata_value', key: 'kbcrdv_kbc_id', column: 'kbcrdv_rdv_id']
   }
 
   static constraints = {
@@ -103,7 +103,7 @@ abstract class KBComponent {
         identifier {
           eq('value',idvalue)
           ns {
-             eq('ns',idtype)
+            eq('ns',idtype)
           }
         }
       }
@@ -120,4 +120,60 @@ abstract class KBComponent {
 
   @Transient
   abstract getPermissableCombos();
+
+  public List getChildren(Class type) {
+    lookupCombos (type, "children")
+  }
+
+  public List getParents (Class type) {
+    lookupCombos (type, "parents")
+  }
+
+  private List lookupCombos (Class type, String direction = "children") {
+    def result = []
+
+    // Try and resolve any combos mapping to this type.
+    if (type) {
+      
+      String typeName;
+      def combos;
+      switch (direction) {
+        case "children" :
+          
+          // Build the type name.
+          typeName = this.class.getName() + "->" + type.getName()
+          
+          // Now query for the results.
+          combos = Combo.findAll {
+            fromComponent : this
+            type : RefdataCategory.lookupOrCreate("Combo.Type", typeName)
+          }
+          
+          // Add each fromComponent to the list.
+          combos.each {
+            result[] = it.toComponent
+          }
+          
+          break
+          
+        default :
+          // Assume parent.
+          typeName = type.getName() + "->" + this.class.getName()// Now query for the results.
+          
+          // Now query for the combos.
+          combos = Combo.findAll {
+            toComponent : this
+            type : RefdataCategory.lookupOrCreate("Combo.Type", typeName)
+          }
+          
+          // Add each fromComponent to the list.
+          combos.each {
+            result[] = it.fromComponent
+          }
+          break
+      }
+    }
+
+    result
+  }
 }
