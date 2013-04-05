@@ -4,6 +4,9 @@ package org.gokb.cred
  * @author sosguthorpe
  *
  */
+
+import grails.util.GrailsNameUtils
+
 class Combo {
 
   RefdataValue status
@@ -40,7 +43,7 @@ class Combo {
 	if (!type && fromComponent && toComponent) {
 	  
 	  // Use the class names to create the combo type.
-	  String typeName = fromComponent.class.getName() + "->" + toComponent.class.getName()
+	  String typeName = GrailsNameUtils.getShortName(fromComponent) + "->" + GrailsNameUtils.getShortName(toComponent)
 	  
 	  // Set the type.
 	  type = RefdataCategory.lookupOrCreate("Combo.Type", typeName)

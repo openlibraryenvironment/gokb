@@ -1,7 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
-
+import grails.util.GrailsNameUtils
 abstract class KBComponent {
 
   String impId
@@ -120,6 +120,37 @@ abstract class KBComponent {
 
   @Transient
   abstract getPermissableCombos();
+  
+  /**
+   * Add a component as a child of this one using the combo class if one doesn't already exist.
+   * @param toComponent - The component that is to become a child of this one.
+   * @return the Combo for the relationship
+   */
+  public Combo addCombo(KBComponent toComponent) {
+    
+    // Create a Combo here to use as the criteria. This will ensure the
+    // type is derived for us and remains consistent.
+    Combo newCombo = new Combo (
+      fromComponent : this,
+      toComponent   : (toComponent)
+    )
+    
+    // See if the combo already exists.
+    def combo = Combo.find(
+      fromComponent : newCombo.fromComponent,
+      toComponent   : newCombo.toComponent,
+      type          : newCombo.type
+    )
+    
+    // No combo already exists.
+    if (!combo) {
+      
+      // Save the new Combo and use that instead.
+      combo = newCombo.save(flush : true)
+    }
+    
+    combo;
+  }
 
   public List getChildren(Class type) {
     lookupCombos (type, "children")
@@ -141,7 +172,7 @@ abstract class KBComponent {
         case "children" :
           
           // Build the type name.
-          typeName = this.class.getName() + "->" + type.getName()
+          typeName = GrailsNameUtils.getShortName(this) + "->" + GrailsNameUtils.getShortName(type)
           
           // Now query for the results.
           combos = Combo.findAll {
