@@ -29,8 +29,8 @@ class Package extends KBComponent {
   Date lastUpdated
   RefineProject lastProject
 
-  static hasMany = [tipps: TitleInstancePackagePlatform]
-  static mappedBy = [tipps: 'pkg']
+//  static hasMany = [tipps: TitleInstancePackagePlatform]
+//  static mappedBy = [tipps: 'pkg']
 
 
   static mapping = {

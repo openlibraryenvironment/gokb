@@ -25,7 +25,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
 
   static belongsTo = [
-    pkg:Package,
+//    pkg:Package,
     platform:Platform,
     title:TitleInstance
   ]
@@ -34,7 +34,7 @@ class TitleInstancePackagePlatform extends KBComponent {
                id column:'tipp_id'
           rectype column:'tipp_rectype'
           version column:'tipp_version'
-              pkg column:'tipp_pkg_fk', index: 'tipp_idx'
+//              pkg column:'tipp_pkg_fk', index: 'tipp_idx'
          platform column:'tipp_plat_fk', index: 'tipp_idx'
             title column:'tipp_ti_fk', index: 'tipp_idx'
         startDate column:'tipp_start_date'
@@ -86,5 +86,5 @@ class TitleInstancePackagePlatform extends KBComponent {
     [
     ]
   }
-
+  static hasByCombo = [pkg : Package]
 }

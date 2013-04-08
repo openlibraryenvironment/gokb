@@ -33,29 +33,4 @@ class Combo {
     fromComponent(nullable:true, blank:false)
     toComponent(nullable:true, blank:false)
   }
-  
-  private void checkDefaultType () {
-	
-	// Check type.
-	if (!type && fromComponent && toComponent) {
-	  
-	  // Use the class names to create the combo type.
-	  String typeName = GrailsNameUtils.getShortName(fromComponent.class) + "->" + GrailsNameUtils.getShortName(toComponent.class)
-	  
-	  // Set the type.
-	  this.type = RefdataCategory.lookupOrCreate("Combo.Type", typeName)
-	}
-  }
-
-  public void setFromComponent(KBComponent fromComponent) {
-    this.fromComponent = fromComponent;
-    
-    checkDefaultType();
-  }
-  
-  public void setToComponent(KBComponent toComponent) {
-    this.toComponent = toComponent;
-    
-    checkDefaultType();
-  }
 }

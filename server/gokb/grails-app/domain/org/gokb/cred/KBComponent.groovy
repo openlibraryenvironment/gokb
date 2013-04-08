@@ -1,5 +1,6 @@
 package org.gokb.cred
 
+import java.lang.reflect.Method
 import javax.persistence.Transient
 import grails.util.GrailsNameUtils
 abstract class KBComponent {
@@ -121,61 +122,139 @@ abstract class KBComponent {
   @Transient
   abstract getPermissableCombos();
   
-  /**
-   * Add a component as a child of this one using the combo class if one doesn't already exist.
-   * @param toComponent - The component that is to become a child of this one.
-   * @return the Combo for the relationship
-   */
-  public Combo has (KBComponent toComponent) {
-    
-    // Create a Combo here to use as the criteria. This will ensure the
-    // type is derived for us and remains consistent.
-    Combo newCombo = new Combo (
-      fromComponent : this,
-      toComponent   : (toComponent)
-    )
-    
-    // See if the combo already exists.
-    def combo = Combo.findOrSaveWhere(
-      fromComponent : newCombo.fromComponent,
-      toComponent   : newCombo.toComponent,
-      type          : newCombo.type
-    )
-    
-    combo;
+  private String comboPropertyKey(String propertyName) {
+    String capProp
+    if (propertyName.length() > 1) {
+      capProp = propertyName[0].toUpperCase() + propertyName[1..-1]
+    } else {
+      capProp = propertyName.toUpperCase();
+    }
+    GrailsNameUtils.getShortName(this.class) + ".${capProp}"
   }
   
   /**
-   * Add a component as a parent of this one using the combo class if one doesn't already exist.
-   * @param fromComponent - The component that is to this components parent.
+   * Create a combo to mirror the behaviour of a property on this method mapping to another class.
+   * @param toComponent - The component that is to become a child of this one.
    * @return the Combo for the relationship
    */
-  public Combo belongsTo (KBComponent fromComponent) {
-    // Create a Combo here to use as the criteria. This will ensure the
-    // type is derived for us and remains consistent.
-    Combo newCombo = new Combo (
-      toComponent : this,
-      fromComponent   : (fromComponent)
+  @Transient
+  private void setComboProperty (String propertyName, def value) {
+    Class typeClass
+    switch (value) {
+      case Collection : 
+        // Check the many relationships
+        typeClass = manyByCombo[propertyName]
+        break
+      default:
+      // Check single properties
+        typeClass = hasByCombo[propertyName]
+    }
+    
+    if (typeClass) {
+      // Capitalise the propertyName.
+      removeComboPropertyVals(propertyName)
+      
+      if (value) {
+      
+        // Generate the type.
+        String type = comboPropertyKey(propertyName)
+        
+        // Go through each item and generate a value.
+        switch (value) {
+          case Collection :
+            // Check the many relationships
+            value.each {
+              if (typeClass.isInstance(it)) {
+                Combo combo = new Combo(
+                  fromComponent : this,
+                  toComponent : (it),
+                  type : RefdataCategory.lookupOrCreate("Combo.Type", type),
+                  status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                ).save()
+              }
+            }
+            break
+          default:
+            // Check single properties
+            typeClass = hasByCombo[propertyName]
+            if (typeClass.isInstance(value)) {
+              Combo combo = new Combo(
+                fromComponent : this,
+                toComponent : (value),
+                type : RefdataCategory.lookupOrCreate("Combo.Type", type),
+                status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+              ).save()
+            }
+        }
+      }
+    }
+  }
+  
+  /**
+   * Create a combo to mirror the behaviour of a property on this method mapping to another class.
+   * @param toComponent - The component that is to become a child of this one.
+   * @return the Combo for the relationship
+   */
+  @Transient
+  private <T> T getComboProperty (String propertyName) {
+    
+    // Check the type.
+    Class typeClass = manyByCombo[propertyName]
+      
+    // Generate the type.
+    String type = comboPropertyKey(propertyName)
+    
+    if (typeClass) {
+      
+      def result = []
+      
+      def combos = Combo.findAllWhere(
+        fromComponent : this,
+        type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+      )
+      
+      combos.each {
+        result.add(it.toComponent)
+      }
+      
+      return result
+    } else {
+    
+      // Try singular.
+      typeClass = manyByCombo[propertyName]
+      
+      if (typeClass) {
+        // Just return the component.
+        return Combo.findWhere(
+          fromComponent : this,
+          type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+        ).toComponent
+      }
+    }
+    
+  }
+  
+  private removeComboPropertyVals (propertyName) {
+    // Generate the type.
+    String type = comboPropertyKey(propertyName)
+    
+    // Get all..
+    List<Combo> combos = Combo.findAllWhere(
+      fromComponent : this,
+      type : RefdataCategory.lookupOrCreate("Combo.Type", type)
     )
     
-    // See if the combo already exists.
-    def combo = Combo.findOrSaveWhere(
-      fromComponent : newCombo.fromComponent,
-      toComponent   : newCombo.toComponent,
-      type          : newCombo.type
-    )
-    
-    combo;
+    // Delete each.
+    combos.each {
+      it.delete()
+    }
   }
 
-  public List getChildren (Class type) {
-    lookupRelations (type, "children")
-  }
-
-  public List getParents (Class type) {
-    lookupRelations (type, "parents")
-  }
-
+  /**
+   * Gets relations of this component that are of the supplied type.
+   * @param type
+   * @return
+   */
   private List lookupRelations (Class type, String direction = "children") {
     def result = []
 
@@ -222,5 +301,36 @@ abstract class KBComponent {
     }
 
     result
+  }
+  
+  static hasByCombo = [:]
+  static manyByCombo = [:]
+  
+  def propertyMissing(String name, value) {
+    setComboProperty(name, value)
+  }
+  
+  
+  def propertyMissing(String name) {
+    getComboProperty(name)
+  }
+  
+  /**
+   *  Override method missing.
+   */
+  def methodMissing(String methodName, args) {
+    
+    String prefix;
+    def propertyName = methodName[3].toLowerCase() + methodName[4..-1]
+    switch (methodName[0..2]) {
+      case "get" :// Property name.
+        return getComboProperty(propertyName)
+          break
+      case "set" :
+        return this.getClass().getMethod("setComboProperties", propertyName.class, args).invoke(this, args)
+          break
+    }
+    
+    
   }
 }
