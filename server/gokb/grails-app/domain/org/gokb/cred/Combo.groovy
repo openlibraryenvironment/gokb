@@ -34,34 +34,28 @@ class Combo {
     toComponent(nullable:true, blank:false)
   }
   
-  private void defaultValues () {
-	
-	// Default to active if not present.
-	status ?: RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+  private void checkDefaultType () {
 	
 	// Check type.
 	if (!type && fromComponent && toComponent) {
 	  
 	  // Use the class names to create the combo type.
-	  String typeName = GrailsNameUtils.getShortName(fromComponent) + "->" + GrailsNameUtils.getShortName(toComponent)
+	  String typeName = GrailsNameUtils.getShortName(fromComponent.class) + "->" + GrailsNameUtils.getShortName(toComponent.class)
 	  
 	  // Set the type.
-	  type = RefdataCategory.lookupOrCreate("Combo.Type", typeName)
+	  this.type = RefdataCategory.lookupOrCreate("Combo.Type", typeName)
 	}
   }
+
+  public void setFromComponent(KBComponent fromComponent) {
+    this.fromComponent = fromComponent;
+    
+    checkDefaultType();
+  }
   
-  
-  /**
-   * Override constructor so we can derive type if not present.
-   */
-  public Combo (Map parmeters) {
-	
-	// Ensure we set the parameters from the map in the normal way.
-	parmeters?.each { k,v ->
-	  this."$k" = v
-	}
-	
-	// Set the default if it isn't already.
-	defaultValues();
+  public void setToComponent(KBComponent toComponent) {
+    this.toComponent = toComponent;
+    
+    checkDefaultType();
   }
 }

@@ -126,7 +126,7 @@ abstract class KBComponent {
    * @param toComponent - The component that is to become a child of this one.
    * @return the Combo for the relationship
    */
-  public Combo addCombo(KBComponent toComponent) {
+  public Combo has (KBComponent toComponent) {
     
     // Create a Combo here to use as the criteria. This will ensure the
     // type is derived for us and remains consistent.
@@ -144,16 +144,39 @@ abstract class KBComponent {
     
     combo;
   }
+  
+  /**
+   * Add a component as a parent of this one using the combo class if one doesn't already exist.
+   * @param fromComponent - The component that is to this components parent.
+   * @return the Combo for the relationship
+   */
+  public Combo belongsTo (KBComponent fromComponent) {
+    // Create a Combo here to use as the criteria. This will ensure the
+    // type is derived for us and remains consistent.
+    Combo newCombo = new Combo (
+      toComponent : this,
+      fromComponent   : (fromComponent)
+    )
+    
+    // See if the combo already exists.
+    def combo = Combo.findOrSaveWhere(
+      fromComponent : newCombo.fromComponent,
+      toComponent   : newCombo.toComponent,
+      type          : newCombo.type
+    )
+    
+    combo;
+  }
 
-  public List getChildren(Class type) {
-    lookupCombos (type, "children")
+  public List getChildren (Class type) {
+    lookupRelations (type, "children")
   }
 
   public List getParents (Class type) {
-    lookupCombos (type, "parents")
+    lookupRelations (type, "parents")
   }
 
-  private List lookupCombos (Class type, String direction = "children") {
+  private List lookupRelations (Class type, String direction = "children") {
     def result = []
 
     // Try and resolve any combos mapping to this type.
@@ -165,24 +188,24 @@ abstract class KBComponent {
         case "children" :
           
           // Build the type name.
-          typeName = GrailsNameUtils.getShortName(this) + "->" + GrailsNameUtils.getShortName(type)
+          typeName = GrailsNameUtils.getShortName(this.class) + "->" + GrailsNameUtils.getShortName(type)
           
           // Now query for the results.
-          combos = Combo.findAll {
-            fromComponent : this
+          combos = Combo.findAllWhere (
+            fromComponent : this,
             type : RefdataCategory.lookupOrCreate("Combo.Type", typeName)
-          }
+          )
           
-          // Add each fromComponent to the list.
+          // Add each toComponent to the list if present.
           combos.each {
-            result[] = it.toComponent
+            if (it.toComponent) result.add(it.toComponent)
           }
           
           break
           
         default :
           // Assume parent.
-          typeName = type.getName() + "->" + this.class.getName()// Now query for the results.
+          typeName = GrailsNameUtils.getShortName(type) + "->" + GrailsNameUtils.getShortName(this.class)
           
           // Now query for the combos.
           combos = Combo.findAll {
@@ -190,9 +213,9 @@ abstract class KBComponent {
             type : RefdataCategory.lookupOrCreate("Combo.Type", typeName)
           }
           
-          // Add each fromComponent to the list.
+          // Add each fromComponent to the list if present.
           combos.each {
-            result[] = it.fromComponent
+            if (it.fromComponent) result.add(it.fromComponent)
           }
           break
       }

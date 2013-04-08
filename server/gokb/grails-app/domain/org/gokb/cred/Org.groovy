@@ -11,7 +11,7 @@ class Org extends KBComponent{
   Date dateCreated
   Date lastUpdated
 
-  Set ids = []
+  Set<IdentifierOccurrence> ids = []
 
   static mappedBy = [ids: 'component', 
                      links: 'org' ]
