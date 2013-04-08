@@ -117,4 +117,89 @@ class AjaxSupportController {
     ]
   ]
 
+
+
+ def addToCollection() {
+    log.debug("AjaxController::addToCollection ${params}");
+
+    def contextObj = resolveOID2(params.__context)
+    def domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
+
+    if ( domain_class ) {
+
+      if ( contextObj ) {
+        log.debug("Create a new instance of ${params.__newObjectClass}");
+
+        def new_obj = domain_class.getClazz().newInstance();
+
+        domain_class.getPersistentProperties().each { p -> // list of GrailsDomainClassProperty
+          log.debug("${p.name} (assoc=${p.isAssociation()}) (oneToMany=${p.isOneToMany()}) (ManyToOne=${p.isManyToOne()}) (OneToOne=${p.isOneToOne()})");
+          if ( params[p.name] ) {
+            if ( p.isAssociation() ) {
+              if ( p.isManyToOne() || p.isOneToOne() ) {
+                // Set ref property
+                log.debug("set assoc ${p.name} to lookup of OID ${params[p.name]}");
+                // if ( key == __new__ then we need to create a new instance )
+                new_obj[p.name] = resolveOID2(params[p.name])
+              }
+              else {
+                // Add to collection
+                log.debug("add to collection ${p.name} for OID ${params[p.name]}");
+                new_obj[p.name].add(resolveOID2(params[p.name]))
+              }
+            }
+            else {
+              log.debug("Set simple prop ${p.name} = ${params[p.name]}");
+              new_obj[p.name] = params[p.name]
+            }
+          }
+        }
+
+        if ( params.__recip ) {
+          log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
+          new_obj[params.__recip] = contextObj
+        }
+
+        log.debug("Saving ${new_obj}");
+        if ( new_obj.save() ) {
+          log.debug("Saved OK");
+        }
+        else {
+          new_obj.errors.each { e ->
+            log.debug("Problem ${e}");
+          }
+        }
+      }
+      else {
+        log.debug("Unable to locate instance of context class with oid ${params.__context}");
+      }
+    }
+    else {
+      log.error("Unable to ookup domain class ${params.__newObjectClass}");
+    }
+
+    redirect(url: request.getHeader('referer'))
+  }
+
+
+  def resolveOID2(oid) {
+    def oid_components = oid.split(':');
+    def result = null;
+    def domain_class=null;
+    domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
+    if ( domain_class ) {
+      if ( oid_components[1]=='__new__' ) {
+        result = domain_class.getClazz().refdataCreate(oid_components)
+        log.debug("Result of create ${oid} is ${result}");
+      }
+      else {
+        result = domain_class.getClazz().get(oid_components[1])
+      }
+    }
+    else {
+      log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");
+    }
+    result
+  }
+
 }
