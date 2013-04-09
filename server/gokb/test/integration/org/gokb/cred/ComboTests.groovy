@@ -3,7 +3,7 @@ package org.gokb.cred
 import static org.junit.Assert.*
 import org.junit.*
 
-class ComboTests {
+class ComboTests extends GroovyTestCase {
 
   Package pkg;
   TitleInstancePackagePlatform tipp;
@@ -36,5 +36,15 @@ class ComboTests {
     def tpkg = tipp.pkg
     
     assert tpkg == pkg
+  }
+  
+  void testExceptions() {
+    System.out.println(shouldFail(MissingPropertyException) {
+      def tpkg = tipp.pkgNotFoundOnHere
+    })
+    
+    System.out.println(shouldFail(MissingMethodException) {
+      def tpkg = tipp.getPkgNotFoundOnHere()
+    })
   }
 }

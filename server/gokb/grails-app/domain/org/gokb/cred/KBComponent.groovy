@@ -190,7 +190,8 @@ abstract class KBComponent {
         // Add to the cache.
         comboPropertyCache.put(propertyName, value)
       }
-    }
+    } else throw new MissingPropertyException(propertyName, this.class)
+    
   }
   
   private Map comboPropertyCache = [:]
@@ -246,13 +247,15 @@ abstract class KBComponent {
         comboPropertyCache.put(propertyName, result)
         
         return result
+      } else {
+        throw new MissingPropertyException(propertyName, this.class)
       }
     }
     
   }
   
   /**
-   * Remove the curent values for the property.
+   * Remove the current values for the property.
    * @param propertyName
    * @return
    */
@@ -275,11 +278,11 @@ abstract class KBComponent {
     comboPropertyCache.remove(propertyName)
   }
   
-  def hasByCombo() {
+  protected hasByCombo() {
     [:]
   }
   
-  def manyByCombo() {
+  protected manyByCombo() {
     [:]
   }
   
@@ -320,6 +323,17 @@ abstract class KBComponent {
     }
     
     // Invoke it.
-    invokeMethod(methodToCall, argVals.toArray())
+    if (methodToCall) {
+      try {
+        
+        return invokeMethod(methodToCall, argVals.toArray())
+         
+      } catch (MissingPropertyException ex) {
+      
+        // Try running the original.
+        throw new MissingMethodException(methodName, this.class, args)
+      }
+      
+    } else throw new MissingMethodException(methodName, this.class, args)
   }
 }

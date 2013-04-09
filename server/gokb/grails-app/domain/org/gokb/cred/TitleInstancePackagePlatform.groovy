@@ -87,11 +87,13 @@ class TitleInstancePackagePlatform extends KBComponent {
     ]
   }
   
-  def hasByCombo() {
+  protected hasByCombo() {
     
-    // Make sure that we add to the superclasses method here so we inherrit from the class.
-    super.hasByCombo().putAll(
+    // Make sure that we add to the superclasses method here so we inherit from the class.
+    def props = super.hasByCombo()
+    props.putAll(
       [pkg : Package]
     )
+    props
   }
 }
