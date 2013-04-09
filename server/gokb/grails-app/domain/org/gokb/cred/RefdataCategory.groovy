@@ -37,4 +37,9 @@ class RefdataCategory {
 
     result
   }
+
+  def availableActions() {
+    [ 'object::delete' ]
+  }
+
 }

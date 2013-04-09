@@ -16,16 +16,17 @@
           <li>${v.value}</li>
         </g:each>
         <hr/>
-
-        <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
-          <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
-          <input type="hidden" name="__newObjectClass" value="org.gokb.cred.RefdataValue"/>
-          <input type="hidden" name="__recip" value="owner"/>
-          Refdata Value: <input type="text" name="value"/>
-          Display Class: <input type="text" name="icon"/>
-          <button type="submit" class="btn btn-primary btn-small">Add Refdata Value</button>
-        </g:form>
-
+        <h4>Add refdata value</h4>
+        <dl class="dl-horizontal">
+          <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+            <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
+            <input type="hidden" name="__newObjectClass" value="org.gokb.cred.RefdataValue"/>
+            <input type="hidden" name="__recip" value="owner"/>
+            <dt>Refdata Value</dt><dd><input type="text" name="value"/></dd>
+            <dt>Display Class</dt><dd><input type="text" name="icon"/></dd>
+            <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+          </g:form>
+        </dl>
       </ul>
     </dd>
   </div>
