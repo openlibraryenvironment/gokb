@@ -47,4 +47,10 @@ class TitleInstance extends KBComponent {
     ]
   }
 
+  def availableActions() {
+    [ [code:'object::delete', label:'Delete'],
+      [code:'title::transfer', label:'Transfer'] ]
+  }
+
+
 }
