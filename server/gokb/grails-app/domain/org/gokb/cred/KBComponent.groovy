@@ -146,7 +146,7 @@ abstract class KBComponent {
         typeClass = manyByCombo().get(propertyName)
         break
       default:
-      // Check single properties
+        // Check single properties
         typeClass = hasByCombo().get(propertyName)
     }
     
@@ -186,9 +186,14 @@ abstract class KBComponent {
               ).save()
             }
         }
+        
+        // Add to the cache.
+        comboPropertyCache.put(propertyName, value)
       }
     }
   }
+  
+  private Map comboPropertyCache = [:]
   
   /**
    * Create a combo to mirror the behaviour of a property on this method mapping to another class.
@@ -197,6 +202,10 @@ abstract class KBComponent {
    */
   @Transient
   private <T> T getComboProperty (String propertyName) {
+    
+    // Return from cache hashmap if present.
+    def cachedResult = comboPropertyCache[propertyName];
+    if (cachedResult) return cachedResult;
     
     // Check the type.
     Class typeClass = manyByCombo().get(propertyName)
@@ -217,6 +226,9 @@ abstract class KBComponent {
         result.add(it.toComponent)
       }
       
+      // Add the result to the cache.
+      comboPropertyCache.put(propertyName, result)
+      
       return result
     } else {
     
@@ -225,15 +237,25 @@ abstract class KBComponent {
       
       if (typeClass) {
         // Just return the component.
-        return Combo.findWhere(
+        def result = Combo.findWhere(
           fromComponent : this,
           type : RefdataCategory.lookupOrCreate("Combo.Type", type)
         ).toComponent
+      
+        // Add the result to the cache.
+        comboPropertyCache.put(propertyName, result)
+        
+        return result
       }
     }
     
   }
   
+  /**
+   * Remove the curent values for the property.
+   * @param propertyName
+   * @return
+   */
   private removeComboPropertyVals (propertyName) {
     // Generate the type.
     String type = comboPropertyKey(propertyName)
@@ -248,6 +270,9 @@ abstract class KBComponent {
     combos.each {
       it.delete()
     }
+    
+    // Clear the cached value too if present.
+    comboPropertyCache.remove(propertyName)
   }
   
   def hasByCombo() {
