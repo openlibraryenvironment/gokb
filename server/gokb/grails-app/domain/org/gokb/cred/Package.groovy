@@ -56,5 +56,15 @@ class Package extends KBComponent {
     [
     ]
   }
+  
+  protected manyByCombo() {
+    
+    // Make sure that we add to the superclasses method here so we inherit from the class.
+    def props = super.manyByCombo()
+    props.putAll(
+      [tipps : TitleInstancePackagePlatform]
+    )
+    props
+  }
 
 }

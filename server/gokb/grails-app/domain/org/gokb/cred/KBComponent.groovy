@@ -124,12 +124,38 @@ abstract class KBComponent {
   
   private String comboPropertyKey(String propertyName) {
     String capProp
-    if (propertyName.length() > 1) {
-      capProp = propertyName[0].toUpperCase() + propertyName[1..-1]
+    Class c
+    def mappedByProp = mappedByCombo().get(propertyName)
+    if (mappedByProp) {
+      // We need to look up the relationship the other way round.
+      // First find the class type mapped to.
+      Class mappedByClass = manyByCombo().get(propertyName)
+      mappedByClass = mappedByClass ?: hasByCombo().get(propertyName)
+      
+      if (mappedByClass) {
+        // Found the class, we can now use this information to build up our string.
+        if (mappedByProp.length() > 1) {
+          capProp = mappedByProp[0].toUpperCase() + mappedByProp[1..-1]
+        } else {
+          capProp = mappedByProp.toUpperCase()
+        }
+        
+        // Set the class also.
+        c = mappedByClass
+      }
     } else {
-      capProp = propertyName.toUpperCase();
+      if (propertyName.length() > 1) {
+        capProp = propertyName[0].toUpperCase() + propertyName[1..-1]
+      } else {
+        capProp = propertyName.toUpperCase();
+      }
+      
+      // Set the class also.
+      c = this.class
     }
-    GrailsNameUtils.getShortName(this.class) + ".${capProp}"
+    
+    // Return the constructed key.
+    GrailsNameUtils.getShortName(c) + ".${capProp}"
   }
   
   /**
@@ -151,6 +177,7 @@ abstract class KBComponent {
     }
     
     if (typeClass) {
+      
       // Capitalise the propertyName.
       removeComboPropertyVals(propertyName)
       
@@ -162,15 +189,29 @@ abstract class KBComponent {
         // Go through each item and generate a value.
         switch (value) {
           case Collection :
-            // Check the many relationships
-            value.each {
-              if (typeClass.isInstance(it)) {
-                Combo combo = new Combo(
-                  fromComponent : this,
-                  toComponent : (it),
-                  type : RefdataCategory.lookupOrCreate("Combo.Type", type),
-                  status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                ).save()
+            
+            if (mappedByCombo().get(propertyName)) {
+              // Reverse
+              value.each {
+                if (typeClass.isInstance(it)) {
+                  Combo combo = new Combo(
+                    toComponent : this,
+                    fromComponent : (it),
+                    type : RefdataCategory.lookupOrCreate("Combo.Type", type),
+                    status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                  ).save()
+                }
+              }
+            } else {
+              value.each {
+                if (typeClass.isInstance(it)) {
+                  Combo combo = new Combo(
+                    fromComponent : this,
+                    toComponent : (it),
+                    type : RefdataCategory.lookupOrCreate("Combo.Type", type),
+                    status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                  ).save()
+                }
               }
             }
             break
@@ -178,19 +219,40 @@ abstract class KBComponent {
             // Check single properties
             typeClass = hasByCombo().get(propertyName)
             if (typeClass.isInstance(value)) {
-              Combo combo = new Combo(
-                fromComponent : this,
-                toComponent : (value),
-                type : RefdataCategory.lookupOrCreate("Combo.Type", type),
-                status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-              ).save()
+              
+              if (mappedByCombo().get(propertyName)) {
+                Combo combo = new Combo(
+                  toComponent : this,
+                  fromComponent : (value),
+                  type : RefdataCategory.lookupOrCreate("Combo.Type", type),
+                  status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                ).save()
+              } else {
+                Combo combo = new Combo(
+                  fromComponent : this,
+                  toComponent : (value),
+                  type : RefdataCategory.lookupOrCreate("Combo.Type", type),
+                  status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                ).save()
+              }
             }
         }
         
         // Add to the cache.
         comboPropertyCache.put(propertyName, value)
       }
-    } else throw new MissingPropertyException(propertyName, this.class)
+    } else {
+    
+      // Check whether this item belongs to another.
+      typeClass = belongsToByCombo().get(propertyName)
+      
+      if (typeClass) {
+        
+        // Get the corresponding Combo.
+        
+        
+      } else throw new MissingPropertyException(propertyName, this.class)
+    }
     
   }
   
@@ -218,38 +280,62 @@ abstract class KBComponent {
       
       def result = []
       
-      def combos = Combo.findAllWhere(
-        fromComponent : this,
-        type : RefdataCategory.lookupOrCreate("Combo.Type", type)
-      )
-      
-      combos.each {
-        result.add(it.toComponent)
+      if (mappedByCombo().get(propertyName)) {
+        // Reverse.
+        def combos = Combo.findAllWhere(
+          toComponent : this,
+          type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+        )
+        
+        combos.each {
+          result.add(it.fromComponent)
+        }
+        
+      } else {
+        def combos = Combo.findAllWhere(
+          fromComponent : this,
+          type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+        )
+        
+        combos.each {
+          result.add(it.toComponent)
+        }
       }
       
       // Add the result to the cache.
       comboPropertyCache.put(propertyName, result)
       
       return result
+      
     } else {
     
       // Try singular.
       typeClass = hasByCombo().get(propertyName)
       
       if (typeClass) {
-        // Just return the component.
-        def result = Combo.findWhere(
-          fromComponent : this,
-          type : RefdataCategory.lookupOrCreate("Combo.Type", type)
-        ).toComponent
+        def result
+        if (mappedByCombo().get(propertyName)) {
+        
+          // Just return the component.
+          result = Combo.findWhere(
+            toComponent : this,
+            type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+          ).fromComponent
+        } else {
+          result = Combo.findWhere(
+            fromComponent : this,
+            type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+          ).toComponent
+        }
       
         // Add the result to the cache.
         comboPropertyCache.put(propertyName, result)
         
         return result
-      } else {
-        throw new MissingPropertyException(propertyName, this.class)
       }
+        
+      // If we get here then throw an exception.
+      throw new MissingPropertyException(propertyName, this.class)
     }
     
   }
@@ -264,10 +350,19 @@ abstract class KBComponent {
     String type = comboPropertyKey(propertyName)
     
     // Get all..
-    List<Combo> combos = Combo.findAllWhere(
-      fromComponent : this,
-      type : RefdataCategory.lookupOrCreate("Combo.Type", type)
-    )
+    List<Combo> combos    
+    if (mappedByCombo().get(propertyName)) {
+      // Reverse
+      combos = Combo.findAllWhere(
+        toComponent : this,
+        type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+      )
+    } else {
+      combos = Combo.findAllWhere(
+        fromComponent : this,
+        type : RefdataCategory.lookupOrCreate("Combo.Type", type)
+      )
+    }
     
     // Delete each.
     combos.each {
@@ -283,6 +378,10 @@ abstract class KBComponent {
   }
   
   protected manyByCombo() {
+    [:]
+  }
+  
+  protected mappedByCombo() {
     [:]
   }
   

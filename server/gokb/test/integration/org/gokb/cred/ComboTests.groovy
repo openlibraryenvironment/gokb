@@ -22,20 +22,28 @@ class ComboTests extends GroovyTestCase {
   
   void testDynamicMethods() {
     
-    tipp.setPkg(pkg)
+    pkg.setTipps([tipp])
     
-    def tpkg = tipp.getPkg()
+    def tipps = pkg.getTipps()
     
-    assert tpkg == pkg
+    assert tipps[0] == tipp
   }
   
   void testDynamicProperties() {
     
-    tipp.pkg = pkg
+    pkg.tipps = [tipp]
     
-    def tpkg = tipp.pkg
+    def tipps = pkg.tipps
     
-    assert tpkg == pkg
+    assert tipps[0] == tipp
+  }
+  
+  void testReverseLookups() {
+    def pkgProp = tipp.pkg
+    def pkgMeth = tipp.getPkg()
+    
+    assert pkgProp == pkg
+    assert pkgMeth == pkg
   }
   
   void testExceptions() {

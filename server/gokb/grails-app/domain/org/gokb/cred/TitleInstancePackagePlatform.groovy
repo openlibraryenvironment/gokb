@@ -96,4 +96,12 @@ class TitleInstancePackagePlatform extends KBComponent {
     )
     props
   }
+  
+  protected mappedByCombo() {
+    def props = super.mappedByCombo()
+    props.putAll(
+      [pkg : 'tipps']
+    )
+    props
+  }
 }
