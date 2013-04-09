@@ -63,7 +63,7 @@
 
 				// Filter the array using a callback that checks that this element actions contains
 				// the object.
-				$.grep(allActionsAvailable, function(action, index) {
+				allActionsAvailable = $.grep(allActionsAvailable, function(action, index) {
 					return $.inArray(action, elementActions) > -1
 				});
 			}
