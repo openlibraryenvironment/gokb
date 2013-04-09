@@ -86,5 +86,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     [
     ]
   }
-  static hasByCombo = [pkg : Package]
+  
+  def hasByCombo() {
+    [pkg : Package]
+  }
 }

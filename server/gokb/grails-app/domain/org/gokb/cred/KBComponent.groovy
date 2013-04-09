@@ -143,11 +143,11 @@ abstract class KBComponent {
     switch (value) {
       case Collection : 
         // Check the many relationships
-        typeClass = manyByCombo[propertyName]
+        typeClass = manyByCombo().get(propertyName)
         break
       default:
       // Check single properties
-        typeClass = hasByCombo[propertyName]
+        typeClass = hasByCombo().get(propertyName)
     }
     
     if (typeClass) {
@@ -176,7 +176,7 @@ abstract class KBComponent {
             break
           default:
             // Check single properties
-            typeClass = hasByCombo[propertyName]
+            typeClass = hasByCombo().get(propertyName)
             if (typeClass.isInstance(value)) {
               Combo combo = new Combo(
                 fromComponent : this,
@@ -199,7 +199,7 @@ abstract class KBComponent {
   private <T> T getComboProperty (String propertyName) {
     
     // Check the type.
-    Class typeClass = manyByCombo[propertyName]
+    Class typeClass = manyByCombo().get(propertyName)
       
     // Generate the type.
     String type = comboPropertyKey(propertyName)
@@ -221,7 +221,7 @@ abstract class KBComponent {
     } else {
     
       // Try singular.
-      typeClass = manyByCombo[propertyName]
+      typeClass = hasByCombo().get(propertyName)
       
       if (typeClass) {
         // Just return the component.
@@ -249,68 +249,25 @@ abstract class KBComponent {
       it.delete()
     }
   }
-
-  /**
-   * Gets relations of this component that are of the supplied type.
-   * @param type
-   * @return
-   */
-  private List lookupRelations (Class type, String direction = "children") {
-    def result = []
-
-    // Try and resolve any combos mapping to this type.
-    if (type) {
-      
-      String typeName;
-      def combos;
-      switch (direction) {
-        case "children" :
-          
-          // Build the type name.
-          typeName = GrailsNameUtils.getShortName(this.class) + "->" + GrailsNameUtils.getShortName(type)
-          
-          // Now query for the results.
-          combos = Combo.findAllWhere (
-            fromComponent : this,
-            type : RefdataCategory.lookupOrCreate("Combo.Type", typeName)
-          )
-          
-          // Add each toComponent to the list if present.
-          combos.each {
-            if (it.toComponent) result.add(it.toComponent)
-          }
-          
-          break
-          
-        default :
-          // Assume parent.
-          typeName = GrailsNameUtils.getShortName(type) + "->" + GrailsNameUtils.getShortName(this.class)
-          
-          // Now query for the combos.
-          combos = Combo.findAll {
-            toComponent : this
-            type : RefdataCategory.lookupOrCreate("Combo.Type", typeName)
-          }
-          
-          // Add each fromComponent to the list if present.
-          combos.each {
-            if (it.fromComponent) result.add(it.fromComponent)
-          }
-          break
-      }
-    }
-
-    result
+  
+  def hasByCombo() {
+    [:]
   }
   
-  static hasByCombo = [:]
-  static manyByCombo = [:]
+  def manyByCombo() {
+    [:]
+  }
   
+  /**
+   * Called when trying to set missing property.
+   */
   def propertyMissing(String name, value) {
     setComboProperty(name, value)
   }
   
-  
+  /**
+   * Called when trying to get missing property.
+   */
   def propertyMissing(String name) {
     getComboProperty(name)
   }
@@ -322,15 +279,22 @@ abstract class KBComponent {
     
     String prefix;
     def propertyName = methodName[3].toLowerCase() + methodName[4..-1]
+    
+    // Add the propertyName as the first argument.
+    def argVals = [propertyName]
+    argVals.addAll(args)
+    
+    String methodToCall
     switch (methodName[0..2]) {
       case "get" :// Property name.
-        return getComboProperty(propertyName)
+        methodToCall = "getComboProperty"
           break
       case "set" :
-        return this.getClass().getMethod("setComboProperties", propertyName.class, args).invoke(this, args)
+        methodToCall = "setComboProperty"
           break
     }
     
-    
+    // Invoke it.
+    invokeMethod(methodToCall, argVals.toArray())
   }
 }

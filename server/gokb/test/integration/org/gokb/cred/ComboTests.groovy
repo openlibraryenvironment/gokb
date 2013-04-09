@@ -22,57 +22,19 @@ class ComboTests {
   
   void testDynamicMethods() {
     
-    def pkg = tipp.getPkg()
+    tipp.setPkg(pkg)
+    
+    def tpkg = tipp.getPkg()
+    
+    assert tpkg == pkg
   }
   
-//  void testHasRelationship() {
-//    tipp.has(pkg)
-//    
-//    def pkgs = tipp.getChildren(Package);
-//    
-//    System.out.println(pkgs)
-//    
-//    // Test appears as child.
-//    boolean found = false;
-//    pkgs.each {
-//      found = (found ? found : (it.id == pkg.id)) 
-//    }
-//    assert found
-//    
-//    // Test appears as parent
-//    System.out.println("Testing parent lookup")
-//    found = false
-//    def tipps = pkg.getParents(TitleInstancePackagePlatform)
-//    
-//    tipps.each {
-//      found = (found ? found : (it.id == tipp.id))
-//    }
-//    assert found
-//  }
-//  
-//  void testBelongsToRelationship() {
-//    platform.belongsTo(tipp)
-//    
-//    def platforms = tipp.getChildren(Platform);
-//    
-//    System.out.println("Testing child lookup")
-//    
-//    // Test appears as child.
-//    boolean found = false;
-//    platforms.each {
-//      found = (found ? found : (it.id == platform.id))
-//    }
-//    assert found
-//    
-//    // Test appears as parent
-//    System.out.println("Testing parent lookup")
-//    found = false
-//    def tipps = platform.getParents(TitleInstancePackagePlatform)
-//    
-//    tipps.each {
-//      found = (found ? found : (it.id == tipp.id))
-//    }
-//    assert found
-//    
-//  }
+  void testDynamicProperties() {
+    
+    tipp.pkg = pkg
+    
+    def tpkg = tipp.pkg
+    
+    assert tpkg == pkg
+  }
 }
