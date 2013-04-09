@@ -8,16 +8,22 @@ class ComboTests extends GroovyTestCase {
   Package pkg;
   TitleInstancePackagePlatform tipp;
   Platform platform
+  def sessionFactory
 
   void setUp() {
     // Setup logic here.
+    super.setUp()
+    sessionFactory.currentSession.flush()
+    sessionFactory.currentSession.clear()
+    
     pkg = Package.first()
     tipp = TitleInstancePackagePlatform.first()
     platform = Platform.first()
   }
 
   void tearDown() {
-    // Tear down logic here
+    sessionFactory.currentSession.flush()
+    sessionFactory.currentSession.clear()
   }
   
   void testDynamicMethods() {
@@ -39,8 +45,10 @@ class ComboTests extends GroovyTestCase {
   }
   
   void testReverseLookups() {
-    def pkgProp = tipp.pkg
+    pkg.tipps = [tipp]
+    
     def pkgMeth = tipp.getPkg()
+    def pkgProp = tipp.pkg
     
     assert pkgProp == pkg
     assert pkgMeth == pkg
