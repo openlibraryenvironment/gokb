@@ -25,7 +25,7 @@
             <g:link class="btn" controller="resource" action="show" id="${r.class.name+':'+r.id}">Show</g:link>
             <g:link class="btn" controller="search" action="index" params="${params+['det':counter]}">Preview -></g:link>
             <g:if test="${r.respondsTo('availableActions')}">
-             <g:set var="al" value="${new JSON(r.availableActions()).toString().encodeAsHTML()}"/>  <!--"-->
+             <g:set var="al" value="${new JSON(r.availableActions()).toString().encodeAsHTML()}"/> 
               <input type="checkbox" name="bulk:${r.class.name}:${r.id}" data-actns="${al}" class="obj-action-ck-box" onChange="javascript:updateAvailableActions();"/>
             </g:if>
           </td>
@@ -36,7 +36,6 @@
   <div class="pull-right well">
     <h4>Available actions for selected rows</h4>
     <select id="selectedBulkAction" name="selectedBulkAction">
-      <option value="delete">Delete</option>
     </select>
     <button type="submit" class="btn">Action</button>
   </div>
