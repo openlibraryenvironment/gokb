@@ -64,7 +64,10 @@
 				// Filter the array using a callback that checks that this element actions contains
 				// the object.
 				allActionsAvailable = $.grep(allActionsAvailable, function(action, index) {
-					return $.inArray(action, elementActions) > -1
+					var match = $.grep(elementActions, function (el, i) {
+						return el.code == action.code && el.label == action.label;
+					});
+					return match.length > 0
 				});
 			}
 		});
