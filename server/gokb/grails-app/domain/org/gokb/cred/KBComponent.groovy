@@ -17,18 +17,26 @@ abstract class KBComponent {
   Set tags = []
   List additionalProperties = []
 
-  static mappedBy = [ids: 'component',
+  static mappedBy = [
+    ids: 'component',
     outgoingCombos: 'fromComponent',
     incomingCombos:'toComponent',
     orgs: 'linkedComponent',
     additionalProperties: 'fromComponent']
 
-  static hasMany = [ids: IdentifierOccurrence,
+  static hasMany = [
+    ids: IdentifierOccurrence,
     orgs: OrgRole,
     tags:RefdataValue,
     outgoingCombos:Combo,
     incomingCombos:Combo,
     additionalProperties:KBComponentAdditionalProperty]
+  
+//  public static hasByCombo = [:]
+//  
+//  public static manyByCombo = [ids : IdentifierOccurrence]
+//  
+//  public static mappedByCombo = [:]
 
   static mapping = {
     id column:'kbc_id'
@@ -422,12 +430,6 @@ abstract class KBComponent {
   protected getStaticMap (String mapName) {
     staticMapGet(mapName, this.class)
   }
-  
-  public static hasByCombo = [:]
-  
-  public static manyByCombo = [:]
-  
-  public static mappedByCombo = [:]
   
   /**
    * Called when trying to set missing property.

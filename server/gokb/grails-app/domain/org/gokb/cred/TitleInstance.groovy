@@ -11,8 +11,9 @@ class TitleInstance extends KBComponent {
   Date dateCreated
   Date lastUpdated
 
-  static mappedBy = [tipps: 'title']
-  static hasMany = [tipps: TitleInstancePackagePlatform]
+//  static mappedBy = [tipps: 'title']
+//  static hasMany = [tipps: TitleInstancePackagePlatform]
+  public static manyByCombo = [tipps : TitleInstancePackagePlatform]
 
 
   static mapping = {
@@ -21,7 +22,7 @@ class TitleInstance extends KBComponent {
       impId column:'ti_imp_id', index:'ti_imp_id_idx'
      status column:'ti_status_rv_fk'
        type column:'ti_type_rv_fk'
-      tipps sort:'startDate', order: 'asc'
+//      tipps sort:'startDate', order: 'asc'
   }
 
   static constraints = {
@@ -43,7 +44,7 @@ class TitleInstance extends KBComponent {
   @Transient
   def getPermissableCombos() {
     [
-      [category:'TIPP',type:'HasTitle',impl:'localSet',targetClass:TitleInstancePackagePlatform.class,setName:'tipps',direction:'in']
+//      [category:'TIPP',type:'HasTitle',impl:'localSet',targetClass:TitleInstancePackagePlatform.class,setName:'tipps',direction:'in']
     ]
   }
 
@@ -51,6 +52,4 @@ class TitleInstance extends KBComponent {
     [ [code:'object::statusDeleted', label:'Set Status: Deleted'],
       [code:'title::transfer', label:'Title Transfer'] ]
   }
-
-
 }
