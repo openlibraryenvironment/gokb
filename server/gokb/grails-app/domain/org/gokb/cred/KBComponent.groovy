@@ -261,8 +261,8 @@ abstract class KBComponent {
   private <T> T getComboProperty (String propertyName) {
     
     // Return from cache hashmap if present.
-    def cachedResult = comboPropertyCache[propertyName];
-    if (cachedResult) return cachedResult;
+    def cachedResult = comboPropertyCache[propertyName]
+    if (cachedResult != null) return cachedResult
     
     // Check the type.
     Class typeClass = getStaticMap('manyByCombo').get(propertyName)
@@ -372,8 +372,8 @@ abstract class KBComponent {
     
     // Return from cache if present.
     def cacheKey = GrailsNameUtils.getShortName(c) + "." + mapName
-    def cached = staticMapsCache[cacheKey]
-    if (cached) return cached
+    def cachedValue = staticMapsCache[cacheKey]
+    if (cachedValue != null) return cachedValue
     
     // No cached value lets merge all the super classes with this one.
     
@@ -397,22 +397,9 @@ abstract class KBComponent {
     // Add superclasses values.
     Class superClass = c.superclass
     
-    while(superClass != java.lang.Object) {
-      try {
-        
-        // Get the field for the class.
-        f = superClass.getDeclaredField(mapName)
-        
-        // Add all the values in the map returned by the field.
-        if (f) combinedVals.putAll(f.get(superClass))
-        
-        
-      } catch (NoSuchFieldException e) {
-        // Just ignore this here as not all classes will declare the static fields.
-      }
-      
-      // Set the class to the superclass of the current one.
-      superClass = superClass.superclass
+    // Recurse this method to ensure caching at all levels. 
+    if(superClass != java.lang.Object) {
+      combinedVals.putAll(staticMapGet (mapName, superClass))
     }
     
     // Add the result to speed this whole process up.
