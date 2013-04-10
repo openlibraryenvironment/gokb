@@ -35,10 +35,9 @@
       </div>
     </div>
 
-<div class="navbar-push"></div>
+    <div class="navbar-push"></div>
 
     <g:layoutBody/>
-
     <g:javascript library="application"/>
     <r:layoutResources />
   </body>

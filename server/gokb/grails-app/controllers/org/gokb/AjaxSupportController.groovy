@@ -181,7 +181,6 @@ class AjaxSupportController {
     redirect(url: request.getHeader('referer'))
   }
 
-
   def resolveOID2(oid) {
     def oid_components = oid.split(':');
     def result = null;
@@ -200,6 +199,26 @@ class AjaxSupportController {
       log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");
     }
     result
+  }
+
+
+  def lookup() {
+    log.debug("AjaxController::lookup ${params}");
+    def result = [:]
+    params.max = params.max ?: 10;
+    def domain_class = grailsApplication.getArtefact('Domain',params.baseClass)
+    if ( domain_class ) {
+      result.values = domain_class.getClazz().refdataFind(params);
+    }
+    else {
+      log.error("Unable to locate domain class ${params.baseClass}");
+      result.values=[]
+    }
+    //result.values = [[id:'Person:45',text:'Fred'],
+    //                 [id:'Person:23',text:'Jim'],
+    //                 [id:'Person:22',text:'Jimmy'],
+    //                 [id:'Person:3',text:'JimBob']]
+    render result as JSON
   }
 
 }
