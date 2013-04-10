@@ -261,8 +261,9 @@ abstract class KBComponent {
   private <T> T getComboProperty (String propertyName) {
     
     // Return from cache hashmap if present.
-    def cachedResult = comboPropertyCache[propertyName]
-    if (cachedResult != null) return cachedResult
+    
+    // Test this way to allow us to cache null values.
+    if (comboPropertyCache.containsKey(propertyName)) return comboPropertyCache[propertyName];
     
     // Check the type.
     Class typeClass = getStaticMap('manyByCombo').get(propertyName)
@@ -272,7 +273,7 @@ abstract class KBComponent {
     
     if (typeClass) {
       
-      def result = []
+      def result = null
       
       if (reverseLookup(propertyName)) {
         // Reverse.
@@ -281,8 +282,10 @@ abstract class KBComponent {
           type : RefdataCategory.lookupOrCreate("Combo.Type", type)
         )
         
-        combos.each {
-          result.add(it.fromComponent)
+        if (combos) {
+          combos.each {
+            result.add(it.fromComponent)
+          }
         }
         
       } else {
@@ -291,8 +294,10 @@ abstract class KBComponent {
           type : RefdataCategory.lookupOrCreate("Combo.Type", type)
         )
         
-        combos.each {
-          result.add(it.toComponent)
+        if (combos) {
+          combos.each {
+            result.add(it.toComponent)
+          }
         }
       }
       
@@ -307,19 +312,23 @@ abstract class KBComponent {
       typeClass = getStaticMap('hasByCombo').get(propertyName)
       
       if (typeClass) {
-        def result
+        def result = null
         if (reverseLookup(propertyName)) {
         
           // Just return the component.
-          result = Combo.findWhere(
+          Combo combo = Combo.findWhere(
             toComponent : this,
             type : RefdataCategory.lookupOrCreate("Combo.Type", type)
-          ).fromComponent
+          )
+          
+          if (combo) result = combo.fromComponent
         } else {
-          result = Combo.findWhere(
+          Combo combo = Combo.findWhere(
             fromComponent : this,
             type : RefdataCategory.lookupOrCreate("Combo.Type", type)
-          ).toComponent
+          )
+        
+          if (combo) result = combo.toComponent
         }
       
         // Add the result to the cache.
