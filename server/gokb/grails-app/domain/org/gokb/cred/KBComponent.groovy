@@ -1,5 +1,6 @@
 package org.gokb.cred
 
+import java.lang.reflect.Field
 import java.lang.reflect.Method
 import javax.persistence.Transient
 import grails.util.GrailsNameUtils
@@ -125,12 +126,12 @@ abstract class KBComponent {
   private String comboPropertyKey(String propertyName) {
     String capProp
     Class c
-    def mappedByProp = mappedByCombo().get(propertyName)
+    def mappedByProp = getStaticMap('mappedByCombo').get(propertyName)
     if (mappedByProp) {
       // We need to look up the relationship the other way round.
       // First find the class type mapped to.
-      Class mappedByClass = manyByCombo().get(propertyName)
-      mappedByClass = mappedByClass ?: hasByCombo().get(propertyName)
+      Class mappedByClass = getStaticMap('manyByCombo').get(propertyName)
+      mappedByClass = mappedByClass ?: getStaticMap('hasByCombo').get(propertyName)
       
       if (mappedByClass) {
         // Found the class, we can now use this information to build up our string.
@@ -158,6 +159,10 @@ abstract class KBComponent {
     GrailsNameUtils.getShortName(c) + ".${capProp}"
   }
   
+  private boolean reverseLookup (String propertyName) {
+    propertyName && getStaticMap('mappedByCombo').get(propertyName)
+  }
+  
   /**
    * Create a combo to mirror the behaviour of a property on this method mapping to another class.
    * @param toComponent - The component that is to become a child of this one.
@@ -169,11 +174,11 @@ abstract class KBComponent {
     switch (value) {
       case Collection : 
         // Check the many relationships
-        typeClass = manyByCombo().get(propertyName)
+        typeClass = getStaticMap('manyByCombo').get(propertyName)
         break
       default:
         // Check single properties
-        typeClass = hasByCombo().get(propertyName)
+        typeClass = getStaticMap('hasByCombo').get(propertyName)
     }
     
     if (typeClass) {
@@ -190,7 +195,7 @@ abstract class KBComponent {
         switch (value) {
           case Collection :
             
-            if (mappedByCombo().get(propertyName)) {
+            if (reverseLookup(propertyName)) {
               // Reverse
               value.each {
                 if (typeClass.isInstance(it)) {
@@ -217,10 +222,10 @@ abstract class KBComponent {
             break
           default:
             // Check single properties
-            typeClass = hasByCombo().get(propertyName)
+            typeClass = getStaticMap('hasByCombo').get(propertyName)
             if (typeClass.isInstance(value)) {
               
-              if (mappedByCombo().get(propertyName)) {
+              if (reverseLookup(propertyName)) {
                 Combo combo = new Combo(
                   toComponent : this,
                   fromComponent : (value),
@@ -241,18 +246,7 @@ abstract class KBComponent {
         // Add to the cache.
         comboPropertyCache.put(propertyName, value)
       }
-    } else {
-    
-      // Check whether this item belongs to another.
-      typeClass = belongsToByCombo().get(propertyName)
-      
-      if (typeClass) {
-        
-        // Get the corresponding Combo.
-        
-        
-      } else throw new MissingPropertyException(propertyName, this.class)
-    }
+    } else throw new MissingPropertyException(propertyName, this.class)
     
   }
   
@@ -271,7 +265,7 @@ abstract class KBComponent {
     if (cachedResult) return cachedResult;
     
     // Check the type.
-    Class typeClass = manyByCombo().get(propertyName)
+    Class typeClass = getStaticMap('manyByCombo').get(propertyName)
       
     // Generate the type.
     String type = comboPropertyKey(propertyName)
@@ -280,7 +274,7 @@ abstract class KBComponent {
       
       def result = []
       
-      if (mappedByCombo().get(propertyName)) {
+      if (reverseLookup(propertyName)) {
         // Reverse.
         def combos = Combo.findAllWhere(
           toComponent : this,
@@ -310,11 +304,11 @@ abstract class KBComponent {
     } else {
     
       // Try singular.
-      typeClass = hasByCombo().get(propertyName)
+      typeClass = getStaticMap('hasByCombo').get(propertyName)
       
       if (typeClass) {
         def result
-        if (mappedByCombo().get(propertyName)) {
+        if (reverseLookup(propertyName)) {
         
           // Just return the component.
           result = Combo.findWhere(
@@ -351,7 +345,7 @@ abstract class KBComponent {
     
     // Get all..
     List<Combo> combos    
-    if (mappedByCombo().get(propertyName)) {
+    if (reverseLookup(propertyName)) {
       // Reverse
       combos = Combo.findAllWhere(
         toComponent : this,
@@ -373,17 +367,68 @@ abstract class KBComponent {
     comboPropertyCache.remove(propertyName)
   }
   
-  protected hasByCombo() {
-    [:]
+  private static staticMapsCache = [:]  
+  private static staticMapGet (String mapName, Class c) {
+    
+    // Return from cache if present.
+    def cacheKey = GrailsNameUtils.getShortName(c) + "." + mapName
+    def cached = staticMapsCache[cacheKey]
+    if (cached) return cached
+    
+    // No cached value lets merge all the super classes with this one.
+    
+    // Combined map.
+    def combinedVals = [:]
+    Field f
+    
+    // Add this classes values first.
+    try {
+      
+      // Get the field for the class.
+      f = c.getDeclaredField(mapName)
+      
+      // Add all the values in the map returned by the field.
+      if (f) combinedVals.putAll(f.get(c))
+      
+    } catch (NoSuchFieldException e) {
+      // Just ignore this here as not all classes will declare the static fields.
+    }
+    
+    // Add superclasses values.
+    Class superClass = c.superclass
+    
+    while(superClass != java.lang.Object) {
+      try {
+        
+        // Get the field for the class.
+        f = superClass.getDeclaredField(mapName)
+        
+        // Add all the values in the map returned by the field.
+        if (f) combinedVals.putAll(f.get(superClass))
+        
+        
+      } catch (NoSuchFieldException e) {
+        // Just ignore this here as not all classes will declare the static fields.
+      }
+      
+      // Set the class to the superclass of the current one.
+      superClass = superClass.superclass
+    }
+    
+    // Add the result to speed this whole process up.
+    staticMapsCache[cacheKey] = combinedVals
   }
   
-  protected manyByCombo() {
-    [:]
+  @Transient
+  protected getStaticMap (String mapName) {
+    staticMapGet(mapName, this.class)
   }
   
-  protected mappedByCombo() {
-    [:]
-  }
+  public static hasByCombo = [:]
+  
+  public static manyByCombo = [:]
+  
+  public static mappedByCombo = [:]
   
   /**
    * Called when trying to set missing property.
