@@ -6,6 +6,7 @@ import org.apache.commons.compress.compressors.gzip.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
 import grails.converters.JSON
+import grails.orm.HibernateCriteriaBuilder
 import java.text.SimpleDateFormat
 
 
@@ -175,7 +176,7 @@ class IngestService {
                                                      jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
                                                      jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
                                                      extra_ids,
-                                                     jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
+                                                     jsonv(datarow.cells[col_positions["publisher_name"]]));
 
             // Platform
             def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
@@ -205,7 +206,16 @@ class IngestService {
             def pkg = getOrCreatePackage(pkg_id,project);
   
             // TIPP
-            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
+//            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
+            HibernateCriteriaBuilder crit = TitleInstancePackagePlatform.createCriteria()
+            def tipp = crit.get {
+              ComboCriteria.add (TitleInstancePackagePlatform.class, crit, "title", "eq", title_info)
+              and {
+                ComboCriteria.add (TitleInstancePackagePlatform.class, crit, "pkg", "eq", pkg)
+                ComboCriteria.add (TitleInstancePackagePlatform.class, crit, "platform_info", "eq", platform_info)
+              }
+            }
+            
             if ( !tipp ) {
               log.debug("Create new tipp");
               tipp = new TitleInstancePackagePlatform(title:title_info,
