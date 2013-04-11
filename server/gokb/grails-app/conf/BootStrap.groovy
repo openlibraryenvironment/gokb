@@ -41,6 +41,8 @@ class BootStrap {
     }
 
 
+    refdataCats();
+
     // assertPublisher('Wiley');
     // assertPublisher('Random House');
     // assertPublisher('Cambridge University Press');
@@ -60,5 +62,21 @@ class BootStrap {
 
 
   def destroy = {
+  }
+
+
+  def refdataCats() {
+    RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+    RefdataCategory.lookupOrCreate('Org Role','Content Provider');
+    RefdataCategory.lookupOrCreate("Package Status", "Current");
+    RefdataCategory.lookupOrCreate("Package Scope", "Front File");
+    RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y");
+    RefdataCategory.lookupOrCreate("Pkg.Parent", "N");
+    RefdataCategory.lookupOrCreate("Pkg.Global", "Y");
+    RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y");
+    RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N");
+    RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider");
+    RefdataCategory.lookupOrCreate("Combo.Status", "Active");
+    RefdataCategory.lookupOrCreate('ComboType','Unknown');
   }
 }

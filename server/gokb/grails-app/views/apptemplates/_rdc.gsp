@@ -1,3 +1,6 @@
+<r:require modules="gokbstyle"/>
+<r:require modules="editable"/>
+
 <h1>Refdata Category: ${d.desc}</h1>
 <dl class="dl-horizontal">
   <div class="control-group">
@@ -6,14 +9,14 @@
   </div>
   <div class="control-group">
     <dt>Description</dt>
-    <dd>${d.desc}</dd>
+    <dd><g:xEditable owner="${d}" field="desc">${d.desc}</g:xEditable></dd>
   </div>
   <div class="control-group">
     <dt>Values</dt>
     <dd>
       <ul>
         <g:each in="${d.values}" var="v">
-          <li>${v.value}</li>
+          <li><g:xEditable owner="${v}" field="value">${v.value}</g:xEditable></li>
         </g:each>
         <hr/>
         <h4>Add refdata value</h4>

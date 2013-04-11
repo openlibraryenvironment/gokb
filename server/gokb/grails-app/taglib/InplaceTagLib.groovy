@@ -20,11 +20,11 @@ class InplaceTagLib {
     def data_link = null
     switch ( attrs.type ) {
       case 'date':
-        data_link = createLink(controller:'ajax', action: 'editableSetValue', params:[type:'date',format:'yyyy/MM/dd'])
+        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date',format:'yyyy/MM/dd'])
         break;
       case 'string':
       default:
-        data_link = createLink(controller:'ajax', action: 'editableSetValue')
+        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue')
         break;
     }
 
@@ -48,8 +48,8 @@ class InplaceTagLib {
 
   def xEditableRefData = { attrs, body ->
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
-    def data_link = createLink(controller:'ajax', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
-    def update_link = createLink(controller:'ajax', action: 'genericSetRel')
+    def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
+    def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
     def oid = "${attrs.owner.class.name}:${attrs.owner.id}"
     def id = attrs.id ?: "${oid}:${attrs.field}"
    
@@ -89,7 +89,7 @@ class InplaceTagLib {
   
   def xEditableManyToOne = { attrs, body ->
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
-    def data_link = createLink(controller:'ajax', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
+    def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
     def oid = "${attrs.owner.class.name}:${attrs.owner.id}"
     def id = attrs.id ?: "${oid}:${attrs.field}"
     out << "<a href=\"#\" id=\"${id}\" class=\"xEditableManyToOne\" data-pk=\"${oid}\" data-type=\"select\" data-name=\"${attrs.field}\" data-source=\"${data_link}\">"
@@ -110,7 +110,7 @@ class InplaceTagLib {
   
    def xEditableFieldNote = { attrs, body ->
    
-    def data_link = createLink(controller:'ajax', action: 'setFieldTableNote')
+    def data_link = createLink(controller:'ajaxSupport', action: 'setFieldTableNote')
     data_link = data_link +"/"+attrs.owner.id +"?type=License"
     def oid = "${attrs.owner.class.name}:${attrs.owner.id}S"
     def id = attrs.id ?: "${oid}:${attrs.field}"
@@ -150,7 +150,7 @@ class InplaceTagLib {
 
 
   def simpleHiddenRefdata = { attrs, body ->
-    def data_link = createLink(controller:'ajax', action: 'sel2RefdataSearch', params:[id:attrs.refdataCategory,format:'json'])
+    def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.refdataCategory,format:'json'])
     out << "<input type=\"hidden\" name=\"${attrs.name}\"/>"
     out << "<a href=\"#\" class=\"simpleHiddenRefdata\" data-type=\"select\" data-source=\"${data_link}\" data-hidden-id=\"${attrs.name}\">"
     out << body()
