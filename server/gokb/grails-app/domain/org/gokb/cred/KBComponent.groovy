@@ -4,7 +4,10 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import javax.persistence.Transient
 import grails.util.GrailsNameUtils
+
 abstract class KBComponent {
+
+  static auditable = true
 
   String impId
   // Canonical name field - title for a title instance, name for an org, etc, etc, etc
