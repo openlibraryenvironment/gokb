@@ -1,7 +1,8 @@
 package org.gokb.cred
 
 class Note {
-  String ownerOid
+  String ownerClass
+  Long ownerId
   String note
   User creator
   Date dateCreated
@@ -9,11 +10,11 @@ class Note {
 
   static mapping = {
     note column:'note_txt', type:'text'
-
   }
 
   static constraints = {
-    ownerOid(nullable:false, blank:false)
+    ownerClass(nullable:false, blank:false)
+    ownerId(nullable:false, blank:false)
     note(nullable:false, blank:false)
     creator(nullable:false, blank:false)
     dateCreated(nullable:true, blank:true)
