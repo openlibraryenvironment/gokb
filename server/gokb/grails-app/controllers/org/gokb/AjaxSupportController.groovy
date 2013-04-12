@@ -155,8 +155,16 @@ class AjaxSupportController {
               }
             }
             else {
-              log.debug("Set simple prop ${p.name} = ${params[p.name]}");
-              new_obj[p.name] = params[p.name]
+              switch ( p.type ) {
+                case Long.class:
+                  log.debug("Set simple prop ${p.name} = ${params[p.name]} (as long=${Long.parseLong(params[p.name])})");
+                  new_obj[p.name] = Long.parseLong(params[p.name]);
+                  break;
+                default:
+                  log.debug("Set simple prop ${p.name} = ${params[p.name]}");
+                  new_obj[p.name] = params[p.name]
+                  break;
+              }
             }
           }
         }
@@ -187,7 +195,6 @@ class AjaxSupportController {
     redirect(url: request.getHeader('referer'))
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def resolveOID2(oid) {
     def oid_components = oid.split(':');
     def result = null;
