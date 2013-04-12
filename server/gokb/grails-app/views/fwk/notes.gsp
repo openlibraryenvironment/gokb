@@ -1,4 +1,4 @@
 <h4>NOTES</h4>
 <p>
-NOTES
+NOTES ${params.id}
 </p>

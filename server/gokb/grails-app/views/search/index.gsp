@@ -4,6 +4,14 @@
     <meta name="layout" content="main"/>
     <r:require modules="gokbstyle,bootstrap-popover"/>
     <title>GOKb</title>
+    <style>
+      #modal {
+	width: 900px; /* SET THE WIDTH OF THE MODAL */
+      }
+      #modal .modal-body {
+	max-height: 800px;
+      }
+    </style>
   </head>
   <body>
 
@@ -64,15 +72,24 @@
                   <ul class="nav pull-right">
 
                     <li>
-                      <a data-toggle="modal" data-cache="false" data-remote='<g:createLink controller="fwk" action="history"/>' data-target="#modal"><i class="icon-time"></i></a>
+                      <a data-toggle="modal" 
+                         data-cache="false" 
+                         data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>' 
+                         data-target="#modal"><i class="icon-time"></i></a>
                     </li>
 
                     <li>
-                      <a data-toggle="modal" data-cache="false" data-remote='<g:createLink controller="fwk" action="notes"/>' data-target="#modal"><i class="icon-comment"></i></a>
+                      <a data-toggle="modal" 
+                         data-cache="false" 
+                         data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>' 
+                         data-target="#modal"><i class="icon-comment"></i></a>
                     </li>
 
                     <li>
-                      <a data-toggle="modal" data-cache="false" data-remote='<g:createLink controller="fwk" action="attachments"/>' data-target="#modal"><i class="icon-file"></i></a>
+                      <a data-toggle="modal" 
+                         data-cache="false" 
+                         data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
+                         data-target="#modal"><i class="icon-file"></i></a>
                     </li>
 
                     <li class="divider-vertical"></li>
@@ -96,17 +113,15 @@
       </div>
     </div>
 
-    <div id="modal" class="modal hide fade" role="dialog">
+    <div id="modal" class="qmodal modal hide fade" role="dialog">
       <div class="modal-header">
          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
          <h3 id="myModalLabel">Modal header</h3>
        </div>
        <div class="modal-body">
-         <p>One fine body</p>
        </div>
        <div class="modal-footer">
          <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-         <button class="btn btn-primary">Save changes</button>
        </div>
     </div>
 
