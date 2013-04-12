@@ -7,6 +7,7 @@
     <style>
       #modal {
 	width: 900px; /* SET THE WIDTH OF THE MODAL */
+        margin-left:-450px;
       }
       #modal .modal-body {
 	max-height: 800px;
