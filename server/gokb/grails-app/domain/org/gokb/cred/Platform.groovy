@@ -13,15 +13,16 @@ class Platform extends KBComponent {
   Date lastUpdated
 
 
-  static mappedBy = [tipps: 'platform']
-  static hasMany = [tipps: TitleInstancePackagePlatform]
+//  static mappedBy = [tipps: 'platform']
+//  static hasMany = [tipps: TitleInstancePackagePlatform]
+  public static manyByCombo = [tipps : TitleInstancePackagePlatform]
 
   static mapping = {
         provenance column:'plat_data_provenance'
         primaryUrl column:'plat_primary_url'
               type column:'plat_type_rv_fk'
             status column:'plat_status_rv_fk'
-             tipps sort: 'title.name', order: 'asc'
+//             tipps sort: 'title.name', order: 'asc'
   }
 
   static constraints = {

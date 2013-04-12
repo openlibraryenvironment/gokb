@@ -31,6 +31,7 @@ class Package extends KBComponent {
 
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
 //  static mappedBy = [tipps: 'pkg']
+  public static manyByCombo = [tipps : TitleInstancePackagePlatform]
 
 
   static mapping = {
@@ -40,7 +41,7 @@ class Package extends KBComponent {
     packageListStatus column:'pkg_list_status_rv_fk'
       nominalPlatform column:'pkg_nominal_platform_fk'
           lastProject column:'pkg_refine_project_fk'
-                tipps sort:'title.name', order: 'asc'
+//                tipps sort:'title.name', order: 'asc'
   }
 
   static constraints = {
@@ -56,9 +57,5 @@ class Package extends KBComponent {
     [
     ]
   }
-  
-  public static manyByCombo = [
-    tipps : TitleInstancePackagePlatform
-  ]
 
 }
