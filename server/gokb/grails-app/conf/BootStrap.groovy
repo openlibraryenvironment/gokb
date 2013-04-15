@@ -1,4 +1,6 @@
 import org.gokb.cred.*;
+import org.gokb.DomainClassExtender;
+import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
 
 class BootStrap {
@@ -47,6 +49,20 @@ class BootStrap {
     // assertPublisher('Random House');
     // assertPublisher('Cambridge University Press');
     // assertPublisher('Sage');
+    
+    // Add our custom metaclass methods for all KBComponents.
+    alterDefaultMetaclass();
+  }
+  
+  def alterDefaultMetaclass = {
+    
+    // Inject helpers to Domain classes.
+    grailsApplication.domainClasses.each {DefaultGrailsDomainClass domainClass ->
+      
+      // Extend the method missing.
+      DomainClassExtender.extendMethodMissing (domainClass)
+      
+    }
   }
 
   def assertPublisher(name) {

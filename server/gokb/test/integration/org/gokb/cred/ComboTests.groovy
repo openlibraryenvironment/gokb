@@ -35,32 +35,40 @@ class ComboTests extends GroovyTestCase {
     assert tipps[0] == tipp
   }
   
-  void testDynamicProperties() {
-    
-    pkg.tipps = [tipp]
-    
-    def tipps = pkg.tipps
-    
-    assert tipps[0] == tipp
-  }
-  
-  void testReverseLookups() {
-    pkg.tipps = [tipp]
-    
-    def pkgMeth = tipp.getPkg()
-    def pkgProp = tipp.pkg
-    
-    assert pkgProp == pkg
-    assert pkgMeth == pkg
-  }
-  
-  void testExceptions() {
-    System.out.println(shouldFail(MissingPropertyException) {
-      def tpkg = tipp.pkgNotFoundOnHere
-    })
-    
-    System.out.println(shouldFail(MissingMethodException) {
-      def tpkg = tipp.getPkgNotFoundOnHere()
-    })
-  }
+//  void testDynamicProperties() {
+//    
+//    pkg.tipps = [tipp]
+//    
+//    def tipps = pkg.tipps
+//    
+//    assert tipps[0] == tipp
+//  }
+//  
+//  void testReverseLookups() {
+//    pkg.tipps = [tipp]
+//    
+//    def pkgMeth = tipp.getPkg()
+//    def pkgProp = tipp.pkg
+//    
+//    assert pkgProp == pkg
+//    assert pkgMeth == pkg
+//  }
+//  
+//  void testExceptions() {
+//    System.out.println(shouldFail(MissingPropertyException) {
+//      def tpkg = tipp.pkgNotFoundOnHere
+//    })
+//    
+//    System.out.println(shouldFail(MissingMethodException) {
+//      def tpkg = tipp.getPkgNotFoundOnHere()
+//    })
+//  }
+//  
+//  void testConstructors() {
+//    def nTipp = new TitleInstancePackagePlatform (
+//      "pkg" : pkg,
+//      "platform" : platform
+//    )
+//    
+//  }
 }

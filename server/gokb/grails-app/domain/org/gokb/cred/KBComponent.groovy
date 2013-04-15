@@ -377,39 +377,39 @@ abstract class KBComponent {
   /**
    *  Override method missing.
    */
-  def methodMissing(String methodName, args) {
-
-    String prefix;
-    def propertyName = methodName[3].toLowerCase() + methodName[4..-1]
-
-    // Add the propertyName as the first argument.
-    def argVals = [propertyName]
-    argVals.addAll(args)
-
-    String methodToCall
-    switch (methodName[0..2]) {
-      case "get" :// Property name.
-        methodToCall = "getComboProperty"
-        break
-      case "set" :
-        methodToCall = "setComboProperty"
-        break
-    }
-
-    // Invoke it.
-    if (methodToCall) {
-      try {
-
-        return invokeMethod(methodToCall, argVals.toArray())
-
-      } catch (MissingPropertyException ex) {
-
-        // Try running the original.
-        throw new MissingMethodException(methodName, this.class, args)
-      }
-
-    } else throw new MissingMethodException(methodName, this.class, args)
-  }
+//  def methodMissing(String methodName, args) {
+//
+//    String prefix;
+//    def propertyName = methodName[3].toLowerCase() + methodName[4..-1]
+//
+//    // Add the propertyName as the first argument.
+//    def argVals = [propertyName]
+//    argVals.addAll(args)
+//
+//    String methodToCall
+//    switch (methodName[0..2]) {
+//      case "get" :// Property name.
+//        methodToCall = "getComboProperty"
+//        break
+//      case "set" :
+//        methodToCall = "setComboProperty"
+//        break
+//    }
+//
+//    // Invoke it.
+//    if (methodToCall) {
+//      try {
+//
+//        return invokeMethod(methodToCall, argVals.toArray())
+//
+//      } catch (MissingPropertyException ex) {
+//
+//        // Try running the original.
+//        throw new MissingMethodException(methodName, this.class, args)
+//      }
+//
+//    } else throw new MissingMethodException(methodName, this.class, args)
+//  }
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
@@ -427,6 +427,10 @@ abstract class KBComponent {
     }
 
     result
+  }
+  
+  public void setProperty (String name, Object value) {
+    System.out.println("Running set Property");
   }
 
 }

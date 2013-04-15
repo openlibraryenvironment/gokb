@@ -189,7 +189,7 @@ class IngestService {
 
             log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
             // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
-            def platform_info = Platform.findByNormname(host_norm_platform_name) 
+            def platform_info = Platform.findByNormname(host_norm_platform_name)
             if ( !platform_info ) {
               // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
               platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
@@ -208,11 +208,13 @@ class IngestService {
             // TIPP
 //            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
             HibernateCriteriaBuilder crit = TitleInstancePackagePlatform.createCriteria()
-            def tipp = crit.get {
-              ComboCriteria.add (TitleInstancePackagePlatform.class, crit, "title", "eq", title_info)
+            def tipp = crit.get {              
+              ComboCriteria.createFor(crit)
+               .add ("title", "eq", title_info)
               and {
-                ComboCriteria.add (TitleInstancePackagePlatform.class, crit, "pkg", "eq", pkg)
-                ComboCriteria.add (TitleInstancePackagePlatform.class, crit, "platform_info", "eq", platform_info)
+                ComboCriteria
+                  .add ("pkg", "eq", pkg)
+                  .add ("platform_info", "eq", platform_info)
               }
             }
             
