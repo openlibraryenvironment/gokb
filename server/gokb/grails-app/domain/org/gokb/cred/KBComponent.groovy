@@ -4,7 +4,6 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import javax.persistence.Transient
 import grails.util.GrailsNameUtils
-import org.gokb.Utils
 abstract class KBComponent {
 
   static auditable = true
@@ -136,13 +135,13 @@ abstract class KBComponent {
   @Transient
   abstract getPermissableCombos();
 
-  private String comboPropertyKey(String propertyName) {
-    Utils.createComboKey(propertyName, this.class)
-  }
+//  private String comboPropertyKey(String propertyName) {
+//    Utils.createComboKey(propertyName, this.class)
+//  }
 
-  private boolean reverseLookup (String propertyName) {
-    propertyName && getStaticMap('mappedByCombo').get(propertyName)
-  }
+//  private boolean reverseLookup (String propertyName) {
+//    propertyName && getStaticMap('mappedByCombo').get(propertyName)
+//  }
 
   /**
    * Create a combo to mirror the behaviour of a property on this method mapping to another class.
@@ -154,12 +153,12 @@ abstract class KBComponent {
     Class typeClass
     switch (value) {
       case Collection :
-      // Check the many relationships
-        typeClass = getStaticMap('manyByCombo').get(propertyName)
+        // Check the many relationships
+        typeClass = lookupComboMapping(Combo.MANY, propertyName)
         break
       default:
-      // Check single properties
-        typeClass = getStaticMap('hasByCombo').get(propertyName)
+        // Check single properties
+        typeClass = lookupComboMapping(Combo.HAS, propertyName)
     }
 
     if (typeClass) {
@@ -170,13 +169,13 @@ abstract class KBComponent {
       if (value) {
 
         // Generate the type.
-        RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", comboPropertyKey(propertyName))
+        RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
 
         // Go through each item and generate a value.
         switch (value) {
           case Collection :
 
-            if (reverseLookup(propertyName)) {
+            if (isComboReverse(propertyName)) {
               // Reverse
               value.each {
                 if (typeClass.isInstance(it)) {
@@ -206,11 +205,11 @@ abstract class KBComponent {
             }
             break
           default:
-          // Check single properties
-            typeClass = getStaticMap('hasByCombo').get(propertyName)
+            // Check single properties
+            typeClass = lookupComboMapping(Combo.HAS, propertyName)
             if (typeClass.isInstance(value)) {
 
-              if (reverseLookup(propertyName)) {
+              if (isComboReverse(propertyName)) {
                 Combo combo = new Combo(
                     fromComponent : (value),
                     type : (type),
@@ -236,8 +235,7 @@ abstract class KBComponent {
         comboPropertyCache.put(propertyName, value)
       }
     } else throw new MissingPropertyException(propertyName, this.class)
-
-  }  
+  }
 
   private Map comboPropertyCache = [:]
 
@@ -255,7 +253,7 @@ abstract class KBComponent {
     if (comboPropertyCache.containsKey(propertyName)) return comboPropertyCache[propertyName];
 
     // Check the type.
-    Class typeClass = getStaticMap('manyByCombo').get(propertyName)
+    Class typeClass = lookupComboMapping(Combo.MANY, propertyName)
 
     // Generate the type.
     RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", comboPropertyKey(propertyName))
@@ -264,7 +262,7 @@ abstract class KBComponent {
 
       def result = null
 
-      if (reverseLookup(propertyName)) {
+      if (isComboReverse(propertyName)) {
         // Reverse.
         def combos = incomingCombos.findAll {
           "type" == (type)
@@ -296,7 +294,7 @@ abstract class KBComponent {
     } else {
 
       // Try singular.
-      typeClass = getStaticMap('hasByCombo').get(propertyName)
+      typeClass = lookupComboMapping(Combo.HAS, propertyName)
 
       if (typeClass) {
         def result = null
@@ -331,11 +329,11 @@ abstract class KBComponent {
    */
   private removeComboPropertyVals (propertyName) {
     // Generate the type.
-    RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", comboPropertyKey(propertyName))
+    RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
 
     // Get all..
     List<Combo> combos
-    if (reverseLookup(propertyName)) {
+    if (isComboReverse(propertyName)) {
       // Reverse.
       combos = incomingCombos.findAll {
         "type" == (type)
@@ -353,11 +351,6 @@ abstract class KBComponent {
 
     // Clear the cached value too if present.
     comboPropertyCache.remove(propertyName)
-  }
-
-  @Transient
-  protected getStaticMap (String mapName) {
-    Utils.staticMapGet(mapName, this.class)
   }
 
   /**
@@ -428,9 +421,4 @@ abstract class KBComponent {
 
     result
   }
-  
-  public void setProperty (String name, Object value) {
-    System.out.println("Running set Property");
-  }
-
 }

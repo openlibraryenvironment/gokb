@@ -2,7 +2,6 @@ package org.gokb
 
 import grails.orm.HibernateCriteriaBuilder
 import org.gokb.cred.*
-import org.gokb.Utils
 
 class ComboCriteria {
   
@@ -27,15 +26,15 @@ class ComboCriteria {
   private ComboCriteria addCriteria (String propertyName, String operator, Object... args ) {
     
       // Property exists.
-      boolean hasProp = ((Utils.staticMapGet('hasByCombo', crit.targetClass).get(propertyName) != null)
-        || (Utils.staticMapGet('manyByCombo', crit.targetClass).get(propertyName) != null))
+      boolean hasProp = ((KBComponent.lookupComboMappingFor(crit.targetClass, Combo.HAS, propertyName) != null)
+        || (KBComponent.lookupComboMappingFor(crit.targetClass, Combo.MANY,propertyName) != null))
       
       if (hasProp) {
         // Combo Type.
-        RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", Utils.createComboKey(propertyName, crit.targetClass))
+        RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", KBComponent.getComboTypeValueFor(crit.targetClass, propertyName))
         
         // Incoming combo?
-        boolean incoming = (Utils.staticMapGet('mappedByCombo', crit.targetClass).get(propertyName) != null)
+        boolean incoming = (KBComponent.lookupComboMappingFor(crit.targetClass, Combo.MAPPED_BY, propertyName) != null)
         
         // Build the criteria string ids.
         String combName, propName

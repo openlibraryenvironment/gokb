@@ -60,7 +60,7 @@ class BootStrap {
     grailsApplication.domainClasses.each {DefaultGrailsDomainClass domainClass ->
       
       // Extend the method missing.
-      DomainClassExtender.extendMethodMissing (domainClass)
+      DomainClassExtender.extend (domainClass)
       
     }
   }
