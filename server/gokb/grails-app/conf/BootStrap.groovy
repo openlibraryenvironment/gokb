@@ -59,7 +59,7 @@ class BootStrap {
     // Inject helpers to Domain classes.
     grailsApplication.domainClasses.each {DefaultGrailsDomainClass domainClass ->
       
-      // Extend the method missing.
+      // Extend the domain class.
       DomainClassExtender.extend (domainClass)
       
     }

@@ -148,224 +148,224 @@ abstract class KBComponent {
    * @param toComponent - The component that is to become a child of this one.
    * @return the Combo for the relationship
    */
-  @Transient
-  private void setComboProperty (String propertyName, def value) {
-    Class typeClass
-    switch (value) {
-      case Collection :
-        // Check the many relationships
-        typeClass = lookupComboMapping(Combo.MANY, propertyName)
-        break
-      default:
-        // Check single properties
-        typeClass = lookupComboMapping(Combo.HAS, propertyName)
-    }
+//  @Transient
+//  private void setComboProperty (String propertyName, def value) {
+//    Class typeClass
+//    switch (value) {
+//      case Collection :
+//        // Check the many relationships
+//        typeClass = lookupComboMapping(Combo.MANY, propertyName)
+//        break
+//      default:
+//        // Check single properties
+//        typeClass = lookupComboMapping(Combo.HAS, propertyName)
+//    }
+//
+//    if (typeClass) {
+//
+//      // Capitalise the propertyName.
+//      removeComboPropertyVals(propertyName)
+//
+//      if (value) {
+//
+//        // Generate the type.
+//        RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
+//
+//        // Go through each item and generate a value.
+//        switch (value) {
+//          case Collection :
+//
+//            if (isComboReverse(propertyName)) {
+//              // Reverse
+//              value.each {
+//                if (typeClass.isInstance(it)) {
+//                  Combo combo = new Combo(
+//                      fromComponent : (it),
+//                      type : (type),
+//                      status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+//                      ).save()
+//
+//                  // Add to the incoming collection
+//                  addToIncomingCombos(combo)
+//                }
+//              }
+//            } else {
+//              value.each {
+//                if (typeClass.isInstance(it)) {
+//                  Combo combo = new Combo(
+//                      toComponent : (it),
+//                      type : (type),
+//                      status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+//                      ).save()
+//
+//                  // Add to the outgoing collection
+//                  addToOutgoingCombos(combo)
+//                }
+//              }
+//            }
+//            break
+//          default:
+//            // Check single properties
+//            typeClass = lookupComboMapping(Combo.HAS, propertyName)
+//            if (typeClass.isInstance(value)) {
+//
+//              if (isComboReverse(propertyName)) {
+//                Combo combo = new Combo(
+//                    fromComponent : (value),
+//                    type : (type),
+//                    status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+//                    ).save()
+//
+//                // Add to the incoming collection
+//                addToIncomingCombos(combo)
+//              } else {
+//                Combo combo = new Combo(
+//                    toComponent : (value),
+//                    type : (type),
+//                    status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+//                    ).save()
+//
+//                // Add to the outgoing collection
+//                addToOutgoingCombos(combo)
+//              }
+//            }
+//        }
+//
+//        // Add to the cache.
+//        comboPropertyCache.put(propertyName, value)
+//      }
+//    } else throw new MissingPropertyException(propertyName, this.class)
+//  }
 
-    if (typeClass) {
-
-      // Capitalise the propertyName.
-      removeComboPropertyVals(propertyName)
-
-      if (value) {
-
-        // Generate the type.
-        RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
-
-        // Go through each item and generate a value.
-        switch (value) {
-          case Collection :
-
-            if (isComboReverse(propertyName)) {
-              // Reverse
-              value.each {
-                if (typeClass.isInstance(it)) {
-                  Combo combo = new Combo(
-                      fromComponent : (it),
-                      type : (type),
-                      status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                      ).save()
-
-                  // Add to the incoming collection
-                  addToIncomingCombos(combo)
-                }
-              }
-            } else {
-              value.each {
-                if (typeClass.isInstance(it)) {
-                  Combo combo = new Combo(
-                      toComponent : (it),
-                      type : (type),
-                      status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                      ).save()
-
-                  // Add to the outgoing collection
-                  addToOutgoingCombos(combo)
-                }
-              }
-            }
-            break
-          default:
-            // Check single properties
-            typeClass = lookupComboMapping(Combo.HAS, propertyName)
-            if (typeClass.isInstance(value)) {
-
-              if (isComboReverse(propertyName)) {
-                Combo combo = new Combo(
-                    fromComponent : (value),
-                    type : (type),
-                    status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                    ).save()
-
-                // Add to the incoming collection
-                addToIncomingCombos(combo)
-              } else {
-                Combo combo = new Combo(
-                    toComponent : (value),
-                    type : (type),
-                    status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                    ).save()
-
-                // Add to the outgoing collection
-                addToOutgoingCombos(combo)
-              }
-            }
-        }
-
-        // Add to the cache.
-        comboPropertyCache.put(propertyName, value)
-      }
-    } else throw new MissingPropertyException(propertyName, this.class)
-  }
-
-  private Map comboPropertyCache = [:]
+  
 
   /**
    * Create a combo to mirror the behaviour of a property on this method mapping to another class.
    * @param toComponent - The component that is to become a child of this one.
    * @return the Combo for the relationship
    */
-  @Transient
-  private def getComboProperty (String propertyName) {
+//  @Transient
+//  private def getComboProperty (String propertyName) {
+//
+//    // Return from cache hashmap if present.
+//
+//    // Test this way to allow us to cache null values.
+//    if (comboPropertyCache.containsKey(propertyName)) return comboPropertyCache[propertyName];
+//
+//    // Check the type.
+//    Class typeClass = lookupComboMapping(Combo.MANY, propertyName)
+//
+//    // Generate the type.
+//    RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", comboPropertyKey(propertyName))
+//
+//    if (typeClass) {
+//
+//      def result = null
+//
+//      if (isComboReverse(propertyName)) {
+//        // Reverse.
+//        def combos = incomingCombos.findAll {
+//          "type" == (type)
+//        }
+//
+//        if (combos) {
+//          combos.each {
+//            result.add(it.fromComponent)
+//          }
+//        }
+//
+//      } else {
+//        def combos = outgoingCombos.findAll {
+//          "type" == (type)
+//        }
+//
+//        if (combos) {
+//          combos.each {
+//            result.add(it.toComponent)
+//          }
+//        }
+//      }
+//
+//      // Add the result to the cache.
+//      comboPropertyCache.put(propertyName, result)
+//
+//      return result
+//
+//    } else {
+//
+//      // Try singular.
+//      typeClass = lookupComboMapping(Combo.HAS, propertyName)
+//
+//      if (typeClass) {
+//        def result = null
+//        if (reverseLookup(propertyName)) {
+//
+//          // Just return the component.
+//          Combo combo = incomingCombos.findWhere(type : (type))
+//
+//          if (combo) result = combo.fromComponent
+//        } else {
+//          Combo combo = outgoingCombos.findWhere(type : (type))
+//
+//          if (combo) result = combo.toComponent
+//        }
+//
+//        // Add the result to the cache.
+//        comboPropertyCache.put(propertyName, result)
+//
+//        return result
+//      }
+//
+//      // If we get here then throw an exception.
+//      throw new MissingPropertyException(propertyName, this.class)
+//    }
+//
+//  }
 
-    // Return from cache hashmap if present.
+//  /**
+//   * Remove the current values for the property.
+//   * @param propertyName
+//   * @return
+//   */
+//  private removeComboPropertyVals (propertyName) {
+//    // Generate the type.
+//    RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
+//
+//    // Get all..
+//    List<Combo> combos
+//    if (isComboReverse(propertyName)) {
+//      // Reverse.
+//      combos = incomingCombos.findAll {
+//        "type" == (type)
+//      }
+//    } else {
+//      combos = outgoingCombos.findAll {
+//        "type" == (type)
+//      }
+//    }
+//
+//    // Delete each.
+//    combos.each {
+//      it.delete()
+//    }
+//
+//    // Clear the cached value too if present.
+//    comboPropertyCache.remove(propertyName)
+//  }
 
-    // Test this way to allow us to cache null values.
-    if (comboPropertyCache.containsKey(propertyName)) return comboPropertyCache[propertyName];
-
-    // Check the type.
-    Class typeClass = lookupComboMapping(Combo.MANY, propertyName)
-
-    // Generate the type.
-    RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", comboPropertyKey(propertyName))
-
-    if (typeClass) {
-
-      def result = null
-
-      if (isComboReverse(propertyName)) {
-        // Reverse.
-        def combos = incomingCombos.findAll {
-          "type" == (type)
-        }
-
-        if (combos) {
-          combos.each {
-            result.add(it.fromComponent)
-          }
-        }
-
-      } else {
-        def combos = outgoingCombos.findAll {
-          "type" == (type)
-        }
-
-        if (combos) {
-          combos.each {
-            result.add(it.toComponent)
-          }
-        }
-      }
-
-      // Add the result to the cache.
-      comboPropertyCache.put(propertyName, result)
-
-      return result
-
-    } else {
-
-      // Try singular.
-      typeClass = lookupComboMapping(Combo.HAS, propertyName)
-
-      if (typeClass) {
-        def result = null
-        if (reverseLookup(propertyName)) {
-
-          // Just return the component.
-          Combo combo = incomingCombos.findWhere(type : (type))
-
-          if (combo) result = combo.fromComponent
-        } else {
-          Combo combo = outgoingCombos.findWhere(type : (type))
-
-          if (combo) result = combo.toComponent
-        }
-
-        // Add the result to the cache.
-        comboPropertyCache.put(propertyName, result)
-
-        return result
-      }
-
-      // If we get here then throw an exception.
-      throw new MissingPropertyException(propertyName, this.class)
-    }
-
-  }
-
-  /**
-   * Remove the current values for the property.
-   * @param propertyName
-   * @return
-   */
-  private removeComboPropertyVals (propertyName) {
-    // Generate the type.
-    RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
-
-    // Get all..
-    List<Combo> combos
-    if (isComboReverse(propertyName)) {
-      // Reverse.
-      combos = incomingCombos.findAll {
-        "type" == (type)
-      }
-    } else {
-      combos = outgoingCombos.findAll {
-        "type" == (type)
-      }
-    }
-
-    // Delete each.
-    combos.each {
-      it.delete()
-    }
-
-    // Clear the cached value too if present.
-    comboPropertyCache.remove(propertyName)
-  }
-
-  /**
-   * Called when trying to set missing property.
-   */
-  def propertyMissing(String name, value) {
-    setComboProperty(name, value)
-  }
-
-  /**
-   * Called when trying to get missing property.
-   */
-  def propertyMissing(String name) {
-    getComboProperty(name)
-  }
+//  /**
+//   * Called when trying to set missing property.
+//   */
+//  def propertyMissing(String name, value) {
+//    setComboProperty(name, value)
+//  }
+//
+//  /**
+//   * Called when trying to get missing property.
+//   */
+//  def propertyMissing(String name) {
+//    getComboProperty(name)
+//  }
 
   /**
    *  Override method missing.

@@ -15,7 +15,7 @@ class Platform extends KBComponent {
 
 //  static mappedBy = [tipps: 'platform']
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
-  public static manyByCombo = [tipps : TitleInstancePackagePlatform]
+  static manyByCombo = [tipps : TitleInstancePackagePlatform]
 
   static mapping = {
         provenance column:'plat_data_provenance'

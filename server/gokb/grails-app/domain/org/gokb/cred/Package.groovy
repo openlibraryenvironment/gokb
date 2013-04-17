@@ -31,7 +31,7 @@ class Package extends KBComponent {
 
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
 //  static mappedBy = [tipps: 'pkg']
-  public static manyByCombo = [tipps : TitleInstancePackagePlatform]
+  static manyByCombo = [tipps : TitleInstancePackagePlatform]
 
 
   static mapping = {

@@ -13,7 +13,7 @@ class TitleInstance extends KBComponent {
 
 //  static mappedBy = [tipps: 'title']
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
-  public static manyByCombo = [tipps : TitleInstancePackagePlatform]
+  static manyByCombo = [tipps : TitleInstancePackagePlatform]
 
 
   static mapping = {
