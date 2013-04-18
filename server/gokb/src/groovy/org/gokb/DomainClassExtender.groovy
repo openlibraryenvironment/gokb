@@ -522,25 +522,33 @@ class DomainClassExtender {
     
     mc.propertyMissing = {String name, value = null ->
       
-    log.trace("propertyMissing called on ${delegate} with args ${[name, value]}")
-    def result
-    
-        // Execute the existing propertyMissing.
-        if (value == null) {
-          if (oldPropertyMissing != null) {
-            log.trace("calling oldPropertyMissing on ${delegate} with args ${name}")
-            result = oldPropertyMissing.doMethodInvoke(delegate, [name].toArray())
-          }
-          
-          result = result ?: getComboProperty(name)
-        } else {
-          if (oldPropertyMissing != null) {
+      log.trace("propertyMissing called on ${delegate} with args ${[name, value]}")
+      def result
+      switch (name) {
+        case Combo.HAS :
+        case Combo.MAPPED_BY :
+        case Combo.MANY :
+          return null
+          break
+        default :
+      
+          // Execute the existing propertyMissing.
+          if (value == null) {
+            if (oldPropertyMissing != null) {
+              log.trace("calling oldPropertyMissing on ${delegate} with args ${name}")
+              result = oldPropertyMissing.doMethodInvoke(delegate, [name].toArray())
+            }
             
-            log.trace("calling oldPropertyMissing on ${delegate} with args ${[name, value]}")
-            result = oldPropertyMissing.doMethodInvoke(delegate, [name, value].toArray())
+            result = result ?: getComboProperty(name)
+          } else {
+            if (oldPropertyMissing != null) {
+              
+              log.trace("calling oldPropertyMissing on ${delegate} with args ${[name, value]}")
+              result = oldPropertyMissing.doMethodInvoke(delegate, [name, value].toArray())
+            }
+            result = result ?: getComboProperty(name, value)
           }
-          result = result ?: getComboProperty(name, value)
-        }
+      }
       result
     }
   }

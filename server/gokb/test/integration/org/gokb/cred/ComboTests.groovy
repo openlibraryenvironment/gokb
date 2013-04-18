@@ -26,40 +26,39 @@ class ComboTests extends GroovyTestCase {
     sessionFactory.currentSession.clear()
   }
   
-  void testDynamicMethods() {
-    
-    pkg.setTipps([tipp])
-    
-    def tipps = pkg.getTipps()
-    
-    assert tipps[0] == tipp
-  }
-  
-  void testMapConstructor() {
-    TitleInstancePackagePlatform nTipp = new TitleInstancePackagePlatform(
-      "pkg" : (pkg),
-      "platform" : (platform)
-    ).save()
-    
-    def tipps = pkg.getTipps()
-    assert tipps.contains(nTipp)
-    
-    tipps = pkg.tipps
-    assert tipps.contains(nTipp)
-    
-    nTipp.save()
-    
-  }
-  
-//  void testDynamicProperties() {
+//  void testDynamicMethods() {
 //    
-//    pkg.tipps = [tipp]
+//    pkg.setTipps([tipp])
 //    
-//    def tipps = pkg.tipps
+//    def tipps = pkg.getTipps()
 //    
 //    assert tipps[0] == tipp
 //  }
 //  
+//  void testMapConstructor() {
+//    TitleInstancePackagePlatform nTipp = new TitleInstancePackagePlatform(
+//      "pkg" : (pkg),
+//      "platform" : (platform)
+//    ).save()
+//    
+//    def tipps = pkg.getTipps()
+//    assert tipps.contains(nTipp)
+//    
+//    tipps = pkg.tipps
+//    assert tipps.contains(nTipp)
+//    
+//    
+//  }
+  
+  void testDynamicProperties() {
+    
+    pkg.tipps = [tipp]
+    
+    def tipps = pkg.tipps
+    
+    assert tipps[0] == tipp
+  }
+  
 //  void testReverseLookups() {
 //    pkg.tipps = [tipp]
 //    
@@ -69,7 +68,7 @@ class ComboTests extends GroovyTestCase {
 //    assert pkgProp == pkg
 //    assert pkgMeth == pkg
 //  }
-  
+//  
 //  void testExceptions() {
 //    System.out.println(shouldFail(MissingPropertyException) {
 //      def tpkg = tipp.pkgNotFoundOnHere
