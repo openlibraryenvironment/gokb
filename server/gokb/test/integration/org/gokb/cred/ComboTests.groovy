@@ -36,15 +36,18 @@ class ComboTests extends GroovyTestCase {
   }
   
   void testMapConstructor() {
-    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(
+    TitleInstancePackagePlatform nTipp = new TitleInstancePackagePlatform(
       "pkg" : (pkg),
       "platform" : (platform)
-    )
+    ).save()
+    
     def tipps = pkg.getTipps()
-    assert tipps.contains(tipp)
+    assert tipps.contains(nTipp)
     
     tipps = pkg.tipps
-    assert tipps.contains(tipp)
+    assert tipps.contains(nTipp)
+    
+    nTipp.save()
     
   }
   

@@ -34,7 +34,10 @@ class DomainClassExtender {
       log.trace("MapConstructor called for new ${delegate} with args ${args}")
       
       log.debug ("Calling original contructor for new ${delegate} with args ${args}.")
-      def instance = oldConstructor.newInstance(args)
+      
+      // Instantiate the object and save...
+      // We really need to save here so we can reference this object within the combos.
+      def instance = oldConstructor.newInstance(args).save()
       
       // Now that we have created our instance using the original constructor we can,
       // now set the combo props that were missed.
@@ -47,7 +50,7 @@ class DomainClassExtender {
           instance.setComboProperty(prop, args[prop])
         }
       }
-instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert tipps[0] == tippnstance
+      instance
     }    
   }
 
@@ -99,7 +102,8 @@ instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert t
 
       if (typeClass) {
 
-        def result = null
+        // Default many association maps to empty set.
+        def result = []
 
         if (isComboReverse(propertyName)) {
           // Reverse.
@@ -157,7 +161,7 @@ instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert t
           return result
         }
 
-        log.debug("No Property found so just throw Exception.")
+        log.debug("No Property found, throw Exception.")
         // If we get here then throw an exception.
         throw new MissingPropertyException(propertyName, this.class)
       }
@@ -296,10 +300,18 @@ instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert t
         case Collection :
           // Check the many relationships
           typeClass = lookupComboMapping(Combo.MANY, propertyName)
+          
+          if (typeClass == null) throw new IllegalArgumentException(
+            "Supplied value for setComboProperty was a collection, but could not find mapping for ${propertyName} in ${Combo.MANY} for class ${domainClass.getClazz()}"
+          )
           break
         default:
           // Check single properties
           typeClass = lookupComboMapping(Combo.HAS, propertyName)
+          
+          if (typeClass == null) throw new IllegalArgumentException(
+            "Supplied value for setComboProperty was a singular none collection, but could not find mapping for ${propertyName} in ${Combo.HAS} for class ${domainClass.getClazz()}"
+          )
       }
 
       if (typeClass) {
@@ -330,6 +342,10 @@ instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert t
                     // Add to the collections.
                     delegate.addToIncomingCombos(combo)
                     val.addToOutgoingCombos(combo)
+                  } else {
+                    throw new IllegalArgumentException(
+                      "All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}"
+                    )
                   }
                 }
               } else {
@@ -344,12 +360,16 @@ instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert t
                     // Add to the collections.
                     delegate.addToOutgoingCombos(combo)
                     val.addToIncomingCombos(combo)
+                  } else {
+                    throw new IllegalArgumentException(
+                      "All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}"
+                    )
                   }
                 }
               }
               break
             default:
-            // Check single properties.
+              // Check single properties.
               typeClass = lookupComboMapping(Combo.HAS, propertyName)
               if (typeClass.isInstance(value)) {
 
@@ -374,6 +394,10 @@ instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert t
                   delegate.addToOutgoingCombos(combo)
                   value.addToIncomingCombos(combo)
                 }
+              } else {
+                throw new IllegalArgumentException(
+                  "Value for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}"
+                )
               }
           }
 
@@ -382,7 +406,7 @@ instanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceinstanceassert t
         }
       } else {
         log.debug("Thrown missing property exception for ${propertyName} on ${delegate}.")
-        throw new MissingPropertyException(propertyName, this.class)
+        throw new MissingPropertyException(propertyName, domainClass.getClazz())
       }
     }
   }
