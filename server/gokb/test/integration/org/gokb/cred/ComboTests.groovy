@@ -35,6 +35,19 @@ class ComboTests extends GroovyTestCase {
     assert tipps[0] == tipp
   }
   
+  void testMapConstructor() {
+    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(
+      "pkg" : (pkg),
+      "platform" : (platform)
+    )
+    def tipps = pkg.getTipps()
+    assert tipps.contains(tipp)
+    
+    tipps = pkg.tipps
+    assert tipps.contains(tipp)
+    
+  }
+  
 //  void testDynamicProperties() {
 //    
 //    pkg.tipps = [tipp]
@@ -53,7 +66,7 @@ class ComboTests extends GroovyTestCase {
 //    assert pkgProp == pkg
 //    assert pkgMeth == pkg
 //  }
-//  
+  
 //  void testExceptions() {
 //    System.out.println(shouldFail(MissingPropertyException) {
 //      def tpkg = tipp.pkgNotFoundOnHere
@@ -62,13 +75,5 @@ class ComboTests extends GroovyTestCase {
 //    System.out.println(shouldFail(MissingMethodException) {
 //      def tpkg = tipp.getPkgNotFoundOnHere()
 //    })
-//  }
-//  
-//  void testConstructors() {
-//    def nTipp = new TitleInstancePackagePlatform (
-//      "pkg" : pkg,
-//      "platform" : platform
-//    )
-//    
 //  }
 }

@@ -105,6 +105,8 @@ log4j = {
           'grails.app.filters',
           // 'grails.app.conf',
           'grails.app.jobs' // ,
+          
+   trace  'org.gokb.DomainClassExtender'
 
 }
 
