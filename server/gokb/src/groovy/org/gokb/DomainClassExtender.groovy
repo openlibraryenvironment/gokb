@@ -546,7 +546,7 @@ class DomainClassExtender {
               log.trace("calling oldPropertyMissing on ${delegate} with args ${[name, value]}")
               result = oldPropertyMissing.doMethodInvoke(delegate, [name, value].toArray())
             }
-            result = result ?: getComboProperty(name, value)
+            result = result ?: setComboProperty(name, value)
           }
       }
       result
