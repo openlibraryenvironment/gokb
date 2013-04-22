@@ -145,13 +145,13 @@ class DomainClassExtender {
           if (isComboReverse(propertyName)) {
 
             // Just return the component.
-            Combo combo = incomingCombos.findAll {
+            Combo combo = incomingCombos.find {
               it.type == (type)
             }
 
             if (combo) result = combo.fromComponent
           } else {
-            Combo combo = outgoingCombos.findAll {
+            Combo combo = outgoingCombos.find {
               it.type == (type)
             }
 
