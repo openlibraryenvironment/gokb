@@ -235,7 +235,7 @@ class IngestService {
                                                       hostPlatformURL:host_platform_url)
 
               gokb_additional_props.each { apd ->
-                tipp.additionalProperties.add(new KBComponentAdditionalProperty(fromComponent:tipp, 
+                tipp.additionalProperties.add(new KBComponentAdditionalProperty(fromComponent:tipp,
                                                                                 propertyDefn:apd.pd,
                                                                                 apValue:getRowValue(datarow,apd.col)))
               }

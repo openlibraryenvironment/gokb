@@ -14,6 +14,94 @@ import groovy.util.logging.*
 @Log4j
 class DomainClassExtender {
   
+  private static addComboPropertyCache = { DefaultGrailsDomainClass domainClass ->
+    
+    log.trace("Adding comboPropertyCache to ${delegate}")
+    // Get the metaclass.
+    domainClass.getMetaClass().comboPropertyCache = [:]
+    
+  }
+  
+  private static addGetAllComboPropertyNames = { DefaultGrailsDomainClass domainClass ->
+    
+    // Get the metaclass.
+    domainClass.getMetaClass().static.getAllComboPropertyNames = { ->
+      getAllComboPropertyNamesFor (domainClass.getClazz())
+    }
+  }
+  
+  private static addGetAllComboPropertyNamesFor = { DefaultGrailsDomainClass domainClass ->
+    
+    // Get the metaclass.
+    ExpandoMetaClass mc = domainClass.getMetaClass()
+    mc.static.getAllComboPropertyNamesFor = { Class forClass ->
+      log.trace("getAllComboPropertyNamesFor called with args ${[forClass]}")
+      String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:all"
+      
+      // Check cache.
+      log.debug("Checking cache...")
+      Set cProps = DomainClassExtender.comboMappingCache[cacheKey]
+      
+      if (cProps == null) {
+        log.debug("\t...not found doing lookup.")
+      
+        // No cached value.
+        cProps = []
+        cProps.addAll( getComboMapFor (forClass, Combo.HAS).keySet() )
+        cProps.addAll( getComboMapFor (forClass, Combo.MANY).keySet() )
+        
+        // Cache it.
+        DomainClassExtender.comboMappingCache[cacheKey] = cProps
+      } else {
+        log.debug("\t...found and returning ${cProps}.")
+      }
+      
+      cProps
+    }
+  }
+  
+  private static addGetAllComboTypeValues = { DefaultGrailsDomainClass domainClass ->
+    
+    // Get the metaclass.
+    domainClass.getMetaClass().static.getAllComboTypeValues = { ->
+      getAllComboTypeValuesFor (domainClass.getClazz())
+    }
+  }
+  
+  private static addGetAllComboTypeValuesFor = { DefaultGrailsDomainClass domainClass ->
+    
+    // Get the metaclass.
+    ExpandoMetaClass mc = domainClass.getMetaClass()
+    mc.static.getAllComboTypeValuesFor = { Class forClass ->
+      log.trace("getAllComboTypeValuesFor called with args ${[forClass]}")
+      String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:allTypeVals"
+      
+      // Check cache.
+      log.debug("Checking cache...")
+      Set types = DomainClassExtender.comboMappingCache[cacheKey]
+      
+      if (types == null) {
+        // No cached value.
+        log.debug("\t...not found doing lookup.")
+      
+        Set cProps = getAllComboPropertyNamesFor(forClass)
+        
+        // Generate each type in turn.
+        types = []
+        for (String propertyName in cProps) {
+          types << getComboTypeValueFor (forClass, propertyName)
+        }
+        
+        // Cache it.
+        DomainClassExtender.comboMappingCache[cacheKey] = types
+      } else {
+        log.debug("\t...found and returning ${types}.")
+      }
+      
+      types
+    }
+  }
+  
   private static addGetComboMap = { DefaultGrailsDomainClass domainClass ->
 
     // Get the metaclass.
@@ -21,37 +109,6 @@ class DomainClassExtender {
       log.trace("getComboMap called on ${delegate} with args ${[mappingName]}")
       getComboMapFor (domainClass.getClazz(), mappingName)
     }
-  }
-  
-  private static extendMapConstructor = { DefaultGrailsDomainClass domainClass ->
-    
-    // Get the metaclass.
-    ExpandoMetaClass mc = domainClass.getMetaClass()
-    
-    // Get the original contructor.
-    def oldConstructor = mc.retrieveConstructor(Map)
-    mc.constructor = { Map args ->
-      log.trace("MapConstructor called for new ${delegate} with args ${args}")
-      
-      log.debug ("Calling original contructor for new ${delegate} with args ${args}.")
-      
-      // Instantiate the object and save...
-      // We really need to save here so we can reference this object within the combos.
-      def instance = oldConstructor.newInstance(args).save()
-      
-      // Now that we have created our instance using the original constructor we can,
-      // now set the combo props that were missed.
-      Set cProps = []
-      cProps.addAll( getComboMapFor (instance.getClass(), Combo.HAS).keySet() )
-      cProps.addAll( getComboMapFor (instance.getClass(), Combo.MANY).keySet() )
-      for (prop in args.keySet()) {
-        if (cProps.contains(prop)) {
-          // Set the combo property directly.
-          instance.setComboProperty(prop, args[prop])
-        }
-      }
-      instance
-    }    
   }
 
   private static addGetComboMapFor = { DefaultGrailsDomainClass domainClass ->
@@ -231,13 +288,6 @@ class DomainClassExtender {
     }
   }
   
-  private static addComboPropertyCache = { DefaultGrailsDomainClass domainClass ->
-
-    // Get the metaclass.
-    domainClass.getMetaClass().comboPropertyCache = [:]
-    
-  }
-
   private static addLookupComboMapping = { DefaultGrailsDomainClass domainClass ->
 
     // Get the metaclass.
@@ -262,6 +312,47 @@ class DomainClassExtender {
       
       log.debug("${delegate}.${propertyName} maps to type ${prop}.")
       prop
+    }
+  }
+
+  private static addPropertyMissing = {DefaultGrailsDomainClass domainClass ->
+    // Get the metaclass.
+    MetaClass mc = domainClass.getMetaClass()
+
+    // Save the old version of methodMissing so it can be used if needed
+    MetaMethod oldPropertyMissing = mc.methods.find { it.name == 'propertyMissing' }
+    
+    mc.propertyMissing = {String name, value = null ->
+      
+      log.trace("propertyMissing called on ${delegate} with args ${[name, value]}")
+      def result
+      switch (name) {
+        case Combo.HAS :
+        case Combo.MAPPED_BY :
+        case Combo.MANY :
+          return null
+          break
+        
+        default :
+      
+          // Execute the existing propertyMissing.
+          if (value == null) {
+            if (oldPropertyMissing != null) {
+              log.trace("calling oldPropertyMissing on ${delegate} with args ${name}")
+              result = oldPropertyMissing.doMethodInvoke(delegate, [name].toArray())
+            }
+            
+            result = result ?: getComboProperty(name)
+          } else {
+            if (oldPropertyMissing != null) {
+              
+              log.trace("calling oldPropertyMissing on ${delegate} with args ${[name, value]}")
+              result = oldPropertyMissing.doMethodInvoke(delegate, [name, value].toArray())
+            }
+            result = result ?: setComboProperty(name, value)
+          }
+      }
+      result
     }
   }
   private static addRemoveComboPropertyVals = { DefaultGrailsDomainClass domainClass ->
@@ -469,10 +560,14 @@ class DomainClassExtender {
         DomainClassExtender.addGetComboProperty(domainClass)
         DomainClassExtender.addRemoveComboPropertyVals(domainClass)
         DomainClassExtender.addPropertyMissing(domainClass)
+        DomainClassExtender.addGetAllComboPropertyNames (domainClass)
+        DomainClassExtender.addGetAllComboTypeValues (domainClass)
 
         DomainClassExtender.addGetComboMapFor (domainClass)
         DomainClassExtender.addLookupComboMappingFor (domainClass)
         DomainClassExtender.addGetComboTypeValueFor (domainClass)
+        DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
+        DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       }
     } else {
 
@@ -481,9 +576,40 @@ class DomainClassExtender {
       DomainClassExtender.addGetComboMapFor (domainClass)
       DomainClassExtender.addLookupComboMappingFor (domainClass)
       DomainClassExtender.addGetComboTypeValueFor (domainClass)
+      DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
+      DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
     }
   }
 
+  private static extendMapConstructor = { DefaultGrailsDomainClass domainClass ->
+    
+    // Get the metaclass.
+    ExpandoMetaClass mc = domainClass.getMetaClass()
+    
+    // Get the original contructor.
+    def oldConstructor = mc.retrieveConstructor(Map)
+    mc.constructor = { Map args ->
+      log.trace("MapConstructor called for new ${delegate} with args ${args}")
+      
+      log.debug ("Calling original contructor for new ${delegate} with args ${args}.")
+      
+      // Instantiate the object and save...
+      // We really need to save here so we can reference this object within the combos.
+      def instance = oldConstructor.newInstance(args).save()
+      
+      // Now that we have created our instance using the original constructor we can,
+      // now set the combo props that were missed.
+      Set cProps = getAllComboPropertyNamesFor (instance.getClass())
+      for (prop in args.keySet()) {
+        if (cProps.contains(prop)) {
+          // Set the combo property directly.
+          instance.setComboProperty(prop, args[prop])
+        }
+      }
+      instance
+    }    
+  }
+  
   private static extendMethodMissing = { DefaultGrailsDomainClass domainClass ->
     log.debug("Extending methodMissing for ${domainClass.getClazz().getName()}")
 
@@ -545,47 +671,6 @@ class DomainClassExtender {
       // Finally throw an exception if no luck.
       log.debug("Thrown MissingMethodException looking for ${methodName} on ${delegate}")
       throw new MissingMethodException(methodName, domainClass.getClazz(), args)
-    }
-  }
-  
-  private static addPropertyMissing = {DefaultGrailsDomainClass domainClass ->
-    // Get the metaclass.
-    MetaClass mc = domainClass.getMetaClass()
-
-    // Save the old version of methodMissing so it can be used if needed
-    MetaMethod oldPropertyMissing = mc.methods.find { it.name == 'propertyMissing' }
-    
-    mc.propertyMissing = {String name, value = null ->
-      
-      log.trace("propertyMissing called on ${delegate} with args ${[name, value]}")
-      def result
-      switch (name) {
-        case Combo.HAS :
-        case Combo.MAPPED_BY :
-        case Combo.MANY :
-          return null
-          break
-        
-        default :
-      
-          // Execute the existing propertyMissing.
-          if (value == null) {
-            if (oldPropertyMissing != null) {
-              log.trace("calling oldPropertyMissing on ${delegate} with args ${name}")
-              result = oldPropertyMissing.doMethodInvoke(delegate, [name].toArray())
-            }
-            
-            result = result ?: getComboProperty(name)
-          } else {
-            if (oldPropertyMissing != null) {
-              
-              log.trace("calling oldPropertyMissing on ${delegate} with args ${[name, value]}")
-              result = oldPropertyMissing.doMethodInvoke(delegate, [name, value].toArray())
-            }
-            result = result ?: setComboProperty(name, value)
-          }
-      }
-      result
     }
   }
 }

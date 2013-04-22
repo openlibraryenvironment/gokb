@@ -1,9 +1,6 @@
 package org.gokb.cred
 
-import java.lang.reflect.Field
-import java.lang.reflect.Method
 import javax.persistence.Transient
-import grails.util.GrailsNameUtils
 abstract class KBComponent {
 
   static auditable = true
@@ -17,7 +14,7 @@ abstract class KBComponent {
   List additionalProperties = []
   List outgoingCombos
   List incomingCombos
-
+  
   static mappedBy = [
     ids: 'component',
     outgoingCombos: 'fromComponent',
@@ -25,6 +22,7 @@ abstract class KBComponent {
     orgs: 'linkedComponent',
     additionalProperties: 'fromComponent']
 
+  
   static hasMany = [
     ids: IdentifierOccurrence,
     orgs: OrgRole,
@@ -32,12 +30,6 @@ abstract class KBComponent {
     outgoingCombos:Combo,
     incomingCombos:Combo,
     additionalProperties:KBComponentAdditionalProperty]
-
-  //  public static hasByCombo = [:]
-  //
-  //  public static manyByCombo = [ids : IdentifierOccurrence]
-  //
-  //  public static mappedByCombo = [:]
 
   static mapping = {
     id column:'kbc_id'
@@ -56,33 +48,6 @@ abstract class KBComponent {
     normname(nullable:true, blank:false, maxSize:2048)
   }
 
-  @Transient
-  String getIdentifierValue(idtype) {
-    def result=null
-    ids?.each { id ->
-      if ( id.identifier?.ns?.ns == idtype )
-        result = id.identifier?.value
-    }
-    result
-  }
-
-  def beforeInsert() {
-    if ( name ) {
-      if ( !shortcode ) {
-        shortcode = generateShortcode(name);
-      }
-      normname = name.toLowerCase().trim();
-    }
-  }
-
-  def beforeUpdate() {
-    if ( name ) {
-      if ( !shortcode ) {
-        shortcode = generateShortcode(name);
-      }
-      normname = name.toLowerCase().trim();
-    }
-  }
 
   static def generateShortcode(name) {
     def candidate = name.trim().replaceAll(" ","_")
@@ -92,7 +57,6 @@ abstract class KBComponent {
 
     return incUntilUnique(candidate);
   }
-
   static def incUntilUnique(name) {
     def result = name;
     if ( KBComponent.findWhere([shortcode : (name)]) ) {
@@ -106,7 +70,6 @@ abstract class KBComponent {
 
     result;
   }
-
   @Transient
   static def lookupByIO(String idtype, String idvalue) {
     // println("lookupByIdentifier(${idtype},${idvalue})");
@@ -132,9 +95,6 @@ abstract class KBComponent {
     result
   }
 
-  @Transient
-  abstract getPermissableCombos();
-
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
    *  objects implementing this method can be easily located and listed / selected
@@ -152,4 +112,73 @@ abstract class KBComponent {
 
     result
   }
+
+  def beforeInsert() {
+    if ( name ) {
+      if ( !shortcode ) {
+        shortcode = generateShortcode(name);
+      }
+      normname = name.toLowerCase().trim();
+    }
+  }
+
+  def beforeUpdate() {
+    if ( name ) {
+      if ( !shortcode ) {
+        shortcode = generateShortcode(name);
+      }
+      normname = name.toLowerCase().trim();
+    }
+  }
+
+  @Transient
+  String getIdentifierValue(idtype) {
+    def result=null
+    ids?.each { id ->
+      if ( id.identifier?.ns?.ns == idtype )
+        result = id.identifier?.value
+    }
+    result
+  }
+
+  public List getOtherIncomingCombos () {
+    
+    List combs = incomingCombos
+    
+    // Only need to bother if we have a defined list.
+    if (combs) {
+      
+      // Get the type values of all defined combo properties for this class.
+      Set comboPropTypes = getAllComboTypeValuesFor(this.getClass())
+      
+      // Filter on none combo properties.
+      combs = combs.findAll {
+        !comboPropTypes.contains(it.type?.value)
+      }
+    }
+    
+    combs
+  }
+
+  public List getOtherOutgoingCombos () {
+    
+    List combs = outgoingCombos
+    
+    // Only need to bother if we have a defined list.
+    if (combs) {
+      
+      // Get the type values of all defined combo properties for this class.
+      Set comboPropTypes = getAllComboTypeValuesFor(this.class)
+      
+      // Filter on none combo properties.
+      combs = combs.findAll {
+        !comboPropTypes.contains(it.type?.value)
+      }
+    }
+    
+    combs
+  };
+
+  @Transient
+  abstract getPermissableCombos()
 }
