@@ -2,6 +2,7 @@ package org.gokb
 
 import grails.converters.*
 import grails.plugins.springsecurity.Secured
+import org.gokb.cred.KBComponent
 
 class SearchController {
 
@@ -133,10 +134,18 @@ class SearchController {
           }
           break;
         case 'filter':
+          
           qry.ilike(contextTree.prop,contextTree.value)
           break;
         case 'qry':
-          qry.ilike(contextTree.prop,value)
+          
+          if (KBComponent.isComboPropertyFor(qry.target_class, contextTree.prop)) {
+            // Add using combo property.
+            ComboCriteria.createFor(qry)
+              .add(contextTree.prop, "ilike", value)
+          } else {
+            qry.ilike(contextTree.prop,value)
+          }
           break;
       
       }
@@ -319,7 +328,7 @@ class SearchController {
             contextTree:[['ctxtp':'property','prop':'title','children':[
                            'ctxtp':'qry', 'prop':'name']]]
           ],
-          [
+          /*[
             prompt:'Content Provider',
             qparam:'qp_cp_name',
             placeholder:'Content Provider Name',
@@ -351,7 +360,7 @@ class SearchController {
             placeholder:'Package ID',
             contextTree:['ctxtp':'assoc','prop':'pkg','children':[
                               ['ctxtp':'qry', 'prop':'id']]]
-          ],
+          ],*/
         ],
         qbeResults:[
           [heading:'Id', property:'id'],

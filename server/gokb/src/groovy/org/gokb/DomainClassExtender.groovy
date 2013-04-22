@@ -25,8 +25,26 @@ class DomainClassExtender {
   private static addGetAllComboPropertyNames = { DefaultGrailsDomainClass domainClass ->
     
     // Get the metaclass.
-    domainClass.getMetaClass().static.getAllComboPropertyNames = { ->
+    domainClass.getMetaClass().getAllComboPropertyNames = { ->
       getAllComboPropertyNamesFor (domainClass.getClazz())
+    }
+  }
+  
+  private static addIsComboPropertyFor = { DefaultGrailsDomainClass domainClass ->
+    
+    // Get the metaclass.
+    ExpandoMetaClass mc = domainClass.getMetaClass()
+    mc.static.isComboPropertyFor = { Class forClass, String propertyName ->
+      Set cProps = getAllComboPropertyNamesFor (forClass)
+      cProps.contains(propertyName)
+    }
+  }
+  
+  private static addIsComboProperty = { DefaultGrailsDomainClass domainClass ->
+    
+    // Get the metaclass.
+    domainClass.getMetaClass().isComboProperty = { String propertyName ->
+      addIsComboPropertyFor (domainClass.getClazz(), propertyName)
     }
   }
   
@@ -63,7 +81,7 @@ class DomainClassExtender {
   private static addGetAllComboTypeValues = { DefaultGrailsDomainClass domainClass ->
     
     // Get the metaclass.
-    domainClass.getMetaClass().static.getAllComboTypeValues = { ->
+    domainClass.getMetaClass().getAllComboTypeValues = { ->
       getAllComboTypeValuesFor (domainClass.getClazz())
     }
   }
@@ -562,12 +580,14 @@ class DomainClassExtender {
         DomainClassExtender.addPropertyMissing(domainClass)
         DomainClassExtender.addGetAllComboPropertyNames (domainClass)
         DomainClassExtender.addGetAllComboTypeValues (domainClass)
+        DomainClassExtender.addIsComboProperty (domainClass)
 
         DomainClassExtender.addGetComboMapFor (domainClass)
         DomainClassExtender.addLookupComboMappingFor (domainClass)
         DomainClassExtender.addGetComboTypeValueFor (domainClass)
         DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
         DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
+        DomainClassExtender.addIsComboPropertyFor (domainClass)
       }
     } else {
 
@@ -578,6 +598,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetComboTypeValueFor (domainClass)
       DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
+      DomainClassExtender.addIsComboPropertyFor (domainClass)
     }
   }
 
