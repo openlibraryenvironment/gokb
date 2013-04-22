@@ -1,6 +1,18 @@
 package org.gokb.cred
 
+/**
+ * @author sosguthorpe
+ *
+ */
+
+import grails.util.GrailsNameUtils
+
 class Combo {
+  
+  public static final String MAPPED_BY = "mappedByCombo"
+  public static final String HAS = "hasByCombo"
+  public static final String MANY = "manyByCombo"
+  
 
   RefdataValue status
   RefdataValue type

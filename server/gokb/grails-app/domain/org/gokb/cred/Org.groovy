@@ -11,13 +11,17 @@ class Org extends KBComponent{
   Date dateCreated
   Date lastUpdated
 
-  Set ids = []
+  Set<IdentifierOccurrence> ids = []
 
-  static mappedBy = [ids: 'component', 
-                     links: 'org' ]
+  static mappedBy = [
+    ids: 'component', 
+    links: 'org'
+  ]
 
-  static hasMany = [ids: IdentifierOccurrence, 
-                    links: OrgRole]
+  static hasMany = [
+    ids: IdentifierOccurrence, 
+    links: OrgRole
+  ]
 
   static mapping = {
          id column:'org_id'
@@ -39,6 +43,20 @@ class Org extends KBComponent{
   def getPermissableCombos() {
     [
     ]
+  }
+
+  static def refdataFind(params) {
+    def result = [];
+    def ql = null;
+    ql = Org.findAllByNameIlike("${params.q}%",params)
+
+    if ( ql ) {
+      ql.each { t ->
+        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+      }
+    }
+
+    result
   }
 
 }

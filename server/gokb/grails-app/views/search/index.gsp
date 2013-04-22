@@ -2,8 +2,17 @@
 <html>
   <head>
     <meta name="layout" content="main"/>
-    <r:require modules="gokbstyle"/>
+    <r:require modules="gokbstyle,bootstrap-popover"/>
     <title>GOKb</title>
+    <style>
+      #modal {
+	width: 900px; /* SET THE WIDTH OF THE MODAL */
+        margin-left:-450px;
+      }
+      #modal .modal-body {
+	max-height: 800px;
+      }
+    </style>
   </head>
   <body>
 
@@ -62,6 +71,29 @@
                 <div class="navbar-inner">
                   <div class="brand">Record ${det} of ${reccount}</div>
                   <ul class="nav pull-right">
+
+                    <li>
+                      <a data-toggle="modal" 
+                         data-cache="false" 
+                         data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>' 
+                         data-target="#modal"><i class="icon-time"></i></a>
+                    </li>
+
+                    <li>
+                      <a data-toggle="modal" 
+                         data-cache="false" 
+                         data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>' 
+                         data-target="#modal"><i class="icon-comment"></i></a>
+                    </li>
+
+                    <li>
+                      <a data-toggle="modal" 
+                         data-cache="false" 
+                         data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
+                         data-target="#modal"><i class="icon-file"></i></a>
+                    </li>
+
+                    <li class="divider-vertical"></li>
                     <li><g:link controller="search" action="index" params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}">Prev</g:link></li>
                     <li class="divider-vertical"></li>
                     <li><g:link controller="search" action="index" params="${params+['det':det+1, offset:((int)(det / max))*max]}">Next</g:link></li>
@@ -81,5 +113,23 @@
 
       </div>
     </div>
+
+    <div id="modal" class="qmodal modal hide fade" role="dialog">
+      <div class="modal-header">
+         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+         <h3 id="myModalLabel">Modal header</h3>
+       </div>
+       <div class="modal-body">
+       </div>
+       <div class="modal-footer">
+         <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+       </div>
+    </div>
+
+    <script language="javascript">
+      $('#modal').on('hidden', function() {
+        $(this).data('modal').$element.removeData();
+      })
+    </script>
   </body>
 </html>

@@ -2,6 +2,9 @@
 // config files can be ConfigSlurper scripts, Java properties files, or classes
 // in the classpath in ConfigSlurper format
 
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
+
+
 grails.config.locations = [ "classpath:${appName}-config.properties",
                             "classpath:${appName}-config.groovy",
                             "file:${userHome}/.grails/${appName}-config.properties",
@@ -102,6 +105,8 @@ log4j = {
           'grails.app.filters',
           // 'grails.app.conf',
           'grails.app.jobs' // ,
+          
+//   trace  'org.gokb.DomainClassExtender'
 
 }
 
@@ -131,3 +136,21 @@ validationRules = [
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] 
 ]
+
+auditLog {
+  actorClosure = { request, session ->
+
+    if (request.applicationContext.springSecurityService.principal instanceof java.lang.String){
+      return request.applicationContext.springSecurityService.principal
+    }
+
+    def username = request.applicationContext.springSecurityService.principal?.username
+
+    if (SpringSecurityUtils.isSwitched()){
+      username = SpringSecurityUtils.switchedUserOriginalUsername+" AS "+username
+    }
+
+    return username
+  }
+}
+

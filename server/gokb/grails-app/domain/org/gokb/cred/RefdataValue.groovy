@@ -20,4 +20,8 @@ class RefdataValue {
   static constraints = {
     icon(nullable:true)
   }
+
+  def availableActions() {
+    [ [ code:'object::delete' , label: 'Delete' ] ]
+  }
 }

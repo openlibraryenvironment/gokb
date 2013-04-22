@@ -9,6 +9,8 @@ class RefdataCategory {
          id column:'rdc_id'
     version column:'rdc_version'
        desc column:'rdc_description', index:'rdc_description_idx'
+     values sort:'value', order:'asc'
+
   }
 
   static hasMany = [
@@ -31,10 +33,15 @@ class RefdataCategory {
     def result = RefdataValue.findByOwnerAndValue(cat, value)
 
     if ( !result ) {
-      new RefdataValue(owner:cat, value:value).save(fliush:true);
+      new RefdataValue(owner:cat, value:value).save(flush:true);
       result = RefdataValue.findByOwnerAndValue(cat, value);
     }
 
     result
   }
+
+  def availableActions() {
+    [ [ code:'object::delete' , label: 'Delete' ] ]
+  }
+
 }

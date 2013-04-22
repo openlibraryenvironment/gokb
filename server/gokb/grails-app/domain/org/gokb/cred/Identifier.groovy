@@ -7,6 +7,8 @@ class Identifier {
 
   static hasMany = [ occurrences:IdentifierOccurrence ]
   static mappedBy = [ occurrences:'identifier' ]
+  
+//  public static manyByCombo = [occurrences:IdentifierOccurrence]
 
   static constraints = {
   }

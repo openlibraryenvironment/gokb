@@ -1,11 +1,13 @@
 package org.gokb
 
 import grails.converters.*
+import grails.plugins.springsecurity.Secured
 
 class SearchController {
 
   def genericOIDService
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
     log.debug("enter SearchController::index...");
     def result = [:]
@@ -81,6 +83,7 @@ class SearchController {
     }
 
   }
+
 
   def doQuery(qbetemplate, params, result) {
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);

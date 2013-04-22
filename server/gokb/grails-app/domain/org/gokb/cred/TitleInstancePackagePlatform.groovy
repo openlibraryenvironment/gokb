@@ -20,23 +20,35 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   TitleInstancePackagePlatform derivedFrom
 
-  static mappedBy = [ids: 'component']
-  static hasMany = [ids: IdentifierOccurrence]
+//  static mappedBy = [ids: 'component']
+//  static hasMany = [ids: IdentifierOccurrence]
 
 
   static belongsTo = [
-    pkg:Package,
-    platform:Platform,
+//    pkg:Package,
+//    platform:Platform,
+//    title:TitleInstance
+  ]
+  
+  static hasByCombo = [
+    pkg : Package,
+    platform : Platform,
     title:TitleInstance
+  ]
+  
+  static mappedByCombo = [
+    pkg : 'tipps',
+    platform : 'tipps',
+    title : 'tipps'
   ]
 
   static mapping = {
                id column:'tipp_id'
           rectype column:'tipp_rectype'
           version column:'tipp_version'
-              pkg column:'tipp_pkg_fk', index: 'tipp_idx'
-         platform column:'tipp_plat_fk', index: 'tipp_idx'
-            title column:'tipp_ti_fk', index: 'tipp_idx'
+//              pkg column:'tipp_pkg_fk', index: 'tipp_idx'
+//         platform column:'tipp_plat_fk', index: 'tipp_idx'
+//            title column:'tipp_ti_fk', index: 'tipp_idx'
         startDate column:'tipp_start_date'
       startVolume column:'tipp_start_volume'
        startIssue column:'tipp_start_issue'
@@ -86,5 +98,4 @@ class TitleInstancePackagePlatform extends KBComponent {
     [
     ]
   }
-
 }

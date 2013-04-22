@@ -6,6 +6,7 @@ import org.apache.commons.compress.compressors.gzip.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
 import grails.converters.JSON
+import grails.orm.HibernateCriteriaBuilder
 import java.text.SimpleDateFormat
 
 
@@ -175,7 +176,7 @@ class IngestService {
                                                      jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
                                                      jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
                                                      extra_ids,
-                                                     jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
+                                                     jsonv(datarow.cells[col_positions["publisher_name"]]));
 
             // Platform
             def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
@@ -188,7 +189,7 @@ class IngestService {
 
             log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
             // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
-            def platform_info = Platform.findByNormname(host_norm_platform_name) 
+            def platform_info = Platform.findByNormname(host_norm_platform_name)
             if ( !platform_info ) {
               // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
               platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
@@ -205,7 +206,18 @@ class IngestService {
             def pkg = getOrCreatePackage(pkg_id,project);
   
             // TIPP
-            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
+//            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
+            HibernateCriteriaBuilder crit = TitleInstancePackagePlatform.createCriteria()
+            def tipp = crit.get {              
+              ComboCriteria.createFor(crit)
+               .add ("title", "eq", title_info)
+              and {
+                ComboCriteria
+                  .add ("pkg", "eq", pkg)
+                  .add ("platform_info", "eq", platform_info)
+              }
+            }
+            
             if ( !tipp ) {
               log.debug("Create new tipp");
               tipp = new TitleInstancePackagePlatform(title:title_info,
@@ -223,7 +235,7 @@ class IngestService {
                                                       hostPlatformURL:host_platform_url)
 
               gokb_additional_props.each { apd ->
-                tipp.additionalProperties.add(new KBComponentAdditionalProperty(fromComponent:tipp, 
+                tipp.additionalProperties.add(new KBComponentAdditionalProperty(fromComponent:tipp,
                                                                                 propertyDefn:apd.pd,
                                                                                 apValue:getRowValue(datarow,apd.col)))
               }
