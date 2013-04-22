@@ -142,7 +142,7 @@ class DomainClassExtender {
 
         if (typeClass) {
           def result = null
-          if (reverseLookup(propertyName)) {
+          if (isComboReverse(propertyName)) {
 
             // Just return the component.
             Combo combo = incomingCombos.findWhere(type : (type))
