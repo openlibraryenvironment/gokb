@@ -84,15 +84,15 @@ class DomainClassExtender {
       value
     }
   }
-
+  
   private static addGetComboProperty = { DefaultGrailsDomainClass domainClass ->
     MetaClass mc = domainClass.getMetaClass()
     mc.getComboProperty {String propertyName ->
       log.trace("getComboProperty called on ${delegate} with args ${[propertyName]}")
 
       // Test this way to allow us to cache null values.
-      String cacheKey = "${delegate.toString()}.${propertyName}".toString()
-      if (DomainClassExtender.comboPropertyCache.containsKey(cacheKey)) return DomainClassExtender.comboPropertyCache.get(cacheKey);
+      String cacheKey = "${propertyName}".toString()
+      if (comboPropertyCache.containsKey(cacheKey)) return comboPropertyCache.get(cacheKey);
 
       // Check the type.
       Class typeClass = lookupComboMapping(Combo.MANY, propertyName)
@@ -130,7 +130,7 @@ class DomainClassExtender {
         }
 
         // Add the result to the cache.
-        DomainClassExtender.comboPropertyCache.put(cacheKey, result)
+        comboPropertyCache.put(cacheKey, result)
 
         log.debug("${result} found.")
         return result
@@ -159,7 +159,7 @@ class DomainClassExtender {
           }
 
           // Add the result to the cache.
-          DomainClassExtender.comboPropertyCache.put(cacheKey, result)
+          comboPropertyCache.put(cacheKey, result)
 
           log.debug("${result} found.")
           return result
@@ -261,9 +261,10 @@ class DomainClassExtender {
     MetaClass mc = domainClass.getMetaClass()
     mc.removeComboPropertyVals {String propertyName ->
       log.trace("removeComboPropertyVals called on ${delegate} with args ${propertyName}")
+      
       // Generate the type.
       RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
-  
+      
       // Get all..
       List<Combo> combos
       if (isComboReverse(propertyName)) {
@@ -286,12 +287,16 @@ class DomainClassExtender {
         combo.fromComponent?.removeFromOutgoingCombos(combo)
         combo.toComponent?.removeFromIncomingCombos(combo)
         
+        // Just clear both caches for coding ease.
+        fromComponent?.comboPropertyCache?.clear()
+        toComponent?.comboPropertyCache?.clear()
+        
         // Remove the combo.
         combo.delete()
       }
-  
+      
       // Clear the cached value too if present.
-      DomainClassExtender.comboPropertyCache.remove("${delegate}.${propertyName}".toString())
+      comboPropertyCache.remove("${propertyName}".toString())
     }
   }
 
@@ -310,7 +315,7 @@ class DomainClassExtender {
           )
           break
         default:
-          // Check single properties
+          // Check single properties.
           typeClass = lookupComboMapping(Combo.HAS, propertyName)
           
           if (typeClass == null) throw new IllegalArgumentException(
@@ -331,21 +336,23 @@ class DomainClassExtender {
           // Go through each item and generate a value.
           switch (value) {
             case Collection :
-
+            
               if (isComboReverse(propertyName)) {
                 // Reverse
                 for (val in value) {
                   if (typeClass.isInstance(val)) {
                     
-                    log.debug("adding incoming Combo of type ${type} from ${val} to ${delegate}.")
                     Combo combo = new Combo(
                       type : (type),
                       status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
                     ).save()
 
                     // Add to the collections.
+                    log.debug("adding incoming Combo of type ${type} to ${delegate} to ${val}.")
                     delegate.addToIncomingCombos(combo)
+                    log.debug("adding outgoing Combo of type ${type} from ${val} to ${delegate}.")
                     val.addToOutgoingCombos(combo)
+
                   } else {
                     throw new IllegalArgumentException(
                       "All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}"
@@ -355,15 +362,17 @@ class DomainClassExtender {
               } else {
                 for (val in value) {
                   if (typeClass.isInstance(val)) {
-                    log.debug("adding incoming Combo of type ${type} from ${delegate} to ${val}.")
                     Combo combo = new Combo(
                       type : (type),
                       status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
                     ).save()
 
                     // Add to the collections.
+                    log.debug("adding outgoing Combo of type ${type} from ${delegate} to ${val}.")
                     delegate.addToOutgoingCombos(combo)
+                    log.debug("adding incoming Combo of type ${type} to ${val} from ${delegate}.")
                     val.addToIncomingCombos(combo)
+
                   } else {
                     throw new IllegalArgumentException(
                       "All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}"
@@ -376,27 +385,31 @@ class DomainClassExtender {
               // Check single properties.
               typeClass = lookupComboMapping(Combo.HAS, propertyName)
               if (typeClass.isInstance(value)) {
-
+                
                 if (isComboReverse(propertyName)) {
-                  log.debug("adding incoming Combo of type ${type} from ${value} to ${delegate}.")
                   Combo combo = new Combo(
                       type : (type),
                       status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
                    ).save()
 
                   // Add to the incoming collection
+                  log.debug("adding incoming Combo of type ${type} to ${delegate} from ${value}.")
                   delegate.addToIncomingCombos(combo)
+                  log.debug("adding outgoing Combo of type ${type} from ${value} to ${delegate}.")
                   value.addToOutgoingCombos(combo)
+                  
                 } else {
-                  log.debug("adding outgoing Combo of type ${type} from ${delegate} to ${value}.")
                   Combo combo = new Combo(
                     type : (type),
                     status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
                   ).save()
 
                   // Add to the collections.
+                  log.debug("adding outgoing Combo of type ${type} from ${delegate} to ${value}.")
                   delegate.addToOutgoingCombos(combo)
+                  log.debug("adding incoming Combo of type ${type} to ${value} to ${delegate}.")
                   value.addToIncomingCombos(combo)
+                  
                 }
               } else {
                 throw new IllegalArgumentException(
@@ -406,7 +419,7 @@ class DomainClassExtender {
           }
 
           // Add to the cache.
-          DomainClassExtender.comboPropertyCache.put("${delegate}.${propertyName}".toString(), value)
+          comboPropertyCache.put("${propertyName}".toString(), value)
         }
       } else {
         log.debug("Thrown missing property exception for ${propertyName} on ${delegate}.")
@@ -416,7 +429,6 @@ class DomainClassExtender {
   }
 
   private static Map comboMappingCache = [:]
-  private static Map comboPropertyCache = [:]
 
   public static extend = { DefaultGrailsDomainClass domainClass ->
     // Get the actual class that is represented by this domain class object.
@@ -534,6 +546,15 @@ class DomainClassExtender {
         case Combo.MANY :
           return null
           break
+          
+        // Add the combo property cache parameter when first requested.
+        case "comboPropertyCache" :
+        
+          // Create the map and add to Metaclass for fast retrieval next time.
+          result = [:]
+          mc.comboPropertyCache = result
+          break  
+        
         default :
       
           // Execute the existing propertyMissing.
