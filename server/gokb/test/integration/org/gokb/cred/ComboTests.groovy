@@ -26,38 +26,36 @@ class ComboTests extends GroovyTestCase {
     sessionFactory.currentSession.clear()
   }
   
-//  void testDynamicMethods() {
-//    
-//    pkg.setTipps([tipp])
-//    
-//    def tipps = pkg.getTipps()
-//    
-//    assert tipps[0] == tipp
-//  }
-//  
-//  void testMapConstructor() {
-//    TitleInstancePackagePlatform nTipp = new TitleInstancePackagePlatform(
-//      "pkg" : (pkg),
-//      "platform" : (platform)
-//    ).save()
-//    
-//    def tipps = pkg.getTipps()
-//    assert tipps.contains(nTipp)
-//    
-//    tipps = pkg.tipps
-//    assert tipps.contains(nTipp)
-//    
-//    
-//  }
+  void testDynamicMethods() {
+    
+    pkg.setTipps([tipp])
+    
+    def tipps = pkg.getTipps()
+    
+    assert tipps[0] == tipp
+  }
   
-//  void testDynamicProperties() {
-//    
-//    pkg.tipps = [tipp]
-//    
-//    def tipps = pkg.tipps
-//    
-//    assert tipps[0] == tipp
-//  }
+  void testMapConstructor() {
+    TitleInstancePackagePlatform nTipp = new TitleInstancePackagePlatform(
+      "pkg" : (pkg),
+      "platform" : (platform)
+    ).save()
+    
+    def tipps = pkg.getTipps()
+    assert tipps.contains(nTipp)
+    
+    tipps = platform.tipps
+    assert tipps.contains(nTipp)
+  }
+  
+  void testDynamicProperties() {
+    
+    pkg.tipps = [tipp]
+    
+    def tipps = pkg.tipps
+    
+    assert tipps[0] == tipp
+  }
   
   void testReverseLookups() {
     pkg.tipps = [tipp]

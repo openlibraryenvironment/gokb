@@ -230,6 +230,13 @@ class DomainClassExtender {
       (lookupComboMapping (Combo.MAPPED_BY, propertyName) != null)
     }
   }
+  
+  private static addComboPropertyCache = { DefaultGrailsDomainClass domainClass ->
+
+    // Get the metaclass.
+    domainClass.getMetaClass().comboPropertyCache = [:]
+    
+  }
 
   private static addLookupComboMapping = { DefaultGrailsDomainClass domainClass ->
 
@@ -279,17 +286,25 @@ class DomainClassExtender {
       }
   
       // Delete each combo in turn.
-      for (combo in combos) {
+      for (Combo combo in combos) {
         log.debug("removing Combo of type ${combo.type} from ${delegate}.")
         
         // Need to make sure we remove from both sides of the,
         // association before attempting to remove the combo.
-        combo.fromComponent?.removeFromOutgoingCombos(combo)
-        combo.toComponent?.removeFromIncomingCombos(combo)
         
-        // Just clear both caches for coding ease.
-        fromComponent?.comboPropertyCache?.clear()
-        toComponent?.comboPropertyCache?.clear()
+        // Clear caches first as removing from set will set components to null.
+        if (combo.fromComponent) {
+          KBComponent comp = combo.fromComponent
+          comp.comboPropertyCache.clear()
+          comp.removeFromOutgoingCombos(combo)
+          comp.save()
+        }
+        if (combo.toComponent) {
+          KBComponent comp = combo.toComponent
+          comp.comboPropertyCache.clear()
+          comp.removeFromIncomingCombos(combo)
+          comp.save()
+        }
         
         // Remove the combo.
         combo.delete()
@@ -420,6 +435,9 @@ class DomainClassExtender {
 
           // Add to the cache.
           comboPropertyCache.put("${propertyName}".toString(), value)
+          
+          // We should also completely clear the target cache too.
+          value?.comboPropertyCache.clear()
         }
       } else {
         log.debug("Thrown missing property exception for ${propertyName} on ${delegate}.")
@@ -446,6 +464,7 @@ class DomainClassExtender {
         DomainClassExtender.addLookupComboMapping (domainClass)
         DomainClassExtender.addGetComboTypeValue (domainClass)
         DomainClassExtender.addIsComboReverse (domainClass)
+        DomainClassExtender.addComboPropertyCache(domainClass)
         DomainClassExtender.addSetComboProperty(domainClass)
         DomainClassExtender.addGetComboProperty(domainClass)
         DomainClassExtender.addRemoveComboPropertyVals(domainClass)
@@ -546,14 +565,6 @@ class DomainClassExtender {
         case Combo.MANY :
           return null
           break
-          
-        // Add the combo property cache parameter when first requested.
-        case "comboPropertyCache" :
-        
-          // Create the map and add to Metaclass for fast retrieval next time.
-          result = [:]
-          mc.comboPropertyCache = result
-          break  
         
         default :
       
