@@ -6,7 +6,7 @@
   <dd>${d.id}</dd>
 
   <dt>Title</dt>
-  <dd><g:link controller="resource" action="show" id="${d.title?.class.name+':'+d.title?.id}">${d.title?.name}</g:link></dd>
+  <dd><g:link controller="resource" action="show" id="${d.title?.class.name+':'+d.title?.id}">${d.title.name}</g:link></dd>
 
   <dt>Package</dt>
   <dd><g:link controller="resource" action="show" id="${d.pkg?.class.name+':'+d.pkg?.id}">${d.pkg?.name}</g:link></dd>

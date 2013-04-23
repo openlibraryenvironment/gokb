@@ -94,6 +94,9 @@ class IngestService {
 
     if ( col_positions[HOST_PLATFORM_URL] == null )
       result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
+      
+      if ( col_positions[PUBLISHER_NAME] == null )
+      result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
 
     if ( result.messages.size() > 0 ) {
       log.error("validation has messages: a failure: ${result.messages}");
@@ -176,7 +179,7 @@ class IngestService {
                                                      jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
                                                      jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
                                                      extra_ids,
-                                                     jsonv(datarow.cells[col_positions["publisher_name"]]));
+                                                     jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
 
             // Platform
             def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])

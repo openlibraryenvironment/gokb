@@ -139,15 +139,23 @@ class SearchController {
           break;
         case 'qry':
           
-          if (KBComponent.isComboPropertyFor(qry.target_class, contextTree.prop)) {
-            // Add using combo property.
-            ComboCriteria.createFor(qry)
-              .add(contextTree.prop, "ilike", value)
-          } else {
+//          if (KBComponent.isComboPropertyFor(owner.target_class, contextTree.prop)) {
+//            // Add using combo property.
+//            ComboCriteria.createFor(qry)
+//              .add("${contextTree.prop}.name", "ilike", value)
+//          } else {
             qry.ilike(contextTree.prop,value)
-          }
+//          }
           break;
-      
+//        case 'property' :
+////          if (KBComponent.isComboPropertyFor(qry.target_class, contextTree.prop)) {
+//            // Add using combo property.
+//            ComboCriteria.createFor(qry)
+//              .add("${contextTree.prop}.name", "ilike", value)
+////          } else {
+////            processContextTree(delegate, contextTree.children, value, paramdef)
+////          }
+//         break;
       }
     }
   }
@@ -327,6 +335,18 @@ class SearchController {
             placeholder:'Title',
             contextTree:[['ctxtp':'property','prop':'title','children':[
                            'ctxtp':'qry', 'prop':'name']]]
+            
+//            prompt:'Title',
+//            qparam:'qp_title',
+//            placeholder:'Title',
+//            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+//                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
+//                            ['ctxtp':'assoc','prop':'type','children':[
+//                              ['ctxtp':'assoc','prop':'owner','children':[
+//                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
+//                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
+//                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
+//                              ['ctxtp':'qry', 'prop':'name']]]]]]]
           ],
           /*[
             prompt:'Content Provider',
