@@ -9,6 +9,8 @@ import org.gokb.cred.Combo
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
+import org.hibernate.SessionFactory
+import org.springframework.context.ApplicationContext
 import groovy.util.logging.*
 
 @Log4j
@@ -33,6 +35,20 @@ class DomainClassExtender {
       
       // Return the cache object.
       cache
+    }
+  }
+  
+  private static overrideCreateCriteria = { DefaultGrailsDomainClass domainClass ->
+    
+    log.trace ("Overriding the createCriteria method.")
+    ApplicationContext ctx = domainClass.grailsApplication.mainContext
+    SessionFactory sessionFactory = ctx.sessionFactory
+    def session = sessionFactory.currentSession
+    
+    // Get the metaclass.
+    domainClass.getMetaClass().static.createCriteria = { ->
+      log.trace ("Running the overridden create criteria.")
+      new HibernateCriteriaBuilder (domainClass.getClazz(), sessionFactory)
     }
   }
   
@@ -603,6 +619,7 @@ class DomainClassExtender {
         DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
         DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
         DomainClassExtender.addIsComboPropertyFor (domainClass)
+        DomainClassExtender.overrideCreateCriteria (domainClass)
       }
     } else {
 
@@ -614,6 +631,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)
+      DomainClassExtender.overrideCreateCriteria (domainClass)
     }
   }
 
