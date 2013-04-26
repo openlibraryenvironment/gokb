@@ -107,6 +107,10 @@ log4j = {
           'grails.app.jobs' // ,
           
    debug  'org.gokb.DomainClassExtender'
+   
+   // Enable Hibernate SQL logging with param values
+//   trace 'org.hibernate.type'
+//   debug 'org.hibernate.SQL'
 
 }
 

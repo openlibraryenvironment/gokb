@@ -520,7 +520,7 @@ class DomainClassExtender {
                     Combo combo = new Combo(
                       type : (type),
                       status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                    )//.save()
+                    )
 
                     // Add to the collections.
                     log.debug("adding outgoing Combo of type ${type} from ${delegate} to ${val}.")
@@ -545,7 +545,7 @@ class DomainClassExtender {
                   Combo combo = new Combo(
                       type : (type),
                       status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                   )//.save()
+                   )
 
                   // Add to the incoming collection
                   log.debug("adding incoming Combo of type ${type} to ${delegate} from ${value}.")
@@ -619,7 +619,7 @@ class DomainClassExtender {
         DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
         DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
         DomainClassExtender.addIsComboPropertyFor (domainClass)
-        DomainClassExtender.overrideCreateCriteria (domainClass)
+//        DomainClassExtender.overrideCreateCriteria (domainClass)
       }
     } else {
 
@@ -631,7 +631,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)
-      DomainClassExtender.overrideCreateCriteria (domainClass)
+//      DomainClassExtender.overrideCreateCriteria (domainClass)
     }
   }
 
@@ -649,7 +649,8 @@ class DomainClassExtender {
       
       // Instantiate the object and save...
       // We really need to save here so we can reference this object within the combos.
-      def instance = oldConstructor.newInstance(args).save()
+      def instance = oldConstructor.newInstance(args)
+//      .save()
       
       // Now that we have created our instance using the original constructor we can,
       // now set the combo props that were missed.
@@ -674,45 +675,51 @@ class DomainClassExtender {
     MetaMethod oldMethodMissing = mc.methods.find { it.name == 'methodMissing' }
 
     mc.methodMissing = { String methodName, args ->
-      log.trace("methodMissing called on ${delegate} with args ${methodName}, ${args.toString()}")
-      String prefix;
-      def propertyName = methodName[3].toLowerCase() + methodName[4..-1]
-
-      // Add the propertyName as the first argument.
-      def argVals = [propertyName]
-      argVals.addAll(args)
-
-      String methodToCall
-      switch (methodName[0..2]) {
-        case "get" :// Property name.
-          methodToCall = "getComboProperty"
-          break
-        case "set" :
-          methodToCall = "setComboProperty"
-          break
-      }
-
-      // Invoke it.
-      if (methodToCall) {
-        try {
-          Object result
-          if (argVals[0] != "comboProperty") {
-            
-            log.debug("Invoking method ${methodToCall} on ${delegate} with args ${argVals}.")
-            result = delegate.invokeMethod(methodToCall, argVals.toArray())
-
-            // Add the metaclass method to speed up future calls.
-            mc."${methodToCall}" = { Object[] varArgs ->
-              log.debug("Invoking ${methodToCall} directly on metaclass without using method missing on ${delegate} using ${varArgs}.")
-              delegate.invokeMethod(methodToCall, varArgs)
+      
+      if (methodName.length() > 3) {
+      
+        log.trace("methodMissing called on ${delegate} with args ${methodName}, ${args.toString()}")
+        String prefix;
+        def propertyName = methodName[3].toLowerCase() + methodName[4..-1]
+  
+        // Add the propertyName as the first argument.
+        def argVals = [propertyName]
+        argVals.addAll(args)
+  
+        String methodToCall
+        switch (methodName[0..2]) {
+          case "get" :// Property name.
+            methodToCall = "getComboProperty"
+            break
+          case "set" :
+            methodToCall = "setComboProperty"
+            break
+        }
+  
+        // Invoke it.
+        if (methodToCall) {
+          try {
+            Object result
+            if (argVals[0] != "comboProperty") {
+              
+              log.debug("Invoking method ${methodToCall} on ${delegate} with args ${argVals}.")
+              result = delegate.invokeMethod(methodToCall, argVals.toArray())
+  
+              // Add the metaclass method to speed up future calls.
+              mc."${methodName}" = { methArgs ->
+                def newArgs = [propertyName]
+                argVals.addAll(methArgs)
+                log.debug("Invoking ${methodName} directly on metaclass without using method missing on ${delegate} using ${varArgs}.")
+                delegate.invokeMethod(methodToCall, newArgs)
+              }
+  
+              return result
             }
-
-            return result
+  
+          } catch (MissingPropertyException ex) {
+            /* Do nothing as the code should drop through and try and run original method */
+            log.debug("MissingPropertyException thrown (${ex.getMessage()})")
           }
-
-        } catch (MissingPropertyException ex) {
-          /* Do nothing as the code should drop through and try and run original method */
-          log.debug("MissingPropertyException thrown (${ex.getMessage()})")
         }
       }
 

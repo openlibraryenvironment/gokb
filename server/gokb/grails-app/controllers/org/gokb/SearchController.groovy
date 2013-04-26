@@ -2,7 +2,7 @@ package org.gokb
 
 import grails.converters.*
 import grails.plugins.springsecurity.Secured
-import org.gokb.cred.KBComponent
+import org.gokb.cred.*
 
 class SearchController {
 
@@ -147,15 +147,60 @@ class SearchController {
             qry.ilike(contextTree.prop,value)
 //          }
           break;
-//        case 'property' :
-////          if (KBComponent.isComboPropertyFor(qry.target_class, contextTree.prop)) {
-//            // Add using combo property.
-//            ComboCriteria.createFor(qry)
-//              .add("${contextTree.prop}.name", "ilike", value)
-////          } else {
-////            processContextTree(delegate, contextTree.children, value, paramdef)
-////          }
-//         break;
+        case 'property' :
+          
+          def the_class = qry.targetClass;
+          
+          // Check if this is a combo property.
+          if (KBComponent.isComboPropertyFor(the_class, contextTree.prop)) {
+            
+            // Add association using either incoming or outgoing properties.
+            boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, contextTree.prop)
+            
+            if (incoming) {
+              // Use incoming combos.
+              qry."incomingCombos" {
+                and {
+                  eq (
+                    "type",
+                    RefdataCategory.lookupOrCreate (
+                      "Combo.Type",
+                      the_class.getComboTypeValueFor (the_class, contextTree.prop)
+                    )
+                  )
+                  fromComponent {
+                    processContextTree(delegate, contextTree.children, value, paramdef)
+                  }
+                }
+              }
+              
+            } else {
+              // Outgoing
+              qry."outgoingCombos" {
+                and {
+                  eq (
+                    "type",
+                    RefdataCategory.lookupOrCreate (
+                      "Combo.Type",
+                      the_class.getComboTypeValueFor (the_class, contextTree.prop)
+                    )
+                  )
+                  toComponent {
+                    processContextTree(delegate, contextTree.children, value, paramdef)
+                  }
+                }
+              }
+            }
+          } else {
+            // Normal grails property.
+            qry."${contextTree.prop}" {
+              processContextTree(delegate, contextTree.children, value, paramdef)
+              contextTree.filters.each { f ->
+                qry.ilike(f.field,f.value)
+              }
+            }
+          }
+         break;
       }
     }
   }
@@ -333,13 +378,14 @@ class SearchController {
             prompt:'Title',
             qparam:'qp_title',
             placeholder:'Title',
-            contextTree:[['ctxtp':'property','prop':'title','children':[
-                           'ctxtp':'qry', 'prop':'name']]]
-            
-//            prompt:'Title',
-//            qparam:'qp_title',
-//            placeholder:'Title',
-//            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+            contextTree:['ctxtp':'property','prop':'title','children':[
+                           'ctxtp':'qry', 'prop':'name']]
+          ],
+//          [
+//            prompt:'Content Provider',
+//            qparam:'qp_cp_name',
+//            placeholder:'Content Provider Name',
+//            contextTree:['ctxtp':'property','prop':'pkg','children':[
 //                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
 //                            ['ctxtp':'assoc','prop':'type','children':[
 //                              ['ctxtp':'assoc','prop':'owner','children':[
@@ -347,40 +393,27 @@ class SearchController {
 //                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
 //                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
 //                              ['ctxtp':'qry', 'prop':'name']]]]]]]
-          ],
-          /*[
-            prompt:'Content Provider',
-            qparam:'qp_cp_name',
-            placeholder:'Content Provider Name',
-            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
-                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
-                            ['ctxtp':'assoc','prop':'type','children':[
-                              ['ctxtp':'assoc','prop':'owner','children':[
-                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
-                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
-                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
-                              ['ctxtp':'qry', 'prop':'name']]]]]]]
-          ],
-          [
-            prompt:'Content Provider ID',
-            qparam:'qp_cp_id',
-            placeholder:'Content Provider ID',
-            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
-                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
-                            ['ctxtp':'assoc','prop':'type','children':[
-                              ['ctxtp':'assoc','prop':'owner','children':[
-                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
-                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
-                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
-                              ['ctxtp':'qry', 'prop':'id']]]]]]]
-          ],
-          [
-            prompt:'Package ID',
-            qparam:'qp_pkg_id',
-            placeholder:'Package ID',
-            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
-                              ['ctxtp':'qry', 'prop':'id']]]
-          ],*/
+//          ],
+//          [
+//            prompt:'Content Provider ID',
+//            qparam:'qp_cp_id',
+//            placeholder:'Content Provider ID',
+//            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+//                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
+//                            ['ctxtp':'assoc','prop':'type','children':[
+//                              ['ctxtp':'assoc','prop':'owner','children':[
+//                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
+//                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
+//                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
+//                              ['ctxtp':'qry', 'prop':'id']]]]]]]
+//          ],
+//          [
+//            prompt:'Package ID',
+//            qparam:'qp_pkg_id',
+//            placeholder:'Package ID',
+//            contextTree:['ctxtp':'property','prop':'pkg','children':[
+//                              ['ctxtp':'qry', 'prop':'id']]]
+//          ],
         ],
         qbeResults:[
           [heading:'Id', property:'id'],

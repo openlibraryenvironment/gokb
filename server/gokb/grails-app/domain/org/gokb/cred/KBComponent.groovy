@@ -143,17 +143,16 @@ abstract class KBComponent {
 
   public List getOtherIncomingCombos () {
     
-    List combs = incomingCombos
+    Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
     
-    // Only need to bother if we have a defined list.
-    if (combs) {
-      
-      // Get the type values of all defined combo properties for this class.
-      Set comboPropTypes = getAllComboTypeValuesFor(this.getClass())
-      
-      // Filter on none combo properties.
-      combs = combs.findAll {
-        !comboPropTypes.contains(it.type?.value)
+    List combs = Combo.createCriteria().list {
+      and {
+        eq ("toComponent", this)
+        type {
+          owner {
+            not { 'in' ("desc", comboPropTypes) }
+          }
+        }
       }
     }
     
@@ -162,22 +161,21 @@ abstract class KBComponent {
 
   public List getOtherOutgoingCombos () {
     
-    List combs = outgoingCombos
+    Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
     
-    // Only need to bother if we have a defined list.
-    if (combs) {
-      
-      // Get the type values of all defined combo properties for this class.
-      Set comboPropTypes = getAllComboTypeValuesFor(this.class)
-      
-      // Filter on none combo properties.
-      combs = combs.findAll {
-        !comboPropTypes.contains(it.type?.value)
+    List combs = Combo.createCriteria().list {
+      and {
+        eq ("fromComponent", this)
+        type {
+          owner {
+            not { 'in' ("desc", comboPropTypes) }
+          }
+        }
       }
     }
     
     combs
-  };
+  }
 
   @Transient
   abstract getPermissableCombos()
