@@ -35,6 +35,19 @@ class ComboTests extends GroovyTestCase {
     assert tipps[0] == tipp
   }
   
+  void testMapConstructor() {
+    TitleInstancePackagePlatform nTipp = new TitleInstancePackagePlatform(
+      "pkg" : (pkg),
+      "platform" : (platform)
+    ).save()
+    
+    def tipps = pkg.getTipps()
+    assert tipps.contains(nTipp)
+    
+    tipps = platform.tipps
+    assert tipps.contains(nTipp)
+  }
+  
   void testDynamicProperties() {
     
     pkg.tipps = [tipp]

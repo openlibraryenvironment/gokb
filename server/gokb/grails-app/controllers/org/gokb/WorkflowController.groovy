@@ -1,5 +1,7 @@
 package org.gokb
 
+import grails.plugins.springsecurity.Secured
+
 class WorkflowController {
 
   def genericOIDService

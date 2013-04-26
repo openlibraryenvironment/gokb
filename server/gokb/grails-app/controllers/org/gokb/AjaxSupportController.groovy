@@ -3,10 +3,13 @@ package org.gokb
 import grails.converters.JSON
 import org.gokb.cred.*
 
+import grails.plugins.springsecurity.Secured
+
 class AjaxSupportController {
 
   def genericOIDService
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def edit() { 
     // edit [name:name, value:project:12, pk:org.gokb.cred.Package:2950, action:edit, controller:ajaxSupport]
     log.debug("edit ${params}");
@@ -32,12 +35,14 @@ class AjaxSupportController {
     render result as JSON
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def setRef() {
     def result = [:]
     render result as JSON
   }
 
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def getRefdata() {
 
     def result = [:]
@@ -119,6 +124,7 @@ class AjaxSupportController {
 
 
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
  def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
 
@@ -149,8 +155,16 @@ class AjaxSupportController {
               }
             }
             else {
-              log.debug("Set simple prop ${p.name} = ${params[p.name]}");
-              new_obj[p.name] = params[p.name]
+              switch ( p.type ) {
+                case Long.class:
+                  log.debug("Set simple prop ${p.name} = ${params[p.name]} (as long=${Long.parseLong(params[p.name])})");
+                  new_obj[p.name] = Long.parseLong(params[p.name]);
+                  break;
+                default:
+                  log.debug("Set simple prop ${p.name} = ${params[p.name]}");
+                  new_obj[p.name] = params[p.name]
+                  break;
+              }
             }
           }
         }
@@ -202,6 +216,7 @@ class AjaxSupportController {
   }
 
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
     log.debug("AjaxController::lookup ${params}");
     def result = [:]
@@ -222,6 +237,7 @@ class AjaxSupportController {
   }
 
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
     def target_object = resolveOID2(params.pk)

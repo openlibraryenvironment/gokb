@@ -1,12 +1,16 @@
 package org.gokb
 
+import grails.plugins.springsecurity.Secured
+
 class ResourceController {
 
   def genericOIDService
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = [:]
 

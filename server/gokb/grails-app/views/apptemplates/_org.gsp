@@ -1,10 +1,13 @@
+<r:require modules="gokbstyle"/>
+<r:require modules="editable"/>
+
 <h1>Organisation: ${d.name}</h1>
 
 <dl>
   <dt>Internal ID</dt>
   <dd>${d.id}</dd>
   <dt>Org Name</dt>
-  <dd>${d.name}</dd>
+  <dd><g:xEditable owner="${d}" field="name">${d.name}</g:xEditable></dd>
   <dt>Tags</dt>
   <dd>
     <ul>

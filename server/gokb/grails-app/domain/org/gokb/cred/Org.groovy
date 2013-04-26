@@ -13,11 +13,15 @@ class Org extends KBComponent{
 
   Set<IdentifierOccurrence> ids = []
 
-  static mappedBy = [ids: 'component', 
-                     links: 'org' ]
+  static mappedBy = [
+    ids: 'component', 
+    links: 'org'
+  ]
 
-  static hasMany = [ids: IdentifierOccurrence, 
-                    links: OrgRole]
+  static hasMany = [
+    ids: IdentifierOccurrence, 
+    links: OrgRole
+  ]
 
   static mapping = {
          id column:'org_id'
