@@ -149,9 +149,13 @@ abstract class KBComponent {
       and {
         eq ("toComponent", this)
         type {
-          owner {
-            not { 'in' ("desc", comboPropTypes) }
-          }
+		  and {
+            owner {
+              eq ("desc", 'Combo.Type')
+            }
+  		  	not { 'in' ("value", comboPropTypes) }
+		  }
+		  
         }
       }
     }
@@ -167,9 +171,12 @@ abstract class KBComponent {
       and {
         eq ("fromComponent", this)
         type {
-          owner {
-            not { 'in' ("desc", comboPropTypes) }
-          }
+		  and {
+            owner {
+              eq ("desc", 'Combo.Type')
+            }
+  		  	not { 'in' ("value", comboPropTypes) }
+		  }
         }
       }
     }
