@@ -455,34 +455,37 @@ class SearchController {
             prompt:'Content Provider',
             qparam:'qp_cp_name',
             placeholder:'Content Provider Name',
-            contextTree:['ctxtp':'property','prop':'pkg','children':[
-                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
-                            ['ctxtp':'assoc','prop':'type','children':[
-                              ['ctxtp':'assoc','prop':'owner','children':[
-                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
-                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
-                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
-                              ['ctxtp':'qry', 'prop':'name']]]]]]]
+			contextTree:['ctxtp' : 'qry', 'prop' : 'pkg.provider.name']
+//            contextTree:['ctxtp':'property','prop':'pkg','children':[
+//                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
+//                            ['ctxtp':'assoc','prop':'type','children':[
+//                              ['ctxtp':'assoc','prop':'owner','children':[
+//                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
+//                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
+//                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
+//                              ['ctxtp':'qry', 'prop':'name']]]]]]]
           ],
           [
             prompt:'Content Provider ID',
             qparam:'qp_cp_id',
             placeholder:'Content Provider ID',
-            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
-                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
-                            ['ctxtp':'assoc','prop':'type','children':[
-                              ['ctxtp':'assoc','prop':'owner','children':[
-                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
-                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
-                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
-                              ['ctxtp':'qry', 'prop':'id']]]]]]]
+			contextTree:['ctxtp' : 'qry', 'prop' : 'pkg.provider.id']
+//            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+//                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
+//                            ['ctxtp':'assoc','prop':'type','children':[
+//                              ['ctxtp':'assoc','prop':'owner','children':[
+//                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
+//                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
+//                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
+//                              ['ctxtp':'qry', 'prop':'id']]]]]]]
           ],
           [
             prompt:'Package ID',
             qparam:'qp_pkg_id',
             placeholder:'Package ID',
-            contextTree:['ctxtp':'property','prop':'pkg','children':[
-                              ['ctxtp':'qry', 'prop':'id']]]
+			contextTree:['ctxtp' : 'qry', 'prop' : 'pkg.id']
+//            contextTree:['ctxtp':'property','prop':'pkg','children':[
+//                              ['ctxtp':'qry', 'prop':'id']]]
           ],
         ],
         qbeResults:[

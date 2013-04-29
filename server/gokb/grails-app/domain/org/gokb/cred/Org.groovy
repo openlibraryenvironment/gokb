@@ -2,7 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 
-class Org extends KBComponent{
+class Org extends KBComponent {
 
   String address
   String ipRange
@@ -13,14 +13,21 @@ class Org extends KBComponent{
 
   Set<IdentifierOccurrence> ids = []
 
+  static manyByCombo = [
+	pkgs	:	Package
+  ]
+  
+  static mappedByCombo = [
+	pkgs	:	'provider'
+  ]
+  
   static mappedBy = [
-    ids: 'component', 
-    links: 'org'
+    ids: 'component',
   ]
 
   static hasMany = [
     ids: IdentifierOccurrence, 
-    links: OrgRole
+    roles: RefdataValue
   ]
 
   static mapping = {

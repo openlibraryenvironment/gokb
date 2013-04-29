@@ -31,15 +31,15 @@ class TitleInstancePackagePlatform extends KBComponent {
   ]
   
   static hasByCombo = [
-    pkg : Package,
-    platform : Platform,
-    title:TitleInstance
+    pkg 		: Package,
+    platform 	: Platform,
+    title		: TitleInstance
   ]
   
   static mappedByCombo = [
-    pkg : 'tipps',
-    platform : 'tipps',
-    title : 'tipps'
+    pkg 		: 'tipps',
+    platform 	: 'tipps',
+    title 		: 'tipps'
   ]
 
   static mapping = {

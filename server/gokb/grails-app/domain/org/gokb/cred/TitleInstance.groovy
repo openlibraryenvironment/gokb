@@ -11,6 +11,7 @@ class TitleInstance extends KBComponent {
   Date dateCreated
   Date lastUpdated
 
+
 //  static mappedBy = [tipps: 'title']
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
   static manyByCombo = [tipps : TitleInstancePackagePlatform]
