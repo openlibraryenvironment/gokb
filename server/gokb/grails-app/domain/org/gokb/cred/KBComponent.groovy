@@ -19,13 +19,13 @@ abstract class KBComponent {
     ids: 'component',
     outgoingCombos: 'fromComponent',
     incomingCombos:'toComponent',
-    orgs: 'linkedComponent',
+//    orgs: 'linkedComponent',
     additionalProperties: 'fromComponent']
 
   
   static hasMany = [
     ids: IdentifierOccurrence,
-    orgs: OrgRole,
+//    orgs: OrgRole,
     tags:RefdataValue,
     outgoingCombos:Combo,
     incomingCombos:Combo,

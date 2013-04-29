@@ -66,7 +66,7 @@ println("Column heads: ${nl}");
 
 while ((nl = r.readNext()) != null) {
   // println("Process line ${nl}");
-  // Internal ID,Parent Org. ID,Authorized Name,Organization Name,Provider,Vendor,Publisher,Licensor
+  // Internal ID,ParentOrg. ID,Authorized Name,Organization Name,Provider,Vendor,Publisher,Licensor
   def org_assert = [    
     name:nl[3],
     description:nl[3],
