@@ -48,9 +48,9 @@
                   </div>
                   <g:if test="${recset != null}">
                     <ul class="nav pull-right">
-                      <li><g:link controller="search" action="index" params="${params+[offset:(offset-max),det:null]}">Prev</g:link></li>
+                      <li><g:link controller="search" action="index" params="${params+[offset:(offset-max),det:null]}"><i class="icon-step-backward"></i></g:link></li>
                       <li class="divider-vertical"></li>
-                      <li><g:link controller="search" action="index" params="${params+[offset:(offset+max),det:null]}">Next</g:link></li>
+                      <li><g:link controller="search" action="index" params="${params+[offset:(offset+max),det:null]}"><i class="icon-step-forward"></i></g:link></li>
                     </ul>
                   </g:if>
                 </div>
@@ -92,11 +92,12 @@
                          data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
                          data-target="#modal"><i class="icon-file"></i></a>
                     </li>
-
-                    <li class="divider-vertical"></li>
-                    <li><g:link controller="search" action="index" params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}">Prev</g:link></li>
-                    <li class="divider-vertical"></li>
-                    <li><g:link controller="search" action="index" params="${params+['det':det+1, offset:((int)(det / max))*max]}">Next</g:link></li>
+                    <li>
+                      <g:link controller="search" action="index" params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}"><i class="icon-step-backward"></i></g:link>
+                    </li>
+                    <li>
+                      <g:link controller="search" action="index" params="${params+['det':det+1, offset:((int)(det / max))*max]}"><i class="icon-step-forward"></i></g:link>
+                    </li>
                   </ul></div></div>
               <g:if test="${displaytemplate != null}">
                 <g:if test="${displaytemplate.type=='staticgsp'}">
