@@ -106,7 +106,11 @@ log4j = {
           // 'grails.app.conf',
           'grails.app.jobs' // ,
           
-//   trace  'org.gokb.DomainClassExtender'
+   debug  'org.gokb.DomainClassExtender'
+   
+   // Enable Hibernate SQL logging with param values
+//   trace 'org.hibernate.type'
+//   debug 'org.hibernate.SQL'
 
 }
 
@@ -134,7 +138,8 @@ validationRules = [
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'title.identifier.eissn'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'publicationtitle'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] 
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] ,
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'org.publisher.name'] ] 
 ]
 
 auditLog {
@@ -153,4 +158,3 @@ auditLog {
     return username
   }
 }
-

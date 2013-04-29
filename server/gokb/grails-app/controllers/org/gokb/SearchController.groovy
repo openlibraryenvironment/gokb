@@ -3,6 +3,9 @@ package org.gokb
 import grails.converters.*
 import grails.plugins.springsecurity.Secured
 
+import org.codehaus.groovy.grails.commons.GrailsClassUtils;
+import org.gokb.cred.*
+
 class SearchController {
 
   def genericOIDService
@@ -121,8 +124,11 @@ class SearchController {
     }
   }
 
-  def  processContextTree(qry, contextTree, value, paramdef) {
+  private def  processContextTree = { qry, contextTree, value, paramdef, Class the_class = null ->
     if ( contextTree ) {
+	  
+	  def the_value = value
+	  
       switch ( contextTree.ctxtp ) {
         case 'assoc':
           qry."${contextTree.prop}" {
@@ -133,12 +139,136 @@ class SearchController {
           }
           break;
         case 'filter':
-          qry.ilike(contextTree.prop,contextTree.value)
-          break;
+          
+		  // Filters work in the same way as queries,
+		  // but the value is in the contextTree instead of the submitted value.
+//          qry.ilike(contextTree.prop,contextTree.value)
+		  the_value = contextTree.value
         case 'qry':
-          qry.ilike(contextTree.prop,value)
-          break;
-      
+          
+		  // Start class as the target class of the query builder, if none supplied.
+          the_class = the_class ?: qry.targetClass;
+		  
+		  // Get all the combo properties defined on the class.
+		  Map allProps = KBComponent.getAllComboPropertyDefinitionsFor(the_class)
+		  
+		  // Split the property and go through each property as needed.
+		  List props = contextTree.prop.split("\\.")
+		  
+		  // if props length > 1 then we need to first add all the necessary associations.
+		  if (props.size() > 1) {
+			
+			// Pop the first element from the list.
+			String prop = props.remove(0)
+			
+			// Set the property value to the new list minus the head.
+			def newCtxtTree = contextTree.clone()
+			newCtxtTree.prop = props.join(".")
+			
+			// Get the type that the property maps to (check combo props first).
+			Class target_class = allProps[prop]
+			
+			// Combo property?
+			if (target_class) {
+			  boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, prop)
+			  
+			  // Combo property... Let's add the association.
+			  if (incoming) {
+				// Use incoming combos.
+				qry."incomingCombos" {
+				  and {
+					eq (
+					  "type",
+					  RefdataCategory.lookupOrCreate (
+						"Combo.Type",
+						the_class.getComboTypeValueFor (the_class, prop)
+					  )
+					)
+					fromComponent {
+                      processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
+					}
+				  }
+				}
+				
+			  } else {
+				// Outgoing
+				qry."outgoingCombos" {
+				  and {
+					eq (
+					  "type",
+					  RefdataCategory.lookupOrCreate (
+						"Combo.Type",
+						the_class.getComboTypeValueFor (the_class, prop)
+					  )
+					)
+					toComponent {
+                      processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
+					}
+				  }
+				}
+			  }  
+			} else {
+				// Normal groovy/grails property.
+				target_class = GrailsClassUtils.getPropertyType(the_class, prop)
+				
+				// Add the association here.
+				qry."prop" {
+				  processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
+				}
+			}
+			
+		  } else {
+  		  	   
+		  	// We need to do the comparison.
+		         
+            // Check if this is a combo property.
+            if (allProps[contextTree.prop]) {
+              
+              // Add association using either incoming or outgoing properties.
+              boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, contextTree.prop)
+              
+              if (incoming) {
+                // Use incoming combos.
+                qry."incomingCombos" {
+                  and {
+                    eq (
+                      "type",
+                      RefdataCategory.lookupOrCreate (
+                        "Combo.Type",
+                        the_class.getComboTypeValueFor (the_class, contextTree.prop)
+                      )
+                    )
+                    fromComponent {
+  //                    processContextTree(delegate, contextTree.children, value, paramdef)
+  						ilike(contextTree.prop,the_value)
+                    }
+                  }
+                }
+                
+              } else {
+                // Outgoing
+                qry."outgoingCombos" {
+                  and {
+                    eq (
+                      "type",
+                      RefdataCategory.lookupOrCreate (
+                        "Combo.Type",
+                        the_class.getComboTypeValueFor (the_class, contextTree.prop)
+                      )
+                    )
+                    toComponent {
+  //                    processContextTree(delegate, contextTree.children, value, paramdef)
+  						ilike(contextTree.prop,the_value)
+                    }
+                  }
+                }
+              }
+            } else {
+              // Normal grails property.
+              qry.ilike(contextTree.prop,the_value)
+            }
+		  }
+         break;
       }
     }
   }
@@ -316,14 +446,16 @@ class SearchController {
             prompt:'Title',
             qparam:'qp_title',
             placeholder:'Title',
-            contextTree:[['ctxtp':'property','prop':'title','children':[
-                           'ctxtp':'qry', 'prop':'name']]]
+            contextTree:[
+			  'ctxtp':'qry',
+			  'prop':'title.name'
+			],
           ],
           [
             prompt:'Content Provider',
             qparam:'qp_cp_name',
             placeholder:'Content Provider Name',
-            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+            contextTree:['ctxtp':'property','prop':'pkg','children':[
                           ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
                             ['ctxtp':'assoc','prop':'type','children':[
                               ['ctxtp':'assoc','prop':'owner','children':[
@@ -349,7 +481,7 @@ class SearchController {
             prompt:'Package ID',
             qparam:'qp_pkg_id',
             placeholder:'Package ID',
-            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
+            contextTree:['ctxtp':'property','prop':'pkg','children':[
                               ['ctxtp':'qry', 'prop':'id']]]
           ],
         ],
