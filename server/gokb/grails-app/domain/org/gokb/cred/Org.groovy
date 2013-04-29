@@ -24,7 +24,7 @@ class Org extends KBComponent {
   
   static mappedByCombo = [
     pkgs        : 'provider',
-    parent      : 'children'
+    children    : 'parent'
   ]
   
   static mappedBy = [
