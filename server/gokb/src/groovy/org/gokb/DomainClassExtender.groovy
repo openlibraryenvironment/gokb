@@ -38,20 +38,6 @@ class DomainClassExtender {
     }
   }
   
-  private static overrideCreateCriteria = { DefaultGrailsDomainClass domainClass ->
-    
-    log.trace ("Overriding the createCriteria method.")
-    ApplicationContext ctx = domainClass.grailsApplication.mainContext
-    SessionFactory sessionFactory = ctx.sessionFactory
-    def session = sessionFactory.currentSession
-    
-    // Get the metaclass.
-    domainClass.getMetaClass().static.createCriteria = { ->
-      log.trace ("Running the overridden create criteria.")
-      new HibernateCriteriaBuilder (domainClass.getClazz(), sessionFactory)
-    }
-  }
-  
   private static addGetAllComboPropertyNames = { DefaultGrailsDomainClass domainClass ->
     
     // Get the metaclass.
@@ -694,7 +680,6 @@ class DomainClassExtender {
 
         // Extend to handle ComboMapped Properties.
         DomainClassExtender.extendMapConstructor(domainClass)
-//        DomainClassExtender.extendMethodMissing (domainClass)
         DomainClassExtender.addGetComboMap (domainClass)
         DomainClassExtender.addLookupComboMapping (domainClass)
         DomainClassExtender.addGetComboTypeValue (domainClass)
@@ -707,9 +692,6 @@ class DomainClassExtender {
         DomainClassExtender.addGetAllComboPropertyNames (domainClass)
         DomainClassExtender.addGetAllComboTypeValues (domainClass)
         DomainClassExtender.addIsComboProperty (domainClass)
-		
-		
-//        DomainClassExtender.overrideCreateCriteria (domainClass)
       }
     } else {
 
@@ -722,7 +704,6 @@ class DomainClassExtender {
       DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)
-//      DomainClassExtender.overrideCreateCriteria (domainClass)
     }
   }
 
