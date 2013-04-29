@@ -45,7 +45,6 @@ class Package extends KBComponent {
 	parent		: 'subPkgs'
   ]
 
-
   static mapping = {
            identifier column:'pkg_identifier'
           packageType column:'pkg_type_rv_fk'
