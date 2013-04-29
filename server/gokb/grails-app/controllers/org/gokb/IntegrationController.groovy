@@ -46,6 +46,27 @@ class IntegrationController {
           result.status = false;
           return
         }
+        
+        // Add parent.
+        if (request.JSON.parent) {
+          def parentDef = request.JSON.parent;
+          log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
+          def located_component = KBComponent.lookupByIO(parentDef.identifierType,parentDef.identifierValue)
+          if (located_component) {
+            located_or_new_org.parent = located_component
+          }
+          
+          
+          // def reloaded_from = KBComponent.get(located_or_new_org.id)
+//          def reloaded_from = located_or_new_org.refresh();
+//          if ( ( located_component != null ) && ( reloaded_from != null ) ) {
+//            def combo_type = RefdataCategory.lookupOrCreate('ComboType',c.linkType);
+//            def combo = new Combo(fromComponent:reloaded_from,toComponent:located_component,type:combo_type).save(flush:true, failOnError : true);
+//          }
+//          else {
+//            log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");
+//          }
+        }
   
         // Identifiers
         log.debug("Identifier processing ${request.JSON.customIdentifers}");

@@ -79,7 +79,8 @@ while ((nl = r.readNext()) != null) {
 
   if ( nl[0] != nl [1] ) {
     // Add a combo that links to the parent org
-    org_assert.combos.add([linkTo:[identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}".toString()], linkType:'HasParent'])
+//    org_assert.combos.add([linkTo:[identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}".toString()], linkType:'HasParent'])
+    org_assert.parent = [identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}".toString()]
   }
 
   if ( nl[4] == 'Y' )
