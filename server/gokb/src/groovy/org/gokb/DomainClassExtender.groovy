@@ -65,7 +65,15 @@ class DomainClassExtender {
     // Get the metaclass.
     ExpandoMetaClass mc = domainClass.getMetaClass()
     mc.static.isComboPropertyFor = { Class forClass, String propertyName ->
-      log.debug ("isComboPropertyFor invoked using params ${[forClass, propertyName]}")
+      log.trace ("isComboPropertyFor invoked using params ${[forClass, propertyName]}")
+	  
+	  // Split at the dot.
+	  String[] properties = propertyName.split("\\.");
+	  
+	  // The class that owns the end-point of the property string.
+	  Class parentClass = forClass;
+	  
+	  
       Set cProps = getAllComboPropertyNamesFor (forClass)
       cProps.contains(propertyName)
     }
@@ -87,28 +95,39 @@ class DomainClassExtender {
     ExpandoMetaClass mc = domainClass.getMetaClass()
     mc.static.getAllComboPropertyNamesFor = { Class forClass ->
       log.trace("getAllComboPropertyNamesFor called with args ${[forClass]}")
-      String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:all"
       
-      // Check cache.
-      log.debug("Checking cache...")
-      Set cProps = DomainClassExtender.comboMappingCache[cacheKey]
-      
-      if (cProps == null) {
-        log.debug("\t...not found doing lookup.")
-      
-        // No cached value.
-        cProps = []
-        cProps.addAll( getComboMapFor (forClass, Combo.HAS).keySet() )
-        cProps.addAll( getComboMapFor (forClass, Combo.MANY).keySet() )
-        
-        // Cache it.
-        DomainClassExtender.comboMappingCache[cacheKey] = cProps
-      } else {
-        log.debug("\t...found and returning ${cProps}.")
-      }
-      
-      cProps
+      getAllComboPropertyDefinitionsFor(forClass).keySet()
     }
+  }
+  
+  private static addGetAllComboPropertyDefinitionsFor = { DefaultGrailsDomainClass domainClass ->
+	
+	// Get the metaclass.
+	ExpandoMetaClass mc = domainClass.getMetaClass()
+	mc.static.getAllComboPropertyDefinitionsFor = { Class forClass ->
+	  log.trace("getAllDefinedComboPropertyFor called with args ${[forClass]}")
+	  String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:all"
+	  
+	  // Check cache.
+	  log.debug("Checking comboMappingCache for ${cacheKey}...")
+	  Map cProps = DomainClassExtender.comboMappingCache[cacheKey]
+	  
+	  if (cProps == null) {
+		log.debug("\t...not found doing lookup.")
+	  
+		// No cached value.
+		cProps = [:]
+		cProps.putAll( getComboMapFor (forClass, Combo.HAS) )
+		cProps.putAll( getComboMapFor (forClass, Combo.MANY) )
+		
+		// Cache it.
+		DomainClassExtender.comboMappingCache[cacheKey] = cProps
+	  } else {
+		log.debug("\t...found and returning ${cProps}.")
+	  }
+	  
+	  cProps
+	}
   }
   
   private static addGetAllComboTypeValues = { DefaultGrailsDomainClass domainClass ->
@@ -125,11 +144,11 @@ class DomainClassExtender {
     ExpandoMetaClass mc = domainClass.getMetaClass()
     mc.static.getAllComboTypeValuesFor = { Class forClass ->
       log.trace("getAllComboTypeValuesFor called with args ${[forClass]}")
-      String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:allTypeVals"
+      String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:all"
       
       // Check cache.
       log.debug("Checking cache...")
-      Set types = DomainClassExtender.comboMappingCache[cacheKey]
+      Set types = DomainClassExtender.comboTypeValueCache[cacheKey]
       
       if (types == null) {
         // No cached value.
@@ -144,7 +163,7 @@ class DomainClassExtender {
         }
         
         // Cache it.
-        DomainClassExtender.comboMappingCache[cacheKey] = types
+        DomainClassExtender.comboTypeValueCache[cacheKey] = types
       } else {
         log.debug("\t...found and returning ${types}.")
       }
@@ -171,11 +190,14 @@ class DomainClassExtender {
 
       // Return from cache if present.
       String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:${mapName}"
-      log.debug("Checking cache for ${cacheKey}")
+      log.debug("Checking cache for ${cacheKey}...")
       def value = DomainClassExtender.comboMappingCache[cacheKey]
-      if (value != null) return value
+      if (value != null) {
+		log.debug("\t...found, returning ${value}")
+		return value
+      }
 
-      log.debug("Not found in cache.")
+      log.debug("\t...Not found, looking up.")
       try {
       
         // Lookup the value using the metaclass allowing superclass traversal.
@@ -199,8 +221,13 @@ class DomainClassExtender {
       log.trace("getComboProperty called on ${delegate} with args ${[propertyName]}")
 
       // Test this way to allow us to cache null values.
+	  log.debug("Checking cache...")
       String cacheKey = "${propertyName}".toString()
-      if (comboPropertyCache().containsKey(cacheKey)) return comboPropertyCache().get(cacheKey);
+      if (comboPropertyCache().containsKey(cacheKey)) {
+		log.debug ("\t...found")
+		return comboPropertyCache().get(cacheKey);
+      }
+	  log.debug ("\t...not found, looking for value,")
 
       // Check the type.
       Class typeClass = lookupComboMapping(Combo.MANY, propertyName)
@@ -325,10 +352,15 @@ class DomainClassExtender {
     mc.static.getComboTypeValueFor = {Class forClass, String propertyName  ->
       log.trace("getComboTypeValueFor called on ${delegate} with args ${[forClass,propertyName]}")
 	  
-	  String cacheKey = "${forClass.getName()}:${propertyName}"
+	  String cacheKey = "${forClass.getName()}.${propertyName}"
+	  log.debug ("Checking cache for ${cacheKey}...")
 	  String key = DomainClassExtender.comboTypeValueCache[cacheKey]
 	  
-	  if (key == null) {
+	  if (key != null) {
+		log.debug("\t...found")
+	  } else {
+	  
+	  	
         String capProp
         Class mappedByClass
         def mappedByProp = lookupComboMappingFor(forClass, Combo.MAPPED_BY, propertyName)
@@ -357,11 +389,13 @@ class DomainClassExtender {
           mappedByClass = forClass
         }
   
-        // Return the constructed key.
-        key = GrailsNameUtils.getShortName(mappedByClass) + ".${capProp}"
+        // Cache the constructed key.
+        key = "${GrailsNameUtils.getShortName(mappedByClass)}.${capProp}"
 		DomainClassExtender.comboTypeValueCache[cacheKey] = key
-        log.debug("${key} generated.")
+        log.debug("\t... not found, generated and added to cache.")
 	  }
+	  
+	  log.debug("Using type value ${key}")
       key
     }
   }
@@ -395,7 +429,7 @@ class DomainClassExtender {
       // Return the property.
       def prop = map[propertyName]
       
-      log.debug("${delegate}.${propertyName} maps to type ${prop}.")
+      log.trace("${delegate}.${propertyName} maps to type ${prop}.")
       prop
     }
   }
@@ -648,7 +682,15 @@ class DomainClassExtender {
     if (!KBComponent.class.is(actualClass)) {
       if (KBComponent.class.isAssignableFrom(actualClass)) {
 
-        // Extends KBCombonent.
+        // Extends KBCombonent. Add Static methods.
+		DomainClassExtender.addGetComboMapFor (domainClass)
+		DomainClassExtender.addLookupComboMappingFor (domainClass)
+		DomainClassExtender.addGetComboTypeValueFor (domainClass)
+		DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
+		DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
+		DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
+		DomainClassExtender.addIsComboPropertyFor (domainClass)
+		DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
 
         // Extend to handle ComboMapped Properties.
         DomainClassExtender.extendMapConstructor(domainClass)
@@ -665,14 +707,6 @@ class DomainClassExtender {
         DomainClassExtender.addGetAllComboPropertyNames (domainClass)
         DomainClassExtender.addGetAllComboTypeValues (domainClass)
         DomainClassExtender.addIsComboProperty (domainClass)
-
-        DomainClassExtender.addGetComboMapFor (domainClass)
-        DomainClassExtender.addLookupComboMappingFor (domainClass)
-        DomainClassExtender.addGetComboTypeValueFor (domainClass)
-        DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
-        DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
-        DomainClassExtender.addIsComboPropertyFor (domainClass)
-		DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
 		
 		
 //        DomainClassExtender.overrideCreateCriteria (domainClass)
@@ -684,6 +718,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetComboMapFor (domainClass)
       DomainClassExtender.addLookupComboMappingFor (domainClass)
       DomainClassExtender.addGetComboTypeValueFor (domainClass)
+	  DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
       DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)
@@ -699,9 +734,9 @@ class DomainClassExtender {
     // Get the original contructor.
     def oldConstructor = mc.retrieveConstructor(Map)
     mc.constructor = { Map args ->
-      log.trace("MapConstructor called for new ${delegate} with args ${args}")
+      log.debug("MapConstructor called for new ${delegate} with args ${args}")
       
-      log.debug ("Calling original contructor for new ${delegate} with args ${args}.")
+      log.trace ("Calling original contructor for new ${delegate} with args ${args}.")
       
       // Instantiate the object and save...
       // We really need to save here so we can reference this object within the combos.
@@ -720,76 +755,6 @@ class DomainClassExtender {
       instance
     }    
   }
-  
-//  private static extendMethodMissing = { DefaultGrailsDomainClass domainClass ->
-//    log.debug("Extending methodMissing for ${domainClass.getClazz().getName()}")
-//
-//    // Get the metaclass.
-//    MetaClass mc = domainClass.getMetaClass()
-//
-//    // Save the old version of methodMissing so it can be used if needed
-//    MetaMethod oldMethodMissing = mc.methods.find { it.name == 'methodMissing' }
-//
-//    mc.methodMissing = { String methodName, args ->
-//      
-//      if (methodName.length() > 3) {
-//      
-//        log.trace("methodMissing called on ${delegate} with args ${methodName}, ${args.toString()}")
-//        String prefix;
-//        def propertyName = methodName[3].toLowerCase() + methodName[4..-1]
-//  
-//        // Add the propertyName as the first argument.
-//        def argVals = [propertyName]
-//        argVals.addAll(args)
-//  
-//        String methodToCall
-//        switch (methodName[0..2]) {
-//          case "get" :// Property name.
-//            methodToCall = "getComboProperty"
-//            break
-//          case "set" :
-//            methodToCall = "setComboProperty"
-//            break
-//        }
-//  
-//        // Invoke it.
-//        if (methodToCall) {
-//          try {
-//            Object result
-//            if (argVals[0] != "comboProperty") {
-//              
-//              log.debug("Invoking method ${methodToCall} on ${delegate} with args ${argVals}.")
-//              result = delegate.invokeMethod(methodToCall, argVals.toArray())
-//  
-//              // Add the metaclass method to speed up future calls.
-//              mc."${methodName}" = { methArgs ->
-//                def newArgs = [propertyName]
-//                argVals.addAll(methArgs)
-//                log.debug("Invoking ${methodName} directly on metaclass without using method missing on ${delegate} using ${varArgs}.")
-//                delegate.invokeMethod(methodToCall, newArgs)
-//              }
-//  
-//              return result
-//            }
-//  
-//          } catch (MissingPropertyException ex) {
-//            /* Do nothing as the code should drop through and try and run original method */
-//            log.debug("MissingPropertyException thrown (${ex.getMessage()})")
-//          }
-//        }
-//      }
-//
-//      // Invoke the old methodMissing...
-//      if (oldMethodMissing) {
-//        log.debug("calling oldMethodMissing on ${delegate} with args ${[args]}")
-//        return oldMethodMissing.invoke(delegate, args)
-//      }
-//
-//      // Finally throw an exception if no luck.
-//      log.debug("Thrown MissingMethodException looking for ${methodName} on ${delegate}")
-//      throw new MissingMethodException(methodName, domainClass.getClazz(), args)
-//    }
-//  }
   
   private static addComboPropertyGettersAndSetters = { DefaultGrailsDomainClass domainClass ->
 	// Get the metaclass.
