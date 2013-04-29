@@ -1,5 +1,29 @@
 package org.gokb
 
+/**
+ * The following class adds the functionality that allows properties maintained by the Combo
+ * mechanism instead of the normal Grails gorm mapping.
+ * 
+ * The following shows how specially mapped Combo properties can be declared on a Domain class:
+ * 
+ * static hasByCombo 	= ['myProp' 		: MyClass]
+ * static manyByCombo	= ['myCollection' 	: MyClass]
+ * static mappedByCombo	= ['myProp'			: propColl]
+ * 
+ * The hasByCombo mapping would create a virtual property 'myProp',
+ * along with the getter and setter (getMyProp(), setMyProp (MyClass val)), 
+ * on the current domain class with the type MyClass.
+ * 
+ * The has manyByCombo mapping would create a virtual property 'myCollection',
+ * along with the getter and setter (getMyCollection(), setMyCollection( Collection<MyClass> val )),
+ * on the current domain class with the type List<MyClass>.
+ * 
+ * The mappedByCombo mapping declares that the property declared as 'myProp' should be treated as an incoming
+ * relationship from the class 'MyClass' from the property 'propColl'. This will ensure that relationships 
+ * are only stored once in the database but allows us to easily derive the relationship identifier to lookup.
+ * 
+ */
+
 import grails.util.GrailsNameUtils
 
 
