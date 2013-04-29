@@ -14,7 +14,8 @@ class Org extends KBComponent {
   Set<IdentifierOccurrence> ids = []
 
   static manyByCombo = [
-	pkgs	:	Package
+	pkgs		:	Package,
+	children	:	Org
   ]
   
   static mappedByCombo = [
