@@ -14,31 +14,33 @@ class Org extends KBComponent {
   Set<IdentifierOccurrence> ids = []
 
   static manyByCombo = [
-	pkgs		: Package,
-	children	: Org
+	providedPackages	: Package,
+	children			: Org,
+	publishedTitles		: TitleInstance,
   ]
   
   static hasByCombo = [
-    parent      :  Org
+    parent      		:  Org,
   ]
   
   static mappedByCombo = [
-    pkgs        : 'provider',
-    children    : 'parent'
+    providedPackages    : 'provider',
+    publishedTitles	    : 'publisher',
+    children    		: 'parent',
   ]
   
-  static mappedBy = [
-    ids: 'component',
-  ]
+//  static mappedBy = [
+//    ids: 'component',
+//  ]
 
   static hasMany = [
-    ids: IdentifierOccurrence, 
-    roles: RefdataValue
+//    ids: IdentifierOccurrence, 
+    roles: RefdataValue,
   ]
 
   static mapping = {
-         id column:'org_id'
-    version column:'org_version'
+//         id column:'org_id'
+//    version column:'org_version'
     address column:'org_address'
     ipRange column:'org_ip_range'
       scope column:'org_scope'

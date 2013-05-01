@@ -16,30 +16,36 @@ class TitleInstancePackagePlatform extends KBComponent {
   String coverageNote
   RefdataValue status
   RefdataValue option
-  String hostPlatformURL
-
-  TitleInstancePackagePlatform derivedFrom
+//  String hostPlatformURL
 
 //  static mappedBy = [ids: 'component']
 //  static hasMany = [ids: IdentifierOccurrence]
 
 
-  static belongsTo = [
+//  static belongsTo = [
 //    pkg:Package,
 //    platform:Platform,
 //    title:TitleInstance
-  ]
+//  ]
   
   static hasByCombo = [
-    pkg 		: Package,
-    platform 	: Platform,
-    title		: TitleInstance
+    pkg 					: Package,
+    platform 				: Platform,
+    title					: TitleInstance,
+	derivedFrom				: TitleInstancePackagePlatform,
   ]
   
   static mappedByCombo = [
-    pkg 		: 'tipps',
-    platform 	: 'tipps',
-    title 		: 'tipps'
+    pkg 					: 'tipps',
+    hostPlatform 			: 'hostedTipps',
+    additionalPlatforms		: 'linkedTipps',
+    title 					: 'tipps',
+    derivatives				: 'derivedFrom',
+  ]
+  
+  static manyByCombo = [
+	derivatives				: TitleInstancePackagePlatform,
+	additionalPlatforms		: Platform,
   ]
 
   static mapping = {
@@ -60,8 +66,8 @@ class TitleInstancePackagePlatform extends KBComponent {
      coverageNote column:'tipp_coverage_note',type: 'text'
            status column:'tipp_status_rv_fk'
            option column:'tipp_option_rv_fk'
-  hostPlatformURL column:'tipp_host_platform_url'
-      derivedFrom column:'tipp_derived_from'
+//  hostPlatformURL column:'tipp_host_platform_url'
+//      derivedFrom column:'tipp_derived_from'
   }
 
   static constraints = {
@@ -77,21 +83,21 @@ class TitleInstancePackagePlatform extends KBComponent {
     impId(nullable:true, blank:true);
     status(nullable:true, blank:false);
     option(nullable:true, blank:false);
-    hostPlatformURL(nullable:true, blank:true);
-    derivedFrom(nullable:true, blank:true);
+//    hostPlatformURL(nullable:true, blank:true);
+//    derivedFrom(nullable:true, blank:true);
   }
 
   
-  @Transient
-  def getHostPlatform() {
-    def result = null;
-    additionalPlatforms.each { p ->
-      if ( p.rel == 'host' ) {
-        result = p.titleUrl
-      }
-    }
-    result
-  }
+//  @Transient
+//  def getHostPlatform() {
+//    def result = null;
+//    additionalPlatforms.each { p ->
+//      if ( p.rel == 'host' ) {
+//        result = p.titleUrl
+//      }
+//    }
+//    result
+//  }
 
   @Transient
   def getPermissableCombos() {

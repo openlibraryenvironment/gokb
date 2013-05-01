@@ -12,10 +12,12 @@ class Platform extends KBComponent {
   Date dateCreated
   Date lastUpdated
 
-
 //  static mappedBy = [tipps: 'platform']
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
-  static manyByCombo = [tipps : TitleInstancePackagePlatform]
+  static manyByCombo = [
+	hostedTipps : TitleInstancePackagePlatform,
+	linkedTipps : TitleInstancePackagePlatform,
+  ]
 
   static mapping = {
         provenance column:'plat_data_provenance'

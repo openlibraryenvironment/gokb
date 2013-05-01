@@ -14,17 +14,17 @@ class Package extends KBComponent {
   // Fixed?: Y
   // Consistent?: N
 
-  String identifier
+//  String identifier
   RefdataValue packageType
   RefdataValue packageStatus
   RefdataValue packageListStatus
   RefdataValue packageScope
   RefdataValue breakable
-  RefdataValue parent
+//  RefdataValue parent
   RefdataValue global
   RefdataValue fixed
   RefdataValue consistent
-  Platform nominalPlatform
+//  Platform nominalPlatform
   Date dateCreated
   Date lastUpdated
   RefineProject lastProject
@@ -32,25 +32,26 @@ class Package extends KBComponent {
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
 //  static mappedBy = [tipps: 'pkg']
   static manyByCombo = [
-	tipps 		: TitleInstancePackagePlatform,
-	subPkgs		: Package
+	tipps 				: TitleInstancePackagePlatform,
+	subPkgs				: Package,
   ]
   
   static hasByCombo = [
-	parent		: Package,
-	provider	: Org
+	parent				: Package,
+	provider			: Org,
+	nominalPlatform		: Platform,
   ]
   
   static mappedByCombo = [
-	parent		: 'subPkgs'
+	parent		: 'subPkgs',
   ]
 
   static mapping = {
-           identifier column:'pkg_identifier'
+//           identifier column:'pkg_identifier'
           packageType column:'pkg_type_rv_fk'
         packageStatus column:'pkg_status_rv_fk'
     packageListStatus column:'pkg_list_status_rv_fk'
-      nominalPlatform column:'pkg_nominal_platform_fk'
+//      nominalPlatform column:'pkg_nominal_platform_fk'
           lastProject column:'pkg_refine_project_fk'
 //                tipps sort:'title.name', order: 'asc'
   }
@@ -58,7 +59,7 @@ class Package extends KBComponent {
   static constraints = {
           packageType(nullable:true, blank:false)
         packageStatus(nullable:true, blank:false)
-      nominalPlatform(nullable:true, blank:false)
+//      nominalPlatform(nullable:true, blank:false)
     packageListStatus(nullable:true, blank:false)
           lastProject(nullable:true, blank:false)
   }

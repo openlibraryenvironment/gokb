@@ -29,7 +29,8 @@ abstract class KBComponent {
     tags:RefdataValue,
     outgoingCombos:Combo,
     incomingCombos:Combo,
-    additionalProperties:KBComponentAdditionalProperty]
+    additionalProperties:KBComponentAdditionalProperty
+  ]
 
   static mapping = {
     id column:'kbc_id'
@@ -70,6 +71,7 @@ abstract class KBComponent {
 
     result;
   }
+  
   @Transient
   static def lookupByIO(String idtype, String idvalue) {
     // println("lookupByIdentifier(${idtype},${idvalue})");
