@@ -1,6 +1,5 @@
 package org.gokb
 
-import org.codehaus.groovy.grails.commons.ApplicationHolder
 import groovy.util.slurpersupport.GPathResult
 import static groovyx.net.http.ContentType.*
 import static groovyx.net.http.Method.*
@@ -16,11 +15,12 @@ class EdinaPublicationsAPIService {
   static transactional = false
   def endpoint
   def target_service
+  def grailsApplication
 
   @javax.annotation.PostConstruct
   def init() {
     log.debug("Initialising rest endpoint for edina publications service...");
-    endpoint = ApplicationHolder.application.config.publicationService.baseurl ?: "http://knowplus.edina.ac.uk:2012/kbplus/api"
+    endpoint = grailsApplication.config.publicationService.baseurl ?: "http://knowplus.edina.ac.uk:2012/kbplus/api"
     target_service = new RESTClient(endpoint)
   }
 
