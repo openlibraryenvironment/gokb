@@ -15,6 +15,8 @@ class TitleLookupService {
       log.debug("find(${title},${issn},${eissn})");
       def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null;
       def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null;
+      
+      def publisher = Org.lookupOrCreateOrgByName(publisher_name)
 
       def tq = TitleInstance.createCriteria()
       def titles = tq.listDistinct {

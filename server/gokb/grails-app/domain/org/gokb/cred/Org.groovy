@@ -11,8 +11,6 @@ class Org extends KBComponent {
   Date dateCreated
   Date lastUpdated
 
-  Set<IdentifierOccurrence> ids = []
-
   static manyByCombo = [
 	providedPackages	: Package,
 	children			: Org,
@@ -60,6 +58,11 @@ class Org extends KBComponent {
     ]
   }
 
+  static def lookupOrCreateByName (publisher_name) {
+    def ql = Org.findByNameIlike("${publisher_name}%")
+    ql
+  }
+  
   static def refdataFind(params) {
     def result = [];
     def ql = null;

@@ -225,7 +225,7 @@ class IngestService {
               log.debug("Create new tipp");
               tipp = new TitleInstancePackagePlatform(title:title_info,
                                                       pkg:pkg,
-                                                      platform:platform_info,
+                                                      hostPlatform:platform_info,
                                                       startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
                                                       startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
                                                       startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),

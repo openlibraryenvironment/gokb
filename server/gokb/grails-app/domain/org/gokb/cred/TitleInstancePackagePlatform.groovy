@@ -30,7 +30,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   
   static hasByCombo = [
     pkg 					: Package,
-    platform 				: Platform,
+    hostPlatform			: Platform,
     title					: TitleInstance,
 	derivedFrom				: TitleInstancePackagePlatform,
   ]
