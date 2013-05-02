@@ -5,7 +5,7 @@ import org.gokb.cred.*;
 class TitleLookupService {
 
     def find(title, issn, eissn) {
-      find(title, issn, eissn)
+      find(title, issn, eissn, null, null)
     }
 
     def find(title, issn, eissn, extra_ids, publisher_name) {
@@ -13,10 +13,9 @@ class TitleLookupService {
       def result = null
 
       log.debug("find(${title},${issn},${eissn})");
-      def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null;
-      def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null;
-      
-      def publisher = Org.lookupOrCreateOrgByName(publisher_name)
+      def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
+      def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
+      def publisher = Org.findOrSaveByNameILike (publisher_name)
 
       def tq = TitleInstance.createCriteria()
       def titles = tq.listDistinct {
@@ -26,6 +25,9 @@ class TitleLookupService {
             // eq('identifier',issn_identifier)
             // eq('identifier',eissn_identifier)
           }
+		  and {
+			
+		  }
         }
       }
 

@@ -95,7 +95,7 @@ class IngestService {
     if ( col_positions[HOST_PLATFORM_URL] == null )
       result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
       
-      if ( col_positions[PUBLISHER_NAME] == null )
+    if ( col_positions[PUBLISHER_NAME] == null )
       result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
 
     if ( result.messages.size() > 0 ) {
@@ -111,7 +111,7 @@ class IngestService {
   }
 
   /**
-   *  ingest a parsed project. 
+   *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
   def ingest(project_data, project_id) {
@@ -132,15 +132,15 @@ class IngestService {
         col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
       }
 
-      // Track any additional title identifiers
+      // Track any additional title identifiers.
       def additional_identifiers = []
       project_data.columnDefinitions?.each { cd ->
         def cn = cd.name?.toLowerCase()
         if (cn.startsWith('title.identifier.') ) {
           def idparts = cn.split('.')
-          if ( idparts.size==3 ) {
-            if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'issn') ) {
-              // Skip issn/eissn
+          if ( idparts.size == 3 ) {
+            if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
+              // Skip issn/eissn.
             }
             else {
               additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
@@ -174,7 +174,7 @@ class IngestService {
             }
 
             // Title Instance
-            log.debug("Looking up title...(extra ids: ${extra_ids})");
+            log.debug("Looking up title...(extra ids: ${extra_ids})")
             def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
                                                      jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
                                                      jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),

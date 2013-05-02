@@ -7,13 +7,14 @@ class IntegrationController {
 
   /**
    *  assertOrg()
-   *  allow an authorized external componet to send in a JSON structure following this template:
+   *  allow an authorized external component to send in a JSON structure following this template:
    *      [
    *         name:National Association of Corrosion Engineers, 
-   *         description:National Association of Corrosion Engineers, 
+   *         description:National Association of Corrosion Engineers,
+   *         parent:
    *         customIdentifers:[[identifierType:"idtype", identifierValue:"value"]], 
    *         combos:[[linkTo:[identifierType:"ncsu-internal", identifierValue:"ncsu:61929"], linkType:"HasParent"]], 
-   *         flags:[[flagType:"Org Role", flagValue:"Content Provider"], 
+   *         flags:[[flagType:"Org Role", flagValue:"Content Provider"],
    *                [flagType:"Org Role", flagValue:"Publisher"], 
    *                [flagType:"Authorized", flagValue:"N"]]
    *      ]

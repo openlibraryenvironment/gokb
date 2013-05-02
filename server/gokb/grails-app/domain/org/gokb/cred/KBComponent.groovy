@@ -21,7 +21,6 @@ abstract class KBComponent {
     incomingCombos:'toComponent',
 //    orgs: 'linkedComponent',
     additionalProperties: 'fromComponent']
-
   
   static hasMany = [
     ids: IdentifierOccurrence,
