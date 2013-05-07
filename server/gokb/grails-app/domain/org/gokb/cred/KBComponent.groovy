@@ -14,6 +14,7 @@ abstract class KBComponent {
   List additionalProperties = []
   List outgoingCombos
   List incomingCombos
+  List ids
   
   static mappedBy = [
     ids: 'component',

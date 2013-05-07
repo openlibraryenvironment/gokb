@@ -15,20 +15,25 @@ class TitleLookupService {
       log.debug("find(${title},${issn},${eissn})");
       def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
       def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
-      def publisher = Org.findOrSaveByNameILike (publisher_name)
+      def publisher = Org.findOrSaveByName (publisher_name)
 
-      def tq = TitleInstance.createCriteria()
+      def tq = ComboCriteria.createFor( TitleInstance.createCriteria() )
       def titles = tq.listDistinct {
-        ids {
-          or {
-            'in'('identifier',[issn_identifier,eissn_identifier])
-            // eq('identifier',issn_identifier)
-            // eq('identifier',eissn_identifier)
-          }
-		  and {
-			
-		  }
-        }
+		and {
+    		tq.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
+    		tq.add('publisher', 'eq', publisher)
+		}
+		
+//        ids {
+//          or {
+//            'in'('identifier',[issn_identifier,eissn_identifier])
+//            // eq('identifier',issn_identifier)
+//            // eq('identifier',eissn_identifier)
+//          }
+//		  and {
+//			add 
+//		  }
+//        }
       }
 
       if ( titles ) {
@@ -53,25 +58,38 @@ class TitleLookupService {
         if ( ! result.ids )
           result.ids = []
 
-        if ( result.save(flush:true) ) {
-          log.debug("New title: ${result.id}");
-        }
-        else {
-          result.errors.each { e ->
-            log.error("Problem saving title: ${e}");
-          }
-        }
-
         if ( issn_identifier )
-          new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
+//          new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
+		
+    		// Add a custom ID.	
+			result.ids.add(
+    		  new IdentifierOccurrence(identifier:issn_identifier)
+    		)
 
         if ( eissn_identifier )
-          new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
+//          new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
+    		// Add a custom ID.
+    		result.ids.add(
+    		  new IdentifierOccurrence(identifier:eissn_identifier)
+    		)
 
         extra_ids.each { ei ->
-          additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
-          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
+          def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
+//          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
+		  result.ids.add(
+			new IdentifierOccurrence(identifier:additional_identifier)
+		  )
         }
+		
+		// Try and save the result now.
+		if ( result.save() ) {
+		  log.debug("New title: ${result.id}");
+		}
+		else {
+		  result.errors.each { e ->
+			log.error("Problem saving title: ${e}");
+		  }
+		}
       }
 
       // May double check with porter stemmer in the future.. see
