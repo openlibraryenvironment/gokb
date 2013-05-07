@@ -53,7 +53,7 @@ class TitleLookupService {
       }
       else {
         log.debug("No result, create a new title")
-        result = new TitleInstance(name:title);
+        result = new TitleInstance(name:title).save()
 
         if ( ! result.ids )
           result.ids = []
@@ -63,21 +63,21 @@ class TitleLookupService {
 		
     		// Add a custom ID.	
 			result.ids.add(
-    		  new IdentifierOccurrence(identifier:issn_identifier)
+    		  new IdentifierOccurrence(identifier:issn_identifier).save()
     		)
 
         if ( eissn_identifier )
 //          new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
     		// Add a custom ID.
     		result.ids.add(
-    		  new IdentifierOccurrence(identifier:eissn_identifier)
+    		  new IdentifierOccurrence(identifier:eissn_identifier).save()
     		)
 
         extra_ids.each { ei ->
           def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
 //          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
 		  result.ids.add(
-			new IdentifierOccurrence(identifier:additional_identifier)
+			new IdentifierOccurrence(identifier:additional_identifier).save()
 		  )
         }
 		
@@ -95,6 +95,6 @@ class TitleLookupService {
       // May double check with porter stemmer in the future.. see
       // https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_3/lucene/src/java/org/apache/lucene/analysis/PorterStemmer.java
 
-      result;
+      result
     }
 }

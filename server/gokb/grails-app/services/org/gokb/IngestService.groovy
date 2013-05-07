@@ -155,7 +155,7 @@ class IngestService {
         def cn = cd.name?.toLowerCase()
         if (cn.startsWith('gokb.') ) {
           def prop_name = cn.substring(5,cn.length());
-          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true);
+          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name);
           gokb_additional_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
         }
       }
@@ -196,7 +196,7 @@ class IngestService {
             if ( !platform_info ) {
               // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
               platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
-              if (! platform_info.save(flush:true) ) {
+              if (! platform_info.save() ) {
                 platform_info.errors.each { e ->
                   log.error(e);
                 }
@@ -624,6 +624,7 @@ class IngestService {
   }
 
   def getOrCreatePackage(identifier, project) {
+	//TODO: Need to a
     def pkg = Package.findByIdentifier(identifier);
     if (!pkg) {
       log.debug("New package with identifier ${identifier}");
@@ -637,7 +638,7 @@ class IngestService {
                         global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
                         fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
                         consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
-                        lastProject:project).save(flush:true);
+                        lastProject:project).save();
 
       // create a Combo linking this package to it's content provider
       def cp_combo = new Combo(fromComponent:project.provider,
