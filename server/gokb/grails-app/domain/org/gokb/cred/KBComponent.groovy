@@ -11,10 +11,10 @@ abstract class KBComponent {
   String normname
   String shortcode
   Set tags = []
-  Set additionalProperties = []
-  Set outgoingCombos = []
-  Set incomingCombos = []
-  Set ids = []
+  List additionalProperties = []
+  List outgoingCombos = []
+  List incomingCombos = []
+  List ids = []
   
   static mappedBy = [
     ids: 'component',

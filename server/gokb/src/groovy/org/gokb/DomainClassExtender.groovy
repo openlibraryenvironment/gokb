@@ -271,7 +271,7 @@ class DomainClassExtender {
 		  }
 		  
 		  // Create our new list.
-		  result = new ComboPersistedSet (
+		  result = new ComboPersistedList (
 			thiz,
 			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
 			type,
@@ -297,7 +297,7 @@ class DomainClassExtender {
 		  }
 		  
 		  // Create our new list.
-		  result = new ComboPersistedSet (
+		  result = new ComboPersistedList (
 			thiz,
 			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
 			type,
@@ -667,7 +667,7 @@ class DomainClassExtender {
                   Combo combo = new Combo(
                       type : (type),
                       status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                   )
+                  )
 
                   // Add to the incoming collection
                   log.debug("adding incoming Combo of type ${type} to ${delegate} from ${value}.")
@@ -780,12 +780,13 @@ class DomainClassExtender {
       Set cProps = getAllComboPropertyNamesFor (instance.getClass())
       for (prop in args.keySet()) {
         if (cProps.contains(prop)) {
+		  
           // Set the combo property directly.
           instance.setComboProperty(prop, args[prop])
         }
       }
       instance
-    }    
+    }
   }
   
   private static addComboPropertyGettersAndSetters = { DefaultGrailsDomainClass domainClass ->
@@ -819,26 +820,26 @@ class DomainClassExtender {
 	}
   }
   
-  public class ComboPersistedSet<E extends KBComponent> extends org.apache.commons.collections.set.AbstractSetDecorator {
+  public class ComboPersistedList <E extends KBComponent> extends org.apache.commons.collections.list.AbstractListDecorator {
 	
 	private final KBComponent component
 	private final boolean incoming
 	private final RefdataValue status
 	private final RefdataValue type
 	
-	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals) {
-	  this (new HashSet (component, status, type, vals, false) )
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals) {
+	  this (component, status, type, new ArrayList (vals), false )
 	}
 	
-	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals, boolean incoming) {
-	  this (new HashSet (component, status, type, vals, outgoing) )
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals, boolean incoming) {
+	  this (component, status, type, new ArrayList (vals), incoming)
 	}
 	
-	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Set<E> vals) {
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals) {
 	  this (component, status, type, vals, false)
 	}
 	
-	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Set<E> vals, boolean incoming) {
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals, boolean incoming) {
 	  super(vals)
 	  this.component = component
 	  this.status = status
@@ -864,14 +865,14 @@ class DomainClassExtender {
 		if (incoming) {
 		  
 		  // Incoming combos of component.
-		  component.incomingCombos.add (combo)
-		  element.outgoingCombos.add (combo)
+		  component.addToIncomingCombos (combo)
+		  element.addToOutgoingCombos (combo)
 		  
 		} else {
 		  
 		  // Outgoing combos of component.
-		  component.outgoingCombos.add (combo)
-		  element.incomingCombos.add (combo)
+		  component.addToOutgoingCombos (combo)
+		  element.addToIncomingCombos (combo)
 		}
 	  }
 	  
@@ -910,8 +911,8 @@ class DomainClassExtender {
 		  combo.toComponent = component
 		  
 		  // Incoming combos of component.
-		  component.incomingCombos.remove (combo)
-		  element.outgoingCombos.remove (combo)
+		  component.removeFromIncomingCombos (combo)
+		  element.removeFromOutgoingCombos (combo)
 		  
 		} else {
 		
@@ -919,8 +920,8 @@ class DomainClassExtender {
 		  combo.toComponent = element
 		  
 		  // Outgoing combos of component.
-		  component.outgoingCombos.add (combo)
-		  element.incomingCombos.add (combo)
+		  component.removeFromOutgoingCombos (combo)
+		  element.removeFromIncomingCombos (combo)
 		}
 	  }
 	  

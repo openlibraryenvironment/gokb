@@ -2,6 +2,7 @@
 // config files can be ConfigSlurper scripts, Java properties files, or classes
 // in the classpath in ConfigSlurper format
 
+
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 
 
@@ -106,7 +107,7 @@ log4j = {
           // 'grails.app.conf',
           'grails.app.jobs' // ,
           
-   debug  'org.gokb.DomainClassExtender'
+//   debug  'org.gokb.DomainClassExtender'
    
    // Enable Hibernate SQL logging with param values
 //   trace 'org.hibernate.type'
@@ -156,5 +157,7 @@ auditLog {
     }
 
     return username
-  }
+  }  
 }
+
+grails.gorm.failOnError=true
