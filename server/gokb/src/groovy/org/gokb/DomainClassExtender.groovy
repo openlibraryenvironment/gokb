@@ -537,6 +537,7 @@ class DomainClassExtender {
 //          it.type == (type)
 //        }
 	  	final KBComponent thiz = delegate
+		
 		combos = Combo.createCriteria().list {
 		  and {
 			eq ("type", (type))
@@ -772,8 +773,7 @@ class DomainClassExtender {
       
       // Instantiate the object and save...
       // We really need to save here so we can reference this object within the combos.
-      def instance = oldConstructor.newInstance(args)
-//      .save()
+      def instance = oldConstructor.newInstance(args).save()
       
       // Now that we have created our instance using the original constructor we can,
       // now set the combo props that were missed.
