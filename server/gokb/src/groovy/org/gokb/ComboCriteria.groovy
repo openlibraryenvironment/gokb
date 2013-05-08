@@ -69,8 +69,12 @@ class ComboCriteria {
 	// We need to try and invoke on the HibernateCriteria.
 	crit.invokeMethod(name, args)
   }
+  
+  public ComboCriteria add (String propertyName, String operator, args) {
+	add(propertyName, operator, args, null)
+  }
 
-  public def add = {String propertyName, String operator, args = [].toArray(), Class the_class = null ->
+  private def add = {String propertyName, String operator, args = [].toArray(), Class the_class ->
 
 //	def the_value = value
 
