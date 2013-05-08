@@ -205,8 +205,8 @@ class IngestService {
     
             // Does the row specify a package?
             def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
-            def pkg_id = "${project.provider.name}:${pkg_name_from_row}"
-            def pkg = getOrCreatePackage(pkg_id,project);
+//            def pkg_id = "${project.provider.name}:${pkg_name_from_row}"
+            def pkg = getOrCreatePackage(pkg_name_from_row, project);
   
             // TIPP
 //            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
@@ -623,34 +623,45 @@ class IngestService {
     }
   }
 
-  def getOrCreatePackage(identifier, project) {
-	//TODO: Need to a
-    def pkg = Package.findByIdentifier(identifier);
+  def getOrCreatePackage(String name, RefineProject project) {
+	//TODO: Need to sort this identifier out.
+//    def pkg = Package.findByIdentifier(identifier);
+	
+	Org provider = project.provider
+	
+	// Try and find a package for the provider with the name entered.
+	def pkg = ComboCriteria.createFor(Package.createCriteria()).get {
+	  add ("name", "eq", name)
+	  add ("provider", "eq", provider)
+	}
+	
+	// Package found.
     if (!pkg) {
-      log.debug("New package with identifier ${identifier}");
-      pkg = new Package(
-                        identifier:identifier,
-                        name:identifier,
-                        packageStatus:RefdataCategory.lookupOrCreate("Package Status", "Current"),
-                        packageScope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
-                        breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
-                        parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
-                        global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
-                        fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
-                        consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
-                        lastProject:project).save();
+      log.debug("New package with name ${name} for ${provider.name}");
+	  pkg = new Package(
+		  name:name,
+		  provider: (provider),
+		  packageStatus:RefdataCategory.lookupOrCreate("Pkg.Status", "Current"),
+		  packageScope:RefdataCategory.lookupOrCreate("Pkg.Scope", "Front File"),
+		  breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
+		  parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
+		  global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
+		  fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
+		  consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
+		  lastProject:project
+	  ).save();
 
       // create a Combo linking this package to it's content provider
-      def cp_combo = new Combo(fromComponent:project.provider,
-                               toComponent:pkg,
-                               type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
-                               status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
-
-
-      cp_combo.save()
+//      def cp_combo = new Combo(fromComponent:project.provider,
+//                               toComponent:pkg,
+//                               type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
+//                               status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
+//
+//
+//      cp_combo.save()
     }
     else {
-      log.debug("Got existing package");
+      log.debug("Got existing package ${pkg.id}");
     }
     pkg
   }
