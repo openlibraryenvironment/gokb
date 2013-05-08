@@ -14,7 +14,7 @@ environments {
 
     development {
         dataSource {
-            dbCreate = "create-drop"
+            dbCreate = "update"
             driverClassName = "com.mysql.jdbc.Driver"
             dialect=org.hibernate.dialect.MySQL5Dialect
             username = "k-int"

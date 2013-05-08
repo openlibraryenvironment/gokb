@@ -181,7 +181,7 @@ class IngestService {
                                                      extra_ids,
                                                      jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
 
-            // Platform
+            // Platform.
             def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
             def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
             def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
@@ -195,7 +195,11 @@ class IngestService {
             def platform_info = Platform.findByNormname(host_norm_platform_name)
             if ( !platform_info ) {
               // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
-              platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
+              platform_info = new Platform(
+				name:host_platform_name,
+				normname:host_norm_platform_name,
+				primaryUrl:host_platform_url
+			  )
               if (! platform_info.save() ) {
                 platform_info.errors.each { e ->
                   log.error(e);
@@ -204,20 +208,19 @@ class IngestService {
             }
     
             // Does the row specify a package?
-            def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
+//            def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
+			def pkg_name_from_row = "${project.id}"
 //            def pkg_id = "${project.provider.name}:${pkg_name_from_row}"
             def pkg = getOrCreatePackage(pkg_name_from_row, project);
   
             // TIPP
 //            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
-            HibernateCriteriaBuilder crit = TitleInstancePackagePlatform.createCriteria()
-            def tipp = crit.get {              
-              ComboCriteria.createFor(crit)
-               .add ("title", "eq", title_info)
+			def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+            def tipp = crit.get {
               and {
-                ComboCriteria
-                  .add ("pkg", "eq", pkg)
-                  .add ("platform_info", "eq", platform_info)
+				crit.add ("title", "eq", title_info)
+                crit.add ("pkg", "eq", pkg)
+                crit.add ("hostPlatform", "eq", platform_info)
               }
             }
             
@@ -238,9 +241,12 @@ class IngestService {
                                                       hostPlatformURL:host_platform_url)
 
               gokb_additional_props.each { apd ->
-                tipp.additionalProperties.add(new KBComponentAdditionalProperty(fromComponent:tipp,
-                                                                                propertyDefn:apd.pd,
-                                                                                apValue:getRowValue(datarow,apd.col)))
+                tipp.additionalProperties.add (
+				  new KBComponentAdditionalProperty(
+					propertyDefn:apd.pd,
+                    apValue:getRowValue(datarow,apd.col)
+				  )
+				)
               }
               
   
@@ -262,11 +268,12 @@ class IngestService {
             // instances we've just looked up.
             if ( ctr % 25 == 0 ) {
               cleanUpGorm()
-              pkg = Package.findByIdentifier("project:${project.id}");
+//              pkg = Package.findByIdentifier("project:${project.id}");
+			  
               // Update project progress indicator, save in db so any observers can see progress
               def project_info = RefineProject.get(project.id)
               project_info.progress = ( ctr / project_data.rowData.size() * 100 )
-              project_info.save(flush:true);
+              project_info.save(flush:true)
             }
 
           } 
@@ -627,19 +634,24 @@ class IngestService {
 	//TODO: Need to sort this identifier out.
 //    def pkg = Package.findByIdentifier(identifier);
 	
+	// The provider.
 	Org provider = project.provider
 	
+	// Create the package name.
+	def pkg_name = "${provider.name}:${name}"
+	
 	// Try and find a package for the provider with the name entered.
-	def pkg = ComboCriteria.createFor(Package.createCriteria()).get {
-	  add ("name", "eq", name)
-	  add ("provider", "eq", provider)
+	def q = ComboCriteria.createFor(Package.createCriteria())
+	def pkg = q.get {
+	  q.add ("name", "eq", pkg_name)
+	  q.add ("provider", "eq", provider)
 	}
 	
 	// Package found.
     if (!pkg) {
       log.debug("New package with name ${name} for ${provider.name}");
 	  pkg = new Package(
-		  name:name,
+		  name:(pkg_name),
 		  provider: (provider),
 		  packageStatus:RefdataCategory.lookupOrCreate("Pkg.Status", "Current"),
 		  packageScope:RefdataCategory.lookupOrCreate("Pkg.Scope", "Front File"),
@@ -649,7 +661,7 @@ class IngestService {
 		  fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
 		  consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
 		  lastProject:project
-	  ).save();
+	  ).save()
 
       // create a Combo linking this package to it's content provider
 //      def cp_combo = new Combo(fromComponent:project.provider,

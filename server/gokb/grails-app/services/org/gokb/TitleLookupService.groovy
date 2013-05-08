@@ -12,16 +12,27 @@ class TitleLookupService {
 
       def result = null
 
-      log.debug("find(${title},${issn},${eissn})");
+      log.debug("find Title (${title},${issn},${eissn},${publisher_name})");
       def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
       def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
-      def publisher = Org.findOrSaveByName (publisher_name)
+	  def q = ComboCriteria.createFor(Org.createCriteria())
+      def publisher = q.get {
+		 q.add ("name", "ilike", publisher_name)
+      }
+	  
+	  // If we have no publisher then we should create one.
+	  if (!publisher) {
+		publisher = new Org ([name : publisher_name]).save()
+		log.debug("No publisher found. Created new one with id ${publisher.id}")
+	  } else {
+	  	log.debug("Found publisher with id ${publisher.id}")
+	  }
 
-      def tq = ComboCriteria.createFor( TitleInstance.createCriteria() )
-      def titles = tq.listDistinct {
+      q = ComboCriteria.createFor( TitleInstance.createCriteria() )
+      def titles = q.listDistinct {
 		and {
-    		tq.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
-    		tq.add('publisher', 'eq', publisher)
+    		q.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
+    		q.add('publisher', 'eq', publisher)
 		}
 		
 //        ids {
@@ -53,10 +64,10 @@ class TitleLookupService {
       }
       else {
         log.debug("No result, create a new title")
-        result = new TitleInstance(name:title).save()
+        result = new TitleInstance(name:title, publisher: (publisher)).save()
 
-        if ( ! result.ids )
-          result.ids = []
+//        if (result.ids )
+//          result.ids = []
 
         if ( issn_identifier )
 //          new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
@@ -73,7 +84,7 @@ class TitleLookupService {
     		  new IdentifierOccurrence(identifier:eissn_identifier).save()
     		)
 
-        extra_ids.each { ei ->
+		extra_ids.each { ei ->
           def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
 //          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
 		  result.ids.add(
