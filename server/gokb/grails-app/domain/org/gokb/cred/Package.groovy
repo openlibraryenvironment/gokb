@@ -9,7 +9,7 @@ class Package extends KBComponent {
   // Status default to 'Current'
   // Scope default to 'Front File'
   // Breakable?: Y
-  // Parent?: N
+  // Parent?: N // SO: This should not be needed really now. We should be able to test children for empty set.
   // Global?: Y
   // Fixed?: Y
   // Consistent?: N
