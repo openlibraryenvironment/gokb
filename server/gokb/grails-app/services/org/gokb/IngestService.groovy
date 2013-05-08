@@ -644,7 +644,7 @@ class IngestService {
 		  packageStatus:RefdataCategory.lookupOrCreate("Pkg.Status", "Current"),
 		  packageScope:RefdataCategory.lookupOrCreate("Pkg.Scope", "Front File"),
 		  breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
-		  parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
+//		  parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
 		  global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
 		  fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
 		  consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
