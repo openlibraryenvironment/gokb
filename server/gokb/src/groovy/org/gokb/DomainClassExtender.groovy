@@ -24,6 +24,10 @@ package org.gokb
  * 
  */
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
 import grails.util.GrailsNameUtils
 
 
@@ -247,45 +251,65 @@ class DomainClassExtender {
 
       if (typeClass) {
 
-        // Default many association maps to empty set.
-        def result = []
+        // The result.
+        def result
+		
+		// The delegate.
+		final KBComponent thiz = delegate
 
         if (isComboReverse(propertyName)) {
+		  
           // Reverse.
 //          def combos = incomingCombos.findAll {
 //            it.type == (type)
 //          }
-		  final KBComponent thiz = delegate
 		  def combos = Combo.createCriteria().list {
 			and {
 			  eq ("type", (type))
 			  eq ("toComponent", (thiz))
 			}
 		  }
+		  
+		  // Create our new list.
+		  result = new ComboPersistedSet (
+			thiz,
+			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
+			type,
+			combos,
+			true
+		  )
 
-          if (combos) {
-            for (combo in combos) {
-              result.add(combo.fromComponent)
-            }
-          }
+//          if (combos) {
+//            for (combo in combos) {
+//              result.add(combo.fromComponent)
+//            }
+//          }
 
         } else {
 //          def combos = outgoingCombos.findAll {
 //            it.type == (type)
 //          }
-		  final KBComponent thiz = delegate
 		  def combos = Combo.createCriteria().list {
 			and {
 			  eq ("type", (type))
 			  eq ("fromComponent", (thiz))
 			}
 		  }
+		  
+		  // Create our new list.
+		  result = new ComboPersistedSet (
+			thiz,
+			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
+			type,
+			combos,
+			false
+		  )
 
-          if (combos) {
-            for (combo in combos) {
-              result.add(combo.toComponent)
-            }
-          }
+//          if (combos) {
+//            for (combo in combos) {
+//              result.add(combo.toComponent)
+//            }
+//          }
         }
 
         // Add the result to the cache.
@@ -674,6 +698,9 @@ class DomainClassExtender {
           comboPropertyCache().put("${propertyName}".toString(), value)
           
           // We should also completely clear the target cache too.
+		  //TODO Maybe we could be more selective about what we remove from the cache,
+		  // although it's probably negligible between the processing needed to lookup,
+		  // and derive the value to clear than to rebuild if/when needed.
           value?.comboPropertyCache().clear()
         }
       } else {
@@ -790,5 +817,141 @@ class DomainClassExtender {
 		delegate.setComboProperty(prop, value)
 	  }
 	}
+  }
+  
+  public class ComboPersistedSet<E extends KBComponent> extends org.apache.commons.collections.set.AbstractSetDecorator {
+	
+	private final KBComponent component
+	private final boolean incoming
+	private final RefdataValue status
+	private final RefdataValue type
+	
+	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals) {
+	  this (new HashSet (component, status, type, vals, false) )
+	}
+	
+	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals, boolean incoming) {
+	  this (new HashSet (component, status, type, vals, outgoing) )
+	}
+	
+	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Set<E> vals) {
+	  this (component, status, type, vals, false)
+	}
+	
+	public ComboPersistedSet (KBComponent component, RefdataValue status, RefdataValue type, Set<E> vals, boolean incoming) {
+	  super(vals)
+	  this.component = component
+	  this.status = status
+	  this.type = type
+	  this.outgoing = outgoing
+	}
+	
+	@Override
+    public boolean add(Object element) {
+	  
+	  // Try and add the object.
+	  boolean added = super.add(element)
+	  
+	  if (added) {
+		
+		// Create the Combo.
+		Combo combo = new Combo ([
+		  "status" 		: status,
+		  "type"			: type
+		])
+		
+		// Add to the 2 comboLists.
+		if (incoming) {
+		  
+		  // Incoming combos of component.
+		  component.incomingCombos.add (combo)
+		  element.outgoingCombos.add (combo)
+		  
+		} else {
+		  
+		  // Outgoing combos of component.
+		  component.outgoingCombos.add (combo)
+		  element.incomingCombos.add (combo)
+		}
+	  }
+	  
+	  added
+    }
+
+	@Override
+    public boolean addAll(Collection coll) {
+	  
+	  // Ensure we use our extended add.
+	  boolean added = true
+	  for (E element : coll) {
+		added = added && this.add(element)
+	  }
+	  
+	  added
+    }
+
+	@Override
+    public boolean remove(Object element) {
+	  
+	  // Removed item successfully.
+	  boolean removed = super.remove(element)
+	  if (removed) {
+		
+		// Create the Combo.
+		Combo combo = new Combo ([
+		  "status" 		: status,
+		  "type"		: type
+		])
+		
+		// Add the from/to components before removing from the 2 lists.
+		if (incoming) {
+		  
+		  combo.fromComponent = element
+		  combo.toComponent = component
+		  
+		  // Incoming combos of component.
+		  component.incomingCombos.remove (combo)
+		  element.outgoingCombos.remove (combo)
+		  
+		} else {
+		
+		  combo.fromComponent = component
+		  combo.toComponent = element
+		  
+		  // Outgoing combos of component.
+		  component.outgoingCombos.add (combo)
+		  element.incomingCombos.add (combo)
+		}
+	  }
+	  
+	  removed
+    }
+
+	@Override
+    public boolean removeAll(Collection coll) {
+	  // Ensure we use our extended remove.
+	  boolean removed = true
+	  for (E element : coll) {
+		removed = removed && this.remove(element)
+	  }
+    }
+
+	@Override
+    public boolean retainAll(Collection coll) {
+	  
+	  boolean removed = true
+
+	  // Remove all items not in the supplied collection.
+	  Iterator items = this.iterator()
+	  E element
+	  while (items.hasNext()) {
+		if (!coll.contains(element)) {
+		  // Remove.
+		  removed = removed && this.remove(element)
+		}
+	  }
+	  
+	  removed
+    }
   }
 }
