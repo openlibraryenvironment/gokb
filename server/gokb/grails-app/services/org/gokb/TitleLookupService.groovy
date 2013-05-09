@@ -13,27 +13,28 @@ class TitleLookupService {
       def result = null
 
       log.debug("find Title (${title},${issn},${eissn},${publisher_name})");
+      
+      // Locate a publisher for the supplied name if possible.
+      def pq = ComboCriteria.createFor(Org.createCriteria())
+      def publisher = pq.get {
+        pq.add ("name", "ilike", publisher_name)
+      }
+      
+      // Create new publisher if needed.
+      if (!publisher) {
+        publisher = new Org ([name : publisher_name])
+        log.debug("No publisher found. Created new one with name ${publisher.name}")
+      } else {
+        log.debug("Found publisher with id ${publisher.id}")
+      }
+      
+      // Use the ids to check for a TitleInstance.
       def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
       def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
-	  def q = ComboCriteria.createFor(Org.createCriteria())
-      def publisher = q.get {
-		 q.add ("name", "ilike", publisher_name)
-      }
-	  
-	  // If we have no publisher then we should create one.
-	  if (!publisher) {
-		publisher = new Org ([name : publisher_name]).save()
-		log.debug("No publisher found. Created new one with id ${publisher.id}")
-	  } else {
-	  	log.debug("Found publisher with id ${publisher.id}")
-	  }
-
-      q = ComboCriteria.createFor( TitleInstance.createCriteria() )
-      def titles = q.listDistinct {
-		and {
-    		q.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
-    		q.add('publisher', 'eq', publisher)
-		}
+	  def tq = ComboCriteria.createFor( TitleInstance.createCriteria() )
+      def titles = tq.listDistinct {
+		tq.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
+//    		tq.add('publisher', 'eq', publisher)
 		
 //        ids {
 //          or {
@@ -64,31 +65,34 @@ class TitleLookupService {
       }
       else {
         log.debug("No result, create a new title")
-        result = new TitleInstance(name:title, publisher: (publisher)).save()
+        result = new TitleInstance(name:title, publisher: (publisher))
 
 //        if (result.ids )
 //          result.ids = []
 
-        if ( issn_identifier )
+        // Don't forget to add our IDs here.
+        if ( issn_identifier ) {
 //          new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
 		
     		// Add a custom ID.	
-			result.ids.add(
-    		  new IdentifierOccurrence(identifier:issn_identifier).save()
+			result.addToIds(
+    		  new IdentifierOccurrence(identifier:issn_identifier)
     		)
+        }
 
-        if ( eissn_identifier )
+        if ( eissn_identifier ) {
 //          new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
     		// Add a custom ID.
-    		result.ids.add(
-    		  new IdentifierOccurrence(identifier:eissn_identifier).save()
+    		result.addToIds(
+    		  new IdentifierOccurrence(identifier:eissn_identifier)
     		)
+        }
 
 		extra_ids.each { ei ->
           def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
 //          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
-		  result.ids.add(
-			new IdentifierOccurrence(identifier:additional_identifier).save()
+		  result.addToIds(
+			new IdentifierOccurrence(identifier:additional_identifier)
 		  )
         }
 		
