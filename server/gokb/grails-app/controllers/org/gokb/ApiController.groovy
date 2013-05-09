@@ -148,27 +148,25 @@ class ApiController {
 	  // Get the project.
 	  RefineProject project
 	  if (params.projectID) {
-		project = RefineProject.load(params.projectID)
+		project = RefineProject.get(params.projectID)
 	  } else {
 		// Creating new project.
 		project = new RefineProject()
-		project.setHash(params.hash ?: null)
-
-		// Set the org too.
-		log.debug("Setting provider from submission.");
-		Org org = Org.get(params.provider)
-		if (org) {
-		  project.provider = org
-		}
+		
 	  }
 
 	  if (project) {
-
-		// A quick hack to set the project provider, this should come from refine, but for testing purposes, we set this to Wiley
-//		if ( !project.provider ) {
-//		  log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
-//		  project.provider = Org.findByName('Wiley') ?: new Org(name:'Wiley').save();
-//		}
+      
+        // Provider?
+        if (params.provider) {
+          
+          // Set the org too.
+          Org org = Org.get(params.provider)
+          if (org) {
+            log.debug("Setting provider to ${org.id}.");
+            project.provider = org
+          }
+        }
 
 		// Generate a filename...
 		def fileName = "project-${randomUUID()}.tar.gz"
@@ -180,6 +178,7 @@ class ApiController {
 		project.setFile(fileName)
 
 		// Update other project properties.
+        if (params.hash) project.setHash(params.hash)
 		if (params.description) project.setDescription(params.description)
 		if (params.name) project.setName(params.name)
 		project.setCheckedIn(true)
@@ -188,21 +187,22 @@ class ApiController {
 		project.setModified(new Date())
 		if (params.notes) project.setNotes(params.notes)
 		
-	        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
-            // suggesting rules or validation.
-      	    log.debug("parse refine project");
-	        def parsed_project_file = ingestService.extractRefineproject(project.file)
-			project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
+        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
+        // suggesting rules or validation.
+        log.debug("Parsing refine project");
+        def parsed_project_file = ingestService.extractRefineproject(project.file)
+        project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
 			
 		// Make sure we null the progress...
 		project.setProgress(null)
+    
+        // Save and flush the project
+        project.save(flush:true)
+        
 		if (params.ingest) {
 		  // Try and ingest the project too!
 		  projectIngest(project,parsed_project_file)
 		}
-
-		// Save and flush.
-		project.save(flush: true, failOnError: true)
 
 		// Return the project data.
 		apiReturn(project)
