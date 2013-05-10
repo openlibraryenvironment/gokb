@@ -125,7 +125,7 @@ class IngestService {
       result.messages = []
   
       project.progress = 0;
-      project.save(flush:true)
+      project.save(flush:true, failOnError:true)
   
       def col_positions = [:]
       project_data.columnDefinitions.each { cd ->
@@ -200,7 +200,7 @@ class IngestService {
 				normname:host_norm_platform_name,
 				primaryUrl:host_platform_url
 			  )
-              if (! platform_info.save() ) {
+              if (! platform_info.save(failOnError:true, flush:true) ) {
                 platform_info.errors.each { e ->
                   log.error(e);
                 }
@@ -250,7 +250,7 @@ class IngestService {
               }
               
   
-              if ( !tipp.save() ) {
+              if ( !tipp.save(failOnError:true,flush:true) ) {
                 tipp.errors.each { e ->
                   log.error("problem saving tipp ${e}");
                 }
@@ -273,7 +273,7 @@ class IngestService {
               // Update project progress indicator, save in db so any observers can see progress
               def project_info = RefineProject.get(project.id)
               project_info.progress = ( ctr / project_data.rowData.size() * 100 )
-              project_info.save(flush:true)
+              project_info.save(flush:true, failOnError:true)
             }
 
           } 
@@ -291,13 +291,13 @@ class IngestService {
 
       def project_info = RefineProject.get(project.id)
       project_info.progress = 100;
-      project_info.save(flush:true);
+      project_info.save(flush:true, failOnError:true);
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);
       result.messages.add([text:"Problem processing project ingest. ${e}"])
       project_info.progress = 100;
-      project_info.save(flush:true);
+      project_info.save(flush:true, failOnError:true);
       //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
     }
     finally {
@@ -571,7 +571,7 @@ class IngestService {
                                  ruleJson: "${r.operation as JSON}",
                                  description: "${r.operation.description}"
             )
-            if ( rule_in_db.save(flush:true) ) {
+            if ( rule_in_db.save(flush:true, failOnError:true) ) {
             }
             else {
               rule_in_db.errors.each { e ->
@@ -661,7 +661,7 @@ class IngestService {
 		  fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
 		  consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
 		  lastProject:project
-	  ).save()
+	  ).save(failOnError:true, flush:true)
 
       // create a Combo linking this package to it's content provider
 //      def cp_combo = new Combo(fromComponent:project.provider,
