@@ -139,46 +139,47 @@ class ApiController {
 
   def projectCheckin() {
 	
-	log.debug(params)
-	
-	def f = request.getFile('projectFile')
+    log.debug("projectCheckin: ${params}")
+    def f = request.getFile('projectFile')
 
-	if (f && !f.empty) {
+    if (f && !f.empty) {
+      // Get the project.
+      RefineProject project
 
-	  // Get the project.
-	  RefineProject project
-	  if (params.projectID) {
-		project = RefineProject.get(params.projectID)
-	  } else {
-		// Creating new project.
-		project = new RefineProject()
-		
-	  }
+      if (params.projectID) {
+        log.debug("Lookup existing project: ${params.projectID}");
+        project = RefineProject.get(params.projectID)
+        // We might end up here if importing a project exported by someone else who is using a different 
+        // DB.
+      } else {
+        // Creating new project.
+        project = new RefineProject()
+        log.debug("New project");		
+      }
 
-	  if (project) {
-      
+      if (project) {
         // Provider?
-        if (params.provider) {
-          
-          // Set the org too.
-          Org org = Org.get(params.provider)
-          if (org) {
-            log.debug("Setting provider to ${org.id}.");
-            project.provider = org
-          }
+        if (params.provider) {  
+        // Set the org too.
+        Org org = Org.get(params.provider)
+        if (org) {
+          log.debug("Setting provider to ${org.id}.");
+          project.provider = org
         }
+      }
 
-		// Generate a filename...
-		def fileName = "project-${randomUUID()}.tar.gz"
 
-		// Save the file.
-		f.transferTo(new File(grailsApplication.config.project_dir + fileName))
+      // Generate a filename...
+      def fileName = "project-${randomUUID()}.tar.gz"
 
-		// Set the file property.
-		project.setFile(fileName)
+      // Save the file.
+      f.transferTo(new File(grailsApplication.config.project_dir + fileName))
 
-		// Update other project properties.
-        if (params.hash) project.setHash(params.hash)
+      // Set the file property.
+      project.setFile(fileName)
+
+      // Update other project properties.
+      if (params.hash) project.setHash(params.hash)
 		if (params.description) project.setDescription(params.description)
 		if (params.name) project.setName(params.name)
 		project.setCheckedIn(true)

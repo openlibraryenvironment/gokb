@@ -12,6 +12,8 @@ class TitleLookupService {
 
       def result = null
 
+      try {
+
       log.debug("find Title (${title},${issn},${eissn},${publisher_name})");
       
       // Locate a publisher for the supplied name if possible.
@@ -34,18 +36,7 @@ class TitleLookupService {
 	  def tq = ComboCriteria.createFor( TitleInstance.createCriteria() )
       def titles = tq.listDistinct {
 		tq.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
-//    		tq.add('publisher', 'eq', publisher)
-		
-//        ids {
-//          or {
-//            'in'('identifier',[issn_identifier,eissn_identifier])
-//            // eq('identifier',issn_identifier)
-//            // eq('identifier',eissn_identifier)
-//          }
-//		  and {
-//			add 
-//		  }
-//        }
+
       }
 
       if ( titles ) {
@@ -67,12 +58,8 @@ class TitleLookupService {
         log.debug("No result, create a new title")
         result = new TitleInstance(name:title, publisher: (publisher))
 
-//        if (result.ids )
-//          result.ids = []
-
         // Don't forget to add our IDs here.
         if ( issn_identifier ) {
-//          new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
 		
     		// Add a custom ID.	
 			result.addToIds(
@@ -81,7 +68,6 @@ class TitleLookupService {
         }
 
         if ( eissn_identifier ) {
-//          new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
     		// Add a custom ID.
     		result.addToIds(
     		  new IdentifierOccurrence(identifier:eissn_identifier)
@@ -90,14 +76,13 @@ class TitleLookupService {
 
 		extra_ids.each { ei ->
           def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
-//          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
 		  result.addToIds(
 			new IdentifierOccurrence(identifier:additional_identifier)
 		  )
         }
 		
 		// Try and save the result now.
-		if ( result.save() ) {
+		if ( result.save(failOnError:true,flush:true) ) {
 		  log.debug("New title: ${result.id}");
 		}
 		else {
@@ -110,6 +95,13 @@ class TitleLookupService {
       // May double check with porter stemmer in the future.. see
       // https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_3/lucene/src/java/org/apache/lucene/analysis/PorterStemmer.java
 
+      }
+      catch ( Exception e ) {
+        log.error("Problem with title lookjup",e);
+      }
+      finally {
+        log.debug("Title lookup completed");
+      }
       result
     }
 }

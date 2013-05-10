@@ -25,8 +25,8 @@ class Identifier {
 
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = IdentifierNamespace.findByNs(ns) ?: new IdentifierNamespace(ns:ns).save();
-    Identifier.findByNsAndValue(namespace,value) ?: new Identifier(ns:namespace, value:value).save();
+    def namespace = IdentifierNamespace.findByNs(ns) ?: new IdentifierNamespace(ns:ns).save(failOnError:true);
+    Identifier.findByNsAndValue(namespace,value) ?: new Identifier(ns:namespace, value:value).save(failOnError:true);
   }
 
 }
