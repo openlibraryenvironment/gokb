@@ -160,4 +160,4 @@ auditLog {
   }  
 }
 
-grails.gorm.failOnError=true
+//grails.gorm.failOnError=true

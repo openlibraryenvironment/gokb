@@ -3,6 +3,7 @@ package org.gokb
 import static java.util.UUID.randomUUID
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
+import org.codehaus.groovy.grails.orm.hibernate.HibernateSession
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import org.gokb.cred.Org;
@@ -286,8 +287,15 @@ class ApiController {
 
   private def doIngest(parsed_data, project) {
 	log.debug("ingesting refine project.. kicking off background task");
-	runAsync {
-	  ingestService.ingest(parsed_data, project.id)
+	
+	
+	// Create a new session to run the ingest service in asynchronous.
+	RefineProject.withNewSession {
+	  runAsync ({projData, Long projId ->
+
+		// Fire the ingest of the project id.
+		ingestService.ingest(projData, projId)
+	  }.curry(parsed_data, project.id))
 	}
   }
 

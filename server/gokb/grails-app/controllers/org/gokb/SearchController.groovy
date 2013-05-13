@@ -92,16 +92,11 @@ class SearchController {
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
 
     log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
-    def c = target_class.getClazz().createCriteria()
+    def c = ComboCriteria.createFor(target_class.getClazz().createCriteria())
 
     def count_result = c.get {
       and {
-        qbetemplate.qbeConfig.qbeForm.each { ap ->
-          log.debug("testing ${ap} : ${params[ap.qparam]}");
-          if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
-            processContextTree(owner, ap.contextTree, params[ap.qparam], ap.property)
-          }
-        }
+        qbetemplate.qbeConfig.qbeForm.each 
       }
       projections {
         rowCount()
@@ -110,14 +105,16 @@ class SearchController {
     result.reccount = count_result;
     log.debug("criteria result: ${count_result}");
 
-    c = target_class.getClazz().createCriteria()
+    c = ComboCriteria.createFor(target_class.getClazz().createCriteria())
+	
+	
     result.recset = c.list(max: result.max, offset: result.offset) {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
             // addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
-            processContextTree(owner, ap.contextTree, params[ap.qparam], ap.property)
+            processContextTree(c, ap.contextTree, params[ap.qparam], ap.property)
           }
         }
       }
@@ -132,7 +129,7 @@ class SearchController {
       switch ( contextTree.ctxtp ) {
         case 'assoc':
           qry."${contextTree.prop}" {
-            processContextTree(delegate, contextTree.children, value, paramdef)
+            processContextTree(qry, contextTree.children, value, paramdef)
             contextTree.filters.each { f ->
               qry.ilike(f.field,f.value)
             }
@@ -269,8 +266,7 @@ class SearchController {
 //            }
 //		  }
 			// Use our custom criteria builder to compare the values.
-			ComboCriteria.createFor(qry)
-			  .add(contextTree.prop, "ilike", the_value)
+			qry.add(contextTree.prop, "ilike", the_value)
          break;
       }
     }
