@@ -285,9 +285,6 @@ class IngestService {
                 project_info.progress = ( ctr / project_data.rowData.size() * 100 )
                 project_info.save(flush:true, failOnError:true)
               }
-  			
-  			// Commit the current transaction.
-  			sessionFactory.currentSession.getTransaction().commit()
             }
             catch ( Exception e ) {
               log.error("Row level exception",e)
