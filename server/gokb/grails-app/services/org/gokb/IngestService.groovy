@@ -163,6 +163,7 @@ class IngestService {
       log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
   
       int ctr = 0
+      boolean row_level_problems = false
       project_data.rowData.each { datarow ->
         log.debug("Row ${ctr} ${datarow}");
         if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
@@ -280,6 +281,7 @@ class IngestService {
           catch ( Exception e ) {
             log.error("Row level exception",e)
             result.messages.add([text:"Problem processing row ${e}"])
+            row_level_problems = true
           }
         }
         else {
@@ -288,6 +290,11 @@ class IngestService {
         }
         ctr++
       }
+
+      if ( row_level_problems ) {
+        log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
+      }
+
 
       def project_info = RefineProject.get(project.id)
       project_info.progress = 100;
