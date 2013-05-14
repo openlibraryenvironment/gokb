@@ -172,7 +172,7 @@ class IngestService {
       project_data.rowData.each { datarow ->
 		
 		// Transaction for each row.
-		RefineProject.withTransaction { status ->
+		RefineProject.withNewTransaction { status ->
 		
           log.debug("Row ${ctr} ${datarow}");
           if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
