@@ -119,14 +119,19 @@ class IngestService {
     try {
       log.debug("Ingest");
   
-      def project = RefineProject.get(project_id);
+      def project
+	  
+	  // Update the project record.
+	  RefineProject.withTransaction { 
+		project = RefineProject.get(project_id);
 
-      def result = [:]
-      result.status = project_data ? true : false
-      result.messages = []
-  
-      project.progress = 0;
-      project.save(flush:true, failOnError:true)
+        def result = [:]
+        result.status = project_data ? true : false
+        result.messages = []
+    
+        project.progress = 0;
+        project.save(failOnError:true)
+      }
   
       def col_positions = [:]
       project_data.columnDefinitions.each { cd ->
@@ -172,7 +177,7 @@ class IngestService {
       project_data.rowData.each { datarow ->
 		
 		// Transaction for each row.
-		RefineProject.withNewTransaction { status ->
+		RefineProject.withTransaction { status ->
 		
           log.debug("Row ${ctr} ${datarow}");
           if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
@@ -222,7 +227,7 @@ class IngestService {
   			def pkg_name_from_row = "${project.id}"
   
   			// The package.
-              def pkg = getOrCreatePackage(pkg_name_from_row, project);
+            def pkg = getOrCreatePackage(pkg_name_from_row, project);
     
               // Try and lookup a tipp.
   			def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
@@ -234,7 +239,7 @@ class IngestService {
                 }
               }
               
-  			// We have a Tipp.
+  			  // We have a Tipp.
               if ( !tipp ) {
                 log.debug("Create new tipp")
                 tipp = new TitleInstancePackagePlatform(title:title_info,
@@ -261,12 +266,8 @@ class IngestService {
   				)
                 }
                 
-  			  // Save the tipp.
-                if ( !tipp.save(failOnError:true,flush:true) ) {
-                  tipp.errors.each { e ->
-                    log.error("problem saving tipp ${e}");
-                  }
-                }
+  			  	// Save the tipp.
+				tipp.save(failOnError:true)
               }
               else {
   			  // Found the tipp.

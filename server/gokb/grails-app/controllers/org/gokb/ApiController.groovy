@@ -213,7 +213,7 @@ class ApiController {
 	} else if (params.projectID) {
 
 	  // Check in with no changes. (In effect we are just removing the lock)
-	  def project = RefineProject.load(params.projectID)
+	  def project = RefineProject.get(params.projectID)
 	  if (project) {
 		// Remove lock properties and return the project state.
 		project.setCheckedIn(true)
