@@ -287,16 +287,21 @@ class ApiController {
 
   private def doIngest(parsed_data, project) {
 	log.debug("ingesting refine project.. kicking off background task");
-	
-	
+
+
 	// Create a new session to run the ingest service in asynchronous.
-	RefineProject.withNewSession {
-	  runAsync ({projData, Long projId ->
+
+	runAsync ({projData, Long projId ->
+	  RefineProject.withNewSession {
 
 		// Fire the ingest of the project id.
 		ingestService.ingest(projData, projId)
-	  }.curry(parsed_data, project.id))
-	}
+		
+		
+	  }
+	  
+	  log.debug ("Finished data insert.")
+	}.curry(parsed_data, project.id))
   }
 
   def refdata() {
@@ -308,7 +313,7 @@ class ApiController {
 		def oq = Org.createCriteria()
 		def orgs = oq.listDistinct {
 		  tags {
-			owner {
+			"owner" {
 			  eq('desc','Org Role');
 			}
 			eq('value','Content Provider');

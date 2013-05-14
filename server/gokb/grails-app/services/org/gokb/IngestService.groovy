@@ -2,6 +2,7 @@ package org.gokb
 
 import org.gokb.refine.*;
 import org.gokb.cred.*;
+import org.springframework.transaction.TransactionStatus
 import org.apache.commons.compress.compressors.gzip.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
@@ -122,15 +123,25 @@ class IngestService {
       def project
 	  
 	  // Update the project record.
-	  RefineProject.withTransaction { 
-		project = RefineProject.get(project_id);
-
+	  RefineProject.withNewTransaction { TransactionStatus status ->
+		
+		log.debug ("Trying to update the refine project in a new transaction.")
+		project = RefineProject.get(project_id)
+		
+		log.debug ("Project ${project}")
         def result = [:]
         result.status = project_data ? true : false
         result.messages = []
     
-        project.progress = 0;
+        project.progress = 0
         project.save(failOnError:true)
+		
+		log.debug ("Updated the project.")
+		
+		// Flush the status.
+		status.flush()
+		
+		log.debug ("Forcibly flushed the session.")
       }
   
       def col_positions = [:]
@@ -177,7 +188,7 @@ class IngestService {
       project_data.rowData.each { datarow ->
 		
 		// Transaction for each row.
-		RefineProject.withTransaction { status ->
+		RefineProject.withNewTransaction { TransactionStatus status ->
 		
           log.debug("Row ${ctr} ${datarow}");
           if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
@@ -216,7 +227,7 @@ class IngestService {
   				normname:host_norm_platform_name,
   				primaryUrl:host_platform_url
   			  )
-                if (! platform_info.save(failOnError:true, flush:true) ) {
+                if (! platform_info.save(failOnError:true) ) {
                   platform_info.errors.each { e ->
                     log.error(e);
                   }
@@ -227,7 +238,7 @@ class IngestService {
   			def pkg_name_from_row = "${project.id}"
   
   			// The package.
-            def pkg = getOrCreatePackage(pkg_name_from_row, project);
+            def pkg = getOrCreatePackage(pkg_name_from_row, project.id);
     
               // Try and lookup a tipp.
   			def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
@@ -284,7 +295,7 @@ class IngestService {
                 // Update project progress indicator, save in db so any observers can see progress
                 def project_info = RefineProject.get(project.id)
                 project_info.progress = ( ctr / project_data.rowData.size() * 100 )
-                project_info.save(flush:true, failOnError:true)
+                project_info.save(failOnError:true)
               }
             }
             catch ( Exception e ) {
@@ -302,6 +313,9 @@ class IngestService {
           }
           ctr++
 		
+		  
+		  // Forcibly flush the session.
+//		  status.flush()
       	}
       }
 
@@ -312,7 +326,7 @@ class IngestService {
 
       def project_info = RefineProject.get(project.id)
       project_info.progress = 100;
-      project_info.save(flush:true, failOnError:true)
+      project_info.save(failOnError:true)
 	  
 	  return result
     }
@@ -320,7 +334,7 @@ class IngestService {
       log.error("Problem processing project ingest.",e);
       result.messages.add([text:"Problem processing project ingest. ${e}"])
       project_info.progress = 100;
-      project_info.save(flush:true, failOnError:true);
+      project_info.save(failOnError:true);
       //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
     }
     finally {
@@ -598,7 +612,7 @@ class IngestService {
                                  ruleJson: "${r.operation as JSON}",
                                  description: "${r.operation.description}"
             )
-            if ( rule_in_db.save(flush:true, failOnError:true) ) {
+            if ( rule_in_db.save(failOnError:true) ) {
             }
             else {
               rule_in_db.errors.each { e ->
@@ -655,9 +669,11 @@ class IngestService {
     }
   }
 
-  def getOrCreatePackage(String name, RefineProject project) {
+  def getOrCreatePackage(String name, project_id) {
 	//TODO: Need to sort this identifier out.
 //    def pkg = Package.findByIdentifier(identifier);
+	
+	RefineProject project = RefineProject.get(project_id)
 	
 	// The provider.
 	Org provider = project.provider
@@ -686,7 +702,7 @@ class IngestService {
 		  fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
 		  consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
 		  lastProject:project
-	  ).save(failOnError:true, flush:true)
+	  ).save(failOnError:true)
 
       // create a Combo linking this package to it's content provider
 //      def cp_combo = new Combo(fromComponent:project.provider,
