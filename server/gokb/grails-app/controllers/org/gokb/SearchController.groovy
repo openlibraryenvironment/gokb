@@ -96,9 +96,15 @@ class SearchController {
 
     def count_result = c.get {
       and {
+		
+		// Add any global 
+		qbetemplate.qbeConfig.qbeGlobals?.each { ap ->
+		  processContextTree(c, ap, ap.value, ap.property)
+		}
+		
+		// Each form element needs to be acted upon.
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
-            // addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
             processContextTree(c, ap.contextTree, params[ap.qparam], ap.property)
           }
         }
@@ -115,6 +121,13 @@ class SearchController {
 
     result.recset = c.list(max: result.max, offset: result.offset) {
       and {
+		
+		// Add any global.
+		qbetemplate.qbeConfig.qbeGlobals?.each { ap ->
+		  processContextTree(c, ap, ap.value, ap.property)
+		}
+		
+		// Form elements.
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
@@ -126,26 +139,45 @@ class SearchController {
     }
   }
 
-  private def  processContextTree = { qry, contextTree, value, paramdef, Class the_class = null ->
-    if ( contextTree ) {
+  private def  processContextTree = { qry, tree, value, paramdef, Class the_class = null ->
+    if ( tree ) {
+	  
+	  // Turn it into a list.
+	  if (!(tree instanceof Iterable)) {
+		tree = [tree]
+	  } 
+	  
+	  // Each item in the tree.
+	  tree.each { contextTree ->
 
-      def the_value = value
-
-      switch ( contextTree.ctxtp ) {
-        case 'filter':
-
-          // Filters work in the same way as queries,
-          // but the value is in the contextTree instead of the submitted value.
-          the_value = contextTree.value
-        case 'qry':
-          // Use our custom criteria builder to compare the values.
-          if (contextTree.type) {
-            // Try and parse the number.
-            the_value = the_value.asType(Class.forName("${contextTree.type}"));
-          }
-          qry.add(contextTree.prop, contextTree.comparator, the_value)
-          break;
-      }
+        def the_value = value
+  
+        switch ( contextTree.ctxtp ) {
+          case 'filter':
+  
+            // Filters work in the same way as queries,
+            // but the value is in the contextTree instead of the submitted value.
+            the_value = contextTree.value
+			
+          case 'qry':
+            // Use our custom criteria builder to compare the values.
+            if (contextTree.type) {
+              // Try and parse the number.
+              the_value = the_value.asType(Class.forName("${contextTree.type}"));
+            }
+			
+			// Check the negation.
+			if (contextTree.negate) {
+			  qry."not" {
+				qry.add(contextTree.prop, contextTree.comparator, the_value)
+			  }
+			} else {
+ 			  qry.add(contextTree.prop, contextTree.comparator, the_value)
+			}
+            
+            break;
+        }
+	  }
     }
   }
 
@@ -336,11 +368,12 @@ class SearchController {
             prompt:'Description',
             qparam:'qp_desc',
             placeholder:'Category Description',
-            contextTree:[
-			  ['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
-			]	
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
           ],
         ],
+	  	qbeGlobals:[
+		  ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
+		],
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Description', property:'desc']

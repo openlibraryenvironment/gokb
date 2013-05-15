@@ -84,18 +84,18 @@ while ((nl = r.readNext()) != null) {
   }
 
   if ( nl[4] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Content Provider'])
+    org_assert.flags.add([flagType:'Org.Role',flagValue:'Content Provider'])
 
   if ( nl[5] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Vendor'])
+    org_assert.flags.add([flagType:'Org.Role',flagValue:'Vendor'])
 
   if ( nl[6] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Publisher'])
+    org_assert.flags.add([flagType:'Org.Role',flagValue:'Publisher'])
 
   if ( nl[7] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Licensor'])
+    org_assert.flags.add([flagType:'Org.Role',flagValue:'Licensor'])
 
-  org_assert.flags.add([flagType:'Authorized',flagValue:nl[2]])
+  org_assert.flags.add([flagType:'Org.Authorized',flagValue:nl[2]])
 
   println("assert that : ${org_assert}");
 
