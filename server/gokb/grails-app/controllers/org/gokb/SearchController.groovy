@@ -127,14 +127,6 @@ class SearchController {
       def the_value = value
 
       switch ( contextTree.ctxtp ) {
-//        case 'assoc':
-//          qry."${contextTree.prop}" {
-//            processContextTree(qry, contextTree.children, value, paramdef)
-//            contextTree.filters.each { f ->
-//              qry.ilike(f.field,f.value)
-//            }
-//          }
-//          break;
         case 'filter':
 
           // Filters work in the same way as queries,
@@ -149,28 +141,6 @@ class SearchController {
           qry.add(contextTree.prop, contextTree.comparator, the_value)
           break;
       }
-    }
-  }
-
-  def addParamInContext(qry,paramdef,value,contextTree) {
-    // log.debug("addParamInContext ${qry.persistentEntity?.name} qry=${qry.toString()}: ${indent}");
-    if ( ( contextTree ) && ( contextTree.size() > 0 ) ) {
-      def new_tree = []
-      new_tree.addAll(contextTree)
-      def head_of_tree = new_tree.remove(0)
-      // log.debug("Add context ${head_of_tree} - tail = ${new_tree}");
-      // log.debug("Looking for property called ${head_of_tree.prop} of context class ${qry.persistentEntity?.name}");
-
-      qry."${head_of_tree.prop}" {
-        addParamInContext(delegate,paramdef,value,new_tree)
-        head_of_tree.qualifiers.each { q ->
-          // qry.ilike(q.field,q.value)
-        }
-      }
-    }
-    else {
-      // log.debug("${indent} - addParamInContext(${paramdef.property},${value}) class of delegate is ${qry.persistentEntity?.name}");
-      qry.ilike(paramdef.property,value)
     }
   }
 
