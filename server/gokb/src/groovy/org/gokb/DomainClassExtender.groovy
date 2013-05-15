@@ -827,19 +827,11 @@ class DomainClassExtender {
 	private final RefdataValue status
 	private final RefdataValue type
 	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals) {
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, java.util.Collection<E> vals) {
 	  this (component, status, type, new ArrayList (vals), false )
 	}
 	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals, boolean incoming) {
-	  this (component, status, type, new ArrayList (vals), incoming)
-	}
-	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals) {
-	  this (component, status, type, vals, false)
-	}
-	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals, boolean incoming) {
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, java.util.Collection<E> vals, java.lang.Boolean incoming) {
 	  super(vals)
 	  this.component = component
 	  this.status = status

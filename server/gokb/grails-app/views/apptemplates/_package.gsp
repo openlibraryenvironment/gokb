@@ -8,8 +8,7 @@
 
 <table class="table table-bordered table-striped" style="clear: both"><tbody>
   <tr><td>Internal Id</td>            <td>${d.id}</td></tr>
-  <tr><td>Package Identifier</td>     <td>${d.identifier}</td></tr>
-  <tr><td>Package Name</td>           <td>${d.name}</td></tr>
+  <tr><td>Package Name/Identifier</td>           <td>${d.name}</td></tr>
   <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
   <tr><td>Tags</td>                   <td>${d.shortcode}</td></tr>
   <tr><td>Status</td>                 <td><span class="ipe" 
