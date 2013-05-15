@@ -5,8 +5,12 @@ class Identifier {
   IdentifierNamespace ns
   String value
 
-  static hasMany = [ occurrences:IdentifierOccurrence ]
-  static mappedBy = [ occurrences:'identifier' ]
+  static hasMany = [ 
+	occurrences		: IdentifierOccurrence
+  ]
+  static mappedBy = [
+	occurrences		: 'identifier'
+  ]
   
 //  public static manyByCombo = [occurrences:IdentifierOccurrence]
 
@@ -21,8 +25,8 @@ class Identifier {
 
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = IdentifierNamespace.findByNs(ns) ?: new IdentifierNamespace(ns:ns).save();
-    Identifier.findByNsAndValue(namespace,value) ?: new Identifier(ns:namespace, value:value).save();
+    def namespace = IdentifierNamespace.findByNs(ns) ?: new IdentifierNamespace(ns:ns).save(failOnError:true);
+    Identifier.findByNsAndValue(namespace,value) ?: new Identifier(ns:namespace, value:value).save(failOnError:true);
   }
 
 }

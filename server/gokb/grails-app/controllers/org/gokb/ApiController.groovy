@@ -3,6 +3,7 @@ package org.gokb
 import static java.util.UUID.randomUUID
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
+import org.codehaus.groovy.grails.orm.hibernate.HibernateSession
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import org.gokb.cred.Org;
@@ -139,47 +140,47 @@ class ApiController {
 
   def projectCheckin() {
 	
-	log.debug(params)
-	
-	def f = request.getFile('projectFile')
+    log.debug("projectCheckin: ${params}")
+    def f = request.getFile('projectFile')
 
-	if (f && !f.empty) {
+    if (f && !f.empty) {
+      // Get the project.
+      RefineProject project
 
-	  // Get the project.
-	  RefineProject project
-	  if (params.projectID) {
-		project = RefineProject.load(params.projectID)
-	  } else {
-		// Creating new project.
-		project = new RefineProject()
-		project.setHash(params.hash ?: null)
+      if (params.projectID) {
+        log.debug("Lookup existing project: ${params.projectID}");
+        project = RefineProject.get(params.projectID)
+        // We might end up here if importing a project exported by someone else who is using a different 
+        // DB.
+      } else {
+        // Creating new project.
+        project = new RefineProject()
+        log.debug("New project");		
+      }
 
-		// Set the org too.
-		log.debug("Setting provider from submission.");
-		Org org = Org.get(params.provider)
-		if (org) {
-		  project.provider = org
-		}
-	  }
+      if (project) {
+        // Provider?
+        if (params.provider) {  
+        // Set the org too.
+        Org org = Org.get(params.provider)
+        if (org) {
+          log.debug("Setting provider to ${org.id}.");
+          project.provider = org
+        }
+      }
 
-	  if (project) {
 
-		// A quick hack to set the project provider, this should come from refine, but for testing purposes, we set this to Wiley
-//		if ( !project.provider ) {
-//		  log.debug("Defaulting in provider, this should be set from the refine project initially. #FixMe");
-//		  project.provider = Org.findByName('Wiley') ?: new Org(name:'Wiley').save();
-//		}
+      // Generate a filename...
+      def fileName = "project-${randomUUID()}.tar.gz"
 
-		// Generate a filename...
-		def fileName = "project-${randomUUID()}.tar.gz"
+      // Save the file.
+      f.transferTo(new File(grailsApplication.config.project_dir + fileName))
 
-		// Save the file.
-		f.transferTo(new File(grailsApplication.config.project_dir + fileName))
+      // Set the file property.
+      project.setFile(fileName)
 
-		// Set the file property.
-		project.setFile(fileName)
-
-		// Update other project properties.
+      // Update other project properties.
+      if (params.hash) project.setHash(params.hash)
 		if (params.description) project.setDescription(params.description)
 		if (params.name) project.setName(params.name)
 		project.setCheckedIn(true)
@@ -188,21 +189,22 @@ class ApiController {
 		project.setModified(new Date())
 		if (params.notes) project.setNotes(params.notes)
 		
-	        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
-            // suggesting rules or validation.
-      	    log.debug("parse refine project");
-	        def parsed_project_file = ingestService.extractRefineproject(project.file)
-			project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
+        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
+        // suggesting rules or validation.
+        log.debug("Parsing refine project");
+        def parsed_project_file = ingestService.extractRefineproject(project.file)
+        project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
 			
 		// Make sure we null the progress...
 		project.setProgress(null)
+    
+        // Save and flush the project
+        project.save(flush:true)
+        
 		if (params.ingest) {
 		  // Try and ingest the project too!
 		  projectIngest(project,parsed_project_file)
 		}
-
-		// Save and flush.
-		project.save(flush: true, failOnError: true)
 
 		// Return the project data.
 		apiReturn(project)
@@ -211,7 +213,7 @@ class ApiController {
 	} else if (params.projectID) {
 
 	  // Check in with no changes. (In effect we are just removing the lock)
-	  def project = RefineProject.load(params.projectID)
+	  def project = RefineProject.get(params.projectID)
 	  if (project) {
 		// Remove lock properties and return the project state.
 		project.setCheckedIn(true)
@@ -285,9 +287,21 @@ class ApiController {
 
   private def doIngest(parsed_data, project) {
 	log.debug("ingesting refine project.. kicking off background task");
-	runAsync {
-	  ingestService.ingest(parsed_data, project.id)
-	}
+
+
+	// Create a new session to run the ingest service in asynchronous.
+
+	runAsync ({projData, Long projId ->
+	  RefineProject.withNewSession {
+
+		// Fire the ingest of the project id.
+		ingestService.ingest(projData, projId)
+		
+		
+	  }
+	  
+	  log.debug ("Finished data insert.")
+	}.curry(parsed_data, project.id))
   }
 
   def refdata() {
@@ -299,7 +313,7 @@ class ApiController {
 		def oq = Org.createCriteria()
 		def orgs = oq.listDistinct {
 		  tags {
-			owner {
+			"owner" {
 			  eq('desc','Org Role');
 			}
 			eq('value','Content Provider');

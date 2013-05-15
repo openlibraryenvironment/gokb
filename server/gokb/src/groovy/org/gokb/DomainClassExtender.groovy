@@ -1,5 +1,33 @@
 package org.gokb
 
+/**
+ * The following class adds the functionality that allows properties maintained by the Combo
+ * mechanism instead of the normal Grails gorm mapping.
+ * 
+ * The following shows how specially mapped Combo properties can be declared on a Domain class:
+ * 
+ * static hasByCombo 	= ['myProp' 		: MyClass]
+ * static manyByCombo	= ['myCollection' 	: MyClass]
+ * static mappedByCombo	= ['myProp'			: propColl]
+ * 
+ * The hasByCombo mapping would create a virtual property 'myProp',
+ * along with the getter and setter (getMyProp(), setMyProp (MyClass val)), 
+ * on the current domain class with the type MyClass.
+ * 
+ * The has manyByCombo mapping would create a virtual property 'myCollection',
+ * along with the getter and setter (getMyCollection(), setMyCollection( Collection<MyClass> val )),
+ * on the current domain class with the type List<MyClass>.
+ * 
+ * The mappedByCombo mapping declares that the property declared as 'myProp' should be treated as an incoming
+ * relationship from the class 'MyClass' from the property 'propColl'. This will ensure that relationships 
+ * are only stored once in the database but allows us to easily derive the relationship identifier to lookup.
+ * 
+ */
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
 import grails.util.GrailsNameUtils
 
 
@@ -223,45 +251,65 @@ class DomainClassExtender {
 
       if (typeClass) {
 
-        // Default many association maps to empty set.
-        def result = []
+        // The result.
+        def result
+		
+		// The delegate.
+		final KBComponent thiz = delegate
 
         if (isComboReverse(propertyName)) {
+		  
           // Reverse.
 //          def combos = incomingCombos.findAll {
 //            it.type == (type)
 //          }
-		  final KBComponent thiz = delegate
 		  def combos = Combo.createCriteria().list {
 			and {
 			  eq ("type", (type))
 			  eq ("toComponent", (thiz))
 			}
 		  }
+		  
+		  // Create our new list.
+		  result = new ComboPersistedList (
+			thiz,
+			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
+			type,
+			combos,
+			true
+		  )
 
-          if (combos) {
-            for (combo in combos) {
-              result.add(combo.fromComponent)
-            }
-          }
+//          if (combos) {
+//            for (combo in combos) {
+//              result.add(combo.fromComponent)
+//            }
+//          }
 
         } else {
 //          def combos = outgoingCombos.findAll {
 //            it.type == (type)
 //          }
-		  final KBComponent thiz = delegate
 		  def combos = Combo.createCriteria().list {
 			and {
 			  eq ("type", (type))
 			  eq ("fromComponent", (thiz))
 			}
 		  }
+		  
+		  // Create our new list.
+		  result = new ComboPersistedList (
+			thiz,
+			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
+			type,
+			combos,
+			false
+		  )
 
-          if (combos) {
-            for (combo in combos) {
-              result.add(combo.toComponent)
-            }
-          }
+//          if (combos) {
+//            for (combo in combos) {
+//              result.add(combo.toComponent)
+//            }
+//          }
         }
 
         // Add the result to the cache.
@@ -489,6 +537,7 @@ class DomainClassExtender {
 //          it.type == (type)
 //        }
 	  	final KBComponent thiz = delegate
+		
 		combos = Combo.createCriteria().list {
 		  and {
 			eq ("type", (type))
@@ -618,7 +667,7 @@ class DomainClassExtender {
                   Combo combo = new Combo(
                       type : (type),
                       status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-                   )
+                  )
 
                   // Add to the incoming collection
                   log.debug("adding incoming Combo of type ${type} to ${delegate} from ${value}.")
@@ -650,6 +699,9 @@ class DomainClassExtender {
           comboPropertyCache().put("${propertyName}".toString(), value)
           
           // We should also completely clear the target cache too.
+		  //TODO Maybe we could be more selective about what we remove from the cache,
+		  // although it's probably negligible between the processing needed to lookup,
+		  // and derive the value to clear than to rebuild if/when needed.
           value?.comboPropertyCache().clear()
         }
       } else {
@@ -721,20 +773,20 @@ class DomainClassExtender {
       
       // Instantiate the object and save...
       // We really need to save here so we can reference this object within the combos.
-      def instance = oldConstructor.newInstance(args)
-//      .save()
+      def instance = oldConstructor.newInstance(args).save()
       
       // Now that we have created our instance using the original constructor we can,
       // now set the combo props that were missed.
       Set cProps = getAllComboPropertyNamesFor (instance.getClass())
       for (prop in args.keySet()) {
         if (cProps.contains(prop)) {
+		  
           // Set the combo property directly.
           instance.setComboProperty(prop, args[prop])
         }
       }
       instance
-    }    
+    }
   }
   
   private static addComboPropertyGettersAndSetters = { DefaultGrailsDomainClass domainClass ->
@@ -766,5 +818,141 @@ class DomainClassExtender {
 		delegate.setComboProperty(prop, value)
 	  }
 	}
+  }
+  
+  public class ComboPersistedList <E extends KBComponent> extends org.apache.commons.collections.list.AbstractListDecorator {
+	
+	private final KBComponent component
+	private final boolean incoming
+	private final RefdataValue status
+	private final RefdataValue type
+	
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals) {
+	  this (component, status, type, new ArrayList (vals), false )
+	}
+	
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals, boolean incoming) {
+	  this (component, status, type, new ArrayList (vals), incoming)
+	}
+	
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals) {
+	  this (component, status, type, vals, false)
+	}
+	
+	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals, boolean incoming) {
+	  super(vals)
+	  this.component = component
+	  this.status = status
+	  this.type = type
+	  this.outgoing = outgoing
+	}
+	
+	@Override
+    public boolean add(Object element) {
+	  
+	  // Try and add the object.
+	  boolean added = super.add(element)
+	  
+	  if (added) {
+		
+		// Create the Combo.
+		Combo combo = new Combo ([
+		  "status" 		: status,
+		  "type"			: type
+		])
+		
+		// Add to the 2 comboLists.
+		if (incoming) {
+		  
+		  // Incoming combos of component.
+		  component.addToIncomingCombos (combo)
+		  element.addToOutgoingCombos (combo)
+		  
+		} else {
+		  
+		  // Outgoing combos of component.
+		  component.addToOutgoingCombos (combo)
+		  element.addToIncomingCombos (combo)
+		}
+	  }
+	  
+	  added
+    }
+
+	@Override
+    public boolean addAll(Collection coll) {
+	  
+	  // Ensure we use our extended add.
+	  boolean added = true
+	  for (E element : coll) {
+		added = added && this.add(element)
+	  }
+	  
+	  added
+    }
+
+	@Override
+    public boolean remove(Object element) {
+	  
+	  // Removed item successfully.
+	  boolean removed = super.remove(element)
+	  if (removed) {
+		
+		// Create the Combo.
+		Combo combo = new Combo ([
+		  "status" 		: status,
+		  "type"		: type
+		])
+		
+		// Add the from/to components before removing from the 2 lists.
+		if (incoming) {
+		  
+		  combo.fromComponent = element
+		  combo.toComponent = component
+		  
+		  // Incoming combos of component.
+		  component.removeFromIncomingCombos (combo)
+		  element.removeFromOutgoingCombos (combo)
+		  
+		} else {
+		
+		  combo.fromComponent = component
+		  combo.toComponent = element
+		  
+		  // Outgoing combos of component.
+		  component.removeFromOutgoingCombos (combo)
+		  element.removeFromIncomingCombos (combo)
+		}
+	  }
+	  
+	  removed
+    }
+
+	@Override
+    public boolean removeAll(Collection coll) {
+	  // Ensure we use our extended remove.
+	  boolean removed = true
+	  for (E element : coll) {
+		removed = removed && this.remove(element)
+	  }
+    }
+
+	@Override
+    public boolean retainAll(Collection coll) {
+	  
+	  boolean removed = true
+
+	  // Remove all items not in the supplied collection.
+	  Iterator items = this.iterator()
+	  E element
+	  while (items.hasNext()) {
+		if (!coll.contains(element)) {
+		  // Remove.
+		  removed = removed && this.remove(element)
+		}
+	  }
+	  
+	  removed
+    }
   }
 }

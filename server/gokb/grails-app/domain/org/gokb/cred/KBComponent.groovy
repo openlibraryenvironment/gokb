@@ -12,24 +12,25 @@ abstract class KBComponent {
   String shortcode
   Set tags = []
   List additionalProperties = []
-  List outgoingCombos
-  List incomingCombos
+  List outgoingCombos = []
+  List incomingCombos = []
+  List ids = []
   
   static mappedBy = [
     ids: 'component',
     outgoingCombos: 'fromComponent',
     incomingCombos:'toComponent',
-    orgs: 'linkedComponent',
+//    orgs: 'linkedComponent',
     additionalProperties: 'fromComponent']
-
   
   static hasMany = [
     ids: IdentifierOccurrence,
-    orgs: OrgRole,
+//    orgs: OrgRole,
     tags:RefdataValue,
     outgoingCombos:Combo,
     incomingCombos:Combo,
-    additionalProperties:KBComponentAdditionalProperty]
+    additionalProperties:KBComponentAdditionalProperty
+  ]
 
   static mapping = {
     id column:'kbc_id'
@@ -70,6 +71,7 @@ abstract class KBComponent {
 
     result;
   }
+  
   @Transient
   static def lookupByIO(String idtype, String idvalue) {
     // println("lookupByIdentifier(${idtype},${idvalue})");

@@ -11,10 +11,13 @@ class TitleInstance extends KBComponent {
   Date dateCreated
   Date lastUpdated
 
-//  static mappedBy = [tipps: 'title']
-//  static hasMany = [tipps: TitleInstancePackagePlatform]
-  static manyByCombo = [tipps : TitleInstancePackagePlatform]
-
+  static hasByCombo = [
+	publisher	: Org
+  ]
+  
+  static manyByCombo = [
+	tipps 		: TitleInstancePackagePlatform
+  ]
 
   static mapping = {
          id column:'ti_id'
@@ -30,16 +33,16 @@ class TitleInstance extends KBComponent {
     type(nullable:true, blank:false);
   }
 
-  @Transient
-  Org getPublisher() {
-    def result = null;
-    orgs.each { o ->
-      if ( o.roleType.value == 'Publisher' ) {
-        result = o.org
-      }
-    }
-    result
-  }
+//  @Transient
+//  Org getPublisher() {
+//    def result = null;
+//    orgs.each { o ->
+//      if ( o.roleType.value == 'Publisher' ) {
+//        result = o.org
+//      }
+//    }
+//    result
+//  }
 
   @Transient
   def getPermissableCombos() {

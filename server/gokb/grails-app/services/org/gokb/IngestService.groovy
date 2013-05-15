@@ -2,9 +2,11 @@ package org.gokb
 
 import org.gokb.refine.*;
 import org.gokb.cred.*;
+import org.springframework.transaction.TransactionStatus
 import org.apache.commons.compress.compressors.gzip.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
+import org.codehaus.groovy.grails.orm.hibernate.HibernateSession
 import grails.converters.JSON
 import grails.orm.HibernateCriteriaBuilder
 import java.text.SimpleDateFormat
@@ -95,7 +97,7 @@ class IngestService {
     if ( col_positions[HOST_PLATFORM_URL] == null )
       result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
       
-      if ( col_positions[PUBLISHER_NAME] == null )
+    if ( col_positions[PUBLISHER_NAME] == null )
       result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
 
     if ( result.messages.size() > 0 ) {
@@ -111,36 +113,51 @@ class IngestService {
   }
 
   /**
-   *  ingest a parsed project. 
+   *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
   def ingest(project_data, project_id) {
     try {
       log.debug("Ingest");
   
-      def project = RefineProject.get(project_id);
-
-      def result = [:]
-      result.status = project_data ? true : false
-      result.messages = []
-  
-      project.progress = 0;
-      project.save(flush:true)
+      def project
+	  
+	  // Update the project record.
+	  RefineProject.withNewTransaction { TransactionStatus status ->
+		
+		log.debug ("Trying to update the refine project in a new transaction.")
+		project = RefineProject.get(project_id)
+		
+		log.debug ("Project ${project}")
+        def result = [:]
+        result.status = project_data ? true : false
+        result.messages = []
+    
+        project.progress = 0
+        project.save(failOnError:true)
+		
+		log.debug ("Updated the project.")
+		
+		// Flush the status.
+		status.flush()
+		
+		log.debug ("Forcibly flushed the session.")
+      }
   
       def col_positions = [:]
       project_data.columnDefinitions.each { cd ->
         col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
       }
 
-      // Track any additional title identifiers
+      // Track any additional title identifiers.
       def additional_identifiers = []
       project_data.columnDefinitions?.each { cd ->
         def cn = cd.name?.toLowerCase()
         if (cn.startsWith('title.identifier.') ) {
           def idparts = cn.split('.')
-          if ( idparts.size==3 ) {
-            if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'issn') ) {
-              // Skip issn/eissn
+          if ( idparts.size == 3 ) {
+            if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
+              // Skip issn/eissn.
             }
             else {
               additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
@@ -155,7 +172,7 @@ class IngestService {
         def cn = cd.name?.toLowerCase()
         if (cn.startsWith('gokb.') ) {
           def prop_name = cn.substring(5,cn.length());
-          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true);
+          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name);
           gokb_additional_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
         }
       }
@@ -163,141 +180,166 @@ class IngestService {
       log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
   
       int ctr = 0
+      boolean row_level_problems = false
+	  
+	  // Get the current transaction and commit it before we start adding tipps.
+//	  sessionFactory.currentSession.getTransaction().commit()
+	  
       project_data.rowData.each { datarow ->
-        log.debug("Row ${ctr} ${datarow}");
-        if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
-
-          try {
-            def extra_ids = []
-            additional_identifiers.each { ai ->
-              extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
-            }
-
-            // Title Instance
-            log.debug("Looking up title...(extra ids: ${extra_ids})");
-            def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
-                                                     jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
-                                                     jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
-                                                     extra_ids,
-                                                     jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
-
-            // Platform
-            def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
-            def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-            def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
-
-            if ( host_platform_name == null ) {
-              throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
-            }
-
-            log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
-            // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
-            def platform_info = Platform.findByNormname(host_norm_platform_name)
-            if ( !platform_info ) {
-              // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
-              platform_info = new Platform(name:host_platform_name, normname:host_norm_platform_name)
-              if (! platform_info.save(flush:true) ) {
-                platform_info.errors.each { e ->
-                  log.error(e);
+		
+		// Transaction for each row.
+		RefineProject.withNewTransaction { TransactionStatus status ->
+		
+          log.debug("Row ${ctr} ${datarow}");
+          if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+  
+            try {
+  			
+              def extra_ids = []
+              additional_identifiers.each { ai ->
+                extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+              }
+  
+              // Title Instance
+              log.debug("Looking up title...(extra ids: ${extra_ids})")
+              def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+                                                       jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
+                                                       jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
+                                                       extra_ids,
+                                                       jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
+  
+              // Platform.
+              def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
+              def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+              def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+  
+              if ( host_platform_name == null ) {
+                throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
+              }
+  
+              log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
+              // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
+              def platform_info = Platform.findByNormname(host_norm_platform_name)
+              if ( !platform_info ) {
+                // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+                platform_info = new Platform(
+  				name:host_platform_name,
+  				normname:host_norm_platform_name,
+  				primaryUrl:host_platform_url
+  			  )
+                if (! platform_info.save(failOnError:true) ) {
+                  platform_info.errors.each { e ->
+                    log.error(e);
+                  }
                 }
               }
-            }
-    
-            // Does the row specify a package?
-            def pkg_name_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME) ?: "${project.id}" //:${project.provider.name}
-            def pkg_id = "${project.provider.name}:${pkg_name_from_row}"
-            def pkg = getOrCreatePackage(pkg_id,project);
+      
+              // Does the row specify a package?
+  			def pkg_name_from_row = "${project.id}"
   
-            // TIPP
-//            def tipp = TitleInstancePackagePlatform.findByTitleAndPkgAndPlatform(title_info, pkg, platform_info)
-            HibernateCriteriaBuilder crit = TitleInstancePackagePlatform.createCriteria()
-            def tipp = crit.get {              
-              ComboCriteria.createFor(crit)
-               .add ("title", "eq", title_info)
-              and {
-                ComboCriteria
-                  .add ("pkg", "eq", pkg)
-                  .add ("platform_info", "eq", platform_info)
-              }
-            }
-            
-            if ( !tipp ) {
-              log.debug("Create new tipp");
-              tipp = new TitleInstancePackagePlatform(title:title_info,
-                                                      pkg:pkg,
-                                                      platform:platform_info,
-                                                      startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-                                                      startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-                                                      startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-                                                      endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-                                                      endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-                                                      endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-                                                      embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-                                                      coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-                                                      coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-                                                      hostPlatformURL:host_platform_url)
-
-              gokb_additional_props.each { apd ->
-                tipp.additionalProperties.add(new KBComponentAdditionalProperty(fromComponent:tipp,
-                                                                                propertyDefn:apd.pd,
-                                                                                apValue:getRowValue(datarow,apd.col)))
+  			// The package.
+            def pkg = getOrCreatePackage(pkg_name_from_row, project.id);
+    
+              // Try and lookup a tipp.
+  			def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+              def tipp = crit.get {
+                and {
+  				crit.add ("title", "eq", title_info)
+                  crit.add ("pkg", "eq", pkg)
+                  crit.add ("hostPlatform", "eq", platform_info)
+                }
               }
               
+  			  // We have a Tipp.
+              if ( !tipp ) {
+                log.debug("Create new tipp")
+                tipp = new TitleInstancePackagePlatform(title:title_info,
+                                                        pkg:pkg,
+                                                        hostPlatform:platform_info,
+                                                        startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+                                                        startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+                                                        startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+                                                        endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+                                                        endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+                                                        endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+                                                        embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+                                                        coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+                                                        coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+                                                        hostPlatformURL:host_platform_url)
   
-              if ( !tipp.save() ) {
-                tipp.errors.each { e ->
-                  log.error("problem saving tipp ${e}");
+  			  // Add each property in turn.
+                gokb_additional_props.each { apd ->
+                  tipp.additionalProperties.add (
+  				  new KBComponentAdditionalProperty(
+  					propertyDefn:apd.pd,
+                      apValue:getRowValue(datarow,apd.col)
+  				  )
+  				)
                 }
+                
+  			  	// Save the tipp.
+				tipp.save(failOnError:true)
               }
-  
-  
-            // publication_title print_identifier online_identifier date_first_issue_online num_first_vol_online num_first_issue_online date_last_issue_online num_last_vol_online num_last_issue_online title_id embargo_info coverage_depth coverage_notes publisher_name DOI platform_name platform_role platform_title_url platform_name2 platform_role2 platform_title_url2
-  
+              else {
+  			  // Found the tipp.
+                log.debug("TIPP already present");
+              }
+    
+              // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
+              // instances we've just looked up.
+              if ( ctr % 25 == 0 ) {
+  			  
+  			  // Clean up the GORM.
+                cleanUpGorm()
+  			  
+                // Update project progress indicator, save in db so any observers can see progress
+                def project_info = RefineProject.get(project.id)
+                project_info.progress = ( ctr / project_data.rowData.size() * 100 )
+                project_info.save(failOnError:true)
+              }
             }
-            else {
-              log.debug("TIPP already present");
+            catch ( Exception e ) {
+              log.error("Row level exception",e)
+              result.messages.add([text:"Problem processing row ${e}"])
+              row_level_problems = true
+  			
+  			  // Rollback the transaction.
+			  status.setRollbackOnly()
             }
-  
-            // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
-            // instances we've just looked up.
-            if ( ctr % 25 == 0 ) {
-              cleanUpGorm()
-              pkg = Package.findByIdentifier("project:${project.id}");
-              // Update project progress indicator, save in db so any observers can see progress
-              def project_info = RefineProject.get(project.id)
-              project_info.progress = ( ctr / project_data.rowData.size() * 100 )
-              project_info.save(flush:true);
-            }
-
-          } 
-          catch ( Exception e ) {
-            log.error("Row level exception",e)
-            result.messages.add([text:"Problem processing row ${e}"])
           }
-        }
-        else {
-          log.debug("Row ${ctr} seems to be a null row. Skipping");
-          result.messages.add([text:"Row ${ctr} seems to be a null row. Skipping"]);
-        }
-        ctr++
+          else {
+            log.debug("Row ${ctr} seems to be a null row. Skipping");
+            result.messages.add([text:"Row ${ctr} seems to be a null row. Skipping"]);
+          }
+          ctr++
+		
+		  
+		  // Forcibly flush the session.
+//		  status.flush()
+      	}
       }
+
+      if ( row_level_problems ) {
+        log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
+      }
+
 
       def project_info = RefineProject.get(project.id)
       project_info.progress = 100;
-      project_info.save(flush:true);
+      project_info.save(failOnError:true)
+	  
+	  return result
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);
       result.messages.add([text:"Problem processing project ingest. ${e}"])
       project_info.progress = 100;
-      project_info.save(flush:true);
+      project_info.save(failOnError:true);
       //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
     }
     finally {
       log.debug("Ingest complete");
     }
-
-    result
   }
 
   def getRowValue(datarow, col_positions, colname) {
@@ -510,9 +552,15 @@ class IngestService {
 
   def cleanUpGorm() {
     log.debug("Clean up GORM");
+	
+	// Get the current session.
     def session = sessionFactory.currentSession
+	
+	// flush and clear the session.
     session.flush()
     session.clear()
+	
+	// Clear the property instance map.
     propertyInstanceMap.get().clear()
   }
 
@@ -564,7 +612,7 @@ class IngestService {
                                  ruleJson: "${r.operation as JSON}",
                                  description: "${r.operation.description}"
             )
-            if ( rule_in_db.save(flush:true) ) {
+            if ( rule_in_db.save(failOnError:true) ) {
             }
             else {
               rule_in_db.errors.each { e ->
@@ -573,8 +621,6 @@ class IngestService {
             }
           }
         }
-
-
       }
     }
     else {
@@ -623,33 +669,52 @@ class IngestService {
     }
   }
 
-  def getOrCreatePackage(identifier, project) {
-    def pkg = Package.findByIdentifier(identifier);
+  def getOrCreatePackage(String name, project_id) {
+	//TODO: Need to sort this identifier out.
+//    def pkg = Package.findByIdentifier(identifier);
+	
+	RefineProject project = RefineProject.get(project_id)
+	
+	// The provider.
+	Org provider = project.provider
+	
+	// Create the package name.
+	def pkg_name = "${provider.name}:${name}"
+	
+	// Try and find a package for the provider with the name entered.
+	def q = ComboCriteria.createFor(Package.createCriteria())
+	def pkg = q.get {
+	  q.add ("name", "eq", pkg_name)
+	  q.add ("provider", "eq", provider)
+	}
+	
+	// Package found.
     if (!pkg) {
-      log.debug("New package with identifier ${identifier}");
-      pkg = new Package(
-                        identifier:identifier,
-                        name:identifier,
-                        packageStatus:RefdataCategory.lookupOrCreate("Package Status", "Current"),
-                        packageScope:RefdataCategory.lookupOrCreate("Package Scope", "Front File"),
-                        breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
-                        parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
-                        global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
-                        fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
-                        consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
-                        lastProject:project).save(flush:true);
+      log.debug("New package with name ${name} for ${provider.name}");
+	  pkg = new Package(
+		  name:(pkg_name),
+		  provider: (provider),
+		  packageStatus:RefdataCategory.lookupOrCreate("Pkg.Status", "Current"),
+		  packageScope:RefdataCategory.lookupOrCreate("Pkg.Scope", "Front File"),
+		  breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
+//		  parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
+		  global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
+		  fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
+		  consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
+		  lastProject:project
+	  ).save(failOnError:true)
 
       // create a Combo linking this package to it's content provider
-      def cp_combo = new Combo(fromComponent:project.provider,
-                               toComponent:pkg,
-                               type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
-                               status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
-
-
-      cp_combo.save()
+//      def cp_combo = new Combo(fromComponent:project.provider,
+//                               toComponent:pkg,
+//                               type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
+//                               status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
+//
+//
+//      cp_combo.save()
     }
     else {
-      log.debug("Got existing package");
+      log.debug("Got existing package ${pkg.id}");
     }
     pkg
   }
