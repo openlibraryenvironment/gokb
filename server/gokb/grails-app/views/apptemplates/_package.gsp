@@ -8,7 +8,7 @@
 
 <table class="table table-bordered table-striped" style="clear: both"><tbody>
   <tr><td>Internal Id</td>            <td>${d.id}</td></tr>
-  <tr><td>Package Name/Identifier</td>           <td>${d.name}</td></tr>
+  <tr><td>Package Name</td>           <td>${d.name}</td></tr>
   <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
   <tr><td>Tags</td>                   <td>${d.shortcode}</td></tr>
   <tr><td>Status</td>                 <td><span class="ipe" 
@@ -60,7 +60,7 @@
         <td><g:link controller="resource" action="show" id="${tipp.title.class.name+':'+tipp.title.id}">${tipp.title.name}</g:link>
         <g:link controller="resource" action="show" id="${tipp.class.name+':'+tipp.id}">(tipp)</g:link>
         </td>
-        <td><g:link controller="resource" action="show" id="${tipp.platform.class.name+':'+tipp.platform.id}">${tipp.platform.name}</g:link></td>
+        <td><g:link controller="resource" action="show" id="${tipp.hostPlatform.class.name+':'+tipp.hostPlatform.id}">${tipp.hostPlatform.name}</g:link></td>
         <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${tipp.startDate}"/></td>
         <td>${tipp.startVolume}</td>
         <td>${tipp.startIssue}</td>

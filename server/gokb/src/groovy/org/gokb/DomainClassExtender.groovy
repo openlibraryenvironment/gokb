@@ -28,10 +28,7 @@ import grails.util.GrailsNameUtils
 import groovy.util.logging.*
 
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
-import org.gokb.cred.Combo
-import org.gokb.cred.KBComponent
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.RefdataValue
+import org.gokb.cred.*
 
 @Log4j
 class DomainClassExtender {

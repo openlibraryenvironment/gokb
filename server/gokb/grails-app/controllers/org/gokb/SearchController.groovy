@@ -11,7 +11,7 @@ class SearchController {
   def genericOIDService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def index() { 
+  def index() {
     log.debug("enter SearchController::index...");
     def result = [:]
 
@@ -96,7 +96,7 @@ class SearchController {
 
     def count_result = c.get {
       and {
-        qbetemplate.qbeConfig.qbeForm.each 
+        qbetemplate.qbeConfig.qbeForm.each
       }
       projections {
         rowCount()
@@ -106,8 +106,8 @@ class SearchController {
     log.debug("criteria result: ${count_result}");
 
     c = ComboCriteria.createFor(target_class.getClazz().createCriteria())
-	
-	
+
+
     result.recset = c.list(max: result.max, offset: result.offset) {
       and {
         qbetemplate.qbeConfig.qbeForm.each { ap ->
@@ -123,151 +123,31 @@ class SearchController {
 
   private def  processContextTree = { qry, contextTree, value, paramdef, Class the_class = null ->
     if ( contextTree ) {
-	  
-	  def the_value = value
-	  
+
+      def the_value = value
+
       switch ( contextTree.ctxtp ) {
-        case 'assoc':
-          qry."${contextTree.prop}" {
-            processContextTree(qry, contextTree.children, value, paramdef)
-            contextTree.filters.each { f ->
-              qry.ilike(f.field,f.value)
-            }
-          }
-          break;
-        case 'filter':
-          
-		  // Filters work in the same way as queries,
-		  // but the value is in the contextTree instead of the submitted value.
-//          qry.ilike(contextTree.prop,contextTree.value)
-		  the_value = contextTree.value
-        case 'qry':
-          
-//		  // Start class as the target class of the query builder, if none supplied.
-//          the_class = the_class ?: qry.targetClass;
-//		  
-//		  // Get all the combo properties defined on the class.
-//		  Map allProps = KBComponent.getAllComboPropertyDefinitionsFor(the_class)
-//		  
-//		  // Split the property and go through each property as needed.
-//		  List props = contextTree.prop.split("\\.")
-//		  
-//		  // If props length > 1 then we need to first add all the necessary associations.
-//		  if (props.size() > 1) {
-//			
-//			// Pop the first element from the list.
-//			String prop = props.remove(0)
-//			
-//			// Set the property value to the new list minus the head.
-//			def newCtxtTree = contextTree.clone()
-//			newCtxtTree.prop = props.join(".")
-//			
-//			// Get the type that the property maps to (check combo props first).
-//			Class target_class = allProps[prop]
-//			
-//			// Combo property?
-//			if (target_class) {
-//			  boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, prop)
-//			  
-//			  // Combo property... Let's add the association.
-//			  if (incoming) {
-//				// Use incoming combos.
-//				qry."incomingCombos" {
-//				  and {
-//					eq (
-//					  "type",
-//					  RefdataCategory.lookupOrCreate (
-//						"Combo.Type",
-//						the_class.getComboTypeValueFor (the_class, prop)
-//					  )
-//					)
-//					fromComponent {
-//                      processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-//					}
-//				  }
-//				}
-//				
-//			  } else {
-//				// Outgoing
-//				qry."outgoingCombos" {
-//				  and {
-//					eq (
-//					  "type",
-//					  RefdataCategory.lookupOrCreate (
-//						"Combo.Type",
-//						the_class.getComboTypeValueFor (the_class, prop)
-//					  )
-//					)
-//					toComponent {
-//                      processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-//					}
-//				  }
-//				}
-//			  }  
-//			} else {
-//				// Normal groovy/grails property.
-//				target_class = GrailsClassUtils.getPropertyType(the_class, prop)
-//				
-//				// Add the association here.
-//				qry."prop" {
-//				  processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-//				}
-//			}
-//			
-//		  } else {
-//  		  	   
-//		  	// We need to do the comparison.
-//		         
-//            // Check if this is a combo property.
-//            if (allProps[contextTree.prop]) {
-//              
-//              // Add association using either incoming or outgoing properties.
-//              boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, contextTree.prop)
-//              
-//              if (incoming) {
-//                // Use incoming combos.
-//                qry."incomingCombos" {
-//                  and {
-//                    eq (
-//                      "type",
-//                      RefdataCategory.lookupOrCreate (
-//                        "Combo.Type",
-//                        the_class.getComboTypeValueFor (the_class, contextTree.prop)
-//                      )
-//                    )
-//                    fromComponent {
-//  //                    processContextTree(delegate, contextTree.children, value, paramdef)
-//  						ilike(contextTree.prop,the_value)
-//                    }
-//                  }
-//                }
-//                
-//              } else {
-//                // Outgoing
-//                qry."outgoingCombos" {
-//                  and {
-//                    eq (
-//                      "type",
-//                      RefdataCategory.lookupOrCreate (
-//                        "Combo.Type",
-//                        the_class.getComboTypeValueFor (the_class, contextTree.prop)
-//                      )
-//                    )
-//                    toComponent {
-//  //                    processContextTree(delegate, contextTree.children, value, paramdef)
-//  						ilike(contextTree.prop,the_value)
-//                    }
-//                  }
-//                }
-//              }
-//            } else {
-//              // Normal grails property.
-//              qry.ilike(contextTree.prop,the_value)
+//        case 'assoc':
+//          qry."${contextTree.prop}" {
+//            processContextTree(qry, contextTree.children, value, paramdef)
+//            contextTree.filters.each { f ->
+//              qry.ilike(f.field,f.value)
 //            }
-//		  }
-			// Use our custom criteria builder to compare the values.
-			qry.add(contextTree.prop, "ilike", the_value)
-         break;
+//          }
+//          break;
+        case 'filter':
+
+          // Filters work in the same way as queries,
+          // but the value is in the contextTree instead of the submitted value.
+          the_value = contextTree.value
+        case 'qry':
+          // Use our custom criteria builder to compare the values.
+          if (contextTree.type) {
+            // Try and parse the number.
+            the_value = the_value.asType(Class.forName("${contextTree.type}"));
+          }
+          qry.add(contextTree.prop, contextTree.comparator, the_value)
+          break;
       }
     }
   }
@@ -306,13 +186,13 @@ class SearchController {
             prompt:'Name or Title',
             qparam:'qp_name',
             placeholder:'Name or title of item',
-            contextTree:['ctxtp':'qry', 'prop':'name']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ],
-          [ 
+          [
             prompt:'ID',
             qparam:'qp_id',
             placeholder:'ID of item',
-            contextTree:['ctxtp':'qry', 'prop':'id']
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'id', 'type' : 'java.lang.Long']
           ]
         ],
         qbeResults:[
@@ -322,21 +202,21 @@ class SearchController {
         ]
       ]
     ],
-    'packages':[      
+    'packages':[
       baseclass:'org.gokb.cred.Package',
       title:'Package Search',
       qbeConfig:[
         qbeForm:[
-         [
+          [
             prompt:'Name of Package',
             qparam:'qp_name',
             placeholder:'Package Name',
-            contextTree:['ctxtp':'qry', 'prop':'name']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ]
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Package Name', property:'name'],
+          [heading:'Name/Identifier', property:'name'],
           [heading:'Nominal Platform', property:'nominalPlatform?.name']
         ]
       ]
@@ -350,7 +230,7 @@ class SearchController {
             prompt:'Name or Title',
             qparam:'qp_name',
             placeholder:'Name or title of item',
-            contextTree:['ctxtp':'qry', 'prop':'name']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -369,7 +249,7 @@ class SearchController {
             prompt:'Name or Title',
             qparam:'qp_name',
             placeholder:'Name or title of item',
-            contextTree:['ctxtp':'qry', 'prop':'name']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -388,7 +268,7 @@ class SearchController {
             prompt:'Name or Title',
             qparam:'qp_name',
             placeholder:'Name or title of item',
-            contextTree:['ctxtp':'qry', 'prop':'name']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -407,7 +287,7 @@ class SearchController {
             prompt:'Description',
             qparam:'qp_description',
             placeholder:'Rule Description',
-            contextTree:['ctxtp':'qry', 'prop':'description']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'description']
           ],
         ],
         qbeResults:[
@@ -426,7 +306,7 @@ class SearchController {
             prompt:'Name',
             qparam:'qp_name',
             placeholder:'Project Name',
-            contextTree:['ctxtp':'qry', 'prop':'name']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ],
         ],
         qbeResults:[
@@ -445,46 +325,25 @@ class SearchController {
             prompt:'Title',
             qparam:'qp_title',
             placeholder:'Title',
-            contextTree:[
-			  'ctxtp':'qry',
-			  'prop':'title.name'
-			],
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'title.name'],
           ],
           [
             prompt:'Content Provider',
             qparam:'qp_cp_name',
             placeholder:'Content Provider Name',
-			contextTree:['ctxtp' : 'qry', 'prop' : 'pkg.provider.name']
-//            contextTree:['ctxtp':'property','prop':'pkg','children':[
-//                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
-//                            ['ctxtp':'assoc','prop':'type','children':[
-//                              ['ctxtp':'assoc','prop':'owner','children':[
-//                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
-//                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
-//                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
-//                              ['ctxtp':'qry', 'prop':'name']]]]]]]
+            contextTree:['ctxtp' : 'qry', 'comparator' : 'ilike', 'prop' : 'pkg.provider.name']
           ],
           [
             prompt:'Content Provider ID',
             qparam:'qp_cp_id',
             placeholder:'Content Provider ID',
-			contextTree:['ctxtp' : 'qry', 'prop' : 'pkg.provider.id']
-//            contextTree:['ctxtp':'assoc','prop':'pkg','children':[
-//                          ['ctxtp':'assoc','prop':'incomingCombos', 'children':[
-//                            ['ctxtp':'assoc','prop':'type','children':[
-//                              ['ctxtp':'assoc','prop':'owner','children':[
-//                                ['ctxtp':'filter', 'prop':'desc', 'value':'Combo.Type']]],
-//                              ['ctxtp':'filter', 'prop':'value', 'value':'ContentProvider']]],
-//                            ['ctxtp':'assoc','prop':'fromComponent', 'children':[
-//                              ['ctxtp':'qry', 'prop':'id']]]]]]]
+            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.provider.id', 'type' : 'java.lang.Long']
           ],
           [
             prompt:'Package ID',
             qparam:'qp_pkg_id',
             placeholder:'Package ID',
-			contextTree:['ctxtp' : 'qry', 'prop' : 'pkg.id']
-//            contextTree:['ctxtp':'property','prop':'pkg','children':[
-//                              ['ctxtp':'qry', 'prop':'id']]]
+            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
           ],
         ],
         qbeResults:[
@@ -502,7 +361,7 @@ class SearchController {
             prompt:'Description',
             qparam:'qp_desc',
             placeholder:'Category Description',
-            contextTree:['ctxtp':'qry', 'prop':'desc']
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
           ],
         ],
         qbeResults:[

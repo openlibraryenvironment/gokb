@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import grails.util.GrailsNameUtils
 abstract class KBComponent {
 
   static auditable = true
@@ -142,7 +143,8 @@ abstract class KBComponent {
     }
     result
   }
-
+  
+  @Transient
   public List getOtherIncomingCombos () {
     
     Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
@@ -165,6 +167,7 @@ abstract class KBComponent {
     combs
   }
 
+  @Transient
   public List getOtherOutgoingCombos () {
     
     Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
@@ -184,6 +187,11 @@ abstract class KBComponent {
     }
     
     combs
+  }
+  
+  @Transient
+  public String getClassName () {
+    "org.gokb.cred.${GrailsNameUtils.getShortName(this.class)}"
   }
 
   @Transient
