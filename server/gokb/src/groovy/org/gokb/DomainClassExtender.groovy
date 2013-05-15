@@ -34,8 +34,8 @@ import org.gokb.cred.*
 class DomainClassExtender {
   
   private static RefdataValue getComboStatusActive = null;
-  private static RefdataValue getComboStatusActive () {
-    if (!getComboStatusActive) { 
+  public static RefdataValue getComboStatusActive () {
+    if (getComboStatusActive == null) { 
       getComboStatusActive = RefdataCategory.lookupOrCreate("Combo.Status", "Active")
     }
     

@@ -96,7 +96,12 @@ class SearchController {
 
     def count_result = c.get {
       and {
-        qbetemplate.qbeConfig.qbeForm.each
+        qbetemplate.qbeConfig.qbeForm.each { ap ->
+          if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
+            // addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
+            processContextTree(c, ap.contextTree, params[ap.qparam], ap.property)
+          }
+        }
       }
       projections {
         rowCount()
@@ -331,7 +336,9 @@ class SearchController {
             prompt:'Description',
             qparam:'qp_desc',
             placeholder:'Category Description',
-            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
+            contextTree:[
+			  ['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
+			]	
           ],
         ],
         qbeResults:[

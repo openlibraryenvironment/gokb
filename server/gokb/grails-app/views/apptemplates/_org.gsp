@@ -30,7 +30,7 @@
 	</g:if>
   <g:if test="${d.parent != null}">
 	  <dt>Parent</dt>
-	  <dd>${d.parent}</dd>
+	  <dd><g:link controller="resource" action="show" id="${d.parent.getClassName()+':'+d.parent.id}">${d.parent.name}</g:link></dd>
 	</g:if>
 	<g:if test="${d.children?.size() > 0}">
 	  <dt>Children</dt>

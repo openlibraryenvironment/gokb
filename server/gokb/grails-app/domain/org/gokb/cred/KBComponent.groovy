@@ -191,7 +191,7 @@ abstract class KBComponent {
   
   @Transient
   public String getClassName () {
-    "org.gokb.cred.${GrailsNameUtils.getShortName(this.class)}"
+	org.hibernate.Hibernate.getClass(this).getSimpleName()
   }
 
   @Transient
