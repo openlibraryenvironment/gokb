@@ -62,6 +62,7 @@ class Combo {
 	// Expire this combo...
 	setStatus (RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_SUPERSEDED))
 	setEndDate(endDate)
+	save()
 	endDate
   }
 }
