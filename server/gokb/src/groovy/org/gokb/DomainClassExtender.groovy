@@ -24,25 +24,23 @@ package org.gokb
  * 
  */
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
 import grails.util.GrailsNameUtils
-
-
-import org.apache.log4j.Logger
-import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
-import org.gokb.cred.Combo
-import org.gokb.cred.KBComponent
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.RefdataValue
-import org.hibernate.SessionFactory
-import org.springframework.context.ApplicationContext
 import groovy.util.logging.*
+
+import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
+import org.gokb.cred.*
 
 @Log4j
 class DomainClassExtender {
+  
+  private static RefdataValue getComboStatusActive = null;
+  public static RefdataValue getComboStatusActive () {
+    if (getComboStatusActive == null) { 
+      getComboStatusActive = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    }
+    
+    getComboStatusActive
+  }
   
   private static addComboPropertyCache = { DefaultGrailsDomainClass domainClass ->
     
@@ -255,7 +253,7 @@ class DomainClassExtender {
         def result
 		
 		// The delegate.
-		final KBComponent thiz = delegate
+		final KBComponent thisComponent = delegate
 
         if (isComboReverse(propertyName)) {
 		  
@@ -266,14 +264,17 @@ class DomainClassExtender {
 		  def combos = Combo.createCriteria().list {
 			and {
 			  eq ("type", (type))
-			  eq ("toComponent", (thiz))
+			  eq ("toComponent", (thisComponent))
 			}
+            projections {
+              property("fromComponent")
+            }
 		  }
 		  
 		  // Create our new list.
 		  result = new ComboPersistedList (
-			thiz,
-			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
+			(thisComponent),
+			DomainClassExtender.getComboStatusActive(),
 			type,
 			combos,
 			true
@@ -292,14 +293,17 @@ class DomainClassExtender {
 		  def combos = Combo.createCriteria().list {
 			and {
 			  eq ("type", (type))
-			  eq ("fromComponent", (thiz))
+			  eq ("fromComponent", (thisComponent))
 			}
+            projections {
+              property("toComponent")
+            }
 		  }
 		  
 		  // Create our new list.
 		  result = new ComboPersistedList (
-			thiz,
-			RefdataCategory.lookupOrCreate("Combo.Status", "Active"),
+			(thisComponent),
+			DomainClassExtender.getComboStatusActive(),
 			type,
 			combos,
 			false
@@ -331,28 +335,34 @@ class DomainClassExtender {
 //            Combo combo = incomingCombos.find {
 //              it.type == (type)
 //            }
-			final KBComponent thiz = delegate
-			Combo combo = Combo.createCriteria().get {
+			final KBComponent thisComponent = delegate
+			result = Combo.createCriteria().get {
 			  and {
 				eq ("type", (type))
-				eq ("toComponent", (thiz))
+				eq ("toComponent", (thisComponent))
 			  }
+              projections {
+                property("fromComponent")
+              }
 			}
 
-            if (combo) result = combo.fromComponent
+//            if (combo) result = combo.fromComponent
           } else {
 //            Combo combo = outgoingCombos.find {
 //              it.type == (type)
 //            }
-		  final KBComponent thiz = delegate
-			Combo combo = Combo.createCriteria().get {
+		  final KBComponent thisComponent = delegate
+			result = Combo.createCriteria().get {
 			  and {
 				eq ("type", (type))
-				eq ("fromComponent", (thiz))
+				eq ("fromComponent", (thisComponent))
 			  }
+              projections {
+                property("toComponent")
+              }
 			}
 
-            if (combo) result = combo.toComponent
+//            if (combo) result = combo.toComponent
           }
 
           // Add the result to the cache.
@@ -510,46 +520,44 @@ class DomainClassExtender {
   }
   private static addRemoveComboPropertyVals = { DefaultGrailsDomainClass domainClass ->
     MetaClass mc = domainClass.getMetaClass()
-    mc.removeComboPropertyVals {String propertyName ->
+    mc.removeComboPropertyVals {String propertyName, boolean preserveCurrent = false ->
       log.trace("removeComboPropertyVals called on ${delegate} with args ${propertyName}")
+	  
+	  // End dateused when expiring.
+	  Date endDate = (preserveCurrent ? new Date() : null)
       
       // Generate the type.
       RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
-      
+	  
       // Get all..
       List<Combo> combos
+	  // Query DB for current combos (endDate is NULL)
       if (isComboReverse(propertyName)) {
         // Reverse.
-//        combos = incomingCombos.findAll {
-//          it.type == (type)
-//        }
-		
-		// Query DB for combos.
-		final KBComponent thiz = delegate
+		final KBComponent thisComponent = delegate
 		combos = Combo.createCriteria().list {
 		  and {
     	    eq ("type", (type))
-    		eq ("toComponent", (thiz))
+    		eq ("toComponent", (thisComponent))
+			isNull ("endDate")
+			eq ("status", DomainClassExtender.getComboStatusActive())
 		  }
 		}
       } else {
-//        combos = outgoingCombos.findAll {
-//          it.type == (type)
-//        }
-	  	final KBComponent thiz = delegate
+	  	final KBComponent thisComponent = delegate
 		
 		combos = Combo.createCriteria().list {
 		  and {
 			eq ("type", (type))
-			eq ("fromComponent", (thiz))
+			eq ("fromComponent", (thisComponent))
+			isNull ("endDate")
+			eq ("status", DomainClassExtender.getComboStatusActive())
 		  }
 		}
-		
       }
   
       // Delete each combo in turn.
       for (Combo combo in combos) {
-        log.debug("removing Combo of type ${combo.type} from ${delegate}.")
         
         // Need to make sure we remove from both sides of the,
         // association before attempting to remove the combo.
@@ -558,28 +566,51 @@ class DomainClassExtender {
         if (combo.fromComponent) {
           KBComponent comp = combo.fromComponent
           comp.comboPropertyCache().clear()
-          comp.removeFromOutgoingCombos(combo)
+		  
+		  if (!preserveCurrent) {
+			comp.removeFromOutgoingCombos(combo)
+		  }
 //          comp.save()
         }
         if (combo.toComponent) {
           KBComponent comp = combo.toComponent
           comp.comboPropertyCache().clear()
-          comp.removeFromIncomingCombos(combo)
+		  
+		  if (!preserveCurrent) {
+			comp.removeFromIncomingCombos(combo)
+		  }
 //          comp.save()
         }
         
-        // Remove the combo.
-        combo.delete()
+		// Remove or expire the combo.
+		if (preserveCurrent) {
+		  // We need to "expire" the current value(s), not remove it.
+		  log.debug ("Expiring combo with ID ${combo.id}")
+		  
+		  // Expire the combo with a custom date.
+		  endDate = combo.expire(endDate)
+		  
+		  // Save the combo.
+		  combo.save()
+		  
+		} else {
+		  log.debug ("Deleting combo with ID ${combo.id}")
+		  // Remove the combo.
+		  combo.delete()
+		}
       }
       
       // Clear the cached value too if present.
       comboPropertyCache().remove("${propertyName}".toString())
+	  
+	  // Return the date added as the endDate
+	  endDate
     }
   }
 
   private static addSetComboProperty = {DefaultGrailsDomainClass domainClass ->
     MetaClass mc = domainClass.getMetaClass()
-    mc.setComboProperty = {String propertyName, def value ->
+    mc.setComboProperty = {String propertyName, def value, boolean preserveCurrent = false ->
       log.trace("setComboProperty called on ${delegate} with args ${[propertyName, value]}")
       Class typeClass
       switch (value) {
@@ -602,32 +633,36 @@ class DomainClassExtender {
 
       if (typeClass) {
 
-        // Capitalise the propertyName.
-        removeComboPropertyVals(propertyName)
+        // Remove the property values.
+        Date new_start_date = removeComboPropertyVals(propertyName, preserveCurrent) ?: new Date()
 
         if (value) {
 
           // Generate the type.
-          RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
+          RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue(propertyName))
 
           // Go through each item and generate a value.
           switch (value) {
             case Collection :
             
               if (isComboReverse(propertyName)) {
+				
                 // Reverse
                 for (val in value) {
                   if (typeClass.isInstance(val)) {
                     
+					// Create an active combo
                     Combo combo = new Combo(
-                      type : (type),
-                      status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                      type		: (type),
+                      status	: DomainClassExtender.getComboStatusActive(),
+					  startDate : new_start_date
                     ) //.save()
 
                     // Add to the collections.
-                    log.debug("adding incoming Combo of type ${type} to ${delegate} to ${val}.")
+                    log.trace("adding incoming Combo of type ${type} to ${delegate} to ${val}.")
                     delegate.addToIncomingCombos(combo)
-                    log.debug("adding outgoing Combo of type ${type} from ${val} to ${delegate}.")
+					
+                    log.trace("adding outgoing Combo of type ${type} from ${val} to ${delegate}.")
                     val.addToOutgoingCombos(combo)
 
                   } else {
@@ -640,14 +675,16 @@ class DomainClassExtender {
                 for (val in value) {
                   if (typeClass.isInstance(val)) {
                     Combo combo = new Combo(
-                      type : (type),
-                      status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                      type		: (type),
+                      status	: DomainClassExtender.getComboStatusActive(),
+					  startDate	: new_start_date
                     )
 
                     // Add to the collections.
-                    log.debug("adding outgoing Combo of type ${type} from ${delegate} to ${val}.")
+                    log.trace("adding outgoing Combo of type ${type} from ${delegate} to ${val}.")
                     delegate.addToOutgoingCombos(combo)
-                    log.debug("adding incoming Combo of type ${type} to ${val} from ${delegate}.")
+					
+                    log.trace("adding incoming Combo of type ${type} to ${val} from ${delegate}.")
                     val.addToIncomingCombos(combo)
 
                   } else {
@@ -665,26 +702,30 @@ class DomainClassExtender {
                 
                 if (isComboReverse(propertyName)) {
                   Combo combo = new Combo(
-                      type : (type),
-                      status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                      type		: (type),
+                      status	: DomainClassExtender.getComboStatusActive(),
+					  startDate : new_start_date
                   )
 
                   // Add to the incoming collection
                   log.debug("adding incoming Combo of type ${type} to ${delegate} from ${value}.")
+				  
                   delegate.addToIncomingCombos(combo)
                   log.debug("adding outgoing Combo of type ${type} from ${value} to ${delegate}.")
                   value.addToOutgoingCombos(combo)
                   
                 } else {
                   Combo combo = new Combo(
-                    type : (type),
-                    status : RefdataCategory.lookupOrCreate("Combo.Status", "Active")
+                    type 		: (type),
+                    status		: DomainClassExtender.getComboStatusActive(),
+					startDate	: new_start_date
                   )//.save()
 
                   // Add to the collections.
-                  log.debug("adding outgoing Combo of type ${type} from ${delegate} to ${value}.")
+                  log.trace("adding outgoing Combo of type ${type} from ${delegate} to ${value}.")
                   delegate.addToOutgoingCombos(combo)
-                  log.debug("adding incoming Combo of type ${type} to ${value} to ${delegate}.")
+				  
+                  log.trace("adding incoming Combo of type ${type} to ${value} to ${delegate}.")
                   value.addToIncomingCombos(combo)
                   
                 }
@@ -818,141 +859,5 @@ class DomainClassExtender {
 		delegate.setComboProperty(prop, value)
 	  }
 	}
-  }
-  
-  public class ComboPersistedList <E extends KBComponent> extends org.apache.commons.collections.list.AbstractListDecorator {
-	
-	private final KBComponent component
-	private final boolean incoming
-	private final RefdataValue status
-	private final RefdataValue type
-	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals) {
-	  this (component, status, type, new ArrayList (vals), false )
-	}
-	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection<E> vals, boolean incoming) {
-	  this (component, status, type, new ArrayList (vals), incoming)
-	}
-	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals) {
-	  this (component, status, type, vals, false)
-	}
-	
-	public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, List<E> vals, boolean incoming) {
-	  super(vals)
-	  this.component = component
-	  this.status = status
-	  this.type = type
-	  this.outgoing = outgoing
-	}
-	
-	@Override
-    public boolean add(Object element) {
-	  
-	  // Try and add the object.
-	  boolean added = super.add(element)
-	  
-	  if (added) {
-		
-		// Create the Combo.
-		Combo combo = new Combo ([
-		  "status" 		: status,
-		  "type"			: type
-		])
-		
-		// Add to the 2 comboLists.
-		if (incoming) {
-		  
-		  // Incoming combos of component.
-		  component.addToIncomingCombos (combo)
-		  element.addToOutgoingCombos (combo)
-		  
-		} else {
-		  
-		  // Outgoing combos of component.
-		  component.addToOutgoingCombos (combo)
-		  element.addToIncomingCombos (combo)
-		}
-	  }
-	  
-	  added
-    }
-
-	@Override
-    public boolean addAll(Collection coll) {
-	  
-	  // Ensure we use our extended add.
-	  boolean added = true
-	  for (E element : coll) {
-		added = added && this.add(element)
-	  }
-	  
-	  added
-    }
-
-	@Override
-    public boolean remove(Object element) {
-	  
-	  // Removed item successfully.
-	  boolean removed = super.remove(element)
-	  if (removed) {
-		
-		// Create the Combo.
-		Combo combo = new Combo ([
-		  "status" 		: status,
-		  "type"		: type
-		])
-		
-		// Add the from/to components before removing from the 2 lists.
-		if (incoming) {
-		  
-		  combo.fromComponent = element
-		  combo.toComponent = component
-		  
-		  // Incoming combos of component.
-		  component.removeFromIncomingCombos (combo)
-		  element.removeFromOutgoingCombos (combo)
-		  
-		} else {
-		
-		  combo.fromComponent = component
-		  combo.toComponent = element
-		  
-		  // Outgoing combos of component.
-		  component.removeFromOutgoingCombos (combo)
-		  element.removeFromIncomingCombos (combo)
-		}
-	  }
-	  
-	  removed
-    }
-
-	@Override
-    public boolean removeAll(Collection coll) {
-	  // Ensure we use our extended remove.
-	  boolean removed = true
-	  for (E element : coll) {
-		removed = removed && this.remove(element)
-	  }
-    }
-
-	@Override
-    public boolean retainAll(Collection coll) {
-	  
-	  boolean removed = true
-
-	  // Remove all items not in the supplied collection.
-	  Iterator items = this.iterator()
-	  E element
-	  while (items.hasNext()) {
-		if (!coll.contains(element)) {
-		  // Remove.
-		  removed = removed && this.remove(element)
-		}
-	  }
-	  
-	  removed
-    }
   }
 }

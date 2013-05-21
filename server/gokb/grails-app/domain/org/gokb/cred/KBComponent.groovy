@@ -1,8 +1,13 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import grails.util.GrailsNameUtils
 abstract class KBComponent {
 
+  static final String RD_STATUS = "KBComponent.Status"
+  static final String STATUS_ACTIVE = "Active"
+  static final String STATUS_DELETED = "Deleted"
+  
   static auditable = true
 
   String impId
@@ -10,6 +15,9 @@ abstract class KBComponent {
   String name
   String normname
   String shortcode
+  
+  RefdataValue status
+  
   Set tags = []
   List additionalProperties = []
   List outgoingCombos = []
@@ -25,7 +33,6 @@ abstract class KBComponent {
   
   static hasMany = [
     ids: IdentifierOccurrence,
-//    orgs: OrgRole,
     tags:RefdataValue,
     outgoingCombos:Combo,
     incomingCombos:Combo,
@@ -38,6 +45,7 @@ abstract class KBComponent {
     impId column:'kbc_imp_id', index:'kbc_imp_id_idx'
     name column:'kbc_name'
     normname column:'kbc_normname'
+	status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
     tags joinTable: [name: 'kb_component_refdata_value', key: 'kbcrdv_kbc_id', column: 'kbcrdv_rdv_id']
   }
@@ -47,6 +55,7 @@ abstract class KBComponent {
     name(nullable:true, blank:false, maxSize:2048)
     shortcode(nullable:true, blank:false, maxSize:128)
     normname(nullable:true, blank:false, maxSize:2048)
+    status(nullable:true, blank:false)
   }
 
 
@@ -122,6 +131,14 @@ abstract class KBComponent {
       }
       normname = name.toLowerCase().trim();
     }
+	
+	// Check the status
+	if (status == null) {
+	  // Lookup or create the refdata in a separate session.
+	  RefdataCategory.withNewSession { session ->
+		status = RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_ACTIVE)
+	  }
+	}
   }
 
   def beforeUpdate() {
@@ -142,7 +159,8 @@ abstract class KBComponent {
     }
     result
   }
-
+  
+  @Transient
   public List getOtherIncomingCombos () {
     
     Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
@@ -165,6 +183,7 @@ abstract class KBComponent {
     combs
   }
 
+  @Transient
   public List getOtherOutgoingCombos () {
     
     Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
@@ -184,6 +203,17 @@ abstract class KBComponent {
     }
     
     combs
+  }
+  
+  public Date deleteSoft (Date endDate = new Date()) {
+
+	// Set the status to deleted.
+	setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+  } 
+  
+  @Transient
+  public String getClassName () {
+	org.hibernate.Hibernate.getClass(this).getName()
   }
 
   @Transient

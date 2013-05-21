@@ -2,9 +2,9 @@ package org.gokb.cred
 
 class OrgRole {
 
-  static belongsTo = [
-    org:Org
-  ]
+//  static belongsTo = [
+//    org:Org
+//  ]
 
   RefdataValue roleType
 //  KBComponent linkedComponent

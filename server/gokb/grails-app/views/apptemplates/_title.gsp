@@ -41,7 +41,7 @@
         <g:each in="${d.tipps}" var="tipp">
           <tr>
             <td><g:link controller="resource" action="show" id="${tipp.pkg.class.name+':'+tipp.pkg.id}">${tipp.pkg.name}</g:link></td>
-            <td><g:link controller="resource" action="show" id="${tipp.platform.class.name+':'+tipp.platform.id}">${tipp.platform.name}</g:link></td>
+            <td><g:link controller="resource" action="show" id="${tipp.hostPlatform.class.name+':'+tipp.hostPlatform.id}">${tipp.hostPlatform.name}</g:link></td>
             <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${tipp.startDate}"/></td>
             <td>${tipp.startVolume}</td>
             <td>${tipp.startIssue}</td>

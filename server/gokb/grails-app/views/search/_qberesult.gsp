@@ -79,14 +79,5 @@
 			opts[index] = new Option(action.label, action.code);
 		});
     
-    // Steve ;) this function needs to iterate over all checked checkboxes with class obj-action-ck-box and build up a list of
-    // actions. Only actions which are applicable to all checked items should be in the final combo (So the combo only shows actions
-    // that can be bulk applied to all checked rows, some rows may allow an action, some may not depending on values in the object.
-    // For example, a title with status "Deleted" can't be deleted, but one with status "Current" can be. Once we have the actions
-    // at the intersection of all checked rows, we need to fill the selectedBulkAction combo with the selected rows.
-    //
-    // Format of the data-actns property in each checkbox element is [{'code':'object::delete','label':'Delete'},{'code':'title::transfer','label':'Transfer'}]
-    // So the option element needs to have a value of the code, and text of the label.
-    
   }
 </script>
