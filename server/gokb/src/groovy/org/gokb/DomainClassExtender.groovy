@@ -554,7 +554,6 @@ class DomainClassExtender {
 			eq ("status", DomainClassExtender.getComboStatusActive())
 		  }
 		}
-		
       }
   
       // Delete each combo in turn.
@@ -567,13 +566,19 @@ class DomainClassExtender {
         if (combo.fromComponent) {
           KBComponent comp = combo.fromComponent
           comp.comboPropertyCache().clear()
-          comp.removeFromOutgoingCombos(combo)
+		  
+		  if (!preserveCurrent) {
+			comp.removeFromOutgoingCombos(combo)
+		  }
 //          comp.save()
         }
         if (combo.toComponent) {
           KBComponent comp = combo.toComponent
           comp.comboPropertyCache().clear()
-          comp.removeFromIncomingCombos(combo)
+		  
+		  if (!preserveCurrent) {
+			comp.removeFromIncomingCombos(combo)
+		  }
 //          comp.save()
         }
         
@@ -584,6 +589,9 @@ class DomainClassExtender {
 		  
 		  // Expire the combo with a custom date.
 		  endDate = combo.expire(endDate)
+		  
+		  // Save the combo.
+		  combo.save()
 		  
 		} else {
 		  log.debug ("Deleting combo with ID ${combo.id}")
