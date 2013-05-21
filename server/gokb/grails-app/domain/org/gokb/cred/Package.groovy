@@ -14,17 +14,16 @@ class Package extends KBComponent {
   // Fixed?: Y
   // Consistent?: N
 
-//  String identifier
-  RefdataValue packageType
-  RefdataValue packageStatus
-  RefdataValue packageListStatus
-  RefdataValue packageScope
+  // Refdata
+  RefdataValue scope
+//  RefdataValue type
+  RefdataValue listStatus
   RefdataValue breakable
-//  RefdataValue parent
-  RefdataValue global
-  RefdataValue fixed
   RefdataValue consistent
-//  Platform nominalPlatform
+  RefdataValue fixed
+  RefdataValue paymentType
+  RefdataValue global
+  
   Date dateCreated
   Date lastUpdated
   RefineProject lastProject
