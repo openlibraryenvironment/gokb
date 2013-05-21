@@ -15,17 +15,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   String coverageDepth
   String coverageNote
   RefdataValue option
-//  String hostPlatformURL
-
-//  static mappedBy = [ids: 'component']
-//  static hasMany = [ids: IdentifierOccurrence]
-
-
-//  static belongsTo = [
-//    pkg:Package,
-//    platform:Platform,
-//    title:TitleInstance
-//  ]
   
   static hasByCombo = [
     pkg 					: Package,
