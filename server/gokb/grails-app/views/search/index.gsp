@@ -86,12 +86,12 @@
                          data-target="#modal"><i class="icon-comment"></i></a>
                     </li>
 
-                    <li>
+                    <!-- li>
                       <a data-toggle="modal" 
                          data-cache="false" 
                          data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
                          data-target="#modal"><i class="icon-file"></i></a>
-                    </li>
+                    </li -->
                     <li>
                       <g:link controller="search" action="index" params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}"><i class="icon-step-backward"></i></g:link>
                     </li>
