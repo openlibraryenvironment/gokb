@@ -213,7 +213,7 @@ abstract class KBComponent {
   
   @Transient
   public String getClassName () {
-	org.hibernate.Hibernate.getClass(this).getSimpleName()
+	org.hibernate.Hibernate.getClass(this).getName()
   }
 
   @Transient
