@@ -202,10 +202,10 @@ abstract class KBComponent {
     combs
   }
   
-  public Date deleteSoft (Date endDate) {
+  public Date deleteSoft (Date endDate = new Date()) {
+
 	// Set the status to deleted.
 	setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
-  	save()
   } 
   
   @Transient
