@@ -82,100 +82,106 @@ class BootStrap {
 
 
   def refdataCats() {
-    RefdataCategory.lookupOrCreate("Component.Status", "Current")
-    RefdataCategory.lookupOrCreate("Component.Status", "Deleted")
-    RefdataCategory.lookupOrCreate("Component.Status", "Expected")
-    RefdataCategory.lookupOrCreate("Component.Status", "Retired")
+    RefdataCategory.lookupOrCreate("KBComponent.Status", "Current")
+    RefdataCategory.lookupOrCreate("KBComponent.Status", "Deleted")
+    RefdataCategory.lookupOrCreate("KBComponent.Status", "Expected")
+    RefdataCategory.lookupOrCreate("KBComponent.Status", "Retired")
 
-    RefdataCategory.lookupOrCreate("Edit.Status", "Approved")
-    RefdataCategory.lookupOrCreate("Edit.Status", "In-Process")
-    RefdataCategory.lookupOrCreate("Edit.Status", "Rejected")
+    RefdataCategory.lookupOrCreate("KBComponent.EditStatus", "Approved")
+    RefdataCategory.lookupOrCreate("KBComponent.EditStatus", "In-Process")
+    RefdataCategory.lookupOrCreate("KBComponent.EditStatus", "Rejected")
 
-    RefdataCategory.lookupOrCreate("tipp.format", "Digitised")
-    RefdataCategory.lookupOrCreate("tipp.format", "Electronic")
-    RefdataCategory.lookupOrCreate("tipp.format", "Print")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Format", "Digitised")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Format", "Electronic")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Format", "Print")
 
-    RefdataCategory.lookupOrCreate("tipp.delatedOA", "No")
-    RefdataCategory.lookupOrCreate("tipp.delatedOA", "Unknown")
-    RefdataCategory.lookupOrCreate("tipp.delatedOA", "Yes")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.DelayedOA", "No")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.DelayedOA", "Unknown")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.DelayedOA", "Yes")
 
-    RefdataCategory.lookupOrCreate("tipp.hybridOA", "No")
-    RefdataCategory.lookupOrCreate("tipp.hybridOA", "Unknown")
-    RefdataCategory.lookupOrCreate("tipp.hybridOA", "Yes")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "No")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "Unknown")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "Yes")
 
-    RefdataCategory.lookupOrCreate("tipp.isPrimary", "Yes")
-    RefdataCategory.lookupOrCreate("tipp.isPrimary", "No")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.IsPrimary", "Yes")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.IsPrimary", "No")
+	
+	RefdataCategory.lookupOrCreate("Package.Scope", "Aggregator")
+	RefdataCategory.lookupOrCreate("Package.Scope", "Back File")
+	RefdataCategory.lookupOrCreate("Package.Scope", "Front File")
+	RefdataCategory.lookupOrCreate("Package.Scope", "Master File")
+	RefdataCategory.lookupOrCreate("Package.ListStatus", "Checked")
+	RefdataCategory.lookupOrCreate("Package.ListStatus", "In Progress")
+	RefdataCategory.lookupOrCreate("Package.Breakable", "No")
+	RefdataCategory.lookupOrCreate("Package.Breakable", "Yes")
+	RefdataCategory.lookupOrCreate("Package.Breakable", "Unknown")
+	RefdataCategory.lookupOrCreate("Package.Consistent", "No")
+	RefdataCategory.lookupOrCreate("Package.Consistent", "Yes")
+	RefdataCategory.lookupOrCreate("Package.Consistent", "Unknown")
+	RefdataCategory.lookupOrCreate("Package.Fixed", "No")
+	RefdataCategory.lookupOrCreate("Package.Fixed", "Yes")
+	RefdataCategory.lookupOrCreate("Package.Fixed", "Unknown")
+    RefdataCategory.lookupOrCreate("Package.PaymentType", "Complimentary")
+    RefdataCategory.lookupOrCreate("Package.PaymentType", "Limited Promotion")
+    RefdataCategory.lookupOrCreate("Package.PaymentType", "Paid")
+    RefdataCategory.lookupOrCreate("Package.PaymentType", "Opt Out Promotion")
+    RefdataCategory.lookupOrCreate("Package.PaymentType", "Uncharged")
+    RefdataCategory.lookupOrCreate("Package.PaymentType", "Unkown")
+	RefdataCategory.lookupOrCreate("Package.Global", "Consortium")
+	RefdataCategory.lookupOrCreate("Package.Global", "Global")
+	RefdataCategory.lookupOrCreate("Package.Global", "Other")
+	
+	RefdataCategory.lookupOrCreate("Platform.AuthMethod", "IP")
+	RefdataCategory.lookupOrCreate("Platform.AuthMethod", "Shibboleth")
+	RefdataCategory.lookupOrCreate("Platform.AuthMethod", "User Password")
+	RefdataCategory.lookupOrCreate("Platform.AuthMethod", "Unknown")
+	
+	RefdataCategory.lookupOrCreate("Platform.Role", "Admin")
+	RefdataCategory.lookupOrCreate("Platform.Role", "Host")
 
-    RefdataCategory.lookupOrCreate("paymentType", "Complimentary")
-    RefdataCategory.lookupOrCreate("paymentType", "Limited Promotion")
-    RefdataCategory.lookupOrCreate("paymentType", "Paid")
-    RefdataCategory.lookupOrCreate("paymentType", "Opt Out Promotion")
-    RefdataCategory.lookupOrCreate("paymentType", "Uncharged")
-    RefdataCategory.lookupOrCreate("paymentType", "Unkown")
+	RefdataCategory.lookupOrCreate("TitleInstance.Material", "A & I Database")
+	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Audio")
+	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Book")
+	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Dataset")
+	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Film")
+	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Image")
+	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Journal")
+	
+	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes")
+	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "No")
+	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Unknown")
+	
+	RefdataCategory.lookupOrCreate("TitleInstance.ReasonRetired", "Ceased")
+	RefdataCategory.lookupOrCreate("TitleInstance.ReasonRetired", "Transferred")
+	
+	RefdataCategory.lookupOrCreate('Org.Mission','Academic')
+	RefdataCategory.lookupOrCreate('Org.Mission','Commercial')
+	RefdataCategory.lookupOrCreate('Org.Mission','Community Agency')
+	RefdataCategory.lookupOrCreate('Org.Mission','Consortium')
+	
+	RefdataCategory.lookupOrCreate('Org.Role','Licensor')
+	RefdataCategory.lookupOrCreate('Org.Role','Licensee')
+	RefdataCategory.lookupOrCreate('Org.Role','Broker')
+	RefdataCategory.lookupOrCreate('Org.Role','Vendor')
+	RefdataCategory.lookupOrCreate('Org.Role','Content Provider')
+	RefdataCategory.lookupOrCreate('Org.Role','Platform Provider')
+	RefdataCategory.lookupOrCreate('Org.Role','Issuing Body')
+	RefdataCategory.lookupOrCreate('Org.Role','Publisher')
+	RefdataCategory.lookupOrCreate('Org.Role','Imprint')
 
-    RefdataCategory.lookupOrCreate("Combo.Status", "Active")
-    RefdataCategory.lookupOrCreate('Org Role','Licensor');
-    RefdataCategory.lookupOrCreate('Org Role','Licensee');
-    RefdataCategory.lookupOrCreate('Org Role','Broker');
-    RefdataCategory.lookupOrCreate('Org Role','Vendor');
-    RefdataCategory.lookupOrCreate('Org Role','Content Provider');
-    RefdataCategory.lookupOrCreate('Org Role','Platform Provider');
-    RefdataCategory.lookupOrCreate('Org Role','Issuing Body');
-    RefdataCategory.lookupOrCreate('Org Role','Publisher');
-
-    RefdataCategory.lookupOrCreate("Package Status", "Aggregator");
-    RefdataCategory.lookupOrCreate("Package Status", "Back File");
-    RefdataCategory.lookupOrCreate("Package Status", "Front File");
-    RefdataCategory.lookupOrCreate("Package Status", "Master File");
-
-    RefdataCategory.lookupOrCreate("Pkg.Breakable", "Yes");
-    RefdataCategory.lookupOrCreate("Pkg.Breakable", "No");
-    RefdataCategory.lookupOrCreate("Pkg.Breakable", "Unknown");
-
-    RefdataCategory.lookupOrCreate("Pkg.Consisitent", "Yes");
-    RefdataCategory.lookupOrCreate("Pkg.Consisitent", "No");
-    RefdataCategory.lookupOrCreate("Pkg.Consisitent", "Unkown");
-
-    RefdataCategory.lookupOrCreate("Pkg.Fixed", "Yes");
-    RefdataCategory.lookupOrCreate("Pkg.Fixed", "No");
-    RefdataCategory.lookupOrCreate("Pkg.Fixed", "Unknown");
-
-    RefdataCategory.lookupOrCreate("Pkg.Global", "Consortium");
-    RefdataCategory.lookupOrCreate("Pkg.Global", "Global");
-    RefdataCategory.lookupOrCreate("Pkg.Global", "Other");
-
-    RefdataCategory.lookupOrCreate("AuthMethod", "IP");
-    RefdataCategory.lookupOrCreate("AuthMethod", "Shibboleth");
-    RefdataCategory.lookupOrCreate("AuthMethod", "User Password");
-    RefdataCategory.lookupOrCreate("AuthMethod", "Unkown");
-
-    RefdataCategory.lookupOrCreate("PlatformRole", "Admin");
-    RefdataCategory.lookupOrCreate("PlatformRole", "Host");
-
-    RefdataCategory.lookupOrCreate("Title.Material", "A & I Database");
-    RefdataCategory.lookupOrCreate("Title.Material", "Audio");
-    RefdataCategory.lookupOrCreate("Title.Material", "Book");
-    RefdataCategory.lookupOrCreate("Title.Material", "Dataset");
-    RefdataCategory.lookupOrCreate("Title.Material", "Film");
-    RefdataCategory.lookupOrCreate("Title.Material", "Image");
-    RefdataCategory.lookupOrCreate("Title.Material", "Journal");
-
-    RefdataCategory.lookupOrCreate("Title.ReasonRetired", "Ceased");
-    RefdataCategory.lookupOrCreate("Title.ReasonRetired", "Transferred");
-
-    RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider");
+//    RefdataCategory.lookupOrCreate("Combo.Type", "Content Provider");
     RefdataCategory.lookupOrCreate("Combo.Status", "Active");
 
-    RefdataCategory.lookupOrCreate('ComboType','Unknown');
-    RefdataCategory.lookupOrCreate('ComboType','Previous');
-    RefdataCategory.lookupOrCreate('ComboType','Model');
-    RefdataCategory.lookupOrCreate('ComboType','Parent');
-    RefdataCategory.lookupOrCreate('ComboType','Translated');
-    RefdataCategory.lookupOrCreate('ComboType','Absorbed');
-    RefdataCategory.lookupOrCreate('ComboType','Merged');
-    RefdataCategory.lookupOrCreate('ComboType','Renamed');
-    RefdataCategory.lookupOrCreate('ComboType','Split');
-    RefdataCategory.lookupOrCreate('ComboType','Transferred');
+//    RefdataCategory.lookupOrCreate('ComboType','Unknown');
+//    RefdataCategory.lookupOrCreate('ComboType','Previous');
+//    RefdataCategory.lookupOrCreate('ComboType','Model');
+//    RefdataCategory.lookupOrCreate('ComboType','Parent');
+//    RefdataCategory.lookupOrCreate('ComboType','Translated');
+//    RefdataCategory.lookupOrCreate('ComboType','Absorbed');
+//    RefdataCategory.lookupOrCreate('ComboType','Merged');
+//    RefdataCategory.lookupOrCreate('ComboType','Renamed');
+//    RefdataCategory.lookupOrCreate('ComboType','Split');
+//    RefdataCategory.lookupOrCreate('ComboType','Transferred');
 
     RefdataCategory.lookupOrCreate('Org.Mission','Academic');
     RefdataCategory.lookupOrCreate('Org.Mission','Commercial');
