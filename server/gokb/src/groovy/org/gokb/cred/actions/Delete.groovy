@@ -11,6 +11,6 @@ class Delete extends A_Action {
     
     // Do the delete action.
     KBComponent comp = param as KBComponent
-    comp.delete()
+    comp.deleteSoft()
   }
 }
