@@ -170,7 +170,7 @@ class BootStrap {
 	RefdataCategory.lookupOrCreate('Org.Role','Imprint')
 
 //    RefdataCategory.lookupOrCreate("Combo.Type", "Content Provider");
-    RefdataCategory.lookupOrCreate("Combo.Status", "Active");
+//    RefdataCategory.lookupOrCreate("Combo.Status", "Active");
 
 //    RefdataCategory.lookupOrCreate('ComboType','Unknown');
 //    RefdataCategory.lookupOrCreate('ComboType','Previous');
