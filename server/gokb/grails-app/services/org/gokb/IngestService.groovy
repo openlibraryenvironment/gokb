@@ -264,8 +264,7 @@ class IngestService {
                                                         endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
                                                         embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
                                                         coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-                                                        coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-                                                        hostPlatformURL:host_platform_url)
+                                                        coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES))
   
   			  // Add each property in turn.
                 gokb_additional_props.each { apd ->

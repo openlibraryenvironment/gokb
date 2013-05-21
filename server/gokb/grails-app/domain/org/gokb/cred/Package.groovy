@@ -23,9 +23,6 @@ class Package extends KBComponent {
   RefdataValue fixed
   RefdataValue paymentType
   RefdataValue global
-  
-  Date dateCreated
-  Date lastUpdated
   RefineProject lastProject
 
 //  static hasMany = [tipps: TitleInstancePackagePlatform]
@@ -46,21 +43,26 @@ class Package extends KBComponent {
   ]
 
   static mapping = {
-//           identifier column:'pkg_identifier'
-          packageType column:'pkg_type_rv_fk'
-        packageStatus column:'pkg_status_rv_fk'
-    packageListStatus column:'pkg_list_status_rv_fk'
-//      nominalPlatform column:'pkg_nominal_platform_fk'
-          lastProject column:'pkg_refine_project_fk'
-//                tipps sort:'title.name', order: 'asc'
+    listStatus column:'pkg_list_status_rv_fk'
+	lastProject column:'pkg_refine_project_fk'
+	scope column:'pkg_scope_rv_fk'
+	breakable column:'pkg_breakable_rv_fk'
+	consistent column:'pkg_consistent_rv_fk'
+	fixed column:'pkg_fixed_rv_fk'
+	paymentType column:'pkg_payment_type_rv_fk'
+	global column:'pkg_global_rv_fk'
   }
 
   static constraints = {
-          packageType(nullable:true, blank:false)
-        packageStatus(nullable:true, blank:false)
-//      nominalPlatform(nullable:true, blank:false)
-    packageListStatus(nullable:true, blank:false)
-          lastProject(nullable:true, blank:false)
+	lastProject		(nullable:true, blank:false)
+	scope 			(nullable:true, blank:false)
+	listStatus		(nullable:true, blank:false)
+	breakable		(nullable:true, blank:false)
+	consistent		(nullable:true, blank:false)
+	fixed			(nullable:true, blank:false)
+	paymentType		(nullable:true, blank:false)
+	global			(nullable:true, blank:false)
+	lastProject		(nullable:true, blank:false)
   }
 
   @Transient

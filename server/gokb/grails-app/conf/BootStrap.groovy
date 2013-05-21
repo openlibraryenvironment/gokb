@@ -103,8 +103,15 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "Unknown")
     RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "Yes")
 
-    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.IsPrimary", "Yes")
-    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.IsPrimary", "No")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "Yes")
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "No")
+	
+	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Complimentary")
+	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Limited Promotion")
+	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Paid")
+	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Opt Out Promotion")
+	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Uncharged")
+	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Unkown")
 	
 	RefdataCategory.lookupOrCreate("Package.Scope", "Aggregator")
 	RefdataCategory.lookupOrCreate("Package.Scope", "Back File")

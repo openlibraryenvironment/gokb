@@ -17,12 +17,17 @@ abstract class KBComponent {
   String shortcode
   
   RefdataValue status
+  RefdataValue editStatus
   
   Set tags = []
   List additionalProperties = []
   List outgoingCombos = []
   List incomingCombos = []
   List ids = []
+  
+  // Timestamps
+  Date dateCreated
+  Date lastUpdated
   
   static mappedBy = [
     ids: 'component',
@@ -48,6 +53,8 @@ abstract class KBComponent {
 	status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
     tags joinTable: [name: 'kb_component_refdata_value', key: 'kbcrdv_kbc_id', column: 'kbcrdv_rdv_id']
+	dateCreated column:'kbc_date_created'
+	lastUpdated column:'kbc_last_updated'
   }
 
   static constraints = {

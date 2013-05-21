@@ -5,16 +5,23 @@ import javax.persistence.Transient
 class TitleInstancePackagePlatform extends KBComponent {
 
   Date startDate
-  String rectype="so"
   String startVolume
   String startIssue
-  Date endDate
-  String endVolume
-  String endIssue
   String embargo
   String coverageDepth
   String coverageNote
-  RefdataValue option
+  RefdataValue format
+  RefdataValue delayedOA
+  String delayedOAEmbargo
+  RefdataValue hybridOA
+  String hybridOAUrl
+  RefdataValue primary
+  RefdataValue paymentType
+//  String rectype="so"
+  Date endDate
+  String endVolume
+  String endIssue
+//  RefdataValue option
   
   static hasByCombo = [
     pkg 					: Package,
@@ -37,8 +44,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   ]
 
   static mapping = {
-               id column:'tipp_id'
-          rectype column:'tipp_rectype'
           version column:'tipp_version'
         startDate column:'tipp_start_date'
       startVolume column:'tipp_start_volume'
@@ -49,7 +54,13 @@ class TitleInstancePackagePlatform extends KBComponent {
           embargo column:'tipp_embargo'
     coverageDepth column:'tipp_coverage_depth'
      coverageNote column:'tipp_coverage_note',type: 'text'
-           option column:'tipp_option_rv_fk'
+		   format column:'tipp_format_rv_fk'
+	    delayedOA column:'tipp_delayed_oa'
+ delayedOAEmbargo column:'tipp_delayed_oa_embargo'
+ 		 hybridOA column:'tipp_hybrid_oa'
+	  hybridOAUrl column:'tipp_hybrid_oa_url'
+	  	  primary column:'tipp_primary'
+	  paymentType column:'tipp_payment_type'
   }
 
   static constraints = {
@@ -62,9 +73,6 @@ class TitleInstancePackagePlatform extends KBComponent {
     embargo(nullable:true, blank:true);
     coverageDepth(nullable:true, blank:true);
     coverageNote(nullable:true, blank:true);
-    impId(nullable:true, blank:true);
-    status(nullable:true, blank:false);
-    option(nullable:true, blank:false);
   }
 
   @Transient

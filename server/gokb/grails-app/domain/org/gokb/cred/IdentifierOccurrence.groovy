@@ -7,16 +7,6 @@ class IdentifierOccurrence {
     identifier:Identifier
   ]
   
-//  public static hasByCombo = [
-//    component:KBComponent,
-//    identifier:Identifier
-//  ]
-//  
-//  public static mappedByCombo = [
-//    component : 'ids',
-//    identifier: 'occurrences'
-//  ]
-  
   static mapping = {
             id column:'io_id'
     identifier column:'io_canonical_id'
