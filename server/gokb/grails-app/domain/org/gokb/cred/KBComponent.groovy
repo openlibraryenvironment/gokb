@@ -55,7 +55,7 @@ abstract class KBComponent {
     name(nullable:true, blank:false, maxSize:2048)
     shortcode(nullable:true, blank:false, maxSize:128)
     normname(nullable:true, blank:false, maxSize:2048)
-    status(nullable:false, blank:false)
+    status(nullable:true, blank:false)
   }
 
 
@@ -134,7 +134,10 @@ abstract class KBComponent {
 	
 	// Check the status
 	if (status == null) {
-	  status = RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_ACTIVE)
+	  // Lookup or create the refdata in a separate session.
+	  RefdataCategory.withNewSession { session ->
+		status = RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_ACTIVE)
+	  }
 	}
   }
 
