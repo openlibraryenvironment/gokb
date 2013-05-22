@@ -21,6 +21,7 @@ class Platform extends KBComponent {
   static manyByCombo = [
 	hostedTipps : TitleInstancePackagePlatform,
 	linkedTipps : TitleInstancePackagePlatform,
+	territories	: Territory
   ]
 
   static mapping = {

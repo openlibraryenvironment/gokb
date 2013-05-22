@@ -15,6 +15,10 @@ class Office extends KBComponent {
   String region
   RefdataValue country
   
+  static manyByCombo = [
+	territories : Territory
+  ]
+  
   static mapping = {
 	website column:'office_website'
 	email column:'office_email'

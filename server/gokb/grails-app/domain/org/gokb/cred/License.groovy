@@ -19,7 +19,7 @@ class License extends KBComponent {
   
   static manyByCombo = [
 	modelledLicenses	: License,
-	apliesIn			: Territory
+	territories			: Territory
   ]
   
   static mappedByCombo = [

@@ -38,6 +38,7 @@ class Package extends KBComponent {
   static manyByCombo = [
 	tipps 				: TitleInstancePackagePlatform,
 	children			: Package,
+	territories			: Territory
   ]
   
   static hasByCombo = [
