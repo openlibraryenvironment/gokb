@@ -24,22 +24,36 @@ class Package extends KBComponent {
   RefdataValue paymentType
   RefdataValue global
   RefineProject lastProject
-
-//  static hasMany = [tipps: TitleInstancePackagePlatform]
-//  static mappedBy = [tipps: 'pkg']
+  
+  static refdataDefaults = [
+	"scope" 		: "Master File",
+	"listStatus"	: "Checked",
+	"breakable"		: "Unknown",
+	"consistent"	: "Unknown",
+	"fixed"			: "Unknown",
+	"paymentType"	: "Unknown",
+	"global"		: "Global"
+  ]
+  
   static manyByCombo = [
 	tipps 				: TitleInstancePackagePlatform,
-	subPkgs				: Package,
+	children			: Package,
   ]
   
   static hasByCombo = [
 	parent				: Package,
+	broker				: Org,
 	provider			: Org,
+	licensor			: Org,
+	vendor				: Org,
 	nominalPlatform		: Platform,
+	'previous'     		: Package,
+	successor     		: Package
   ]
   
   static mappedByCombo = [
-	parent		: 'subPkgs',
+	children    : 'parent',
+	successor	: 'previous',
   ]
 
   static mapping = {
@@ -65,10 +79,10 @@ class Package extends KBComponent {
 	lastProject		(nullable:true, blank:false)
   }
 
-  @Transient
-  def getPermissableCombos() {
-    [
-    ]
-  }
+//  @Transient
+//  def getPermissableCombos() {
+//    [
+//    ]
+//  }
 
 }

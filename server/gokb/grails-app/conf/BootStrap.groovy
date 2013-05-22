@@ -82,10 +82,10 @@ class BootStrap {
 
 
   def refdataCats() {
-    RefdataCategory.lookupOrCreate("KBComponent.Status", "Current")
-    RefdataCategory.lookupOrCreate("KBComponent.Status", "Deleted")
-    RefdataCategory.lookupOrCreate("KBComponent.Status", "Expected")
-    RefdataCategory.lookupOrCreate("KBComponent.Status", "Retired")
+    RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+    RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED)
+    RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
 
     RefdataCategory.lookupOrCreate("KBComponent.EditStatus", "Approved")
     RefdataCategory.lookupOrCreate("KBComponent.EditStatus", "In-Process")
@@ -146,13 +146,13 @@ class BootStrap {
 	RefdataCategory.lookupOrCreate("Platform.Role", "Admin")
 	RefdataCategory.lookupOrCreate("Platform.Role", "Host")
 
-	RefdataCategory.lookupOrCreate("TitleInstance.Material", "A & I Database")
-	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Audio")
-	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Book")
-	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Dataset")
-	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Film")
-	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Image")
-	RefdataCategory.lookupOrCreate("TitleInstance.Material", "Journal")
+	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database")
+	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio")
+	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book")
+	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset")
+	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Film")
+	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image")
+	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Journal")
 	
 	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes")
 	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "No")

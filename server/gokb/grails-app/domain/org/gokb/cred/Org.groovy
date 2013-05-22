@@ -4,27 +4,39 @@ import javax.persistence.Transient
 
 class Org extends KBComponent {
 
-  String address
-  String ipRange
-  String sector
-  String scope
-  Date dateCreated
-  Date lastUpdated
+  RefdataValue mission
 
   static manyByCombo = [
 	providedPackages	: Package,
 	children			: Org,
 	publishedTitles		: TitleInstance,
+	issuedTitles		: TitleInstance,
+	providedPlatforms	: Platform,
+	brokeredPackages	: Package,
+	licensedPackages	: Package,
+	vendedPackages		: Package,
+	offeredLicenses		: License,
+	heldLicenses		: License
   ]
 
   static hasByCombo = [
 	parent      		:  Org,
+	'previous'     		:  Org,
+	successor     		:  Org
   ]
 
   static mappedByCombo = [
 	providedPackages    : 'provider',
+	providedPlatforms   : 'provider',
 	publishedTitles	    : 'publisher',
+	issuedTitles		: 'issuer',
 	children    		: 'parent',
+	successor			: 'previous',
+	brokeredPackages	: 'broker',
+	licensedPackages	: 'licensor',
+	vendedPackages		: 'vendor',
+	offeredLicenses		: 'licensor',
+	heldLicenses		: 'licensee',
   ]
 
   //  static mappedBy = [
@@ -39,24 +51,18 @@ class Org extends KBComponent {
   static mapping = {
 	//         id column:'org_id'
 	//    version column:'org_version'
-	address column:'org_address'
-	ipRange column:'org_ip_range'
-	scope column:'org_scope'
+	mission column:'org_mission_fk_rv'
   }
 
   static constraints = {
-	address(nullable:true, blank:true,maxSize:256);
-	ipRange(nullable:true, blank:true, maxSize:1024);
-	sector(nullable:true, blank:true, maxSize:128);
-	shortcode(nullable:true, blank:true, maxSize:128);
-	scope(nullable:true, blank:true, maxSize:128);
+	mission(nullable:true, blank:true)
   }
 
-  @Transient
-  def getPermissableCombos() {
-	[
-	]
-  }
+//  @Transient
+//  def getPermissableCombos() {
+//	[
+//	]
+//  }
 
   static def refdataFind(params) {
 	def result = [];

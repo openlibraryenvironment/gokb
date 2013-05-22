@@ -17,11 +17,18 @@ class TitleInstancePackagePlatform extends KBComponent {
   String hybridOAUrl
   RefdataValue primary
   RefdataValue paymentType
-//  String rectype="so"
   Date endDate
   String endVolume
   String endIssue
 //  RefdataValue option
+  
+  static refdataDefaults = [
+	"format" 		: "Electronic",
+	"delayedOA"		: "Unknown",
+	"hybridOA"		: "Unknown",
+	"primary"		: "No",
+	"payment"		: "Paid"
+  ]
   
   static hasByCombo = [
     pkg 					: Package,
@@ -44,7 +51,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   ]
 
   static mapping = {
-          version column:'tipp_version'
         startDate column:'tipp_start_date'
       startVolume column:'tipp_start_volume'
        startIssue column:'tipp_start_issue'
@@ -64,15 +70,22 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   static constraints = {
-    startDate(nullable:true, blank:true);
-    startVolume(nullable:true, blank:true);
-    startIssue(nullable:true, blank:true);
-    endDate(nullable:true, blank:true);
-    endVolume(nullable:true, blank:true);
-    endIssue(nullable:true, blank:true);
-    embargo(nullable:true, blank:true);
-    coverageDepth(nullable:true, blank:true);
-    coverageNote(nullable:true, blank:true);
+	startDate (nullable:true, blank:true)
+	startVolume (nullable:true, blank:true)
+	 startIssue (nullable:true, blank:true)
+		endDate (nullable:true, blank:true)
+	  endVolume (nullable:true, blank:true)
+	   endIssue (nullable:true, blank:true)
+		embargo (nullable:true, blank:true)
+  coverageDepth (nullable:true, blank:true)
+   coverageNote (nullable:true, blank:true)
+		 format (nullable:true, blank:true)
+	  delayedOA (nullable:true, blank:true)
+delayedOAEmbargo (nullable:true, blank:true)
+		hybridOA (nullable:true, blank:true)
+	hybridOAUrl (nullable:true, blank:true)
+		  primary (nullable:true, blank:true)
+	paymentType (nullable:true, blank:true)
   }
 
   @Transient

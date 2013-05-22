@@ -4,17 +4,20 @@ import javax.persistence.Transient
 
 class Platform extends KBComponent {
 
-  // String impId
   String primaryUrl
   RefdataValue authentication
-//  String provenance
-//  RefdataValue type
-////  RefdataValue status
-//  Date dateCreated
-//  Date lastUpdated
 
-//  static mappedBy = [tipps: 'platform']
   static hasMany = [roles: RefdataValue]
+  
+  static hasByCombo = [
+	provider			: Org
+  ]
+  
+  static refdataDefaults = [
+	"authentication"	: "Unknown",
+	"roles"				: ["Host"]
+  ]
+  
   static manyByCombo = [
 	hostedTipps : TitleInstancePackagePlatform,
 	linkedTipps : TitleInstancePackagePlatform,
@@ -32,10 +35,10 @@ class Platform extends KBComponent {
     authentication	(nullable:true, blank:false)
   }
 
-  @Transient
-  def getPermissableCombos() {
-    [
-    ]
-  }
+//  @Transient
+//  def getPermissableCombos() {
+//    [
+//    ]
+//  }
 
 }

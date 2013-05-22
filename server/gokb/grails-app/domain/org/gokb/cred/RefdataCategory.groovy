@@ -40,8 +40,8 @@ class RefdataCategory {
     result
   }
 
-  def availableActions() {
-    [ [ code:'object::delete' , label: 'Delete' ] ]
-  }
+//  def availableActions() {
+//    [ [ code:'object::delete' , label: 'Delete' ] ]
+//  }
 
 }

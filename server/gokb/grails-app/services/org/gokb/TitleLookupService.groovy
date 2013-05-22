@@ -63,21 +63,21 @@ class TitleLookupService {
 		
     		// Add a custom ID.	
 			result.addToIds(
-    		  new IdentifierOccurrence(identifier:issn_identifier)
+    		  issn_identifier
     		)
         }
 
         if ( eissn_identifier ) {
     		// Add a custom ID.
     		result.addToIds(
-    		  new IdentifierOccurrence(identifier:eissn_identifier)
+    		  eissn_identifier
     		)
         }
 
 		extra_ids.each { ei ->
           def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
 		  result.addToIds(
-			new IdentifierOccurrence(identifier:additional_identifier)
+			additional_identifier
 		  )
         }
 		

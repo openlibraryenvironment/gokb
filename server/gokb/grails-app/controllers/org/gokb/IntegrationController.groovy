@@ -75,7 +75,7 @@ class IntegrationController {
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})");
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
           located_or_new_org.addToIds(
-            new IdentifierOccurrence(identifier:canonical_identifier)
+            canonical_identifier
           )
 //          def id_occur = new IdentifierOccurrence(identifier:canonical_identifier, component:located_or_new_org);
         }

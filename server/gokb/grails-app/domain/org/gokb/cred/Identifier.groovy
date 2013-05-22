@@ -1,26 +1,26 @@
 package org.gokb.cred
 
-class Identifier {
+class Identifier extends KBComponent {
 
-  IdentifierNamespace ns
+  IdentifierNamespace namespace
   String value
-
-  static hasMany = [ 
-	occurrences		: IdentifierOccurrence
-  ]
-  static mappedBy = [
-	occurrences		: 'identifier'
-  ]
+  KBComponent component
   
-//  public static manyByCombo = [occurrences:IdentifierOccurrence]
+//  static belongsTo = [
+//	component	: KBComponent
+//  ]
+  
+//  static hasByCombo = [
+//	component	: KBComponent
+//  ]
 
   static constraints = {
   }
 
   static mapping = {
-       id column:'id_id'
-       ns column:'id_ns_fk', index:'id_value_idx'
+    namespace column:'id_namespace_fk', index:'id_namespace_fk_idx'
     value column:'id_value', index:'id_value_idx'
+	component column:'id_component_fk', index:'id_component_fk_idx'
   }
 
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
