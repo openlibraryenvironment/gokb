@@ -5,14 +5,6 @@ class Identifier extends KBComponent {
   IdentifierNamespace namespace
   String value
   KBComponent component
-  
-//  static belongsTo = [
-//	component	: KBComponent
-//  ]
-  
-//  static hasByCombo = [
-//	component	: KBComponent
-//  ]
 
   static constraints = {
   }
