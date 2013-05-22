@@ -25,8 +25,9 @@ class Identifier extends KBComponent {
 
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = IdentifierNamespace.findByNs(ns) ?: new IdentifierNamespace(ns:ns).save(failOnError:true);
-    Identifier.findByNsAndValue(namespace,value) ?: new Identifier(ns:namespace, value:value).save(failOnError:true);
+    def namespace = IdentifierNamespace.findByValue(ns) ?: new IdentifierNamespace(value:ns).save(failOnError:true);
+	
+    Identifier.findByNamespaceAndValue(namespace,value) ?: new Identifier(namespace:(namespace), value: (value));
   }
 
 }
