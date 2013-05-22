@@ -20,9 +20,6 @@ abstract class KBComponent {
   static final String EDIT_STATUS_IN_PROGRESS	= "In progress"
   static final String EDIT_STATUS_REJECTED		= "Rejected"
 
-  @Transient
-  GrailsApplication grailsApplication
-
   static auditable = true
 
   static refdataDefaults = [
@@ -30,6 +27,7 @@ abstract class KBComponent {
 	"editStatus"	: EDIT_STATUS_IN_PROGRESS
   ]
 
+  @Transient
   private ensureDefaults () {
 
 	// Metaclass
@@ -191,11 +189,9 @@ abstract class KBComponent {
 	def crit = KBComponent.createCriteria()
 	def lr = crit.list {
 	  ids {
-		identifier {
-		  eq('value',idvalue)
-		  ns {
-			eq('ns',idtype)
-		  }
+		eq('value',idvalue)
+		namespace {
+		  eq('value',idtype)
 		}
 	  }
 	}
