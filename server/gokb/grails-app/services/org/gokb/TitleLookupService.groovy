@@ -35,8 +35,7 @@ class TitleLookupService {
       def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
 	  def tq = ComboCriteria.createFor( TitleInstance.createCriteria() )
       def titles = tq.listDistinct {
-		tq.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
-
+		tq.add('ids', 'in', [[issn_identifier,eissn_identifier]])
       }
 
       if ( titles ) {

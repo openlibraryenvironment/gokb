@@ -16,7 +16,7 @@ abstract class KBComponent {
 
   static final String RD_EDIT_STATUS			= "KBComponent.EditStatus"
   static final String EDIT_STATUS_APPROVED		= "Approved"
-  static final String EDIT_STATUS_IN_PROGRESS	= "In progress"
+  static final String EDIT_STATUS_IN_PROGRESS	= "In Progress"
   static final String EDIT_STATUS_REJECTED		= "Rejected"
 
   static auditable = true

@@ -314,7 +314,7 @@ class ApiController {
 		def orgs = oq.listDistinct {
 		  tags {
 			"owner" {
-			  eq('desc','Org Role');
+			  eq('desc','Org.Role');
 			}
 			eq('value','Content Provider');
 		  }
