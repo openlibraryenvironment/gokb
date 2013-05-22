@@ -815,7 +815,7 @@ class DomainClassExtender {
       // Instantiate the object and save...
       // We really need to save here so we can reference this object within the combos.
       def instance = oldConstructor.newInstance(args)
-//	  if (instance.save(failOnError:true)) {
+	  if (instance.save(failOnError:true)) {
       
         // Now that we have created our instance using the original constructor we can,
         // now set the combo props that were missed.
@@ -827,7 +827,7 @@ class DomainClassExtender {
             instance.setComboProperty(prop, args[prop])
           }
         }
-//	  }
+	  }
       instance
     }
   }
