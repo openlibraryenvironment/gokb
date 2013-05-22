@@ -25,7 +25,7 @@ class Package extends KBComponent {
   RefdataValue global
   RefineProject lastProject
   
-  static refdataDefaults = [
+  final static refdataDefaults = [
 	"scope" 		: "Master File",
 	"listStatus"	: "Checked",
 	"breakable"		: "Unknown",

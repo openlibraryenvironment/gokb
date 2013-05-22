@@ -13,7 +13,7 @@ class Platform extends KBComponent {
 	provider			: Org
   ]
   
-  static refdataDefaults = [
+  final static refdataDefaults = [
 	"authentication"	: "Unknown",
 	"roles"				: ["Host"]
   ]

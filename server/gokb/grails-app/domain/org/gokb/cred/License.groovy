@@ -5,7 +5,7 @@ class License extends KBComponent {
   String		file
   RefdataValue	type
   
-  static refdataDefaults = [
+  final static refdataDefaults = [
 	"type" 		: "Template"
   ]
   

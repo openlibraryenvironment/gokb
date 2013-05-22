@@ -11,7 +11,7 @@ class TitleInstance extends KBComponent {
   
   String imprint
   
-  static refdataDefaults = [
+  final static refdataDefaults = [
 	"Medium"		: "Journal",
 	"pureOA"		: "No"
   ]

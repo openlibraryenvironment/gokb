@@ -22,7 +22,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   String endIssue
 //  RefdataValue option
   
-  static refdataDefaults = [
+  final static refdataDefaults = [
 	"format" 		: "Electronic",
 	"delayedOA"		: "Unknown",
 	"hybridOA"		: "Unknown",

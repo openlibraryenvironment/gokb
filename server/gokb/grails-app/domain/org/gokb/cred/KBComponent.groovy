@@ -21,10 +21,12 @@ abstract class KBComponent {
 
   static auditable = true
 
-  static refdataDefaults = [
+  private static refdataDefaults = [
 	"status" 		: STATUS_CURRENT,
 	"editStatus"	: EDIT_STATUS_IN_PROGRESS
   ]
+
+  private static final Map fullDefaultsForClass = [:]
 
   @Transient
   private ensureDefaults () {
@@ -32,59 +34,99 @@ abstract class KBComponent {
 	// Metaclass
 	ExpandoMetaClass mc = getMetaClass()
 
-	// Get the property values for the current class implementation.
-	Map defaults = mc.getProperty(this.getClass(), this.getClass(), "refdataDefaults", true, true)
+	// First get or build up the full static map of defaults
+	final Class rootClass = mc.getTheClass()
+	Map defaultsForThis = fullDefaultsForClass.get(rootClass.getName())
+	if (defaultsForThis == null) {
+	  
+	  defaultsForThis = [:]
+
+	  // Default to the root.
+	  Class theClass = rootClass
+
+	  // Try and get the map.
+	  Map classMap
+	  while (theClass) {
+
+		try {
+		  // Read the classMap
+		  classMap = mc.getProperty(
+			rootClass,
+			theClass,
+			"refdataDefaults",
+			false,
+			true
+		  )
+		} catch (MissingPropertyException e) {
+		  // Catch the error and just set to null.
+		  classMap = null
+		}
+		
+		// If we have values then add.
+		if (classMap) {
+
+		  // Add using the class simple name.
+		  defaultsForThis[theClass.getSimpleName()] = classMap
+		}
+
+		// Get the superclass.
+		theClass = theClass.getSuperclass()
+	  }
+
+	  // Once we have added each map to our map add to the global map.
+	  fullDefaultsForClass[rootClass.getName()] = defaultsForThis
+	}
 
 	// Check we have some defaults.
-	if (defaults) {
-
-	  // The className
-	  String className = mc.getTheClass().getSimpleName()
-
-	  // DomainClassArtefactHandler for this class
-	  GrailsDomainClass dClass = this.domainClass
-
-	  // Create a pointer to this so that we can access within the each closure below.
+	if (defaultsForThis) {
+	  
+	  // Create a pointer to this so that we can access within the closures below.
 	  KBComponent thisComponent = this
 
-	  // Add each property and value to the properties in the defaults.
-	  defaults.each {String property, values ->
+	  // DomainClassArtefactHandler for this class
+	  GrailsDomainClass dClass = thisComponent.domainClass
+	  
+	  defaultsForThis.each { String className, defaults ->
 
-		if (thisComponent."${property}" == null) {
+		// Add each property and value to the properties in the defaults.
+		defaults.each {String property, values ->
 
-		  // Get the type defined against the class.
-		  String propType = dClass.getPropertyByName(property)?.getType()?.getName()
+		  if (thisComponent."${property}" == null) {
 
-		  if (propType) {
+			// Get the type defined against the class.
+			String propType = dClass.getPropertyByName(property)?.getType()?.getName()
 
-			switch (propType) {
-			  case RefdataValue.class.getName() :
+			if (propType) {
 
-			    // Expecting refdata value. Do the lookup in a new session.
-			    def vals
-				
-				KBComponent.withNewSession { session ->
-				  String key = "${className}.${GrailsNameUtils.getClassName(property)}"
+			  switch (propType) {
+				case RefdataValue.class.getName() :
 
-				  if (values instanceof Collection) {
-					vals = []
-					values.each { val ->
-					  vals << RefdataCategory.lookupOrCreate(key, val)
+				// Expecting refdata value. Do the lookup in a new session.
+				  def vals
+
+				  KBComponent.withNewSession { session ->
+					String key = "${className}.${GrailsNameUtils.getClassName(property)}"
+
+					if (values instanceof Collection) {
+					  vals = []
+					  values.each { val ->
+						vals << RefdataCategory.lookupOrCreate(key, val)
+					  }
+
+					} else {
+
+					  vals = RefdataCategory.lookupOrCreate(key, values)
 					}
-    				  
-				  } else {
-				  
-					vals = RefdataCategory.lookupOrCreate(key, values)
 				  }
-				}
-				  
-				// Set the default.
-				thisComponent."${property}" = vals
-				break
-			  default :
-			  	// Just treat as a normal prop
-				thisComponent."${property}" = values
-				break
+
+				  // Set the default.
+				  thisComponent."${property}" = vals
+				  break
+				default :
+				  // Just treat as a normal prop
+				  thisComponent."${property}" = values
+				  break
+			  }
 			}
 		  }
 		}
@@ -111,13 +153,13 @@ abstract class KBComponent {
   Date dateCreated
   Date lastUpdated
 
-//  static manyByCombo = [
-//	ids      :  Identifier,
-//  ]
+  //  static manyByCombo = [
+  //	ids      :  Identifier,
+  //  ]
 
-//  static mappedByCombo = [
-//	ids      :  'component',
-//  ]
+  //  static mappedByCombo = [
+  //	ids      :  'component',
+  //  ]
 
   static mappedBy = [
 	outgoingCombos: 'fromComponent',
@@ -232,7 +274,7 @@ abstract class KBComponent {
 
 	result
   }
-  
+
   protected def generateNormname () {
 	if (!normname && name) {
 	  normname = name.toLowerCase().trim()
@@ -244,10 +286,10 @@ abstract class KBComponent {
 	// Generate the any necessary values.
 	generateShortcode()
 	generateNormname()
-	
+
 	// Ensure any defaults defined get set.
 	ensureDefaults()
-	
+
   }
 
   def beforeUpdate() {

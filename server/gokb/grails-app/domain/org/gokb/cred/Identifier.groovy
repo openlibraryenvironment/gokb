@@ -7,6 +7,9 @@ class Identifier extends KBComponent {
   KBComponent component
 
   static constraints = {
+    namespace (nullable:true, blank:true)
+    value (nullable:true, blank:true)
+	component (nullable:true, blank:true)
   }
 
   static mapping = {
