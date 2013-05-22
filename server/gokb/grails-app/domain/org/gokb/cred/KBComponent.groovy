@@ -152,10 +152,11 @@ abstract class KBComponent {
 
   static constraints = {
 	//    impId(nullable:true, blank:false)
-	name(nullable:true, blank:false, maxSize:2048)
-	shortcode(nullable:true, blank:false, maxSize:128)
-	normname(nullable:true, blank:false, maxSize:2048)
-	status(nullable:true, blank:false)
+	name		(nullable:true, blank:false, maxSize:2048)
+	shortcode	(nullable:true, blank:false, maxSize:128)
+	normname	(nullable:true, blank:false, maxSize:2048)
+	status		(nullable:true, blank:false)
+	editStatus	(nullable:true, blank:false)
   }
 
 
