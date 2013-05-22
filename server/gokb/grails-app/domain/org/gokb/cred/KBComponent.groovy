@@ -157,6 +157,17 @@ abstract class KBComponent {
 	editStatus	(nullable:true, blank:false)
   }
 
+  /**
+   * Defined parameter-less method to allow for overrides in classes, wishing to define
+   * their own way of generating a shortcode.
+   * @return
+   */
+  protected def generateShortcode () {
+	if (!shortcode && name) {
+	  // Generate the short code.
+	  shortcode = generateShortcode(name)
+	}
+  }
 
   static def generateShortcode(name) {
 	def candidate = name.trim().replaceAll(" ","_")
@@ -221,24 +232,22 @@ abstract class KBComponent {
 
 	result
   }
+  
+  protected def generateNormname () {
+	if (!normname && name) {
+	  normname = name.toLowerCase().trim()
+	}
+  }
 
   def beforeInsert() {
-	if ( name ) {
-	  if ( !shortcode ) {
-		shortcode = generateShortcode(name);
-	  }
-	  normname = name.toLowerCase().trim();
-	}
 
-	//	// Check the status
-	//	if (status == null) {
-	//	  // Lookup or create the refdata in a separate session.
-	//	  RefdataCategory.withNewSession { session ->
-	//		status = RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT)
-	//	  }
-	//	}
-
+	// Generate the any necessary values.
+	generateShortcode()
+	generateNormname()
+	
+	// Ensure any defaults defined get set.
 	ensureDefaults()
+	
   }
 
   def beforeUpdate() {
