@@ -14,6 +14,13 @@ class Identifier extends KBComponent {
     value column:'id_value', index:'id_value_idx'
 	component column:'id_component_fk', index:'id_component_fk_idx'
   }
+  
+  @Override
+  protected def generateNormname () {
+	if (!normname && namespace && value) {
+	  normname = "${namespace.value}:${value}".toLowerCase().trim()
+	}
+  }
 
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
