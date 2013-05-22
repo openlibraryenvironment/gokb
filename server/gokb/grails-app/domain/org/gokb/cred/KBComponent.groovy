@@ -1,11 +1,10 @@
 package org.gokb.cred
 
-import javax.persistence.Transient
 import grails.util.GrailsNameUtils
-import org.codehaus.groovy.grails.commons.GrailsApplication
+
+import javax.persistence.Transient
+
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
-import org.hibernate.Hibernate
-import org.codehaus.groovy.grails.commons.DomainClassArtefactHandler
 
 abstract class KBComponent {
 
@@ -34,16 +33,15 @@ abstract class KBComponent {
 	ExpandoMetaClass mc = getMetaClass()
 
 	// Get the property values for the current class implementation.
-	Map defaults = mc.getProperty(getClass(), getClass(), "refdataDefaults", true, true)
+	Map defaults = mc.getProperty(this.getClass(), this.getClass(), "refdataDefaults", true, true)
 
 	// Check we have some defaults.
 	if (defaults) {
 
 	  // The className
-	  String className = Hibernate.getClass(getClass()).getSimpleName()
+	  String className = mc.getTheClass().getSimpleName()
 
 	  // DomainClassArtefactHandler for this class
-	  def domainDescriptor = grailsApplication.getArtefact(DomainClassArtefactHandler.TYPE, className)
 	  GrailsDomainClass dClass = this.domainClass
 
 	  // Create a pointer to this so that we can access within the each closure below.
@@ -315,7 +313,7 @@ abstract class KBComponent {
 
   @Transient
   public String getClassName () {
-	Hibernate.getClass(this).getName()
+	getMetaClass().getTheClass().getName()
   }
 
   //  @Transient

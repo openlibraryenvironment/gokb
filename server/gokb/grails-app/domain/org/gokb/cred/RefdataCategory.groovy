@@ -33,8 +33,8 @@ class RefdataCategory {
     def result = RefdataValue.findByOwnerAndValue(cat, value)
 
     if ( !result ) {
-      new RefdataValue(owner:cat, value:value).save(flush:true);
-      result = RefdataValue.findByOwnerAndValue(cat, value);
+      new RefdataValue(owner:cat, value:value).save()
+      result = RefdataValue.findByOwnerAndValue(cat, value)
     }
 
     result
