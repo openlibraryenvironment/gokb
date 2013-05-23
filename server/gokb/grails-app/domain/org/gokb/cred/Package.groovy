@@ -16,7 +16,6 @@ class Package extends KBComponent {
 
   // Refdata
   RefdataValue scope
-//  RefdataValue type
   RefdataValue listStatus
   RefdataValue breakable
   RefdataValue consistent
@@ -26,7 +25,7 @@ class Package extends KBComponent {
   RefineProject lastProject
   
   private static refdataDefaults = [
-	"scope" 		: "Master File",
+	"scope" 		: "Front File",
 	"listStatus"	: "Checked",
 	"breakable"		: "Unknown",
 	"consistent"	: "Unknown",
