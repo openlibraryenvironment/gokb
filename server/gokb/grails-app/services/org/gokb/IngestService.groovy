@@ -117,6 +117,8 @@ class IngestService {
    *  @param project_data Parsed map of project data
    */
   def ingest(project_data, project_id) {
+	// Return result.
+	def result = [:]
     try {
       log.debug("Ingest");
   
@@ -129,7 +131,6 @@ class IngestService {
 		project = RefineProject.get(project_id)
 		
 		log.debug ("Project ${project}")
-        def result = [:]
         result.status = project_data ? true : false
         result.messages = []
     
@@ -326,8 +327,6 @@ class IngestService {
       def project_info = RefineProject.get(project.id)
       project_info.progress = 100;
       project_info.save(failOnError:true)
-	  
-	  return result
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);
@@ -339,6 +338,8 @@ class IngestService {
     finally {
       log.debug("Ingest complete");
     }
+	
+	result
   }
 
   def getRowValue(datarow, col_positions, colname) {
