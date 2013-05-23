@@ -10,15 +10,14 @@
   <tr><td>Internal Id</td>            <td>${d.id}</td></tr>
   <tr><td>Package Name</td>           <td>${d.name}</td></tr>
   <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
-  <tr><td>Tags</td>                   <td>${d.shortcode}</td></tr>
+  <tr><td>Provider</td>              <td>${d.provider.name}</td></tr>
   <tr><td>Status</td>                 <td><span class="ipe" 
                                                 data-pk="${d.getClassName()}:${d.id}" 
                                                 data-type="select" 
                                                 data-name="packageStatus"
                                                 data-url="<g:createLink controller='ajaxSupport' action='setRef'/>",
-                                                data-source="<g:createLink controller='ajaxSupport' action='getRefdata' id='PackageStatus'/>">${d.packageStatus?.value?:'Not Set'}</span></td></tr>
+                                                data-source="<g:createLink controller='ajaxSupport' action='getRefdata' id='KBComponent.Status'/>">${d.status?.value?:'Not Set'}</span></td></tr>
   <tr><td>Breakable</td>              <td>${d.breakable?.value?:'Not Set'}</td></tr>
-  <tr><td>Parent</td>                 <td>${d.parent?.value?:'Not Set'}</td></tr>
   <tr><td>Global</td>                 <td>${d.global?.value?:'Not Set'}</td></tr>
   <tr><td>Fixed</td>                  <td>${d.fixed?.value?:'Not Set'}</td></tr>
   <tr><td>Consistent</td>             <td>${d.consistent?.value?:'Not Set'}</td></tr>
@@ -38,7 +37,7 @@
     </ul></td></tr>
 </tbody></table>
 <table class="table table-bordered table-striped" style="clear: both"><tbody>
-  <tr><td><g:link controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:'2953']" id="">Titles in this package</g:link></td></tr>
+  <tr><td><g:link controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link></td></tr>
 </tbody></table>
 <script language="JavaScript">
   $(document).ready(function() {

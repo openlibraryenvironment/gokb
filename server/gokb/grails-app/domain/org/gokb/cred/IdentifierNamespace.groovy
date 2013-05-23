@@ -2,13 +2,13 @@ package org.gokb.cred
 
 class IdentifierNamespace {
 
-  String ns
+  String value
 
   static mapping = {
-    id column:'idns_id'
-    ns column:'idns_ns'
+    value column:'idns_value'
   }
 
   static constraints = {
+	value (nullable:true, blank:false)
   }
 }

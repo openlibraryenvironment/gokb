@@ -159,5 +159,7 @@ auditLog {
     return username
   }  
 }
-
+grails.gorm.default.constraints = {
+  '*'(nullable: true, blank:false)
+}
 //grails.gorm.failOnError=true

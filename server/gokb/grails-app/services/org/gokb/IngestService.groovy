@@ -40,6 +40,7 @@ class IngestService {
   static String ONLINE_IDENTIFIER = 'title.identifier.eissn'
   static String HOST_PLATFORM_NAME = 'platform.host.name'
   static String HOST_PLATFORM_URL = 'platform.host.url'
+  static String HOST_PLATFORM_BASE_URL = 'platform.host.base.url'
 
   static String COVERAGE_DEPTH = 'coveragedepth'
   static String COVERAGE_NOTES = 'coveragenotes'
@@ -117,6 +118,8 @@ class IngestService {
    *  @param project_data Parsed map of project data
    */
   def ingest(project_data, project_id) {
+	// Return result.
+	def result = [:]
     try {
       log.debug("Ingest");
   
@@ -129,7 +132,6 @@ class IngestService {
 		project = RefineProject.get(project_id)
 		
 		log.debug ("Project ${project}")
-        def result = [:]
         result.status = project_data ? true : false
         result.messages = []
     
@@ -225,7 +227,7 @@ class IngestService {
                 platform_info = new Platform(
   				name:host_platform_name,
   				normname:host_norm_platform_name,
-  				primaryUrl:host_platform_url
+  				primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
   			  )
                 if (! platform_info.save(failOnError:true) ) {
                   platform_info.errors.each { e ->
@@ -253,29 +255,31 @@ class IngestService {
   			  // We have a Tipp.
               if ( !tipp ) {
                 log.debug("Create new tipp")
-                tipp = new TitleInstancePackagePlatform(title:title_info,
-                                                        pkg:pkg,
-                                                        hostPlatform:platform_info,
-                                                        startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-                                                        startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-                                                        startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-                                                        endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-                                                        endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-                                                        endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-                                                        embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-                                                        coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-                                                        coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-                                                        hostPlatformURL:host_platform_url)
+                tipp = new TitleInstancePackagePlatform(
+					title:title_info,
+					pkg:pkg,
+					hostPlatform:platform_info,
+					startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+					startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+					startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+					endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+					endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+					endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+					embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+					url:host_platform_url
+				)
   
-  			  // Add each property in turn.
-                gokb_additional_props.each { apd ->
-                  tipp.additionalProperties.add (
-  				  new KBComponentAdditionalProperty(
-  					propertyDefn:apd.pd,
-                      apValue:getRowValue(datarow,apd.col)
-  				  )
-  				)
-                }
+  			  	// Add each property in turn.
+				gokb_additional_props.each { apd ->
+				  tipp.additionalProperties.add (
+					new KBComponentAdditionalProperty(
+					  propertyDefn:apd.pd,
+					  apValue:getRowValue(datarow,apd.col)
+					)
+				  )
+				}
                 
   			  	// Save the tipp.
 				tipp.save(failOnError:true)
@@ -289,7 +293,7 @@ class IngestService {
               // instances we've just looked up.
               if ( ctr % 25 == 0 ) {
   			  
-  			  // Clean up the GORM.
+  			  	// Clean up the GORM.
                 cleanUpGorm()
   			  
                 // Update project progress indicator, save in db so any observers can see progress
@@ -327,8 +331,6 @@ class IngestService {
       def project_info = RefineProject.get(project.id)
       project_info.progress = 100;
       project_info.save(failOnError:true)
-	  
-	  return result
     }
     catch ( Exception e ) {
       log.error("Problem processing project ingest.",e);
@@ -340,6 +342,8 @@ class IngestService {
     finally {
       log.debug("Ingest complete");
     }
+	
+	result
   }
 
   def getRowValue(datarow, col_positions, colname) {
@@ -694,24 +698,8 @@ class IngestService {
 	  pkg = new Package(
 		  name:(pkg_name),
 		  provider: (provider),
-		  packageStatus:RefdataCategory.lookupOrCreate("Pkg.Status", "Current"),
-		  packageScope:RefdataCategory.lookupOrCreate("Pkg.Scope", "Front File"),
-		  breakable:RefdataCategory.lookupOrCreate("Pkg.Breakable", "Y"),
-//		  parent:RefdataCategory.lookupOrCreate("Pkg.Parent", "N"),
-		  global:RefdataCategory.lookupOrCreate("Pkg.Global", "Y"),
-		  fixed:RefdataCategory.lookupOrCreate("Pkg.Fixed", "Y"),
-		  consistent:RefdataCategory.lookupOrCreate("Pkg.Consisitent", "N"),
 		  lastProject:project
 	  ).save(failOnError:true)
-
-      // create a Combo linking this package to it's content provider
-//      def cp_combo = new Combo(fromComponent:project.provider,
-//                               toComponent:pkg,
-//                               type:RefdataCategory.lookupOrCreate("Combo.Type", "ContentProvider"),
-//                               status:RefdataCategory.lookupOrCreate("Combo.Status", "Active"))
-//
-//
-//      cp_combo.save()
     }
     else {
       log.debug("Got existing package ${pkg.id}");

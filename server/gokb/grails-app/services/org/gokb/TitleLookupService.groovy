@@ -31,13 +31,18 @@ class TitleLookupService {
       }
       
       // Use the ids to check for a TitleInstance.
-      def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
-      def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
-	  def tq = ComboCriteria.createFor( TitleInstance.createCriteria() )
-      def titles = tq.listDistinct {
-		tq.add('ids.identifier', 'in', [[issn_identifier,eissn_identifier]])
-
-      }
+      Identifier issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
+      Identifier eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
+	  
+	  def tq = ComboCriteria.createFor(TitleInstance.createCriteria())
+	  def titles = tq.listDistinct {
+		ids {
+		  or {
+			 if (issn_identifier) eq ("id", issn_identifier.id)
+			 if (eissn_identifier) eq ("id", eissn_identifier.id)
+		  }
+		}
+	  }
 
       if ( titles ) {
         switch ( titles.size() ) {
@@ -63,21 +68,21 @@ class TitleLookupService {
 		
     		// Add a custom ID.	
 			result.addToIds(
-    		  new IdentifierOccurrence(identifier:issn_identifier)
+    		  issn_identifier
     		)
         }
 
         if ( eissn_identifier ) {
     		// Add a custom ID.
     		result.addToIds(
-    		  new IdentifierOccurrence(identifier:eissn_identifier)
+    		  eissn_identifier
     		)
         }
 
 		extra_ids.each { ei ->
           def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
 		  result.addToIds(
-			new IdentifierOccurrence(identifier:additional_identifier)
+			additional_identifier
 		  )
         }
 		

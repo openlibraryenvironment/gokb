@@ -20,8 +20,13 @@ class RefdataValue {
   static constraints = {
     icon(nullable:true)
   }
-
-  def availableActions() {
-    [ [ code:'object::delete' , label: 'Delete' ] ]
+  
+  @Override
+  public String toString() {
+	return "${value}"
   }
+
+//  def availableActions() {
+//    [ [ code:'object::delete' , label: 'Delete' ] ]
+//  }
 }

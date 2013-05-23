@@ -75,22 +75,30 @@ class IntegrationController {
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})");
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
           located_or_new_org.addToIds(
-            new IdentifierOccurrence(identifier:canonical_identifier)
+            canonical_identifier
           )
 //          def id_occur = new IdentifierOccurrence(identifier:canonical_identifier, component:located_or_new_org);
         }
+		
+		// roles
+		log.debug("Role Processing: ${request.JSON.flags}");
+		request.JSON.roles.each { r ->
+		  log.debug("Adding role ${r}");
+		  def role = RefdataCategory.lookupOrCreate("Org.Role", r)
+		  located_or_new_org.addToRoles(
+			role
+		  )
+		}
 
         // flags
         log.debug("Flag Processing: ${request.JSON.flags}");
         request.JSON.flags.each { f ->
           log.debug("Adding flag ${f.flagType},${f.flagValue}");
-          def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue);
-//          located_or_new_org.tags.add(flag);
+          def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue)
           located_or_new_org.addToTags(
             flag
           )
         }
-//        located_or_new_org.save(flush:true, failOnError : true);
 
         log.debug("Combo processing: ${request.JSON.combos}");
 
@@ -98,12 +106,9 @@ class IntegrationController {
         request.JSON.combos.each { c ->
           log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
           def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
-          // def reloaded_from = KBComponent.get(located_or_new_org.id)
-//          def reloaded_from = located_or_new_org.refresh();
-//          if ( ( located_component != null ) && ( reloaded_from != null ) ) {
+		  
+		  // Located a component.
           if ( ( located_component != null ) ) {
-//            def combo_type = RefdataCategory.lookupOrCreate('ComboType',c.linkType)
-//            def combo = new Combo(fromComponent:reloaded_from,toComponent:located_component,type:combo_type).save(flush:true, failOnError : true);
             def combo = new Combo(
               RefdataCategory.lookupOrCreate('ComboType',c.linkType)
             )
