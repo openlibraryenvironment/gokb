@@ -31,7 +31,7 @@ class Identifier extends KBComponent {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = IdentifierNamespace.findByValue(ns) ?: new IdentifierNamespace(value:ns).save(failOnError:true);
 	
-    Identifier.findByNamespaceAndValue(namespace,value) ?: new Identifier(namespace:(namespace), value: (value)).save(failOnError:true)
+    Identifier.findByNamespaceAndValue(namespace,value) ?: new Identifier(namespace:(namespace), value: (value))
   }
 
 }

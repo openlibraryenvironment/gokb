@@ -37,7 +37,10 @@ class TitleLookupService {
 	  def tq = ComboCriteria.createFor(TitleInstance.createCriteria())
 	  def titles = tq.listDistinct {
 		ids {
-		  "in" ("id", [issn_identifier.id, eissn_identifier.id])
+		  or {
+			 if (issn_identifier) eq ("id", issn_identifier.id)
+			 if (eissn_identifier) eq ("id", eissn_identifier.id)
+		  }
 		}
 	  }
 
