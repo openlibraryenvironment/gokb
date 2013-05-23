@@ -2,11 +2,10 @@ package org.gokb
 
 import static java.util.UUID.randomUUID
 import grails.converters.JSON
-import grails.plugins.springsecurity.Secured
-import org.codehaus.groovy.grails.orm.hibernate.HibernateSession
+
+import org.gokb.cred.Org
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
-import org.gokb.cred.Org;
 
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
@@ -312,7 +311,7 @@ class ApiController {
 	  case 'cp' :
 		def oq = Org.createCriteria()
 		def orgs = oq.listDistinct {
-		  tags {
+		  roles {
 			"owner" {
 			  eq('desc','Org.Role');
 			}
