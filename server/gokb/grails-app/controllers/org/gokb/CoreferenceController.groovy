@@ -16,8 +16,8 @@ class CoreferenceController {
 
       def q = new DetachedCriteria(Identifier).build {
         if ( params.nspart ) {
-          ns {
-            eq('ns',params.nspart)
+          namespace {
+            eq('value',params.nspart)
           }
         }
         eq('value',params.idpart)
@@ -29,7 +29,7 @@ class CoreferenceController {
         log.debug("Recognised identifier.. find all occurrences");
         def q2 = new DetachedCriteria(KBComponent).build {
           ids {
-            eq('identifier',int_id)
+            eq ("id", int_id.id)
           }
         }
         result.identifier = int_id
@@ -50,7 +50,7 @@ class CoreferenceController {
         def rec_identifiers = []
         rec_identifiers.add(['namespace':'gokb','identifier':"${result.identifier.class.name}:${result.identifier.id}"])
         r.ids.each { rid ->
-          rec_identifiers.add(['namespace':rid.identifier.ns.ns,'identifier':rid.identifier.value])
+          rec_identifiers.add(['namespace':rid.namespace.value,'identifier':rid.value])
         }
         api_response.records.add(['type':r.class.name,
                                    'id':r.id,

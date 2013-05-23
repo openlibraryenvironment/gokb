@@ -53,11 +53,11 @@
            </thead>
            <tbody>
              <g:each in="${records}" var="i">
-               <tr><td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}">${i.class.name}:${i.id}</g:link></td>
-                   <td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}">${i.name}</g:link></td>
+               <tr><td><g:link controller="resource" action="show" id="${i.getClassName()}:${i.id}">${i.getClassName()}:${i.id}</g:link></td>
+                   <td><g:link controller="resource" action="show" id="${i.getClassName()}:${i.id}">${i.name}</g:link></td>
                    <td>
                      <g:each in="${i.ids}" var="sa">
-                       <g:link controller="coreference" action="index" params="${[nspart:sa.identifier.ns.ns,idpart:sa.identifier.value]}">${sa.identifier.ns.ns} ${sa.identifier.value}</g:link>
+                       <g:link controller="coreference" action="index" params="${[nspart:sa.namespace.value,idpart:sa.value]}">${sa.namespace.value}:${sa.value}</g:link>
                        <br/>
                      </g:each>
                    </td>

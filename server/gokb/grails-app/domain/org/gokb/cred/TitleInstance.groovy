@@ -8,7 +8,6 @@ class TitleInstance extends KBComponent {
   RefdataValue	medium
   RefdataValue	pureOA
   RefdataValue	reasonRetired
-  
   String imprint
   
   final static refdataDefaults = [
@@ -39,6 +38,7 @@ class TitleInstance extends KBComponent {
 	medium (nullable:true, blank:false)
 	pureOA (nullable:true, blank:false)
 	reasonRetired (nullable:true, blank:false)
+	imprint (nullable:true, blank:false)
   }
 
 //  @Transient

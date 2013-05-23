@@ -184,10 +184,11 @@ abstract class KBComponent {
 	normname column:'kbc_normname'
 	status column:'kbc_status_rv_fk'
 	shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
-	tags joinTable: [name: 'kb_component_refdata_value', key: 'kbcrdv_kbc_id', column: 'kbcrdv_rdv_id']
+	tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
 	dateCreated column:'kbc_date_created'
 	lastUpdated column:'kbc_last_updated'
 	ids column:'kbc_identifier_fk', index:'kbc_identifier_fk_idx'
+//	ids joinTable: [name: 'kb_component_ids', key: 'kbcids_kbc_id', column: 'kbcids_identifier_id']
   }
 
   static constraints = {

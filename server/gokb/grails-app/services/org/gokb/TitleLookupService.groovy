@@ -31,12 +31,15 @@ class TitleLookupService {
       }
       
       // Use the ids to check for a TitleInstance.
-      def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
-      def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
-	  def tq = ComboCriteria.createFor( TitleInstance.createCriteria() )
-      def titles = tq.listDistinct {
-		tq.add('ids', 'in', [[issn_identifier,eissn_identifier]])
-      }
+      Identifier issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
+      Identifier eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
+	  
+	  def tq = ComboCriteria.createFor(TitleInstance.createCriteria())
+	  def titles = tq.listDistinct {
+		ids {
+		  "in" ("id", [issn_identifier.id, eissn_identifier.id])
+		}
+	  }
 
       if ( titles ) {
         switch ( titles.size() ) {

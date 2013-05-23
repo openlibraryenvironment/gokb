@@ -23,7 +23,7 @@
 	  <dd>
 	    <ul>
 	      <g:each in="${d.ids}" var="id">
-	        <li>${id.identifier.ns.ns}:${id.identifier.value}</li>
+	        <li>${id.namespace.value}:${id.value}</li>
 	      </g:each>
 	    </ul>
 	  </dd>

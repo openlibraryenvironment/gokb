@@ -5,6 +5,8 @@ class Identifier extends KBComponent {
   IdentifierNamespace namespace
   String value
   KBComponent component
+  
+  static belongsTo = [KBComponent]
 
   static constraints = {
     namespace (nullable:true, blank:true)
