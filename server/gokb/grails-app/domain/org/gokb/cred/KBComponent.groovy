@@ -5,6 +5,7 @@ import grails.util.GrailsNameUtils
 import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
+import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 
 abstract class KBComponent {
 
@@ -94,33 +95,30 @@ abstract class KBComponent {
 		  if (thisComponent."${property}" == null) {
 
 			// Get the type defined against the class.
-			String propType = dClass.getPropertyByName(property)?.getType()?.getName()
+			GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
+			String propType = propertyDef?.getReferencedPropertyType()?.getName()
 
 			if (propType) {
 
 			  switch (propType) {
 				case RefdataValue.class.getName() :
 
-				// Expecting refdata value. Do the lookup in a new session.
-				  def vals
-
+				  // Expecting refdata value. Do the lookup in a new session.
 				  KBComponent.withNewSession { session ->
-					String key = "${className}.${GrailsNameUtils.getClassName(property)}"
+					final String ucProp = GrailsNameUtils.getClassName(property);
+					final String key = "${className}.${ucProp}"
 
 					if (values instanceof Collection) {
-					  vals = []
 					  values.each { val ->
-						vals << RefdataCategory.lookupOrCreate(key, val)
+						thisComponent."addTo${ucProp}" ( RefdataCategory.lookupOrCreate(key, val) )
+//						vals << RefdataCategory.lookupOrCreate(key, val)
 					  }
 
 					} else {
-
-					  vals = RefdataCategory.lookupOrCreate(key, values)
+					  // Set the default.
+					  thisComponent."${property}" = RefdataCategory.lookupOrCreate(key, values)
 					}
 				  }
-
-				  // Set the default.
-				  thisComponent."${property}" = vals
 				  break
 				default :
 				  // Just treat as a normal prop

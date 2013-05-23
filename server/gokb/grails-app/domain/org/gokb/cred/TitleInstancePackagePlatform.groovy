@@ -20,14 +20,13 @@ class TitleInstancePackagePlatform extends KBComponent {
   Date endDate
   String endVolume
   String endIssue
-//  RefdataValue option
   
-  final static refdataDefaults = [
+  private static refdataDefaults = [
 	"format" 		: "Electronic",
 	"delayedOA"		: "Unknown",
 	"hybridOA"		: "Unknown",
 	"primary"		: "No",
-	"payment"		: "Paid"
+	"paymentType"	: "Paid"
   ]
   
   static hasByCombo = [

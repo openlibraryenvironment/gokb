@@ -10,8 +10,8 @@ class TitleInstance extends KBComponent {
   RefdataValue	reasonRetired
   String imprint
   
-  final static refdataDefaults = [
-	"Medium"		: "Journal",
+  private static refdataDefaults = [
+	"medium"		: "Journal",
 	"pureOA"		: "No"
   ]
 
