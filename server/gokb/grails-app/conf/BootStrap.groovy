@@ -190,11 +190,6 @@ class BootStrap {
 //    RefdataCategory.lookupOrCreate('ComboType','Split').save()
 //    RefdataCategory.lookupOrCreate('ComboType','Transferred').save()
 
-    RefdataCategory.lookupOrCreate('Org.Mission','Academic').save()
-    RefdataCategory.lookupOrCreate('Org.Mission','Commercial').save()
-    RefdataCategory.lookupOrCreate('Org.Mission','Community Agency').save()
-    RefdataCategory.lookupOrCreate('Org.Mission','Consortium').save()
-
     RefdataCategory.lookupOrCreate('License.Type','Template').save()
     RefdataCategory.lookupOrCreate('License.Type','Other').save()
   }
