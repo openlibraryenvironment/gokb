@@ -74,7 +74,7 @@ while ((nl = r.readNext()) != null) {
       [identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[0]}".toString()]
     ],
     combos:[],
-    flags:[]
+    flags:[],
 	roles:[]
   ]
 
