@@ -9,14 +9,14 @@
   </div>
   <div class="control-group">
     <dt>Description</dt>
-    <dd><g:xEditable owner="${d}" field="desc">${d.desc}</g:xEditable></dd>
+    <dd>${d.desc}</dd>
   </div>
   <div class="control-group">
     <dt>Values</dt>
     <dd>
       <ul>
         <g:each in="${d.values}" var="v">
-          <li><g:xEditable owner="${v}" field="value">${v.value}</g:xEditable></li>
+          <li>${v.value}</li>
         </g:each>
         <hr/>
         <h4>Add refdata value</h4>
