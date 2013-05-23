@@ -111,7 +111,6 @@ abstract class KBComponent {
 					if (values instanceof Collection) {
 					  values.each { val ->
 						thisComponent."addTo${ucProp}" ( RefdataCategory.lookupOrCreate(key, val) )
-//						vals << RefdataCategory.lookupOrCreate(key, val)
 					  }
 
 					} else {
@@ -177,7 +176,6 @@ abstract class KBComponent {
   static mapping = {
 	id column:'kbc_id'
 	version column:'kbc_version'
-	//    impId column:'kbc_imp_id', index:'kbc_imp_id_idx'
 	name column:'kbc_name'
 	normname column:'kbc_normname'
 	status column:'kbc_status_rv_fk'
@@ -186,11 +184,9 @@ abstract class KBComponent {
 	dateCreated column:'kbc_date_created'
 	lastUpdated column:'kbc_last_updated'
 	ids column:'kbc_identifier_fk', index:'kbc_identifier_fk_idx'
-//	ids joinTable: [name: 'kb_component_ids', key: 'kbcids_kbc_id', column: 'kbcids_identifier_id']
   }
 
   static constraints = {
-	//    impId(nullable:true, blank:false)
 	name		(nullable:true, blank:false, maxSize:2048)
 	shortcode	(nullable:true, blank:false, maxSize:128)
 	normname	(nullable:true, blank:false, maxSize:2048)
