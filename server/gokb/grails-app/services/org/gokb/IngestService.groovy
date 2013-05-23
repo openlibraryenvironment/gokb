@@ -267,7 +267,8 @@ class IngestService {
 					endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
 					embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
 					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES)
+					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+					url:host_platform_url
 				)
   
   			  	// Add each property in turn.

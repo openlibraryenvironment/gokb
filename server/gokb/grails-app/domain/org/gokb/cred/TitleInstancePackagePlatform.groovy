@@ -20,6 +20,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   Date endDate
   String endVolume
   String endIssue
+  String url
   
   private static refdataDefaults = [
 	"format" 		: "Electronic",

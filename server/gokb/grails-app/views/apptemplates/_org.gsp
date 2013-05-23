@@ -8,7 +8,23 @@
   <dd>${d.id}</dd>
   <dt>Org Name</dt>
   <dd><g:xEditable owner="${d}" field="name">${d.name}</g:xEditable></dd>
-  <g:if test="${ d.tags?.size() > 0 }" >
+  <dt>Status</dt><dd><span class="ipe" 
+         data-pk="${d.getClassName()}:${d.id}" 
+         data-type="select" 
+         data-name="packageStatus"
+         data-url="<g:createLink controller='ajaxSupport' action='setRef'/>",
+         data-source="<g:createLink controller='ajaxSupport' action='getRefdata' id='KBComponent.Status'/>">${d.status?.value?:'Not Set'}</span></dd>
+  <g:if test="${ d.roles?.size() > 0 }" >
+	  <dt>Roles</dt>
+	  <dd>
+	    <ul>
+	      <g:each in="${d.roles.sort({"${it.value}"})}" var="t">
+	        <li>${t.value}</li>
+	      </g:each>
+	    </ul>
+	  </dd>
+	</g:if>
+	<g:if test="${ d.tags?.size() > 0 }" >
 	  <dt>Tags</dt>
 	  <dd>
 	    <ul>
@@ -63,4 +79,9 @@
 	  </dd>
   </g:if>
 </dl>
-
+<script language="JavaScript">
+  $(document).ready(function() {
+    $.fn.editable.defaults.mode = 'inline';
+    $('.ipe').editable();
+  });
+</script>

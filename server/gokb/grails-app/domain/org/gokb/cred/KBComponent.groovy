@@ -13,7 +13,7 @@ abstract class KBComponent {
   static final String STATUS_CURRENT 			= "Current"
   static final String STATUS_DELETED 			= "Deleted"
   static final String STATUS_EXPECTED 			= "Expected"
-  static final String STATUS_RETIRED 			= "Deleted"
+  static final String STATUS_RETIRED 			= "Retired"
 
   static final String RD_EDIT_STATUS			= "KBComponent.EditStatus"
   static final String EDIT_STATUS_APPROVED		= "Approved"
