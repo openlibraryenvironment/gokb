@@ -346,12 +346,12 @@ class SearchController {
 //            placeholder:'Content Provider ID',
 //            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.provider.id', 'type' : 'java.lang.Long']
 //          ],
-//          [
-//            prompt:'Package ID',
-//            qparam:'qp_pkg_id',
-//            placeholder:'Package ID',
-//            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
-//          ],
+          [
+            prompt:'Package ID',
+            qparam:'qp_pkg_id',
+            placeholder:'Package ID',
+            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
+          ],
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
