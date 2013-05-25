@@ -355,7 +355,8 @@ class SearchController {
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Title', property:'title.name']
+          [heading:'Title', property:'title.name'],
+          [heading:'Package', property:'pkg.name']
         ]
       ]
     ],
