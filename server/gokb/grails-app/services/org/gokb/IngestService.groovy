@@ -64,16 +64,10 @@ class IngestService {
       log.debug("Processing of ingest file completed ok, validating");
     }
     else {
-      log.debug("Processing of ingest file completed ok, validating");
+      log.debug("Processing of ingest file failed, unable to vlidate.");
       result.messages.add([text:'Unable to process ingest file at this time']);
       return result
     }
-
-    def print_identifier_col = null;
-    def online_identifier_col = null;
-    def publication_title_col = null;
-    def platform_host_name_col = null;
-    def platform_host_url_col = null;
 
     def col_positions = [:]
     project_data.columnDefinitions?.each { cd ->
@@ -111,6 +105,55 @@ class IngestService {
     }
 
     result
+  }
+  
+  /**
+   * Estimate the number of each component that would be Created/Updated as a result of ingesting this data.
+   */
+  def estimateChanges(project_data) {
+    def col_positions = [:]
+    project_data.columnDefinitions.each { cd ->
+      col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
+    }
+
+    // Track any additional title identifiers.
+    def additional_identifiers = []
+    project_data.columnDefinitions?.each { cd ->
+      def cn = cd.name?.toLowerCase()
+      if (cn.startsWith('title.identifier.') ) {
+        def idparts = cn.split('.')
+        if ( idparts.size == 3 ) {
+          if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
+            // Skip issn/eissn.
+          }
+          else {
+            additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
+          }
+        }
+      }
+    }
+
+    log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
+
+    int ctr = 0
+    boolean row_level_problems = false
+    
+    // Go through each row.
+    project_data.rowData.each { datarow ->
+      
+      log.debug("Row ${ctr} ${datarow}");
+      if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+
+        try {
+        
+          def extra_ids = []
+          additional_identifiers.each { ai ->
+            extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+          }
+        } catch (Throwable t) {
+        }
+      }
+    }
   }
 
   /**
@@ -184,9 +227,7 @@ class IngestService {
       int ctr = 0
       boolean row_level_problems = false
 	  
-	  // Get the current transaction and commit it before we start adding tipps.
-//	  sessionFactory.currentSession.getTransaction().commit()
-	  
+      // Go through each row.
       project_data.rowData.each { datarow ->
 		
 		// Transaction for each row.
@@ -610,11 +651,11 @@ class IngestService {
           def rule_in_db = Rule.findByScopeAndProviderAndFingerprint('provider',provider,fingerprint)
           if ( !rule_in_db ) {
             rule_in_db = new Rule(
-                                 scope:scope,
-                                 provider: provider,
-                                 fingerprint: fingerprint,
-                                 ruleJson: "${r.operation as JSON}",
-                                 description: "${r.operation.description}"
+               scope:scope,
+               provider: provider,
+               fingerprint: fingerprint,
+               ruleJson: "${r.operation as JSON}",
+               description: "${r.operation.description}"
             )
             if ( rule_in_db.save(failOnError:true) ) {
             }
@@ -674,8 +715,6 @@ class IngestService {
   }
 
   def getOrCreatePackage(String name, project_id) {
-	//TODO: Need to sort this identifier out.
-//    def pkg = Package.findByIdentifier(identifier);
 	
 	RefineProject project = RefineProject.get(project_id)
 	
