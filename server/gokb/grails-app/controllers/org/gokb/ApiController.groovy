@@ -71,6 +71,44 @@ class ApiController {
   def describe() {
 	apiReturn(RefineOperation.findAll ())
   }
+  
+  def estimateDataChanges() {
+    log.debug("Try to estimate what changes will occur in CRED for data in zip file.")
+    def f = request.getFile('dataZip')
+    def result = [:]
+    
+    if (f && !f.empty) {
+      
+      log.debug ("Got file saving and parsing.")
+      // Save the file temporarily...
+      def temp_data_zipfile
+      try {
+        
+        // Temporary file.
+        temp_data_zipfile = File.createTempFile(
+          Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
+        )
+        f.transferTo(temp_data_zipfile)
+        def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+        
+        log.debug("Try and predetermine the changes.");
+        result = ingestService.estimateChanges(parsed_project_file, params.projectID)
+        
+      } finally {
+        if ( temp_data_zipfile ) {
+          try {
+            temp_data_zipfile.delete();
+          }
+          catch ( Throwable t ) {
+          }
+        }
+      }
+    } else {
+      log.debug("No dataZip file request attribute supplied.")
+    }
+    
+    apiReturn ( result )
+  }
 
   def saveOperations() {
 	// Get the operations as a list.

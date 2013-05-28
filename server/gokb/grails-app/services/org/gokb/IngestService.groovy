@@ -8,6 +8,7 @@ import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.archivers.*
 import org.codehaus.groovy.grails.orm.hibernate.HibernateSession
 import grails.converters.JSON
+import grails.gorm.DetachedCriteria
 import grails.orm.HibernateCriteriaBuilder
 import java.text.SimpleDateFormat
 
@@ -110,7 +111,19 @@ class IngestService {
   /**
    * Estimate the number of each component that would be Created/Updated as a result of ingesting this data.
    */
-  def estimateChanges(project_data) {
+  def estimateChanges(project_data, project_id = null) {
+    
+    // The result object.
+    def result = []
+    
+    // Default all our counters.
+    int ctr             = 0
+    int titleRows       = 0
+    int existingTipps   = 0
+    int newPkgs         = 0
+    int existingPlats   = 0
+    
+    // Read in the column positions.
     def col_positions = [:]
     project_data.columnDefinitions.each { cd ->
       col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
@@ -133,27 +146,121 @@ class IngestService {
       }
     }
 
-    log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
-
-    int ctr = 0
-    boolean row_level_problems = false
+    log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}")
     
-    // Go through each row.
-    project_data.rowData.each { datarow ->
+    // If a project id has been supplied
+    if (project_id != null) {
+      log.debug("Using refine project id ${project_id}.")
+    
+      // Check the package.
+      RefineProject project = RefineProject.get(project_id)
       
-      log.debug("Row ${ctr} ${datarow}");
-      if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
-
-        try {
+      // The provider.
+      Org provider = project.provider
+      
+      // Create the package name.
+      def pkg_name = "${provider.name}:${project_id}"
+      
+      log.debug("Checking for existing package with name ${pkg_name}, for provider ${provider.name}.")
+      
+      // Try and find a package for the provider with the name entered.
+      def q = ComboCriteria.createFor(Package.createCriteria())
+      def pkg = q.get {
+        q.add ("name", "eq", pkg_name)
+        q.add ("provider", "eq", provider)
+      }
+      
+      // Package found.
+      if (!pkg) newPkgs ++
+      
+    } else {
+      log.debug("No refine project id supplied. Assuming new package.")
+      newPkgs ++
+    }
+      
+    // Add to the results.
+    result << [ type : "packages", "new" : newPkgs, "updated" : (1 - newPkgs) ]
+    
+    // Create the set for the platforms.
+    Set platformNames   = []
+    
+    // Go through each row and build up the tipp criteria.
+    DetachedCriteria tippCrit = new DetachedCriteria(Identifier).build {
+      distinct ("id")
+      ids {
         
-          def extra_ids = []
-          additional_identifiers.each { ai ->
-            extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+        or {
+      
+          project_data.rowData.each { datarow ->
+            if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+              
+              def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+              def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+  
+              // Just add the normname to the platforms list.
+              platformNames << host_norm_platform_name
+              
+              // (e)issns.
+              def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
+              def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
+              
+              // issn query.
+              if (issn != null) {
+                and {
+                  eq ("value", issn)
+                  namespace {
+                    eq ("value", "issn") 
+                  }
+                }
+              }
+              
+              // eissn query
+              if (eissn != null) {
+                and {
+                  eq ("value", eissn)
+                  namespace {
+                    eq ("value", "eissn")
+                  }
+                }
+              }
+      
+              // Each additional identifier type.
+              additional_identifiers.each { ai ->
+                and {
+                  eq ("value", datarow.cells[ai.colno])
+                  namespace {
+                    eq ("value", ai.type)
+                  }
+                }
+              }
+              
+              // increment the titleRows counter.
+              titleRows ++
+            }
+            
+            // Increment the row counter.
+            ctr ++
           }
-        } catch (Throwable t) {
         }
       }
     }
+    
+    // We should now have a query that we can execute to determine (roughly) how many Tipps will be added.
+    existingTipps = tippCrit.count()
+    result << [ type : "tipps", "new" : (titleRows - existingTipps), "updated" : existingTipps ]
+    
+    // Host platform criteria...
+    DetachedCriteria platCrit = new DetachedCriteria(Platform).build {
+      distinct ("id")
+      'in' ("normname", platformNames)
+    }
+    
+    // Run a count.
+    existingPlats = platCrit.count()
+    result << [ type : "platforms", "new" : (platformNames - existingPlats), "updated" : existingPlats ]
+    
+    // Return the result.
+    result
   }
 
   /**
