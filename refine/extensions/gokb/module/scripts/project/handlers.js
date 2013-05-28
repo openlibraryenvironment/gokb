@@ -148,6 +148,55 @@ GOKb.handlers.history = function() {
 	});
 };
 
+GOKb.handlers.estimateChanges = function () {
+	
+  // Get the current project ID
+  var params = {"project" : theProject.id};
+	
+  // Post the columns to the service
+  GOKb.doCommand (
+    "project-estimate-changes",
+    params,
+    null,
+    {
+    	onDone : function (data) {
+    		
+    		if ("result" in data && "status" in data.result) {
+    			
+    			alert (data);
+    			
+    			var dialog = GOKb.createDialog("Applied Operations");
+    			if ("entries" in data && data.entries.length > 0) {
+    				
+    				// Build a JSON data object to display to the user.
+    				var DTDdata = [];
+    				$.each(data.entries, function () {
+    					if ("operation" in this) {
+    						
+    						// Include only operations.
+    						DTDdata.push([this.description]);
+    					}
+    				});
+    				
+    				// Create a table from the data.
+    				var table = GOKb.toTable (
+    				  ["Operation"],
+    				  DTDdata
+    				);
+    				
+    				// Append the table
+    				table.appendTo(dialog.bindings.dialogContent);
+    			}
+    		}
+    		
+    		if (onDoneFunc) {
+    			onDoneFunc();
+    		}
+    	}
+  	}
+  );
+}
+
 GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 	
 	// Get the dynamic form...
