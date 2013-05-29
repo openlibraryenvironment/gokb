@@ -117,11 +117,11 @@ class IngestService {
     def result = []
     
     // Default all our counters.
-    int ctr             = 0
-    int titleRows       = 0
-    int existingTipps   = 0
-    int newPkgs         = 0
-    int existingPlats   = 0
+    long ctr             = 0
+    long titleRows       = 0
+    long existingTitles  = 0
+    long newPkgs         = 0
+    long existingPlats   = 0
     
     // Read in the column positions.
     def col_positions = [:]
@@ -185,8 +185,7 @@ class IngestService {
     Set platformNames   = []
     
     // Go through each row and build up the tipp criteria.
-    DetachedCriteria tippCrit = new DetachedCriteria(Identifier).build {
-      distinct ("id")
+    existingTitles = TitleInstance.createCriteria().get {
       ids {
         
         or {
@@ -243,11 +242,14 @@ class IngestService {
           }
         }
       }
+      
+      projections {
+        countDistinct("id")
+      }
     }
     
     // We should now have a query that we can execute to determine (roughly) how many Tipps will be added.
-    existingTipps = tippCrit.count()
-    result << [ type : "tipps", "new" : (titleRows - existingTipps), "updated" : existingTipps ]
+    result << [ type : "titles", "new" : (titleRows - existingTitles), "updated" : existingTitles ]
     
     // Host platform criteria...
     DetachedCriteria platCrit = new DetachedCriteria(Platform).build {
@@ -257,7 +259,7 @@ class IngestService {
     
     // Run a count.
     existingPlats = platCrit.count()
-    result << [ type : "platforms", "new" : (platformNames - existingPlats), "updated" : existingPlats ]
+    result << [ type : "platforms", "new" : (platformNames.size() - existingPlats), "updated" : existingPlats ]
     
     // Return the result.
     result
@@ -384,13 +386,13 @@ class IngestService {
                 }
               }
       
-              // Does the row specify a package?
+            // Does the row specify a package?
   			def pkg_name_from_row = "${project.id}"
   
   			// The package.
             def pkg = getOrCreatePackage(pkg_name_from_row, project.id);
     
-              // Try and lookup a tipp.
+            // Try and lookup a tipp.
   			def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
               def tipp = crit.get {
                 and {
