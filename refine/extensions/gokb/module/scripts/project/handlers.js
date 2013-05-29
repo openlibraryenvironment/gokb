@@ -150,47 +150,58 @@ GOKb.handlers.history = function() {
 
 GOKb.handlers.estimateChanges = function () {
 	
-  // Get the current project ID
-  var params = {"project" : theProject.id};
-	
-  // Post the columns to the service
+  // Get the estimated changes.
   GOKb.doCommand (
     "project-estimate-changes",
-    params,
+    {"project" : theProject.id},
     null,
     {
     	onDone : function (data) {
     		
-    		if ("result" in data && "status" in data.result) {
+    		if ("result" in data && data.result.length > 0) {
+
+    			// Create the dialog.
+    			var dialog = GOKb.createDialog("Estimated changes to data");
     			
-    			alert (data);
+    			// Add some text.
+    			dialog.bindings.dialogContent.append(
+    			  $("<p/>")
+    			  	.text("Please review the following estimated data changes that would result from ingesting this project.")
+    			);
+
+    			// Build a JSON data object to display to the user.
+    			var DTDdata = [];
+    			$.each(data.result, function () {
+
+  					// Add the row.
+  					DTDdata.push([this.type, "" + this["new"], "" + this.updated]);
+    			});
+
+    			// Create a table from the data.
+    			var table = GOKb.toTable (
+            ["Component", "To be created", "To be updated"],
+            DTDdata
+    			);
+
+    			// Append the table
+    			table.appendTo(dialog.bindings.dialogContent);
     			
-    			var dialog = GOKb.createDialog("Applied Operations");
-    			if ("entries" in data && data.entries.length > 0) {
+    			// Add a button confirm the ingest process.
+    			$("<button>Proceed with Ingest</button>").addClass("button").click(function() {
     				
-    				// Build a JSON data object to display to the user.
-    				var DTDdata = [];
-    				$.each(data.entries, function () {
-    					if ("operation" in this) {
-    						
-    						// Include only operations.
-    						DTDdata.push([this.description]);
-    					}
-    				});
+    				// Close this dialog.
+    				dialog.close();
     				
-    				// Create a table from the data.
-    				var table = GOKb.toTable (
-    				  ["Operation"],
-    				  DTDdata
-    				);
+    				// Fire the next stage of the ingest.
+    				GOKb.handlers.checkInWithProps({ingest : true});
     				
-    				// Append the table
-    				table.appendTo(dialog.bindings.dialogContent);
-    			}
-    		}
-    		
-    		if (onDoneFunc) {
-    			onDoneFunc();
+    			}).appendTo(
+    			  // Append to the footer.
+    			  dialog.bindings.dialogFooter
+    			);
+    			
+    			// Show the dialog.
+    			GOKb.showDialog(dialog);
     		}
     	}
   	}

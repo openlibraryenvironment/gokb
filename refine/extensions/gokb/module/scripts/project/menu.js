@@ -6,13 +6,13 @@ var standardMenuItems = [
 		  GOKb.handlers.suggest();
 	  }
 	},
-	{
-		"id" : "gokb-menu-estimate-changes",
-	  label: "Estimate Data Changes",
-	  click: function() { 
-		  GOKb.handlers.estimateChanges();
-	  }
-	}
+//	{
+//		"id" : "gokb-menu-estimate-changes",
+//	  label: "Estimate Data Changes",
+//	  click: function() { 
+//		  GOKb.handlers.estimateChanges();
+//	  }
+//	}
 ];
 
 // Load the project metadata.
