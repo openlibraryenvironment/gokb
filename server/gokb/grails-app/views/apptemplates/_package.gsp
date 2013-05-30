@@ -8,6 +8,16 @@
 
 <table class="table table-bordered table-striped" style="clear: both"><tbody>
   <tr><td>Internal Id</td>            <td>${d.id}</td></tr>
+  <g:if test="${ d.ids?.size() > 0 }" >
+	  <tr>
+	  	<td>Identifiers</td>
+	  	<td><ul>
+	      <g:each in="${d.ids}" var="id" >
+	        <li>${id.namespace.value}:${id.value}</li>
+	      </g:each>
+	    </ul></td>
+	  </tr>
+  </g:if>
   <tr><td>Package Name</td>           <td>${d.name}</td></tr>
   <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
   <tr><td>Provider</td>              <td>${d.provider.name}</td></tr>

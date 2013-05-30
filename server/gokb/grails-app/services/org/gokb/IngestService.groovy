@@ -158,16 +158,22 @@ class IngestService {
       // The provider.
       Org provider = project.provider
       
-      // Create the package name.
-      def pkg_name = "${provider.name}:${project_id}"
+      // Combine to create the package Identifier.
+      def pkg_identifier = "${provider.name}:${project_id}"
       
-      log.debug("Checking for existing package with name ${pkg_name}, for provider ${provider.name}.")
+      log.debug("Checking for existing package with name ${pkg_identifier}, for provider ${provider.name}.")
       
       // Try and find a package for the provider with the name entered.
-      def q = ComboCriteria.createFor(Package.createCriteria())
+      def q = Package.createCriteria()
       def pkg = q.get {
-        q.add ("name", "eq", pkg_name)
-        q.add ("provider", "eq", provider)
+        ids {
+          and {
+            namespace {
+              eq ("value", 'gokb-pkgid')
+            }
+            eq ("value", pkg_identifier)
+          }
+        }
       }
       
       // Package found.
@@ -386,11 +392,12 @@ class IngestService {
                 }
               }
       
-            // Does the row specify a package?
-  			def pkg_name_from_row = "${project.id}"
+            // Does the row specify a package identifier?
+            // TODO: This needs to lookup a column instead of just using null.
+  			def pkg_identifier_from_row = null
   
   			// The package.
-            def pkg = getOrCreatePackage(pkg_name_from_row, project.id);
+            def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
     
             // Try and lookup a tipp.
   			def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
@@ -823,31 +830,57 @@ class IngestService {
     }
   }
 
-  def getOrCreatePackage(String name, project_id) {
+  def getOrCreatePackage(String identifier, project_id) {
+    
+    // Read the project.
+    RefineProject project = RefineProject.get(project_id)
+    
+    // The provider.
+    Org provider = project.provider
 	
-	RefineProject project = RefineProject.get(project_id)
-	
-	// The provider.
-	Org provider = project.provider
-	
-	// Create the package name.
-	def pkg_name = "${provider.name}:${name}"
+    // If identifier supplied, then use that. Otherwise, generate.
+    def pkg_identifier = "${identifier}"
+    
+    if (pkg_identifier == null || pkg_identifier == "") {
+      
+      // Derive the package identifier from the project info.
+      pkg_identifier = "${provider.name}:${project.id}"
+    }
 	
 	// Try and find a package for the provider with the name entered.
 	def q = ComboCriteria.createFor(Package.createCriteria())
 	def pkg = q.get {
-	  q.add ("name", "eq", pkg_name)
-	  q.add ("provider", "eq", provider)
+      ids {
+        and {
+          namespace {
+            eq ("value", 'gokb-pkgid')
+          }
+          eq ("value", pkg_identifier)
+        }
+      }
 	}
 	
-	// Package found.
+	// Package found?
     if (!pkg) {
-      log.debug("New package with name ${name} for ${provider.name}");
-	  pkg = new Package(
-		  name:(pkg_name),
-		  provider: (provider),
+      log.debug("New package with identifier ${pkg_identifier} for ${provider.name}");
+	  
+      // Create a new package.
+      pkg = new Package(
+		  name:       (provider.name),
+		  provider:   (provider),
 		  lastProject:project
-	  ).save(failOnError:true)
+	  )
+      
+      // Add a new identifier to the package.
+      pkg.addToIds(
+        new Identifier (
+          namespace : new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true),
+          value : pkg_identifier
+        )
+      );
+    
+      // Save the package.
+      pkg.save(failOnError:true)
     }
     else {
       log.debug("Got existing package ${pkg.id}");

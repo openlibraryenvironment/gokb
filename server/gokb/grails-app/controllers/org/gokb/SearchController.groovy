@@ -223,7 +223,7 @@ class SearchController {
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Name/Identifier', property:'name'],
+          [heading:'Name', property:'name'],
           [heading:'Nominal Platform', property:'nominalPlatform?.name']
         ]
       ]
