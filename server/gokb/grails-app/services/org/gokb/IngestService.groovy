@@ -730,7 +730,7 @@ class IngestService {
     if ( datestr && ( datestr.length() > 0 ) )
     for(Iterator i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
       try {
-        parsed_date = i.next().parse(datestr);
+        parsed_date = i.next().parse(datestr.replaceAll('-','/'));
       }
       catch ( Exception e ) {
       }
