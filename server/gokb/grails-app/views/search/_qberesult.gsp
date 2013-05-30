@@ -7,7 +7,6 @@
    <caption>Search results</caption>
     <thead>
       <tr>
-        <th>row#</th>
         <g:each in="${qbeConfig.qbeResults}" var="c">
           <th>${c.heading}</th>
         </g:each>
@@ -17,7 +16,7 @@
     <tbody>
       <g:each in="${rows}" var="r">
         <tr class="${++counter==det ? 'success':''}">
-          <td>${counter}</td>
+          <!-- Row ${counter} -->
           <g:each in="${qbeConfig.qbeResults}" var="c">
             <td>${groovy.util.Eval.x(r, 'x.' + c.property)}</td>
           </g:each>
