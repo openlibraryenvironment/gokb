@@ -94,7 +94,7 @@ class IntegrationController {
         log.debug("Flag Processing: ${request.JSON.flags}");
         request.JSON.flags.each { f ->
           log.debug("Adding flag ${f.flagType},${f.flagValue}");
-          def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue)
+          def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue).save()
           located_or_new_org.addToTags(
             flag
           )

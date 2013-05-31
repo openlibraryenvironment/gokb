@@ -332,7 +332,7 @@ class IngestService {
         def cn = cd.name?.toLowerCase()
         if (cn.startsWith('gokb.') ) {
           def prop_name = cn.substring(5,cn.length());
-          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name);
+          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save();
           gokb_additional_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
         }
       }
