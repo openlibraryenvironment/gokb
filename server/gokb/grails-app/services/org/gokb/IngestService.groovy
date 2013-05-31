@@ -877,7 +877,7 @@ class IngestService {
           value : pkg_identifier
         ).save()
 
-      pkg.addToIds(new_identifier)
+      pkg.ids.add(new_identifier)
     
       // Save the package.
       pkg.save(failOnError:true)
