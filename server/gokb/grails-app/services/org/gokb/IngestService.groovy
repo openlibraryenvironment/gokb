@@ -332,7 +332,7 @@ class IngestService {
         def cn = cd.name?.toLowerCase()
         if (cn.startsWith('gokb.') ) {
           def prop_name = cn.substring(5,cn.length());
-          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save();
+          def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true);
           gokb_additional_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
         }
       }
@@ -430,10 +430,15 @@ class IngestService {
   
   			  	// Add each property in turn.
 				gokb_additional_props.each { apd ->
-                                  def ap = new KBComponentAdditionalProperty(
-                                          propertyDefn:apd.pd,
-                                          apValue:getRowValue(datarow,apd.col))
-				  tipp.additionalProperties.add (ap)
+                                  // Done this way because I was worried about the prop defn crossing the transaction start boundary above
+                                  def prop_defn = AdditionalPropertyDefinition.findBypropertyName(apd.prop_name)
+                                  if ( prop_defn != null ) {
+                                    def ap = new KBComponentAdditionalProperty( propertyDefn:prop_defn, apValue:getRowValue(datarow,apd.col))
+				    tipp.additionalProperties.add (ap)
+                                  }
+                                  else {
+                                    log.error("Unable to locate property definition with name ${apd.prop_name}");
+                                  }
 				}
                 
   			  	// Save the tipp.
