@@ -869,9 +869,11 @@ class IngestService {
 		  lastProject:project
 	  )
       
+      def ns = IdentifierNamespace.findByValue(gokb-pkgid) ?:  new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true);
+
       // Add a new identifier to the package.
       def new_identifier = new Identifier (
-          namespace : new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true),
+          namespace : ns,
           value : pkg_identifier
         ).save()
 
