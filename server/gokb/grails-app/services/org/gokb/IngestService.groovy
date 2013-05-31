@@ -430,12 +430,10 @@ class IngestService {
   
   			  	// Add each property in turn.
 				gokb_additional_props.each { apd ->
-				  tipp.additionalProperties.add (
-					new KBComponentAdditionalProperty(
-					  propertyDefn:apd.pd,
-					  apValue:getRowValue(datarow,apd.col)
-					)
-				  )
+                                  def ap = new new KBComponentAdditionalProperty(
+                                          propertyDefn:apd.pd,
+                                          apValue:getRowValue(datarow,apd.col)).save();
+				  tipp.additionalProperties.add (ap)
 				}
                 
   			  	// Save the tipp.
