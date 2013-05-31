@@ -49,5 +49,8 @@ drop table rule;
 drop table user;
 drop table user_role;
 drop table utils;
+drop table kb_component_tags_value;
+drop table org_refdata_value;
+drop table platform_refdata_value;
 
 SET foreign_key_checks = 1;
