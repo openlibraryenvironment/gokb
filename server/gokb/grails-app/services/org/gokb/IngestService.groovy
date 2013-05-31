@@ -845,13 +845,7 @@ class IngestService {
     Org provider = project.provider
 	
     // If identifier supplied, then use that. Otherwise, generate.
-    def pkg_identifier = "${identifier}"
-    
-    if (pkg_identifier == null || pkg_identifier == "") {
-      
-      // Derive the package identifier from the project info.
-      pkg_identifier = "${provider.name}:${project.id}"
-    }
+    def pkg_identifier = identifier ?: "${provider.name}:${project.id}"
 	
 	// Try and find a package for the provider with the name entered.
 	def q = ComboCriteria.createFor(Package.createCriteria())
@@ -868,27 +862,32 @@ class IngestService {
 	
 	// Package found?
     if (!pkg) {
-      log.debug("New package with identifier ${pkg_identifier} for ${provider.name}");
-	  
-      // Create a new package.
-      pkg = new Package(
-		  name:       (provider.name),
-		  provider:   (provider),
-		  lastProject:project
-	  )
       
-      def ns = IdentifierNamespace.findByValue('gokb-pkgid') ?:  new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true);
-
-      // Add a new identifier to the package.
-      def new_identifier = new Identifier (
+      Package.withNewTransaction { tranStat ->
+        log.debug("New package with identifier ${pkg_identifier} for ${provider.name}");
+  	  
+        // Create a new package.
+        pkg = new Package(
+  		  name:       (provider.name),
+  		  provider:   (provider),
+  		  lastProject:project
+        )
+        
+        def ns = IdentifierNamespace.findByValue('gokb-pkgid') ?:  new IdentifierNamespace (value: 'gokb-pkgid') //.save(failOnError:true);
+  
+        // Add a new identifier to the package.
+        def new_identifier = new Identifier (
           namespace : ns,
           value : pkg_identifier
-        ).save()
-
-      pkg.ids.add(new_identifier)
-    
-      // Save the package.
-      pkg.save(failOnError:true)
+        )
+        
+        new_identifier //.save(failOnError:true)
+  
+        pkg.addToIds(new_identifier)
+      
+        // Save the package.
+        pkg.save(failOnError:true)
+      }
     }
     else {
       log.debug("Got existing package ${pkg.id}");
