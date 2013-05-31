@@ -325,10 +325,11 @@ class IngestService {
           }
         }
       }
-
+      
+      def gokb_additional_props = []
       // Extract any gokb scoped fields we are going to store as extra properties
       RefineProject.withNewTransaction { TransactionStatus status ->
-        def gokb_additional_props = []
+        
         project_data.columnDefinitions?.each { cd ->
           def cn = cd.name?.toLowerCase()
           if (cn.startsWith('gokb.') ) {
