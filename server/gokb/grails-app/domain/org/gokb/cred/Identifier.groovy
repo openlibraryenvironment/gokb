@@ -4,22 +4,21 @@ class Identifier extends KBComponent {
 
   IdentifierNamespace namespace
   String value
-  KBComponent component
-  
-  static belongsTo = [KBComponent]
+
+  static belongsTo = [component:KBComponent]
 
   static constraints = {
     namespace (nullable:true, blank:true)
     value (nullable:true, blank:true)
-	component (nullable:true, blank:true)
+    component (nullable:true, blank:true)
   }
 
   static mapping = {
-    namespace column:'id_namespace_fk', index:'id_namespace_fk_idx'
-    value column:'id_value', index:'id_value_idx'
-	component column:'id_component_fk', index:'id_component_fk_idx'
+    namespace column:'id_namespace_fk', index:'id_value_idx'
+        value column:'id_value', index:'id_value_idx'
+    component column:'id_component_fk', index:'id_comp_idx'
   }
-  
+
   @Override
   protected def generateNormname () {
 	if (!normname && namespace && value) {
