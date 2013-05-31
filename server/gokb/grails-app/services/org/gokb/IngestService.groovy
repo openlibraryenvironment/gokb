@@ -872,12 +872,12 @@ class IngestService {
 	  )
       
       // Add a new identifier to the package.
-      pkg.addToIds(
-        new Identifier (
+      def new_identifier = new Identifier (
           namespace : new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true),
           value : pkg_identifier
-        )
-      );
+        ).save()
+
+      pkg.addToIds(new_identifier)
     
       // Save the package.
       pkg.save(failOnError:true)
