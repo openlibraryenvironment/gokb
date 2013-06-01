@@ -17,10 +17,7 @@ class TitleLookupService {
       log.debug("find Title (${title},${issn},${eissn},${publisher_name})");
       
       // Locate a publisher for the supplied name if possible.
-      def pq = ComboCriteria.createFor(Org.createCriteria())
-      def publisher = pq.get {
-        pq.add ("name", "ilike", publisher_name)
-      }
+      def publisher = Org.findByNameIlike(publisher_name)
       
       // Create new publisher if needed.
       if (!publisher) {

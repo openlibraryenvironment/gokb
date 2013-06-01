@@ -877,7 +877,7 @@ class IngestService {
         name:       (provider.name),
         provider:   (provider),
         lastProject:project
-        )
+        ).save(failOnError:true)
         
         def ns = IdentifierNamespace.findByValue('gokb-pkgid') ?:  new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true);
   
@@ -892,10 +892,8 @@ class IngestService {
         // before the pkg, so I've put the saves back in here.
         new_identifier.save(failOnError:true)
   
-        pkg.addToIds(new_identifier)
-      
-        // Save the package.
-        pkg.save(failOnError:true)
+        def identifier_combo_type = RefdataCategory.lookupOrCreate('ComboType','ids');
+        def id_combo = new Combo( fromComponent:pkg, toComponent:new_identifier, type:identifier_combo_type, startDate:new Date()).save()
       }
     }
     else {
