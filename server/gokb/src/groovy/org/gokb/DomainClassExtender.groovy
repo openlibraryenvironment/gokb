@@ -763,14 +763,14 @@ class DomainClassExtender {
       if (KBComponent.class.isAssignableFrom(actualClass)) {
 
         // Extends KBCombonent. Add Static methods.
-    DomainClassExtender.addGetComboMapFor (domainClass)
-    DomainClassExtender.addLookupComboMappingFor (domainClass)
-    DomainClassExtender.addGetComboTypeValueFor (domainClass)
-    DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
-    DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
-    DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
-    DomainClassExtender.addIsComboPropertyFor (domainClass)
-    DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
+        DomainClassExtender.addGetComboMapFor (domainClass)
+        DomainClassExtender.addLookupComboMappingFor (domainClass)
+        DomainClassExtender.addGetComboTypeValueFor (domainClass)
+        DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
+        DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
+        DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
+        DomainClassExtender.addIsComboPropertyFor (domainClass)
+        DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
 
         // Extend to handle ComboMapped Properties.
         DomainClassExtender.extendMapConstructor(domainClass)
@@ -794,7 +794,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetComboMapFor (domainClass)
       DomainClassExtender.addLookupComboMappingFor (domainClass)
       DomainClassExtender.addGetComboTypeValueFor (domainClass)
-    DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
+      DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
       DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)

@@ -8,7 +8,7 @@ class Org extends KBComponent {
 
   static manyByCombo = [
 	providedPackages	: Package,
-	children			: Org,
+	children		: Org,
 	publishedTitles		: TitleInstance,
 	issuedTitles		: TitleInstance,
 	providedPlatforms	: Platform,
@@ -16,7 +16,8 @@ class Org extends KBComponent {
 	licensedPackages	: Package,
 	vendedPackages		: Package,
 	offeredLicenses		: License,
-	heldLicenses		: License
+	heldLicenses		: License,
+	ids			: Identifier
   ]
 
   static hasByCombo = [
@@ -44,7 +45,6 @@ class Org extends KBComponent {
   //  ]
 
   static hasMany = [
-	//    ids: IdentifierOccurrence,
 	roles: RefdataValue,
   ]
 

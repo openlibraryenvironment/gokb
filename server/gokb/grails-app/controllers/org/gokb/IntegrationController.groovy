@@ -70,7 +70,7 @@ class IntegrationController {
 //          }
         }
   
-        def identifier_combo_type = RefdataCategory.lookupOrCreate('ComboType','ids');
+        def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','Org.Ids');
         // Identifiers
 
         log.debug("Identifier processing ${request.JSON.customIdentifers}");
@@ -116,9 +116,10 @@ class IntegrationController {
       // Located a component.
           if ( ( located_component != null ) ) {
             def combo = new Combo(
-              type:RefdataCategory.lookupOrCreate('ComboType',c.linkType),
+              type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
               fromComponent:located_or_new_org,
-              toComponent:located_component).save(flush:true);
+              toComponent:located_component,
+              startDate:new Date()).save(flush:true,failOnError:true);
           }
           else {
             log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");

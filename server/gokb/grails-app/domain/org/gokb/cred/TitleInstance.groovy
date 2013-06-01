@@ -26,11 +26,11 @@ class TitleInstance extends KBComponent {
   ]
   
   static manyByCombo = [
-	tipps 		: TitleInstancePackagePlatform
+	tipps 	: TitleInstancePackagePlatform,
+        ids     :  Identifier
   ]
 
   static mapping = {
-//      tipps sort:'startDate', order: 'asc'
   }
 
   static constraints = {
@@ -40,13 +40,6 @@ class TitleInstance extends KBComponent {
 	reasonRetired (nullable:true, blank:false)
 	imprint (nullable:true, blank:false)
   }
-
-//  @Transient
-//  def getPermissableCombos() {
-//    [
-////      [category:'TIPP',type:'HasTitle',impl:'localSet',targetClass:TitleInstancePackagePlatform.class,setName:'tipps',direction:'in']
-//    ]
-//  }
 
   def availableActions() {
     [ [code:'object::statusDeleted', label:'Set Status: Deleted'],

@@ -150,9 +150,10 @@ abstract class KBComponent {
   Date dateCreated
   Date lastUpdated
 
-  static manyByCombo = [
-    ids      :  Identifier,
-  ]
+  // Going to add this per subclass
+  // static manyByCombo = [
+  //   ids      :  Identifier,
+  // ]
 
   // static mappedByCombo = [
   //   ids      :  'identifiedComponents',
