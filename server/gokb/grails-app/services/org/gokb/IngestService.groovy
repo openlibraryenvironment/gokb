@@ -21,8 +21,8 @@ class IngestService {
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
-    new SimpleDateFormat('dd/MM/yyyy'),
     new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('dd/MM/yyyy'),
     new SimpleDateFormat('dd/MM/yy'),
     new SimpleDateFormat('yyyy/MM'),
     new SimpleDateFormat('yyyy')
@@ -901,7 +901,7 @@ class IngestService {
         // Add a new identifier to the package.
         def new_identifier = Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid',pkg_identifier);
         
-        def identifier_combo_type = RefdataCategory.lookupOrCreate('ComboType','ids');
+        def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Ids');
         log.debug("create new combo to link package to identifier. pkg=${pkg.id}, new_id:${new_identifier.id}");
         def id_combo = new Combo( fromComponent:pkg, toComponent:new_identifier, type:identifier_combo_type, startDate:new Date())
         if ( id_combo.save(flush:true, failOnError:true) ) {

@@ -13,6 +13,7 @@
       </g:each>
     </ul>
   </dd>
+
   <dt>Tags</dt>
   <dd>
     <ul>
@@ -54,6 +55,7 @@
       </tbody>
     </table>
   </dd>
+
   <dt>Other Incoming Combos</dt>
   <dd>
     <ul>
@@ -62,6 +64,7 @@
       </g:each>
     </ul>
   </dd>
+
   <dt>Other Outgoing Combos</dt>
   <dd>
     <ul>
