@@ -6,9 +6,9 @@ package org.gokb
  * 
  * The following shows how specially mapped Combo properties can be declared on a Domain class:
  * 
- * static hasByCombo 	= ['myProp' 		: MyClass]
- * static manyByCombo	= ['myCollection' 	: MyClass]
- * static mappedByCombo	= ['myProp'			: propColl]
+ * static hasByCombo   = ['myProp'     : MyClass]
+ * static manyByCombo  = ['myCollection'   : MyClass]
+ * static mappedByCombo  = ['myProp'      : propColl]
  * 
  * The hasByCombo mapping would create a virtual property 'myProp',
  * along with the getter and setter (getMyProp(), setMyProp (MyClass val)), 
@@ -78,14 +78,14 @@ class DomainClassExtender {
     ExpandoMetaClass mc = domainClass.getMetaClass()
     mc.static.isComboPropertyFor = { Class forClass, String propertyName ->
       log.trace ("isComboPropertyFor invoked using params ${[forClass, propertyName]}")
-	  
-	  // Split at the dot.
-	  String[] properties = propertyName.split("\\.");
-	  
-	  // The class that owns the end-point of the property string.
-	  Class parentClass = forClass;
-	  
-	  
+    
+    // Split at the dot.
+    String[] properties = propertyName.split("\\.");
+    
+    // The class that owns the end-point of the property string.
+    Class parentClass = forClass;
+    
+    
       Set cProps = getAllComboPropertyNamesFor (forClass)
       cProps.contains(propertyName)
     }
@@ -113,33 +113,33 @@ class DomainClassExtender {
   }
   
   private static addGetAllComboPropertyDefinitionsFor = { DefaultGrailsDomainClass domainClass ->
-	
-	// Get the metaclass.
-	ExpandoMetaClass mc = domainClass.getMetaClass()
-	mc.static.getAllComboPropertyDefinitionsFor = { Class forClass ->
-	  log.trace("getAllDefinedComboPropertyFor called with args ${[forClass]}")
-	  String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:all"
-	  
-	  // Check cache.
-	  log.debug("Checking comboMappingCache for ${cacheKey}...")
-	  Map cProps = DomainClassExtender.comboMappingCache[cacheKey]
-	  
-	  if (cProps == null) {
-		log.debug("\t...not found doing lookup.")
-	  
-		// No cached value.
-		cProps = [:]
-		cProps.putAll( getComboMapFor (forClass, Combo.HAS) )
-		cProps.putAll( getComboMapFor (forClass, Combo.MANY) )
-		
-		// Cache it.
-		DomainClassExtender.comboMappingCache[cacheKey] = cProps
-	  } else {
-		log.debug("\t...found and returning ${cProps}.")
-	  }
-	  
-	  cProps
-	}
+  
+  // Get the metaclass.
+  ExpandoMetaClass mc = domainClass.getMetaClass()
+  mc.static.getAllComboPropertyDefinitionsFor = { Class forClass ->
+    log.trace("getAllDefinedComboPropertyFor called with args ${[forClass]}")
+    String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:all"
+    
+    // Check cache.
+    log.debug("Checking comboMappingCache for ${cacheKey}...")
+    Map cProps = DomainClassExtender.comboMappingCache[cacheKey]
+    
+    if (cProps == null) {
+    log.debug("\t...not found doing lookup.")
+    
+    // No cached value.
+    cProps = [:]
+    cProps.putAll( getComboMapFor (forClass, Combo.HAS) )
+    cProps.putAll( getComboMapFor (forClass, Combo.MANY) )
+    
+    // Cache it.
+    DomainClassExtender.comboMappingCache[cacheKey] = cProps
+    } else {
+    log.debug("\t...found and returning ${cProps}.")
+    }
+    
+    cProps
+  }
   }
   
   private static addGetAllComboTypeValues = { DefaultGrailsDomainClass domainClass ->
@@ -205,8 +205,8 @@ class DomainClassExtender {
       log.debug("Checking cache for ${cacheKey}...")
       def value = DomainClassExtender.comboMappingCache[cacheKey]
       if (value != null) {
-		log.debug("\t...found, returning ${value}")
-		return value
+    log.debug("\t...found, returning ${value}")
+    return value
       }
 
       log.debug("\t...Not found, looking up.")
@@ -233,13 +233,13 @@ class DomainClassExtender {
       log.trace("getComboProperty called on ${delegate} with args ${[propertyName]}")
 
       // Test this way to allow us to cache null values.
-	  log.debug("Checking cache...")
+    log.debug("Checking cache...")
       String cacheKey = "${propertyName}".toString()
       if (comboPropertyCache().containsKey(cacheKey)) {
-		log.debug ("\t...found")
-		return comboPropertyCache().get(cacheKey);
+    log.debug ("\t...found")
+    return comboPropertyCache().get(cacheKey);
       }
-	  log.debug ("\t...not found, looking for value,")
+    log.debug ("\t...not found, looking for value,")
 
       // Check the type.
       Class typeClass = lookupComboMapping(Combo.MANY, propertyName)
@@ -251,34 +251,34 @@ class DomainClassExtender {
 
         // The result.
         def result
-		
-		// The delegate.
-		final KBComponent thisComponent = delegate
+    
+    // The delegate.
+    final KBComponent thisComponent = delegate
 
         if (isComboReverse(propertyName)) {
-		  
+      
           // Reverse.
 //          def combos = incomingCombos.findAll {
 //            it.type == (type)
 //          }
-		  def combos = Combo.createCriteria().list {
-			and {
-			  eq ("type", (type))
-			  eq ("toComponent", (thisComponent))
-			}
+      def combos = Combo.createCriteria().list {
+      and {
+        eq ("type", (type))
+        eq ("toComponent", (thisComponent))
+      }
             projections {
               property("fromComponent")
             }
-		  }
-		  
-		  // Create our new list.
-		  result = new ComboPersistedList (
-			(thisComponent),
-			DomainClassExtender.getComboStatusActive(),
-			type,
-			combos,
-			true
-		  )
+      }
+      
+      // Create our new list.
+      result = new ComboPersistedList (
+      (thisComponent),
+      DomainClassExtender.getComboStatusActive(),
+      type,
+      combos,
+      true
+      )
 
 //          if (combos) {
 //            for (combo in combos) {
@@ -290,24 +290,24 @@ class DomainClassExtender {
 //          def combos = outgoingCombos.findAll {
 //            it.type == (type)
 //          }
-		  def combos = Combo.createCriteria().list {
-			and {
-			  eq ("type", (type))
-			  eq ("fromComponent", (thisComponent))
-			}
+      def combos = Combo.createCriteria().list {
+      and {
+        eq ("type", (type))
+        eq ("fromComponent", (thisComponent))
+      }
             projections {
               property("toComponent")
             }
-		  }
-		  
-		  // Create our new list.
-		  result = new ComboPersistedList (
-			(thisComponent),
-			DomainClassExtender.getComboStatusActive(),
-			type,
-			combos,
-			false
-		  )
+      }
+      
+      // Create our new list.
+      result = new ComboPersistedList (
+      (thisComponent),
+      DomainClassExtender.getComboStatusActive(),
+      type,
+      combos,
+      false
+      )
 
 //          if (combos) {
 //            for (combo in combos) {
@@ -335,32 +335,32 @@ class DomainClassExtender {
 //            Combo combo = incomingCombos.find {
 //              it.type == (type)
 //            }
-			final KBComponent thisComponent = delegate
-			result = Combo.createCriteria().get {
-			  and {
-				eq ("type", (type))
-				eq ("toComponent", (thisComponent))
-			  }
+      final KBComponent thisComponent = delegate
+      result = Combo.createCriteria().get {
+        and {
+        eq ("type", (type))
+        eq ("toComponent", (thisComponent))
+        }
               projections {
                 property("fromComponent")
               }
-			}
+      }
 
 //            if (combo) result = combo.fromComponent
           } else {
 //            Combo combo = outgoingCombos.find {
 //              it.type == (type)
 //            }
-		  final KBComponent thisComponent = delegate
-			result = Combo.createCriteria().get {
-			  and {
-				eq ("type", (type))
-				eq ("fromComponent", (thisComponent))
-			  }
+      final KBComponent thisComponent = delegate
+      result = Combo.createCriteria().get {
+        and {
+        eq ("type", (type))
+        eq ("fromComponent", (thisComponent))
+        }
               projections {
                 property("toComponent")
               }
-			}
+      }
 
 //            if (combo) result = combo.toComponent
           }
@@ -395,16 +395,16 @@ class DomainClassExtender {
     MetaClass mc = domainClass.getMetaClass()
     mc.static.getComboTypeValueFor = {Class forClass, String propertyName  ->
       log.trace("getComboTypeValueFor called on ${delegate} with args ${[forClass,propertyName]}")
-	  
-	  String cacheKey = "${forClass.getName()}.${propertyName}"
-	  log.debug ("Checking cache for ${cacheKey}...")
-	  String key = DomainClassExtender.comboTypeValueCache[cacheKey]
-	  
-	  if (key != null) {
-		log.debug("\t...found")
-	  } else {
-	  
-	  	
+    
+    String cacheKey = "${forClass.getName()}.${propertyName}"
+    log.debug ("Checking cache for ${cacheKey}...")
+    String key = DomainClassExtender.comboTypeValueCache[cacheKey]
+    
+    if (key != null) {
+    log.debug("\t...found")
+    } else {
+    
+      
         String capProp
         Class mappedByClass
         def mappedByProp = lookupComboMappingFor(forClass, Combo.MAPPED_BY, propertyName)
@@ -435,11 +435,11 @@ class DomainClassExtender {
   
         // Cache the constructed key.
         key = "${GrailsNameUtils.getShortName(mappedByClass)}.${capProp}"
-		DomainClassExtender.comboTypeValueCache[cacheKey] = key
+    DomainClassExtender.comboTypeValueCache[cacheKey] = key
         log.debug("\t... not found, generated and added to cache.")
-	  }
-	  
-	  log.debug("Using type value ${key}")
+    }
+    
+    log.debug("Using type value ${key}")
       key
     }
   }
@@ -522,38 +522,38 @@ class DomainClassExtender {
     MetaClass mc = domainClass.getMetaClass()
     mc.removeComboPropertyVals {String propertyName, boolean preserveCurrent = false ->
       log.trace("removeComboPropertyVals called on ${delegate} with args ${propertyName}")
-	  
-	  // End dateused when expiring.
-	  Date endDate = (preserveCurrent ? new Date() : null)
+    
+    // End dateused when expiring.
+    Date endDate = (preserveCurrent ? new Date() : null)
       
       // Generate the type.
       RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
-	  
+    
       // Get all..
       List<Combo> combos
-	  // Query DB for current combos (endDate is NULL)
+    // Query DB for current combos (endDate is NULL)
       if (isComboReverse(propertyName)) {
         // Reverse.
-		final KBComponent thisComponent = delegate
-		combos = Combo.createCriteria().list {
-		  and {
-    	    eq ("type", (type))
-    		eq ("toComponent", (thisComponent))
-			isNull ("endDate")
-			eq ("status", DomainClassExtender.getComboStatusActive())
-		  }
-		}
+    final KBComponent thisComponent = delegate
+    combos = Combo.createCriteria().list {
+      and {
+          eq ("type", (type))
+        eq ("toComponent", (thisComponent))
+      isNull ("endDate")
+      eq ("status", DomainClassExtender.getComboStatusActive())
+      }
+    }
       } else {
-	  	final KBComponent thisComponent = delegate
-		
-		combos = Combo.createCriteria().list {
-		  and {
-			eq ("type", (type))
-			eq ("fromComponent", (thisComponent))
-			isNull ("endDate")
-			eq ("status", DomainClassExtender.getComboStatusActive())
-		  }
-		}
+      final KBComponent thisComponent = delegate
+    
+    combos = Combo.createCriteria().list {
+      and {
+      eq ("type", (type))
+      eq ("fromComponent", (thisComponent))
+      isNull ("endDate")
+      eq ("status", DomainClassExtender.getComboStatusActive())
+      }
+    }
       }
   
       // Delete each combo in turn.
@@ -566,45 +566,45 @@ class DomainClassExtender {
         if (combo.fromComponent) {
           KBComponent comp = combo.fromComponent
           comp.comboPropertyCache().clear()
-		  
-		  if (!preserveCurrent) {
-			comp.removeFromOutgoingCombos(combo)
-		  }
+      
+      if (!preserveCurrent) {
+      comp.removeFromOutgoingCombos(combo)
+      }
 //          comp.save()
         }
         if (combo.toComponent) {
           KBComponent comp = combo.toComponent
           comp.comboPropertyCache().clear()
-		  
-		  if (!preserveCurrent) {
-			comp.removeFromIncomingCombos(combo)
-		  }
+      
+      if (!preserveCurrent) {
+      comp.removeFromIncomingCombos(combo)
+      }
 //          comp.save()
         }
         
-		// Remove or expire the combo.
-		if (preserveCurrent) {
-		  // We need to "expire" the current value(s), not remove it.
-		  log.debug ("Expiring combo with ID ${combo.id}")
-		  
-		  // Expire the combo with a custom date.
-		  endDate = combo.expire(endDate)
-		  
-		  // Save the combo.
-		  combo.save()
-		  
-		} else {
-		  log.debug ("Deleting combo with ID ${combo.id}")
-		  // Remove the combo.
-		  combo.delete()
-		}
+    // Remove or expire the combo.
+    if (preserveCurrent) {
+      // We need to "expire" the current value(s), not remove it.
+      log.debug ("Expiring combo with ID ${combo.id}")
+      
+      // Expire the combo with a custom date.
+      endDate = combo.expire(endDate)
+      
+      // Save the combo.
+      combo.save()
+      
+    } else {
+      log.debug ("Deleting combo with ID ${combo.id}")
+      // Remove the combo.
+      combo.delete()
+    }
       }
       
       // Clear the cached value too if present.
       comboPropertyCache().remove("${propertyName}".toString())
-	  
-	  // Return the date added as the endDate
-	  endDate
+    
+    // Return the date added as the endDate
+    endDate
     }
   }
 
@@ -646,22 +646,22 @@ class DomainClassExtender {
             case Collection :
             
               if (isComboReverse(propertyName)) {
-				
+        
                 // Reverse
                 for (val in value) {
                   if (typeClass.isInstance(val)) {
                     
-					// Create an active combo
+          // Create an active combo
                     Combo combo = new Combo(
-                      type		: (type),
-                      status	: DomainClassExtender.getComboStatusActive(),
-					  startDate : new_start_date
+                      type    : (type),
+                      status  : DomainClassExtender.getComboStatusActive(),
+            startDate : new_start_date
                     ) //.save()
 
                     // Add to the collections.
                     log.trace("adding incoming Combo of type ${type} to ${delegate} to ${val}.")
                     delegate.addToIncomingCombos(combo)
-					
+          
                     log.trace("adding outgoing Combo of type ${type} from ${val} to ${delegate}.")
                     val.addToOutgoingCombos(combo)
 
@@ -675,15 +675,15 @@ class DomainClassExtender {
                 for (val in value) {
                   if (typeClass.isInstance(val)) {
                     Combo combo = new Combo(
-                      type		: (type),
-                      status	: DomainClassExtender.getComboStatusActive(),
-					  startDate	: new_start_date
+                      type    : (type),
+                      status  : DomainClassExtender.getComboStatusActive(),
+            startDate  : new_start_date
                     )
 
                     // Add to the collections.
                     log.trace("adding outgoing Combo of type ${type} from ${delegate} to ${val}.")
                     delegate.addToOutgoingCombos(combo)
-					
+          
                     log.trace("adding incoming Combo of type ${type} to ${val} from ${delegate}.")
                     val.addToIncomingCombos(combo)
 
@@ -702,29 +702,29 @@ class DomainClassExtender {
                 
                 if (isComboReverse(propertyName)) {
                   Combo combo = new Combo(
-                      type		: (type),
-                      status	: DomainClassExtender.getComboStatusActive(),
-					  startDate : new_start_date
+                      type    : (type),
+                      status  : DomainClassExtender.getComboStatusActive(),
+            startDate : new_start_date
                   )
 
                   // Add to the incoming collection
                   log.debug("adding incoming Combo of type ${type} to ${delegate} from ${value}.")
-				  
+          
                   delegate.addToIncomingCombos(combo)
                   log.debug("adding outgoing Combo of type ${type} from ${value} to ${delegate}.")
                   value.addToOutgoingCombos(combo)
                   
                 } else {
                   Combo combo = new Combo(
-                    type 		: (type),
-                    status		: DomainClassExtender.getComboStatusActive(),
-					startDate	: new_start_date
+                    type     : (type),
+                    status    : DomainClassExtender.getComboStatusActive(),
+          startDate  : new_start_date
                   )//.save()
 
                   // Add to the collections.
                   log.trace("adding outgoing Combo of type ${type} from ${delegate} to ${value}.")
                   delegate.addToOutgoingCombos(combo)
-				  
+          
                   log.trace("adding incoming Combo of type ${type} to ${value} to ${delegate}.")
                   value.addToIncomingCombos(combo)
                   
@@ -740,9 +740,9 @@ class DomainClassExtender {
           comboPropertyCache().put("${propertyName}".toString(), value)
           
           // We should also completely clear the target cache too.
-		  //TODO Maybe we could be more selective about what we remove from the cache,
-		  // although it's probably negligible between the processing needed to lookup,
-		  // and derive the value to clear than to rebuild if/when needed.
+      //TODO Maybe we could be more selective about what we remove from the cache,
+      // although it's probably negligible between the processing needed to lookup,
+      // and derive the value to clear than to rebuild if/when needed.
           value?.comboPropertyCache().clear()
         }
       } else {
@@ -762,14 +762,14 @@ class DomainClassExtender {
       if (KBComponent.class.isAssignableFrom(actualClass)) {
 
         // Extends KBCombonent. Add Static methods.
-		DomainClassExtender.addGetComboMapFor (domainClass)
-		DomainClassExtender.addLookupComboMappingFor (domainClass)
-		DomainClassExtender.addGetComboTypeValueFor (domainClass)
-		DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
-		DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
-		DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
-		DomainClassExtender.addIsComboPropertyFor (domainClass)
-		DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
+    DomainClassExtender.addGetComboMapFor (domainClass)
+    DomainClassExtender.addLookupComboMappingFor (domainClass)
+    DomainClassExtender.addGetComboTypeValueFor (domainClass)
+    DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
+    DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
+    DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
+    DomainClassExtender.addIsComboPropertyFor (domainClass)
+    DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
 
         // Extend to handle ComboMapped Properties.
         DomainClassExtender.extendMapConstructor(domainClass)
@@ -793,7 +793,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetComboMapFor (domainClass)
       DomainClassExtender.addLookupComboMappingFor (domainClass)
       DomainClassExtender.addGetComboTypeValueFor (domainClass)
-	  DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
+    DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
       DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)
@@ -815,51 +815,51 @@ class DomainClassExtender {
       // Instantiate the object and save...
       // We really need to save here so we can reference this object within the combos.
       def instance = oldConstructor.newInstance(args)
-	  if (instance.save(failOnError:true)) {
+    if (instance.save(failOnError:true)) {
       
         // Now that we have created our instance using the original constructor we can,
         // now set the combo props that were missed.
         Set cProps = getAllComboPropertyNamesFor (instance.getClass())
         for (prop in args.keySet()) {
           if (cProps.contains(prop)) {
-  		  
+        
             // Set the combo property directly.
             instance.setComboProperty(prop, args[prop])
           }
         }
-	  }
+    }
       instance
     }
   }
   
   private static addComboPropertyGettersAndSetters = { DefaultGrailsDomainClass domainClass ->
-	// Get the metaclass.
-	MetaClass mc = domainClass.getMetaClass()
+  // Get the metaclass.
+  MetaClass mc = domainClass.getMetaClass()
 
-	// Get the list of all combo properties for this class and add the getters and setters.
-	// Should be much less resource intensive than using method missing.
-	Set<String> comboProperties = domainClass.getClazz().getAllComboPropertyNamesFor (domainClass.getClazz())
-	
-	for (String property in comboProperties) {
-	  // Uppercase the first character.
-	  String propName = "${property[0].toUpperCase()}${property[1..-1]}"
-	  
-	  // Create a copy of the property.
-	  final String prop = property.toString()
-	  
-	  log.debug ("Adding methods get${propName} and set${propName} to ${domainClass.getClazz()} metaclass.")
-	  
-	  // Add the getter.
-	  mc."get${propName}" = { ->
-		log.trace("get${propName} called for ${delegate}")
-		delegate.getComboProperty(prop)
-	  }
-	  
-	  // Add the setter
-	  mc."set${propName}" = { Object value ->
-		log.trace("set${propName} called for ${delegate} using args ${[value]}")
-		delegate.setComboProperty(prop, value)
-	  }
-	}
+  // Get the list of all combo properties for this class and add the getters and setters.
+  // Should be much less resource intensive than using method missing.
+  Set<String> comboProperties = domainClass.getClazz().getAllComboPropertyNamesFor (domainClass.getClazz())
+  
+  for (String property in comboProperties) {
+    // Uppercase the first character.
+    String propName = "${property[0].toUpperCase()}${property[1..-1]}"
+    
+    // Create a copy of the property.
+    final String prop = property.toString()
+    
+    log.debug ("Adding methods get${propName} and set${propName} to ${domainClass.getClazz()} metaclass.")
+    
+    // Add the getter.
+    mc."get${propName}" = { ->
+    log.trace("get${propName} called for ${delegate}")
+    delegate.getComboProperty(prop)
+    }
+    
+    // Add the setter
+    mc."set${propName}" = { Object value ->
+    log.trace("set${propName} called for ${delegate} using args ${[value]}")
+    delegate.setComboProperty(prop, value)
+    }
+  }
   }
 }

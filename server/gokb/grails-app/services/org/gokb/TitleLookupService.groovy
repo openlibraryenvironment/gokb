@@ -33,16 +33,16 @@ class TitleLookupService {
       // Use the ids to check for a TitleInstance.
       Identifier issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
       Identifier eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
-	  
-	  def tq = ComboCriteria.createFor(TitleInstance.createCriteria())
-	  def titles = tq.listDistinct {
-		ids {
-		  or {
-			 if (issn_identifier) eq ("id", issn_identifier.id)
-			 if (eissn_identifier) eq ("id", eissn_identifier.id)
-		  }
-		}
-	  }
+    
+      def tq = ComboCriteria.createFor(TitleInstance.createCriteria())
+      def titles = tq.listDistinct {
+        outgoingCombos {
+          or {
+           eq ("toComponent", issn_identifier)
+           eq ("toComponent", eissn_identifier)
+          }
+        }
+      }
 
       if ( titles ) {
         switch ( titles.size() ) {
@@ -61,40 +61,33 @@ class TitleLookupService {
       }
       else {
         log.debug("No result, create a new title")
-        result = new TitleInstance(name:title, publisher: (publisher))
+        result = new TitleInstance(name:title, publisher: (publisher)).save(flush:true)
+
+        def identifier_combo_type = RefdataCategory.lookupOrCreate('ComboType','ids');
 
         // Don't forget to add our IDs here.
         if ( issn_identifier ) {
-		
-    		// Add a custom ID.	
-			result.addToIds(
-    		  issn_identifier
-    		)
+          def issn_combo = new Combo( fromComponent:result, toComponent:issn_identifier, type:identifier_combo_type, startDate:new Date()).save()
         }
 
         if ( eissn_identifier ) {
-    		// Add a custom ID.
-    		result.addToIds(
-    		  eissn_identifier
-    		)
+          def eissn_combo = new Combo( fromComponent:result, toComponent:eissn_identifier, type:identifier_combo_type, startDate:new Date()).save()
         }
 
-		extra_ids.each { ei ->
+        extra_ids.each { ei ->
           def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
-		  result.addToIds(
-			additional_identifier
-		  )
+          def ed_combo = new Combo( fromComponent:result, toComponent:additional_identifier, type:identifier_combo_type, startDate:new Date()).save()
         }
-		
-		// Try and save the result now.
-		if ( result.save(failOnError:true,flush:true) ) {
-		  log.debug("New title: ${result.id}");
-		}
-		else {
-		  result.errors.each { e ->
-			log.error("Problem saving title: ${e}");
-		  }
-		}
+    
+    // Try and save the result now.
+    if ( result.save(failOnError:true,flush:true) ) {
+      log.debug("New title: ${result.id}");
+    }
+    else {
+      result.errors.each { e ->
+      log.error("Problem saving title: ${e}");
+      }
+    }
       }
 
       // May double check with porter stemmer in the future.. see

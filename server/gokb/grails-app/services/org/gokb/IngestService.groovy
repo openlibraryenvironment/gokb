@@ -78,8 +78,8 @@ class IngestService {
 
     if ( col_positions[PRINT_IDENTIFIER] == null )
       result.messages.add(
-		[text:"Import does not specify a ${PRINT_IDENTIFIER} column", type:"missing_column", col: "${PRINT_IDENTIFIER}"]
-	  );
+    [text:"Import does not specify a ${PRINT_IDENTIFIER} column", type:"missing_column", col: "${PRINT_IDENTIFIER}"]
+    );
 
     if ( col_positions[ONLINE_IDENTIFIER] == null )
       result.messages.add([text:"Import does not specify an ${ONLINE_IDENTIFIER} column", type:"missing_column", col: "${ONLINE_IDENTIFIER}"]);
@@ -165,14 +165,11 @@ class IngestService {
       
       // Try and find a package for the provider with the name entered.
       def q = Package.createCriteria()
+
+      def pkg_identifier_component = getIdentifierComponent('gokb-pkgid',pkg_identifier);
       def pkg = q.get {
-        ids {
-          and {
-            namespace {
-              eq ("value", 'gokb-pkgid')
-            }
-            eq ("value", pkg_identifier)
-          }
+        outgoingCombos {
+          eq('toComponent',pkg_identifier_component)
         }
       }
       
@@ -192,7 +189,7 @@ class IngestService {
     
     // Go through each row and build up the tipp criteria.
     existingTitles = TitleInstance.createCriteria().get {
-      ids {
+      outgoingCombos {
         
         or {
       
@@ -211,31 +208,25 @@ class IngestService {
               
               // issn query.
               if (issn != null) {
-                and {
-                  eq ("value", issn)
-                  namespace {
-                    eq ("value", "issn") 
-                  }
+                def issn_component = getIdentifierComponent('issn',issn);
+                if ( issn_component != null ) {
+                  eq('toComponent',issn_component);
                 }
               }
               
               // eissn query
               if (eissn != null) {
-                and {
-                  eq ("value", eissn)
-                  namespace {
-                    eq ("value", "eissn")
-                  }
+                def eissn_component = getIdentifierComponent('eissn',issn);
+                if ( eissn_component != null ) {
+                  eq ("toComponent", eissn_component)
                 }
               }
       
               // Each additional identifier type.
               additional_identifiers.each { ai ->
-                and {
-                  eq ("value", datarow.cells[ai.colno])
-                  namespace {
-                    eq ("value", ai.type)
-                  }
+                def id_component = getIdentifierComponent(ai.type,datarow.cells[ai.colno]);
+                if ( id_component ) {
+                  eq ("toComponent", id_component)
                 }
               }
               
@@ -271,37 +262,45 @@ class IngestService {
     result
   }
 
+
+  def getIdentifierComponent(namespace, value) {
+    def result = null
+    def pkg_identifier_ns = IdentifierNamespace.findByValue('gokb-pkgid') ?: new IdentifierNamespace(value:'gokb-pkgid').save()
+    result = Identifier.findByNamespaceAndValue(pkg_identifier_ns, value)
+    result;
+  }
+
   /**
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
   def ingest(project_data, project_id) {
-	// Return result.
-	def result = [:]
+  // Return result.
+  def result = [:]
     try {
       log.debug("Ingest");
   
       def project
-	  
-	  // Update the project record.
-	  RefineProject.withNewTransaction { TransactionStatus status ->
-		
-		log.debug ("Trying to update the refine project in a new transaction.")
-		project = RefineProject.get(project_id)
-		
-		log.debug ("Project ${project}")
+    
+    // Update the project record.
+    RefineProject.withNewTransaction { TransactionStatus status ->
+    
+    log.debug ("Trying to update the refine project in a new transaction.")
+    project = RefineProject.get(project_id)
+    
+    log.debug ("Project ${project}")
         result.status = project_data ? true : false
         result.messages = []
     
         project.progress = 0
         project.save(failOnError:true)
-		
-		log.debug ("Updated the project.")
-		
-		// Flush the status.
-		status.flush()
-		
-		log.debug ("Forcibly flushed the session.")
+    
+    log.debug ("Updated the project.")
+    
+    // Flush the status.
+    status.flush()
+    
+    log.debug ("Forcibly flushed the session.")
       }
   
       def col_positions = [:]
@@ -344,18 +343,18 @@ class IngestService {
   
       int ctr = 0
       boolean row_level_problems = false
-	  
+    
       // Go through each row.
       project_data.rowData.each { datarow ->
-		
-		// Transaction for each row.
-		RefineProject.withNewTransaction { TransactionStatus status ->
-		
+    
+    // Transaction for each row.
+    RefineProject.withNewTransaction { TransactionStatus status ->
+    
           log.debug("Row ${ctr} ${datarow}");
           if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
   
             try {
-  			
+        
               def extra_ids = []
               additional_identifiers.each { ai ->
                 extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
@@ -384,10 +383,10 @@ class IngestService {
               if ( !platform_info ) {
                 // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
                 platform_info = new Platform(
-  				name:host_platform_name,
-  				normname:host_norm_platform_name,
-  				primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
-  			  )
+          name:host_platform_name,
+          normname:host_norm_platform_name,
+          primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
+          )
                 if (! platform_info.save(failOnError:true) ) {
                   platform_info.errors.each { e ->
                     log.error(e);
@@ -397,68 +396,68 @@ class IngestService {
       
             // Does the row specify a package identifier?
             // TODO: This needs to lookup a column instead of just using null.
-  			def pkg_identifier_from_row = null
+        def pkg_identifier_from_row = null
   
-  			// The package.
+        // The package.
             def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
     
             // Try and lookup a tipp.
-  			def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+        def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
               def tipp = crit.get {
                 and {
-  				crit.add ("title", "eq", title_info)
+          crit.add ("title", "eq", title_info)
                   crit.add ("pkg", "eq", pkg)
                   crit.add ("hostPlatform", "eq", platform_info)
                 }
               }
               
-  			  // We have a Tipp.
+          // We have a Tipp.
               if ( !tipp ) {
                 log.debug("Create new tipp")
                 tipp = new TitleInstancePackagePlatform(
-					title:title_info,
-					pkg:pkg,
-					hostPlatform:platform_info,
-					startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-					startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-					startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-					endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-					endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-					endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-					embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-					url:host_platform_url
-				)
+          title:title_info,
+          pkg:pkg,
+          hostPlatform:platform_info,
+          startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+          startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+          startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+          endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+          endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+          endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+          embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+          coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+          coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+          url:host_platform_url
+        )
   
-  			  	// Add each property in turn.
-				gokb_additional_props.each { apd ->
+            // Add each property in turn.
+        gokb_additional_props.each { apd ->
                                   // Done this way because I was worried about the prop defn crossing the transaction start boundary above
                                   def prop_defn = AdditionalPropertyDefinition.findBypropertyName(apd.prop_name)
                                   if ( prop_defn != null ) {
                                     def ap = new KBComponentAdditionalProperty( propertyDefn:prop_defn, apValue:getRowValue(datarow,apd.col))
-				    tipp.additionalProperties.add (ap)
+            tipp.additionalProperties.add (ap)
                                   }
                                   else {
                                     log.error("Unable to locate property definition with name ${apd.prop_name}");
                                   }
-				}
+        }
                 
-  			  	// Save the tipp.
-				tipp.save(failOnError:true)
+            // Save the tipp.
+        tipp.save(failOnError:true)
               }
               else {
-  			  // Found the tipp.
+          // Found the tipp.
                 log.debug("TIPP already present");
               }
     
               // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
               // instances we've just looked up.
               if ( ctr % 25 == 0 ) {
-  			  
-  			  	// Clean up the GORM.
+          
+            // Clean up the GORM.
                 cleanUpGorm()
-  			  
+          
                 // Update project progress indicator, save in db so any observers can see progress
                 def project_info = RefineProject.get(project.id)
                 project_info.progress = ( ctr / project_data.rowData.size() * 100 )
@@ -469,9 +468,9 @@ class IngestService {
               log.error("Row level exception",e)
               result.messages.add([text:"Problem processing row ${e}"])
               row_level_problems = true
-  			
-  			  // Rollback the transaction.
-			  status.setRollbackOnly()
+        
+          // Rollback the transaction.
+        status.setRollbackOnly()
             }
           }
           else {
@@ -479,11 +478,11 @@ class IngestService {
             result.messages.add([text:"Row ${ctr} seems to be a null row. Skipping"]);
           }
           ctr++
-		
-		  
-		  // Forcibly flush the session.
-//		  status.flush()
-      	}
+    
+      
+      // Forcibly flush the session.
+//      status.flush()
+        }
       }
 
       if ( row_level_problems ) {
@@ -505,8 +504,8 @@ class IngestService {
     finally {
       log.debug("Ingest complete");
     }
-	
-	result
+  
+  result
   }
 
   def getRowValue(datarow, col_positions, colname) {
@@ -570,8 +569,8 @@ class IngestService {
               }
               fos.flush()
               fos.close();
-			  
-			  result = extractRefineDataZip(temp_data_zipfile)
+        
+        result = extractRefineDataZip(temp_data_zipfile)
             }
             finally {
               if ( temp_data_zipfile ) {
@@ -603,28 +602,28 @@ class IngestService {
 
   def extractRefineDataZip (def zip_file) {
 
-	  def result=null
-	  
-	  // Open temp zip file as a zip object
-	  if ( zip_file ) {
-		java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zip_file)
-		log.debug("Getting data.txt")
-		java.util.zip.ZipEntry ze = zf.getEntry('data.txt')
-		if ( ze ) {
-		  log.debug("Got data.txt")
-		  result = [:]
-		  result.processingCompleted = false;
-		  processData(result, zf.getInputStream(ze));
-		}
-		else {
-		  log.error("Problem getting data.txt");
-		}
-	  }
-	  else {
-		log.debug("extractRefineDataZip: zip file is null");
-	  }
-	  
-	  result
+    def result=null
+    
+    // Open temp zip file as a zip object
+    if ( zip_file ) {
+    java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zip_file)
+    log.debug("Getting data.txt")
+    java.util.zip.ZipEntry ze = zf.getEntry('data.txt')
+    if ( ze ) {
+      log.debug("Got data.txt")
+      result = [:]
+      result.processingCompleted = false;
+      processData(result, zf.getInputStream(ze));
+    }
+    else {
+      log.error("Problem getting data.txt");
+    }
+    }
+    else {
+    log.debug("extractRefineDataZip: zip file is null");
+    }
+    
+    result
   }
   
   def processData(result, is) {
@@ -719,15 +718,15 @@ class IngestService {
 
   def cleanUpGorm() {
     log.debug("Clean up GORM");
-	
-	// Get the current session.
+  
+  // Get the current session.
     def session = sessionFactory.currentSession
-	
-	// flush and clear the session.
+  
+  // flush and clear the session.
     session.flush()
     session.clear()
-	
-	// Clear the property instance map.
+  
+  // Clear the property instance map.
     propertyInstanceMap.get().clear()
   }
 
@@ -814,7 +813,7 @@ class IngestService {
     }
 
     extracted_fingerprints.each { fp ->
-	  if (provider) findRulesByFingerprint('provider',provider,fp,result)
+    if (provider) findRulesByFingerprint('provider',provider,fp,result)
       findRulesByFingerprint('global',null,fp,result)
     }
 
@@ -822,14 +821,14 @@ class IngestService {
   }
 
   def findRulesByFingerprint(scope,provider,fp,ruleset) {
-	def rule_in_db
-	if ( provider ) {
+  def rule_in_db
+  if ( provider ) {
       log.debug("Looking for rules ${scope}:${provider}:${fp}")
       rule_in_db = Rule.findByScopeAndProviderAndFingerprint(scope,provider,fp)
-	  
-	} else {
-	  rule_in_db = Rule.findByScopeAndFingerprint(scope,fp)
-	}
+    
+  } else {
+    rule_in_db = Rule.findByScopeAndFingerprint(scope,fp)
+  }
     if ( rule_in_db ) {
       log.debug("got matching rule ${rule_in_db}");
       ruleset.add(rule_in_db)
@@ -843,34 +842,35 @@ class IngestService {
     
     // The provider.
     Org provider = project.provider
-	
+  
     // If identifier supplied, then use that. Otherwise, generate.
     def pkg_identifier = identifier ?: "${provider.name}:${project.id}"
-	
-	// Try and find a package for the provider with the name entered.
-	def q = ComboCriteria.createFor(Package.createCriteria())
-	def pkg = q.get {
-      ids {
-        and {
-          namespace {
-            eq ("value", 'gokb-pkgid')
-          }
-          eq ("value", pkg_identifier)
+  
+    // Try and find a package for the provider with the name entered.
+
+    def pkg_identifier_component = getIdentifierComponent('gokb-pkgid',pkg_identifier);
+    def pkg = null;
+
+    if ( pkg_identifier_component != null ) {
+      def q = ComboCriteria.createFor(Package.createCriteria())
+      pkg = q.get {
+        outgoingCombos {
+          eq ("toCombo", pkg_identifier_component)
         }
       }
-	}
-	
-	// Package found?
+    }
+  
+    // Package found?
     if (!pkg) {
       
       Package.withNewTransaction { tranStat ->
         log.debug("New package with identifier ${pkg_identifier} for ${provider.name}");
-  	  
+      
         // Create a new package.
         pkg = new Package(
-  		  name:       (provider.name),
-  		  provider:   (provider),
-  		  lastProject:project
+        name:       (provider.name),
+        provider:   (provider),
+        lastProject:project
         )
         
         def ns = IdentifierNamespace.findByValue('gokb-pkgid') ?:  new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true);

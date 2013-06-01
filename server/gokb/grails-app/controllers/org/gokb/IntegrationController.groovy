@@ -30,23 +30,24 @@ class IntegrationController {
 
       if ( located_or_new_org == null ) {
         log.debug("Create new org with identifiers ${request.JSON.customIdentifers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
+   
         located_or_new_org = new Org(name:request.JSON.name)
 
-//        log.debug("Attempt to save - validate: ${located_or_new_org}");
-//
-//        if ( located_or_new_org.save(failOnError : true) ) {
-//          log.debug("Saved ok");
-//        }
-//        else {
-//          log.debug("Save failed ${located_or_new_org}");
-//          result.errors = []
-//          located_or_new_org.errors.each { e ->
-//            log.error("Problem saving new org record",e);
-//            result.errors.add("${e}".toString());
-//          }
-//          result.status = false;
-//          return
-//        }
+        log.debug("Attempt to save - validate: ${located_or_new_org}");
+
+        if ( located_or_new_org.save(failOnError : true) ) {
+          log.debug("Saved ok");
+        }
+        else {
+          log.debug("Save failed ${located_or_new_org}");
+          result.errors = []
+          located_or_new_org.errors.each { e ->
+            log.error("Problem saving new org record",e);
+            result.errors.add("${e}".toString());
+          }
+          result.status = false;
+          return
+        }
         
         // Add parent.
         if (request.JSON.parent) {
@@ -69,23 +70,24 @@ class IntegrationController {
 //          }
         }
   
+        def identifier_combo_type = RefdataCategory.lookupOrCreate('ComboType','ids');
         // Identifiers
         log.debug("Identifier processing ${request.JSON.customIdentifers}");
         request.JSON.customIdentifers.each { ci ->
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})");
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-          located_or_new_org.ids.add(canonical_identifier)
+          def id_combo = new Combo( fromComponent:located_or_new_org, toComponent:canonical_identifier, type:identifier_combo_type, startDate:new Date()).save()
         }
     
-    // roles
-    log.debug("Role Processing: ${request.JSON.flags}");
-    request.JSON.roles.each { r ->
-      log.debug("Adding role ${r}");
-      def role = RefdataCategory.lookupOrCreate("Org.Role", r)
-      located_or_new_org.addToRoles(
-      role
-      )
-    }
+        // roles
+        log.debug("Role Processing: ${request.JSON.flags}");
+        request.JSON.roles.each { r ->
+          log.debug("Adding role ${r}");
+          def role = RefdataCategory.lookupOrCreate("Org.Role", r)
+          located_or_new_org.addToRoles(
+          role
+          )
+        }
 
         // flags
         log.debug("Flag Processing: ${request.JSON.flags}");

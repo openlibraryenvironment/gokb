@@ -154,9 +154,10 @@ abstract class KBComponent {
     ids      :  Identifier,
   ]
 
-  static mappedByCombo = [
-    ids      :  'identifiedComponents',
-  ]
+  // II: Commenting this out to see if this is the reason identifier combos aren't being created
+  // static mappedByCombo = [
+  //   ids      :  'identifiedComponents',
+  // ]
 
   static mappedBy = [
   outgoingCombos: 'fromComponent',
