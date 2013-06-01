@@ -752,7 +752,8 @@ class IngestService {
   }
 
   def extractRules(parsed_data, project) {
-    if ( project.provider ) {
+    if ( ( project.provider != null ) && 
+         ( parsed_data != null ) ) {
       log.debug("extracting rules, provider is ${project.provider.id}");
       def provider = Org.get(project.provider.id)
       // finally, rules extraction
@@ -798,7 +799,7 @@ class IngestService {
       }
     }
     else {
-      log.error("Provider not set, cannot establish rules!");
+      log.error("Provider or parsed data not set, cannot establish rules!");
     }
   }
 

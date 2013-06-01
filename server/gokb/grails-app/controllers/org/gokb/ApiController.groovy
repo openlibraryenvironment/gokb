@@ -228,6 +228,10 @@ class ApiController {
         // suggesting rules or validation.
         log.debug("Parsing refine project");
         def parsed_project_file = ingestService.extractRefineproject(project.file)
+
+        if ( parsed_project_file == null )
+          throw new Exception("Problem parsing project file");
+
         project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
       
     // Make sure we null the progress...
@@ -472,13 +476,13 @@ class ApiController {
   }
   
   private def suggestRulesFromParsedData (parsed_project_file, provider) {
-  log.debug ("Suggesting rules from parsed data.")
-  try {
-    def possible_rules = ingestService.findRules(parsed_project_file, provider )
-    return possible_rules
-  }
-  catch ( Exception e ) {
-    log.error("Problem trying to match rules",e)
-  }
+    log.debug ("Suggesting rules from parsed data.")
+    try {
+      def possible_rules = ingestService.findRules(parsed_project_file, provider )
+      return possible_rules
+    }
+    catch ( Exception e ) {
+      log.error("Problem trying to match rules",e)
+    }
   }  
 }

@@ -144,6 +144,7 @@ abstract class KBComponent {
   Set additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
+  Set ids = []
 
   // Timestamps
   Date dateCreated
