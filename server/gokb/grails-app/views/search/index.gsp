@@ -48,9 +48,9 @@
                   </div>
                   <g:if test="${recset != null}">
                     <ul class="nav pull-right">
-                      <li><g:link controller="search" action="index" params="${params+[offset:(offset-max),det:null]}"><i class="icon-step-backward"></i></g:link></li>
+                      <li><g:link alt="Previous Page" controller="search" action="index" params="${params+[offset:(offset-max),det:null]}"><i class="icon-chevron-left"></i></g:link></li>
                       <li class="divider-vertical"></li>
-                      <li><g:link controller="search" action="index" params="${params+[offset:(offset+max),det:null]}"><i class="icon-step-forward"></i></g:link></li>
+                      <li><g:link alt="Next Page" controller="search" action="index" params="${params+[offset:(offset+max),det:null]}"><i class="icon-chevron-right"></i></g:link></li>
                     </ul>
                   </g:if>
                 </div>
@@ -75,6 +75,7 @@
                     <li>
                       <a data-toggle="modal" 
                          data-cache="false" 
+                         alt="Show History"
                          data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>' 
                          data-target="#modal"><i class="icon-time"></i></a>
                     </li>
@@ -82,6 +83,7 @@
                     <li>
                       <a data-toggle="modal" 
                          data-cache="false" 
+                         alt="Show Notes"
                          data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>' 
                          data-target="#modal"><i class="icon-comment"></i></a>
                     </li>
@@ -89,14 +91,15 @@
                     <!-- li>
                       <a data-toggle="modal" 
                          data-cache="false" 
+                         alt="Show File Attachments"
                          data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
                          data-target="#modal"><i class="icon-file"></i></a>
                     </li -->
                     <li>
-                      <g:link controller="search" action="index" params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}"><i class="icon-step-backward"></i></g:link>
+                      <g:link controller="search" alt="Previous Record" action="index" params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}"><i class="icon-chevron-left"></i></g:link>
                     </li>
                     <li>
-                      <g:link controller="search" action="index" params="${params+['det':det+1, offset:((int)(det / max))*max]}"><i class="icon-step-forward"></i></g:link>
+                      <g:link controller="search" alt="Next Record" action="index" params="${params+['det':det+1, offset:((int)(det / max))*max]}"><i class="icon-chevron-right"></i></g:link>
                     </li>
                   </ul></div></div>
               <g:if test="${displaytemplate != null}">
