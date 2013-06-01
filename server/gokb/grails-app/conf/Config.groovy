@@ -112,7 +112,8 @@ log4j = {
 //   debug  'org.gokb.DomainClassExtender'
    
    // Enable Hibernate SQL logging with param values
-//   trace 'org.hibernate.type'
+   // trace 'org.hibernate.type'
+   // trace 'org.gokb.DomainClassExtender'
 //   debug 'org.hibernate.SQL'
 
 }

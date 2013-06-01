@@ -82,8 +82,7 @@ class IntegrationController {
                                     toComponent:canonical_identifier, 
                                     type:identifier_combo_type, 
                                     startDate:new Date())
-          located_or_new_org.outgoingCombos.add(located_or_new_org)
-          canonical_identifier.incomingCombos.add(id_combo)
+          log.debug("About to call save on id combo, from=${id_combo.fromComponent}, to=${id_combo.toComponent}");
           id_combo.save(failOnError:true, flush:true)
         }
     
@@ -117,13 +116,9 @@ class IntegrationController {
       // Located a component.
           if ( ( located_component != null ) ) {
             def combo = new Combo(
-              RefdataCategory.lookupOrCreate('ComboType',c.linkType)
-            )
-            
-            // Add to both incoming and outgoing combos.
-            located_or_new_org.addToOutgoingCombos(combo)
-            located_component.addToIncomingCombos(combo)
-            
+              type:RefdataCategory.lookupOrCreate('ComboType',c.linkType),
+              fromComponent:located_or_new_org,
+              toComponent:located_component).save(flush:true);
           }
           else {
             log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");

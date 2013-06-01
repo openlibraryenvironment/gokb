@@ -384,7 +384,7 @@ class DomainClassExtender {
 
     // Get the metaclass.
     domainClass.getMetaClass().getComboTypeValue = {String propertyName  ->
-      log.trace("getComboTypeValue called on ${delegate} with args ${[propertyName]}")
+      log.debug("getComboTypeValue called on ${delegate} with args ${[propertyName]}")
       getComboTypeValueFor(domainClass.getClazz(), propertyName)
     }
   }
@@ -394,7 +394,7 @@ class DomainClassExtender {
     // Get the metaclass.
     MetaClass mc = domainClass.getMetaClass()
     mc.static.getComboTypeValueFor = {Class forClass, String propertyName  ->
-      log.trace("getComboTypeValueFor called on ${delegate} with args ${[forClass,propertyName]}")
+      log.debug("getComboTypeValueFor called on ${delegate} with args ${[forClass,propertyName]}")
     
     String cacheKey = "${forClass.getName()}.${propertyName}"
     log.debug ("Checking cache for ${cacheKey}...")
@@ -521,7 +521,7 @@ class DomainClassExtender {
   private static addRemoveComboPropertyVals = { DefaultGrailsDomainClass domainClass ->
     MetaClass mc = domainClass.getMetaClass()
     mc.removeComboPropertyVals {String propertyName, boolean preserveCurrent = false ->
-      log.trace("removeComboPropertyVals called on ${delegate} with args ${propertyName}")
+      log.debug("removeComboPropertyVals called on ${delegate} with args ${propertyName}")
     
     // End dateused when expiring.
     Date endDate = (preserveCurrent ? new Date() : null)
@@ -755,6 +755,7 @@ class DomainClassExtender {
   private static Map comboMappingCache = [:]
 
   public static extend = { DefaultGrailsDomainClass domainClass ->
+
     // Get the actual class that is represented by this domain class object.
     Class actualClass = domainClass.getClazz()
 

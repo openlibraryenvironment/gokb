@@ -16,10 +16,6 @@ class Identifier extends KBComponent {
         value column:'id_value', index:'id_value_idx'
   }
 
-  static manyByCombo = [
-    identifiedComponents : KBComponent
-  ]
-
   @Override
   protected def generateNormname () {
 	if (!normname && namespace && value) {
