@@ -74,21 +74,18 @@ class IntegrationController {
         request.JSON.customIdentifers.each { ci ->
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})");
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-          located_or_new_org.addToIds(
-            canonical_identifier
-          )
-//          def id_occur = new IdentifierOccurrence(identifier:canonical_identifier, component:located_or_new_org);
+          located_or_new_org.ids.add(canonical_identifier)
         }
-		
-		// roles
-		log.debug("Role Processing: ${request.JSON.flags}");
-		request.JSON.roles.each { r ->
-		  log.debug("Adding role ${r}");
-		  def role = RefdataCategory.lookupOrCreate("Org.Role", r)
-		  located_or_new_org.addToRoles(
-			role
-		  )
-		}
+    
+    // roles
+    log.debug("Role Processing: ${request.JSON.flags}");
+    request.JSON.roles.each { r ->
+      log.debug("Adding role ${r}");
+      def role = RefdataCategory.lookupOrCreate("Org.Role", r)
+      located_or_new_org.addToRoles(
+      role
+      )
+    }
 
         // flags
         log.debug("Flag Processing: ${request.JSON.flags}");
@@ -106,8 +103,8 @@ class IntegrationController {
         request.JSON.combos.each { c ->
           log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
           def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
-		  
-		  // Located a component.
+      
+      // Located a component.
           if ( ( located_component != null ) ) {
             def combo = new Combo(
               RefdataCategory.lookupOrCreate('ComboType',c.linkType)

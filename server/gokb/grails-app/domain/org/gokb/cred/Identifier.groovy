@@ -5,19 +5,20 @@ class Identifier extends KBComponent {
   IdentifierNamespace namespace
   String value
 
-  static belongsTo = [component:KBComponent]
 
   static constraints = {
     namespace (nullable:true, blank:true)
     value (nullable:true, blank:true)
-    component (nullable:true, blank:true)
   }
 
   static mapping = {
     namespace column:'id_namespace_fk', index:'id_value_idx'
         value column:'id_value', index:'id_value_idx'
-    component column:'id_component_fk', index:'id_comp_idx'
   }
+
+  static manyByCombo = [
+    identifiedComponents : KBComponent
+  ]
 
   @Override
   protected def generateNormname () {
@@ -29,7 +30,6 @@ class Identifier extends KBComponent {
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = IdentifierNamespace.findByValue(ns) ?: new IdentifierNamespace(value:ns).save(failOnError:true);
-	
     Identifier.findByNamespaceAndValue(namespace,value) ?: new Identifier(namespace:(namespace), value: (value)).save()
   }
 
