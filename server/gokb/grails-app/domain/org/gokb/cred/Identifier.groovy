@@ -16,6 +16,11 @@ class Identifier extends KBComponent {
         value column:'id_value', index:'id_value_idx'
   }
 
+  static mappedByCombo = [
+    identifiedComponents      :  'ids'
+  ]
+
+
   @Override
   protected def generateNormname () {
 	if (!normname && namespace && value) {

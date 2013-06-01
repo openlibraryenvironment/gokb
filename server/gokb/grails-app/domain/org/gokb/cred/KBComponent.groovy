@@ -32,103 +32,103 @@ abstract class KBComponent {
   @Transient
   private ensureDefaults () {
 
-  // Metaclass
-  ExpandoMetaClass mc = getMetaClass()
+    // Metaclass
+    ExpandoMetaClass mc = getMetaClass()
 
-  // First get or build up the full static map of defaults
-  final Class rootClass = mc.getTheClass()
-  Map defaultsForThis = fullDefaultsForClass.get(rootClass.getName())
-  if (defaultsForThis == null) {
+    // First get or build up the full static map of defaults
+    final Class rootClass = mc.getTheClass()
+    Map defaultsForThis = fullDefaultsForClass.get(rootClass.getName())
+    if (defaultsForThis == null) {
     
-    defaultsForThis = [:]
+      defaultsForThis = [:]
 
-    // Default to the root.
-    Class theClass = rootClass
+      // Default to the root.
+      Class theClass = rootClass
 
-    // Try and get the map.
-    Map classMap
-    while (theClass) {
+      // Try and get the map.
+      Map classMap
+      while (theClass) {
 
-    try {
-      // Read the classMap
-      classMap = mc.getProperty(
-      rootClass,
-      theClass,
-      "refdataDefaults",
-      false,
-      true
-      )
-    } catch (MissingPropertyException e) {
-      // Catch the error and just set to null.
-      classMap = null
+      try {
+        // Read the classMap
+        classMap = mc.getProperty(
+        rootClass,
+        theClass,
+        "refdataDefaults",
+        false,
+        true
+        )
+      } catch (MissingPropertyException e) {
+        // Catch the error and just set to null.
+        classMap = null
+      }
+    
+      // If we have values then add.
+      if (classMap) {
+
+        // Add using the class simple name.
+        defaultsForThis[theClass.getSimpleName()] = classMap
+      }
+
+      // Get the superclass.
+      theClass = theClass.getSuperclass()
+      }
+
+      // Once we have added each map to our map add to the global map.
+      fullDefaultsForClass[rootClass.getName()] = defaultsForThis
     }
+
+    // Check we have some defaults.
+    if (defaultsForThis) {
     
-    // If we have values then add.
-    if (classMap) {
+      // Create a pointer to this so that we can access within the closures below.
+      KBComponent thisComponent = this
 
-      // Add using the class simple name.
-      defaultsForThis[theClass.getSimpleName()] = classMap
-    }
-
-    // Get the superclass.
-    theClass = theClass.getSuperclass()
-    }
-
-    // Once we have added each map to our map add to the global map.
-    fullDefaultsForClass[rootClass.getName()] = defaultsForThis
-  }
-
-  // Check we have some defaults.
-  if (defaultsForThis) {
+      // DomainClassArtefactHandler for this class
+      GrailsDomainClass dClass = thisComponent.domainClass
     
-    // Create a pointer to this so that we can access within the closures below.
-    KBComponent thisComponent = this
+      defaultsForThis.each { String className, defaults ->
 
-    // DomainClassArtefactHandler for this class
-    GrailsDomainClass dClass = thisComponent.domainClass
+        // Add each property and value to the properties in the defaults.
+        defaults.each {String property, values ->
+
+          if (thisComponent."${property}" == null) {
+
+            // Get the type defined against the class.
+            GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
+            String propType = propertyDef?.getReferencedPropertyType()?.getName()
+  
+            if (propType) {
+  
+              switch (propType) {
+                case RefdataValue.class.getName() :
     
-    defaultsForThis.each { String className, defaults ->
-
-    // Add each property and value to the properties in the defaults.
-    defaults.each {String property, values ->
-
-      if (thisComponent."${property}" == null) {
-
-      // Get the type defined against the class.
-      GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
-      String propType = propertyDef?.getReferencedPropertyType()?.getName()
-
-      if (propType) {
-
-        switch (propType) {
-        case RefdataValue.class.getName() :
-
-          // Expecting refdata value. Do the lookup in a new session.
-          KBComponent.withNewSession { session ->
-          final String ucProp = GrailsNameUtils.getClassName(property);
-          final String key = "${className}.${ucProp}"
-
-          if (values instanceof Collection) {
-            values.each { val ->
-            thisComponent."addTo${ucProp}" ( RefdataCategory.lookupOrCreate(key, val) )
+                  // Expecting refdata value. Do the lookup in a new session.
+                  KBComponent.withNewSession { session ->
+                    final String ucProp = GrailsNameUtils.getClassName(property);
+                    final String key = "${className}.${ucProp}"
+      
+                    if (values instanceof Collection) {
+                      values.each { val ->
+                        thisComponent."addTo${ucProp}" ( RefdataCategory.lookupOrCreate(key, val) )
+                      }
+        
+                    } else {
+                      // Set the default.
+                      thisComponent."${property}" = RefdataCategory.lookupOrCreate(key, values)
+                    }
+                  }
+                  break
+                default :
+                  // Just treat as a normal prop
+                  thisComponent."${property}" = values
+                  break
+              }
             }
-
-          } else {
-            // Set the default.
-            thisComponent."${property}" = RefdataCategory.lookupOrCreate(key, values)
           }
-          }
-          break
-        default :
-          // Just treat as a normal prop
-          thisComponent."${property}" = values
-          break
         }
       }
-      }
     }
-    }
-  }
   }
 
   //  String impId
@@ -141,10 +141,9 @@ abstract class KBComponent {
   RefdataValue editStatus
 
   Set tags = []
-  List additionalProperties = []
-  List outgoingCombos = []
-  List incomingCombos = []
-  List ids = []
+  Set additionalProperties = []
+  Set outgoingCombos = []
+  Set incomingCombos = []
 
   // Timestamps
   Date dateCreated
@@ -154,7 +153,6 @@ abstract class KBComponent {
     ids      :  Identifier,
   ]
 
-  // II: Commenting this out to see if this is the reason identifier combos aren't being created
   // static mappedByCombo = [
   //   ids      :  'identifiedComponents',
   // ]
@@ -367,14 +365,13 @@ abstract class KBComponent {
   }
 
   public Date deleteSoft (Date endDate = new Date()) {
-
-  // Set the status to deleted.
-  setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+    // Set the status to deleted.
+    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
   }
 
   @Transient
   public String getClassName () {
-  getMetaClass().getTheClass().getName()
+    getMetaClass().getTheClass().getName()
   }
 
   //  @Transient
