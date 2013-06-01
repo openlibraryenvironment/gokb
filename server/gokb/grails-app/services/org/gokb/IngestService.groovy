@@ -861,7 +861,7 @@ class IngestService {
       def q = ComboCriteria.createFor(Package.createCriteria())
       pkg = q.get {
         outgoingCombos {
-          eq ("toCombo", pkg_identifier_component)
+          eq ("toComponent", pkg_identifier_component)
         }
       }
     }
