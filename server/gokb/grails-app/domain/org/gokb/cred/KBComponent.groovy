@@ -160,36 +160,36 @@ abstract class KBComponent {
   // ]
 
   static mappedBy = [
-  outgoingCombos: 'fromComponent',
-  incomingCombos:'toComponent',
-  additionalProperties: 'fromComponent',
+    outgoingCombos: 'fromComponent',
+    incomingCombos:'toComponent',
+    additionalProperties: 'fromComponent',
   ]
 
   static hasMany = [
-  tags:RefdataValue,
-  outgoingCombos:Combo,
-  incomingCombos:Combo,
-  additionalProperties:KBComponentAdditionalProperty
+    tags:RefdataValue,
+    outgoingCombos:Combo,
+    incomingCombos:Combo,
+    additionalProperties:KBComponentAdditionalProperty
   ]
 
   static mapping = {
-  id column:'kbc_id'
-  version column:'kbc_version'
-  name column:'kbc_name'
-  normname column:'kbc_normname'
-  status column:'kbc_status_rv_fk'
-  shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
-  tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
-  dateCreated column:'kbc_date_created'
-  lastUpdated column:'kbc_last_updated'
+    id column:'kbc_id'
+    version column:'kbc_version'
+    name column:'kbc_name'
+    normname column:'kbc_normname'
+    status column:'kbc_status_rv_fk'
+    shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
+    tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
+    dateCreated column:'kbc_date_created'
+    lastUpdated column:'kbc_last_updated'
   }
 
   static constraints = {
-  name    (nullable:true, blank:false, maxSize:2048)
-  shortcode  (nullable:true, blank:false, maxSize:128)
-  normname  (nullable:true, blank:false, maxSize:2048)
-  status    (nullable:true, blank:false)
-  editStatus  (nullable:true, blank:false)
+    name    (nullable:true, blank:false, maxSize:2048)
+    shortcode  (nullable:true, blank:false, maxSize:128)
+    normname  (nullable:true, blank:false, maxSize:2048)
+    status    (nullable:true, blank:false)
+    editStatus  (nullable:true, blank:false)
   }
 
   /**

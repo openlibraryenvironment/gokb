@@ -37,7 +37,6 @@ class IntegrationController {
 
         if ( located_or_new_org.save(flush:true, failOnError : true) ) {
           log.debug("Saved ok");
-          located_or_new_org.refresh()
         }
         else {
           log.debug("Save failed ${located_or_new_org}");
@@ -73,16 +72,19 @@ class IntegrationController {
   
         def identifier_combo_type = RefdataCategory.lookupOrCreate('ComboType','ids');
         // Identifiers
+
         log.debug("Identifier processing ${request.JSON.customIdentifers}");
         request.JSON.customIdentifers.each { ci ->
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-          canonical_identifier.refresh()
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
           def id_combo = new Combo( 
                                     fromComponent:located_or_new_org, 
                                     toComponent:canonical_identifier, 
                                     type:identifier_combo_type, 
-                                    startDate:new Date()).save(failOnError:true, flush:true)
+                                    startDate:new Date())
+          located_or_new_org.outgoingCombos.add(located_or_new_org)
+          canonical_identifier.incomingCombos.add(id_combo)
+          id_combo.save(failOnError:true, flush:true)
         }
     
         // roles
