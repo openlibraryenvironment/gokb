@@ -42,17 +42,17 @@ class Combo {
               type column:'combo_type_rv_fk'    , index:'combo_type_rv_idx'
      fromComponent column:'combo_from_fk'       , index:'combo_from_idx'
        toComponent column:'combo_to_fk'         , index:'combo_to_idx'
-	       endDate column:'combo_end_date'
-	     startDate column:'combo_start_date'
+           endDate column:'combo_end_date'
+         startDate column:'combo_start_date'
   }
 
   static constraints = {
     status(nullable:true, blank:false)
     type(nullable:true, blank:false)
-    fromComponent(nullable:true, blank:false)
-    toComponent(nullable:true, blank:false)
-	endDate(nullable:true, blank:false)
-	startDate(nullable:false, blank:false)
+    fromComponent(nullable:false, blank:false)
+    toComponent(nullable:false, blank:false)
+    endDate(nullable:true, blank:false)
+    startDate(nullable:false, blank:false)
   }
   
   public Date expire (Date endDate = null) {

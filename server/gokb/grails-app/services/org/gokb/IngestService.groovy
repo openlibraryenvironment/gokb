@@ -387,12 +387,14 @@ class IngestService {
               // def platform_info = Platform.findByPrimaryUrl(host_platform_url) 
               def platform_info = Platform.findByNormname(host_norm_platform_name)
               if ( !platform_info ) {
+                log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
                 // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
                 platform_info = new Platform(
-          name:host_platform_name,
-          normname:host_norm_platform_name,
-          primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
-          )
+                  name:host_platform_name,
+                  normname:host_norm_platform_name,
+                  primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
+                )
+
                 if (! platform_info.save(failOnError:true) ) {
                   platform_info.errors.each { e ->
                     log.error(e);
@@ -842,6 +844,8 @@ class IngestService {
   }
 
   def getOrCreatePackage(String identifier, project_id) {
+
+    log.debug("getOrCreatePackage(identifier:${identifier},project:${project_id})");
     
     // Read the project.
     RefineProject project = RefineProject.get(project_id)
@@ -853,16 +857,30 @@ class IngestService {
     def pkg_identifier = identifier ?: "${provider.name}:${project.id}"
   
     // Try and find a package for the provider with the name entered.
+    log.debug("identifier will be ${pkg_identifier}");
 
     def pkg_identifier_component = getIdentifierComponent('gokb-pkgid',pkg_identifier);
     def pkg = null;
 
     if ( pkg_identifier_component != null ) {
       def q = ComboCriteria.createFor(Package.createCriteria())
-      pkg = q.get {
+      def pkg_list = q.list {
         outgoingCombos {
           eq ("toComponent", pkg_identifier_component)
         }
+      }
+
+      log.debug("Lookup of package with identifier ${pkg_identifier} returns ${pkg_list.size()} entries");
+
+      if ( pkg_list.size() == 0 ) {
+        log.debug("New package")
+      }
+      else if (  pkg_list.size() == 1 ) {
+        log.debug("Identified a package")
+        pkg = pkg_list.get(0);
+      }
+      else {
+        throw new Exception("Multiple packages with specififed identifier. This should never happen");
       }
     }
   
@@ -877,23 +895,22 @@ class IngestService {
         name:       (provider.name),
         provider:   (provider),
         lastProject:project
-        ).save(failOnError:true)
+        ).save(flush:true, failOnError:true)
         
-        def ns = IdentifierNamespace.findByValue('gokb-pkgid') ?:  new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true);
-  
         // Add a new identifier to the package.
-        def new_identifier = new Identifier (
-          namespace : ns,
-          value : pkg_identifier
-        )
+        def new_identifier = Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid',pkg_identifier);
         
-        // Steve - Not sure why you commented out the .saves here and on the ns above..
-        // I can't see any cascades on the domian model that would allow the instances to be cascade saved
-        // before the pkg, so I've put the saves back in here.
-        new_identifier.save(failOnError:true)
-  
         def identifier_combo_type = RefdataCategory.lookupOrCreate('ComboType','ids');
-        def id_combo = new Combo( fromComponent:pkg, toComponent:new_identifier, type:identifier_combo_type, startDate:new Date()).save()
+        log.debug("create new combo to link package to identifier. pkg=${pkg.id}, new_id:${new_identifier.id}");
+        def id_combo = new Combo( fromComponent:pkg, toComponent:new_identifier, type:identifier_combo_type, startDate:new Date())
+        if ( id_combo.save(flush:true, failOnError:true) ) {
+          log.debug("id combo saved... ${id_combo.id}");
+        }
+        else {
+          id_combo.errors.each { e ->
+            log.error("Problem: ${e}");
+          }
+        }
       }
     }
     else {

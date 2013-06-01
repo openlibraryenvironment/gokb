@@ -35,8 +35,9 @@ class IntegrationController {
 
         log.debug("Attempt to save - validate: ${located_or_new_org}");
 
-        if ( located_or_new_org.save(failOnError : true) ) {
+        if ( located_or_new_org.save(flush:true, failOnError : true) ) {
           log.debug("Saved ok");
+          located_or_new_org.refresh()
         }
         else {
           log.debug("Save failed ${located_or_new_org}");
@@ -74,9 +75,14 @@ class IntegrationController {
         // Identifiers
         log.debug("Identifier processing ${request.JSON.customIdentifers}");
         request.JSON.customIdentifers.each { ci ->
-          log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})");
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-          def id_combo = new Combo( fromComponent:located_or_new_org, toComponent:canonical_identifier, type:identifier_combo_type, startDate:new Date()).save()
+          canonical_identifier.refresh()
+          log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
+          def id_combo = new Combo( 
+                                    fromComponent:located_or_new_org, 
+                                    toComponent:canonical_identifier, 
+                                    type:identifier_combo_type, 
+                                    startDate:new Date()).save(failOnError:true, flush:true)
         }
     
         // roles
