@@ -873,7 +873,7 @@ class IngestService {
   		  lastProject:project
         )
         
-        def ns = IdentifierNamespace.findByValue('gokb-pkgid') ?:  new IdentifierNamespace (value: 'gokb-pkgid') //.save(failOnError:true);
+        def ns = IdentifierNamespace.findByValue('gokb-pkgid') ?:  new IdentifierNamespace (value: 'gokb-pkgid').save(failOnError:true);
   
         // Add a new identifier to the package.
         def new_identifier = new Identifier (
@@ -881,7 +881,10 @@ class IngestService {
           value : pkg_identifier
         )
         
-        new_identifier //.save(failOnError:true)
+        // Steve - Not sure why you commented out the .saves here and on the ns above..
+        // I can't see any cascades on the domian model that would allow the instances to be cascade saved
+        // before the pkg, so I've put the saves back in here.
+        new_identifier.save(failOnError:true)
   
         pkg.addToIds(new_identifier)
       
