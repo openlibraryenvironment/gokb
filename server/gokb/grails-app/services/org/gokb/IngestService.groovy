@@ -174,7 +174,10 @@ class IngestService {
       }
       
       // Package found.
-      if (!pkg) newPkgs ++
+      if (!pkg) {
+        log.debug("New package...");
+        newPkgs ++
+      }
       
     } else {
       log.debug("No refine project id supplied. Assuming new package.")
@@ -186,6 +189,8 @@ class IngestService {
     
     // Create the set for the platforms.
     Set platformNames   = []
+
+    log.debug("Finding existing titles...");
     
     // Go through each row and build up the tipp criteria.
     existingTitles = TitleInstance.createCriteria().get {
@@ -258,6 +263,7 @@ class IngestService {
     existingPlats = platCrit.count()
     result << [ type : "platforms", "new" : (platformNames.size() - existingPlats), "updated" : existingPlats ]
     
+    log.debug("Estimate changes complete...${result}");
     // Return the result.
     result
   }
