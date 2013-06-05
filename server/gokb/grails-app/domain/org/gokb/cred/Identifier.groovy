@@ -16,10 +16,13 @@ class Identifier extends KBComponent {
         value column:'id_value', index:'id_value_idx'
   }
 
-  static mappedByCombo = [
-    identifiedComponents      :  'ids'
+  static manyByCombo = [
+    identifiedComponents  :  KBComponent
   ]
 
+  static mappedByCombo = [
+	identifiedComponents  :  'ids',
+  ]
 
   @Override
   protected def generateNormname () {
@@ -33,5 +36,4 @@ class Identifier extends KBComponent {
     def namespace = IdentifierNamespace.findByValue(ns) ?: new IdentifierNamespace(value:ns).save(flush:true,failOnError:true);
     Identifier.findByNamespaceAndValue(namespace,value) ?: new Identifier(namespace:namespace, value:value).save(flush:true,failOnError:true)
   }
-
 }

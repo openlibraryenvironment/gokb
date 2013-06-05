@@ -17,7 +17,7 @@ class Org extends KBComponent {
 	vendedPackages		: Package,
 	offeredLicenses		: License,
 	heldLicenses		: License,
-	ids			: Identifier
+//	ids			: Identifier
   ]
 
   static hasByCombo = [

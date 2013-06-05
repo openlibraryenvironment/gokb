@@ -23,8 +23,8 @@ abstract class KBComponent {
   static auditable = true
 
   private static refdataDefaults = [
-  "status"     : STATUS_CURRENT,
-  "editStatus"  : EDIT_STATUS_IN_PROGRESS
+	"status"     : STATUS_CURRENT,
+	"editStatus"  : EDIT_STATUS_IN_PROGRESS
   ]
 
   private static final Map fullDefaultsForClass = [:]
@@ -32,103 +32,103 @@ abstract class KBComponent {
   @Transient
   private ensureDefaults () {
 
-    // Metaclass
-    ExpandoMetaClass mc = getMetaClass()
+	// Metaclass
+	ExpandoMetaClass mc = getMetaClass()
 
-    // First get or build up the full static map of defaults
-    final Class rootClass = mc.getTheClass()
-    Map defaultsForThis = fullDefaultsForClass.get(rootClass.getName())
-    if (defaultsForThis == null) {
-    
-      defaultsForThis = [:]
+	// First get or build up the full static map of defaults
+	final Class rootClass = mc.getTheClass()
+	Map defaultsForThis = fullDefaultsForClass.get(rootClass.getName())
+	if (defaultsForThis == null) {
 
-      // Default to the root.
-      Class theClass = rootClass
+	  defaultsForThis = [:]
 
-      // Try and get the map.
-      Map classMap
-      while (theClass) {
+	  // Default to the root.
+	  Class theClass = rootClass
 
-      try {
-        // Read the classMap
-        classMap = mc.getProperty(
-        rootClass,
-        theClass,
-        "refdataDefaults",
-        false,
-        true
-        )
-      } catch (MissingPropertyException e) {
-        // Catch the error and just set to null.
-        classMap = null
-      }
-    
-      // If we have values then add.
-      if (classMap) {
+	  // Try and get the map.
+	  Map classMap
+	  while (theClass) {
 
-        // Add using the class simple name.
-        defaultsForThis[theClass.getSimpleName()] = classMap
-      }
+		try {
+		  // Read the classMap
+		  classMap = mc.getProperty(
+			  rootClass,
+			  theClass,
+			  "refdataDefaults",
+			  false,
+			  true
+			  )
+		} catch (MissingPropertyException e) {
+		  // Catch the error and just set to null.
+		  classMap = null
+		}
 
-      // Get the superclass.
-      theClass = theClass.getSuperclass()
-      }
+		// If we have values then add.
+		if (classMap) {
 
-      // Once we have added each map to our map add to the global map.
-      fullDefaultsForClass[rootClass.getName()] = defaultsForThis
-    }
+		  // Add using the class simple name.
+		  defaultsForThis[theClass.getSimpleName()] = classMap
+		}
 
-    // Check we have some defaults.
-    if (defaultsForThis) {
-    
-      // Create a pointer to this so that we can access within the closures below.
-      KBComponent thisComponent = this
+		// Get the superclass.
+		theClass = theClass.getSuperclass()
+	  }
 
-      // DomainClassArtefactHandler for this class
-      GrailsDomainClass dClass = thisComponent.domainClass
-    
-      defaultsForThis.each { String className, defaults ->
+	  // Once we have added each map to our map add to the global map.
+	  fullDefaultsForClass[rootClass.getName()] = defaultsForThis
+	}
 
-        // Add each property and value to the properties in the defaults.
-        defaults.each {String property, values ->
+	// Check we have some defaults.
+	if (defaultsForThis) {
 
-          if (thisComponent."${property}" == null) {
+	  // Create a pointer to this so that we can access within the closures below.
+	  KBComponent thisComponent = this
 
-            // Get the type defined against the class.
-            GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
-            String propType = propertyDef?.getReferencedPropertyType()?.getName()
-  
-            if (propType) {
-  
-              switch (propType) {
-                case RefdataValue.class.getName() :
-    
-                  // Expecting refdata value. Do the lookup in a new session.
-                  KBComponent.withNewSession { session ->
-                    final String ucProp = GrailsNameUtils.getClassName(property);
-                    final String key = "${className}.${ucProp}"
-      
-                    if (values instanceof Collection) {
-                      values.each { val ->
-                        thisComponent."addTo${ucProp}" ( RefdataCategory.lookupOrCreate(key, val) )
-                      }
-        
-                    } else {
-                      // Set the default.
-                      thisComponent."${property}" = RefdataCategory.lookupOrCreate(key, values)
-                    }
-                  }
-                  break
-                default :
-                  // Just treat as a normal prop
-                  thisComponent."${property}" = values
-                  break
-              }
-            }
-          }
-        }
-      }
-    }
+	  // DomainClassArtefactHandler for this class
+	  GrailsDomainClass dClass = thisComponent.domainClass
+
+	  defaultsForThis.each { String className, defaults ->
+
+		// Add each property and value to the properties in the defaults.
+		defaults.each {String property, values ->
+
+		  if (thisComponent."${property}" == null) {
+
+			// Get the type defined against the class.
+			GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
+			String propType = propertyDef?.getReferencedPropertyType()?.getName()
+
+			if (propType) {
+
+			  switch (propType) {
+				case RefdataValue.class.getName() :
+
+				// Expecting refdata value. Do the lookup in a new session.
+				  KBComponent.withNewSession { session ->
+					final String ucProp = GrailsNameUtils.getClassName(property);
+					final String key = "${className}.${ucProp}"
+
+					if (values instanceof Collection) {
+					  values.each { val ->
+						thisComponent."addTo${ucProp}" ( RefdataCategory.lookupOrCreate(key, val) )
+					  }
+
+					} else {
+					  // Set the default.
+					  thisComponent."${property}" = RefdataCategory.lookupOrCreate(key, values)
+					}
+				  }
+				  break
+				default :
+				// Just treat as a normal prop
+				  thisComponent."${property}" = values
+				  break
+			  }
+			}
+		  }
+		}
+	  }
+	}
   }
 
   //  String impId
@@ -144,52 +144,48 @@ abstract class KBComponent {
   Set additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
-  Set ids = []
+//  Set ids = []
 
   // Timestamps
   Date dateCreated
   Date lastUpdated
 
-  // Going to add this per subclass
-  // static manyByCombo = [
-  //   ids      :  Identifier,
-  // ]
-
-  // static mappedByCombo = [
-  //   ids      :  'identifiedComponents',
-  // ]
+  // ids moved to combos.
+  static manyByCombo = [
+	ids      :  Identifier,
+  ]
 
   static mappedBy = [
-    outgoingCombos: 'fromComponent',
-    incomingCombos:'toComponent',
-    additionalProperties: 'fromComponent',
+	outgoingCombos: 'fromComponent',
+	incomingCombos:'toComponent',
+	additionalProperties: 'fromComponent',
   ]
 
   static hasMany = [
-    tags:RefdataValue,
-    outgoingCombos:Combo,
-    incomingCombos:Combo,
-    additionalProperties:KBComponentAdditionalProperty
+	tags:RefdataValue,
+	outgoingCombos:Combo,
+	incomingCombos:Combo,
+	additionalProperties:KBComponentAdditionalProperty
   ]
 
   static mapping = {
-    id column:'kbc_id'
-    version column:'kbc_version'
-    name column:'kbc_name'
-    normname column:'kbc_normname'
-    status column:'kbc_status_rv_fk'
-    shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
-    tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
-    dateCreated column:'kbc_date_created'
-    lastUpdated column:'kbc_last_updated'
+	id column:'kbc_id'
+	version column:'kbc_version'
+	name column:'kbc_name'
+	normname column:'kbc_normname'
+	status column:'kbc_status_rv_fk'
+	shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
+	tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
+	dateCreated column:'kbc_date_created'
+	lastUpdated column:'kbc_last_updated'
   }
 
   static constraints = {
-    name    (nullable:true, blank:false, maxSize:2048)
-    shortcode  (nullable:true, blank:false, maxSize:128)
-    normname  (nullable:true, blank:false, maxSize:2048)
-    status    (nullable:true, blank:false)
-    editStatus  (nullable:true, blank:false)
+	name    (nullable:true, blank:false, maxSize:2048)
+	shortcode  (nullable:true, blank:false, maxSize:128)
+	normname  (nullable:true, blank:false, maxSize:2048)
+	status    (nullable:true, blank:false)
+	editStatus  (nullable:true, blank:false)
   }
 
   /**
@@ -198,70 +194,70 @@ abstract class KBComponent {
    * @return
    */
   protected def generateShortcode () {
-  if (!shortcode && name) {
-    // Generate the short code.
-    shortcode = generateShortcode(name)
-  }
+	if (!shortcode && name) {
+	  // Generate the short code.
+	  shortcode = generateShortcode(name)
+	}
   }
 
   static def generateShortcode(name) {
-  def candidate = name.trim().replaceAll(" ","_")
+	def candidate = name.trim().replaceAll(" ","_")
 
-  if ( candidate.length() > 100 )
-    candidate = candidate.substring(0,100)
+	if ( candidate.length() > 100 )
+	  candidate = candidate.substring(0,100)
 
-  return incUntilUnique(candidate);
+	return incUntilUnique(candidate);
   }
 
   static def incUntilUnique(name) {
-  def result = name;
-  if ( KBComponent.findWhere([shortcode : (name)]) ) {
-    // There is already a shortcode for that identfier
-    int i = 2;
-    while ( KBComponent.findWhere([shortcode : "${name}_${i}"]) ) {
-    i++
-    }
-    result = "${name}_${i}"
-  }
+	def result = name;
+	if ( KBComponent.findWhere([shortcode : (name)]) ) {
+	  // There is already a shortcode for that identfier
+	  int i = 2;
+	  while ( KBComponent.findWhere([shortcode : "${name}_${i}"]) ) {
+		i++
+	  }
+	  result = "${name}_${i}"
+	}
 
-  result;
+	result;
   }
 
   @Transient
   static def lookupByIO(String idtype, String idvalue) {
-    // println("lookupByIdentifier(${idtype},${idvalue})");
-    // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
-    def result = null
+	// println("lookupByIdentifier(${idtype},${idvalue})");
+	// Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
+	def result = null
 
-    // Look up the namespace.. If we can't find it, there can't possibly be a match
-    def ns = IdentifierNamespace.findByValue(idtype)
-    if ( ns != null ) {
+	// Look up the namespace.. If we can't find it, there can't possibly be a match
+	def ns = IdentifierNamespace.findByValue(idtype)
+	if ( ns != null ) {
 
-      // Got a namespace, see if we can find the supplied idvalue in that namespace, if not, we won't be able to find
-      // any components with that identifier
-      def identifier = Identifier.findByNamespaceAndValue(ns, idvalue)
+	  // Got a namespace, see if we can find the supplied idvalue in that namespace, if not, we won't be able to find
+	  // any components with that identifier
+	  def identifier = Identifier.findByNamespaceAndValue(ns, idvalue)
 
-      if ( identifier != null ) {
-        // Found an identifier.. Get all components where that identifier is linked via
-        // the ids combo map.
-        def crit = KBComponent.createCriteria()
+	  if ( identifier != null ) {
+		// Found an identifier.. Get all components where that identifier is linked via
+		// the ids combo map.
+		def crit = KBComponent.createCriteria()
 
-        def lr = crit.list {
-          or {
-            outgoingCombos {
-              eq ( 'toComponent', identifier)
-            }
-            incomingCombos {
-              eq ( 'fromComponent', identifier)
-            }
-          }
-        }
+		def lr = crit.list {
+		  or {
+			outgoingCombos {
+			  eq ( 'toComponent', identifier)
+			}
+			incomingCombos {
+			  eq ( 'fromComponent', identifier)
+			}
+		  }
+		}
 
-        if ( lr && lr.size() == 1 )
-          result=lr.get(0);
-      }
-    }
-    result
+		if ( lr && lr.size() == 1 )
+		  result=lr.get(0);
+	  }
+	}
+	result
   }
 
 
@@ -270,110 +266,110 @@ abstract class KBComponent {
    *  objects implementing this method can be easily located and listed / selected
    */
   static def refdataFind(params) {
-  def result = [];
-  def ql = null;
-  ql = KBComponent.findAllByNameIlike("${params.q}%",params)
+	def result = [];
+	def ql = null;
+	ql = KBComponent.findAllByNameIlike("${params.q}%",params)
 
-  if ( ql ) {
-    ql.each { t ->
-    result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
-    }
-  }
+	if ( ql ) {
+	  ql.each { t ->
+		result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+	  }
+	}
 
-  result
+	result
   }
 
   protected def generateNormname () {
-  if (!normname && name) {
-    normname = name.toLowerCase().trim()
-  }
+	if (!normname && name) {
+	  normname = name.toLowerCase().trim()
+	}
   }
 
   def beforeInsert() {
 
-    // Generate the any necessary values.
-    generateShortcode()
-    generateNormname()
+	// Generate the any necessary values.
+	generateShortcode()
+	generateNormname()
 
-    // Ensure any defaults defined get set.
-    ensureDefaults()
+	// Ensure any defaults defined get set.
+	ensureDefaults()
 
   }
 
   def beforeUpdate() {
-  if ( name ) {
-    if ( !shortcode ) {
-    shortcode = generateShortcode(name);
-    }
-    normname = name.toLowerCase().trim();
-  }
+	if ( name ) {
+	  if ( !shortcode ) {
+		shortcode = generateShortcode(name);
+	  }
+	  normname = name.toLowerCase().trim();
+	}
   }
 
   @Transient
   String getIdentifierValue(idtype) {
-    def result=null
-    ids?.each { id ->
-      if ( id.toComponent instanceof Identifier ) {
-        if ( id.toComponent.ns?.ns == idtype )
-          result = id.toComponent?.value
-      }
-    }
-    result
+	def result=null
+	ids?.each { id ->
+	  if ( id.toComponent instanceof Identifier ) {
+		if ( id.toComponent.ns?.ns == idtype )
+		  result = id.toComponent?.value
+	  }
+	}
+	result
   }
 
   @Transient
   public List getOtherIncomingCombos () {
 
-  Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
+	Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
-  List combs = Combo.createCriteria().list {
-    and {
-    eq ("toComponent", this)
-    type {
-      and {
-      owner {
-        eq ("desc", 'Combo.Type')
-      }
-      not { 'in' ("value", comboPropTypes) }
-      }
+	List combs = Combo.createCriteria().list {
+	  and {
+		eq ("toComponent", this)
+		type {
+		  and {
+			owner {
+			  eq ("desc", 'Combo.Type')
+			}
+			not { 'in' ("value", comboPropTypes) }
+		  }
 
-    }
-    }
-  }
+		}
+	  }
+	}
 
-  combs
+	combs
   }
 
   @Transient
   public List getOtherOutgoingCombos () {
 
-  Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
+	Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
-  List combs = Combo.createCriteria().list {
-    and {
-    eq ("fromComponent", this)
-    type {
-      and {
-      owner {
-        eq ("desc", 'Combo.Type')
-      }
-      not { 'in' ("value", comboPropTypes) }
-      }
-    }
-    }
-  }
+	List combs = Combo.createCriteria().list {
+	  and {
+		eq ("fromComponent", this)
+		type {
+		  and {
+			owner {
+			  eq ("desc", 'Combo.Type')
+			}
+			not { 'in' ("value", comboPropTypes) }
+		  }
+		}
+	  }
+	}
 
-  combs
+	combs
   }
 
   public Date deleteSoft (Date endDate = new Date()) {
-    // Set the status to deleted.
-    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+	// Set the status to deleted.
+	setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
   }
 
   @Transient
   public String getClassName () {
-    getMetaClass().getTheClass().getName()
+	getMetaClass().getTheClass().getName()
   }
 
   //  @Transient

@@ -27,11 +27,8 @@ class TitleInstance extends KBComponent {
   
   static manyByCombo = [
 	tipps 	: TitleInstancePackagePlatform,
-        ids     :  Identifier
+//        ids     :  Identifier
   ]
-
-  static mapping = {
-  }
 
   static constraints = {
 	
