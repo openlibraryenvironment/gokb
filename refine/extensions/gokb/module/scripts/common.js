@@ -1,4 +1,4 @@
-  var GOKb = {
+var GOKb = {
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
@@ -198,17 +198,33 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
   
   // Complete callback.
   var complete = function (jqXHR, status) {
-		done = true;
-	  if (dismissBusy) {
-	    dismissBusy();
-	  }
-	  GOKb.clearAjaxInProgress();
 	  
 	  if (status == 'error' || status == 'timeout') {
 	    // Display an error message to the user.	    
 	    GOKb.defaultError();
 	  }
 	};
+	
+
+	
+	// Current success method.
+	var currentSuccess = ajaxObj.success;
+	var newSucessFunction = function (dataR) {
+		
+		// Clear the waiting window, here before the success handler to ensure the
+		// new window is not closed as well as the waiting modal.
+		done = true;
+	  if (dismissBusy) {
+	    dismissBusy();
+	  }
+	  GOKb.clearAjaxInProgress();
+		
+		// Fire our current success object afterwards.
+		currentSuccess(dataR);
+	};
+	
+	// Set success to our new function.
+	ajaxObj.success = newSucessFunction;
 	
 	/*
 	 * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
@@ -229,7 +245,7 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 		// Set the complete method equal to our callback.
 		ajaxObj.complete = complete;
 		
-		// fire the ajax request.
+		// Fire the ajax request.
 		$.ajax(ajaxObj);
 	}
   
