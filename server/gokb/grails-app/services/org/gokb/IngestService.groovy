@@ -193,56 +193,68 @@ class IngestService {
 	log.debug("Finding existing titles...");
 
 	// Go through each row and build up the tipp criteria.
-	existingTitles = TitleInstance.createCriteria().get {
-	  outgoingCombos {
+	def tiCrit = ComboCriteria.createFor(TitleInstance.createCriteria())
+	existingTitles = tiCrit.get {
+	  
+	  or {
 
-		or {
+		project_data.rowData.each { datarow ->
+		  if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
 
-		  project_data.rowData.each { datarow ->
-			if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+			def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
 
-			  def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-			  def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+			// Just add the normname to the platforms list.
+			platformNames << host_norm_platform_name
 
-			  // Just add the normname to the platforms list.
-			  platformNames << host_norm_platform_name
+			// (e)issns.
+			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
+			def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
 
-			  // (e)issns.
-			  def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
-			  def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
-
-			  // issn query.
-			  if (issn != null) {
-				def issn_component = getIdentifierComponent('issn',issn);
-				if ( issn_component != null ) {
-				  eq('toComponent',issn_component);
+			// issn query.
+			if (issn != null) {
+			  def issn_component = getIdentifierComponent('issn',issn);
+			  if ( issn_component != null ) {
+//				eq('toComponent',issn_component);
+				and {
+				  tiCrit.add ("ids.namespace.value", "eq", 'issn')
+				  tiCrit.add ("ids.value", "eq", issn)
 				}
 			  }
-
-			  // eissn query
-			  if (eissn != null) {
-				def eissn_component = getIdentifierComponent('eissn',issn);
-				if ( eissn_component != null ) {
-				  eq ("toComponent", eissn_component)
-				}
-			  }
-
-			  // Each additional identifier type.
-			  additional_identifiers.each { ai ->
-				def id_component = getIdentifierComponent(ai.type,datarow.cells[ai.colno]);
-				if ( id_component ) {
-				  eq ("toComponent", id_component)
-				}
-			  }
-
-			  // increment the titleRows counter.
-			  titleRows ++
 			}
 
-			// Increment the row counter.
-			ctr ++
+			// eissn query
+			if (eissn != null) {
+//			  def eissn_component = getIdentifierComponent('eissn',issn);
+			  if ( eissn_component != null ) {
+//				eq ("toComponent", eissn_component)
+				and {
+    				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
+    				tiCrit.add ("ids.value", "eq", eissn)
+				}
+			  }
+			}
+
+			// Each additional identifier type.
+			additional_identifiers.each { ai ->
+//			  def id_component = getIdentifierComponent(ai.type,datarow.cells[ai.colno]);
+//			  if ( id_component ) {
+//				eq ("toComponent", id_component)
+//			  }
+			  and {
+				tiCrit.add ("ids.namespace.value", "eq", ai.type)
+				tiCrit.add ("ids.value", "eq", datarow.cells[ai.colno])
+			  }
+			}
+
+			// increment the titleRows counter.
+			titleRows ++
 		  }
+
+		  // Increment the row counter.
+		  ctr ++
 		}
+
 	  }
 
 	  projections {
