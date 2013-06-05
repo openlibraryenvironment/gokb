@@ -3,7 +3,6 @@ package org.gokb;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 import org.gokb.cred.Combo;
 import org.gokb.cred.KBComponent;
@@ -20,7 +19,6 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
     this (component, status, type, vals, false );
   }
 
-  @SuppressWarnings({ "rawtypes", "unchecked" })
   public ComboPersistedList (KBComponent component, RefdataValue status, RefdataValue type, Collection vals, boolean incoming) {
     super(new ArrayList(vals));
     this.component = component;
@@ -29,7 +27,6 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
     this.incoming = incoming;
   }
   
-  @SuppressWarnings("unchecked")
   @Override
   public boolean add(Object element) {
     
@@ -41,29 +38,30 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
     if (added) {
       
       // Create the Combo.
-      Combo combo = new Combo ();
-      combo.setStatus(status);
-      combo.setType(type);
-      
+      Combo combo = new Combo (
+		status 		: (status),
+		type 		: (type),
+		startDate 	: new Date()
+	  )
+	  
       // Add to the 2 comboLists.
       if (incoming) {
         
         // Incoming combos of component.
-        component.getIncomingCombos().add(combo);
-        comp.getOutgoingCombos().add(combo);
+        component.addToIncomingCombos(combo)
+        comp.addToOutgoingCombos(combo)
         
       } else {
         
         // Outgoing combos of component.
-        component.getOutgoingCombos().add (combo);
-        comp.getIncomingCombos().add (combo);
+        component.addToOutgoingCombos (combo);
+        comp.addToIncomingCombos (combo);
       }
     }
     
     return added;
   }
 
-  @SuppressWarnings({ "rawtypes"})
   @Override
   public boolean addAll( Collection coll) {
     
@@ -114,7 +112,6 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
     return removed;
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public boolean removeAll(Collection coll) {
     // Ensure we use our extended remove.
@@ -126,7 +123,6 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
     return removed;
   }
 
-  @SuppressWarnings({ "rawtypes" })
   @Override
   public boolean retainAll(Collection coll) {
     

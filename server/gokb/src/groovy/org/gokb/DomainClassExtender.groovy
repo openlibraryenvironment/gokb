@@ -204,7 +204,8 @@ class DomainClassExtender {
   private static addCombineInheritedMapFor = { DefaultGrailsDomainClass domainClass ->
 
 	// Get the metaclass.
-	domainClass.getMetaClass().static.combineInheritedMapFor = {Class forClass, String mapName ->
+	ExpandoMetaClass mc = domainClass.getMetaClass()
+	mc.static.combineInheritedMapFor = {Class forClass, String mapName ->
 	  log.debug("combineInheritedValuesFor called on ${delegate} with args ${[forClass, mapName]}")
 	  
 	  // Start with this class.
@@ -212,17 +213,17 @@ class DomainClassExtender {
 	  
 	  // Start with an empty map.
 	  Map values = [:]
-	  while (theClass) {
+	  while (theClass && theClass != java.lang.Object) {
 		Map value
 		try {
 		  // Read the classMap
 		  value = mc.getProperty(
-			  domainClass.getClazz(),
-			  theClass,
-			  mapName,
-			  false,
-			  true
-			  )
+			domainClass.getClazz(),
+			theClass,
+			mapName,
+			false,
+			true
+		  )
 		} catch (MissingPropertyException e) {
 		  // Catch the error and just set to null.
 		  value = null
@@ -457,7 +458,6 @@ class DomainClassExtender {
 	  if (key != null) {
 		log.debug("\t...found")
 	  } else {
-
 
 		String capProp
 		Class mappedByClass
@@ -824,6 +824,7 @@ class DomainClassExtender {
 		DomainClassExtender.addGetAllComboPropertyNamesFor (domainClass)
 		DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
 		DomainClassExtender.addIsComboPropertyFor (domainClass)
+		DomainClassExtender.addCombineInheritedMapFor (domainClass)
 		DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
 
 		// Extend to handle ComboMapped Properties.

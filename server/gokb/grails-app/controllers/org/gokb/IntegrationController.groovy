@@ -72,18 +72,19 @@ class IntegrationController {
   
         def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','Org.Ids');
         // Identifiers
-
         log.debug("Identifier processing ${request.JSON.customIdentifers}");
         request.JSON.customIdentifers.each { ci ->
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
-          def id_combo = new Combo( 
-                                    fromComponent:located_or_new_org, 
-                                    toComponent:canonical_identifier, 
-                                    type:identifier_combo_type, 
-                                    startDate:new Date())
-          log.debug("About to call save on id combo, from=${id_combo.fromComponent}, to=${id_combo.toComponent}");
-          id_combo.save(failOnError:true, flush:true)
+//          def id_combo = new Combo( 
+//                                    fromComponent:located_or_new_org, 
+//                                    toComponent:canonical_identifier, 
+//                                    type:identifier_combo_type, 
+//                                    startDate:new Date())
+//          log.debug("About to call save on id combo, from=${id_combo.fromComponent}, to=${id_combo.toComponent}");
+//          id_combo.save(failOnError:true, flush:true)
+		  
+		  located_or_new_org.ids.add(canonical_identifier)
         }
     
         // roles
@@ -92,7 +93,7 @@ class IntegrationController {
           log.debug("Adding role ${r}");
           def role = RefdataCategory.lookupOrCreate("Org.Role", r)
           located_or_new_org.addToRoles(
-          role
+			role
           )
         }
 
@@ -113,7 +114,7 @@ class IntegrationController {
           log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
           def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
       
-      // Located a component.
+		  // Located a component.
           if ( ( located_component != null ) ) {
             def combo = new Combo(
               type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
@@ -122,7 +123,7 @@ class IntegrationController {
               startDate:new Date()).save(flush:true,failOnError:true);
           }
           else {
-            log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");
+            log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
           }
         }
         
