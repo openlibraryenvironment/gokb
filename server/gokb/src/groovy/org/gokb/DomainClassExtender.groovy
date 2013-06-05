@@ -213,7 +213,7 @@ class DomainClassExtender {
 	  
 	  // Start with an empty map.
 	  Map values = [:]
-	  while (theClass && theClass != java.lang.Object) {
+	  while (theClass) {
 		Map value
 		try {
 		  // Read the classMap
@@ -486,9 +486,25 @@ class DomainClassExtender {
 		  // Set the class also.
 		  mappedByClass = forClass
 		}
+		
+		// We have a mapped by class, but we need to check that it isn't declared on one of the super classes.
+		Class theClass = mappedByClass
+		while (theClass) {
+		  try {
+			Set<String> props = getAllComboPropertyNamesFor (theClass)
+			if (props.contains(propertyName)) {
+			  // Set the key.
+			  key = "${GrailsNameUtils.getShortName(theClass)}.${capProp}"
+			}
+			
+		  } catch (Throwable t) {
+		  	// Do nothing.
+		  }
+		  
+		  theClass = theClass.getSuperclass();
+		}
 
 		// Cache the constructed key.
-		key = "${GrailsNameUtils.getShortName(mappedByClass)}.${capProp}"
 		DomainClassExtender.comboTypeValueCache[cacheKey] = key
 		log.debug("\t... not found, generated and added to cache.")
 	  }

@@ -26,15 +26,16 @@ class CoreferenceController {
       def int_id = q.get()
 
       if ( int_id ) {
-        log.debug("Recognised identifier.. find all occurrences");
-        def q2 = new DetachedCriteria(KBComponent).build {
-          ids {
-            eq ("id", int_id.id)
-          }
-        }
+        log.debug("Recognised identifier.. find all occurrences")
+		
+		ComboCriteria crit = ComboCriteria.createFor(KBComponent.createCriteria())
+		
         result.identifier = int_id
-        result.count = q2.count()
-        result.records = q2.list()
+        result.records = crit.list {
+		  crit.add ("ids.id", "eq", int_id.id)
+		}
+		result.count = result.records.size()
+		
         log.debug("result: ${result.identifier} ${result.count} ${result.records}");
       }
     }
