@@ -213,26 +213,26 @@ class IngestService {
 
 			// issn query.
 			if (issn != null) {
-			  def issn_component = getIdentifierComponent('issn',issn);
-			  if ( issn_component != null ) {
+//			  def issn_component = getIdentifierComponent('issn',issn);
+//			  if ( issn_component != null ) {
 //				eq('toComponent',issn_component);
 				and {
 				  tiCrit.add ("ids.namespace.value", "eq", 'issn')
 				  tiCrit.add ("ids.value", "eq", issn)
 				}
-			  }
+//			  }
 			}
 
 			// eissn query
 			if (eissn != null) {
 //			  def eissn_component = getIdentifierComponent('eissn',issn);
-			  if ( eissn_component != null ) {
+//			  if ( eissn_component != null ) {
 //				eq ("toComponent", eissn_component)
 				and {
     				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
     				tiCrit.add ("ids.value", "eq", eissn)
 				}
-			  }
+//			  }
 			}
 
 			// Each additional identifier type.
@@ -405,7 +405,7 @@ class IngestService {
 					name:host_platform_name,
 					normname:host_norm_platform_name,
 					primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
-					)
+				)
 
 				if (! platform_info.save(failOnError:true) ) {
 				  platform_info.errors.each { e ->
@@ -879,7 +879,7 @@ class IngestService {
 	if ( pkg_identifier_component != null ) {
 	  def q = ComboCriteria.createFor(Package.createCriteria())
 	  def pkg_list = q.list {
-		q.add ("ids.id", pkg_identifier_component.id)
+		q.add ("ids.id", "eq", pkg_identifier_component.id)
 	  }
 
 	  log.debug("Lookup of package with identifier ${pkg_identifier} returns ${pkg_list.size()} entries");

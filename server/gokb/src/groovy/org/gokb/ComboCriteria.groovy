@@ -117,7 +117,7 @@ class ComboCriteria {
 			  )
 			  fromComponent {
 //				processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-				add (newPropName, operator, args, the_class)
+				add (newPropName, operator, args, target_class)
 			  }
 			}
 		  }
@@ -135,7 +135,7 @@ class ComboCriteria {
 			  )
 			  toComponent {
 //				processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-				add (newPropName, operator, args, the_class)
+				add (newPropName, operator, args, target_class)
 			  }
 			}
 		  }
@@ -143,11 +143,12 @@ class ComboCriteria {
 	  } else {
 		// Normal groovy/grails property.
 		target_class = GrailsClassUtils.getPropertyType(the_class, prop)
+		crit.targetClass = the_class
 
 		// Add the association here.
 		"${prop}" {
 //		  processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-		  add (newPropName, operator, args, the_class)
+		  add (newPropName, operator, args, target_class)
 		}
 	  }
 
