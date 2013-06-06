@@ -871,35 +871,34 @@ class IngestService {
 
 	// Try and find a package for the provider with the name entered.
 	log.debug("identifier will be ${pkg_identifier}")
-	def pkg_identifier_component = Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid', pkg_identifier)
-
-//	def pkg_identifier_component = getIdentifierComponent('gokb-pkgid',pkg_identifier);
 	def pkg = null;
 
-	if ( pkg_identifier_component != null ) {
-	  def q = ComboCriteria.createFor(Package.createCriteria())
-	  def pkg_list = q.list {
-		q.add ("ids.id", "eq", pkg_identifier_component.id)
-	  }
 
-	  log.debug("Lookup of package with identifier ${pkg_identifier} returns ${pkg_list.size()} entries");
+    def q = ComboCriteria.createFor(Package.createCriteria())
+    def pkg_list = q.list {
+      and {
+        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+        q.add ("ids.value", "eq", pkg_identifier)
+      }
+    }
 
-	  if ( pkg_list.size() == 0 ) {
-		log.debug("New package")
-	  }
-	  else if (  pkg_list.size() == 1 ) {
-		log.debug("Identified a package")
-		pkg = pkg_list.get(0);
-	  }
-	  else {
-		throw new Exception("Multiple packages with specififed identifier. This should never happen");
-	  }
-	}
+    log.debug("Lookup of package with identifier ${pkg_identifier} returns ${pkg_list.size()} entries");
+
+    if ( pkg_list.size() == 0 ) {
+      log.debug("New package")
+    }
+    else if (  pkg_list.size() == 1 ) {
+      log.debug("Identified a package")
+      pkg = pkg_list.get(0);
+    }
+    else {
+      throw new Exception("Multiple packages with specififed identifier. This should never happen");
+    }
 
 	// Package found?
 	if (!pkg) {
 
-	  Package.withNewTransaction { tranStat ->
+//	  Package.withNewTransaction { tranStat ->
 		log.debug("New package with identifier ${pkg_identifier} for ${provider.name}");
 
 		// Create a new package.
@@ -915,8 +914,8 @@ class IngestService {
 		pkg.ids.add (new_identifier)
 		
 		// Save the package.
-		pkg.save(failOnError:true)
-	  }
+		pkg.save(failOnError:true, flush:true)
+//	  }
 	}
 	else {
 	  log.debug("Got existing package ${pkg.id}");

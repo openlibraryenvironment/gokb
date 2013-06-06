@@ -21,71 +21,71 @@ class TitleInstancePackagePlatform extends KBComponent {
   String endVolume
   String endIssue
   String url
-  
+
   private static refdataDefaults = [
-  "format"     : "Electronic",
-  "delayedOA"    : "Unknown",
-  "hybridOA"    : "Unknown",
-  "primary"    : "No",
-  "paymentType"  : "Paid"
+    "format"        : "Electronic",
+    "delayedOA"     : "Unknown",
+    "hybridOA"      : "Unknown",
+    "primary"       : "No",
+    "paymentType"   : "Paid"
   ]
-  
+
   static hasByCombo = [
-    pkg           : Package,
-    hostPlatform      : Platform,
-    title          : TitleInstance,
-    derivedFrom        : TitleInstancePackagePlatform,
+    pkg                 : Package,
+    hostPlatform        : Platform,
+    title               : TitleInstance,
+    derivedFrom         : TitleInstancePackagePlatform,
   ]
-  
+
   static mappedByCombo = [
-    pkg           : 'tipps',
-    hostPlatform       : 'hostedTipps',
-    additionalPlatforms    : 'linkedTipps',
-    title           : 'tipps',
-    derivatives        : 'derivedFrom',
+    pkg                 : 'tipps',
+    hostPlatform        : 'hostedTipps',
+    additionalPlatforms : 'linkedTipps',
+    title               : 'tipps',
+    derivatives         : 'derivedFrom',
   ]
-  
+
   static manyByCombo = [
-  derivatives        : TitleInstancePackagePlatform,
-  additionalPlatforms    : Platform,
+    derivatives           : TitleInstancePackagePlatform,
+    additionalPlatforms   : Platform,
   ]
 
   static mapping = {
-        startDate column:'tipp_start_date'
-      startVolume column:'tipp_start_volume'
-       startIssue column:'tipp_start_issue'
-          endDate column:'tipp_end_date'
-        endVolume column:'tipp_end_volume'
-         endIssue column:'tipp_end_issue'
-          embargo column:'tipp_embargo'
+    startDate column:'tipp_start_date'
+    startVolume column:'tipp_start_volume'
+    startIssue column:'tipp_start_issue'
+    endDate column:'tipp_end_date'
+    endVolume column:'tipp_end_volume'
+    endIssue column:'tipp_end_issue'
+    embargo column:'tipp_embargo'
     coverageDepth column:'tipp_coverage_depth'
-     coverageNote column:'tipp_coverage_note',type: 'text'
-       format column:'tipp_format_rv_fk'
-      delayedOA column:'tipp_delayed_oa'
- delayedOAEmbargo column:'tipp_delayed_oa_embargo'
-      hybridOA column:'tipp_hybrid_oa'
+    coverageNote column:'tipp_coverage_note',type: 'text'
+    format column:'tipp_format_rv_fk'
+    delayedOA column:'tipp_delayed_oa'
+    delayedOAEmbargo column:'tipp_delayed_oa_embargo'
+    hybridOA column:'tipp_hybrid_oa'
     hybridOAUrl column:'tipp_hybrid_oa_url'
-        primary column:'tipp_primary'
+    primary column:'tipp_primary'
     paymentType column:'tipp_payment_type'
   }
 
   static constraints = {
-  startDate (nullable:true, blank:true)
-  startVolume (nullable:true, blank:true)
-   startIssue (nullable:true, blank:true)
+    startDate (nullable:true, blank:true)
+    startVolume (nullable:true, blank:true)
+    startIssue (nullable:true, blank:true)
     endDate (nullable:true, blank:true)
     endVolume (nullable:true, blank:true)
-     endIssue (nullable:true, blank:true)
+    endIssue (nullable:true, blank:true)
     embargo (nullable:true, blank:true)
-  coverageDepth (nullable:true, blank:true)
-   coverageNote (nullable:true, blank:true)
-     format (nullable:true, blank:true)
+    coverageDepth (nullable:true, blank:true)
+    coverageNote (nullable:true, blank:true)
+    format (nullable:true, blank:true)
     delayedOA (nullable:true, blank:true)
-delayedOAEmbargo (nullable:true, blank:true)
+    delayedOAEmbargo (nullable:true, blank:true)
     hybridOA (nullable:true, blank:true)
-  hybridOAUrl (nullable:true, blank:true)
-      primary (nullable:true, blank:true)
-  paymentType (nullable:true, blank:true)
+    hybridOAUrl (nullable:true, blank:true)
+    primary (nullable:true, blank:true)
+    paymentType (nullable:true, blank:true)
   }
 
   @Transient
