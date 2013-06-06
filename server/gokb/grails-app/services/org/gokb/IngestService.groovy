@@ -21,7 +21,7 @@ class IngestService {
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
-	new SimpleDateFormat('yyyy-MM-dd'),
+	new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
 	new SimpleDateFormat('yyyy/MM/dd'),
 	new SimpleDateFormat('dd/MM/yyyy'),
 	new SimpleDateFormat('dd/MM/yy'),
@@ -96,6 +96,8 @@ class IngestService {
 
 //	if ( col_positions[PUBLISHER_NAME] == null )
 //	  result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
+    if ( col_positions[PACKAGE_NAME] == null )
+      result.messages.add([text:"Import does not specify a ${PACKAGE_NAME} column", type:"missing_column", col: "${PACKAGE_NAME}"]);
 
 	if ( result.messages.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
