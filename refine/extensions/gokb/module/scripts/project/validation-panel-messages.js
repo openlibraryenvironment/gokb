@@ -55,6 +55,21 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			);
 			
 			break;
+			
+		case 'data_invalid' :
+		  // No quick suggestions yet.
+			opts = opts.concat (
+			  [
+			   	{
+			   		id 		: message.type + "none",
+			   		label : "No suggestions...",
+//			   		click : function() {
+//			   			ValidationPanel.messages.quickRes.renameColumn(message);
+//			   		}
+			    },
+			  ]
+			);
+			break;
 	}
 	
 	return opts;

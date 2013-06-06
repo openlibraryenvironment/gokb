@@ -8,7 +8,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   String startVolume
   String startIssue
   String embargo
-  String coverageDepth
+  RefdataValue coverageDepth
   String coverageNote
   RefdataValue format
   RefdataValue delayedOA
@@ -27,7 +27,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     "delayedOA"     : "Unknown",
     "hybridOA"      : "Unknown",
     "primary"       : "No",
-    "paymentType"   : "Paid"
+    "paymentType"   : "Paid",
+    "coverageDepth" : "Fulltext"
   ]
 
   static hasByCombo = [

@@ -21,7 +21,7 @@ class IngestService {
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
-	new SimpleDateFormat('yyyy-MM-dd'),
+	new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
 	new SimpleDateFormat('yyyy/MM/dd'),
 	new SimpleDateFormat('dd/MM/yyyy'),
 	new SimpleDateFormat('dd/MM/yy'),
@@ -94,9 +94,14 @@ class IngestService {
 	if ( col_positions[HOST_PLATFORM_URL] == null )
 	  result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
 
-	if ( col_positions[PUBLISHER_NAME] == null )
-	  result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
-
+//	if ( col_positions[PUBLISHER_NAME] == null )
+//	  result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
+    if ( col_positions[PACKAGE_NAME] == null )
+      result.messages.add([text:"Import does not specify a ${PACKAGE_NAME} column", type:"missing_column", col: "${PACKAGE_NAME}"]);
+      
+    // Check the cell content here...
+    validateContent (project_data, col_positions, result)
+    
 	if ( result.messages.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
 	  result.status = false;
@@ -107,6 +112,64 @@ class IngestService {
 	}
 
 	result
+  }
+  
+  /**
+   * Do some validation on the content here.
+   */
+  def validateContent (project_data, col_positions, result) {
+    
+    // Only check the content if the status is correct.
+    if (result.status) {
+    
+      // Go through the data and see whether each row is valid.
+      def rowCount = 1
+      
+      // Keep track of package ids in this doc.
+      Set packageIdentifiers = []
+      project_data.rowData.each { datarow ->
+      
+        // Check the presence of the name first.
+        def pkg_name_pos = col_positions[PACKAGE_NAME]
+        
+        if (pkg_name_pos != null) {
+          
+          // Check the value of package name here.
+          def value = getRowValue(datarow,col_positions,PACKAGE_NAME)
+          if (!value || value == "") {
+            result.messages.add([text:"Row ${rowCount} contains no data for column ${PACKAGE_NAME}", type:"data_invalid", col: "${PACKAGE_NAME}"]);
+          } else {
+            // Add to the list of package ids.
+            packageIdentifiers << value.toString()
+          }
+        }
+        rowCount ++
+      }
+      
+      // Check existing packages.
+      if (packageIdentifiers) {
+		def q = ComboCriteria.createFor(Package.createCriteria())
+		def existingPkgs = q.get {
+		  and {
+			  q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+			  q.add ("ids.value", "in", [packageIdentifiers])
+		  }
+		}
+        
+        if (existingPkgs) {
+          // Get the package ids that cause the issue.
+          Set offendingIds = []
+          existingPkgs.each {pkg ->
+            pkg.ids.each {Identifier theId ->
+              if (packageIdentifiers.contains(theId.value)) offendingIds << theId.value
+            }
+          }
+          
+          // Add a message.
+          result.messages.add([text:"Data present in column \"${PACKAGE_NAME}\" would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
+        }
+      }
+    }
   }
 
   /**
@@ -389,7 +452,7 @@ class IngestService {
 				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
 				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
 				  extra_ids,
-				  jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
+				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
 
 			  // Platform.
 			  def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
@@ -420,8 +483,7 @@ class IngestService {
 			  }
 
 			  // Does the row specify a package identifier?
-			  // TODO: This needs to lookup a column instead of just using null.
-			  def pkg_identifier_from_row = null
+			  def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
 
 			  // The package.
 			  def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
@@ -450,7 +512,9 @@ class IngestService {
 					endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
 					endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
 					embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+          
+                    //TODO: Coverage depth now defaults only for this phase. Commenting out for now.
+//					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
 					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
 					url:host_platform_url
 					)

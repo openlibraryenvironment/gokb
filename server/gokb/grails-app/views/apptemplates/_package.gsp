@@ -31,7 +31,7 @@
   <tr><td>Global</td>                 <td>${d.global?.value?:'Not Set'}</td></tr>
   <tr><td>Fixed</td>                  <td>${d.fixed?.value?:'Not Set'}</td></tr>
   <tr><td>Consistent</td>             <td>${d.consistent?.value?:'Not Set'}</td></tr>
-  <tr><td>Last Project</td>           <td><g:link controller="resource" action="show" id="${d.lastProject?.class.name+':'+d.lastProject?.id}">${d.lastProject?.name}</g:link></td></tr>
+  <tr><td>Last Project</td>           <td><g:link controller="resource" action="show" id="${d.lastProject?.getClassName()+':'+d.lastProject?.id}">${d.lastProject?.name}</g:link></td></tr>
   <tr><td>Tags</td>                   <td><ul><g:each in="${d.tags}" var="t"><li>${t.value}</li></g:each></ul></td></tr>
   <tr><td>Incoming Combos</td>        <td>
     <ul>
