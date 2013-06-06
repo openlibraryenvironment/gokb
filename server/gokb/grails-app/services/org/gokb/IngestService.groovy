@@ -126,7 +126,7 @@ class IngestService {
       def rowCount = 1
       
       // Keep track of package ids in this doc.
-      Set pkg_ids = []
+      Set packageIdentifiers = []
       project_data.rowData.each { datarow ->
       
         // Check the presence of the name first.
@@ -140,28 +140,28 @@ class IngestService {
             result.messages.add([text:"Row ${rowCount} contains no data for column ${PACKAGE_NAME}", type:"data_invalid", col: "${PACKAGE_NAME}"]);
           } else {
             // Add to the list of package ids.
-            pkg_ids << value.toString()
+            packageIdentifiers << value.toString()
           }
         }
         rowCount ++
       }
       
       // Check existing packages.
-      if (pkg_ids) {
-        def q = ComboCriteria.createFor(Package.createCriteria())
-        def existingPkgs = q.list {
-          and {
-            q.add ("ids.namespace.value", "eq", "gokb-pkgid")
-            q.add ("ids.value", "in", [pkg_ids])
-          }
-        }
+      if (packageIdentifiers) {
+		def q = ComboCriteria.createFor(Package.createCriteria())
+		def existingPkgs = q.get {
+		  and {
+			  q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+			  q.add ("ids.value", "in", [packageIdentifiers])
+		  }
+		}
         
         if (existingPkgs) {
           // Get the package ids that cause the issue.
           Set offendingIds = []
           existingPkgs.each {pkg ->
-            pkg.ids.each {theId ->
-              if (pkg_ids.contains(theId)) offendingIds << theId
+            pkg.ids.each {Identifier theId ->
+              if (packageIdentifiers.contains(theId.value)) offendingIds << theId.value
             }
           }
           
@@ -452,7 +452,7 @@ class IngestService {
 				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
 				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
 				  extra_ids,
-				  jsonv(datarow.cells[col_positions[PUBLISHER_NAME]]));
+				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
 
 			  // Platform.
 			  def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
