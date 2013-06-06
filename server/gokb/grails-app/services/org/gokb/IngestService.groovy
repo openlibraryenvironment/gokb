@@ -445,7 +445,9 @@ class IngestService {
 					endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
 					endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
 					embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+          
+                    //TODO: Coverage depth now defaults only for this phase. Commenting out for now.
+//					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
 					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
 					url:host_platform_url
 					)

@@ -112,6 +112,10 @@ class BootStrap {
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Opt Out Promotion").save()
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Uncharged").save()
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Unkown").save()
+    
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.CoverageDepth", "Fulltext").save()
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.CoverageDepth", "Selected Articles").save()
+    RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.CoverageDepth", "Abstracts").save()
 	
 	RefdataCategory.lookupOrCreate("Package.Scope", "Aggregator").save()
 	RefdataCategory.lookupOrCreate("Package.Scope", "Back File").save()
@@ -156,7 +160,7 @@ class BootStrap {
 	
 	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes").save()
 	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "No").save()
-	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Unknown").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Unknown").save()
 	
 	RefdataCategory.lookupOrCreate("TitleInstance.ReasonRetired", "Ceased").save()
 	RefdataCategory.lookupOrCreate("TitleInstance.ReasonRetired", "Transferred").save()
