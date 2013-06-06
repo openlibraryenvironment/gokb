@@ -98,7 +98,10 @@ class IngestService {
 //	  result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
     if ( col_positions[PACKAGE_NAME] == null )
       result.messages.add([text:"Import does not specify a ${PACKAGE_NAME} column", type:"missing_column", col: "${PACKAGE_NAME}"]);
-
+      
+    // Check the cell content here...
+    validateContent (project_data, col_positions, result)
+    
 	if ( result.messages.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
 	  result.status = false;
@@ -109,6 +112,64 @@ class IngestService {
 	}
 
 	result
+  }
+  
+  /**
+   * Do some validation on the content here.
+   */
+  def validateContent (project_data, col_positions, result) {
+    
+    // Only check the content if the status is correct.
+    if (result.status) {
+    
+      // Go through the data and see whether each row is valid.
+      def rowCount = 1
+      
+      // Keep track of package ids in this doc.
+      Set pkg_ids = []
+      project_data.rowData.each { datarow ->
+      
+        // Check the presence of the name first.
+        def pkg_name_pos = col_positions[PACKAGE_NAME]
+        
+        if (pkg_name_pos != null) {
+          
+          // Check the value of package name here.
+          def value = getRowValue(datarow,col_positions,PACKAGE_NAME)
+          if (!value || value == "") {
+            result.messages.add([text:"Row ${rowCount} contains no data for column ${PACKAGE_NAME}", type:"data_invalid", col: "${PACKAGE_NAME}"]);
+          } else {
+            // Add to the list of package ids.
+            pkg_ids << value.toString()
+          }
+        }
+        rowCount ++
+      }
+      
+      // Check existing packages.
+      if (pkg_ids) {
+        def q = ComboCriteria.createFor(Package.createCriteria())
+        def existingPkgs = q.list {
+          and {
+            q.add ("ids.namespace.value", "eq", "gokb-pkgid")
+            q.add ("ids.value", "in", [pkg_ids])
+          }
+        }
+        
+        if (existingPkgs) {
+          // Get the package ids that cause the issue.
+          Set offendingIds = []
+          existingPkgs.each {pkg ->
+            pkg.ids.each {theId ->
+              if (pkg_ids.contains(theId)) offendingIds << theId
+            }
+          }
+          
+          // Add a message.
+          result.messages.add([text:"Row ${rowCount} contains data for column ${PACKAGE_NAME} that would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
+        }
+      }
+    }
   }
 
   /**
@@ -417,8 +478,7 @@ class IngestService {
 			  }
 
 			  // Does the row specify a package identifier?
-			  // TODO: This needs to lookup a column instead of just using null.
-			  def pkg_identifier_from_row = null
+			  def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
 
 			  // The package.
 			  def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
