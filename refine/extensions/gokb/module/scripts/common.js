@@ -205,8 +205,6 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	  }
 	};
 	
-
-	
 	// Current success method.
 	var currentSuccess = ajaxObj.success;
 	var newSucessFunction = function (dataR) {
@@ -233,7 +231,6 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	 * So here we need to check the version and attach our callback to the initial
 	 * ajax object if we are using jQuery 1.5 or lower.
 	 */
-  
 	if (GOKb.jqVersion > 1.5) {
 		
 		// Fire the ajax and attach the always function.

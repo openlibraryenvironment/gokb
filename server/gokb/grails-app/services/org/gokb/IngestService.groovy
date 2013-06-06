@@ -211,47 +211,38 @@ class IngestService {
 	}
 
 	log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}")
-
+	
+	// Combine to create the package Identifier.
+	def default_pkg_identifier = null
+	
 	// If a project id has been supplied
 	if (project_id != null) {
 	  log.debug("Using refine project id ${project_id}.")
 
 	  // Check the package.
 	  RefineProject project = RefineProject.get(project_id)
+	  
+	  // Check that the project exists...
+	  if (project) {
+		
+		log.debug("Refine project exists. Use to generate the default pkg_id.")
 
-	  // The provider.
-	  Org provider = project.provider
+		// The provider.
+		Org provider = project.provider
 
-	  // Combine to create the package Identifier.
-	  def pkg_identifier = "${provider.name}:${project_id}"
-
-	  log.debug("Checking for existing package with name ${pkg_identifier}, for provider ${provider.name}.")
-
-	  // Try and find a package for the provider with the name entered.
-	  def q = ComboCriteria.createFor(Package.createCriteria())
-
-//	  def pkg_identifier_component = getIdentifierComponent('gokb-pkgid',pkg_identifier);
-	  def pkg = q.get {
-		q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-		q.add ("ids.value", "eq", pkg_identifier)
+		// Set the default pkg id to use when no value supplied.
+		default_pkg_identifier = "${provider.name}:${project_id}"
 	  }
-
-	  // Package found.
-	  if (!pkg) {
-		log.debug("New package...");
-		newPkgs ++
-	  }
-
-	} else {
-	  log.debug("No refine project id supplied. Assuming new package.")
-	  newPkgs ++
+	} 
+	
+	// Could not create default package id. Assume same new package for each blank row.
+	if (!default_pkg_identifier) {
+	  log.debug("No refine project id supplied. Assuming blank rows are added to the same new package.")
 	}
 
-	// Add to the results.
-	result << [ type : "packages", "new" : newPkgs, "updated" : (1 - newPkgs) ]
-
-	// Create the set for the platforms.
+	// Create the set for the platforms and packages.
 	Set platformNames   = []
+	Set packageIdentifiers = []
 
 	log.debug("Finding existing titles...");
 
@@ -269,6 +260,15 @@ class IngestService {
 
 			// Just add the normname to the platforms list.
 			platformNames << host_norm_platform_name
+			
+			// Package ID
+			def pkg_id	= getRowValue(datarow,col_positions,PACKAGE_NAME)
+			pkg_id = pkg_id?.trim()
+			if (!pkg_id || pkg_id == "") {
+			  pkg_id = default_pkg_identifier
+			}
+			
+			packageIdentifiers << pkg_id.toString()
 
 			// (e)issns.
 			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
@@ -276,34 +276,22 @@ class IngestService {
 
 			// issn query.
 			if (issn != null) {
-//			  def issn_component = getIdentifierComponent('issn',issn);
-//			  if ( issn_component != null ) {
-//				eq('toComponent',issn_component);
-				and {
-				  tiCrit.add ("ids.namespace.value", "eq", 'issn')
-				  tiCrit.add ("ids.value", "eq", issn)
-				}
-//			  }
+			  and {
+				tiCrit.add ("ids.namespace.value", "eq", 'issn')
+				tiCrit.add ("ids.value", "eq", issn)
+			  }
 			}
 
 			// eissn query
 			if (eissn != null) {
-//			  def eissn_component = getIdentifierComponent('eissn',issn);
-//			  if ( eissn_component != null ) {
-//				eq ("toComponent", eissn_component)
-				and {
-    				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
-    				tiCrit.add ("ids.value", "eq", eissn)
-				}
-//			  }
+			  and {
+				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
+				tiCrit.add ("ids.value", "eq", eissn)
+			  }
 			}
 
 			// Each additional identifier type.
 			additional_identifiers.each { ai ->
-//			  def id_component = getIdentifierComponent(ai.type,datarow.cells[ai.colno]);
-//			  if ( id_component ) {
-//				eq ("toComponent", id_component)
-//			  }
 			  and {
 				tiCrit.add ("ids.namespace.value", "eq", ai.type)
 				tiCrit.add ("ids.value", "eq", datarow.cells[ai.colno])
@@ -317,13 +305,30 @@ class IngestService {
 		  // Increment the row counter.
 		  ctr ++
 		}
-
 	  }
 
 	  projections {
 		countDistinct("id")
 	  }
 	}
+	
+	// Try and find a package for the provider with the name entered.
+	def q = ComboCriteria.createFor(Package.createCriteria())
+	def existingPkgs = q.get {
+	  and {
+  	    q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+  	    q.add ("ids.value", "in", [packageIdentifiers])
+	  }
+	  
+	  projections {
+	   countDistinct ("id")
+	  }
+	}
+
+	// New packages.
+	newPkgs = packageIdentifiers.size() - existingPkgs
+	result << [ type : "packages", "new" : (newPkgs), "updated" : existingPkgs ]
+	
 
 	// We should now have a query that we can execute to determine (roughly) how many Tipps will be added.
 	result << [ type : "titles", "new" : (titleRows - existingTitles), "updated" : existingTitles ]
