@@ -166,7 +166,7 @@ class IngestService {
           }
           
           // Add a message.
-          result.messages.add([text:"Row ${rowCount} contains data for column ${PACKAGE_NAME} that would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
+          result.messages.add([text:"Data present in column \"${PACKAGE_NAME}\" would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
         }
       }
     }
