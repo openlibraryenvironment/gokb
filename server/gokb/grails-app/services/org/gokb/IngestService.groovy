@@ -972,15 +972,17 @@ class IngestService {
 
 		// Create a new package.
 		pkg = new Package(
-			name:       (provider.name),
 			provider:   (provider),
 			lastProject:project
 		)
 
 		// Add a new identifier to the package.
-		def new_identifier = Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid', pkg_identifier)
+		Identifier new_identifier = Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid', pkg_identifier)
 		log.debug("create new combo to link package to identifier. pkg=${pkg.id}, new_id:${new_identifier.id}");
 		pkg.ids.add (new_identifier)
+    
+        // Need to set the anme to mirror the Identifier.
+        pkg.name = new_identifier.value
 		
 		// Save the package.
 		pkg.save(failOnError:true, flush:true)
