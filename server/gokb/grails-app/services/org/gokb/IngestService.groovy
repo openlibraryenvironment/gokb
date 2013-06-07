@@ -149,7 +149,7 @@ class IngestService {
       // Check existing packages.
       if (packageIdentifiers) {
 		def q = ComboCriteria.createFor(Package.createCriteria())
-		def existingPkgs = q.get {
+		def existingPkgs = q.list {
 		  and {
 			  q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
 			  q.add ("ids.value", "in", [packageIdentifiers])
