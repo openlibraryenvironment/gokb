@@ -5,6 +5,10 @@
   <dd>${d.id}</dd>
   <dt>Title</dt>
   <dd>${d.name}</dd>
+  <g:if test="${d.publisher}">
+  	<dt>Publisher</dt>
+  	<dd>${d.publisher.name}</dd>
+  </g:if>
   <dt>Identifiers</dt>
   <dd>
     <ul>
