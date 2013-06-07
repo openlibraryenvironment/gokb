@@ -16,15 +16,22 @@ class TitleLookupService {
 
       log.debug("find Title (${title},${issn},${eissn},${publisher_name})");
 
-      // Locate a publisher for the supplied name if possible.
-      def publisher = Org.findByNameIlike(publisher_name)
-
-      // Create new publisher if needed.
-      if (!publisher) {
-        publisher = new Org ([name : publisher_name])
-        log.debug("No publisher found. Created new one with name ${publisher.name}")
-      } else {
-        log.debug("Found publisher with id ${publisher.id}")
+      // No publisher to start.
+      Org publisher = null
+      
+      // Publisher name
+      if (publisher_name) {
+      
+        // Locate a publisher for the supplied name if possible.
+        publisher = Org.findByNameIlike(publisher_name)
+  
+        // Create new publisher if needed.
+        if (!publisher) {
+          publisher = new Org ([name : publisher_name])
+          log.debug("No publisher found. Created new one with name ${publisher.name}")
+        } else {
+          log.debug("Found publisher with id ${publisher.id}")
+        }
       }
 
       // Use the ids to check for a TitleInstance.
@@ -58,7 +65,12 @@ class TitleLookupService {
       }
       else {
         log.debug("No result, create a new title")
-        result = new TitleInstance(name:title, publisher: (publisher))
+        result = new TitleInstance(name:title)
+        
+        // Add the publisher here if needed.
+        if (publisher != null) {
+          result.publisher = publisher
+        }
 
         // Don't forget to add our IDs here.
         if ( issn_identifier ) {
