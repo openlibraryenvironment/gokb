@@ -247,3 +247,10 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 		}
 	});
 };
+
+/**
+ * Display a box to allow a user to search for an id in the given namespace.
+ */
+GOKb.handlers.identifierLookup = function(namespace) {
+	$(document.activeElement).insertAtCaret(namespace);
+};
