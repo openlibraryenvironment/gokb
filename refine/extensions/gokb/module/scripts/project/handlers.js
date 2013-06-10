@@ -148,56 +148,65 @@ GOKb.handlers.history = function() {
 	});
 };
 
-/**
- * Prompt the user to check project properties and then check in the project.
- */
+GOKb.handlers.estimateChanges = function () {
+	
+  // Get the estimated changes.
+  GOKb.doCommand (
+    "project-estimate-changes",
+    {"project" : theProject.id},
+    null,
+    {
+    	onDone : function (data) {
+    		
+    		if ("result" in data && data.result.length > 0) {
 
-//GOKb.handlers.checkInWithProps = function() {
-//	// Create the form to collect some basic data about this document.
-//	var dialog = GOKb.createDialog("Suggested Operations", "form_project_properties");
-//	
-//	// Change the location to send the data to project check-in.
-//	dialog.bindings.form.attr("action", "command/gokb/project-checkin");
-//	var params = jQuery.extend({update : true}, GOKb.projectDataAsParams(theProject));
-//	
-//	// Change the submit button text to be check-in
-//	dialog.bindings.submit.attr("value", "Save and Check-in");
-//	
-//	// Get the refdata from GOKb service.
-//	GOKb.getRefData ("cp", {
-//		onDone : function (data) {
-//			
-//			if ("result" in data && "datalist" in data.result) {
-//			
-//				var orgList = $('#org', dialog.bindings.form);
-//				$.each(data.result.datalist, function (value, display) {
-//					var opt = $('<option />', {"value" : value})
-//						.text(display)
-//					;
-//					
-//					// Select the current value...
-//					if (value == params.org) {
-//						opt.attr('selected', 'selected');
-//					}
-//					
-//					// Append the arguments...
-//					orgList.append(
-//					  opt
-//					);
-//				}, {async : false});
-//				
-//				// Add the project params as hidden fields to the form.
-//				GOKb.forms.paramsAsHiddenFields(dialog.bindings.form, dialog.bindings.form, params);
-//			}
-//		}
-//	});
-//	
-//	// Rename close button to cancel.
-//	dialog.bindings.closeButton.text("Cancel");
-//	
-//	// Show the form.
-//	return GOKb.showDialog(dialog);
-//};
+    			// Create the dialog.
+    			var dialog = GOKb.createDialog("Estimated changes to data");
+    			
+    			// Add some text.
+    			dialog.bindings.dialogContent.append(
+    			  $("<p/>")
+    			  	.text("Please review the following estimated data changes that would result from ingesting this project.")
+    			);
+
+    			// Build a JSON data object to display to the user.
+    			var DTDdata = [];
+    			$.each(data.result, function () {
+
+  					// Add the row.
+  					DTDdata.push([this.type, "" + this["new"], "" + this.updated]);
+    			});
+
+    			// Create a table from the data.
+    			var table = GOKb.toTable (
+            ["Component", "To be created", "To be updated"],
+            DTDdata
+    			);
+
+    			// Append the table
+    			table.appendTo(dialog.bindings.dialogContent);
+    			
+    			// Add a button confirm the ingest process.
+    			$("<button>Proceed with Ingest</button>").addClass("button").click(function() {
+    				
+    				// Close this dialog.
+    				dialog.close();
+    				
+    				// Fire the next stage of the ingest.
+    				GOKb.handlers.checkInWithProps({ingest : true});
+    				
+    			}).appendTo(
+    			  // Append to the footer.
+    			  dialog.bindings.dialogFooter
+    			);
+    			
+    			// Show the dialog.
+    			GOKb.showDialog(dialog);
+    		}
+    	}
+  	}
+  );
+}
 
 GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 	

@@ -1,9 +1,10 @@
 package org.gokb.refine
 
+import org.gokb.cred.KBComponent
 import org.gokb.cred.Org
 import javax.persistence.Transient
 
-class RefineProject {
+class RefineProject extends KBComponent {
 
    String name
    String description
@@ -25,9 +26,6 @@ class RefineProject {
   def possibleRulesResultAsList = null
 
   static mapping = {
-    table 'refine_project'
-
-                      id column: 'rp_id'
              description column: 'rp_desc'
                 modified column: 'rp_modified'
                     file column: 'rp_file'

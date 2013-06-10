@@ -2,6 +2,10 @@
 // config files can be ConfigSlurper scripts, Java properties files, or classes
 // in the classpath in ConfigSlurper format
 
+
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
+
+
 grails.config.locations = [ "classpath:${appName}-config.properties",
                             "classpath:${appName}-config.groovy",
                             "file:${userHome}/.grails/${appName}-config.properties",
@@ -12,6 +16,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 // }
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
+
+refine_min_version = "0.7"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -102,6 +108,12 @@ log4j = {
           'grails.app.filters',
           // 'grails.app.conf',
           'grails.app.jobs' // ,
+          
+//   debug  'org.gokb.DomainClassExtender'
+   
+   // Enable Hibernate SQL logging with param values
+//   trace 'org.hibernate.type'
+//   debug 'org.hibernate.SQL'
 
 }
 
@@ -129,5 +141,27 @@ validationRules = [
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'title.identifier.eissn'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'publicationtitle'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
-  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] 
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] ,
+  [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'org.publisher.name'] ] 
 ]
+
+auditLog {
+  actorClosure = { request, session ->
+
+    if (request.applicationContext.springSecurityService.principal instanceof java.lang.String){
+      return request.applicationContext.springSecurityService.principal
+    }
+
+    def username = request.applicationContext.springSecurityService.principal?.username
+
+    if (SpringSecurityUtils.isSwitched()){
+      username = SpringSecurityUtils.switchedUserOriginalUsername+" AS "+username
+    }
+
+    return username
+  }  
+}
+grails.gorm.default.constraints = {
+  '*'(nullable: true, blank:false)
+}
+//grails.gorm.failOnError=true

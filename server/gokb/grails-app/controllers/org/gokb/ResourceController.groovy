@@ -1,12 +1,16 @@
 package org.gokb
 
+import grails.plugins.springsecurity.Secured
+
 class ResourceController {
 
   def genericOIDService
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = [:]
 
@@ -34,7 +38,9 @@ class ResourceController {
     'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
     'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
     'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
-    'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ]
+    'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
+    'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ]
   ]
+
 
 }

@@ -4,25 +4,46 @@ import org.gokb.cred.*;
 
 class TitleLookupService {
 
-    def find(title, issn, eissn) {
-      find(title, issn, eissn)
-    }
+  def find(title, issn, eissn) {
+    find(title, issn, eissn, null, null)
+  }
 
-    def find(title, issn, eissn, extra_ids) {
+  def find(title, issn, eissn, extra_ids, publisher_name) {
 
-      def result = null
+    def result = null
 
-      log.debug("find(${title},${issn},${eissn})");
-      def issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null;
-      def eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null;
+    try {
 
-      def tq = TitleInstance.createCriteria()
+      log.debug("find Title (${title},${issn},${eissn},${publisher_name})");
+
+      // No publisher to start.
+      Org publisher = null
+      
+      // Publisher name
+      if (publisher_name) {
+      
+        // Locate a publisher for the supplied name if possible.
+        publisher = Org.findByNameIlike(publisher_name)
+  
+        // Create new publisher if needed.
+        if (!publisher) {
+          publisher = new Org ([name : publisher_name])
+          log.debug("No publisher found. Created new one with name ${publisher.name}")
+        } else {
+          log.debug("Found publisher with id ${publisher.id}")
+        }
+      }
+
+      // Use the ids to check for a TitleInstance.
+      Identifier issn_identifier = issn ? Identifier.lookupOrCreateCanonicalIdentifier('issn',issn) : null
+      Identifier eissn_identifier = eissn ? Identifier.lookupOrCreateCanonicalIdentifier('eissn',eissn) : null
+
+      def tq = ComboCriteria.createFor(TitleInstance.createCriteria())
       def titles = tq.listDistinct {
-        ids {
+        outgoingCombos {
           or {
-            'in'('identifier',[issn_identifier,eissn_identifier])
-            // eq('identifier',issn_identifier)
-            // eq('identifier',eissn_identifier)
+            eq ("toComponent", issn_identifier)
+            eq ("toComponent", eissn_identifier)
           }
         }
       }
@@ -44,12 +65,29 @@ class TitleLookupService {
       }
       else {
         log.debug("No result, create a new title")
-        result = new TitleInstance(name:title);
+        result = new TitleInstance(name:title)
+        
+        // Add the publisher here if needed.
+        if (publisher != null) {
+          result.publisher = publisher
+        }
 
-        if ( ! result.ids )
-          result.ids = []
+        // Don't forget to add our IDs here.
+        if ( issn_identifier ) {
+          result.ids.add (issn_identifier)
+        }
 
-        if ( result.save(flush:true) ) {
+        if ( eissn_identifier ) {
+          result.ids.add (eissn_identifier)
+        }
+
+        extra_ids.each { ei ->
+          def additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
+          result.ids.add (additional_identifier)
+        }
+
+        // Try and save the result now.
+        if ( result.save(failOnError:true,flush:true) ) {
           log.debug("New title: ${result.id}");
         }
         else {
@@ -57,21 +95,18 @@ class TitleLookupService {
             log.error("Problem saving title: ${e}");
           }
         }
-
-        if ( issn_identifier )
-          new IdentifierOccurrence(identifier:issn_identifier, component:result).save(flush:true);
-        if ( eissn_identifier )
-          new IdentifierOccurrence(identifier:eissn_identifier, component:result).save(flush:true);
-
-        extra_ids.each { ei ->
-          additional_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ei.type,ei.value)
-          new IdentifierOccurrence(identifier:additional_identifier, component:result).save(flush:true);
-        }
       }
 
       // May double check with porter stemmer in the future.. see
       // https://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_3/lucene/src/java/org/apache/lucene/analysis/PorterStemmer.java
 
-      result;
     }
+    catch ( Exception e ) {
+      log.error("Problem with title lookup",e);
+    }
+    finally {
+      log.debug("Title lookup completed");
+    }
+    result
+  }
 }

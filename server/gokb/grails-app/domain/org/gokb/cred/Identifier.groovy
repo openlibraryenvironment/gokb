@@ -1,26 +1,40 @@
 package org.gokb.cred
 
-class Identifier {
+class Identifier extends KBComponent {
 
-  IdentifierNamespace ns
+  IdentifierNamespace namespace
   String value
 
-  static hasMany = [ occurrences:IdentifierOccurrence ]
-  static mappedBy = [ occurrences:'identifier' ]
 
   static constraints = {
+    namespace (nullable:true, blank:true)
+    value (nullable:true, blank:true)
   }
 
   static mapping = {
-       id column:'id_id'
-       ns column:'id_ns_fk', index:'id_value_idx'
-    value column:'id_value', index:'id_value_idx'
+    namespace column:'id_namespace_fk', index:'id_value_idx'
+        value column:'id_value', index:'id_value_idx'
+  }
+
+  static manyByCombo = [
+    identifiedComponents  :  KBComponent
+  ]
+
+  static mappedByCombo = [
+	identifiedComponents  :  'ids',
+  ]
+
+  @Override
+  protected def generateNormname () {
+	if (!normname && namespace && value) {
+	  normname = "${namespace.value}:${value}".toLowerCase().trim()
+	}
   }
 
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = IdentifierNamespace.findByNs(ns) ?: new IdentifierNamespace(ns:ns).save();
-    Identifier.findByNsAndValue(namespace,value) ?: new Identifier(ns:namespace, value:value).save();
+    def namespace = IdentifierNamespace.findByValue(ns) ?: new IdentifierNamespace(value:ns).save(failOnError:true);
+    def identifier = Identifier.findByNamespaceAndValue(namespace,value) ?: new Identifier(namespace:namespace, value:value).save(failOnError:true, flush:true)
+    identifier
   }
-
 }

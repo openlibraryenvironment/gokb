@@ -8,12 +8,49 @@ var GOKb = {
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   refine:{},
   versionError : false,
+  hijacked : [],
+};
+
+/**
+ * Replace an existing function with your custom code.
+ * The old function is appended to the arguments and therefore
+ * can be called from within your new code where necessary.
+ * 
+ * Use the syntax:
+ * function ([params...,] oldFunction) {
+ * 	oldFunction.apply(this, arguments);
+ * }
+ * 
+ * Using the apply method ensures that the old method's context
+ * is correct.
+ */
+GOKb.hijackFunction = function(functionName, replacement) {
+	
+	// Save the old function so we can still use it in our new function.
+	GOKb.hijacked[functionName] = eval(functionName);
+	
+	// New method...
+	var repMeth = function() {
+		// All arguments passed to this method will be passed to replacement.
+		var args = [];
+		for (i=0; i<arguments.length; i++){
+			args[i] = arguments[i];
+		}
+		
+		// Also pass the old method too.
+		args.push(GOKb.hijacked[functionName]);
+		
+		// Then execute the replacement.
+		return (replacement).apply(this, args);
+	}
+	
+	// Generate source to replace old method with the new code.
+	eval(functionName + " = " + repMeth.toString());
 };
 
 /**
  * Default callback object that displays an error if one was sent through.
  */
-
 GOKb.defaultError = function (data) {
 	var error = GOKb.createErrorDialog("Error");
 	var msg;
@@ -136,11 +173,16 @@ GOKb.showDialog = function(dialog) {
   	$("select, input, button, textarea", dialog.bindings.form).uniform();
   }
   
-  var level = DialogSystem.showDialog(dialog.html);
-  dialog.bindings.closeButton.click(function() {
-    DialogSystem.dismissUntil(level - 1);
-  });
-  dialog.level = level;
+  // Open the dialog and record the level (Z-Axis) at which it is displayed.
+  dialog.level = DialogSystem.showDialog(dialog.html);
+  
+  // Add a close method to this dialog.
+  dialog.close = function () {
+  	DialogSystem.dismissUntil(dialog.level - 1);
+  }
+  
+  // Add the close method as the onclick of the close button.
+  dialog.bindings.closeButton.click(dialog.close);
   return dialog;
 };
 
@@ -156,17 +198,31 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
   
   // Complete callback.
   var complete = function (jqXHR, status) {
-		done = true;
-	  if (dismissBusy) {
-	    dismissBusy();
-	  }
-	  GOKb.clearAjaxInProgress();
 	  
 	  if (status == 'error' || status == 'timeout') {
 	    // Display an error message to the user.	    
 	    GOKb.defaultError();
 	  }
 	};
+	
+	// Current success method.
+	var currentSuccess = ajaxObj.success;
+	var newSucessFunction = function (dataR) {
+		
+		// Clear the waiting window, here before the success handler to ensure the
+		// new window is not closed as well as the waiting modal.
+		done = true;
+	  if (dismissBusy) {
+	    dismissBusy();
+	  }
+	  GOKb.clearAjaxInProgress();
+		
+		// Fire our current success object afterwards.
+		currentSuccess(dataR);
+	};
+	
+	// Set success to our new function.
+	ajaxObj.success = newSucessFunction;
 	
 	/*
 	 * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
@@ -175,7 +231,6 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	 * So here we need to check the version and attach our callback to the initial
 	 * ajax object if we are using jQuery 1.5 or lower.
 	 */
-  
 	if (GOKb.jqVersion > 1.5) {
 		
 		// Fire the ajax and attach the always function.
@@ -187,7 +242,7 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 		// Set the complete method equal to our callback.
 		ajaxObj.complete = complete;
 		
-		// fire the ajax request.
+		// Fire the ajax request.
 		$.ajax(ajaxObj);
 	}
   
@@ -337,6 +392,60 @@ GOKb.projectDataAsParams = function (project) {
  */
 GOKb.getRefData = function (type, callbacks, ajaxOpts) {
 	GOKb.doCommand ("refdata", {"type" : type }, null, callbacks, ajaxOpts);
+};
+
+/**
+ * Single value auto-complete.
+ */
+GOKb.autoComplete = function(elements, data) {
+	elements.autocomplete({
+		source: data,
+	});
+};
+
+/**
+ * Function to add multi-value auto-complete to the supplied jquery matches.
+ */
+GOKb.multiAutoComplete = function(elements, data, separator) {
+
+	separator = separator || ",";
+	
+	// Split function to split at our separator.
+	var split = function( val ) {
+		return val.split( separator );
+	};
+	
+	// Extract the last term in the list.
+	var extractLast = function ( term ) {
+		 return split( term ).pop();
+	};
+	
+	elements.autocomplete({
+		source: function( request, response ) {
+			// delegate back to autocomplete, but extract the last term
+			response( $.ui.autocomplete.filter(
+			  data, extractLast( request.term ) ) );
+		},
+		focus: function() {
+			// prevent value inserted on focus
+			return false;
+		},
+		select: function( event, ui ) {
+			var terms = split( this.value );
+			// remove the current input
+			terms.pop();
+			
+			if (ui && ui.item) {
+				// add the selected item
+				terms.push( ui.item.value );
+			}
+			
+			// add placeholder to get the comma-and-space at the end
+			terms.push( "" );
+			this.value = terms.join( separator );
+			return false;
+		}
+	});
 };
 
 /**

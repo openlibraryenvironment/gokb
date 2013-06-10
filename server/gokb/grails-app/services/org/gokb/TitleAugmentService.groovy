@@ -30,7 +30,7 @@ class TitleAugmentService {
             if ( matched && suncat_identifier ) {
               log.debug("set suncat identifier to ${suncat_identifier}");
               def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier('SUNCAT',suncat_identifier);
-              titleInstance.ids.add(new IdentifierOccurrence(identifier:canonical_identifier, ti:ti));
+              titleInstance.addToIds(canonical_identifier);
               titleInstance.save(flush:true);
             }
             else {

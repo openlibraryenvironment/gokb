@@ -6,6 +6,7 @@ class Role {
 
 	static mapping = {
 		cache true
+		id column:'role_id'
 	}
 
 	static constraints = {

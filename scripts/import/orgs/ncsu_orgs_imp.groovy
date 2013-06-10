@@ -66,7 +66,7 @@ println("Column heads: ${nl}");
 
 while ((nl = r.readNext()) != null) {
   // println("Process line ${nl}");
-  // Internal ID,Parent Org. ID,Authorized Name,Organization Name,Provider,Vendor,Publisher,Licensor
+  // Internal ID,ParentOrg. ID,Authorized Name,Organization Name,Provider,Vendor,Publisher,Licensor
   def org_assert = [    
     name:nl[3],
     description:nl[3],
@@ -74,27 +74,33 @@ while ((nl = r.readNext()) != null) {
       [identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[0]}".toString()]
     ],
     combos:[],
-    flags:[]
+    flags:[],
+	roles:[]
   ]
 
   if ( nl[0] != nl [1] ) {
     // Add a combo that links to the parent org
-    org_assert.combos.add([linkTo:[identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}".toString()], linkType:'HasParent'])
+//    org_assert.combos.add([linkTo:[identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}".toString()], linkType:'HasParent'])
+    org_assert.parent = [identifierType:'ncsu-internal',identifierValue:"ncsu:${nl[1]}".toString()]
   }
 
   if ( nl[4] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Content Provider'])
+//    org_assert.flags.add([flagType:'Org.Role',flagValue:'Content Provider'])
+	org_assert.roles.add('Content Provider')
 
   if ( nl[5] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Vendor'])
+//    org_assert.flags.add([flagType:'Org.Role',flagValue:'Vendor'])
+	org_assert.roles.add('Vendor')
 
   if ( nl[6] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Publisher'])
+//    org_assert.flags.add([flagType:'Org.Role',flagValue:'Publisher'])
+	org_assert.roles.add('Publisher')
 
   if ( nl[7] == 'Y' )
-    org_assert.flags.add([flagType:'Org Role',flagValue:'Licensor'])
+//    org_assert.flags.add([flagType:'Org.Role',flagValue:'Licensor'])
+	org_assert.roles.add('Licensor')
 
-  org_assert.flags.add([flagType:'Authorized',flagValue:nl[2]])
+  org_assert.flags.add([flagType:'Org.Authorized',flagValue:nl[2]])
 
   println("assert that : ${org_assert}");
 

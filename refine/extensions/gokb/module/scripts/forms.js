@@ -9,10 +9,10 @@ GOKb.forms = {
     	 children : [
          {type : "legend", text : "footer"},
          {
-        	 type : "submit",
-        	 name : "submit",
-        	 value : "submit",
-        	 attr : {bind : "submit"},
+        	 type 	: "submit",
+        	 name 	: "submit",
+        	 value 	: "submit",
+        	 attr 	: {bind : "submit"},
          },
        ]
      },
@@ -36,7 +36,7 @@ GOKb.forms.paramsAsHiddenFields = function (theForm, elem, params) {
 };
 
 /**
- * Build a for from a definition array.
+ * Build a form from a definition array.
  */
 GOKb.forms.build = function(name, def, action, attr, validate) {
 	
@@ -122,11 +122,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		GOKb.forms.addSavedValue (theForm, def);
 		
 		// Create the form row.
-		var add_to = $('<div />')
-			.attr({
-				'class' : 'form-row'
-			})
-		;
+		var add_to = null;
 		
 		// Add the element based on the def.
 		var	elem, opts;
@@ -160,6 +156,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 	
 			case 'legend'		:
 			case 'fieldset' :
+			case 'option' 	:
 				add_to = parent;
 			case 'textarea' :
 				elem = $("<" + def.type + " />");
@@ -173,6 +170,16 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 				elem = $("<input />")
 					.attr ({type : def.type, value : def.value});
 				break;
+		}
+		
+		if (add_to == null) {
+			// Create div container for the form element.
+			add_to = $('<div />')
+				.attr({
+					'class' : 'form-row'
+				})
+			;
+			
 		}
 		
 		if (def.text) elem.text(def.text);
@@ -189,7 +196,11 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		}
 		
 		// Add any attributes.
-		elem.attr($.extend((def.attr || {}), {id : def.name, name : def.name}));
+		var attr = def.attr || {};
+		if (def.name) {
+			attr = $.extend(attr, {id : def.name, name : def.name})
+		}
+		elem.attr(attr);
 		
 		// Append the element.
 		add_to.append(elem);
@@ -281,4 +292,22 @@ GOKb.forms.saveValues = function(form) {
 	  {},
 	  {async : false, type : "post"}
 	);
+};
+
+/**
+ * Return a list of option definitions for the current,
+ * list of columns within the project. 
+ */
+GOKb.forms.getColumnsAsListOptions = function() {
+	var opts = [];
+	var cols = theProject.columnModel.columns;
+	for (i=0; i<cols.length; i++) {
+		opts.push({
+			type 		: 'option',
+			text 		: cols[i].name,
+			value 	: cols[i].name,
+		});
+	}
+	
+	return opts;
 };
