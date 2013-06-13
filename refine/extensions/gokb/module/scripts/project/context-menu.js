@@ -57,7 +57,7 @@ GOKb.contextMenu.options = {
 //	  	  	icon: "",
 	  	  	alias: "gokb-lookup-pkg-name",
 	  	  	action: function () {
-	  	  		GOKb.handlers.identifierLookup ("gokb-pkgid");
+	  	  		GOKb.handlers.lookup ("gokb-pkgid");
 	  	  	}
 	  	  }
       ]

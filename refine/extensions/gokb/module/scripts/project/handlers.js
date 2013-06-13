@@ -251,6 +251,19 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 /**
  * Display a box to allow a user to search for an id in the given namespace.
  */
-GOKb.handlers.identifierLookup = function(namespace) {
-	$(document.activeElement).insertAtCaret(namespace);
+GOKb.handlers.lookup = function(namespace) {
+	
+	// Active element.
+	var activeElem = $(document.activeElement);
+	
+	// Perform a lookup.
+	var lookup = GOKb.getLookup (
+	  ["Apple", "Banana"],
+	  function (item) {
+
+	  	// Insert the selected value at the location.
+	  	activeElem.insertAtCaret(item.value);
+	  }
+	);
+	lookup.open();
 };

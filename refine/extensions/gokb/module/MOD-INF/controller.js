@@ -49,6 +49,7 @@ function init() {
 		 module,
 		 [
 	     "scripts/plugins/jquery.uniform.min.js",
+	     "scripts/plugins/jquery.ui-lookup.js",
 	     "scripts/common.js",
 	     "scripts/forms.js",
 	     "scripts/index.js",
@@ -78,6 +79,7 @@ function init() {
      "scripts/plugins/jquery.uniform.min.js",
      "scripts/plugins/jquery.insert-at-caret.js",
      "scripts/plugins/jquery.contextmenu.js",
+     "scripts/plugins/jquery.ui-lookup.js",
      "scripts/common.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
