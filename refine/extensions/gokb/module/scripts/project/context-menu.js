@@ -38,7 +38,7 @@ GOKb.contextMenu.rules = {
 	  { disable: true, items: ["gokb-lookup"] }
 	],
 	"enable-lookup" : [
-	  { disable: false, items: ["gokb-lookup", "gokb-lookup-pkg-name"] }
+	  { disable: false, items: ["gokb-lookup", "gokb-lookup-org"] }
 	]
 };
 
@@ -53,9 +53,9 @@ GOKb.contextMenu.options = {
 	  	width: 150,
 	  	items:[
 	  	  {
-	  	  	text: "Package Name",
+	  	  	text: "Organisation",
 //	  	  	icon: "",
-	  	  	alias: "gokb-lookup-pkg-name",
+	  	  	alias: "gokb-lookup-org",
 	  	  	action: function () {
 	  	  		GOKb.handlers.lookup ("gokb-pkgid");
 	  	  	}
