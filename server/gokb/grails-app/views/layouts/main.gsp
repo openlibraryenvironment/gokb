@@ -29,7 +29,19 @@
               <li class="active"><g:link controller="home" action="showRules">Validation Rules</g:link></li>
               <li class="active"><g:link controller="coreference" action="index">Coreference</g:link></li>
             </ul>
-            <p class="navbar-text pull-right">Not logged in</p>
+            <ul class="nav pull-right">
+              <sec:ifLoggedIn>
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">${request.user?.displayName?:request.user?.username} <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    <li><g:link controller="logout">Logout</g:link></li>
+                  </ul>
+                </li>
+              </sec:ifLoggedIn>
+              <sec:ifNotLoggedIn>
+                <li>Not logged in</li>
+              </sec:ifNotLoggedIn>
+            </ul>
           </div>
         </div>
       </div>
