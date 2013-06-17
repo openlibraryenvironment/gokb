@@ -13,19 +13,21 @@
           <div class="well sidebar-nav">
             <ul class="nav nav-list">
               <li class="nav-header">Create New..</li>
-              <li><g:link controller="create" action="index" params="${[qbe:'g:packages']}">Package</g:link></li>
-              <li><g:link controller="create" action="index" params="${[qbe:'g:orgs']}">Org</g:link></li>
-              <li><g:link controller="create" action="index" params="${[qbe:'g:platforms']}">Platform</g:link></li>
-              <li><g:link controller="create" action="index" params="${[qbe:'g:titles']}">Title</g:link></li>
-              <li><g:link controller="create" action="index" params="${[qbe:'g:refdataCategories']}">Refdata Category</g:link></li>
+              <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
+              <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
+              <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
+              <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
+              <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
 
-        <div id="mainarea" class="${displayobj != null ? 'span5' : 'span10'}">
+        <div id="mainarea" class="span10">
           <div class="well">
-            <g:if test="${qbetemplate==null}">
-              Please select a template from the navigation menu
+            <g:if test="${displaytemplate != null}">
+              <g:if test="${displaytemplate.type=='staticgsp'}">
+                <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj]}"/>
+              </g:if>
             </g:if>
           </div>
         </div>

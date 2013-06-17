@@ -20,7 +20,7 @@
   </g:if>
   <tr><td>Package Name</td>           <td>${d.name}</td></tr>
   <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
-  <tr><td>Provider</td>              <td>${d.provider.name}</td></tr>
+  <tr><td>Provider</td>              <td>${d.provider?.name}</td></tr>
   <tr><td>Status</td>                 <td><span class="ipe" 
                                                 data-pk="${d.getClassName()}:${d.id}" 
                                                 data-type="select" 
