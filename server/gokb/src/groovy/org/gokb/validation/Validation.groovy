@@ -51,16 +51,36 @@ class Validation {
 	// Check the rules for the column context.
 	checkColumnRules (result, col_positions)
 	
+	// Do the row-level checks.
+	// Go through the data and see whether each row is valid.
+	def rowCount = 1
+
+	// Go through each row.
+	project_data.rowData.each { datarow ->
+	  checkRowRules (result, rowCount, datarow, col_positions)
+	  rowCount ++
+	}
   }
-  
-  private void checkColumnRules (result, col_positions) {
+
+  private void checkRowRules (final result, final rowNum, final datarow, final col_positions) {
 	
 	// The rules.
-	List<ValidationRule> validationRules = validationRules [CONTEXT_COLUMN]
+	List<ValidationRule> valRules = validationRules [CONTEXT_ROW]
 	
 	// Execute each rule, passing in the column positions for each.
-	validationRules.each {ValidationRule rule ->
-	  project_data.status = project_data.status && rule.valid(col_positions)
+	valRules.each {ValidationRule rule ->
+	  result.status = result.status && rule.valid(col_positions, rowNum, datarow)
+	}
+  }
+  
+  private void checkColumnRules (final result, final col_positions) {
+	
+	// The rules.
+	List<ValidationRule> valRules = validationRules [CONTEXT_COLUMN]
+	
+	// Execute each rule, passing in the column positions for each.
+	valRules.each {ValidationRule rule ->
+	  result.status = result.status && rule.valid(col_positions)
 	}
   }
   
