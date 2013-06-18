@@ -19,6 +19,7 @@ class ResourceController {
       result.displayobj = genericOIDService.resolveOID(params.id)
       if ( result.displayobj ) {
         result.displayobjclassname = result.displayobj.class.name
+        result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
         result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
         log.debug("result of lookup: ${result}");
       }

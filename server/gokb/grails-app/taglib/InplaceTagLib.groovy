@@ -10,7 +10,8 @@ class InplaceTagLib {
    *   class [optional] - additional classes
    */
   def xEditable = { attrs, body ->
-    def oid = "${attrs.owner.class.name}:${attrs.owner.id}"
+
+    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''}\""
@@ -50,7 +51,7 @@ class InplaceTagLib {
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
     def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
-    def oid = "${attrs.owner.class.name}:${attrs.owner.id}"
+    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
    
     out << "<span>"
@@ -90,7 +91,7 @@ class InplaceTagLib {
   def xEditableManyToOne = { attrs, body ->
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
     def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
-    def oid = "${attrs.owner.class.name}:${attrs.owner.id}"
+    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     out << "<a href=\"#\" id=\"${id}\" class=\"xEditableManyToOne\" data-pk=\"${oid}\" data-type=\"select\" data-name=\"${attrs.field}\" data-source=\"${data_link}\">"
     out << body()
@@ -112,7 +113,7 @@ class InplaceTagLib {
    
     def data_link = createLink(controller:'ajaxSupport', action: 'setFieldTableNote')
     data_link = data_link +"/"+attrs.owner.id +"?type=License"
-    def oid = "${attrs.owner.class.name}:${attrs.owner.id}S"
+    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def org = ""
     if (attrs.owner.getNote("${attrs.field}")){

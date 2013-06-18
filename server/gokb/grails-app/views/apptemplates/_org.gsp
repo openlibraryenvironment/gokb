@@ -12,7 +12,7 @@
 
   <div class="control-group">
     <dt>Org Name</dt>
-    <dd><g:xEditable owner="${d}" field="name">${d.name}</g:xEditable></dd>
+    <dd><g:xEditable class="ipe" owner="${d}" field="name">${d.name}</g:xEditable></dd>
   </div>
 
   <div class="control-group">

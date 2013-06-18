@@ -1,12 +1,8 @@
 
-<h1>Package: <span class="ipe" 
-                   data-type="text" 
-                   data-pk="${d.getClassName()}:${d.id}" 
-                   data-name="name" 
-                   data-url="<g:createLink controller='ajaxSupport' action='edit'/>" 
-                   data-original-title="ProjectName">${d.name}</span> </h1>
+<h1>Package: ${d.name}</h1>
 
 <table class="table table-bordered table-striped" style="clear: both"><tbody>
+  <tr><td>Package Name</td>           <td><g:xEditable class="ipe" owner="${d}" field="name">${d.name}</g:xEditable></td></tr>
   <tr><td>Internal Id</td>            <td>${d.id}</td></tr>
   <g:if test="${ d.ids?.size() > 0 }" >
 	  <tr>
@@ -18,11 +14,10 @@
 	    </ul></td>
 	  </tr>
   </g:if>
-  <tr><td>Package Name</td>           <td>${d.name}</td></tr>
   <tr><td>Shortcode</td>              <td>${d.shortcode}</td></tr>
   <tr><td>Provider</td>              <td>${d.provider?.name}</td></tr>
   <tr><td>Status</td>                 <td><span class="ipe" 
-                                                data-pk="${d.getClassName()}:${d.id}" 
+                                                data-pk="${__oid}" 
                                                 data-type="select" 
                                                 data-name="packageStatus"
                                                 data-url="<g:createLink controller='ajaxSupport' action='setRef'/>",

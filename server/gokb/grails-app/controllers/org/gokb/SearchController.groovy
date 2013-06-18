@@ -49,6 +49,7 @@ class SearchController {
         result.displayobj = result.recset.get(recno)
         result.displayobjclassname = result.displayobj.class.name
         result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
+        result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
         if ( result.displaytemplate == null ) {
           log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");
         }
