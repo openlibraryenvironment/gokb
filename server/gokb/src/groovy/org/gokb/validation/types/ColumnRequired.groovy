@@ -1,28 +1,31 @@
 package org.gokb.validation.types
 
-import org.gokb.validation.ValidationRule
-
-class ColumnRequired implements ValidationRule {
+class ColumnRequired implements I_ColumnValidationRule {
   
   private static final String ERROR_TYPE = "missing_column"
+  
   private String columnName
   
-  public ColumnRequired (String columnName) {
+  private ColumnRequired (String columnName) {
 	this.columnName = columnName
   }
-
+  
   @Override
-  public boolean valid(def project) {
-	return (columnDefinitions[columnName] != null)
+  public ColumnRequired getInstance (columnName) {
+	return new ColumnRequired (columnName)
   }
 
   @Override
-  public String getErrorMessage() {
-	return "Import does not specify a ${columnName} column";
+  public boolean validate (final result, final columnDefinitions) {
+	if (columnDefinitions[columnName] != null) {
+	  // Add the message and set to false.
+	  result.status = false
+	  result.messages.add([text:"Import does not specify an ${columnName} column", type:"${ERROR_TYPE}", col: "${columnName}"]);
+	}
   }
 
   @Override
-  public String getErrorType() {
-	return ERROR_TYPE;
+  public int getSeverity() {
+	return I_ValidationRule.SEVERITY_ERROR
   }
 }
