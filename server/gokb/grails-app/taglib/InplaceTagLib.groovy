@@ -15,7 +15,9 @@ class InplaceTagLib {
     def id = attrs.id ?: "${oid}:${attrs.field}"
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''}\""
-    out << " data-type=\"${attrs.type?:'textarea'}\" data-pk=\"${oid}\""
+    out << " data-type=\"${attrs.type?:'textarea'}\""
+    if ( oid && ( oid != '' ) ) 
+      out << " data-pk=\"${oid}\""
     out << " data-name=\"${attrs.field}\""
 
     def data_link = null

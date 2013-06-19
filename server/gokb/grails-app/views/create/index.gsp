@@ -42,7 +42,7 @@
     <script language="JavaScript">
 
       $('#save-btn').click(function() {
-          $('.myeditable').editable('submit', {   //call submit
+          $('.editable').editable('submit', {   //call submit
               url: "${createLink(controller:'create', action: 'process')}",                     //url for creating new user
               ajaxOptions: {
                 dataType: 'json' //assuming json response
