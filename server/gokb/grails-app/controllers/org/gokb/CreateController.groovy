@@ -33,9 +33,8 @@ class CreateController {
     def result=['responseText':'OK']
     log.debug("create::process params - ${params}");
     log.debug("create::process request - ${request}");
-    log.debug("method: ${request.method}");
-    log.debug("json: ${request.JSON}");
-    log.debug("format: ${request.format}");
-    render result as JSON
+    params.each { p ->
+      log.debug("Consider ${p.key} -> ${p.value}");
+    }
   }
 }
