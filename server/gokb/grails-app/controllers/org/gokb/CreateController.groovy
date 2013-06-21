@@ -6,6 +6,9 @@ import org.codehaus.groovy.grails.commons.*
 
 class CreateController {
 
+  def genericOIDService
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
     log.debug("Create... ${params}");
     def result=[:]
@@ -30,6 +33,7 @@ class CreateController {
     result
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def process() {
     def result=['responseText':'OK']
     log.debug("create::process params - ${params}");
@@ -46,17 +50,23 @@ class CreateController {
               GrailsDomainClassProperty pdef = newclass.getPersistentProperty(p.key) 
               log.debug(pdef);
               if ( pdef.association ) {
-                switch ( pdef.association-type ) {
-                  case 'one-to-one':
-                    log.debug("one-to-one");
-                    break
-                  default:
-                    log.debug("unhandled association type");
-                    break
+                if ( pdef.isOneToOne() ) {
+                  log.debug("one-to-one");
+                  def related_item = genericOIDService.resolveOID(p.value);
+                  result.newobj[p.key] = related_item
+                }
+                else if ( pdef.isManyToOne() ) {
+                  log.debug("many-to-one");
+                  def related_item = genericOIDService.resolveOID(p.value);
+                  result.newobj[p.key] = related_item
+                }
+                else {
+                  log.debug("unhandled association type");
                 }
               }
               else {
                 log.debug("Scalar property");
+                result.newobj[p.key] = p.value
               }
             }
             else {
@@ -67,7 +77,9 @@ class CreateController {
         catch ( Exception e ) {
           log.error("Problem",e);
         }
+        result.newobj.save(flush:true)
       }
     }
+    render result as JSON
   }
 }
