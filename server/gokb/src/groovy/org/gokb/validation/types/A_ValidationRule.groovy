@@ -2,8 +2,8 @@ package org.gokb.validation.types
 
 abstract class A_ValidationRule {
   
-  public static final int SEVERITY_ERROR = 10
-  public static final int SEVERITY_WARNING = 5
+  public static final String SEVERITY_ERROR = "error"
+  public static final String SEVERITY_WARNING = "warning"
   private boolean errorTriggered = false
   
   protected isErrorTriggered() {
@@ -14,7 +14,7 @@ abstract class A_ValidationRule {
    * The severity rating of the error.
    * @return
    */
-  protected abstract int getSeverity()
+  protected abstract String getSeverity()
   
   /**
    * Return the type to be sent with error messages.

@@ -23,7 +23,7 @@ class ColumnRequired extends A_ValidationRule implements I_ColumnValidationRule 
   }
 
   @Override
-  public int getSeverity() {
+  public String getSeverity() {
 	// Returnt he severity to be sent with eah error message.
 	return SEVERITY_ERROR
   }

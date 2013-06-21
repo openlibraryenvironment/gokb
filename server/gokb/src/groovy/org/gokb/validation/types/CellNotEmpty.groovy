@@ -17,9 +17,9 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
   }
 
   @Override
-  public int getSeverity() {
+  public String getSeverity() {
 	
-	// Returnt he severity to be sent with eah error message.
+	// Return he severity to be sent with eah error message.
 	return SEVERITY_ERROR
   }
 
@@ -33,7 +33,11 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
   @Override
   protected Map getMessageExtras() {
 	// The extra info to be sent with each error message.
-	return [col: columnName, facet: ""];
+	return [
+	  col			: columnName,
+	  facetValue	: "value == \"\"",
+	  facetName		: "Invalid value in ${columnName}"
+	];
   }
   
   @Override

@@ -3,7 +3,7 @@ import org.gokb.DomainClassExtender
 import org.gokb.IngestService
 import org.gokb.cred.*
 import org.gokb.validation.Validation
-import org.gokb.validation.types.ColumnRequired
+import org.gokb.validation.types.*
 
 class BootStrap {
 
