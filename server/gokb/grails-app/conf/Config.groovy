@@ -4,7 +4,8 @@
 
 
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
-
+import org.gokb.IngestService
+import org.gokb.validation.types.*
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
                             "classpath:${appName}-config.groovy",
@@ -143,6 +144,17 @@ validationRules = [
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] ,
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'org.publisher.name'] ] 
+]
+
+validation = [
+  [(ColumnRequired) : "${IngestService.PUBLICATION_TITLE}"],
+  [(CellNotEmpty)	: "${IngestService.PUBLICATION_TITLE}"],
+  [(ColumnRequired) : "${IngestService.PRINT_IDENTIFIER}"],
+  [(ColumnRequired)	: "${IngestService.ONLINE_IDENTIFIER}"],
+  [(ColumnRequired)	: "${IngestService.HOST_PLATFORM_NAME}"],
+  [(ColumnRequired)	: "${IngestService.HOST_PLATFORM_URL}"],
+  [(ColumnRequired)	: "${IngestService.PACKAGE_NAME}"],
+  [(CellNotEmpty)	: "${IngestService.PACKAGE_NAME}"]
 ]
 
 auditLog {

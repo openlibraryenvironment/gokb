@@ -51,7 +51,7 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
 	  def pos = col_positions[columnName]
 
 	  // Only check the content if the row is present in the data in the first place.
-	  if (pos) {
+	  if (pos != null) {
 
 		// Get the value.
 		def value = getRowValue(datarow, col_positions, columnName)

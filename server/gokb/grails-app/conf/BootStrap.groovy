@@ -81,19 +81,16 @@ class BootStrap {
   
   def addValidationRules() {
 	
-	// Add the rules for the validation process here
-	
-	// Start with required columns.
-	Validation.addRule(ColumnRequired, IngestService.PRINT_IDENTIFIER)
-	Validation.addRule(ColumnRequired, IngestService.ONLINE_IDENTIFIER)
-	Validation.addRule(ColumnRequired, IngestService.PUBLICATION_TITLE)
-	Validation.addRule(ColumnRequired, IngestService.HOST_PLATFORM_NAME)
-	Validation.addRule(ColumnRequired, IngestService.HOST_PLATFORM_URL)
-	Validation.addRule(ColumnRequired, IngestService.PACKAGE_NAME)
-	
-	// None blank fields.
-	Validation.addRule(CellNotEmpty, IngestService.PACKAGE_NAME)
-	
+	// Get the config for the validation.
+	grailsApplication.config.validation.each { ruleDef ->
+	  ruleDef.each { Class<? extends A_ValidationRule> rule, args ->
+
+		if (!(args instanceof Collection)) {
+		  args = [args]
+		}
+		Validation.addRule(rule, (args as Object[]))
+	  }
+	}
   }
 
 
