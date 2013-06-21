@@ -1,7 +1,9 @@
-import org.gokb.cred.*;
-import org.gokb.DomainClassExtender;
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
-import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
+import org.gokb.DomainClassExtender
+import org.gokb.IngestService
+import org.gokb.cred.*
+import org.gokb.validation.Validation
+import org.gokb.validation.types.ColumnRequired
 
 class BootStrap {
 
@@ -44,6 +46,7 @@ class BootStrap {
 
 
     refdataCats()
+	addValidationRules()
 
     // assertPublisher('Wiley');
     // assertPublisher('Random House');
@@ -74,6 +77,23 @@ class BootStrap {
       p.save(flush:true);
     }
 
+  }
+  
+  def addValidationRules() {
+	
+	// Add the rules for the validation process here
+	
+	// Start with required columns.
+	Validation.addRule(ColumnRequired, IngestService.PRINT_IDENTIFIER)
+	Validation.addRule(ColumnRequired, IngestService.ONLINE_IDENTIFIER)
+	Validation.addRule(ColumnRequired, IngestService.PUBLICATION_TITLE)
+	Validation.addRule(ColumnRequired, IngestService.HOST_PLATFORM_NAME)
+	Validation.addRule(ColumnRequired, IngestService.HOST_PLATFORM_URL)
+	Validation.addRule(ColumnRequired, IngestService.PACKAGE_NAME)
+	
+	// None blank fields.
+	Validation.addRule(CellNotEmpty, IngestService.PACKAGE_NAME)
+	
   }
 
 

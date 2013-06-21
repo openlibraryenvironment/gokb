@@ -1,6 +1,6 @@
 package org.gokb.validation.types
 
-interface I_ColumnValidationRule extends I_ValidationRule {
+interface I_ColumnValidationRule {
 
-  public boolean validate (final result, final col_positions)
+  public void validate (final result, final col_positions)
 }
