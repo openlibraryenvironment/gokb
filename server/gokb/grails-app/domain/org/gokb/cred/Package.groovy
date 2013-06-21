@@ -25,13 +25,13 @@ class Package extends KBComponent {
   RefineProject lastProject
   
   private static refdataDefaults = [
-	"scope" 		: "Front File",
+	"scope" 	: "Front File",
 	"listStatus"	: "Checked",
-	"breakable"		: "Unknown",
+	"breakable"	: "Unknown",
 	"consistent"	: "Unknown",
-	"fixed"			: "Unknown",
+	"fixed"		: "Unknown",
 	"paymentType"	: "Unknown",
-	"global"		: "Global"
+	"global"	: "Global"
   ]
   
   static manyByCombo = [

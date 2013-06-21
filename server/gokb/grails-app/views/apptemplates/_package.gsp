@@ -19,7 +19,7 @@
   <tr><td>Status</td>                 <td><span class="ipe" 
                                                 data-pk="${__oid}" 
                                                 data-type="select" 
-                                                data-name="packageStatus"
+                                                data-name="status"
                                                 data-url="<g:createLink controller='ajaxSupport' action='setRef'/>",
                                                 data-source="<g:createLink controller='ajaxSupport' action='getRefdata' id='KBComponent.Status'/>">${d.status?.value?:'Not Set'}</span></td></tr>
   <tr><td>Breakable</td>              <td>${d.breakable?.value?:'Not Set'}</td></tr>
