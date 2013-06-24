@@ -48,10 +48,10 @@
                 dataType: 'json' //assuming json response
               },  
               success: function(data) {
-                var msg = 'New user created! Now editables work in regular way.';
-                $('#msg').addClass('alert-success').removeClass('alert-error').html(msg).show();
-                $('#save-btn').hide(); 
-                alert("Ok");
+                // var msg = 'New user created! Now editables work in regular way.';
+                // $('#msg').addClass('alert-success').removeClass('alert-error').html(msg).show();
+                // $('#save-btn').hide(); 
+                window.location = data.uri;
               },
               error: function(data) {
                 var msg = '';

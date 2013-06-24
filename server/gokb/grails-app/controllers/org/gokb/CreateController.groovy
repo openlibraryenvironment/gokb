@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import org.codehaus.groovy.grails.commons.*
+import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
 
 class CreateController {
 
@@ -73,11 +74,13 @@ class CreateController {
               log.debug("Persistent class has no property named ${p.key}");
             }
           }
+
+          result.newobj.save(flush:true)
+          result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
         }
         catch ( Exception e ) {
           log.error("Problem",e);
         }
-        result.newobj.save(flush:true)
       }
     }
     render result as JSON
