@@ -278,8 +278,13 @@ class DomainClassExtender {
 
   private static addGetComboProperty = { DefaultGrailsDomainClass domainClass ->
 	final MetaClass mc = domainClass.getMetaClass()
-	mc.getComboProperty {String propertyName ->
+	mc.getComboProperty { String propertyName ->
 	  log.debug("getComboProperty called on ${delegate} with args ${[propertyName]}")
+
+          if ( delegate.id == null ) {
+            // Don't run this method on transient instances
+            return null
+          }
 
 	  // Test this way to allow us to cache null values.
 	  log.debug("Checking cache...")

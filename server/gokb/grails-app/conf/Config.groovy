@@ -191,3 +191,221 @@ grails.gorm.default.constraints = {
   '*'(nullable: true, blank:false)
 }
 //grails.gorm.failOnError=true
+
+
+
+globalSearchTemplates = [
+    'components':[
+      baseclass:'org.gokb.cred.KBComponent',
+      title:'Component Search',
+      qbeConfig:[
+        // For querying over associations and joins, here we will need to set up scopes to be referenced in the qbeForm config
+        // Until we need them tho, they are omitted. qbeForm entries with no explicit scope are at the root object.
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+          [
+            prompt:'ID',
+            qparam:'qp_id',
+            placeholder:'ID of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'id', 'type' : 'java.lang.Long']
+          ]
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
+      ]
+    ],
+    'packages':[
+      baseclass:'org.gokb.cred.Package',
+      title:'Package Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name of Package',
+            qparam:'qp_name',
+            placeholder:'Package Name',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ]
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name', property:'name'],
+          [heading:'Nominal Platform', property:'nominalPlatform?.name']
+        ]
+      ]
+    ],
+    'orgs':[
+      baseclass:'org.gokb.cred.Org',
+      title:'Organisation Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
+      ]
+    ],
+    'platforms':[
+      baseclass:'org.gokb.cred.Platform',
+      title:'Platform Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
+      ]
+    ],
+    'titles':[
+      baseclass:'org.gokb.cred.TitleInstance',
+      title:'Title Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name']
+        ]
+      ]
+    ],
+    'rules':[
+      baseclass:'org.gokb.refine.Rule',
+      title:'Rule Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Description',
+            qparam:'qp_description',
+            placeholder:'Rule Description',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'description']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Fingerprint', property:'fingerprint'],
+          [heading:'Description', property:'description']
+        ]
+      ]
+    ],
+    'projects':[
+      baseclass:'org.gokb.refine.RefineProject',
+      title:'Import Project Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name',
+            qparam:'qp_name',
+            placeholder:'Project Name',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name', property:'name'],
+          [heading:'Provider', property:'provider?.name']
+        ]
+      ]
+    ],
+    'tipps':[
+      baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
+      title:'TIPP Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Title',
+            qparam:'qp_title',
+            placeholder:'Title',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'title.name'],
+          ],
+//          [
+//            prompt:'Content Provider',
+//            qparam:'qp_cp_name',
+//            placeholder:'Content Provider Name',
+//            contextTree:['ctxtp' : 'qry', 'comparator' : 'ilike', 'prop' : 'pkg.provider.name']
+//          ],
+//          [
+//            prompt:'Content Provider ID',
+//            qparam:'qp_cp_id',
+//            placeholder:'Content Provider ID',
+//            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.provider.id', 'type' : 'java.lang.Long']
+//          ],
+          [
+            prompt:'Package ID',
+            qparam:'qp_pkg_id',
+            placeholder:'Package ID',
+            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Title', property:'title.name'],
+          [heading:'Package', property:'pkg.name']
+        ]
+      ]
+    ],
+    'refdataCategories':[
+      baseclass:'org.gokb.cred.RefdataCategory',
+      title:'Refdata Search',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Description',
+            qparam:'qp_desc',
+            placeholder:'Category Description',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
+          ],
+        ],
+	  	qbeGlobals:[
+		  ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
+		],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Description', property:'desc']
+        ]
+      ]
+    ],
+
+]
+
+
+// Types: staticgsp: under views/templates, dyngsp: in database, dynamic:full dynamic generation, other...
+globalDisplayTemplates = [
+  'org.gokb.cred.Package': [ type:'staticgsp', rendername:'package' ],
+  'org.gokb.cred.Org': [ type:'staticgsp', rendername:'org' ],
+  'org.gokb.cred.Platform': [ type:'staticgsp', rendername:'platform' ],
+  'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
+  'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
+  'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
+  'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
+  'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ]
+]

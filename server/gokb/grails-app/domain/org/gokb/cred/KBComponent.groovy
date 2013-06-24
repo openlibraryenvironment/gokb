@@ -320,9 +320,12 @@ abstract class KBComponent {
   @Transient
   public List getOtherIncomingCombos () {
 
+    def combs = null
+    // Only run this query id this is not a transient object. This must have an ID for this method to work
+    if ( this.id ) {
 	Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
-	List combs = Combo.createCriteria().list {
+	combs = Combo.createCriteria().list {
 	  and {
 		eq ("toComponent", this)
 		type {
@@ -336,16 +339,24 @@ abstract class KBComponent {
 		}
 	  }
 	}
+    }
+    else {
+      combs = []
+    }
 
-	combs
+    combs
   }
 
   @Transient
   public List getOtherOutgoingCombos () {
 
+
+    def combs = null
+
+    if ( this.id != null ) {
 	Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
-	List combs = Combo.createCriteria().list {
+	combs = Combo.createCriteria().list {
 	  and {
 		eq ("fromComponent", this)
 		type {
@@ -358,8 +369,12 @@ abstract class KBComponent {
 		}
 	  }
 	}
+    }
+    else {
+      combs = null;
+    }
 
-	combs
+    combs
   }
 
   public Date deleteSoft (Date endDate = new Date()) {
