@@ -69,44 +69,74 @@ ValidationPanel.prototype._render = function() {
   // Check the data
   var data = self.data;
   if ("status" in data) {
-  	if (!data.status) {
-  		
-  		// invalid doc.
-  		var tData = [];
-  		if ("messages" in data) {
-  			$.each(data.messages, function() {
-  				
-  				// Get the message.
-  				var message = this;
-  				
-  				// The link to display the menu.
-  				var menuLink = $("<a class='button' href='javascript:{}' ><img src='images/right-arrow.png'></a>")
-  					.appendTo($("<div class='gokb-message-actions' />"))
-  					.click(function() {
-  						ValidationPanel.messages.getActions(message, $(this));
-  					});
-  				;
-  				
-  				// Push the data to the table.
-  				tData.push([message.text, menuLink]);
-  			});
-  			
-  			var table = GOKb.toTable (
-  			  ["Error messages", ""],
-  			  tData
-  			);
-  			
-  			// Set the header error count to the correct number. 
-  			self._tabHeader.html('Errors <span class="error count">' + tData.length + '</span>');
-  			
-  			// Append the table to the dialog...
-  			elmts.validationContent.html(table);
-  			$('h1', elmts.panelContent).hide();
-  		}
+  	
+  	// Add the errors and warnings.
+		var errorMess = [];
+		var warnMess = [];
+		if ("messages" in data) {
+			
+			// hasError.
+			var hasError = false;
+			
+			$.each(data.messages, function() {
+				
+				// Get the message.
+				var message = this;
+				
+				// The link to display the menu.
+				var menuLink = $("<a class='button' href='javascript:{}' ><img src='images/right-arrow.png'></a>")
+					.appendTo($("<div class='gokb-message-actions' />"))
+					.click(function() {
+						ValidationPanel.messages.getActions(message, $(this));
+					});
+				;
+				
+				if (message.severity == "error") {
+					// Push the data to the error table.
+					errorMess.push(["<span class='error' >" + message.text + "</span>", menuLink]);
+				} else {
+					// Push the data to the error table.
+					warnMess.push(["<span class='warning' >" + message.text + "</span>", menuLink]);
+				}
+				
+			});
+			
+			// Set the header error count to the correct number. 
+			self._tabHeader.html('Errors <span class="error count">' + errorMess.length + '</span> / <span class="warning count">' + warnMess.length + '</span>');
+			
+			// Append the table to the dialog...
+			if (errorMess.length > 0) {
+				
+				// Error message table.
+				var errorMessages = GOKb.toTable (
+				  ["<span class='error' >Error messages</span>", ""],
+				  errorMess
+				).addClass("error");
+				
+				// Add the table.
+				elmts.validationContent.html(errorMessages);
+				hasError = true;
+			}
+			if (warnMess.length > 0) {
+
+				// Warning message table.
+				var warnMessages = GOKb.toTable (
+	 			  ["<span class='warning' >Warning messages</span>", ""],
+				  warnMess
+				).addClass("warning");
+				
+				// Add the table.
+				elmts.validationContent.html(warnMessages);
+				hasError = true;
+			}
+		}
+  	
+  	if (hasError) {
+  		$('h1', elmts.panelContent).hide();
   	} else {
   		
 			// Set the header error count to the correct number.
-  		self._tabHeader.html('Errors <span class="count">0</span>');
+  		self._tabHeader.html('Errors <span class="error count">0</span> / <span class="warning count">0</span>');
   		
   		elmts.validationContent
   			.html("<p>The current project has passed all validation rules.</p>")

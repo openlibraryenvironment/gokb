@@ -61,6 +61,8 @@
 .ui-tabs {
 	background : none;
 	border:none;
+	font-size:1em;
+	
 	.ui-tabs-nav {
 		padding: 0 2px;
 		li {
@@ -71,6 +73,10 @@
 	  
 	  span.error {
 	  	color: #FF0000 !important;
+	  	background: none;
+	  	padding: 0;
+	  	display:inline;
+	  	margin:0;
 	  }
 	}
 }
@@ -94,10 +100,24 @@
   
   table {
   	th {
-	  	padding: 10px;
+	  	padding: 7px 10px 7px 10px;
 	  	border-bottom: 2px solid #000;
 	  	text-align: left;
 	  	border-bottom:2px solid #000;
+	  	
+	  	/* Warning */
+	  	span.warning {
+				display: block;
+				padding: 4px 0 4px 30px;
+				background: transparent url("../images/warning.png") 0 0 no-repeat;
+			}
+			
+			/* Error */
+			span.error {
+				display: block;
+				padding: 4px 0 4px 30px;
+				background: transparent url("../images/error.png") 0 0 no-repeat;
+			}
 	  }
 	  
 	  td {
