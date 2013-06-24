@@ -152,7 +152,8 @@ ValidationPanel.messages.quickRes.addFacet = function(message) {
     {
       "name" 				: message.facetName,
       "columnName" 	: message.col, 
-      "expression" 	: message.facetValue
+      "expression" 	: message.facetValue,
+    	"omitBlank" : true
     }
   );
 };

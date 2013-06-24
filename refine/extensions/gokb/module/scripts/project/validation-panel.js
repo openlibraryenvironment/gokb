@@ -104,6 +104,9 @@ ValidationPanel.prototype._render = function() {
 			// Set the header error count to the correct number. 
 			self._tabHeader.html('Errors <span class="error count">' + errorMess.length + '</span> / <span class="warning count">' + warnMess.length + '</span>');
 			
+			// Clear the HTML first.
+			elmts.validationContent.html("");
+			
 			// Append the table to the dialog...
 			if (errorMess.length > 0) {
 				
@@ -114,7 +117,7 @@ ValidationPanel.prototype._render = function() {
 				).addClass("error");
 				
 				// Add the table.
-				elmts.validationContent.html(errorMessages);
+				elmts.validationContent.append(errorMessages);
 				hasError = true;
 			}
 			if (warnMess.length > 0) {
@@ -126,7 +129,7 @@ ValidationPanel.prototype._render = function() {
 				).addClass("warning");
 				
 				// Add the table.
-				elmts.validationContent.html(warnMessages);
+				elmts.validationContent.append(warnMessages);
 				hasError = true;
 			}
 		}

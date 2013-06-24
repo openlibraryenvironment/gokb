@@ -153,7 +153,8 @@ validation = [
   ],
   "${IngestService.PRINT_IDENTIFIER}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellMatches		, severity: A_ValidationRule.SEVERITY_ERROR , args: [ /^\d{4}\-\d{3}[\d|X]$/ ] ]
+	[ type: CellMatches		, severity: A_ValidationRule.SEVERITY_ERROR , args: [ /^\d{4}\-\d{3}[\d|X]$/ ] ],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
   ],
   "${IngestService.ONLINE_IDENTIFIER}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ]
