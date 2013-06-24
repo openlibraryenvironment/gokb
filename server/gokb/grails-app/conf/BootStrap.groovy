@@ -82,13 +82,20 @@ class BootStrap {
   def addValidationRules() {
 	
 	// Get the config for the validation.
-	grailsApplication.config.validation.each { ruleDef ->
-	  ruleDef.each { Class<? extends A_ValidationRule> rule, args ->
-
-		if (!(args instanceof Collection)) {
-		  args = [args]
+	grailsApplication.config.validation.each { String columnName, ruleDefs ->
+	  ruleDefs.each { ruleDef ->
+		
+		// Any extra args?
+		def args = ruleDef.args
+		if (args == null) {
+		  args = []
 		}
-		Validation.addRule(rule, (args as Object[]))
+		
+		// Add the (columnName, severity) default args.
+		args = [(columnName), (ruleDef.severity)] + args
+		
+		// Add the rule now we have the args build.
+		Validation.addRule(ruleDef.type, (args as Object[]))
 	  }
 	}
   }

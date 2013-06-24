@@ -4,17 +4,25 @@ abstract class A_ValidationRule {
   
   public static final String SEVERITY_ERROR = "error"
   public static final String SEVERITY_WARNING = "warning"
-  private boolean errorTriggered = false
   
-  protected isErrorTriggered() {
-	return errorTriggered
+  private boolean errorTriggered = false
+  protected String columnName
+  String severity
+  
+  private A_ValidationRule () { /* Hide the default constructor */ }
+  
+  protected A_ValidationRule (String columnName, String severity) {
+	this.severity = severity
+	this.columnName = columnName
   }
   
-  /**
-   * The severity rating of the error.
-   * @return
-   */
-  protected abstract String getSeverity()
+  protected boolean isErrorTriggered() {
+	errorTriggered
+  }
+  
+  protected void flagErrorTriggered() {
+	errorTriggered = true
+  }
   
   /**
    * Return the type to be sent with error messages.
@@ -49,7 +57,7 @@ abstract class A_ValidationRule {
 	result.messages.add(message)
 	
 	// Set the error triggered flag.
-	errorTriggered = true
+	flagErrorTriggered()
   }
   
   protected def getRowValue(datarow, col_positions, colname) {

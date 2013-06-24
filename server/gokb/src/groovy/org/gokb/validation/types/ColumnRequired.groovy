@@ -4,13 +4,15 @@ class ColumnRequired extends A_ValidationRule implements I_ColumnValidationRule 
   
   private static final String ERROR_TYPE = "missing_column"
   
-  private String columnName
-  
-  public ColumnRequired (String columnName) {
+  public ColumnRequired (String columnName, String severity) {
+	
+	// Call super constructor.
+	super (columnName, severity)
+	
+	// Set the column name.
 	if (!(columnName instanceof String)) {
 	  throw new IllegalArgumentException ("ColumRequired rule expects a single argument of type String.")
 	}
-	this.columnName = columnName
   }
 
   @Override
@@ -20,12 +22,6 @@ class ColumnRequired extends A_ValidationRule implements I_ColumnValidationRule 
 	  // Add an error message.
 	  addError(result, "Import does not specify an ${columnName} column")
 	}
-  }
-
-  @Override
-  public String getSeverity() {
-	// Returnt he severity to be sent with eah error message.
-	return SEVERITY_ERROR
   }
 
   @Override

@@ -1,15 +1,19 @@
 package org.gokb.validation.types
 
-class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
+class CellMatches extends A_ValidationRule implements I_RowValidationRule {
   
   private static final String ERROR_TYPE = "data_invalid"
+
+  private String regex
   
-  public CellNotEmpty (String columnName, String severity) {
-	super(columnName, severity)
+  public CellMatches (String columnName, String severity, regex) {
+	super (columnName, severity)
 	
 	if (!(columnName instanceof String)) {
-	  throw new IllegalArgumentException ("CellNotEmpty rule expects a single argument of type String.")
+	  throw new IllegalArgumentException ("CellMatches rule requires at least a ColumnName and a Regex.")
 	}
+	
+	this.regex = regex
   }
 
   @Override
@@ -25,7 +29,7 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
 	// The extra info to be sent with each error message.
 	return [
 	  col			: columnName,
-	  facetValue	: "isBlank(value)",
+	  facetValue	: "and (isNonBlank(value), value.match(/${regex}/) == null)",
 	  facetName		: "Invalid value in ${columnName}"
 	];
   }
@@ -47,10 +51,14 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
 		def value = getRowValue(datarow, col_positions, columnName)
 
 		// If blank we need to add a message.
-		if (!value) {
+		if (value && value != "") { 
 
-		  // Flag that an error has been found in this row.
-		  addError(result, "One or more rows contain no data for column \"${columnName}\"")
+		  // Check the regex matches the value.
+		  if (!(value =~ regex)) {
+
+    		  // Flag that an error has been found in this row.
+    		  addError(result, "One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${columnName}\"")
+		  }
 		}
 	  }
 	}

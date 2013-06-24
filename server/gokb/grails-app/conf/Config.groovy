@@ -147,14 +147,27 @@ validationRules = [
 ]
 
 validation = [
-  [(ColumnRequired) : "${IngestService.PUBLICATION_TITLE}"],
-  [(CellNotEmpty)	: "${IngestService.PUBLICATION_TITLE}"],
-  [(ColumnRequired) : "${IngestService.PRINT_IDENTIFIER}"],
-  [(ColumnRequired)	: "${IngestService.ONLINE_IDENTIFIER}"],
-  [(ColumnRequired)	: "${IngestService.HOST_PLATFORM_NAME}"],
-  [(ColumnRequired)	: "${IngestService.HOST_PLATFORM_URL}"],
-  [(ColumnRequired)	: "${IngestService.PACKAGE_NAME}"],
-  [(CellNotEmpty)	: "${IngestService.PACKAGE_NAME}"]
+  "${IngestService.PUBLICATION_TITLE}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+  "${IngestService.PRINT_IDENTIFIER}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellMatches		, severity: A_ValidationRule.SEVERITY_ERROR , args: [ /^\d{4}\-\d{3}[\d|X]$/ ] ]
+  ],
+  "${IngestService.ONLINE_IDENTIFIER}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+  "${IngestService.HOST_PLATFORM_NAME}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+  "${IngestService.HOST_PLATFORM_URL}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+  "${IngestService.PACKAGE_NAME}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ]
 ]
 
 auditLog {

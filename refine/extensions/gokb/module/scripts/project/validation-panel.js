@@ -70,6 +70,7 @@ ValidationPanel.prototype._render = function() {
   var data = self.data;
   if ("status" in data) {
   	if (!data.status) {
+  		
   		// invalid doc.
   		var tData = [];
   		if ("messages" in data) {
@@ -104,47 +105,11 @@ ValidationPanel.prototype._render = function() {
   		}
   	} else {
   		
-//  		// Create a div to house the data change estimates.
-//  		var changesDiv = $('<div>').attr("id", "esitmated-changes");
-//  		
-//  		// Estimate the data changes...
-//  		GOKb.doCommand (
-//	      "project-estimate-changes",
-//	      {"project" : theProject.id},
-//	      null,
-//	      {
-//	      	onDone : function (data) {
-//	
-//	      		if ("result" in data && data.result.length > 0) {
-//	
-//	      			// Build a JSON data object to display to the user.
-//	      			var DTDdata = [];
-//	      			$.each(data.result, function () {
-//	
-//	      				// Add the row.
-//	      				DTDdata.push([this.type, "" + this["new"], "" + this.updated]);
-//	      			});
-//	
-//	      			// Create a table from the data.
-//	      			var table = GOKb.toTable (
-//                ["Component", "To be created", "To be updated"],
-//                DTDdata
-//	      			).attr("id", "esitmated-changes-table");
-//	
-//	      			// Set the inner html to this table.
-//	      			changesDiv.html("<p>The table below shows the estimated outcomes of ingesting this project.</p>")
-//	      				.append(table);
-//	      		}
-//	      	}
-//	      }
-//  		);
-  		
 			// Set the header error count to the correct number.
   		self._tabHeader.html('Errors <span class="count">0</span>');
   		
   		elmts.validationContent
   			.html("<p>The current project has passed all validation rules.</p>")
-//  			.append(changesDiv)
   			.append(
   			  $("<div>").attr("id", "gokb-ingest-button").append(
 			  		$('<button />')
