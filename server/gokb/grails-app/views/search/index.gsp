@@ -92,7 +92,7 @@
                       <a data-toggle="modal" 
                          data-cache="false" 
                          title="Show File Attachments"
-                         data-remote='<g:create    <r:require modules="gokbstyle,bootstrap-popover"/>Link controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
+                         data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
                          data-target="#modal"><i class="icon-file"></i></a>
                     </li -->
                     <li>
