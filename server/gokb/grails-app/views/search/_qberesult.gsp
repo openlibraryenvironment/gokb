@@ -16,6 +16,7 @@
     </thead>
     <tbody>
       <g:each in="${rows}" var="r">
+        <g:set var="r" value="${r}"/>
         <tr class="${++counter==det ? 'success':''}">
           <!-- Row ${counter} -->
           <td>
@@ -30,8 +31,10 @@
           <g:each in="${qbeConfig.qbeResults}" var="c">
             <td>
               <g:if test="${c.link != null}">
-                <g:link controller="${c.link.controller}" action="${c.link.action}" 
-                        params="${groovy.util.Eval.x(pageScope,c.link.params)}">${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty'}</g:link>
+                <g:link controller="${c.link.controller}" 
+                        action="${c.link.action}" 
+                        id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
+                        params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty'}</g:link>
               </g:if>
               <g:else>
                 ${groovy.util.Eval.x(r, 'x.' + c.property)}
@@ -39,8 +42,7 @@
             </td>
           </g:each>
           <td>
-            <g:link class="btn" controller="resource" action="show" id="${r.class.name+':'+r.id}">Show</g:link>
-            <g:link class="btn" controller="search" action="index" params="${params+['det':counter]}">Preview -></g:link>
+            <g:link class="btn" controller="search" action="index" params="${params+['det':counter]}">Show -></g:link>
           </td>
         </tr>
       </g:each>
