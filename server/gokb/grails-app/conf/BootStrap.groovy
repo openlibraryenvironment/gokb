@@ -82,7 +82,7 @@ class BootStrap {
   def addValidationRules() {
 	
 	// Get the config for the validation.
-	grailsApplication.config.validation.each { String columnName, ruleDefs ->
+	grailsApplication.config.validation.rules.each { String columnName, ruleDefs ->
 	  ruleDefs.each { ruleDef ->
 		
 		// Any extra args?

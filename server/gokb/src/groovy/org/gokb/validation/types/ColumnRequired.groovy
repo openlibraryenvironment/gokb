@@ -16,12 +16,15 @@ class ColumnRequired extends A_ValidationRule implements I_ColumnValidationRule 
   }
 
   @Override
-  public void validate (final result, final columnDefinitions) {
+  public boolean validate (final result, final columnDefinitions) {
 	if (columnDefinitions[columnName] == null) {
 	  
 	  // Add an error message.
-	  addError(result, "Import does not specify an ${columnName} column")
+	  addError(result)
+	  return false
 	}
+	
+	return true
   }
 
   @Override
@@ -31,8 +34,11 @@ class ColumnRequired extends A_ValidationRule implements I_ColumnValidationRule 
   }
 
   @Override
-  protected Map getMessageExtras() {
+  protected Map getMessageProperties() {
 	// The extra info to be sent with each error message.
-	return [col: columnName];
+	return [
+	  col	: columnName,
+	  text	:"Import does not specify an ${columnName} column"
+	]
   }
 }

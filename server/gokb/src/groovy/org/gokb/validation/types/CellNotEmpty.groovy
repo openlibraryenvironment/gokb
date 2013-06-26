@@ -20,18 +20,19 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
   }
 
   @Override
-  protected Map getMessageExtras() {
+  protected Map getMessageProperties() {
 	
 	// The extra info to be sent with each error message.
 	return [
 	  col			: columnName,
+	  text			: "One or more rows contain no data for column \"${columnName}\"",
 	  facetValue	: "isBlank(value)",
 	  facetName		: "Invalid value in ${columnName}"
 	];
   }
   
   @Override
-  public void validate(final result, final col_positions, final rowNum, final datarow) {
+  public boolean validate(final result, final col_positions, final rowNum, final datarow) {
 	
 	// First check should be to see if an error has already been triggered by this rule,
 	// we don't want to fill the error messages with repeats.
@@ -50,9 +51,12 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
 		if (!value) {
 
 		  // Flag that an error has been found in this row.
-		  addError(result, "One or more rows contain no data for column \"${columnName}\"")
+		  addError(result)
+		  return false
 		}
 	  }
 	}
+	
+	return !isErrorTriggered()
   }
 }

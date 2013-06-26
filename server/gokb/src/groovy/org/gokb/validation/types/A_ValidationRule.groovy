@@ -6,7 +6,7 @@ abstract class A_ValidationRule {
   public static final String SEVERITY_WARNING = "warning"
   
   private boolean errorTriggered = false
-  protected String columnName
+  String columnName
   String severity
   
   private A_ValidationRule () { /* Hide the default constructor */ }
@@ -32,20 +32,15 @@ abstract class A_ValidationRule {
   /**
    * Return the extra information to be sent with error messages.
    */
-  protected abstract Map getMessageExtras ()
+  protected abstract Map getMessageProperties ()
   
   /**
    * Add an error message.
    */
-  protected void addError(final result, String messageText) {
+  protected void addError(final result) {
 	
 	// Get the extras added by this rule.
-	Map message = getMessageExtras()
-	
-	// Add the other required items.
-	message['severity'] = getSeverity()
-	message['type']		= getType()
-	message['text']		= messageText
+	Map message = ['severity' : getSeverity(), 'type' : getType()] + getMessageProperties()
 	
 	// If messages isn't set then default to empty list.
 	if (result.messages == null) {

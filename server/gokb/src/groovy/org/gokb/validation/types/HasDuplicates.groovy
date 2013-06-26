@@ -20,24 +20,29 @@ class HasDuplicates extends A_ValidationRule implements I_DeferredRowValidationR
   }
 
   @Override
-  protected Map getMessageExtras() {
+  protected Map getMessageProperties() {
 	
 	// The extra info to be sent with each error message.
 	return [
 	  col			: columnName,
+	  text			: "One or more rows contain duplicated data for column \"${columnName}\"",
 	  facetValue	: "value.match(/(\\Q${duplicates.join("\\E|\\Q")}\\E)/)",
 	  facetName		: "Duplicate values in ${columnName}"
 	];
   }
   
   @Override
-  public void validate(final result) {
+  public boolean validate(final result) {
 	
 	// Check to see if the duplicates set has data.
 	if (duplicates.size() > 0) {
-	  // Add the errors.
-	  addError(result, "One or more rows contain duplicated data for column \"${columnName}\"")
+	  
+	  // Add the error.
+	  addError(result)
+	  return false
 	}
+	
+	return true
   }
   
   private Set allVals = []

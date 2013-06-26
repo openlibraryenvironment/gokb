@@ -5,8 +5,10 @@ class CellMatches extends A_ValidationRule implements I_RowValidationRule {
   private static final String ERROR_TYPE = "data_invalid"
 
   private String regex
+  private String text
+  private String facetValue
   
-  public CellMatches (String columnName, String severity, regex) {
+  public CellMatches (String columnName, String severity, String regex, String text , String facetValue) {
 	super (columnName, severity)
 	
 	if (!(columnName instanceof String)) {
@@ -14,6 +16,8 @@ class CellMatches extends A_ValidationRule implements I_RowValidationRule {
 	}
 	
 	this.regex = regex
+	this.text = text
+	this.facetValue = facetValue
   }
 
   @Override
@@ -24,18 +28,19 @@ class CellMatches extends A_ValidationRule implements I_RowValidationRule {
   }
 
   @Override
-  protected Map getMessageExtras() {
+  protected Map getMessageProperties() {
 	
 	// The extra info to be sent with each error message.
 	return [
 	  col			: columnName,
-	  facetValue	: "and (isNonBlank(value), value.match(/${regex}/) == null)",
+	  text			: (text),
+	  facetValue	: (facetValue),
 	  facetName		: "Invalid value in ${columnName}"
 	];
   }
   
   @Override
-  public void validate(final result, final col_positions, final rowNum, final datarow) {
+  public boolean validate(final result, final col_positions, final rowNum, final datarow) {
 	
 	// First check should be to see if an error has already been triggered by this rule,
 	// we don't want to fill the error messages with repeats.
@@ -51,16 +56,19 @@ class CellMatches extends A_ValidationRule implements I_RowValidationRule {
 		def value = getRowValue(datarow, col_positions, columnName)
 
 		// If blank we need to add a message.
-		if (value && value != "") { 
+		if (value && value != "") {
 
 		  // Check the regex matches the value.
-		  if (!(value =~ regex)) {
+		  if (!(value ==~ regex)) {
 
     		  // Flag that an error has been found in this row.
-    		  addError(result, "One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${columnName}\"")
+    		  addError(result)
+			  return false
 		  }
 		}
 	  }
 	}
+	
+	return !isErrorTriggered()
   }
 }
