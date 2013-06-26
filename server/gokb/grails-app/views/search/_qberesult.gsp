@@ -25,7 +25,15 @@
             </g:if>
           </td>
           <g:each in="${qbeConfig.qbeResults}" var="c">
-            <td>${groovy.util.Eval.x(r, 'x.' + c.property)}</td>
+            <td>
+              <g:if test="${c.link != null}">
+                <g:link controller="${c.link.controller}" action="${c.link.action}" 
+                        params="${groovy.util.Eval.x(pageScope,c.link.params)}">${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty'}</g:link>
+              </g:if>
+              <g:else>
+                ${groovy.util.Eval.x(r, 'x.' + c.property)}
+              </g:else>
+            </td>
           </g:each>
           <td>
             <g:link class="btn" controller="resource" action="show" id="${r.class.name+':'+r.id}">Show</g:link>
