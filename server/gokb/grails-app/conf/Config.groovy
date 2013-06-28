@@ -199,7 +199,13 @@ validation.rules = [
   ],
 
   "${IngestService.HOST_PLATFORM_NAME}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ]
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.PACKAGE_NAME}" : [
@@ -207,7 +213,7 @@ validation.rules = [
 	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
-  // None required columns
+  // Custom ISBN.
   "title.identifier.isbn" : [
 	[
 	  type: CellMatches,
