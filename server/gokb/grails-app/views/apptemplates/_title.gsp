@@ -1,3 +1,6 @@
+<r:require modules="gokbstyle"/>
+<r:require modules="editable"/>
+
 <h1>Title: ${d.name}</h1>
 
 <dl>
@@ -10,14 +13,14 @@
   <dd>
     <g:if test="${d.publisher}">
       <table class="table table-striped">
-        <thead><tr><th>Publisher</th><th>Status</th><th>Start Date</th><th>End Date</th></tr></thead>
+        <thead><tr><th>Publisher</th><th>Relationship Status</th><th>Publisher From</th><th>Publisher To</th></tr></thead>
         <tbody>
           <g:each in="${d.getCombosByPropertyName('publisher')}" var="p">
             <tr>
-              <td>${p.toComponent.name}</td>
+              <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}">${p.toComponent.name}</g:link></td>
               <td>${p.status.value}</td>
-              <td>${p.startDate}</td>
-              <td>${p.endDate}</td>
+              <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date"/></td>
+              <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date"/></td>
             </tr>
           </g:each>
         </tbody>
