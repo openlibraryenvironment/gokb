@@ -16,7 +16,6 @@ class TitleInstance extends KBComponent {
   ]
 
   static hasByCombo = [
-	publisher		: Org,
 	issuer			: Org,
 	translatedFrom	: TitleInstance,
 	absorbedBy		: TitleInstance,
@@ -26,7 +25,8 @@ class TitleInstance extends KBComponent {
   ]
   
   static manyByCombo = [
-	tipps 	: TitleInstancePackagePlatform,
+	tipps : TitleInstancePackagePlatform,
+	publisher : Org,
 //        ids     :  Identifier
   ]
 

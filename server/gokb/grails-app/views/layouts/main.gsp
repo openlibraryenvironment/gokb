@@ -24,11 +24,32 @@
           <a class="brand" href="#">GOKb</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="active"><g:link controller="home" action="index">Home</g:link></li>
-              <li class="active"><g:link controller="search" action="index">Search</g:link></li>
-              <li class="active"><g:link controller="create" action="index">Create</g:link></li>
-              <li class="active"><g:link controller="home" action="showRules">Validation Rules</g:link></li>
-              <li class="active"><g:link controller="coreference" action="index">Coreference</g:link></li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
+                <ul class="dropdown-menu">
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:components']}">Components</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:packages']}">Packages</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:orgs']}">Orgs</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:platforms']}">Platforms</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:titles']}">Titles</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:rules']}">Rules</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:projects']}">Projects</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:tipps']}">TIPPs</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:refdataCategories']}">Refdata</g:link></li>
+                </ul>
+              </li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
+                <ul class="dropdown-menu">
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
+                </ul>
+              </li>
+              <li><g:link controller="home" action="showRules">Validation Rules</g:link></li>
+              <li><g:link controller="coreference" action="index">Coreference</g:link></li>
             </ul>
             <ul class="nav pull-right">
               <sec:ifLoggedIn>

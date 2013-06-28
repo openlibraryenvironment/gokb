@@ -275,7 +275,7 @@ globalSearchTemplates = [
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Type', property:'class.name'],
-          [heading:'Name/Title', property:'name']
+          [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
         ]
       ]
     ],
@@ -293,7 +293,7 @@ globalSearchTemplates = [
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Name', property:'name'],
+          [heading:'Name', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
           [heading:'Nominal Platform', property:'nominalPlatform?.name']
         ]
       ]
@@ -312,8 +312,7 @@ globalSearchTemplates = [
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Type', property:'class.name'],
-          [heading:'Name/Title', property:'name']
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
         ]
       ]
     ],
@@ -331,8 +330,7 @@ globalSearchTemplates = [
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Type', property:'class.name'],
-          [heading:'Name/Title', property:'name']
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
         ]
       ]
     ],
@@ -350,8 +348,7 @@ globalSearchTemplates = [
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Type', property:'class.name'],
-          [heading:'Name/Title', property:'name']
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
         ]
       ]
     ],
@@ -370,7 +367,7 @@ globalSearchTemplates = [
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Fingerprint', property:'fingerprint'],
-          [heading:'Description', property:'description']
+          [heading:'Description', property:'description', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
         ]
       ]
     ],
@@ -466,3 +463,7 @@ globalDisplayTemplates = [
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
   'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ]
 ]
+
+grails.plugins.springsecurity.ui.password.minLength = 6
+grails.plugins.springsecurity.ui.password.maxLength = 64
+grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'

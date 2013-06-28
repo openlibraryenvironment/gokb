@@ -389,4 +389,36 @@ abstract class KBComponent {
 
   //  @Transient
   //  abstract getPermissableCombos()
+
+
+  /**
+   *  Return the combos pertaining to a specific property (Rather than the components linked).
+   *  Needed for editing start/end dates. Initially on publisher, but probably on other things too later on.
+   */
+  @Transient getCombosByPropertyName(propertyName) {
+    def combos
+    if ( this.id != null ) {
+      // Unsaved components can't have combo relations
+      RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
+
+      if (isComboReverse(propertyName)) {
+       combos = Combo.createCriteria().list {
+         and {
+           eq ("type", (type))
+           eq ("toComponent", (this))
+         }
+       }
+      } else {
+       combos = Combo.createCriteria().list {
+         and {
+           eq ("type", (type))
+           eq ("fromComponent", (this))
+         }
+       }
+      }
+    }
+
+    return combos
+  }
+
 }

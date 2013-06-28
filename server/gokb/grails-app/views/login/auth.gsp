@@ -1,7 +1,11 @@
 <html>
 <head>
-	<meta name='layout' content='main'/>
 	<title><g:message code="springSecurity.login.title"/></title>
+
+  <r:require modules="gokbstyle,bootstrap-popover"/>
+
+  <r:layoutResources />
+
 	<style type='text/css' media='screen'>
 	#login {
 		margin: 15px 0px;
@@ -85,9 +89,24 @@
 </head>
 
 <body>
+
+   <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">GOKb</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
 <div id='login'>
 	<div class='inner'>
-		<div class='fheader'><g:message code="springSecurity.login.header"/></div>
+		<div class='fheader'><g:message code="springSecurity.login.header"/> (Or <g:link controller="register">Register Here</g:link>)</div>
 
 		<g:if test='${flash.message}'>
 			<div class='login_message'>${flash.message}</div>

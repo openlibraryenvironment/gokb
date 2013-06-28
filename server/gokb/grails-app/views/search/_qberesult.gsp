@@ -7,26 +7,42 @@
    <caption>Search results</caption>
     <thead>
       <tr>
+        <th></th>
         <g:each in="${qbeConfig.qbeResults}" var="c">
           <th>${c.heading}</th>
         </g:each>
-        <th>Actions [bulk]</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       <g:each in="${rows}" var="r">
+        <g:set var="r" value="${r}"/>
         <tr class="${++counter==det ? 'success':''}">
           <!-- Row ${counter} -->
-          <g:each in="${qbeConfig.qbeResults}" var="c">
-            <td>${groovy.util.Eval.x(r, 'x.' + c.property)}</td>
-          </g:each>
           <td>
-            <g:link class="btn" controller="resource" action="show" id="${r.class.name+':'+r.id}">Show</g:link>
-            <g:link class="btn" controller="search" action="index" params="${params+['det':counter]}">Preview -></g:link>
             <g:if test="${r.respondsTo('availableActions')}">
-             <g:set var="al" value="${new JSON(r.availableActions()).toString().encodeAsHTML()}"/> 
+              <g:set var="al" value="${new JSON(r.availableActions()).toString().encodeAsHTML()}"/> 
               <input type="checkbox" name="bulk:${r.class.name}:${r.id}" data-actns="${al}" class="obj-action-ck-box" onChange="javascript:updateAvailableActions();"/>
             </g:if>
+            <g:else>
+              <input type="checkbox" disabled="disabled"/>
+            </g:else>
+          </td>
+          <g:each in="${qbeConfig.qbeResults}" var="c">
+            <td>
+              <g:if test="${c.link != null}">
+                <g:link controller="${c.link.controller}" 
+                        action="${c.link.action}" 
+                        id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
+                        params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty'}</g:link>
+              </g:if>
+              <g:else>
+                ${groovy.util.Eval.x(r, 'x.' + c.property)}
+              </g:else>
+            </td>
+          </g:each>
+          <td>
+            <g:link class="btn" controller="search" action="index" params="${params+['det':counter]}">Show -></g:link>
           </td>
         </tr>
       </g:each>
