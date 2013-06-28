@@ -14,7 +14,7 @@
         <tbody>
           <g:each in="${d.getCombosByPropertyName('publisher')}" var="p">
             <tr>
-              <td>${p.toComponent.name} ${p}</td>
+              <td>${p.toComponent.name}</td>
               <td>${p.status.value}</td>
               <td>${p.startDate}</td>
               <td>${p.endDate}</td>
