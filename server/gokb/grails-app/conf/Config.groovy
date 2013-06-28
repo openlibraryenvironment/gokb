@@ -148,7 +148,7 @@ validationRules = [
 
 validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
 validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
-validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.)+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
+validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
 
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
