@@ -10,16 +10,18 @@
   <dd>
     <g:if test="${d.publisher}">
       <table class="table table-striped">
-        <thead><tr><th>Publisher</th><th>Start Date</th><th>End Date</th></tr></thead>
+        <thead><tr><th>Publisher</th><th>Status</th><th>Start Date</th><th>End Date</th></tr></thead>
         <tbody>
-          <g:each in="${d.publisher}" var="p">
+          <g:each in="${d.getCombosByPropertyName('publisher')}" var="p">
             <tr>
-              <td>${p.name}</td>
-              <td></td>
-              <td></td>
+              <td>${p.toComponent.name} ${p}</td>
+              <td>${p.status.value}</td>
+              <td>${p.startDate}</td>
+              <td>${p.endDate}</td>
             </tr>
           </g:each>
-      <g:each>
+        </tbody>
+      </table>
     </g:if>
   </dd>
 
