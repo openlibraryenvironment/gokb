@@ -5,10 +5,24 @@
   <dd>${d.id}</dd>
   <dt>Title</dt>
   <dd>${d.name}</dd>
-  <g:if test="${d.publisher}">
-  	<dt>Publisher</dt>
-  	<dd>${d.publisher.name}</dd>
-  </g:if>
+
+  <dt>Publishers</dt>
+  <dd>
+    <g:if test="${d.publisher}">
+      <table class="table table-striped">
+        <thead><tr><th>Publisher</th><th>Start Date</th><th>End Date</th></tr></thead>
+        <tbody>
+          <g:each in="${d.publisher}" var="p">
+            <tr>
+              <td>${p.name}</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </g:each>
+      <g:each>
+    </g:if>
+  </dd>
+
   <dt>Identifiers</dt>
   <dd>
     <ul>
