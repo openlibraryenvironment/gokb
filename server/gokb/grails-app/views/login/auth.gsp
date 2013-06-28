@@ -106,7 +106,7 @@
 
 <div id='login'>
 	<div class='inner'>
-		<div class='fheader'><g:message code="springSecurity.login.header"/></div>
+		<div class='fheader'><g:message code="springSecurity.login.header"/> (Or <g:link controller="register">Register Here</g:link>)</div>
 
 		<g:if test='${flash.message}'>
 			<div class='login_message'>${flash.message}</div>

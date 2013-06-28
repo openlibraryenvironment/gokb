@@ -380,3 +380,7 @@ globalDisplayTemplates = [
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
   'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ]
 ]
+
+grails.plugins.springsecurity.ui.password.minLength = 6
+grails.plugins.springsecurity.ui.password.maxLength = 64
+grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
