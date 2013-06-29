@@ -2,6 +2,8 @@ package org.gokb.cred
 
 class KBComponentVariantName {
 
+  transient textNormalisationService
+
   KBComponent owner
   RefdataValue variantType
   RefdataValue locale
