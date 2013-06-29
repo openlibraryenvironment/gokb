@@ -16,11 +16,30 @@
   </div>
 
   <div class="control-group">
+    <dt>Alternate Titles</dt>
+    <dd>
+      <table class="table table-striped table-bordered">
+        <thead><tr><th>Variant Title</th><th>Status</th><th>Variant Type</th><th>Locale</th></tr></thead>
+        <tbody>
+          <g:each in="${d.variantNames}" var="v">
+            <tr>
+              <td>${v.variantName}</td>
+              <td>${v.status?.value}</td>
+              <td>${v.variantType?.value}</td>
+              <td>${v.locale?.value}</td>
+            </tr>
+          </g:each>
+        </tbody>
+      </table>
+    </dd>
+  </div>
+
+  <div class="control-group">
 
     <dt>Publishers</dt>
     <dd>
       <g:if test="${d.publisher}">
-        <table class="table table-striped">
+        <table class="table table-striped table-bordered">
           <thead><tr><th>Publisher Name</th><th>Relationship Status</th><th>Publisher From</th><th>Publisher To</th></tr></thead>
           <tbody>
             <g:each in="${d.getCombosByPropertyName('publisher')}" var="p">
@@ -69,7 +88,7 @@
   <div class="control-group">
     <dt>Package Appearences</dt>
     <dd>
-      <table class="table table-striped">
+      <table class="table table-striped table-bordered">
         <thead>
           <tr>
             <th>Package</th>

@@ -7,6 +7,7 @@ class KBComponentVariantName {
   KBComponent owner
   RefdataValue variantType
   RefdataValue locale
+  RefdataValue status
 
   String variantName
   String normVariantName
@@ -19,6 +20,7 @@ class KBComponentVariantName {
         normVariantName column:'cvn_norm_variant_name'
         variantType column:'cvn_type_rv_fk'
         locale column:'cvn_locale_rv_fk'
+        status column:'cvn_status_rv_fk'
   }
 
   static constraints = {
@@ -27,6 +29,7 @@ class KBComponentVariantName {
         variantType (nullable:true, blank:false)
         locale (nullable:true, blank:false)
         owner (nullable:false, blank:false)
+        status (nullable:true, blank:false)
   }
 
   protected def generateNormname () {
