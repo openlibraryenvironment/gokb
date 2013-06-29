@@ -32,17 +32,13 @@ class KBComponentVariantName {
         status (nullable:true, blank:false)
   }
 
-  protected def generateNormname () {
+  def beforeInsert() {
+    // Generate the any necessary values.
     normVariantName = textNormalisationService.normalise(variantName);
   }
 
-  def beforeInsert() {
-    // Generate the any necessary values.
-    generateNormname()
-  }
-
   def beforeUpdate() {
-    generateNormname()
+    normVariantName = textNormalisationService.normalise(variantName);
   }
 
 

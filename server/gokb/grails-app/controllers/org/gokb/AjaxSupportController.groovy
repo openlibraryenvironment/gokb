@@ -278,16 +278,22 @@ class AjaxSupportController {
 
     if ( target && value ) {
       def binding_properties = [ "${params.name}":value ]
+      // log.debug("Binding: ${binding_properties} into ${target} - a ${target.class.name}");
       bindData(target, binding_properties)
-      target.save(flush:true);
-      if ( params.resultProp ) {
-        result = value[params.resultProp]
+      if ( target.save(flush:true) ) {
+        if ( params.resultProp ) {
+          result = value[params.resultProp]
+        }
+        else {
+          if ( value ) {
+            result = renderObjectValue(value);
+            // result = value.toString()
+          }
+        }
       }
       else {
-        if ( value ) {
-          result = renderObjectValue(value);
-          // result = value.toString()
-        }
+        log.error("Problem saving.. ${target.errors}");
+        result="ERROR"
       }
     }
     else {
