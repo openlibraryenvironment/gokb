@@ -9,6 +9,13 @@ def testcases = [
                  [ txt:'WILEY The quick brown fox jumps over the lazy dog', reason:'Spurious prefix'],
                  [ txt:'qk. brn. fox jumps over the lazy dog', reason:'Abbreviations'],
                  [ txt:'This is not the same title!', reason:'Non-Match'] ],
+  ],
+  [ original : 'OneWordTitle',
+    variants : [ [ txt:'OneWordTitle', reason:'Exact Match'],
+                 [ txt:'oneWordTitle', reason:'Single Character Case Change'],
+                 [ txt:'One Word Title', reason:'Add spaces' ],
+                 [ txt:'WILEY OneWordTitle', reason:'Spurious prefix'],
+                 [ txt:'OneWordTitle With Some Text', reason:'Spurious Trailing Text' ] ]
   ]
 ]
 
