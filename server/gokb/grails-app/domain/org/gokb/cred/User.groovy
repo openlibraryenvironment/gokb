@@ -3,6 +3,7 @@ package org.gokb.cred
 class User {
 
   transient springSecurityService
+  transient grailsApplication
 
   String username
   String password
@@ -48,5 +49,12 @@ class User {
 
   protected void encodePassword() {
     password = springSecurityService.encodePassword(password)
+  }
+
+
+  transient def getUserOptions() {
+    def userOptions = [:]
+    userOptions.availableSearches = grailsApplication.config.globalSearchTemplates
+    userOptions
   }
 }

@@ -27,15 +27,9 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:components']}">Components</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:packages']}">Packages</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:orgs']}">Orgs</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:platforms']}">Platforms</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:titles']}">Titles</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:rules']}">Rules</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:projects']}">Projects</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:tipps']}">TIPPs</g:link></li>
-                  <li><g:link controller="search" action="index" params="${[qbe:'g:refdataCategories']}">Refdata</g:link></li>
+                  <g:each in="${request.userOptions.availableSearches}" var="srch">
+                    <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
+                  </g:each>
                 </ul>
               </li>
               <li class="dropdown">

@@ -365,7 +365,22 @@ globalSearchTemplates = [
         ]
       ]
     ],
-
+    'reviewRequests':[
+      baseclass:'org.gokb.cred.ReviewRequest',
+      title:'Review Requests',
+      qbeConfig:[
+        qbeForm:[
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Cause', property:'descriptionOfCause'],
+          [heading:'Request', property:'reviewRequest'],
+          [heading:'Timestamp', property:'requestTimestamp'],
+        ]
+      ]
+    ],
 ]
 
 
@@ -378,7 +393,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
   'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
-  'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ]
+  'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
+  'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6
