@@ -199,6 +199,9 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('VariantNameType','Alternate Title').save()
     RefdataCategory.lookupOrCreate('VariantNameType','Previous Title').save()
-    RefdataCategory.lookupOrCreate('VariantNameType','Mispelling').save()
+    RefdataCategory.lookupOrCreate('VariantNameType','Misspelling').save()
+
+    RefdataCategory.lookupOrCreate('Locale','EN-us').save()
+    RefdataCategory.lookupOrCreate('Locale','EN-gb').save()
   }
 }

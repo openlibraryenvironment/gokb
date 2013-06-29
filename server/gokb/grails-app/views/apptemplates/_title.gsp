@@ -31,7 +31,7 @@
               <td>${v.variantName}</td>
               <td><g:xEditableRefData owner="${v}" field="status" config='KBComponent.Status' /></td>
               <td><g:xEditableRefData owner="${v}" field="variantType" config='VariantNameType' /></td>
-              <td>${v.locale?.value}</td>
+              <td><g:xEditableRefData owner="${v}" field="locale" config='Locale' /></td>
             </tr>
           </g:each>
         </tbody>

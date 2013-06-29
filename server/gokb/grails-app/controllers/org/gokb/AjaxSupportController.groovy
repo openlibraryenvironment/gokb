@@ -120,6 +120,14 @@ class AjaxSupportController {
       cols:['value'],
       format:'simple'
     ],
+    'Locale' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='Locale' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='Locale' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      qryParams:[],
+      cols:['value'],
+      format:'simple'
+    ]
   ]
 
 
