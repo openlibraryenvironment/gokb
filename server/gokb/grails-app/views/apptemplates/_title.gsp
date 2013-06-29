@@ -16,6 +16,11 @@
   </div>
 
   <div class="control-group">
+    <dt>Status</dt>
+    <dd><g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' /></dd>
+  </div>
+
+  <div class="control-group">
     <dt>Alternate Titles</dt>
     <dd>
       <table class="table table-striped table-bordered">

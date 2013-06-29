@@ -250,4 +250,57 @@ class AjaxSupportController {
     outs.close()
   }
 
+  def genericSetRel() {
+    // [id:1, value:JISC_Collections_NESLi2_Lic_IOP_Institute_of_Physics_NESLi2_2011-2012_01012011-31122012.., type:License, action:inPlaceSave, controller:ajax
+    // def clazz=grailsApplication.domainClasses.findByFullName(params.type)
+    log.debug("genericSetRel ${params}");
+
+    def target=genericOIDService.resolveOID(params.pk)
+    def value=genericOIDService.resolveOID(params.value)
+
+    def result = null
+
+    if ( target && value ) {
+      def binding_properties = [ "${params.name}":value ]
+      bindData(target, binding_properties)
+      target.save(flush:true);
+      if ( params.resultProp ) {
+        result = value[params.resultProp]
+      }
+      else {
+        if ( value ) {
+          result = renderObjectValue(value);
+          // result = value.toString()
+        }
+      }
+    }
+    else {
+      log.debug("no type (target=${target_components}, value=${value_components}");
+    }
+
+    def resp = [ newValue: result ]
+    log.debug("return ${resp as JSON}");
+    render resp as JSON
+  }
+
+  def renderObjectValue(value) {
+    def result=''
+    if ( value ) {
+      switch ( value.class ) {
+        case org.gokb.cred.RefdataValue.class:
+          if ( value.icon != null ) {
+            result="<span class=\"select-icon ${value.icon}\"></span>${value.value}"
+          }
+          else {
+            result=value.value
+          }
+          break;
+        default:
+          result=value.toString();
+      }
+    }
+    result;
+  }
+
+
 }
