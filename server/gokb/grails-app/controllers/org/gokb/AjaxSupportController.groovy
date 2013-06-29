@@ -111,7 +111,15 @@ class AjaxSupportController {
       qryParams:[],
       cols:['value'],
       format:'simple'
-    ]
+    ],
+    'VariantNameType' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='VariantNameType' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='VariantNameType' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      qryParams:[],
+      cols:['value'],
+      format:'simple'
+    ],
   ]
 
 

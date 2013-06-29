@@ -29,8 +29,8 @@
           <g:each in="${d.variantNames}" var="v">
             <tr>
               <td>${v.variantName}</td>
-              <td>${v.status?.value}</td>
-              <td>${v.variantType?.value}</td>
+              <td><g:xEditableRefData owner="${v}" field="status" config='KBComponent.Status' /></td>
+              <td><g:xEditableRefData owner="${v}" field="variantType" config='VariantNameType' /></td>
               <td>${v.locale?.value}</td>
             </tr>
           </g:each>
