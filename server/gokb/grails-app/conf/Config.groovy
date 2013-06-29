@@ -384,3 +384,8 @@ globalDisplayTemplates = [
 grails.plugins.springsecurity.ui.password.minLength = 6
 grails.plugins.springsecurity.ui.password.maxLength = 64
 grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
+
+//configure register 
+grails.plugins.springsecurity.ui.register.emailFrom = "GOKb"
+grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GoKB'
+
