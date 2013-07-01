@@ -61,11 +61,11 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			opts = opts.concat (
 			  [
 			   	{
-			   		id 		: message.type + "none",
-			   		label : "No suggestions...",
-//			   		click : function() {
-//			   			ValidationPanel.messages.quickRes.renameColumn(message);
-//			   		}
+			   		id 		: message.type + "facet",
+			   		label : "Create facet",
+			   		click : function() {
+			   			ValidationPanel.messages.quickRes.addFacet(message)
+			   		}
 			    },
 			  ]
 			);
@@ -139,4 +139,21 @@ ValidationPanel.messages.quickRes.renameColumn = function(message) {
 	
 	// Show the form.
 	return GOKb.showDialog(dialog);
-}
+};
+
+/**
+ * Rename a column to the required name.
+ */
+ValidationPanel.messages.quickRes.addFacet = function(message) {
+
+	// Add the facet.
+  ui.browsingEngine.addFacet(
+    'list',
+    {
+      "name" 				: message.facetName,
+      "columnName" 	: message.col, 
+      "expression" 	: message.facetValue,
+    	"omitBlank" : true
+    }
+  );
+};

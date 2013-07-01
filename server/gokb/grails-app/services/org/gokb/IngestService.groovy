@@ -1,16 +1,17 @@
 package org.gokb
 
-import org.gokb.refine.*;
-import org.gokb.cred.*;
-import org.springframework.transaction.TransactionStatus
-import org.apache.commons.compress.compressors.gzip.*
-import org.apache.commons.compress.archivers.tar.*
-import org.apache.commons.compress.archivers.*
-import org.codehaus.groovy.grails.orm.hibernate.HibernateSession
 import grails.converters.JSON
 import grails.gorm.DetachedCriteria
-import grails.orm.HibernateCriteriaBuilder
+
 import java.text.SimpleDateFormat
+
+import org.apache.commons.compress.archivers.*
+import org.apache.commons.compress.archivers.tar.*
+import org.apache.commons.compress.compressors.gzip.*
+import org.gokb.cred.*
+import org.gokb.refine.*
+import org.gokb.validation.Validation
+import org.springframework.transaction.TransactionStatus
 
 
 class IngestService {
@@ -30,26 +31,26 @@ class IngestService {
   ];
 
 
-  static String PUBLICATION_TITLE = 'publicationtitle'
-  static String DATE_FIRST_PACKAGE_ISSUE = 'datefirstpackageissue'
-  static String VOLUME_FIRST_PACKAGE_ISSUE = 'volumefirstpackageissue'
-  static String NUMBER_FIRST_PACKAGE_ISSUE = 'numberfirstpackageissue'
-  static String DATE_LAST_PACKAGE_ISSUE = 'datelastpackageissue'
-  static String VOLUME_LAST_PACKAGE_ISSUE = 'volumelastpackageissue'
-  static String NUMBER_LAST_PACKAGE_ISSUE = 'numberlastpackageissue'
+  public static final String PUBLICATION_TITLE = 'publicationtitle'
+  public static final String DATE_FIRST_PACKAGE_ISSUE = 'datefirstpackageissue'
+  public static final String VOLUME_FIRST_PACKAGE_ISSUE = 'volumefirstpackageissue'
+  public static final String NUMBER_FIRST_PACKAGE_ISSUE = 'numberfirstpackageissue'
+  public static final String DATE_LAST_PACKAGE_ISSUE = 'datelastpackageissue'
+  public static final String VOLUME_LAST_PACKAGE_ISSUE = 'volumelastpackageissue'
+  public static final String NUMBER_LAST_PACKAGE_ISSUE = 'numberlastpackageissue'
 
-  static String PRINT_IDENTIFIER = 'title.identifier.issn'
-  static String ONLINE_IDENTIFIER = 'title.identifier.eissn'
-  static String HOST_PLATFORM_NAME = 'platform.host.name'
-  static String HOST_PLATFORM_URL = 'platform.host.url'
-  static String HOST_PLATFORM_BASE_URL = 'platform.host.base.url'
+  public static final String PRINT_IDENTIFIER = 'title.identifier.issn'
+  public static final String ONLINE_IDENTIFIER = 'title.identifier.eissn'
+  public static final String HOST_PLATFORM_NAME = 'platform.host.name'
+  public static final String HOST_PLATFORM_URL = 'platform.host.url'
+  public static final String HOST_PLATFORM_BASE_URL = 'platform.host.base.url'
 
-  static String COVERAGE_DEPTH = 'coveragedepth'
-  static String COVERAGE_NOTES = 'coveragenotes'
-  static String EMBARGO_INFO = 'kbartembargo'
+  public static final String COVERAGE_DEPTH = 'coveragedepth'
+  public static final String COVERAGE_NOTES = 'coveragenotes'
+  public static final String EMBARGO_INFO = 'kbartembargo'
 
-  static String PACKAGE_NAME = 'package.name'
-  static String PUBLISHER_NAME = 'org.publisher.name'
+  public static final String PACKAGE_NAME = 'package.name'
+  public static final String PUBLISHER_NAME = 'org.publisher.name'
 
   /**
    *  Validate a parsed project. 
@@ -58,49 +59,50 @@ class IngestService {
   def validate(project_data) {
 	log.debug("Validate");
 
-	def result = [:]
-	result.status = true
-	result.messages = []
-
-	if ( project_data?.processingCompleted ) {
-	  log.debug("Processing of ingest file completed ok, validating");
-	}
-	else {
-	  log.debug("Processing of ingest file failed, unable to vlidate.");
-	  result.messages.add([text:'Unable to process ingest file at this time']);
-	  return result
-	}
-
-	def col_positions = [:]
-	project_data.columnDefinitions?.each { cd ->
-	  log.debug("Assigning col ${cd.name} to position ${cd.cellIndex}");
-	  col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
-	}
-
-	if ( col_positions[PRINT_IDENTIFIER] == null )
-	  result.messages.add(
-		  [text:"Import does not specify a ${PRINT_IDENTIFIER} column", type:"missing_column", col: "${PRINT_IDENTIFIER}"]
-		  );
-
-	if ( col_positions[ONLINE_IDENTIFIER] == null )
-	  result.messages.add([text:"Import does not specify an ${ONLINE_IDENTIFIER} column", type:"missing_column", col: "${ONLINE_IDENTIFIER}"]);
-
-	if ( col_positions[PUBLICATION_TITLE] == null )
-	  result.messages.add([text:"Import does not specify a ${PUBLICATION_TITLE} column", type:"missing_column", col: "${PUBLICATION_TITLE}"]);
-
-	if ( col_positions[HOST_PLATFORM_NAME] == null )
-	  result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_NAME} column", type:"missing_column", col: "${HOST_PLATFORM_NAME}"]);
-
-	if ( col_positions[HOST_PLATFORM_URL] == null )
-	  result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
-
-//	if ( col_positions[PUBLISHER_NAME] == null )
-//	  result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
-    if ( col_positions[PACKAGE_NAME] == null )
-      result.messages.add([text:"Import does not specify a ${PACKAGE_NAME} column", type:"missing_column", col: "${PACKAGE_NAME}"]);
-      
-    // Check the cell content here...
-    validateContent (project_data, col_positions, result)
+	def result = Validation.doValidate(project_data)
+//	def result = [:]
+//	result.status = true
+//	result.messages = []
+//
+//	if ( project_data?.processingCompleted ) {
+//	  log.debug("Processing of ingest file completed ok, validating");
+//	}
+//	else {
+//	  log.debug("Processing of ingest file failed, unable to vlidate.");
+//	  result.messages.add([text:'Unable to process ingest file at this time']);
+//	  return result
+//	}
+//
+//	def col_positions = [:]
+//	project_data.columnDefinitions?.each { cd ->
+//	  log.debug("Assigning col ${cd.name} to position ${cd.cellIndex}");
+//	  col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
+//	}
+//
+//	if ( col_positions[PRINT_IDENTIFIER] == null )
+//	  result.messages.add(
+//		  [text:"Import does not specify a ${PRINT_IDENTIFIER} column", type:"missing_column", col: "${PRINT_IDENTIFIER}"]
+//		  );
+//
+//	if ( col_positions[ONLINE_IDENTIFIER] == null )
+//	  result.messages.add([text:"Import does not specify an ${ONLINE_IDENTIFIER} column", type:"missing_column", col: "${ONLINE_IDENTIFIER}"]);
+//
+//	if ( col_positions[PUBLICATION_TITLE] == null )
+//	  result.messages.add([text:"Import does not specify a ${PUBLICATION_TITLE} column", type:"missing_column", col: "${PUBLICATION_TITLE}"]);
+//
+//	if ( col_positions[HOST_PLATFORM_NAME] == null )
+//	  result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_NAME} column", type:"missing_column", col: "${HOST_PLATFORM_NAME}"]);
+//
+//	if ( col_positions[HOST_PLATFORM_URL] == null )
+//	  result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
+//
+////	if ( col_positions[PUBLISHER_NAME] == null )
+////	  result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
+//    if ( col_positions[PACKAGE_NAME] == null )
+//      result.messages.add([text:"Import does not specify a ${PACKAGE_NAME} column", type:"missing_column", col: "${PACKAGE_NAME}"]);
+//      
+//    // Check the cell content here...
+//    validateContent (project_data, col_positions, result)
     
 	if ( result.messages.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
