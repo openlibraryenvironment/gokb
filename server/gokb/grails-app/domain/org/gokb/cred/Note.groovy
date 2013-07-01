@@ -9,8 +9,8 @@ class Note {
   Date lastUpdated 
 
   static mapping = {
-		id column:'note_id'
-      note column:'note_txt', type:'text'
+    id column:'note_id'
+    note column:'note_txt', type:'text'
   }
 
   static constraints = {

@@ -9,6 +9,8 @@ import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 
 abstract class KBComponent {
 
+  transient textNormalisationService
+
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
   static final String STATUS_DELETED       = "Deleted"
@@ -156,16 +158,18 @@ abstract class KBComponent {
   ]
 
   static mappedBy = [
-	outgoingCombos: 'fromComponent',
-	incomingCombos:'toComponent',
-	additionalProperties: 'fromComponent',
+    outgoingCombos: 'fromComponent',
+    incomingCombos:'toComponent',
+    additionalProperties: 'fromComponent',
+    variantNames: 'owner',
   ]
 
   static hasMany = [
-	tags:RefdataValue,
-	outgoingCombos:Combo,
-	incomingCombos:Combo,
-	additionalProperties:KBComponentAdditionalProperty
+    tags:RefdataValue,
+    outgoingCombos:Combo,
+    incomingCombos:Combo,
+    additionalProperties:KBComponentAdditionalProperty,
+    variantNames:KBComponentVariantName
   ]
 
   static mapping = {
@@ -280,9 +284,7 @@ abstract class KBComponent {
   }
 
   protected def generateNormname () {
-	if (!normname && name) {
-	  normname = name.toLowerCase().trim()
-	}
+    normname = textNormalisationService.normalise(name);
   }
 
   def beforeInsert() {

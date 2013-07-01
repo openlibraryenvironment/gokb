@@ -51,7 +51,7 @@ class InplaceTagLib {
 
   def xEditableRefData = { attrs, body ->
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
-    def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
+    def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.config,format:'json'])
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
     def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
@@ -75,7 +75,7 @@ class InplaceTagLib {
     def result=''
     if ( value ) {
       switch ( value.class ) {
-        case com.k_int.kbplus.RefdataValue.class:
+        case org.gokb.cred.RefdataValue.class:
           if ( value.icon != null ) {
             result="<span class=\"select-icon ${value.icon}\"></span>${value.value}"
           }
@@ -92,7 +92,7 @@ class InplaceTagLib {
   
   def xEditableManyToOne = { attrs, body ->
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
-    def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.config,format:'json'])
+    def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.config,format:'json'])
     def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     out << "<a href=\"#\" id=\"${id}\" class=\"xEditableManyToOne\" data-pk=\"${oid}\" data-type=\"select\" data-name=\"${attrs.field}\" data-source=\"${data_link}\">"
@@ -153,7 +153,7 @@ class InplaceTagLib {
 
 
   def simpleHiddenRefdata = { attrs, body ->
-    def data_link = createLink(controller:'ajaxSupport', action: 'sel2RefdataSearch', params:[id:attrs.refdataCategory,format:'json'])
+    def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.refdataCategory,format:'json'])
     out << "<input type=\"hidden\" name=\"${attrs.name}\"/>"
     out << "<a href=\"#\" class=\"simpleHiddenRefdata\" data-type=\"select\" data-source=\"${data_link}\" data-hidden-id=\"${attrs.name}\">"
     out << body()

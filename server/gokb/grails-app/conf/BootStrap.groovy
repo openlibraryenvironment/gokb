@@ -220,5 +220,12 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('License.Type','Template').save()
     RefdataCategory.lookupOrCreate('License.Type','Other').save()
+
+    RefdataCategory.lookupOrCreate('VariantNameType','Alternate Title').save()
+    RefdataCategory.lookupOrCreate('VariantNameType','Previous Title').save()
+    RefdataCategory.lookupOrCreate('VariantNameType','Misspelling').save()
+
+    RefdataCategory.lookupOrCreate('Locale','EN-us').save()
+    RefdataCategory.lookupOrCreate('Locale','EN-gb').save()
   }
 }

@@ -254,7 +254,7 @@ grails.gorm.default.constraints = {
 globalSearchTemplates = [
     'components':[
       baseclass:'org.gokb.cred.KBComponent',
-      title:'Component Search',
+      title:'Components',
       qbeConfig:[
         // For querying over associations and joins, here we will need to set up scopes to be referenced in the qbeForm config
         // Until we need them tho, they are omitted. qbeForm entries with no explicit scope are at the root object.
@@ -281,7 +281,7 @@ globalSearchTemplates = [
     ],
     'packages':[
       baseclass:'org.gokb.cred.Package',
-      title:'Package Search',
+      title:'Packages',
       qbeConfig:[
         qbeForm:[
           [
@@ -300,7 +300,7 @@ globalSearchTemplates = [
     ],
     'orgs':[
       baseclass:'org.gokb.cred.Org',
-      title:'Organisation Search',
+      title:'Organisations',
       qbeConfig:[
         qbeForm:[
           [
@@ -318,7 +318,7 @@ globalSearchTemplates = [
     ],
     'platforms':[
       baseclass:'org.gokb.cred.Platform',
-      title:'Platform Search',
+      title:'Platforms',
       qbeConfig:[
         qbeForm:[
           [
@@ -336,7 +336,7 @@ globalSearchTemplates = [
     ],
     'titles':[
       baseclass:'org.gokb.cred.TitleInstance',
-      title:'Title Search',
+      title:'Titles',
       qbeConfig:[
         qbeForm:[
           [
@@ -354,7 +354,7 @@ globalSearchTemplates = [
     ],
     'rules':[
       baseclass:'org.gokb.refine.Rule',
-      title:'Rule Search',
+      title:'Rules',
       qbeConfig:[
         qbeForm:[
           [
@@ -373,7 +373,7 @@ globalSearchTemplates = [
     ],
     'projects':[
       baseclass:'org.gokb.refine.RefineProject',
-      title:'Import Project Search',
+      title:'Projects',
       qbeConfig:[
         qbeForm:[
           [
@@ -392,7 +392,7 @@ globalSearchTemplates = [
     ],
     'tipps':[
       baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
-      title:'TIPP Search',
+      title:'TIPPs',
       qbeConfig:[
         qbeForm:[
           [
@@ -429,7 +429,7 @@ globalSearchTemplates = [
     ],
     'refdataCategories':[
       baseclass:'org.gokb.cred.RefdataCategory',
-      title:'Refdata Search',
+      title:'Refdata Categories ',
       qbeConfig:[
         qbeForm:[
           [
@@ -448,7 +448,22 @@ globalSearchTemplates = [
         ]
       ]
     ],
-
+    'reviewRequests':[
+      baseclass:'org.gokb.cred.ReviewRequest',
+      title:'Review Requests',
+      qbeConfig:[
+        qbeForm:[
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Cause', property:'descriptionOfCause'],
+          [heading:'Request', property:'reviewRequest'],
+          [heading:'Timestamp', property:'requestTimestamp'],
+        ]
+      ]
+    ],
 ]
 
 
@@ -461,9 +476,15 @@ globalDisplayTemplates = [
   'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
   'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
-  'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ]
+  'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
+  'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6
 grails.plugins.springsecurity.ui.password.maxLength = 64
 grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
+
+//configure register 
+grails.plugins.springsecurity.ui.register.emailFrom = "GOKb"
+grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GoKB'
+

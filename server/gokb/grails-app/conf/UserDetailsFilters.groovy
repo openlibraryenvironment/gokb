@@ -16,7 +16,8 @@ class UserDetailsFilters {
           log.debug("User is string: ${springSecurityService.principal}");
         }
         else if (springSecurityService.principal?.id != null ) {
-          request.user = User.get(springSecurityService.principal.id)
+          request.user = User.get(springSecurityService.principal.id);
+          request.userOptions = request.user.getUserOptions();
         }
       }
     }
