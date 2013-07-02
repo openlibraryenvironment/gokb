@@ -2,7 +2,7 @@ var GOKb = {
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
-  globals = {},
+  globals: {},
 	menuItems: [],
   ui: {},
   api : {},
@@ -69,14 +69,21 @@ GOKb.defaultError = function (data) {
 	} else {
 		msg = "There was an error contacting the GOKb server.";
 	}
-	error.bindings.dialogContent.html("<p>" + msg + "</p>");
-  return GOKb.showDialog(error);
+	if (error) {
+		
+		error.bindings.dialogContent.html("<p>" + msg + "</p>");
+		return GOKb.showDialog(error);
+		
+	} else {
+		return null;
+	}
 };
 
 /**
  * Set ajax in progress.
  */
 GOKb.setAjaxInProgress = function() {
+	
 	// If defined on the refine object then use that...
 	if (Refine.setAjaxInProgress) {
 		Refine.setAjaxInProgress();
@@ -120,7 +127,7 @@ GOKb.createDialog = function(title, template) {
   var dialog_obj = $(DOM.loadHTML("gokb", "scripts/dialogs/main.html"));
   var dialog_bindings = DOM.bind(dialog_obj);
   
-  // Set title if present
+  // Set title if present.
   if (title) {
   	dialog_bindings.dialogHeader.text(title);
   }
@@ -156,12 +163,27 @@ GOKb.createDialog = function(title, template) {
  */
 GOKb.createErrorDialog = function(title, template) {
 	
-	if (!GOKb.versionError && !GOKb.error.eDialogOpen) {
+	if (!GOKb.versionError && !GOKb.globals.eDialogOpen) {
 		
 		// Temporary set to same as dialog.
 		var error = GOKb.createDialog(title, template);
 		error.html.addClass("error");
 		error.bindings.closeButton.text("OK");
+		
+		// Add an onShow
+		error.onShow = function () {
+			
+			// Just set the flag.
+			GOKb.globals.eDialogOpen = true;
+		};
+		
+		// On close clear the flag.
+		error.onClose = function () {
+			
+			// Just set the flag.
+			GOKb.globals.eDialogOpen = false;
+		};
+		
 		return error;
 	}
 };
@@ -170,6 +192,7 @@ GOKb.createErrorDialog = function(title, template) {
  * Helper method for showing dialogs within this module.
  */
 GOKb.showDialog = function(dialog) {
+	
 	// Run uniform on any form elements
   if (dialog.bindings.form) {
   	$("select, input, button, textarea", dialog.bindings.form).uniform();
@@ -178,12 +201,26 @@ GOKb.showDialog = function(dialog) {
   // Open the dialog and record the level (Z-Axis) at which it is displayed.
   dialog.level = DialogSystem.showDialog(dialog.html);
   
+  // Run any custom onShow code specified.
+  if ("onShow" in dialog) {
+  	
+  	// Execute the onShow code
+  	dialog.onShow (dialog);
+  }
+  
   // Add a close method to this dialog.
   dialog.close = function () {
   	DialogSystem.dismissUntil(dialog.level - 1);
+  	
+  	// Also fire the on close event.
+  	if ("onClose" in dialog) {
+    	
+    	// Execute the onShow code
+    	dialog.onClose (dialog);
+    }
   }
   
-  // Add the close method as the onclick of the close button.
+  // Add the close method as the onClick of the close button.
   dialog.bindings.closeButton.click(dialog.close);
   return dialog;
 };
