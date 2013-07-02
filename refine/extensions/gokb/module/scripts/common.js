@@ -196,14 +196,18 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
   // Use the built in UI to show AJAX in progress.
   GOKb.setAjaxInProgress();
   
-  // Complete callback.
-  var complete = function (jqXHR, status) {
-	  
-	  if (status == 'error' || status == 'timeout') {
-	    // Display an error message to the user.	    
-	    GOKb.defaultError();
+  // Error callback.	
+	var error = function ( jqXHR, status, errorThrown ) {
+		
+		done = true;
+	  if (dismissBusy) {
+	    dismissBusy();
 	  }
-	};
+	  GOKb.clearAjaxInProgress();
+		
+		// Display an error message to the user.	    
+	  GOKb.defaultError();
+	}
 	
 	// Current success method.
 	var currentSuccess = ajaxObj.success;
@@ -223,28 +227,29 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	
 	// Set success to our new function.
 	ajaxObj.success = newSucessFunction;
+	ajaxObj.error = error;
 	
-	/*
-	 * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
-	 * could attach the complete callback to by use of the always method.
-	 * 
-	 * So here we need to check the version and attach our callback to the initial
-	 * ajax object if we are using jQuery 1.5 or lower.
-	 */
-	if (GOKb.jqVersion > 1.5) {
-		
-		// Fire the ajax and attach the always function.
-	  $.ajax(ajaxObj)
-	  	.always(complete)
-	  ;
-	} else {
-		
-		// Set the complete method equal to our callback.
-		ajaxObj.complete = complete;
-		
+//	/*
+//	 * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
+//	 * could attach the complete callback to by use of the always method.
+//	 * 
+//	 * So here we need to check the version and attach our callback to the initial
+//	 * ajax object if we are using jQuery 1.5 or lower.
+//	 */
+//	if (GOKb.jqVersion > 1.5) {
+//		
+//		// Fire the ajax and attach the always function.
+//	  $.ajax(ajaxObj)
+//	  	.always(complete)
+//	  ;
+//	} else {
+//		
+//		// Set the complete method equal to our callback.
+//		ajaxObj.complete = complete;
+//		
 		// Fire the ajax request.
 		$.ajax(ajaxObj);
-	}
+//	}
   
   // Show waiting message if function has not completed within a second.
   window.setTimeout(function() {
