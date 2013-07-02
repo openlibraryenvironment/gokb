@@ -2,6 +2,7 @@ var GOKb = {
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
+  globals = {},
 	menuItems: [],
   ui: {},
   api : {},
@@ -155,7 +156,8 @@ GOKb.createDialog = function(title, template) {
  */
 GOKb.createErrorDialog = function(title, template) {
 	
-	if (!GOKb.versionError) {
+	if (!GOKb.versionError && !GOKb.error.eDialogOpen) {
+		
 		// Temporary set to same as dialog.
 		var error = GOKb.createDialog(title, template);
 		error.html.addClass("error");
