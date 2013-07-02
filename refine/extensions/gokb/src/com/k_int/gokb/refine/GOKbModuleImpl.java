@@ -7,9 +7,12 @@ import java.util.List;
 
 import javax.servlet.ServletConfig;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections.ExtendedProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import sun.misc.BASE64Encoder;
 
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
@@ -30,6 +33,16 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     public static ExtendedProperties properties;
 
     public static final String VERSION = "0.8";
+    
+    private static String userDetails = null;
+    
+    public static String getCurrentUserDetails() {
+        return userDetails;
+    }
+    
+    public static void setCurrentUserDetails(String username, String password) {
+        userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
+    }
 
     @Override
     public void init(ServletConfig config) throws Exception {

@@ -207,6 +207,13 @@ public abstract class A_RefineAPIBridge extends Command {
         // Set the custom refine extension property.
         connection.setRequestProperty("GOKb-version", GOKbModuleImpl.VERSION);
         
+        // If we have user details set then we should use basic auth to add the details to the header.
+        String details = GOKbModuleImpl.getCurrentUserDetails();
+        if (details != null) {
+            connection.setRequestProperty  ("Authorization", "Basic " + details);
+        }
+        
+        // Now do the specifics.
         if (type == METHOD_TYPE.POST) {
             connection.setDoInput(true);
             connection.setRequestMethod("POST");
