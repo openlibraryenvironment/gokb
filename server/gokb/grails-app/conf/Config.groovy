@@ -488,3 +488,19 @@ grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
 grails.plugins.springsecurity.ui.register.emailFrom = "GOKb"
 grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GoKB'
 
+
+
+
+// The following 2 entries make the app use basic auth by default
+grails.plugins.springsecurity.useBasicAuth = true
+grails.plugins.springsecurity.basic.realmName = "gokb"
+
+// This stanza then says everything should use form apart from /api
+// More info: http://stackoverflow.com/questions/7065089/how-to-configure-grails-spring-authentication-scheme-per-url
+grails.plugins.springsecurity.filterChain.chainMap = [
+   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
+   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
+   // '/soap/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
+   // '/rest/**': 'JOINED_FILTERS,-exceptionTranslationFilter'
+   // '/rest/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
+]
