@@ -28,10 +28,10 @@ public class GerericProxiedCommand extends A_RefineAPIBridge {
             throws ServletException, IOException {
         // Just proxy through to the remote app.
         try {
-            getFromAPI(remoteMethod, params(request), new RefineAPICallback(){
+            getFromAPI(response, remoteMethod, params(request), new RefineAPICallback() {
 
                 @Override
-                protected void onSuccess(InputStream result, int responseCode)
+                protected void onSuccess(InputStream result, HttpServletResponse response, int responseCode)
                         throws Exception {
                     
                     // Just send the api response through to the client.
@@ -51,10 +51,10 @@ public class GerericProxiedCommand extends A_RefineAPIBridge {
             throws ServletException, IOException {
         // Just proxy through to the remote app.
         try {
-            postToAPI(remoteMethod, params(request), files(request), new RefineAPICallback(){
+            postToAPI(response, remoteMethod, params(request), files(request), new RefineAPICallback(){
 
                 @Override
-                protected void onSuccess(InputStream result, int responseCode)
+                protected void onSuccess(InputStream result, HttpServletResponse response, int responseCode)
                         throws Exception {
                     
                     // Get the JSON back...

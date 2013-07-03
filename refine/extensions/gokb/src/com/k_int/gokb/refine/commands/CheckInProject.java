@@ -38,7 +38,8 @@ public class CheckInProject extends A_RefineAPIBridge {
     }
     
     private void handleRequest (final HttpServletRequest request, final HttpServletResponse response) {
-     // Get the project manager and flag that it is busy.
+        
+        // Get the project manager and flag that it is busy.
         final ProjectManager pm = ProjectManager.singleton;
         pm.setBusy(true);
         try {
@@ -88,10 +89,10 @@ public class CheckInProject extends A_RefineAPIBridge {
             }
             
             // Now we need to pass the data to the API.
-            postToAPI("projectCheckin", params, files, new RefineAPICallback(){
+            postToAPI(response, "projectCheckin", params, files, new RefineAPICallback() {
 
                 @Override
-                protected void onSuccess(InputStream result, int responseCode)
+                protected void onSuccess(InputStream result, HttpServletResponse response, int responseCode)
                         throws Exception {
                     
                     // Remove the project from refine.
@@ -102,12 +103,12 @@ public class CheckInProject extends A_RefineAPIBridge {
                 }
                 
             });
-                
+
         } catch (Exception e) {
             
             // Respond with the error page.
             respondWithErrorPage(request, response, e.getLocalizedMessage(), e);
-            
+
         } finally {
             // Make sure we clear the busy flag.
             pm.setBusy(false);

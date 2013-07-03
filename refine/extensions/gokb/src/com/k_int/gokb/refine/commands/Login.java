@@ -43,10 +43,10 @@ public class Login extends A_RefineAPIBridge {
             }
 
             // Now we need to pass the data to the API.
-            postToAPI("checkLogin", params, null, new RefineAPICallback() {
+            postToAPI(response, "checkLogin", params, null, new RefineAPICallback() {
 
                 @Override
-                protected void onSuccess(InputStream result, int responseCode) throws Exception {
+                protected void onSuccess(InputStream result, HttpServletResponse response, int responseCode) throws Exception {
 
                     // Redirect to the refine index.
                     redirect(response, "/");

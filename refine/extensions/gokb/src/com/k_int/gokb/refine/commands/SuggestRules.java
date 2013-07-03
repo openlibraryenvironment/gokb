@@ -52,10 +52,10 @@ public class SuggestRules extends A_RefineAPIBridge {
             files.put("dataZip", RefineUtil.projectToDataZip(project));
 
             // Now we need to pass the data to the API.
-            postToAPI("suggestRulesFromData", params(request), files, new RefineAPICallback(){
+            postToAPI(response, "suggestRulesFromData", params(request), files, new RefineAPICallback(){
 
                 @Override
-                protected void onSuccess(InputStream result, int responseCode)
+                protected void onSuccess(InputStream result, HttpServletResponse response, int responseCode)
                         throws Exception {
 
                     // Proxy through the api response to the client.
