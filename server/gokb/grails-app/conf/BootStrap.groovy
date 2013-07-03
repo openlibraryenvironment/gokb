@@ -1,7 +1,9 @@
-import org.gokb.cred.*;
-import org.gokb.DomainClassExtender;
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
-import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
+import org.gokb.DomainClassExtender
+import org.gokb.IngestService
+import org.gokb.cred.*
+import org.gokb.validation.Validation
+import org.gokb.validation.types.*
 
 class BootStrap {
 
@@ -44,6 +46,7 @@ class BootStrap {
 
 
     refdataCats()
+	addValidationRules()
 
     // assertPublisher('Wiley');
     // assertPublisher('Random House');
@@ -74,6 +77,27 @@ class BootStrap {
       p.save(flush:true);
     }
 
+  }
+  
+  def addValidationRules() {
+	
+	// Get the config for the validation.
+	grailsApplication.config.validation.rules.each { String columnName, ruleDefs ->
+	  ruleDefs.each { ruleDef ->
+		
+		// Any extra args?
+		def args = ruleDef.args
+		if (args == null) {
+		  args = []
+		}
+		
+		// Add the (columnName, severity) default args.
+		args = [(columnName), (ruleDef.severity)] + args
+		
+		// Add the rule now we have the args build.
+		Validation.addRule(ruleDef.type, (args as Object[]))
+	  }
+	}
   }
 
 

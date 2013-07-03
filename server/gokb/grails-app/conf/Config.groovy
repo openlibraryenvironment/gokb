@@ -4,7 +4,8 @@
 
 
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
-
+import org.gokb.IngestService
+import org.gokb.validation.types.*
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
                             "classpath:${appName}-config.groovy",
@@ -143,6 +144,88 @@ validationRules = [
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.name'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'platform.host.url'] ] ,
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'org.publisher.name'] ] 
+]
+
+validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
+validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
+validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
+
+validation.rules = [
+  "${IngestService.PUBLICATION_TITLE}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.PRINT_IDENTIFIER}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.issn}",
+		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.PRINT_IDENTIFIER}\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+
+  "${IngestService.ONLINE_IDENTIFIER}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.issn}",
+		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.ONLINE_IDENTIFIER}\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+
+  "${IngestService.HOST_PLATFORM_URL}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.uri}",
+		"One or more rows contain invlid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.uri}/) == null)",
+	  ]
+	],
+  ],
+
+  "${IngestService.HOST_PLATFORM_NAME}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.PACKAGE_NAME}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  // Custom ISBN.
+  "title.identifier.isbn" : [
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.isbn}",
+		"One or more rows do not contain valid ISBNs in the column \"title.identifier.isbn\". Note the ISBN should be entered without dashes.",
+		"and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
 ]
 
 auditLog {
