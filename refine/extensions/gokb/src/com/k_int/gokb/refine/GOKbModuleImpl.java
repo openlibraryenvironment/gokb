@@ -12,8 +12,6 @@ import org.apache.commons.collections.ExtendedProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.misc.BASE64Encoder;
-
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 
