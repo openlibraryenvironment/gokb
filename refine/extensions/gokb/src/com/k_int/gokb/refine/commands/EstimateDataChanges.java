@@ -75,7 +75,7 @@ public class EstimateDataChanges extends A_RefineAPIBridge {
             postToAPI("estimateDataChanges", params, files, new RefineAPICallback(){
 
                 @Override
-                protected void onSuccess(InputStream result)
+                protected void onSuccess(InputStream result, int responseCode)
                         throws Exception {
 
                     // Proxy through the api response to the client.

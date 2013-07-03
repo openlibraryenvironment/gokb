@@ -45,7 +45,7 @@ public class CheckOutProject extends A_RefineAPIBridge {
             postToAPI("projectCheckout", params, null, new RefineAPICallback() {
 
                 @Override
-                protected void onSuccess(InputStream result) throws Exception {
+                protected void onSuccess(InputStream result, int responseCode) throws Exception {
 
                     // Import the project
                     pm.importProject(localID, result, true);

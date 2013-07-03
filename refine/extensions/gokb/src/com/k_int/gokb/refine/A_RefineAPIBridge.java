@@ -63,7 +63,7 @@ public abstract class A_RefineAPIBridge extends Command {
     }
     
     private static void postFilesAndParams(HttpURLConnection conn, Map<String, String[]> params, Map<String, ?> files) throws IOException, FileUploadException {
-        DataOutputStream dos = new DataOutputStream( conn.getOutputStream() ); 
+        DataOutputStream dos = new DataOutputStream( conn.getOutputStream() );
         try {
 
             // Add the params.
@@ -285,7 +285,7 @@ public abstract class A_RefineAPIBridge extends Command {
         // Return input stream.
         InputStream inputStream = null;
 
-        // construct the url String
+        // Construct the URL String
         String urlString = GOKbModuleImpl.properties.getString("api.url") + apiMethod;
         
         // If get then append the param string here.
@@ -297,21 +297,25 @@ public abstract class A_RefineAPIBridge extends Command {
         URL url = new URL(urlString);
 
         try {
-
+            // Open up a connection.
             HttpURLConnection connection = getAPIConnection(type, url);
         	
             try {
                 
                 if (type == METHOD_TYPE.POST) {
+                    
                     // Do the POST.
                     postFilesAndParams (connection, params, fileData);
                 }
             } catch (Exception e) {
-                callback.onError (inputStream, new IOException("Cannot connect to " + urlString, e));
+                callback.onError (inputStream, connection.getResponseCode(), new IOException("Cannot connect to " + urlString, e));
             }
             try {
                 try {
+                    
+                    // Input stream
                     inputStream = connection.getInputStream();
+                    
                 } catch (Exception e) {
                     if (e instanceof FileNotFoundException) {
                         // ignore
@@ -321,11 +325,11 @@ public abstract class A_RefineAPIBridge extends Command {
                 }
 
                 // Run the success handler of the callback.
-                callback.onSuccess(inputStream);
+                callback.onSuccess(inputStream, connection.getResponseCode());
             } catch (Exception e) {
 
                 // Run the error handler of the callback.
-                callback.onError(inputStream, new IOException("Cannot retrieve content from " + url, e));
+                callback.onError(inputStream, connection.getResponseCode(), new IOException("Cannot retrieve content from " + url, e));
             }
         } finally {
 

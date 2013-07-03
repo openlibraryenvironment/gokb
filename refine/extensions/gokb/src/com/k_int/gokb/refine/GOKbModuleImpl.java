@@ -159,14 +159,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
 
         // Remove default controller.
         ImportingManager.controllers.remove(
-                coreMod.getName() + "/" + controllerName
-                );
+            coreMod.getName() + "/" + controllerName
+        );
 
         // Now register our controller at the default key.
         ImportingManager.registerController(
-                coreMod,
-                controllerName,
-                new GOKbImportingController()
-                );        
+            coreMod,
+            controllerName,
+            new GOKbImportingController()
+        );        
     }
 }
