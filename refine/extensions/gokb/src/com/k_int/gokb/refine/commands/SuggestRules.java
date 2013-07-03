@@ -55,7 +55,7 @@ public class SuggestRules extends A_RefineAPIBridge {
             postToAPI(response, "suggestRulesFromData", params(request), files, new RefineAPICallback(){
 
                 @Override
-                protected void onSuccess(InputStream result, HttpServletResponse response, int responseCode)
+                protected void onSuccess(InputStream result, int responseCode)
                         throws Exception {
 
                     // Proxy through the api response to the client.

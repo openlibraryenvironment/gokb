@@ -55,7 +55,7 @@ GOKb.hijackFunction = function(functionName, replacement) {
 GOKb.defaultError = function (data) {
 	var error = GOKb.createErrorDialog("Error");
 	var msg;
-	if  (data && "message" in data ) {
+	if  (data && ("message" in data) ) {
 		msg = data.message;
 		
 		// Check for the special case version error.
@@ -242,10 +242,12 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	  if (dismissBusy) {
 	    dismissBusy();
 	  }
+	  
+	  // Clear the progress spinner.
 	  GOKb.clearAjaxInProgress();
 		
 		// Display an error message to the user.	    
-	  GOKb.defaultError();
+	  GOKb.defaultError(JSON.parse( jqXHR.responseText ));
 	}
 	
 	// Current success method.

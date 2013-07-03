@@ -92,7 +92,7 @@ public class CheckInProject extends A_RefineAPIBridge {
             postToAPI(response, "projectCheckin", params, files, new RefineAPICallback() {
 
                 @Override
-                protected void onSuccess(InputStream result, HttpServletResponse response, int responseCode)
+                protected void onSuccess(InputStream result, int responseCode)
                         throws Exception {
                     
                     // Remove the project from refine.

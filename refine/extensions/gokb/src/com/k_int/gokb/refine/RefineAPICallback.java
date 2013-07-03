@@ -2,8 +2,6 @@ package com.k_int.gokb.refine;
 
 import java.io.InputStream;
 
-import javax.servlet.http.HttpServletResponse;
-
 
 public class RefineAPICallback {
     
@@ -15,11 +13,11 @@ public class RefineAPICallback {
         }
     }
     
-    protected void onSuccess(InputStream result, HttpServletResponse clientResponse, int respCode) throws Exception {
+    protected void onSuccess(InputStream result, int respCode) throws Exception {
         /* Do Nothing */
     }
 
-    protected void onError(InputStream result, HttpServletResponse clientResponse, int respCode, Exception e) throws Exception {
+    protected void onError(InputStream result, int respCode, Exception e) throws Exception {
 
         // If we have a 401 response then we need to redirect to login page.
         if ( respCode == 401 ) {

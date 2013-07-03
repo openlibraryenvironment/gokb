@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InvalidClassException;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
@@ -311,7 +312,7 @@ public abstract class A_RefineAPIBridge extends Command {
                     postFilesAndParams (connection, params, fileData);
                 }
             } catch (Exception e) {
-                callback.onError (inputStream, clientResponse, connection.getResponseCode(), new IOException("Cannot connect to " + urlString, e));
+                callback.onError (inputStream, connection.getResponseCode(), new IOException("Cannot connect to " + urlString, e));
             }
             try {
                 try {
@@ -328,16 +329,29 @@ public abstract class A_RefineAPIBridge extends Command {
                 }
 
                 // Run the success handler of the callback.
-                callback.onSuccess(inputStream, clientResponse, connection.getResponseCode());
+                callback.onSuccess(inputStream, connection.getResponseCode());
             } catch (Exception e) {
 
                 // Run the error handler of the callback.
-                callback.onError(inputStream, clientResponse, connection.getResponseCode(), new IOException("Cannot retrieve content from " + url, e));
+                callback.onError(inputStream, connection.getResponseCode(), new IOException("Cannot retrieve content from " + url, e));
             }
         } catch (GOKbAuthRequiredException e) {
             
-            // Need to suppress this type of error and show the login page instead.
-            redirect(clientResponse, "");
+            // Return the error to the client to display the login box.
+            String message = GOKbModuleImpl.getCurrentUserDetails() != null ? "The user details supplied are incorrect or you do not have permission to access the API." : "You need to sign in to use the GOKb extension.";
+            String content = "{\"message\":\""+ message + "\", \"result\":{}, \"code\":\"error\"}";
+            clientResponse.setCharacterEncoding("UTF-8");
+            
+            // Set the status to a 401 unauthorized.
+            clientResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            Writer w = clientResponse.getWriter();
+            if (w != null) {
+                w.write(content);
+                w.flush();
+                w.close();
+            } else {
+                throw new ServletException("response returned a null writer");
+            }
             
         } finally {
 
