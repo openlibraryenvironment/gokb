@@ -71,8 +71,13 @@ GOKb.defaultError = function (data) {
 		// Hide the footer as we don't want to have a close button here.
 		login.bindings.dialogFooter.hide();
 		
+		// This is a work around to try and prevent the login box appearing behind a waiting box.
+		window.setTimeout(function() {
+			GOKb.showDialog(login);
+	  }, 700);
+		
 		// Show the login box.
-		return GOKb.showDialog(login);
+		return login;
 		
 	} else {
 	
@@ -322,7 +327,7 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
     if (!done) {
       dismissBusy = DialogSystem.showBusy(message);
     }
-  }, 1000);
+  }, 2000);
 };
 
 /**
