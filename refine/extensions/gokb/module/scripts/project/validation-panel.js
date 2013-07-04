@@ -4,7 +4,7 @@
 function ValidationPanel(div, tabHeader) {
   this._div = div;
   this._tabHeader = tabHeader;
-  this.update();
+//  this.update();
 }
 
 /**
