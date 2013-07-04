@@ -159,28 +159,29 @@ GOKb.ui.projects.prototype.getProjectControls = function(project, localProjects)
 		controls.push(
 		  this.createControlLink(
 		    project,
-		    '#' + project.id,
+//		    '#' + project.id,
+		    'command/gokb/project-checkout?projectID=' + project.id,
 		    "check&#45;out",
 		    "Checkout this project from GOKb to work on it."
 		  )
 //		  .addClass( "ingestingHidden" )
-			.click(function(event) {
-				
-				// Stop the anchor moving to a different location.
-				event.preventDefault();
-				
-				// Create checkout dialog.
-				var dialog = GOKb.createDialog("Checkout GOKb project", "form_project_checkout");
-				
-				// Set the value of the ProjectID field.
-				dialog.bindings.projectID.val($(this).attr('rel'));
-				
-				// Rename close button to cancel.
-				dialog.bindings.closeButton.text("Cancel");
-				
-				// Show dialog.
-				GOKb.showDialog(dialog);
-			})
+//			.click(function(event) {
+//				
+//				// Stop the anchor moving to a different location.
+//				event.preventDefault();
+//				
+//				// Create checkout dialog.
+//				var dialog = GOKb.createDialog("Checkout GOKb project", "form_project_checkout");
+//				
+//				// Set the value of the ProjectID field.
+//				dialog.bindings.projectID.val($(this).attr('rel'));
+//				
+//				// Rename close button to cancel.
+//				dialog.bindings.closeButton.text("Cancel");
+//				
+//				// Show dialog.
+//				GOKb.showDialog(dialog);
+//			})
 		);
 	} else {
 		

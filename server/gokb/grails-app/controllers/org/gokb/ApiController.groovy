@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID
 import grails.converters.JSON
 
 import org.gokb.cred.Org
+import org.gokb.cred.User
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import grails.plugins.springsecurity.Secured
@@ -18,6 +19,7 @@ class ApiController {
 
   def ingestService
   def grailsApplication
+  def springSecurityService
 
   /**
    * Before interceptor to check the current version of the refine
@@ -142,7 +144,10 @@ class ApiController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def projectCheckout() {
 
-	log.debug(params)
+	// Get the current user from the security service.
+	User user = springSecurityService.currentUser
+	
+	log.debug ("User ${user.getUsername()} attempting to check-out a project.")
 	if (params.projectID) {
 
 	  // Get the project.
@@ -150,7 +155,7 @@ class ApiController {
 
 	  if (project) {
 
-		if (project.getCheckedIn()) {
+		if (project.getProjectStatus() == RefineProject.Status.CHECKED_IN) {
 
 		  // Get the file and send the file to the client.
 		  def file = new File(grailsApplication.config.project_dir + project.file)
@@ -161,10 +166,12 @@ class ApiController {
 		  response.outputStream << file.newInputStream()
 
 		  // Set the checkout details.
-		  def chOut = (params.checkOutName ?: "No Name Given") +
-			  " (" + (params.checkOutEmail ?: "No Email Given") + ")"
-		  project.setCheckedOutBy(chOut)
-		  project.setCheckedIn(false)
+//		  def chOut = (params.checkOutName ?: "No Name Given") +
+//			  " (" + (params.checkOutEmail ?: "No Email Given") + ")"
+//		  project.setCheckedOutBy(chOut)
+		  project.setLastCheckedOutBy(user)
+		  project.setProjectStatus(RefineProject.Status.CHECKED_OUT)
+//		  project.setCheckedIn(false)
 		  project.setLocalProjectID(params.long("localProjectID"))
 		  return
 		} else {
@@ -181,10 +188,15 @@ class ApiController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def projectCheckin() {
 
-	log.debug("projectCheckin: ${params}")
+	// Get the current user from the security service.
+	User user = springSecurityService.currentUser
+	
+	log.debug ("User ${user.getUsername()} attempting to check-in a project.")
+	
 	def f = request.getFile('projectFile')
 
 	if (f && !f.empty) {
+	  
 	  // Get the project.
 	  RefineProject project
 
@@ -195,8 +207,10 @@ class ApiController {
 		// DB.
 	  } else {
 		// Creating new project.
-		project = new RefineProject()
 		log.debug("New project");
+		project = new RefineProject()
+		project.setCreatedBy(user)
+		project.setLastCheckedOutBy(user)
 	  }
 
 	  if (project) {
@@ -209,7 +223,6 @@ class ApiController {
 			project.provider = org
 		  }
 		}
-
 
 		// Generate a filename...
 		def fileName = "project-${randomUUID()}.tar.gz"
@@ -224,10 +237,11 @@ class ApiController {
 		if (params.hash) project.setHash(params.hash)
 		if (params.description) project.setDescription(params.description)
 		if (params.name) project.setName(params.name)
-		project.setCheckedIn(true)
-		project.setCheckedOutBy(null)
+		project.setProjectStatus(RefineProject.Status.CHECKED_IN)
+//		project.setLastCheckedOutBy(null)
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
+		project.setModifiedBy(user)
 		if (params.notes) project.setNotes(params.notes)
 
 		// Parse the uploaded project.. We do this here because the parsed project data will be needed for
@@ -261,8 +275,8 @@ class ApiController {
 	  def project = RefineProject.get(params.projectID)
 	  if (project) {
 		// Remove lock properties and return the project state.
-		project.setCheckedIn(true)
-		project.setCheckedOutBy(null)
+		project.setProjectStatus(RefineProject.Status.CHECKED_IN)
+//		project.setCheckedOutBy(null)
 		project.setLocalProjectID(0)
 		project.save(flush: true, failOnError: true)
 
@@ -279,7 +293,8 @@ class ApiController {
   private def projectIngest (RefineProject project, parsed_data) {
 	log.debug("projectIngest....");
 
-	if (project.getCheckedIn()) {
+	if (project.getProjectStatus() == RefineProject.Status.CHECKED_IN) {
+	  
 	  log.debug("Validate the project");
 	  def validationResult = ingestService.validate(parsed_data)
 	  project.lastValidationResult = validationResult.messages
