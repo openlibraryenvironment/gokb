@@ -338,8 +338,8 @@ public abstract class A_RefineAPIBridge extends Command {
         } catch (GOKbAuthRequiredException e) {
             
             // Return the error to the client to display the login box.
-            String message = GOKbModuleImpl.getCurrentUserDetails() != null ? "The user details supplied are incorrect or you do not have permission to access the API." : "You need to sign in to use the GOKb extension.";
-            String content = "{\"message\":\""+ message + "\", \"result\":{}, \"code\":\"error\"}";
+            String message = GOKbModuleImpl.getCurrentUserDetails() != null ? "\"message\":\"The user details supplied are incorrect or you do not have permission to access the API.\", " : "";
+            String content = "{"+ message + "\"result\":{\"errorType\":\"authError\"}, \"code\":\"error\"}";
             clientResponse.setCharacterEncoding("UTF-8");
             
             // Set the status to a 401 unauthorized.

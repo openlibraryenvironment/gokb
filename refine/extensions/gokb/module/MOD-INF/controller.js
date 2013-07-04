@@ -14,6 +14,7 @@ function registerCommands() {
   RS.registerCommand(module, "project-estimate-changes", new Packages.com.k_int.gokb.refine.commands.EstimateDataChanges());
   RS.registerCommand(module, "rules-suggest", new Packages.com.k_int.gokb.refine.commands.SuggestRules());
   RS.registerCommand(module, "datastore-save", new Packages.com.k_int.gokb.refine.commands.SaveDatastore());
+  RS.registerCommand(module, "login", new Packages.com.k_int.gokb.refine.commands.Login());
   Packages.java.lang.System.out.println("done");
 }
 

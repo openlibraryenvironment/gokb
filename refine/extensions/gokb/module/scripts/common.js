@@ -53,30 +53,55 @@ GOKb.hijackFunction = function(functionName, replacement) {
  * Default callback object that displays an error if one was sent through.
  */
 GOKb.defaultError = function (data) {
-	var error = GOKb.createErrorDialog("Error");
-	var msg;
-	if  (data && ("message" in data) ) {
-		msg = data.message;
+	
+	if ("result" in data && "errorType" in data.result && data.result.errorType == "authError") {
 		
-		// Check for the special case version error.
-		if ("result" in data && "errorType" in data.result && data.result.errorType == "versionError") {
-			
-			// Remove close button.
-			error.bindings.closeButton.hide();
-			
-			GOKb.versionError = true;
+		// Authentication error, do not show the error but instead show the login box.
+		var login = GOKb.createDialog("Login to GOKb", "form_login");
+		
+		// Add the message if there is one.
+		if ("message" in data && data.message && data.message != "") {
+			$("fieldset", login.bindings.form).prepend (
+			   $("<p />")
+			     .attr("class", "error message")
+			     .text(data.message)
+			);
 		}
-	} else {
-		msg = "There was an error contacting the GOKb server.";
-	}
-	if (error) {
 		
-		error.bindings.dialogContent.html("<p>" + msg + "</p>");
-		return GOKb.showDialog(error);
+		// Hide the footer as we don't want to have a close button here.
+		login.bindings.dialogFooter.hide();
+		
+		// Show the login box.
+		return GOKb.showDialog(login);
 		
 	} else {
-		return null;
+	
+		var error = GOKb.createErrorDialog("Error");
+		var msg;
+		if  (data && ("message" in data) ) {
+			msg = data.message;
+			
+			// Check for the special case version error.
+			if ("result" in data && "errorType" in data.result && data.result.errorType == "versionError") {
+				
+				// Remove close button.
+				error.bindings.closeButton.hide();
+				
+				GOKb.versionError = true;
+			}
+		} else {
+			msg = "There was an error contacting the GOKb server.";
+		}
+		if (error) {
+			
+			error.bindings.dialogContent.html("<p>" + msg + "</p>");
+			return GOKb.showDialog(error);
+			
+		}
 	}
+	
+	// If we haven't returned anything then return then.
+	return null;
 };
 
 /**

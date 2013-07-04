@@ -36,11 +36,16 @@ public class Login extends A_RefineAPIBridge {
             String[] username = params.get("username");
             String[] password = params.get("password");
 
+            // Ensure the details have been set.
             if (username != null && password != null && username.length == 1 && password.length == 1) {
 
                 // Set the current user details.
                 GOKbModuleImpl.setCurrentUserDetails(username[0], password[0]);
             }
+            
+            // Get the page.
+            String referrer = request.getHeader("referer");
+            final String page = referrer != null && !"".equals(referrer) ? referrer : "/";
 
             // Now we need to pass the data to the API.
             postToAPI(response, "checkLogin", params, null, new RefineAPICallback() {
@@ -48,8 +53,18 @@ public class Login extends A_RefineAPIBridge {
                 @Override
                 protected void onSuccess(InputStream result, int responseCode) throws Exception {
 
-                    // Redirect to the refine index.
-                    redirect(response, "/");
+                    /* Do nothing */
+                }
+
+                @Override
+                protected void onError(InputStream result, int respCode, Exception e) throws Exception {
+                    /* Do nothing */
+                }
+
+                @Override
+                protected void complete(InputStream result) throws Exception {
+                    // Redirect
+                    response.sendRedirect(page);
                 }
             });
 
