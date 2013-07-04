@@ -2,6 +2,7 @@ var GOKb = {
   messageBusy : "Contacting GOKb",
   timeout : 60000, // 1 min timeout.
   handlers: {},
+  globals: {},
 	menuItems: [],
   ui: {},
   api : {},
@@ -52,30 +53,62 @@ GOKb.hijackFunction = function(functionName, replacement) {
  * Default callback object that displays an error if one was sent through.
  */
 GOKb.defaultError = function (data) {
-	var error = GOKb.createErrorDialog("Error");
-	var msg;
-	if  (data && "message" in data ) {
-		msg = data.message;
+	
+	if ("result" in data && "errorType" in data.result && data.result.errorType == "authError") {
 		
-		// Check for the special case version error.
-		if ("result" in data && "errorType" in data.result && data.result.errorType == "versionError") {
-			
-			// Remove close button.
-			error.bindings.closeButton.hide();
-			
-			GOKb.versionError = true;
+		// Authentication error, do not show the error but instead show the login box.
+		var login = GOKb.createDialog("Login to GOKb", "form_login");
+		
+		// Add the message if there is one.
+		if ("message" in data && data.message && data.message != "") {
+			$("fieldset", login.bindings.form).prepend (
+			   $("<p />")
+			     .attr("class", "error message")
+			     .text(data.message)
+			);
 		}
+		
+		// Hide the footer as we don't want to have a close button here.
+		login.bindings.dialogFooter.hide();
+		
+		// Show the login box.
+		return GOKb.showDialog(login);
+		
 	} else {
-		msg = "There was an error contacting the GOKb server.";
+	
+		var error = GOKb.createErrorDialog("Error");
+		var msg;
+		if  (data && ("message" in data) ) {
+			msg = data.message;
+			
+			// Check for the special case version error.
+			if ("result" in data && "errorType" in data.result && data.result.errorType == "versionError") {
+				
+				// Remove close button.
+				error.bindings.closeButton.hide();
+				
+				GOKb.versionError = true;
+			}
+		} else {
+			msg = "There was an error contacting the GOKb server.";
+		}
+		if (error) {
+			
+			error.bindings.dialogContent.html("<p>" + msg + "</p>");
+			return GOKb.showDialog(error);
+			
+		}
 	}
-	error.bindings.dialogContent.html("<p>" + msg + "</p>");
-  return GOKb.showDialog(error);
+	
+	// If we haven't returned anything then return then.
+	return null;
 };
 
 /**
  * Set ajax in progress.
  */
 GOKb.setAjaxInProgress = function() {
+	
 	// If defined on the refine object then use that...
 	if (Refine.setAjaxInProgress) {
 		Refine.setAjaxInProgress();
@@ -119,7 +152,7 @@ GOKb.createDialog = function(title, template) {
   var dialog_obj = $(DOM.loadHTML("gokb", "scripts/dialogs/main.html"));
   var dialog_bindings = DOM.bind(dialog_obj);
   
-  // Set title if present
+  // Set title if present.
   if (title) {
   	dialog_bindings.dialogHeader.text(title);
   }
@@ -155,11 +188,27 @@ GOKb.createDialog = function(title, template) {
  */
 GOKb.createErrorDialog = function(title, template) {
 	
-	if (!GOKb.versionError) {
+	if (!GOKb.versionError && !GOKb.globals.eDialogOpen) {
+		
 		// Temporary set to same as dialog.
 		var error = GOKb.createDialog(title, template);
 		error.html.addClass("error");
 		error.bindings.closeButton.text("OK");
+		
+		// Add an onShow
+		error.onShow = function () {
+			
+			// Just set the flag.
+			GOKb.globals.eDialogOpen = true;
+		};
+		
+		// On close clear the flag.
+		error.onClose = function () {
+			
+			// Just set the flag.
+			GOKb.globals.eDialogOpen = false;
+		};
+		
 		return error;
 	}
 };
@@ -168,6 +217,7 @@ GOKb.createErrorDialog = function(title, template) {
  * Helper method for showing dialogs within this module.
  */
 GOKb.showDialog = function(dialog) {
+	
 	// Run uniform on any form elements
   if (dialog.bindings.form) {
   	$("select, input, button, textarea", dialog.bindings.form).uniform();
@@ -176,12 +226,26 @@ GOKb.showDialog = function(dialog) {
   // Open the dialog and record the level (Z-Axis) at which it is displayed.
   dialog.level = DialogSystem.showDialog(dialog.html);
   
+  // Run any custom onShow code specified.
+  if ("onShow" in dialog) {
+  	
+  	// Execute the onShow code
+  	dialog.onShow (dialog);
+  }
+  
   // Add a close method to this dialog.
   dialog.close = function () {
   	DialogSystem.dismissUntil(dialog.level - 1);
+  	
+  	// Also fire the on close event.
+  	if ("onClose" in dialog) {
+    	
+    	// Execute the onShow code
+    	dialog.onClose (dialog);
+    }
   }
   
-  // Add the close method as the onclick of the close button.
+  // Add the close method as the onClick of the close button.
   dialog.bindings.closeButton.click(dialog.close);
   return dialog;
 };
@@ -196,14 +260,20 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
   // Use the built in UI to show AJAX in progress.
   GOKb.setAjaxInProgress();
   
-  // Complete callback.
-  var complete = function (jqXHR, status) {
-	  
-	  if (status == 'error' || status == 'timeout') {
-	    // Display an error message to the user.	    
-	    GOKb.defaultError();
+  // Error callback.	
+	var error = function ( jqXHR, status, errorThrown ) {
+		
+		done = true;
+	  if (dismissBusy) {
+	    dismissBusy();
 	  }
-	};
+	  
+	  // Clear the progress spinner.
+	  GOKb.clearAjaxInProgress();
+		
+		// Display an error message to the user.	    
+	  GOKb.defaultError(JSON.parse( jqXHR.responseText ));
+	}
 	
 	// Current success method.
 	var currentSuccess = ajaxObj.success;
@@ -223,28 +293,29 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
 	
 	// Set success to our new function.
 	ajaxObj.success = newSucessFunction;
+	ajaxObj.error = error;
 	
-	/*
-	 * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
-	 * could attach the complete callback to by use of the always method.
-	 * 
-	 * So here we need to check the version and attach our callback to the initial
-	 * ajax object if we are using jQuery 1.5 or lower.
-	 */
-	if (GOKb.jqVersion > 1.5) {
-		
-		// Fire the ajax and attach the always function.
-	  $.ajax(ajaxObj)
-	  	.always(complete)
-	  ;
-	} else {
-		
-		// Set the complete method equal to our callback.
-		ajaxObj.complete = complete;
-		
+//	/*
+//	 * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
+//	 * could attach the complete callback to by use of the always method.
+//	 * 
+//	 * So here we need to check the version and attach our callback to the initial
+//	 * ajax object if we are using jQuery 1.5 or lower.
+//	 */
+//	if (GOKb.jqVersion > 1.5) {
+//		
+//		// Fire the ajax and attach the always function.
+//	  $.ajax(ajaxObj)
+//	  	.always(complete)
+//	  ;
+//	} else {
+//		
+//		// Set the complete method equal to our callback.
+//		ajaxObj.complete = complete;
+//		
 		// Fire the ajax request.
 		$.ajax(ajaxObj);
-	}
+//	}
   
   // Show waiting message if function has not completed within a second.
   window.setTimeout(function() {
