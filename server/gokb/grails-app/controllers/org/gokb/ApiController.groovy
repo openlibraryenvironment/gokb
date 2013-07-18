@@ -345,34 +345,30 @@ class ApiController {
   }
 
   def refdata() {
-  def result = [:];
+    def result = [:];
 
-  // Should take a type parameter and do the right thing. Initially only do one type
-  switch ( params.type ) {
-    case 'cp' :
-    def oq = Org.createCriteria()
-    def orgs = oq.listDistinct {
-      roles {
-      "owner" {
-        eq('desc','Org.Role');
-      }
-      eq('value','Content Provider');
-      }
-      order("name", "asc")
+    // Should take a type parameter and do the right thing. Initially only do one type
+    switch ( params.type ) {
+      case 'cp' :
+        def oq = Org.createCriteria()
+        def orgs = oq.listDistinct {
+          roles {
+            "owner" {
+              eq('desc','Org.Role');
+            }
+            eq('value','Content Provider');
+          }
+          order("name", "asc")
+        }
+        result.datalist=new java.util.ArrayList()
+        orgs.each { o ->
+          result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
+        }
+        break;
+      default:
+        break;
     }
-    result.datalist=new java.util.ArrayList()
-    orgs.each { o ->
-      result.datalist.add([
-      "value" : "${o.id}",
-      "name" : (o.name)
-      ])
-    }
-    break;
-    default:
-    break;
-  }
-
-  apiReturn(result)
+    apiReturn(result)
   }
   
   def projectIngestProgress() {
