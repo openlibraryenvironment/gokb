@@ -146,6 +146,14 @@ abstract class KBComponent {
   Set additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
+
+  // Org provOrg
+  // String provUpdateFrequency
+  // String provSource
+  // String provDownloadUrl
+  // String provNote
+  // RefdataValue provFormat
+
 //  Set ids = []
 
   // Timestamps
@@ -154,7 +162,7 @@ abstract class KBComponent {
 
   // ids moved to combos.
   static manyByCombo = [
-	ids      :  Identifier,
+    ids : Identifier,
   ]
 
   static mappedBy = [
