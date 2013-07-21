@@ -26,6 +26,20 @@ class RefdataValue {
 	return "${value}"
   }
 
+  static def refdataFind(params) {
+    def result = [];
+    def ql = null;
+    ql = RefdataValue.findAllByValueIlikeOrDescriptionIlike("%${params.q}%","%${params.q}%",params)
+
+    if ( ql ) {
+      ql.each { id ->
+        result.add([id:"${id.class.name}:${id.id}",text:"${id.value} : ${id.description?:'No Description'}"])
+      }
+    }
+
+    result
+  }
+
 //  def availableActions() {
 //    [ [ code:'object::delete' , label: 'Delete' ] ]
 //  }

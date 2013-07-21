@@ -222,4 +222,5 @@ class InplaceTagLib {
 
     redirect(url: request.getHeader('referer'))
   }
+
 }

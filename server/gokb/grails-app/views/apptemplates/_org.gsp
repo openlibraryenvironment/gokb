@@ -32,6 +32,8 @@
           <li>${t.value}</li>
         </g:each>
       </ul>
+      <br/>
+      <g:simpleHiddenRefdata name="orgRoleRDV" refdataCategory="Org.Role"/>
     </dd>
   </div>
 
