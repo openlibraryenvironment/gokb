@@ -45,13 +45,14 @@ class Org extends KBComponent {
   //  ]
 
   static hasMany = [
-  roles: RefdataValue,
+    roles: RefdataValue,
   ]
 
   static mapping = {
   //         id column:'org_id'
   //    version column:'org_version'
-  mission column:'org_mission_fk_rv'
+    mission column:'org_mission_fk_rv'
+  //  roles joinTable: [name: 'org_role']
   }
 
   static constraints = {
