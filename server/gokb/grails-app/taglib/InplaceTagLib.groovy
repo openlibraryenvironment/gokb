@@ -148,6 +148,11 @@ class InplaceTagLib {
     if ( attrs.style ) {
       out << "style=\"${attrs.style}\" "
     }
+
+    if ( attrs.filter1 ) {
+      out << "data-filter1=\"${attrs.filter1}\" "
+    }
+
     out << "class=\"simpleReferenceTypedown ${attrs.class}\" />"
   }
 

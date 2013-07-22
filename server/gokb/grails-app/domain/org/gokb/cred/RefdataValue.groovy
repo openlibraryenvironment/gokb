@@ -35,8 +35,16 @@ class RefdataValue {
     def ql = null;
     // ql = RefdataValue.findAllByValueIlikeOrDescriptionIlike("%${params.q}%","%${params.q}%",params)
     // ql = RefdataValue.findWhere("%${params.q}%","%${params.q}%",params)
-    ql = RefdataValue.findAll("from RefdataValue as rv where lower(rv.value) like ?", 
-                              ["%${params.q.toLowerCase()}%"],params)
+
+    def query = "from RefdataValue as rv where lower(rv.value) like ?"
+    def query_params = ["%${params.q.toLowerCase()}%"]
+
+    if ( ( params.filter1 != null ) && ( params.filter1.length() > 0 ) ) {
+      query += " and rv.owner.desc = ?"
+      query_params.add(params.filter1);
+    }
+
+    ql = RefdataValue.findAll(query, query_params, params)
 
     if ( ql ) {
       ql.each { id ->

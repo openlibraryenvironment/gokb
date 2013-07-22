@@ -33,7 +33,7 @@
         </g:each>
       </ul>
       <br/>
-      Add role: <g:simpleReferenceTypedown name="roleRefdataValue" baseClass="org.gokb.cred.RefdataValue" />
+      Add role: <g:simpleReferenceTypedown name="roleRefdataValue" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
     </dd>
   </div>
 
