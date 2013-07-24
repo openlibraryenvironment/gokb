@@ -28,10 +28,12 @@
     <dt>Roles</dt>
     <dd>
       <ul>
-        <g:each in="${d.roles.sort({"${it.value}"})}" var="t">
+        <g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
           <li>${t.value}</li>
         </g:each>
       </ul>
+      <br/>
+      Add role: <g:simpleReferenceTypedown name="roleRefdataValue" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
     </dd>
   </div>
 
