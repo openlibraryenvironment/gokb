@@ -430,5 +430,4 @@ abstract class KBComponent {
 
     return combos
   }
-
 }

@@ -58,7 +58,7 @@ class ApiController {
 	  result    : (result),
 	  message    : (message),
 	]
-
+	JSON.use('default')
 	def json = data as JSON
 	log.debug (json)
 	render json
@@ -138,7 +138,23 @@ class ApiController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def projectList() {
-	apiReturn ( RefineProject.findAll() )
+	apiReturn (RefineProject.findAll().collect {
+	  TreeMap props = [:]
+	  it.properties.each { k,v ->
+		if (v instanceof User) {
+		  User u = v as User
+		  props[k] = [
+			"id" 			: "${u.id}",
+			"email" 		: "${u.email}",
+			"displayName" 	: "${u.displayName}"
+		  ]
+		} else {
+		  props[k] = v
+		}
+	  }
+	  
+	  return props
+	})
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
