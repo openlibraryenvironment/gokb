@@ -56,8 +56,10 @@ class Validation {
   private def validate (final def project_data) {
 	
 	// Define the object to contain the results of the validation routine.
-	def result = [:]
-	result.status = true
+	def result = [
+	  messages : [],
+	  status : true
+	]
 	
 	// Check processing complete
 	checkProcessingComplete (result, project_data)

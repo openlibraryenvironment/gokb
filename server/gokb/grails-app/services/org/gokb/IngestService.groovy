@@ -104,13 +104,13 @@ class IngestService {
 //    // Check the cell content here...
 //    validateContent (project_data, col_positions, result)
     
-	if ( result.messages.size() > 0 ) {
+	if ( result.messages?.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
 	  result.status = false;
 	}
 	else {
 	  log.debug("No messages, file valid");
-	  result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
+//	  result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
 	}
 
 	result

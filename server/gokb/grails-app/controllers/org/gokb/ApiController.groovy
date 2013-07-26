@@ -16,6 +16,31 @@ import grails.plugins.springsecurity.Secured
  */
 
 class ApiController {
+  
+  private static final Closure TRANSFORMER_PROJECT = {
+	
+	// Treat as refine project.
+	RefineProject proj = it as RefineProject
+	
+	// Populate the map.
+	TreeMap props = ["id" : proj.id] // Id is not included in properties...
+	
+	// Go through defined properties.
+	proj.properties.each { k,v ->
+	  if (v instanceof User) {
+		User u = v as User
+		props[k] = [
+		  "id" 			: "${u.id}",
+		  "email" 		: "${u.email}",
+		  "displayName" 	: "${u.displayName}"
+		]
+	  } else {
+		props[k] = v
+	  }
+	}
+
+	return props
+  }
 
   def ingestService
   def grailsApplication
@@ -138,23 +163,7 @@ class ApiController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def projectList() {
-	apiReturn (RefineProject.findAll().collect {
-	  TreeMap props = [:]
-	  it.properties.each { k,v ->
-		if (v instanceof User) {
-		  User u = v as User
-		  props[k] = [
-			"id" 			: "${u.id}",
-			"email" 		: "${u.email}",
-			"displayName" 	: "${u.displayName}"
-		  ]
-		} else {
-		  props[k] = v
-		}
-	  }
-	  
-	  return props
-	})
+	apiReturn (RefineProject.findAll().collect(TRANSFORMER_PROJECT))
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -171,7 +180,7 @@ class ApiController {
 
 	  if (project) {
 
-		if (project.getProjectStatus() == RefineProject.Status.CHECKED_IN) {
+		if (project.getProjectStatus() != RefineProject.Status.CHECKED_OUT) {
 
 		  // Get the file and send the file to the client.
 		  def file = new File(grailsApplication.config.project_dir + project.file)
@@ -282,7 +291,7 @@ class ApiController {
 		}
 
 		// Return the project data.
-		apiReturn(project)
+		apiReturn(project.collect(TRANSFORMER_PROJECT))
 		return
 	  }
 	} else if (params.projectID) {
@@ -420,7 +429,7 @@ class ApiController {
 
 	  if (project) {
 		// Return the progress.
-		apiReturn ( [progress : project.getProgress()] )
+		apiReturn ( project.collect(TRANSFORMER_PROJECT) )
 		return
 	  }
 
