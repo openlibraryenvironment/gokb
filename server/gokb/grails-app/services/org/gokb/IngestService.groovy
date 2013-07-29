@@ -104,13 +104,13 @@ class IngestService {
 //    // Check the cell content here...
 //    validateContent (project_data, col_positions, result)
     
-	if ( result.messages.size() > 0 ) {
+	if ( result.messages?.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
 	  result.status = false;
 	}
 	else {
 	  log.debug("No messages, file valid");
-	  result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
+//	  result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
 	}
 
 	result
@@ -381,6 +381,7 @@ class IngestService {
 		result.messages = []
 
 		project.progress = 0
+		project.setProjectStatus(RefineProject.Status.INGESTING)
 		project.save(failOnError:true)
 
 		log.debug ("Updated the project.")
@@ -583,12 +584,15 @@ class IngestService {
 
 	  def project_info = RefineProject.get(project.id)
 	  project_info.progress = 100;
+	  project_info.setProjectStatus (RefineProject.Status.INGESTED)
 	  project_info.save(failOnError:true)
 	}
 	catch ( Exception e ) {
+	  def project_info = RefineProject.get(project.id)
 	  log.error("Problem processing project ingest.",e);
 	  result.messages.add([text:"Problem processing project ingest. ${e}"])
 	  project_info.progress = 100;
+	  project_info.setProjectStatus (RefineProject.Status.INGEST_FAILED)
 	  project_info.save(failOnError:true);
 	  //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
 	}

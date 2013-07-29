@@ -503,4 +503,7 @@ grails.plugins.springsecurity.filterChain.chainMap = [
    // '/soap/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
    // '/rest/**': 'JOINED_FILTERS,-exceptionTranslationFilter'
    // '/rest/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
+   
 ]
+
+grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'

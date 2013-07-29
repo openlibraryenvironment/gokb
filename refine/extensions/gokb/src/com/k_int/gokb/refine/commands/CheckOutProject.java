@@ -23,7 +23,7 @@ public class CheckOutProject extends A_RefineAPIBridge {
     final static Logger logger = LoggerFactory.getLogger("GOKb-checkout-project_command");
 
     @Override
-    public void doPost(final HttpServletRequest request, final HttpServletResponse response)
+    public void doGet(final HttpServletRequest request, final HttpServletResponse response)
             throws ServletException, IOException {       
 
         final ProjectManager pm = ProjectManager.singleton;
