@@ -9,6 +9,8 @@ import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 
 abstract class KBComponent {
 
+  transient textNormalisationService
+
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
   static final String STATUS_DELETED       = "Deleted"
@@ -144,6 +146,14 @@ abstract class KBComponent {
   Set additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
+
+  // Org provOrg
+  // String provUpdateFrequency
+  // String provSource
+  // String provDownloadUrl
+  // String provNote
+  // RefdataValue provFormat
+
 //  Set ids = []
 
   // Timestamps
@@ -152,20 +162,22 @@ abstract class KBComponent {
 
   // ids moved to combos.
   static manyByCombo = [
-	ids      :  Identifier,
+    ids : Identifier,
   ]
 
   static mappedBy = [
-	outgoingCombos: 'fromComponent',
-	incomingCombos:'toComponent',
-	additionalProperties: 'fromComponent',
+    outgoingCombos: 'fromComponent',
+    incomingCombos:'toComponent',
+    additionalProperties: 'fromComponent',
+    variantNames: 'owner',
   ]
 
   static hasMany = [
-	tags:RefdataValue,
-	outgoingCombos:Combo,
-	incomingCombos:Combo,
-	additionalProperties:KBComponentAdditionalProperty
+    tags:RefdataValue,
+    outgoingCombos:Combo,
+    incomingCombos:Combo,
+    additionalProperties:KBComponentAdditionalProperty,
+    variantNames:KBComponentVariantName
   ]
 
   static mapping = {
@@ -280,9 +292,7 @@ abstract class KBComponent {
   }
 
   protected def generateNormname () {
-	if (!normname && name) {
-	  normname = name.toLowerCase().trim()
-	}
+    normname = textNormalisationService.normalise(name);
   }
 
   def beforeInsert() {
@@ -320,9 +330,12 @@ abstract class KBComponent {
   @Transient
   public List getOtherIncomingCombos () {
 
+    def combs = null
+    // Only run this query id this is not a transient object. This must have an ID for this method to work
+    if ( this.id ) {
 	Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
-	List combs = Combo.createCriteria().list {
+	combs = Combo.createCriteria().list {
 	  and {
 		eq ("toComponent", this)
 		type {
@@ -336,16 +349,24 @@ abstract class KBComponent {
 		}
 	  }
 	}
+    }
+    else {
+      combs = []
+    }
 
-	combs
+    combs
   }
 
   @Transient
   public List getOtherOutgoingCombos () {
 
+
+    def combs = null
+
+    if ( this.id != null ) {
 	Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
-	List combs = Combo.createCriteria().list {
+	combs = Combo.createCriteria().list {
 	  and {
 		eq ("fromComponent", this)
 		type {
@@ -358,8 +379,12 @@ abstract class KBComponent {
 		}
 	  }
 	}
+    }
+    else {
+      combs = null;
+    }
 
-	combs
+    combs
   }
 
   public Date deleteSoft (Date endDate = new Date()) {
@@ -374,4 +399,35 @@ abstract class KBComponent {
 
   //  @Transient
   //  abstract getPermissableCombos()
+
+
+  /**
+   *  Return the combos pertaining to a specific property (Rather than the components linked).
+   *  Needed for editing start/end dates. Initially on publisher, but probably on other things too later on.
+   */
+  @Transient getCombosByPropertyName(propertyName) {
+    def combos
+    if ( this.id != null ) {
+      // Unsaved components can't have combo relations
+      RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
+
+      if (isComboReverse(propertyName)) {
+       combos = Combo.createCriteria().list {
+         and {
+           eq ("type", (type))
+           eq ("toComponent", (this))
+         }
+       }
+      } else {
+       combos = Combo.createCriteria().list {
+         and {
+           eq ("type", (type))
+           eq ("fromComponent", (this))
+         }
+       }
+      }
+    }
+
+    return combos
+  }
 }

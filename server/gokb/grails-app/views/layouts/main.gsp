@@ -24,12 +24,40 @@
           <a class="brand" href="#">GOKb</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="active"><g:link controller="home" action="index">Home</g:link></li>
-              <li class="active"><g:link controller="search" action="index">Search</g:link></li>
-              <li class="active"><g:link controller="home" action="showRules">Validation Rules</g:link></li>
-              <li class="active"><g:link controller="coreference" action="index">Coreference</g:link></li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
+                <ul class="dropdown-menu">
+                  <g:each in="${request.userOptions.availableSearches}" var="srch">
+                    <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
+                  </g:each>
+                </ul>
+              </li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
+                <ul class="dropdown-menu">
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
+                </ul>
+              </li>
+              <li><g:link controller="home" action="showRules">Validation Rules</g:link></li>
+              <li><g:link controller="coreference" action="index">Coreference</g:link></li>
             </ul>
-            <p class="navbar-text pull-right">Not logged in</p>
+            <ul class="nav pull-right">
+              <sec:ifLoggedIn>
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">${request.user?.displayName?:request.user?.username} <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    <li><g:link controller="logout">Logout</g:link></li>
+                  </ul>
+                </li>
+              </sec:ifLoggedIn>
+              <sec:ifNotLoggedIn>
+                <li>Not logged in</li>
+              </sec:ifNotLoggedIn>
+            </ul>
           </div>
         </div>
       </div>

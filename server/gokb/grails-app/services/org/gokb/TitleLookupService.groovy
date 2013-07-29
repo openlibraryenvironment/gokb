@@ -69,7 +69,14 @@ class TitleLookupService {
         
         // Add the publisher here if needed.
         if (publisher != null) {
-          result.publisher = publisher
+          // result.publisher = publisher
+          // Only add the publisher if not already in the list of publishers for this title
+          if ( result.publisher.contains(publisher) ) {
+            // Already present - Don't do anything
+          }
+          else {
+            result.publisher.add(publisher)
+          }
         }
 
         // Don't forget to add our IDs here.

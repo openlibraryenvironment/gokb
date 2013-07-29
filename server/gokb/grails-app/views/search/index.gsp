@@ -18,24 +18,8 @@
 
     <div class="container-fluid">
       <div class="row-fluid">
-        <div id="sidebar" class="span2">
-          <div class="well sidebar-nav">
-            <ul class="nav nav-list">
-              <li class="nav-header">Search In</li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:components']}">Components</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:packages']}">Packages</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:orgs']}">Orgs</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:platforms']}">Platforms</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:titles']}">Titles</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:rules']}">Rules</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:projects']}">Projects</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:tipps']}">TIPPs</g:link></li>
-              <li><g:link controller="search" action="index" params="${[qbe:'g:refdataCategories']}">Refdata</g:link></li>
-            </ul>
-          </div><!--/.well -->
-        </div><!--/span-->
 
-        <div id="mainarea" class="${displayobj != null ? 'span5' : 'span10'}">
+        <div id="mainarea" class="${displayobj != null ? 'span6' : 'span12'}">
           <div class="well">
             <g:if test="${qbetemplate==null}">
               Please select a template from the navigation menu
@@ -64,7 +48,7 @@
         </div>
 
         <g:if test="${displayobj != null}">
-          <div id="mainarea" class="span5">
+          <div id="mainarea" class="span6">
             <div class="well">
 
               <div class="navbar">

@@ -30,7 +30,9 @@ class RefdataCategory {
       cat = new RefdataCategory(desc:category_name).save();
     }
 
-    def result = RefdataValue.findByOwnerAndValue(cat, value)
+    // II Commented out the following - Seems to clash with domain class extender!
+    // def result = RefdataValue.findByOwnerAndValue(cat, value)
+    def result = RefdataValue.findWhere(owner:cat, value:value)
 
     if ( !result ) {
       new RefdataValue(owner:cat, value:value).save()

@@ -4,7 +4,8 @@
 
 
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
-
+import org.gokb.IngestService
+import org.gokb.validation.types.*
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
                             "classpath:${appName}-config.groovy",
@@ -145,6 +146,88 @@ validationRules = [
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'org.publisher.name'] ] 
 ]
 
+validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
+validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
+validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
+
+validation.rules = [
+  "${IngestService.PUBLICATION_TITLE}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.PRINT_IDENTIFIER}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.issn}",
+		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.PRINT_IDENTIFIER}\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+
+  "${IngestService.ONLINE_IDENTIFIER}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.issn}",
+		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.ONLINE_IDENTIFIER}\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+
+  "${IngestService.HOST_PLATFORM_URL}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.uri}",
+		"One or more rows contain invlid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.uri}/) == null)",
+	  ]
+	],
+  ],
+
+  "${IngestService.HOST_PLATFORM_NAME}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.PACKAGE_NAME}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  // Custom ISBN.
+  "title.identifier.isbn" : [
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.isbn}",
+		"One or more rows do not contain valid ISBNs in the column \"title.identifier.isbn\". Note the ISBN should be entered without dashes.",
+		"and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+]
+
 auditLog {
   actorClosure = { request, session ->
 
@@ -165,3 +248,262 @@ grails.gorm.default.constraints = {
   '*'(nullable: true, blank:false)
 }
 //grails.gorm.failOnError=true
+
+
+
+globalSearchTemplates = [
+    'components':[
+      baseclass:'org.gokb.cred.KBComponent',
+      title:'Components',
+      qbeConfig:[
+        // For querying over associations and joins, here we will need to set up scopes to be referenced in the qbeForm config
+        // Until we need them tho, they are omitted. qbeForm entries with no explicit scope are at the root object.
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+          [
+            prompt:'ID',
+            qparam:'qp_id',
+            placeholder:'ID of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'id', 'type' : 'java.lang.Long']
+          ]
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Type', property:'class.name'],
+          [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        ]
+      ]
+    ],
+    'packages':[
+      baseclass:'org.gokb.cred.Package',
+      title:'Packages',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name of Package',
+            qparam:'qp_name',
+            placeholder:'Package Name',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ]
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+          [heading:'Nominal Platform', property:'nominalPlatform?.name']
+        ]
+      ]
+    ],
+    'orgs':[
+      baseclass:'org.gokb.cred.Org',
+      title:'Organisations',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'platforms':[
+      baseclass:'org.gokb.cred.Platform',
+      title:'Platforms',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'titles':[
+      baseclass:'org.gokb.cred.TitleInstance',
+      title:'Titles',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'rules':[
+      baseclass:'org.gokb.refine.Rule',
+      title:'Rules',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Description',
+            qparam:'qp_description',
+            placeholder:'Rule Description',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'description']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Fingerprint', property:'fingerprint'],
+          [heading:'Description', property:'description', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'projects':[
+      baseclass:'org.gokb.refine.RefineProject',
+      title:'Projects',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name',
+            qparam:'qp_name',
+            placeholder:'Project Name',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name', property:'name'],
+          [heading:'Provider', property:'provider?.name']
+        ]
+      ]
+    ],
+    'tipps':[
+      baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
+      title:'TIPPs',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Title',
+            qparam:'qp_title',
+            placeholder:'Title',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'title.name'],
+          ],
+//          [
+//            prompt:'Content Provider',
+//            qparam:'qp_cp_name',
+//            placeholder:'Content Provider Name',
+//            contextTree:['ctxtp' : 'qry', 'comparator' : 'ilike', 'prop' : 'pkg.provider.name']
+//          ],
+//          [
+//            prompt:'Content Provider ID',
+//            qparam:'qp_cp_id',
+//            placeholder:'Content Provider ID',
+//            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.provider.id', 'type' : 'java.lang.Long']
+//          ],
+          [
+            prompt:'Package ID',
+            qparam:'qp_pkg_id',
+            placeholder:'Package ID',
+            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
+          ],
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Title', property:'title.name'],
+          [heading:'Package', property:'pkg.name']
+        ]
+      ]
+    ],
+    'refdataCategories':[
+      baseclass:'org.gokb.cred.RefdataCategory',
+      title:'Refdata Categories ',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Description',
+            qparam:'qp_desc',
+            placeholder:'Category Description',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
+          ],
+        ],
+	  	qbeGlobals:[
+		  ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
+		],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Description', property:'desc']
+        ]
+      ]
+    ],
+    'reviewRequests':[
+      baseclass:'org.gokb.cred.ReviewRequest',
+      title:'Review Requests',
+      qbeConfig:[
+        qbeForm:[
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Cause', property:'descriptionOfCause'],
+          [heading:'Request', property:'reviewRequest'],
+          [heading:'Timestamp', property:'requestTimestamp'],
+        ]
+      ]
+    ],
+]
+
+
+// Types: staticgsp: under views/templates, dyngsp: in database, dynamic:full dynamic generation, other...
+globalDisplayTemplates = [
+  'org.gokb.cred.Package': [ type:'staticgsp', rendername:'package' ],
+  'org.gokb.cred.Org': [ type:'staticgsp', rendername:'org' ],
+  'org.gokb.cred.Platform': [ type:'staticgsp', rendername:'platform' ],
+  'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
+  'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
+  'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
+  'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
+  'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
+  'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ]
+]
+
+grails.plugins.springsecurity.ui.password.minLength = 6
+grails.plugins.springsecurity.ui.password.maxLength = 64
+grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
+
+//configure register 
+grails.plugins.springsecurity.ui.register.emailFrom = "GOKb"
+grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GoKB'
+
+
+
+
+// The following 2 entries make the app use basic auth by default
+grails.plugins.springsecurity.useBasicAuth = true
+grails.plugins.springsecurity.basic.realmName = "gokb"
+
+// This stanza then says everything should use form apart from /api
+// More info: http://stackoverflow.com/questions/7065089/how-to-configure-grails-spring-authentication-scheme-per-url
+grails.plugins.springsecurity.filterChain.chainMap = [
+   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
+   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
+   // '/soap/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
+   // '/rest/**': 'JOINED_FILTERS,-exceptionTranslationFilter'
+   // '/rest/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
+   
+]
+
+grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'

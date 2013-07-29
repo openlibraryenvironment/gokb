@@ -72,10 +72,10 @@ public class EstimateDataChanges extends A_RefineAPIBridge {
             }
 
             // Now we need to pass the data to the API.
-            postToAPI("estimateDataChanges", params, files, new RefineAPICallback(){
+            postToAPI(response, "estimateDataChanges", params, files, new RefineAPICallback(){
 
                 @Override
-                protected void onSuccess(InputStream result)
+                protected void onSuccess(InputStream result, int responseCode)
                         throws Exception {
 
                     // Proxy through the api response to the client.

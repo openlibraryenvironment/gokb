@@ -23,7 +23,7 @@ public class CheckOutProject extends A_RefineAPIBridge {
     final static Logger logger = LoggerFactory.getLogger("GOKb-checkout-project_command");
 
     @Override
-    public void doPost(final HttpServletRequest request, final HttpServletResponse response)
+    public void doGet(final HttpServletRequest request, final HttpServletResponse response)
             throws ServletException, IOException {       
 
         final ProjectManager pm = ProjectManager.singleton;
@@ -42,10 +42,10 @@ public class CheckOutProject extends A_RefineAPIBridge {
             
             
             // Call the project download method with our callback to import the project.
-            postToAPI("projectCheckout", params, null, new RefineAPICallback() {
+            postToAPI(response, "projectCheckout", params, null, new RefineAPICallback() {
 
                 @Override
-                protected void onSuccess(InputStream result) throws Exception {
+                protected void onSuccess(InputStream result, int responseCode) throws Exception {
 
                     // Import the project
                     pm.importProject(localID, result, true);

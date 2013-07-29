@@ -52,10 +52,10 @@ public class ValidateData extends A_RefineAPIBridge {
             files.put("dataZip", RefineUtil.projectToDataZip(project));
 
             // Now we need to pass the data to the API.
-            postToAPI("projectDataValid", params(request), files, new RefineAPICallback(){
+            postToAPI(response, "projectDataValid", params(request), files, new RefineAPICallback(){
 
                 @Override
-                protected void onSuccess(InputStream result)
+                protected void onSuccess(InputStream result, int responseCode)
                         throws Exception {
 
                     // Proxy through the api response to the client.
