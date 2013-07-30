@@ -29,25 +29,45 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
   
   // Set the _data attribute to the data.
   var params = {"project" : theProject.id};
-	
-  // Post the columns to the service
+  
+  // Check the MD5.
   GOKb.doCommand (
-    "project-validate",
+    "checkMD5",
     params,
     null,
     {
     	onDone : function (data) {
     		
-    		if ("result" in data && "status" in data.result) {
+    		if ("result" in data) {
     			
-    			self.data = data.result;
+    			// Set the metadata part of the data.
+    			self.data = {
+    					"md5Check" : data.result,
+    					"dataCheck" : {}
+    			};
     			
-    		  // Then render.
-    		  self._render();
-    		}
-    		
-    		if (onDoneFunc) {
-    			onDoneFunc();
+    			// Post the column data to the service.
+    		  GOKb.doCommand (
+    		    "project-validate",
+    		    params,
+    		    null,
+    		    {
+    		    	onDone : function (data) {
+    		    		
+    		    		if ("result" in data && "status" in data.result) {
+    		    			
+    		    			self.data.dataCheck = data.result;
+    		    			
+    		    		  // Then render.
+    		    		  self._render();
+    		    		}
+    		    		
+    		    		if (onDoneFunc) {
+    		    			onDoneFunc();
+    		    		}
+    		    	}
+    		  	}
+    		  );
     		}
     	}
   	}

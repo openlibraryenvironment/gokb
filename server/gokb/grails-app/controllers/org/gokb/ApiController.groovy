@@ -97,6 +97,30 @@ class ApiController {
   def describe() {
 	apiReturn(RefineOperation.findAll ())
   }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def checkMD5() {
+	
+	// The parameters.
+	def md5 = params.get("hash");
+	def pId = params.get("projects");
+	
+	// RefineProject
+	RefineProject rp = RefineProject.createCriteria().get {
+	  and {
+		ne ("localProjectID", pId)
+		eq ("hash", md5)
+	  }
+	}
+	
+	// Create the return object. 
+	def result = [
+	  "hashCheck" : !rp
+	]
+	
+	// Return the result.
+	apiReturn(result)
+  }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def estimateDataChanges() {
@@ -350,7 +374,7 @@ class ApiController {
 	  try {
 		temp_data_zipfile = File.createTempFile(
 			Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
-			)
+		)
 		f.transferTo(temp_data_zipfile)
 		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
 
