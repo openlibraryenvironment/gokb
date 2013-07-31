@@ -34,6 +34,7 @@
       </ul>
       <br/>
 
+      <!--
           <g:if test="${1==1}">
             <g:form controller="ajax" action="addToCollection" class="form-inline">
               <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
@@ -44,7 +45,17 @@
             </g:form>
           </g:if>
 
+        -->
       Add role: <g:simpleReferenceTypedown name="roleRefdataValue" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
+
+        <!--
+      <g:select name="orgRoles" 
+                from="${org.gokb.cred.RefdataValue.list()}"
+                value="${d.roles*.id}"
+                optionKey="id"
+                optionValue="value"
+                multiple="true"/>
+       -->
     </dd>
   </div>
 
