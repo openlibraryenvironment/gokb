@@ -7,6 +7,9 @@ import javax.persistence.Transient
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 
+/**
+ * Abstract base class for GoKB Components.
+ */
 abstract class KBComponent {
 
   transient textNormalisationService
@@ -135,11 +138,32 @@ abstract class KBComponent {
 
   //  String impId
   // Canonical name field - title for a title instance, name for an org, etc, etc, etc
+
+  /**
+   * Generic name for the compoent. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
+   * conventions when trying to decide what to map to this property in a subclass. The name should be a string that reasonably identifies this
+   * object when placed in a list of other components.
+   */ 
   String name
+
+  /**
+   * The normalised name of this component. Lowecase, strip diacritics
+   */
   String normname
+
+  /**
+   * A URI style shortcode for the component referenced. Used to create unique but human readable URIs for this item.
+   */
   String shortcode
 
+  /**
+   * Component Status. Linked to refdata table.
+   */
   RefdataValue status
+
+  /**
+   * Edit Status. Linked to refdata table.
+   */
   RefdataValue editStatus
 
   Set tags = []
