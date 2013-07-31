@@ -101,9 +101,12 @@ class ApiController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def checkMD5() {
 	
+	def metadata = JSON.parse(params.get("md"));
+	
 	// The parameters.
-	def md5 = params.get("hash");
-	def pId = params.get("projects");
+	log.debug(metadata);
+	def md5 = metadata.customMetadata.hash;
+	long pId = params.long("project");
 	
 	// RefineProject
 	RefineProject rp = RefineProject.createCriteria().get {
