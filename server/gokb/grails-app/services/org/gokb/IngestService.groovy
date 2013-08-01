@@ -188,6 +188,8 @@ class IngestService {
 	long existingTitles  = 0
 	long newPkgs         = 0
 	long existingPlats   = 0
+	long newPubs		 = 0
+	long existingPubs	 = 0
 
 	// Read in the column positions.
 	def col_positions = [:]
@@ -242,9 +244,10 @@ class IngestService {
 	  log.debug("No refine project id supplied. Assuming blank rows are added to the same new package.")
 	}
 
-	// Create the set for the platforms and packages.
-	Set platformNames   = []
-	Set packageIdentifiers = []
+	// Create the sets for processing after run through.
+	Set platformNames   	= []
+	Set packageIdentifiers 	= []
+	Set publisherIds		= []
 
 	log.debug("Finding existing titles...");
 
@@ -271,6 +274,18 @@ class IngestService {
 			}
 			
 			packageIdentifiers << pkg_id.toString()
+			
+			// Get the publisher name.
+			def publisher_name = getRowValue(datarow,col_positions,PUBLISHER_NAME)
+			if (publisher_name) {
+			  def publisher_match = publisher_name =~ "\\:\\:Org\\:(\\d+)\\\$"
+			  
+			  if (publisher_match) {
+				
+				// We have a match.
+				publisherIds << publisher_match[0][1]
+			  }
+			}
 
 			// (e)issns.
 			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
@@ -344,6 +359,24 @@ class IngestService {
 	// Run a count.
 	existingPlats = platCrit.count()
 	result << [ type : "platforms", "new" : (platformNames.size() - existingPlats), "updated" : existingPlats ]
+	
+	// Distinct listed publishers.
+	if (publisherIds.size() > 0) {
+	  def publishers = Org.createCriteria().listDistinct {
+		'in' ("id", publisherIds)
+	  }
+	  
+	  // Check ones that haven't yet published.
+	  publishers.each { Org publisher ->
+		if (publisher.getPublishedTitles().size() == 0) {
+		  newPubs ++
+		}
+	  }
+	}
+	
+	// Existing publishers
+	existingPubs = publisherIds.size() - newPubs
+	result << [ type : "publishers", "new" : newPubs, "updated" : existingPubs ]
 
 	log.debug("Estimate changes complete...${result}");
 	// Return the result.
@@ -451,7 +484,8 @@ class IngestService {
 
 			  // Title Instance
 			  log.debug("Looking up title...(extra ids: ${extra_ids})")
-			  def title_info = titleLookupService.find(jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+			  def title_info = titleLookupService.find(
+				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
 				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
 				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
 				  extra_ids,

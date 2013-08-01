@@ -70,7 +70,7 @@ class ComboCriteria {
 	crit.invokeMethod(name, args)
   }
   
-  public ComboCriteria add (String propertyName, String operator, args) {
+  public ComboCriteria add (String propertyName, String operator, args = []) {
 	add(propertyName, operator, args, null)
   }
 
