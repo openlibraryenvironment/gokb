@@ -525,6 +525,70 @@ GOKb.multiAutoComplete = function(elements, data, separator) {
 };
 
 /**
+ * Lookup needs to bound to click and focus of something.
+ * So here we'll create a hidden container and then programatically show and hide the popup.
+ */
+GOKb.lookupCont = null;
+GOKb.lookup = null;
+GOKb.getLookup = function (location, callback) {
+	
+	// Try and get the container.
+	if (GOKb.lookupCont == null) {
+		
+		// Create the new container and add to the body.
+		GOKb.lookupCont = $('<div />');
+		GOKb.lookupCont.appendTo($("body"));
+		GOKb.lookupCont.hide();
+	}
+		
+	// Let's now set a add a lookup. With blank set of data.
+	GOKb.lookupCont.lookup({		
+	});
+		
+	// The customised lookup object.
+	GOKb.lookup = {
+		_lookup : GOKb.lookupCont.data("lookup"),
+		open : function () {
+			this._lookup._open();
+		},
+		close : function () {
+			this._lookup._close();
+		},
+		setCallback : function (cb) {
+			this._lookup.options.select = function (item) {
+				cb(item);
+				GOKb.lookup._lookup.destroy();
+				GOKb.lookup = null;
+			};
+		},
+		setSource : function (source) {
+			if ("_autocomplete" in this._lookup) {
+				
+				// Change the source for the auto complete.
+				this._lookup._autocomplete.autocomplete ('option', 'source', source);
+				
+			} else {
+				
+				// Set the initial source.
+				this._lookup.options.source = source;
+			}
+		},
+		val : function () {
+			return this._lookup.options.value;
+		}
+	};
+	
+	// Set the Z-Index
+	GOKb.lookup._lookup._dialog.dialog('option', { stack: false, zIndex:100000 });
+	
+	// We should now have a lookup box.
+	GOKb.lookup.setSource(location);
+	GOKb.lookup.setCallback(callback);
+	
+	return GOKb.lookup;
+};
+
+/**
  * Check for access to API.
  */
 (GOKb.checkIsUp = function() {

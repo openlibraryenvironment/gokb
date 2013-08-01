@@ -50,6 +50,7 @@ function init() {
 		 module,
 		 [
 	     "scripts/plugins/jquery.uniform.min.js",
+	     "scripts/plugins/jquery.ui-lookup.js",
 	     "scripts/common.js",
 	     "scripts/forms.js",
 	     "scripts/index.js",
@@ -77,6 +78,9 @@ function init() {
     [
      "scripts/plugins/jquery.plugin.selectablerows.js",
      "scripts/plugins/jquery.uniform.min.js",
+     "scripts/plugins/jquery.insert-at-caret.js",
+     "scripts/plugins/jquery.contextmenu.js",
+     "scripts/plugins/jquery.ui-lookup.js",
      "scripts/common.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
@@ -84,7 +88,8 @@ function init() {
      "scripts/project.js",
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
-     "scripts/project/title-complete.js",
+     "scripts/project/context-menu.js",
+//     "scripts/project/title-complete.js",
     ]
   );
 
@@ -96,6 +101,7 @@ function init() {
       "styles/jqui/jquery-ui.css",
       "styles/uniform.default.css",
       "styles/uniform.aristo.css",
+      "styles/contextmenu.css",
       "styles/common.less",
     ]
   );

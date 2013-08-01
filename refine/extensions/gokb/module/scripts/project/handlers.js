@@ -247,3 +247,34 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 		}
 	});
 };
+
+/**
+ * Display a box to allow a user to search for an id in the given namespace.
+ */
+GOKb.handlers.lookup = function(namespace) {
+	
+	// Active element.
+	var activeElem = $(document.activeElement);
+	
+	// Perform a lookup.
+	var lookup = GOKb.getLookup (
+	  [
+	   {label : "American Chemical Society", value : "Org:1"},
+	   {label : "American Mathematical Society", value : "Org:3"},
+	   {label : "EBSCOhost", value : "Org:9"},
+	   {label : "JSTOR", value : "Org:13"},
+	   {label : "National Research Council Canada", value : "Org:19"},
+	   {label : "Proquest", value : "Org:33"},
+	   {label : "Optical Society of America", value : "Org:35"},
+	   {label : "BioOne", value : "Org:39"},
+	   {label : "Springer", value : "Org:73"},
+	   {label : "Japanese Society of Fisheries Science", value : "Org:313"}
+	  ],
+	  function (item) {
+
+	  	// Insert the selected value at the location.
+	  	activeElem.insertAtCaret(item.value);
+	  }
+	);
+	lookup.open();
+};

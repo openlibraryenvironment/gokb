@@ -83,7 +83,7 @@ class ApiController {
 	  result    : (result),
 	  message    : (message),
 	]
-	JSON.use('default')
+
 	def json = data as JSON
 	log.debug (json)
 	render json
