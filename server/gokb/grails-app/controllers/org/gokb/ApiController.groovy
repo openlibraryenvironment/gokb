@@ -83,7 +83,7 @@ class ApiController {
 	  result    : (result),
 	  message    : (message),
 	]
-	JSON.use('default')
+
 	def json = data as JSON
 	log.debug (json)
 	render json
@@ -96,6 +96,33 @@ class ApiController {
   //  @Secured(["ROLE_USER"])
   def describe() {
 	apiReturn(RefineOperation.findAll ())
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def checkMD5() {
+	
+	def metadata = JSON.parse(params.get("md"));
+	
+	// The parameters.
+	log.debug(metadata);
+	def md5 = metadata.customMetadata.hash;
+	long pId = params.long("project");
+	
+	// RefineProject
+	RefineProject rp = RefineProject.createCriteria().get {
+	  and {
+		ne ("localProjectID", pId)
+		eq ("hash", md5)
+	  }
+	}
+	
+	// Create the return object. 
+	def result = [
+	  "hashCheck" : !rp
+	]
+	
+	// Return the result.
+	apiReturn(result)
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -350,7 +377,7 @@ class ApiController {
 	  try {
 		temp_data_zipfile = File.createTempFile(
 			Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
-			)
+		)
 		f.transferTo(temp_data_zipfile)
 		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
 
@@ -532,5 +559,32 @@ class ApiController {
 	catch ( Exception e ) {
 	  log.error("Problem trying to match rules", e)
 	}
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def lookup() {
+	def result = [];
+	
+	// Get the "term" parameter for performing a search.
+	def term = params.term
+
+	// Should take a type parameter and do the right thing.
+	switch ( params.type ) {
+	  case 'org' :
+	  	
+		def orgs = Org.createCriteria().listDistinct {
+		  if (term) {
+			ilike "name", "%${term}%"
+		  }
+		}
+		
+		orgs.each { Org org ->
+		  result << [ "value" : "${org.name}::{Org:${org.id}}", "label" : (org.name) ]
+		}
+		break;
+	  default:
+		break;
+	}
+	apiReturn(result)
   }
 }

@@ -5,9 +5,6 @@ package org.gokb.cred
  *
  */
 
-import java.util.Date;
-
-import grails.util.GrailsNameUtils
 
 class Combo {
   

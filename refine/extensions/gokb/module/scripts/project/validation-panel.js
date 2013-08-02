@@ -28,26 +28,49 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
   var self = this;
   
   // Set the _data attribute to the data.
-  var params = {"project" : theProject.id};
-	
-  // Post the columns to the service
+  var params = {
+  		md 			: JSON.stringify(theProject.metadata),
+  		project : theProject.id
+  };
+  
+  // Check the MD5.
   GOKb.doCommand (
-    "project-validate",
+    "checkMD5",
     params,
     null,
     {
     	onDone : function (data) {
     		
-    		if ("result" in data && "status" in data.result) {
+    		if ("result" in data) {
     			
-    			self.data = data.result;
+    			// Set the metadata part of the data.
+    			self.data = {
+  					"md5Check" : data.result,
+  					"dataCheck" : {}
+    			};
     			
-    		  // Then render.
-    		  self._render();
-    		}
-    		
-    		if (onDoneFunc) {
-    			onDoneFunc();
+    			// Post the column data to the service.
+    		  GOKb.doCommand (
+    		    "project-validate",
+    		    params,
+    		    null,
+    		    {
+    		    	onDone : function (data) {
+    		    		
+    		    		if ("result" in data && "status" in data.result) {
+    		    			
+    		    			self.data.dataCheck = data.result;
+    		    			
+    		    		  // Then render.
+    		    		  self._render();
+    		    		}
+    		    		
+    		    		if (onDoneFunc) {
+    		    			onDoneFunc();
+    		    		}
+    		    	}
+    		  	}
+    		  );
     		}
     	}
   	}
@@ -68,17 +91,27 @@ ValidationPanel.prototype._render = function() {
   
   // Check the data
   var data = self.data;
-  if ("status" in data) {
-  	
-  	// Add the errors and warnings.
-		var errorMess = [];
-		var warnMess = [];
-		if ("messages" in data) {
+	
+	// Add the errors and warnings.
+	var errorMess = [];
+	var warnMess = [];
+	
+	if ("md5Check" in data && "hashCheck" && data.md5Check) {
+		if (data.md5Check.hashCheck == false) {
+			
+			// Add the warning.
+			warnMess.push(["<span class='warning' >GOKb has detected that at this file may have been used to create another project.</span>", ""]);
+		}
+	}
+  
+  if ("dataCheck" in data && "status" in data.dataCheck) {
+		
+		if ("messages" in data.dataCheck) {
 			
 			// hasError.
 			var hasError = false;
 			
-			$.each(data.messages, function() {
+			$.each(data.dataCheck.messages, function() {
 				
 				// Get the message.
 				var message = this;

@@ -247,3 +247,23 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 		}
 	});
 };
+
+/**
+ * Display a box to allow a user to search for an id in the given namespace.
+ */
+GOKb.handlers.lookup = function(namespace) {
+	
+	// Active element.
+	var activeElem = $(document.activeElement);
+	
+	// Perform a lookup.
+	var lookup = GOKb.getLookup (
+	  "/command/gokb/lookup?type=" + namespace,
+	  function (item) {
+
+	  	// Insert the selected value at the location.
+	  	activeElem.insertAtCaret(item.value);
+	  }
+	);
+	lookup.open();
+};

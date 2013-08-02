@@ -149,6 +149,7 @@ validationRules = [
 validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
 validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
 validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
+validation.regex.looked_up_org = ".*\\:\\:\\{Org\\:(\\d+)\\}\$"
 
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
@@ -192,7 +193,7 @@ validation.rules = [
 	  severity: A_ValidationRule.SEVERITY_ERROR,
 	  args: [
 		"${validation.regex.uri}",
-		"One or more rows contain invlid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
+		"One or more rows contain invalid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
 		"and (isNonBlank(value), value.match(/${validation.regex.uri}/) == null)",
 	  ]
 	],
@@ -211,6 +212,19 @@ validation.rules = [
   "${IngestService.PACKAGE_NAME}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
 	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.PUBLISHER_NAME}" : [
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.looked_up_org}",
+		"If you specify a \"${IngestService.PUBLISHER_NAME}\" column then the field should contain " +
+		"identifier text like \"::{Org:ORG_ID}\". Use the gokb lookup function on the right click menu to insert these values.",
+		"and (isNonBlank(value), value.match(/${validation.regex.looked_up_org}/) == null)",
+	  ]
+	]
   ],
 
   // Custom ISBN.
