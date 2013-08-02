@@ -283,7 +283,7 @@ class IngestService {
 			  if (publisher_match) {
 				
 				// We have a match.
-				publisherIds << publisher_match[0][1]
+				publisherIds << Long.parseLong( publisher_match[0][1] )
 			  }
 			}
 
