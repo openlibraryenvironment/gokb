@@ -44,7 +44,17 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
 
     @Override
     public void init(ServletConfig config) throws Exception {
-
+        
+        // Core module.
+        ButterflyModule coreMod = getModule("core");
+        
+        // Remove the jQuery libs for open refine 2.6
+        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-1.7.2.min.js");
+        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-ui/jquery-ui-1.8.20.custom.min.js");
+        
+        // Remove the jQuery libs for google refine 2.5
+        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-1.4.2.min.js");
+        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-ui/jquery-ui-1.8.custom.min.js");
         // Run default init method.
         super.init(config);
 
