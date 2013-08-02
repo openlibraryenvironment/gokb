@@ -57,7 +57,7 @@ GOKb.contextMenu.options = {
 //	  	  	icon: "",
 	  	  	alias: "gokb-lookup-org",
 	  	  	action: function () {
-	  	  		GOKb.handlers.lookup ("gokb-pkgid");
+	  	  		GOKb.handlers.lookup ("org");
 	  	  	}
 	  	  }
       ]

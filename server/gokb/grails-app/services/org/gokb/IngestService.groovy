@@ -278,7 +278,7 @@ class IngestService {
 			// Get the publisher name.
 			def publisher_name = getRowValue(datarow,col_positions,PUBLISHER_NAME)
 			if (publisher_name) {
-			  def publisher_match = publisher_name =~ "\\:\\:Org\\:(\\d+)\\\$"
+			  def publisher_match = publisher_name =~ /${grailsApplication.config.validation.regex.looked_up_org}/
 			  
 			  if (publisher_match) {
 				

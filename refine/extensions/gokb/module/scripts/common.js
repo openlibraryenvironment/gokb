@@ -525,7 +525,7 @@ GOKb.multiAutoComplete = function(elements, data, separator) {
 };
 
 /**
- * Lookup needs to bound to click and focus of something.
+ * Lookup needs to be bound to click and focus of something.
  * So here we'll create a hidden container and then programatically show and hide the popup.
  */
 GOKb.lookupCont = null;

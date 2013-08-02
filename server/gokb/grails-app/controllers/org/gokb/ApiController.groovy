@@ -560,4 +560,31 @@ class ApiController {
 	  log.error("Problem trying to match rules", e)
 	}
   }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def lookup() {
+	def result = [];
+	
+	// Get the "term" parameter for performing a search.
+	def term = params.term
+
+	// Should take a type parameter and do the right thing.
+	switch ( params.type ) {
+	  case 'org' :
+	  	
+		def orgs = Org.createCriteria().listDistinct {
+		  if (term) {
+			ilike "name", "%${term}%"
+		  }
+		}
+		
+		orgs.each { Org org ->
+		  result << [ "value" : "${org.name}::{Org:${org.id}}", "label" : (org.name) ]
+		}
+		break;
+	  default:
+		break;
+	}
+	apiReturn(result)
+  }
 }
