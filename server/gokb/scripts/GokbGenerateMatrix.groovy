@@ -51,6 +51,10 @@ target(main: "Generate the property matrix for KBComponents") {
       matrix.add(genMatrixRow(csc, propertyNames))
     }
 
+    // Add any special additional 
+    componentClasses.add(ApplicationHolder.application.getDomainClass('org.gokb.cred.OrgRole'));
+    componentClasses.add(ApplicationHolder.application.getDomainClass('org.gokb.cred.User'));
+
 
     grailsConsole.addStatus "Calculating GoKB component matrix"
     // Combo relations matrix - 1-M props between components
