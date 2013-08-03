@@ -23,10 +23,15 @@ target(main: "Generate the property matrix for KBComponents") {
     // } 
 
     def propertyNames = []
+
+    def componentClasses = []
     
 
     component_class.getSubClasses().each { csc ->
+
       // grailsConsole.addStatus "Handle component subclass: ${csc.fullName}"
+      componentClasses.add(csc);
+
       csc.getProperties().each { cscp ->
         if ( propertyNames.contains( cscp.name ) ) {
           // no action - Property name already in top row of matrix
@@ -47,6 +52,48 @@ target(main: "Generate the property matrix for KBComponents") {
     }
 
 
+    grailsConsole.addStatus "Calculating GoKB component matrix"
+    // Combo relations matrix - 1-M props between components
+    def combo_relations_matrix = new String[componentClasses.size()+1][componentClasses.size()+1]
+    def x=0;
+    def y=0;
+
+    // combo_relations_matrix[from][to]
+    def noArgs = [].toArray()
+
+    componentClasses.each { cc1 ->
+      combo_relations_matrix[0][x+1] = cc1.name
+      combo_relations_matrix[x+1][0] = cc1.name
+      y=0;
+      componentClasses.each { cc2 ->
+        def t1 = cc1.clazz.metaClass.getStaticMetaMethod('getManyByCombo', noArgs)
+        def t2 = cc1.clazz.metaClass.getStaticMetaMethod('getHasByCombo', noArgs)
+
+        // if ( t1 != null )
+        //   grailsConsole.addStatus "${cc1.name} -> ${cc2.name} : test to see if ${cc1.clazz.manyByCombo.values()} contains ${cc2.name}"
+
+        // if ( t2 != null )
+        //   grailsConsole.addStatus "${cc1.name} -> ${cc2.name} : test to see if ${cc1.clazz.hasByCombo.values()} contains ${cc2.name}"
+
+        if ( ( t1 != null ) && ( cc1.clazz.manyByCombo.values().contains(cc2.clazz) ) ) {
+          // cc1 hasmany cc2
+          combo_relations_matrix[x+1][y+1]='M';
+        }
+        else if ( ( t2 != null ) && ( cc1.clazz.hasByCombo.values().contains(cc2.clazz) ) ) {
+          combo_relations_matrix[x+1][y+1]='1';
+        }
+        else {
+          combo_relations_matrix[x+1][y+1]='-';
+        }
+        // if ( cc1.hasThrough contains cc2 then it's a 1
+      
+        y++
+      }
+      x++
+    }
+    grailsConsole.addStatus "done Calculating GoKB component matrix"
+    
+
     //println "wrapping file ${file.name}"
 
     //        echo(file: "src/docs/ref/Answers/${file.name}.gdoc", """
@@ -55,14 +102,16 @@ target(main: "Generate the property matrix for KBComponents") {
     //            {code}
     //        """)
 
-    def x=1
-    def y=1
+    x=1
+    y=1
     def m2 = new String[propertyNames.size()+1][matrix.size()+1]
 
+    // Set property names along X axis
     propertyNames.each { p ->
       m2[x++][0] = p
     }
   
+    // 
     matrix.each { m ->
       x=0
       m.each { p ->
@@ -91,8 +140,22 @@ target(main: "Generate the property matrix for KBComponents") {
 
     // 
     f.append('{table}');
+
+    f.append('\n\nComponent Subclass relations\n {table}\n');
+    for ( int i1=0; i1<combo_relations_matrix.length; i1++ ) {
+      for ( int i2=0; i2<combo_relations_matrix.length; i2++ ) {
+        if ( i2 > 0 ) {
+          f.append(' | ');
+        }
+        f.append("* ${combo_relations_matrix[i2][i1]} *");
+      }
+      f.append('\n');
+    }
+    
+    f.append('\n{table}\n');
   }
   catch ( Exception e ) {
+    e.printStackTrace()
     grailsConsole.addStatus e.message
   }
   finally {
