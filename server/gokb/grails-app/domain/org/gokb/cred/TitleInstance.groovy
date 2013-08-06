@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import org.gokb.GOKbTextUtils
 
 class TitleInstance extends KBComponent {
 

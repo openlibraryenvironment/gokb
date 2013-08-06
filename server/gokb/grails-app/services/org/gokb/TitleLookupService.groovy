@@ -7,6 +7,45 @@ class TitleLookupService {
   def find(title, issn, eissn) {
     find(title, issn, eissn, null, null)
   }
+  
+  private List<KBComponent> class_one_match (Map<String, String> class_one_ids) {
+	
+	// The list of matches.
+	Set<KBComponent> matches = []
+	
+	// Go through each of the class_one_ids and look for a match.
+	class_one_ids.each { namespace, value ->
+	  
+	  // Treat each key as a namespace => value.
+	  Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(namespace, value)
+	  
+	  // If we find an ID then lookup the components.
+	  if (the_id) matches += (the_id.identifiedComponents)
+	}
+	
+	return matches
+  }
+  
+  def find (String title, String publisher_name, Map<String, String> class_one_ids) {
+	
+	// Lookup any class 1 identifier matches 
+	List<KBComponent> matches = class_one_match (class_one_ids)
+	
+	switch (matches.size()) {
+	  case 0 :
+	  	// No match behaviour.
+	  	log.debug ("Title class one identifier lookup yielded no matches.")
+	  	break;
+	  case 1 :
+	    // Single component match.
+	  	log.debug ("Title class one identifier lookup yielded a single match.")
+	  	break;
+	  default :
+	  	// Multiple matches.
+	  	log.debug ("Title class one identifier lookup yielded ${matches.size()} matches.")
+	  	break;
+	} 
+  }
 
   def find(title, issn, eissn, extra_ids, publisher_name) {
 
