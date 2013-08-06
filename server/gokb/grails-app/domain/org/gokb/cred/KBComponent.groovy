@@ -6,6 +6,7 @@ import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
+import org.gokb.GOKbTextUtils;
 
 abstract class KBComponent {
 
@@ -292,7 +293,7 @@ abstract class KBComponent {
   }
 
   protected def generateNormname () {
-    normname = textNormalisationService.normalise(name);
+    normname = GOKbTextUtils.normaliseString(name);
   }
 
   def beforeInsert() {
