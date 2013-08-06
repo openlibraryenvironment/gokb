@@ -2,7 +2,7 @@ package org.gokb
 
 import java.text.Normalizer
 
-class GoKbTextUtils {
+class GOKbTextUtils {
   
   private static final List<String> STOPWORDS = [
 	"and",
@@ -24,7 +24,7 @@ class GoKbTextUtils {
     distance[str1_len][str2_len]
   }
   
-  def static String normaliseString(String s) {
+  public static String normaliseString(String s) {
 
 	// Ensure s is not null.
 	if (!s) s = "";
