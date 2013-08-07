@@ -13,8 +13,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                             "file:${userHome}/.grails/${appName}-config.groovy"]
 
 identifiers.class_ones = [
-  IngestService.ONLINE_IDENTIFIER,
-  IngestService.PRINT_IDENTIFIER
+  "issn",
+  "eissn"
 ] as Set
 
 // if (System.properties["${appName}.config.location"]) {
