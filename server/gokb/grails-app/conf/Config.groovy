@@ -12,6 +12,11 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                             "file:${userHome}/.grails/${appName}-config.properties",
                             "file:${userHome}/.grails/${appName}-config.groovy"]
 
+identifiers.class_ones = [
+  IngestService.ONLINE_IDENTIFIER,
+  IngestService.PRINT_IDENTIFIER
+] as Set
+
 // if (System.properties["${appName}.config.location"]) {
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }

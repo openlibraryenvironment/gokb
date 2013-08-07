@@ -10,8 +10,6 @@ import org.gokb.GOKbTextUtils;
 
 abstract class KBComponent {
 
-  transient textNormalisationService
-
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
   static final String STATUS_DELETED       = "Deleted"

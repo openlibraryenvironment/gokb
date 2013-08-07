@@ -19,6 +19,7 @@ class IngestService {
   // Automatically injected services from grails-app/services
   def grailsApplication
   def titleLookupService
+  def orgLookupService
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
@@ -39,8 +40,9 @@ class IngestService {
   public static final String VOLUME_LAST_PACKAGE_ISSUE = 'volumelastpackageissue'
   public static final String NUMBER_LAST_PACKAGE_ISSUE = 'numberlastpackageissue'
 
-  public static final String PRINT_IDENTIFIER = 'title.identifier.issn'
-  public static final String ONLINE_IDENTIFIER = 'title.identifier.eissn'
+  public static final String IDENTIFIER_PREFIX = 'title.identifier'
+  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}.issn"
+  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}.eissn"
   public static final String HOST_PLATFORM_NAME = 'platform.host.name'
   public static final String HOST_PLATFORM_URL = 'platform.host.url'
   public static final String HOST_PLATFORM_BASE_URL = 'platform.host.base.url'
@@ -197,24 +199,26 @@ class IngestService {
 	  col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
 	}
 
-	// Track any additional title identifiers.
-	def additional_identifiers = []
+	// All identifiers for this title.
+	def identifiers = []
 	project_data.columnDefinitions?.each { cd ->
 	  def cn = cd.name?.toLowerCase()
-	  if (cn.startsWith('title.identifier.') ) {
+	  if (cn.startsWith(IDENTIFIER_PREFIX) ) {
 		def idparts = cn.split('.')
 		if ( idparts.size == 3 ) {
-		  if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
-			// Skip issn/eissn.
-		  }
-		  else {
-			additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
-		  }
+//		  if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
+//			// Skip issn/eissn.
+//		  }
+//		  else {
+//			identifiers.add([type:idparts[2],colno:cd.cellIndex])
+//		  }
+		  
+		  identifiers.add([type:idparts[2],colno:cd.cellIndex])
 		}
 	  }
 	}
 
-	log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}")
+	log.debug("Using col positions: ${col_positions}, additional identifiers: ${identifiers}")
 	
 	// Combine to create the package Identifier.
 	def default_pkg_identifier = null
@@ -275,40 +279,32 @@ class IngestService {
 			
 			packageIdentifiers << pkg_id.toString()
 			
-			// Get the publisher name.
-			def publisher_name = getRowValue(datarow,col_positions,PUBLISHER_NAME)
-			if (publisher_name) {
-			  def publisher_match = publisher_name =~ /${grailsApplication.config.validation.regex.looked_up_org}/
-			  
-			  if (publisher_match) {
-				
-				// We have a match.
-				publisherIds << Long.parseLong( publisher_match[0][1] )
-			  }
-			}
+			// Lookup a publisher ID if present.
+			def pub_id = orgLookupService.extractOrgIDFromName( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
+			if (pub_id) publisherIds << pub_id
 
-			// (e)issns.
-			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
-			def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
+//			// (e)issns.
+//			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
+//			def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
+//
+//			// issn query.
+//			if (issn != null) {
+//			  and {
+//				tiCrit.add ("ids.namespace.value", "eq", 'issn')
+//				tiCrit.add ("ids.value", "eq", issn)
+//			  }
+//			}
+//
+//			// eissn query
+//			if (eissn != null) {
+//			  and {
+//				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
+//				tiCrit.add ("ids.value", "eq", eissn)
+//			  }
+//			}
 
-			// issn query.
-			if (issn != null) {
-			  and {
-				tiCrit.add ("ids.namespace.value", "eq", 'issn')
-				tiCrit.add ("ids.value", "eq", issn)
-			  }
-			}
-
-			// eissn query
-			if (eissn != null) {
-			  and {
-				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
-				tiCrit.add ("ids.value", "eq", eissn)
-			  }
-			}
-
-			// Each additional identifier type.
-			additional_identifiers.each { ai ->
+			// Each identifier type.
+			identifiers.each { ai ->
 			  and {
 				tiCrit.add ("ids.namespace.value", "eq", ai.type)
 				tiCrit.add ("ids.value", "eq", datarow.cells[ai.colno])
@@ -430,19 +426,22 @@ class IngestService {
 		col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
 	  }
 
-	  // Track any additional title identifiers.
-	  def additional_identifiers = []
+	  // Group all identifiers together.
+	  def identifiers = []
 	  project_data.columnDefinitions?.each { cd ->
 		def cn = cd.name?.toLowerCase()
-		if (cn.startsWith('title.identifier.') ) {
+		if (cn.startsWith(IDENTIFIER_PREFIX) ) {
 		  def idparts = cn.split('.')
 		  if ( idparts.size == 3 ) {
-			if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
-			  // Skip issn/eissn.
-			}
-			else {
-			  additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
-			}
+//			if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
+//			  // Skip issn/eissn.
+//			}
+//			else {
+//			  identifiers.add([type:idparts[2],colno:cd.cellIndex])
+//			}
+			
+			// Add all identifiers. Class 1 IDs are handled later on in the process.
+			identifiers.add([type:idparts[2],colno:cd.cellIndex])
 		  }
 		}
 	  }
@@ -461,7 +460,7 @@ class IngestService {
 		}
 	  }
 
-	  log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
+	  log.debug("Using col positions: ${col_positions}, additional identifiers: ${identifiers}");
 
 	  int ctr = 0
 	  boolean row_level_problems = false
@@ -477,19 +476,25 @@ class IngestService {
 
 			try {
 
-			  def extra_ids = []
-			  additional_identifiers.each { ai ->
-				extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+			  def ids = []
+			  identifiers.each { ai ->
+				ids.add([type:ai.type, value:datarow.cells[ai.colno]])
 			  }
 
 			  // Title Instance
-			  log.debug("Looking up title...(extra ids: ${extra_ids})")
+			  log.debug("Looking up title...(ids: ${ids})")
+//			  def title_info = titleLookupService.find(
+//				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+//				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
+//				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
+//				  ids,
+//				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
+			  
+			  // Lookup the title.
 			  def title_info = titleLookupService.find(
-				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
-				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
-				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
-				  extra_ids,
-				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
+				jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+				getRowValue(datarow,col_positions,PUBLISHER_NAME),
+				ids);
 
 			  // Platform.
 			  def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
