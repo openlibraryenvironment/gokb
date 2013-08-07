@@ -1,8 +1,8 @@
 package org.gokb.cred
 
-class KBComponentVariantName {
+import org.gokb.GOKbTextUtils
 
-  transient textNormalisationService
+class KBComponentVariantName {
 
   KBComponent owner
   RefdataValue variantType
@@ -34,12 +34,10 @@ class KBComponentVariantName {
 
   def beforeInsert() {
     // Generate the any necessary values.
-    normVariantName = textNormalisationService.normalise(variantName);
+    normVariantName = GOKbTextUtils.normaliseString(variantName);
   }
 
   def beforeUpdate() {
-    normVariantName = textNormalisationService.normalise(variantName);
+    normVariantName = GOKbTextUtils.normaliseString(variantName);
   }
-
-
 }
