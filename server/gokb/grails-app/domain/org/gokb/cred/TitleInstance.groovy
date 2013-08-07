@@ -15,6 +15,17 @@ class TitleInstance extends KBComponent {
 	"medium"		: "Journal",
 	"pureOA"		: "No"
   ]
+  
+  public void addVariantTitle (String title, String locale = "EN-us") {
+	addToVariantNames(
+	  new KBComponentVariantName([
+		"variantType"	: RefdataCategory.lookupOrCreate("VariantNameType", "Alternate Title"),
+		"locale"		: RefdataCategory.lookupOrCreate("Locale", (locale)),
+		"status"		: RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+		"variantName"	: (title)
+	  ])
+	)
+  }
 
   static hasByCombo = [
 	issuer			: Org,
