@@ -42,7 +42,7 @@ class GOKbTextUtils {
 
 	// Re-piece the array back into a string.
 	String normstring = "";
-	components.each { String piece
+	components.each { String piece ->
 	  if ( !STOPWORDS.contains(piece)) {
 
 		// Remove all unnecessary characters.
