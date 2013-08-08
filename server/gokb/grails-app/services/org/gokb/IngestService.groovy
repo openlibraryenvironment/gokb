@@ -204,8 +204,8 @@ class IngestService {
 	project_data.columnDefinitions?.each { cd ->
 	  def cn = cd.name?.toLowerCase()
 	  if (cn.startsWith(IDENTIFIER_PREFIX) ) {
-		def idparts = cn.split('.')
-		if ( idparts.size == 3 ) {
+		def idparts = cn.split(/\./)
+		if ( idparts.length == 3 ) {
 //		  if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
 //			// Skip issn/eissn.
 //		  }
@@ -305,9 +305,13 @@ class IngestService {
 
 			// Each identifier type.
 			identifiers.each { ai ->
-			  and {
-				tiCrit.add ("ids.namespace.value", "eq", ai.type)
-				tiCrit.add ("ids.value", "eq", datarow.cells[ai.colno])
+			  def val = jsonv(datarow.cells[ai.colno])
+			  
+			  if (val) {
+				and {
+				  tiCrit.add ("ids.namespace.value", "eq", ai.type)
+				  tiCrit.add ("ids.value", "eq", val)
+				}
 			  }
 			}
 
@@ -431,8 +435,8 @@ class IngestService {
 	  project_data.columnDefinitions?.each { cd ->
 		def cn = cd.name?.toLowerCase()
 		if (cn.startsWith(IDENTIFIER_PREFIX) ) {
-		  def idparts = cn.split(/\./)
-		  if ( idparts.size == 3 ) {
+		  String[] idparts = cn.split(/\./)
+		  if ( idparts.length == 3 ) {
 //			if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
 //			  // Skip issn/eissn.
 //			}
