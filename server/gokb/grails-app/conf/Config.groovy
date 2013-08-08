@@ -524,6 +524,8 @@ grails.plugins.springsecurity.filterChain.chainMap = [
    
 ]
 
+cosine.good_threshold = 7.5
+
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
 
 /**

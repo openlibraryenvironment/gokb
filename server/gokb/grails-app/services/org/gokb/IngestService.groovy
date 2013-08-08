@@ -305,6 +305,8 @@ class IngestService {
 
 			// Each identifier type.
 			identifiers.each { ai ->
+			  
+			  // The value.
 			  def val = jsonv(datarow.cells[ai.colno])
 			  
 			  if (val) {
@@ -482,7 +484,11 @@ class IngestService {
 
 			  def ids = []
 			  identifiers.each { ai ->
-				ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+				// The value.
+				def val = jsonv(datarow.cells[ai.colno])
+				if (val) {
+				  ids.add([type:ai.type, value:(val)])
+				}
 			  }
 
 			  // Title Instance

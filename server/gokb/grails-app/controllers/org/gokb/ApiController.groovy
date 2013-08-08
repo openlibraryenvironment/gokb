@@ -290,6 +290,9 @@ class ApiController {
 		if (params.description) project.setDescription(params.description)
 		if (params.name) project.setName(params.name)
 		project.setProjectStatus(RefineProject.Status.CHECKED_IN)
+		
+//		project.save()
+		
 //		project.setLastCheckedOutBy(null)
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
@@ -310,7 +313,7 @@ class ApiController {
 		project.setProgress(null)
 
 		// Save and flush the project
-		project.save(flush:true)
+		project.save(flush:true, failOnError:true)
 
 		if (params.ingest) {
 		  // Try and ingest the project too!

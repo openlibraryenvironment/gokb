@@ -291,7 +291,12 @@ abstract class KBComponent {
   }
 
   protected def generateNormname () {
-    normname = GOKbTextUtils.normaliseString(name);
+    
+	// Get the norm_name
+	def nname = GOKbTextUtils.normaliseString(name);
+	
+	// Set to null if blank.
+	normname = nname == "" ? null : nname 
   }
 
   def beforeInsert() {
