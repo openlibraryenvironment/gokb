@@ -128,7 +128,7 @@ class TitleLookupService {
   
 	  // Try and save the result now.
 	  if ( the_title.save(failOnError:true,flush:true) ) {
-		log.debug("New title: ${ti.id}");
+		log.debug("New title: ${the_title.id}");
 	  }
 	  else {
 		the_title.errors.each { e ->
