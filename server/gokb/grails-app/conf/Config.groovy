@@ -504,12 +504,11 @@ grails.plugins.springsecurity.ui.password.maxLength = 64
 grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
 
 //configure register 
-grails.plugins.springsecurity.ui.register.emailFrom = "GOKb"
-grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GoKB'
-
-
-
-
+grails.plugins.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.k-int.com>"
+grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
+grails.plugins.springsecurity.ui.register.defaultRoleNames = [
+  "ROLE_USER"
+]
 // The following 2 entries make the app use basic auth by default
 grails.plugins.springsecurity.useBasicAuth = true
 grails.plugins.springsecurity.basic.realmName = "gokb"
@@ -526,3 +525,8 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 ]
 
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
+
+/**
+ * We need to disable springs password encoding as we handle this in our domain model.
+ */
+grails.plugins.springsecurity.ui.encodePassword = false
