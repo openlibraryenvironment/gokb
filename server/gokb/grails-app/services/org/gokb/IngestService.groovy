@@ -431,7 +431,7 @@ class IngestService {
 	  project_data.columnDefinitions?.each { cd ->
 		def cn = cd.name?.toLowerCase()
 		if (cn.startsWith(IDENTIFIER_PREFIX) ) {
-		  def idparts = cn.split('.')
+		  def idparts = cn.split(/\./)
 		  if ( idparts.size == 3 ) {
 //			if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
 //			  // Skip issn/eissn.
