@@ -1,6 +1,6 @@
 var html = "text/html";
 var encoding = "UTF-8";
-var ClientSideResourceManager = Packages.com.google.refine.ClientSideResourceManager;
+var ClientSideResourceManager = Packages.com.k_int.gokb.refine.ExtendedResourceManager;
 
 /*
  * Register our custom commands.
@@ -73,6 +73,14 @@ function init() {
   );
 
   // Script files to inject into /project page
+  ClientSideResourceManager.prependPaths(
+    "project/scripts",
+  	module,
+  	[
+  	 "scripts/jquery/jquery.js",
+  	 "scripts/jquery/jquery-ui.min.js"
+  	]
+  );
   ClientSideResourceManager.addPaths(
     "project/scripts",
     module,
