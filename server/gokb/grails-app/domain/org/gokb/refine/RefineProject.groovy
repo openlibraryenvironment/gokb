@@ -27,6 +27,13 @@ class RefineProject extends KBComponent {
    String possibleRulesString
    String notes
    
+   // The rows skipped in the ingest process.
+   Set<Integer> skippedRows = []
+   
+   static hasMany = [
+	 skippedRows: Integer,
+   ]
+   
    Status projectStatus = Status.CHECKED_OUT
 
   @Transient
