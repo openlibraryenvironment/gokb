@@ -400,6 +400,7 @@ class IngestService {
   def ingest(project_data, project_id) {
 	// Return result.
 	def result = [:]
+	Set<Integer> skipped_rows = []
 	try {
 	  log.debug("Ingest");
 
@@ -505,93 +506,103 @@ class IngestService {
 				jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
 				getRowValue(datarow,col_positions,PUBLISHER_NAME),
 				ids);
+			  
+			  // If we match a title then ingest...
+			  if (title_info != null) {
 
-			  // Platform.
-			  def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
-			  def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-			  def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+				// Platform.
+				def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
+				def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+				def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
 
-			  if ( host_platform_name == null ) {
-				throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
-			  }
-
-			  log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
-			  // def platform_info = Platform.findByPrimaryUrl(host_platform_url)
-			  def platform_info = Platform.findByNormname(host_norm_platform_name)
-			  if ( !platform_info ) {
-				log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
-				// platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
-				platform_info = new Platform(
-					name:host_platform_name,
-					normname:host_norm_platform_name,
-					primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
-				)
-
-				if (! platform_info.save(failOnError:true) ) {
-				  platform_info.errors.each { e ->
-					log.error(e);
-				  }
+				if ( host_platform_name == null ) {
+				  throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
 				}
-			  }
 
-			  // Does the row specify a package identifier?
-			  def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
+				log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
+				// def platform_info = Platform.findByPrimaryUrl(host_platform_url)
+				def platform_info = Platform.findByNormname(host_norm_platform_name)
+				if ( !platform_info ) {
+				  log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
+				  // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+				  platform_info = new Platform(
+					  name:host_platform_name,
+					  normname:host_norm_platform_name,
+					  primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
+					  )
 
-			  // The package.
-			  def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
-
-			  // Try and lookup a tipp.
-			  def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
-			  def tipp = crit.get {
-				and {
-				  crit.add ("title", "eq", title_info)
-				  crit.add ("pkg", "eq", pkg)
-				  crit.add ("hostPlatform", "eq", platform_info)
-				}
-			  }
-
-			  // We have a Tipp.
-			  if ( !tipp ) {
-				log.debug("Create new tipp")
-				tipp = new TitleInstancePackagePlatform(
-					title:title_info,
-					pkg:pkg,
-					hostPlatform:platform_info,
-					startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-					startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-					startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-					endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-					endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-					endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-					embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-          
-                    //TODO: Coverage depth now defaults only for this phase. Commenting out for now.
-//					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-					url:host_platform_url
-					)
-
-				// Add each property in turn.
-				gokb_additional_props.each { apd ->
-				  // Done this way because I was worried about the prop defn crossing the transaction start boundary above
-				  def prop_defn = AdditionalPropertyDefinition.findBypropertyName(apd.prop_name)
-				  if ( prop_defn != null ) {
-					def ap = new KBComponentAdditionalProperty( propertyDefn:prop_defn, apValue:getRowValue(datarow,apd.col))
-					tipp.additionalProperties.add (ap)
-				  }
-				  else {
-					log.error("Unable to locate property definition with name ${apd.prop_name}");
+				  if (! platform_info.save(failOnError:true) ) {
+					platform_info.errors.each { e ->
+					  log.error(e);
+					}
 				  }
 				}
 
-				// Save the tipp.
-				tipp.save(failOnError:true)
-			  }
-			  else {
-				// Found the tipp.
-				log.debug("TIPP already present");
-			  }
+				// Does the row specify a package identifier?
+				def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
 
+				// The package.
+				def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
+
+				// Try and lookup a tipp.
+				def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+				def tipp = crit.get {
+				  and {
+					crit.add ("title", "eq", title_info)
+					crit.add ("pkg", "eq", pkg)
+					crit.add ("hostPlatform", "eq", platform_info)
+				  }
+				}
+
+				// We have a Tipp.
+				if ( !tipp ) {
+				  log.debug("Create new tipp")
+				  tipp = new TitleInstancePackagePlatform(
+					  title:title_info,
+					  pkg:pkg,
+					  hostPlatform:platform_info,
+					  startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+					  startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+					  startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+					  endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+					  endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+					  endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+					  embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+
+					  //TODO: Coverage depth now defaults only for this phase. Commenting out for now.
+					  //					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+					  coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+					  url:host_platform_url
+					  )
+
+				  // Add each property in turn.
+				  gokb_additional_props.each { apd ->
+					// Done this way because I was worried about the prop defn crossing the transaction start boundary above
+					def prop_defn = AdditionalPropertyDefinition.findBypropertyName(apd.prop_name)
+					if ( prop_defn != null ) {
+					  def ap = new KBComponentAdditionalProperty( propertyDefn:prop_defn, apValue:getRowValue(datarow,apd.col))
+					  tipp.additionalProperties.add (ap)
+					}
+					else {
+					  log.error("Unable to locate property definition with name ${apd.prop_name}");
+					}
+				  }
+
+				  // Save the tipp.
+				  tipp.save(failOnError:true)
+				}
+				else {
+				  // Found the tipp.
+				  log.debug("TIPP already present");
+				}
+
+			  } else {
+			  
+			  	// Skip this row. Need to log this and then save against the project.
+			  	skipped_rows << ctr
+				log.debug("Row ${ctr} has been skipped as the data needs to be rectified in the system before it can be ingested.")
+			  }
+			  
 			  // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
 			  // instances we've just looked up.
 			  if ( ctr % 25 == 0 ) {
@@ -630,10 +641,27 @@ class IngestService {
 		log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
 	  }
 
-
+	  // Update the project file.
 	  def project_info = RefineProject.get(project.id)
+	  
+	  // If any rows with data have been skipped then we need to set them against the,
+	  // project here, for reporting back into refine. 
+	  if (skipped_rows) {
+		
+		// Partially ingested
+		project_info.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
+		
+	  } else {
+	  
+	  	// Set to ingested.
+	  	project_info.setProjectStatus (RefineProject.Status.INGESTED)
+	  }
+	  
+	  // Update the skipped rows and the progress.
+	  project_info.setSkippedRows(skipped_rows)
 	  project_info.progress = 100;
-	  project_info.setProjectStatus (RefineProject.Status.INGESTED)
+	  
+	  // Save the project.
 	  project_info.save(failOnError:true)
 	}
 	catch ( Exception e ) {
@@ -643,10 +671,10 @@ class IngestService {
 	  project_info.progress = 100;
 	  project_info.setProjectStatus (RefineProject.Status.INGEST_FAILED)
 	  project_info.save(failOnError:true);
-	  //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
+	  // ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
 	}
 	finally {
-	  log.debug("Ingest complete");
+	  log.debug("Ingest process completed");
 	}
 
 	result
@@ -997,7 +1025,6 @@ class IngestService {
 	log.debug("identifier will be ${pkg_identifier}")
 	def pkg = null;
 
-
     def q = ComboCriteria.createFor(Package.createCriteria())
     def pkg_list = q.list {
       and {
@@ -1036,7 +1063,7 @@ class IngestService {
 		log.debug("create new combo to link package to identifier. pkg=${pkg.id}, new_id:${new_identifier.id}");
 		pkg.ids.add (new_identifier)
     
-        // Need to set the anme to mirror the Identifier.
+        // Need to set the name to mirror the Identifier.
         pkg.name = new_identifier.value
 		
 		// Save the package.
