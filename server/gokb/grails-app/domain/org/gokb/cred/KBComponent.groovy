@@ -434,4 +434,10 @@ abstract class KBComponent {
 
     return combos
   }
+  
+  public boolean isInstanceOf (Class testCase) {
+	boolean val = getMetaClass().getTheClass().isAssignableFrom(testCase)
+	val
+  }
+//	return (getMetaClass().getTheClass() instanceof testCase.class)
 }
