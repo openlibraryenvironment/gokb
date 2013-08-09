@@ -19,13 +19,10 @@ class TitleLookupService {
 	// Return the list of class 1 identifiers we have found or created, as well as the
 	// list of matches
 	def result = [
-	  "class_one" : false,
-	  "ids"	: [],
-	  "matches" : []
+	  "class_one" 	: false,
+	  "ids"			: [],
+	  "matches"		: [] as Set
 	]
-
-	// The list of matches.
-	Set<KBComponent> matches = []
 
 	// Go through each of the class_one_ids and look for a match.
 	ids.each { id_def ->
@@ -50,12 +47,12 @@ class TitleLookupService {
 		  comp.each { KBComponent c ->
 
 			// Only add if it's a title.
-			if (c instanceof TitleInstance) result['matches'] << c
+			if (c.isInstanceOf(TitleInstance) ) result['matches'] << c
 		  }
 		}
 	  }
 	}
-
+	
 	result
   }
 
@@ -71,7 +68,7 @@ class TitleLookupService {
 	def results = class_one_match (identifiers)
 
 	// The matches.
-	List<KBComponent> matches = results['matches']
+	Set<KBComponent> matches = results['matches']
 
 	switch (matches.size()) {
 	  case 0 :
@@ -106,7 +103,7 @@ class TitleLookupService {
 		break;
 	  default :
 	    // Multiple matches.
-		log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match.")
+		log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
 		break;
 	}
 	
