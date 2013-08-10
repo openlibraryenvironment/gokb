@@ -3,13 +3,13 @@ package org.gokb.validation.types
 import org.gokb.GOKbTextUtils;
 import org.gokb.cred.KBComponent
 
-class WarnSimilar extends A_ValidationRule implements I_DeferredRowValidationRule {
+class IsSimilar extends A_ValidationRule implements I_DeferredRowValidationRule {
   
   private static final String ERROR_TYPE = "data_warning"
   private final Class<? extends KBComponent> type_class
   private final double threshold
   
-  public WarnSimilar (String columnName, Class<? extends KBComponent> clazz, String severity, double threshold) {
+  public IsSimilar(String columnName, String severity, Class<? extends KBComponent> clazz, double threshold) {
 	super(columnName, severity)
 	
 	// The type.
@@ -52,7 +52,7 @@ class WarnSimilar extends A_ValidationRule implements I_DeferredRowValidationRul
 		// Compare the normalised value of this val with the data.
 		String norm_val = GOKbTextUtils.normaliseString(val)
 		double sim = GOKbTextUtils.cosineSimilarity(norm_val, comp.normname)
-		if (sim >= threshold && sim > maxValue) {
+		if (sim >= threshold && sim > maxValue && sim < 1) {
 
 		  // We have determined that the current is a near match.
 		  similarities[val] = comp.name
