@@ -7,6 +7,8 @@ import javax.persistence.Transient
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils;
+import org.hibernate.proxy.HibernateProxy
+import org.hibernate.Hibernate
 
 abstract class KBComponent {
 
@@ -145,6 +147,7 @@ abstract class KBComponent {
   Set additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
+  Set reviewRequests = []
 
   // Org provOrg
   // String provUpdateFrequency
@@ -169,6 +172,7 @@ abstract class KBComponent {
     incomingCombos:'toComponent',
     additionalProperties: 'fromComponent',
     variantNames: 'owner',
+	reviewRequests:'componentToReview'
   ]
 
   static hasMany = [
@@ -176,7 +180,8 @@ abstract class KBComponent {
     outgoingCombos:Combo,
     incomingCombos:Combo,
     additionalProperties:KBComponentAdditionalProperty,
-    variantNames:KBComponentVariantName
+    variantNames:KBComponentVariantName,
+	reviewRequests:ReviewRequest
   ]
 
   static mapping = {
@@ -315,7 +320,7 @@ abstract class KBComponent {
 	  if ( !shortcode ) {
 		shortcode = generateShortcode(name);
 	  }
-	  normname = name.toLowerCase().trim();
+	  generateNormname();
 	}
   }
 
@@ -438,6 +443,13 @@ abstract class KBComponent {
   public boolean isInstanceOf (Class testCase) {
 	boolean val = getMetaClass().getTheClass().isAssignableFrom(testCase)
 	val
+  }
+  
+  public static <T> T deproxy(def element) {
+  	if (element instanceof HibernateProxy) {
+  		return (T) ((HibernateProxy) element).getHibernateLazyInitializer().getImplementation();
+  	}
+	return (T) element;
   }
 //	return (getMetaClass().getTheClass() instanceof testCase.class)
 }
