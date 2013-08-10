@@ -513,23 +513,24 @@ class IngestService {
 				// Platform.
 				def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
 				def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-				def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+				def host_norm_platform_name = GOKbTextUtils.normaliseString(host_platform_name);
 
 				if ( host_platform_name == null ) {
 				  throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
 				}
 
 				log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
+				
 				// def platform_info = Platform.findByPrimaryUrl(host_platform_url)
 				def platform_info = Platform.findByNormname(host_norm_platform_name)
 				if ( !platform_info ) {
 				  log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
 				  // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
 				  platform_info = new Platform(
-					  name:host_platform_name,
-					  normname:host_norm_platform_name,
-					  primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
-					  )
+					name:host_platform_name,
+					normname:host_norm_platform_name,
+					primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
+				  )
 
 				  if (! platform_info.save(failOnError:true) ) {
 					platform_info.errors.each { e ->
