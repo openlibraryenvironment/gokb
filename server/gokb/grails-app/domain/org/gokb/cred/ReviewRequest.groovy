@@ -43,7 +43,7 @@ class ReviewRequest {
 	)
 	
 	// Add to the list of requests for the component.
-	forComponent.adToReviewRequests( req )
+	forComponent.addToReviewRequests( req )
 	
 	// Just return the request.
 	req
