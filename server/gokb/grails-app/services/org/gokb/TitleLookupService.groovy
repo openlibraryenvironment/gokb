@@ -206,6 +206,7 @@ class TitleLookupService {
 	  double distance = GOKbTextUtils.cosineSimilarity(norm_title, t.normname)
 	  if (distance >= best_distance) {
 		ti = t
+		best_distance = distance
 	  }
 	}
 	
