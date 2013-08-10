@@ -46,8 +46,13 @@ class TitleLookupService {
 		  Set<KBComponent> comp = the_id.identifiedComponents
 		  comp.each { KBComponent c ->
 
+			// Ensure we're not looking at a Hibernate Proxy class representation of the class
+			KBComponent dproxied = KBComponent.deproxy(c);
+			
 			// Only add if it's a title.
-			if (c.isInstanceOf(TitleInstance) ) result['matches'] << c
+			if ( dproxied instanceof TitleInstance ) {
+			  result['matches'] << (dproxied as TitleInstance)
+			}
 		  }
 		}
 	  }
@@ -68,7 +73,7 @@ class TitleLookupService {
 	def results = class_one_match (identifiers)
 
 	// The matches.
-	Set<KBComponent> matches = results['matches']
+	List< KBComponent> matches = results['matches'] as List
 
 	switch (matches.size()) {
 	  case 0 :
@@ -125,7 +130,7 @@ class TitleLookupService {
   
 	  // Try and save the result now.
 	  if ( the_title.save(failOnError:true,flush:true) ) {
-		log.debug("New title: ${the_title.id}");
+		log.debug("Succesfully saved TI: ${the_title.id}");
 	  }
 	  else {
 		the_title.errors.each { e ->
