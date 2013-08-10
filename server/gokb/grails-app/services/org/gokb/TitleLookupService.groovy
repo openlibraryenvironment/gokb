@@ -95,8 +95,32 @@ class TitleLookupService {
 		  // Lookup using title string match only.
 		  the_title = attemptStringMatch (norm_title)
 		  
-		  // This match is classed as a partial.
-		  partialMatch (title, the_title)
+		  if (the_title) {
+			log.debug("TI ${the_title} matched by name. Partial match")
+
+			// Add the variant.
+			the_title.addVariantTitle(title)
+			
+			// Raise a review request
+			ReviewRequest.raise(
+				the_title,
+				"'${title}' added as a variant of '${the_title.name}'.",
+				"No 1st class ID supplied but reasonable match was made on the title name."
+			)
+			
+		  } else {
+		  
+		  	log.debug("No TI could be matched by name. New TI, flag for review.")
+			
+		  	// Could not match on title either.
+		  	// Create a new TI but attach a Review request to it.
+		  	the_title = new TitleInstance(name:title)
+			ReviewRequest.raise(
+			  the_title,
+			  "New TI created.",
+			  "No 1st class ID supplied and no match could be made on title name."
+			)
+		  }
 		}
 		break;
 	  case 1 :
@@ -146,15 +170,25 @@ class TitleLookupService {
 	
 	// Lookup our publisher.
 	Org publisher = orgLookupService.lookupOrg(publisher_name)
+	
+	def orgs = ti.getPublisher()
 
 	// Add the publisher.
-	if (!ti.getPublisher().contains(publisher)) {
+	if (!orgs.contains(publisher)) {
+	  
+	  if (orgs.size() > 0) {
+		ReviewRequest.raise(
+		  ti,
+		  "Added '${publisher.name}' as alternate publisher on '${ti.name}'.",
+		  "Publisher supplied in ingested file is different to any already present on TI."
+		)
+	  }
 
 	  // Add the new publisher.
-	  the_title.publisher.add (publisher)
-	  
-	  // TODO: Add a review task.
+	  ti.publisher.add (publisher)
 	}
+	
+	ti
   }
   
   private TitleInstance attemptStringMatch (String norm_title) {
@@ -206,21 +240,18 @@ class TitleLookupService {
 	  default :
 	  
 	    // Bad match...
-		partialMatch(title, ti)
+		ti.addVariantTitle(title)		
+		
+		// Raise a review request
+		ReviewRequest.raise(
+			ti,
+			"'${title}' added as a variant of '${ti.name}'.",
+			"Match was made on 1st class identifier but title name seems to be very different."
+		)
 		break
 	}
 	
 	ti
-  }
-  
-  private TitleInstance partialMatch (String title, TitleInstance ti) {
-	ti.addVariantTitle(title)
-	
-	// TODO: Need to create a task to review here....
-  }
-  
-  private void doNotIngest (String title) {
-	// TODO: Add as not ingested...
   }
 
   //  def find(title, issn, eissn, extra_ids, publisher_name) {
