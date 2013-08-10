@@ -19,9 +19,9 @@ class TitleInstance extends KBComponent {
   public void addVariantTitle (String title, String locale = "EN-us") {
 	addToVariantNames(
 	  new KBComponentVariantName([
-		"variantType"	: RefdataCategory.lookupOrCreate("VariantNameType", "Alternate Title"),
-		"locale"		: RefdataCategory.lookupOrCreate("Locale", (locale)),
-		"status"		: RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+		"variantType"	: RefdataCategory.lookupOrCreate("KBComponentVariantName.variantType", "Alternate Title"),
+		"locale"		: RefdataCategory.lookupOrCreate("KBComponentVariantName.locale", (locale)),
+		"status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.status', KBComponent.STATUS_CURRENT),
 		"variantName"	: (title)
 	  ])
 	)
