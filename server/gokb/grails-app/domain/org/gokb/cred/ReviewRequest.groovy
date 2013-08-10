@@ -19,7 +19,6 @@ class ReviewRequest {
     id column:'rr_id'
     descriptionOfCause column:'rr_cause_txt', type:'text'
     reviewRequest column:'rr_req_txt', type:'text'
-    requestTimestamp column:'rr_timestamp'
   }
 
   static constraints = {
