@@ -216,7 +216,15 @@ validation.rules = [
 
   "${IngestService.PACKAGE_NAME}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ 
+	  type: IsSimilar,
+	  severity: A_ValidationRule.SEVERITY_WARNING,
+	  args: [
+		org.gokb.cred.Package,
+		9
+	  ]
+	]
   ],
 
   "${IngestService.PUBLISHER_NAME}" : [
