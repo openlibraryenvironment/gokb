@@ -420,6 +420,9 @@ class IngestService {
 		project.progress = 0
 		project.setProjectStatus(RefineProject.Status.INGESTING)
 		project.save(failOnError:true)
+		
+		// Clear the skipped_titles
+		project.getSkippedTitles().clear()
 
 		log.debug ("Updated the project.")
 
@@ -646,30 +649,35 @@ class IngestService {
 		log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
 	  }
 
-	  // Wrap in with transaction to get the current active transaction.
-	  
-	  // Update the project file.
-	  //		def project_info = RefineProject.get(project.id)
-
-	  // If any rows with data have been skipped then we need to set them against the,
-	  // project here, for reporting back into refine.
-	  if (skipped_titles) {
-
-		// Partially ingested
-		project.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
-
-	  } else {
-
-		// Set to ingested.
-		project.setProjectStatus (RefineProject.Status.INGESTED)
+	  // Wrap in with transaction.
+	  RefineProject.withNewTransaction { TransactionStatus status ->
+		
+    	  // Update the project file.
+    	  def project_info = RefineProject.load(project.id)
+    
+    	  // If any rows with data have been skipped then we need to set them against the,
+    	  // project here, for reporting back into refine.
+    	  if (skipped_titles) {
+    
+    		// Partially ingested
+    		project_info.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
+    
+    	  } else {
+    
+    		// Set to ingested.
+    		project_info.setProjectStatus (RefineProject.Status.INGESTED)
+    	  }
+    
+    	  // Update the skipped rows and the progress.
+    	  project_info.getSkippedTitles().addAll(skipped_titles)
+    	  project_info.progress = 100;
+    
+    	  // Save the project.
+    	  project_info.save(failOnError:true, flush:true)
+		  
+		  // Force the session to flush
+		  status.flush()
 	  }
-
-	  // Update the skipped rows and the progress.
-	  project.setSkippedTitles(skipped_titles)
-	  project.progress = 100;
-
-	  // Save the project.
-	  project.save(failOnError:true, flush:true)
 	}
 	catch ( Exception e ) {
 	  def project_info = RefineProject.get(project_id)
