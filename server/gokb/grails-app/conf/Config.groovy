@@ -12,6 +12,11 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                             "file:${userHome}/.grails/${appName}-config.properties",
                             "file:${userHome}/.grails/${appName}-config.groovy"]
 
+identifiers.class_ones = [
+  "issn",
+  "eissn"
+] as Set
+
 // if (System.properties["${appName}.config.location"]) {
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
@@ -150,11 +155,12 @@ validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
 validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
 validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
 validation.regex.looked_up_org = ".*\\:\\:\\{Org\\:(\\d+)\\}\$"
+validation.regex.date = "^[1-9][0-9]{3,3}\\-(0[1-9]|1[0-2])\\-(0[1-9]|[1-2][0-9]|3[0-1])\$"
 
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+	[ type: ColumnRequired			, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.PRINT_IDENTIFIER}" : [
@@ -168,7 +174,12 @@ validation.rules = [
 		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
 	  ]
 	],
-	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
+	[ 
+	  type: CellAndOtherNotEmpty,
+	  severity: A_ValidationRule.SEVERITY_WARNING,
+	  args: [IngestService.ONLINE_IDENTIFIER]
+	]
   ],
 
   "${IngestService.ONLINE_IDENTIFIER}" : [
@@ -206,12 +217,27 @@ validation.rules = [
 
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+	[ type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.date}",
+		"One or more rows contains no, or invalid data in the column \"${IngestService.DATE_FIRST_PACKAGE_ISSUE}\". Format must be \"yyyy-mm-dd\"",
+		"and (isNonBlank(value), value.match(/^${validation.regex.date}\$/) == null)",
+	  ]
+	]
   ],
 
   "${IngestService.PACKAGE_NAME}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ 
+	  type: IsSimilar,
+	  severity: A_ValidationRule.SEVERITY_WARNING,
+	  args: [
+		org.gokb.cred.Package,
+		9
+	  ]
+	]
   ],
 
   "${IngestService.PUBLISHER_NAME}" : [
@@ -474,7 +500,7 @@ globalSearchTemplates = [
           [heading:'Id', property:'id'],
           [heading:'Cause', property:'descriptionOfCause'],
           [heading:'Request', property:'reviewRequest'],
-          [heading:'Timestamp', property:'requestTimestamp'],
+          [heading:'Timestamp', property:'dateCreated'],
         ]
       ]
     ],
@@ -499,12 +525,11 @@ grails.plugins.springsecurity.ui.password.maxLength = 64
 grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
 
 //configure register 
-grails.plugins.springsecurity.ui.register.emailFrom = "GOKb"
-grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GoKB'
-
-
-
-
+grails.plugins.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.k-int.com>"
+grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
+grails.plugins.springsecurity.ui.register.defaultRoleNames = [
+  "ROLE_USER"
+]
 // The following 2 entries make the app use basic auth by default
 grails.plugins.springsecurity.useBasicAuth = true
 grails.plugins.springsecurity.basic.realmName = "gokb"
@@ -520,4 +545,11 @@ grails.plugins.springsecurity.filterChain.chainMap = [
    
 ]
 
+cosine.good_threshold = 0.75
+
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
+
+/**
+ * We need to disable springs password encoding as we handle this in our domain model.
+ */
+grails.plugins.springsecurity.ui.encodePassword = false

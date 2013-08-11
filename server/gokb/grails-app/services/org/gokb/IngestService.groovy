@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import grails.gorm.DetachedCriteria
 
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 
 import org.apache.commons.compress.archivers.*
@@ -19,6 +20,7 @@ class IngestService {
   // Automatically injected services from grails-app/services
   def grailsApplication
   def titleLookupService
+  def orgLookupService
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
@@ -39,8 +41,9 @@ class IngestService {
   public static final String VOLUME_LAST_PACKAGE_ISSUE = 'volumelastpackageissue'
   public static final String NUMBER_LAST_PACKAGE_ISSUE = 'numberlastpackageissue'
 
-  public static final String PRINT_IDENTIFIER = 'title.identifier.issn'
-  public static final String ONLINE_IDENTIFIER = 'title.identifier.eissn'
+  public static final String IDENTIFIER_PREFIX = 'title.identifier'
+  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}.issn"
+  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}.eissn"
   public static final String HOST_PLATFORM_NAME = 'platform.host.name'
   public static final String HOST_PLATFORM_URL = 'platform.host.url'
   public static final String HOST_PLATFORM_BASE_URL = 'platform.host.base.url'
@@ -197,24 +200,26 @@ class IngestService {
 	  col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
 	}
 
-	// Track any additional title identifiers.
-	def additional_identifiers = []
+	// All identifiers for this title.
+	def identifiers = []
 	project_data.columnDefinitions?.each { cd ->
 	  def cn = cd.name?.toLowerCase()
-	  if (cn.startsWith('title.identifier.') ) {
-		def idparts = cn.split('.')
-		if ( idparts.size == 3 ) {
-		  if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
-			// Skip issn/eissn.
-		  }
-		  else {
-			additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
-		  }
+	  if (cn.startsWith(IDENTIFIER_PREFIX) ) {
+		def idparts = cn.split(/\./)
+		if ( idparts.length == 3 ) {
+//		  if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
+//			// Skip issn/eissn.
+//		  }
+//		  else {
+//			identifiers.add([type:idparts[2],colno:cd.cellIndex])
+//		  }
+		  
+		  identifiers.add([type:idparts[2],colno:cd.cellIndex])
 		}
 	  }
 	}
 
-	log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}")
+	log.debug("Using col positions: ${col_positions}, additional identifiers: ${identifiers}")
 	
 	// Combine to create the package Identifier.
 	def default_pkg_identifier = null
@@ -275,43 +280,41 @@ class IngestService {
 			
 			packageIdentifiers << pkg_id.toString()
 			
-			// Get the publisher name.
-			def publisher_name = getRowValue(datarow,col_positions,PUBLISHER_NAME)
-			if (publisher_name) {
-			  def publisher_match = publisher_name =~ /${grailsApplication.config.validation.regex.looked_up_org}/
+			// Lookup a publisher ID if present.
+			def pub_id = orgLookupService.extractOrgIDFromName( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
+			if (pub_id) publisherIds << pub_id
+
+//			// (e)issns.
+//			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
+//			def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
+//
+//			// issn query.
+//			if (issn != null) {
+//			  and {
+//				tiCrit.add ("ids.namespace.value", "eq", 'issn')
+//				tiCrit.add ("ids.value", "eq", issn)
+//			  }
+//			}
+//
+//			// eissn query
+//			if (eissn != null) {
+//			  and {
+//				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
+//				tiCrit.add ("ids.value", "eq", eissn)
+//			  }
+//			}
+
+			// Each identifier type.
+			identifiers.each { ai ->
 			  
-			  if (publisher_match) {
-				
-				// We have a match.
-				publisherIds << Long.parseLong( publisher_match[0][1] )
-			  }
-			}
-
-			// (e)issns.
-			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
-			def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
-
-			// issn query.
-			if (issn != null) {
-			  and {
-				tiCrit.add ("ids.namespace.value", "eq", 'issn')
-				tiCrit.add ("ids.value", "eq", issn)
-			  }
-			}
-
-			// eissn query
-			if (eissn != null) {
-			  and {
-				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
-				tiCrit.add ("ids.value", "eq", eissn)
-			  }
-			}
-
-			// Each additional identifier type.
-			additional_identifiers.each { ai ->
-			  and {
-				tiCrit.add ("ids.namespace.value", "eq", ai.type)
-				tiCrit.add ("ids.value", "eq", datarow.cells[ai.colno])
+			  // The value.
+			  def val = jsonv(datarow.cells[ai.colno])
+			  
+			  if (val) {
+				and {
+				  tiCrit.add ("ids.namespace.value", "eq", ai.type)
+				  tiCrit.add ("ids.value", "eq", val)
+				}
 			  }
 			}
 
@@ -398,6 +401,7 @@ class IngestService {
   def ingest(project_data, project_id) {
 	// Return result.
 	def result = [:]
+	Set<String> skipped_titles = []
 	try {
 	  log.debug("Ingest");
 
@@ -416,6 +420,9 @@ class IngestService {
 		project.progress = 0
 		project.setProjectStatus(RefineProject.Status.INGESTING)
 		project.save(failOnError:true)
+		
+		// Clear the skipped_titles
+		project.getSkippedTitles().clear()
 
 		log.debug ("Updated the project.")
 
@@ -430,19 +437,22 @@ class IngestService {
 		col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
 	  }
 
-	  // Track any additional title identifiers.
-	  def additional_identifiers = []
+	  // Group all identifiers together.
+	  def identifiers = []
 	  project_data.columnDefinitions?.each { cd ->
 		def cn = cd.name?.toLowerCase()
-		if (cn.startsWith('title.identifier.') ) {
-		  def idparts = cn.split('.')
-		  if ( idparts.size == 3 ) {
-			if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
-			  // Skip issn/eissn.
-			}
-			else {
-			  additional_identifiers.add([type:idparts[2],colno:cd.cellIndex])
-			}
+		if (cn.startsWith(IDENTIFIER_PREFIX) ) {
+		  String[] idparts = cn.split(/\./)
+		  if ( idparts.length == 3 ) {
+//			if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
+//			  // Skip issn/eissn.
+//			}
+//			else {
+//			  identifiers.add([type:idparts[2],colno:cd.cellIndex])
+//			}
+			
+			// Add all identifiers. Class 1 IDs are handled later on in the process.
+			identifiers.add([type:idparts[2],colno:cd.cellIndex])
 		  }
 		}
 	  }
@@ -461,7 +471,7 @@ class IngestService {
 		}
 	  }
 
-	  log.debug("Using col positions: ${col_positions}, additional identifiers: ${additional_identifiers}");
+	  log.debug("Using col positions: ${col_positions}, additional identifiers: ${identifiers}");
 
 	  int ctr = 0
 	  boolean row_level_problems = false
@@ -477,106 +487,136 @@ class IngestService {
 
 			try {
 
-			  def extra_ids = []
-			  additional_identifiers.each { ai ->
-				extra_ids.add([type:ai.type, value:datarow.cells[ai.colno]])
+			  def ids = []
+			  identifiers.each { ai ->
+				// The value.
+				def val = jsonv(datarow.cells[ai.colno])
+				if (val) {
+				  ids.add([type:ai.type, value:(val)])
+				}
 			  }
 
 			  // Title Instance
-			  log.debug("Looking up title...(extra ids: ${extra_ids})")
+			  log.debug("Looking up title...(ids: ${ids})")
+//			  def title_info = titleLookupService.find(
+//				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+//				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
+//				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
+//				  ids,
+//				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
+			  
+			  // Lookup the title.
 			  def title_info = titleLookupService.find(
-				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
-				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
-				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
-				  extra_ids,
-				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
+				jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+				getRowValue(datarow,col_positions,PUBLISHER_NAME),
+				ids);
+			  
+			  // If we match a title then ingest...
+			  if (title_info != null) {
 
-			  // Platform.
-			  def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
-			  def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-			  def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+				// Platform.
+				def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
+				def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+				def host_norm_platform_name = GOKbTextUtils.normaliseString(host_platform_name);
 
-			  if ( host_platform_name == null ) {
-				throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
-			  }
+				if ( host_platform_name == null ) {
+				  throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
+				}
 
-			  log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
-			  // def platform_info = Platform.findByPrimaryUrl(host_platform_url)
-			  def platform_info = Platform.findByNormname(host_norm_platform_name)
-			  if ( !platform_info ) {
-				log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
-				// platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
-				platform_info = new Platform(
+				log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
+				
+				// def platform_info = Platform.findByPrimaryUrl(host_platform_url)
+				def platform_info = Platform.findByNormname(host_norm_platform_name)
+				if ( !platform_info ) {
+				  log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
+				  // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
+				  platform_info = new Platform(
 					name:host_platform_name,
 					normname:host_norm_platform_name,
 					primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
+				  )
+
+				  if (! platform_info.save(failOnError:true) ) {
+					platform_info.errors.each { e ->
+					  log.error(e);
+					}
+				  }
+				}
+
+				// Does the row specify a package identifier?
+				def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
+
+				// The package.
+				def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
+
+				// Try and lookup a tipp.
+				def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+				def tipp = crit.get {
+				  and {
+					crit.add ("title", "eq", title_info)
+					crit.add ("pkg", "eq", pkg)
+					crit.add ("hostPlatform", "eq", platform_info)
+				  }
+				}
+
+				// We have a Tipp.
+				if ( !tipp ) {
+				  log.debug("Create new tipp")
+				  tipp = new TitleInstancePackagePlatform(
+					  title:title_info,
+					  pkg:pkg,
+					  hostPlatform:platform_info,
+					  startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+					  startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+					  startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+					  endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+					  endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+					  endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+					  embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+
+					  //TODO: Coverage depth now defaults only for this phase. Commenting out for now.
+					  //					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
+					  coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+					  url:host_platform_url
+					  )
+
+				  // Add each property in turn.
+				  gokb_additional_props.each { apd ->
+					// Done this way because I was worried about the prop defn crossing the transaction start boundary above
+					def prop_defn = AdditionalPropertyDefinition.findBypropertyName(apd.prop_name)
+					if ( prop_defn != null ) {
+					  def ap = new KBComponentAdditionalProperty( propertyDefn:prop_defn, apValue:getRowValue(datarow,apd.col))
+					  tipp.additionalProperties.add (ap)
+					}
+					else {
+					  log.error("Unable to locate property definition with name ${apd.prop_name}");
+					}
+				  }
+
+				  // Save the tipp.
+				  tipp.save(failOnError:true)
+				}
+				else {
+				  // Found the tipp.
+				  log.debug("TIPP already present");
+				}
+
+			  } else {
+			  
+			  	// Skip this row. Need to log this and save against the project.
+				log.debug("Row ${ctr} has been skipped as the data needs to be rectified in the system before it can be ingested.")
+				
+				// We store a hash of title joined with package. This isn't ideal.
+				// TODO:Review this.
+				
+				def val = (
+				  (getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "") +
+				  (getRowValue(datarow, col_positions, PACKAGE_NAME) ?: "")
 				)
-
-				if (! platform_info.save(failOnError:true) ) {
-				  platform_info.errors.each { e ->
-					log.error(e);
-				  }
-				}
+				
+				skipped_titles << val.toString()
 			  }
-
-			  // Does the row specify a package identifier?
-			  def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
-
-			  // The package.
-			  def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
-
-			  // Try and lookup a tipp.
-			  def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
-			  def tipp = crit.get {
-				and {
-				  crit.add ("title", "eq", title_info)
-				  crit.add ("pkg", "eq", pkg)
-				  crit.add ("hostPlatform", "eq", platform_info)
-				}
-			  }
-
-			  // We have a Tipp.
-			  if ( !tipp ) {
-				log.debug("Create new tipp")
-				tipp = new TitleInstancePackagePlatform(
-					title:title_info,
-					pkg:pkg,
-					hostPlatform:platform_info,
-					startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-					startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-					startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-					endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-					endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-					endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-					embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-          
-                    //TODO: Coverage depth now defaults only for this phase. Commenting out for now.
-//					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-					coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-					url:host_platform_url
-					)
-
-				// Add each property in turn.
-				gokb_additional_props.each { apd ->
-				  // Done this way because I was worried about the prop defn crossing the transaction start boundary above
-				  def prop_defn = AdditionalPropertyDefinition.findBypropertyName(apd.prop_name)
-				  if ( prop_defn != null ) {
-					def ap = new KBComponentAdditionalProperty( propertyDefn:prop_defn, apValue:getRowValue(datarow,apd.col))
-					tipp.additionalProperties.add (ap)
-				  }
-				  else {
-					log.error("Unable to locate property definition with name ${apd.prop_name}");
-				  }
-				}
-
-				// Save the tipp.
-				tipp.save(failOnError:true)
-			  }
-			  else {
-				// Found the tipp.
-				log.debug("TIPP already present");
-			  }
-
+			  
 			  // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
 			  // instances we've just looked up.
 			  if ( ctr % 25 == 0 ) {
@@ -605,7 +645,6 @@ class IngestService {
 		  }
 		  ctr++
 
-
 		  // Forcibly flush the session.
 		  //      status.flush()
 		}
@@ -615,23 +654,47 @@ class IngestService {
 		log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
 	  }
 
-
-	  def project_info = RefineProject.get(project.id)
-	  project_info.progress = 100;
-	  project_info.setProjectStatus (RefineProject.Status.INGESTED)
-	  project_info.save(failOnError:true)
+	  // Wrap in with transaction.
+	  RefineProject.withNewTransaction { TransactionStatus status ->
+		
+    	  // Update the project file.
+    	  def project_info = RefineProject.load(project.id)
+    
+    	  // If any rows with data have been skipped then we need to set them against the,
+    	  // project here, for reporting back into refine.
+    	  if (skipped_titles) {
+    
+    		// Partially ingested
+    		project_info.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
+    
+    	  } else {
+    
+    		// Set to ingested.
+    		project_info.setProjectStatus (RefineProject.Status.INGESTED)
+    	  }
+    
+    	  // Update the skipped rows and the progress.
+    	  project_info.getSkippedTitles().addAll(skipped_titles)
+    	  project_info.progress = 100;
+    
+    	  // Save the project.
+    	  project_info.save(failOnError:true, flush:true)
+		  
+		  // Force the session to flush
+		  status.flush()
+	  }
 	}
 	catch ( Exception e ) {
-	  def project_info = RefineProject.get(project.id)
+	  def project_info = RefineProject.get(project_id)
 	  log.error("Problem processing project ingest.",e);
 	  result.messages.add([text:"Problem processing project ingest. ${e}"])
 	  project_info.progress = 100;
 	  project_info.setProjectStatus (RefineProject.Status.INGEST_FAILED)
 	  project_info.save(failOnError:true);
-	  //ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
+	  // ToDo: Steve.. can you figure out a way to log the exception and pass it back to refine?
 	}
 	finally {
-	  log.debug("Ingest complete");
+	  log.debug("Ingest process completed");
 	}
 
 	result
@@ -982,7 +1045,6 @@ class IngestService {
 	log.debug("identifier will be ${pkg_identifier}")
 	def pkg = null;
 
-
     def q = ComboCriteria.createFor(Package.createCriteria())
     def pkg_list = q.list {
       and {
@@ -1021,7 +1083,7 @@ class IngestService {
 		log.debug("create new combo to link package to identifier. pkg=${pkg.id}, new_id:${new_identifier.id}");
 		pkg.ids.add (new_identifier)
     
-        // Need to set the anme to mirror the Identifier.
+        // Need to set the name to mirror the Identifier.
         pkg.name = new_identifier.value
 		
 		// Save the package.
