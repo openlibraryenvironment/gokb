@@ -350,7 +350,7 @@ class ApiController {
 		project.setLocalProjectID(0)
 		project.save(flush: true, failOnError: true)
 
-		apiReturn(project)
+		apiReturn(project.collect(TRANSFORMER_PROJECT))
 		return
 	  }
 	}
