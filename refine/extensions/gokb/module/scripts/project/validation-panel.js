@@ -207,7 +207,28 @@ ValidationPanel.prototype._render = function() {
 		}
   	
   	if (hasError) {
-  		$('h1', elmts.panelContent).hide();
+			$('h1', elmts.panelContent).hide();
+			
+			if (errorMess.length == 0) {
+				
+				// There must only be warnings. We still need to allow the ingest to take place.
+	  		elmts.validationContent
+					.append($("<h1 />")
+						.text("GOKb Validation Status"))
+					.append($("<p />")
+						.text("There are warnings against your project currently but these will not stop you from continuing to ingest."))
+					.append(
+					  $("<div>").attr("id", "gokb-ingest-button").append(
+				  		$('<button />')
+				  			.addClass("button")
+				  			.text("Begin ingest process")
+				  			.click(function() {
+				  				GOKb.handlers.estimateChanges();
+				  			})
+				  	)
+			  	)
+				;
+  		}
   	} else {
   		
 			// Set the header error count to the correct number.
