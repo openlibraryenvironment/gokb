@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import grails.gorm.DetachedCriteria
 
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 
 import org.apache.commons.compress.archivers.*
@@ -400,7 +401,7 @@ class IngestService {
   def ingest(project_data, project_id) {
 	// Return result.
 	def result = [:]
-	Set<Integer> skipped_rows = []
+	Set<String> skipped_titles = []
 	try {
 	  log.debug("Ingest");
 
@@ -599,9 +600,13 @@ class IngestService {
 
 			  } else {
 			  
-			  	// Skip this row. Need to log this and then save against the project.
-			  	skipped_rows << ctr
+			  	// Skip this row. Need to log this and save against the project.
 				log.debug("Row ${ctr} has been skipped as the data needs to be rectified in the system before it can be ingested.")
+				
+				// We store a hash of title joined with package. This isn't ideal.
+				// TODO:Review this.
+				skipped_titles << getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "" +
+				  getRowValue(datarow, col_positions, PACKAGE_NAME) ?: ""
 			  }
 			  
 			  // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
@@ -647,7 +652,7 @@ class IngestService {
 	  
 	  // If any rows with data have been skipped then we need to set them against the,
 	  // project here, for reporting back into refine. 
-	  if (skipped_rows) {
+	  if (skipped_titles) {
 		
 		// Partially ingested
 		project_info.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
@@ -659,7 +664,7 @@ class IngestService {
 	  }
 	  
 	  // Update the skipped rows and the progress.
-	  project_info.setSkippedRows(skipped_rows)
+	  project_info.setSkippedTitles(skipped_titles)
 	  project_info.progress = 100;
 	  
 	  // Save the project.

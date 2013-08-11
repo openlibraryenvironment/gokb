@@ -124,6 +124,21 @@ class ApiController {
 	// Return the result.
 	apiReturn(result)
   }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def checkSkipedRows() {
+	
+	long pId = params.long("project");
+	
+	// RefineProject
+	RefineProject rp = RefineProject.get(pId)
+	
+	// The result is the list of titles if we have a project.
+	def result = rp?.getSkippedTitles() ?: []
+	
+	// Return the result.
+	apiReturn(result)
+  }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def estimateDataChanges() {
