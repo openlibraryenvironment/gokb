@@ -114,16 +114,16 @@ class AjaxSupportController {
     ],
     'VariantNameType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='VariantNameType'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='VariantNameType'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.variantType'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.variantType'",
       qryParams:[],
       cols:['value'],
       format:'simple'
     ],
     'Locale' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='Locale'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='Locale'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.locale'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.locale'",
       qryParams:[],
       cols:['value'],
       format:'simple'
