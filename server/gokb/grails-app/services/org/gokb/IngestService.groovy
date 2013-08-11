@@ -608,10 +608,13 @@ class IngestService {
 				
 				// We store a hash of title joined with package. This isn't ideal.
 				// TODO:Review this.
-				skipped_titles << (
-				  getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "" +
-				  getRowValue(datarow, col_positions, PACKAGE_NAME) ?: ""
-				).toString()
+				
+				def val = (
+				  (getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "") +
+				  (getRowValue(datarow, col_positions, PACKAGE_NAME) ?: "")
+				)
+				
+				skipped_titles << val.toString()
 			  }
 			  
 			  // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
