@@ -637,7 +637,6 @@ class IngestService {
 		  }
 		  ctr++
 
-
 		  // Forcibly flush the session.
 		  //      status.flush()
 		}

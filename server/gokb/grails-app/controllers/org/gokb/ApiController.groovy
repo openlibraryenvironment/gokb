@@ -126,7 +126,7 @@ class ApiController {
   }
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def checkSkipedRows() {
+  def checkSkippedTitles() {
 	
 	long pId = params.long("project");
 	

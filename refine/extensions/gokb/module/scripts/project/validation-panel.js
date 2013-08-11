@@ -27,7 +27,47 @@ ValidationPanel.prototype.resize = function() {
 ValidationPanel.prototype.update = function(onDoneFunc) {
   var self = this;
   
-  // Set the _data attribute to the data.
+  // Clear the data.
+  self.data = {
+  	dataCheck : {
+  		messages : []
+  	}
+  };
+  
+  // Need to check for any skipped titles.
+  if ("gokb" in theProject.metadata.customMetadata && theProject.metadata.customMetadata.gokb == true) {
+  	
+  	// This has been associated with GOKb and will have a GOKb project id. We now need to check
+  	// for skipped titles.
+  	var id = theProject.metadata.customMetadata['gokb-id'];
+  	GOKb.doCommand (
+      "checkSkippedTitles",
+      {project: id},
+      null,
+      {
+      	onDone : function (data) {
+      		
+      		if ("result" in data) {
+      			// (cells['publicationtitle'].value + cells['package.name'].value).match('\\QAfrican and Asian StudiesBrill:Master:2013\\E|\\QAfrican DiasporaBrill:Master:2013\\E') != null
+      			var grel = "(cells['publicationtitle'].value + cells['package.name'].value).match('\\Q";
+      			for (var i=0; i<data.result.length;i++) {
+      				grel += (i > 0 ? '\\E|\\Q' : "") + data.result[i];
+      			}
+      			
+      			// Close the statement.
+      			grel += ""\\E') != null";
+      			
+      			// Add a validation message here.
+      			self.data.dataCheck.messages.push(
+      			  {"facetValue":grel,"text":"One or more title was not ingested during the last ingest.","col":"publicationtitle","facetName":"Un-ingested rows","severity":"warning","type":"data_invalid"}
+      			);
+      		}
+      	}
+      }
+    );
+  }  
+
+  // Shared params.
   var params = {
   		md 			: JSON.stringify(theProject.metadata),
   		project : theProject.id
@@ -43,11 +83,8 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
     		
     		if ("result" in data) {
     			
-    			// Set the metadata part of the data.
-    			self.data = {
-  					"md5Check" : data.result,
-  					"dataCheck" : {}
-    			};
+    			// Set the md5 part of the data.
+    			self.data["md5Check"] = data.result;
     			
     			// Post the column data to the service.
     		  GOKb.doCommand (
@@ -59,7 +96,9 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
     		    		
     		    		if ("result" in data && "status" in data.result) {
     		    			
-    		    			self.data.dataCheck = data.result;
+    		    			// Merge the results into the existing object.
+    		    			$.extend (true, self.data["dataCheck"], data.result)
+//    		    			self.data["dataCheck"] = data.result;
     		    			
     		    		  // Then render.
     		    		  self._render();
