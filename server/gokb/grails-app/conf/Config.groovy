@@ -487,7 +487,7 @@ globalSearchTemplates = [
           [heading:'Id', property:'id'],
           [heading:'Cause', property:'descriptionOfCause'],
           [heading:'Request', property:'reviewRequest'],
-          [heading:'Timestamp', property:'requestTimestamp'],
+          [heading:'Timestamp', property:'dateCreated'],
         ]
       ]
     ],
