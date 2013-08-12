@@ -27,35 +27,19 @@
   <div class="control-group">
     <dt>Roles</dt>
     <dd>
-      <ul>
-        <g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
-          <li>${t.value}</li>
-        </g:each>
-      </ul>
-      <br/>
+      <g:if test="${d.id != null}">
+        <ul>
+          <g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
+            <li>${t.value}</li>
+          </g:each>
+        </ul>
+        <br/>
 
-      <!--
-          <g:if test="${1==1}">
-            <g:form controller="ajax" action="addToCollection" class="form-inline">
-              <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
-              <input type="hidden" name="__newObjectClass" value="com.k_int.kbplus.IdentifierOccurrence"/>
-              <input type="hidden" name="__recip" value="org"/>
-              <input type="hidden" name="identifier" id="addIdentifierSelect"/>
-              <input type="submit" value="Add Identifier..." class="btn btn-primary btn-small"/>
-            </g:form>
-          </g:if>
-
-        -->
-      Add role: <g:simpleReferenceTypedown name="roleRefdataValue" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
-
-        <!--
-      <g:select name="orgRoles" 
-                from="${org.gokb.cred.RefdataValue.list()}"
-                value="${d.roles*.id}"
-                optionKey="id"
-                optionValue="value"
-                multiple="true"/>
-       -->
+        Add role: <g:simpleReferenceTypedown name="roleRefdataValue" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
+      </g:if>
+      <g:else>
+        Record must be saved before roles can be edited.
+      </g:else>
     </dd>
   </div>
 
