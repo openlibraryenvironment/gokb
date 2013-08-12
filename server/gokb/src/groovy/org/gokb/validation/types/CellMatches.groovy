@@ -56,7 +56,7 @@ class CellMatches extends A_ValidationRule implements I_RowValidationRule {
 		def value = getRowValue(datarow, col_positions, columnName)
 
 		// If blank we need to add a message.
-		if (value && value != "") {
+		if (value != null && value != "") {
 
 		  // Check the regex matches the value.
 		  if (!(value ==~ regex)) {
