@@ -221,20 +221,20 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('License.Type','Template').save()
     RefdataCategory.lookupOrCreate('License.Type','Other').save()
 
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.variantType','Alternate Title').save()
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.variantType','Previous Title').save()
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.variantType','Misspelling').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Alternate Title').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Previous Title').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Misspelling').save()
 
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.locale','EN-us').save()
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.locale','EN-gb').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-us').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-gb').save()
 	
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.status', KBComponent.STATUS_CURRENT).save()
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.status', KBComponent.STATUS_DELETED).save()
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.status', KBComponent.STATUS_EXPECTED).save()
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.status', KBComponent.STATUS_RETIRED).save()
+	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT).save()
+	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_DELETED).save()
+	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_EXPECTED).save()
+	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_RETIRED).save()
 	
 	// Review Request
-	RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Needs Review').save()
-	RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Reviewed').save()
+	RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Needs Review').save()
+	RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Reviewed').save()
   }
 }
