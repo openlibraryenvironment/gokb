@@ -5,7 +5,7 @@ import org.gokb.cred.KBComponent
 class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationRule {
   
   private static final String ERROR_TYPE = "data_invalid"
-  private static final def REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
+  public static final def REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
   
   private String regex
   private Class<? extends KBComponent> the_class
