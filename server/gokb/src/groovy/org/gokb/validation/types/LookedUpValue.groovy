@@ -2,10 +2,10 @@ package org.gokb.validation.types
 
 import org.gokb.cred.KBComponent
 
-class LookedUpValue extends A_ValidationRule implements I_RowValidationRule {
+class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationRule {
   
   private static final String ERROR_TYPE = "data_invalid"
-  private static final String REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
+  private static final def REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
   
   private String regex
   private Class<? extends KBComponent> the_class
@@ -13,7 +13,8 @@ class LookedUpValue extends A_ValidationRule implements I_RowValidationRule {
   public LookedUpValue(String columnName, String severity, Class<? extends KBComponent> the_class) {
 	super(columnName, severity)
 	
-	regex = REGEX_TEMPLATE[0] + the_class.getSimpleName() + REGEX_TEMPLATE[1]
+	regex = "${REGEX_TEMPLATE[0] + the_class.getSimpleName() + REGEX_TEMPLATE[1]}"
+	this.the_class = the_class
 	
 	if (!(columnName instanceof String)) {
 	  throw new IllegalArgumentException ("EnsureExistingValue rule expects a single argument of type String.")
@@ -34,13 +35,29 @@ class LookedUpValue extends A_ValidationRule implements I_RowValidationRule {
 	return [
 	  col			: columnName,
 	  text			: "One or more rows contains values in \"${columnName}\" that appear to not have been looked up from gokb. Please use the lookup functions on the right-click menu to populate this field",
-	  facetValue	: "and (isNonBlank(value), value.match(/${regex}/) == null)",
+	  facetValue	: "value.match(/(\\Q${invalid_vals.join('\\E|\\Q')}\\E)/",
 	  facetName		: "None looked up value in ${columnName}"
 	];
   }
   
   @Override
-  public boolean validate(final result, final col_positions, final rowNum, final datarow) {
+  public boolean validate(final result) {
+	
+	// Check to see if the duplicates set has data.
+	if (invalid_vals.size() > 0) {
+	  
+	  // Add the error.
+	  addError(result)
+	  return false
+	}
+	
+	return true
+  }
+  
+  private Set<String> invalid_vals = []
+  
+  @Override
+  public void process(final col_positions, final rowNum, final datarow) {
 	
 	// First check should be to see if an error has already been triggered by this rule,
 	// we don't want to fill the error messages with repeats.
@@ -61,7 +78,7 @@ class LookedUpValue extends A_ValidationRule implements I_RowValidationRule {
 		  boolean valid = false
 		
 		  // Check the value matches the regex first of all..
-		  def match = regex =~ value
+		  def match = value =~ regex
 		  if (match) {
 
 			// Matches so let's do a lookup to ensure it exists.
@@ -81,12 +98,10 @@ class LookedUpValue extends A_ValidationRule implements I_RowValidationRule {
 		  
 		  // Flag that data isn't valid.
 		  if (!valid) {
-			addError(result)
+			invalid_vals << value
 		  }
 		}
 	  }
 	}
-	
-	return !isErrorTriggered()
   }
 }
