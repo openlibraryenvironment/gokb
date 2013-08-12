@@ -65,7 +65,7 @@ abstract class A_ValidationRule {
   }
   
   private Map<String, List<String>> col_names = [:]
-  private List<String> doRegexMatchOnColumns(Map col_positions, String colname) {
+  protected List<String> doRegexMatchOnColumns(Map col_positions, String colname) {
 	
 	List<String> val = col_names [colname]
 	
