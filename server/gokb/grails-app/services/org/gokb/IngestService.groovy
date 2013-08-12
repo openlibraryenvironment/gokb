@@ -20,7 +20,7 @@ class IngestService {
   // Automatically injected services from grails-app/services
   def grailsApplication
   def titleLookupService
-  def orgLookupService
+  def componentLookupService
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
@@ -281,7 +281,7 @@ class IngestService {
 			packageIdentifiers << pkg_id.toString()
 			
 			// Lookup a publisher ID if present.
-			def pub_id = orgLookupService.extractOrgIDFromName( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
+			def pub_id = componentLookupService.lookupComponent ( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
 			if (pub_id) publisherIds << pub_id
 
 //			// (e)issns.
@@ -526,7 +526,7 @@ class IngestService {
 				log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
 				
 				// def platform_info = Platform.findByPrimaryUrl(host_platform_url)
-				def platform_info = Platform.findByNormname(host_norm_platform_name)
+				def platform_info =  Platform.findByNormname(host_norm_platform_name)
 				if ( !platform_info ) {
 				  log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
 				  // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
