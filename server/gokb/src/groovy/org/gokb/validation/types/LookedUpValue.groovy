@@ -1,0 +1,92 @@
+package org.gokb.validation.types
+
+import org.gokb.cred.KBComponent
+
+class LookedUpValue extends A_ValidationRule implements I_RowValidationRule {
+  
+  private static final String ERROR_TYPE = "data_invalid"
+  private static final String REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
+  
+  private String regex
+  private Class<? extends KBComponent> the_class
+  
+  public LookedUpValue(String columnName, String severity, Class<? extends KBComponent> the_class) {
+	super(columnName, severity)
+	
+	regex = REGEX_TEMPLATE[0] + the_class.getSimpleName() + REGEX_TEMPLATE[1]
+	
+	if (!(columnName instanceof String)) {
+	  throw new IllegalArgumentException ("EnsureExistingValue rule expects a single argument of type String.")
+	}
+  }
+
+  @Override
+  protected String getType() {
+	
+	// Return the type to be sent with each error message.
+	return ERROR_TYPE;
+  }
+
+  @Override
+  protected Map getMessageProperties() {
+	
+	// The extra info to be sent with each error message.
+	return [
+	  col			: columnName,
+	  text			: "One or more rows contains values in \"${columnName}\" that appear to not have been looked up from gokb. Please use the lookup functions on the right-click menu to populate this field",
+	  facetValue	: "and (isNonBlank(value), value.match(/${regex}/) == null)",
+	  facetName		: "None looked up value in ${columnName}"
+	];
+  }
+  
+  @Override
+  public boolean validate(final result, final col_positions, final rowNum, final datarow) {
+	
+	// First check should be to see if an error has already been triggered by this rule,
+	// we don't want to fill the error messages with repeats.
+	if (!isErrorTriggered()) {
+	
+	  // Get the index for the column.
+	  def pos = col_positions[columnName]
+
+	  // Only check the content if the row is present in the data in the first place.
+	  if (pos != null) {
+
+		// Get the value.
+		def value = getRowValue(datarow, col_positions, columnName)
+		
+		if (value != null) {
+		  
+		  // Default to invalid.
+		  boolean valid = false
+		
+		  // Check the value matches the regex first of all..
+		  def match = regex =~ value
+		  if (match) {
+
+			// Matches so let's do a lookup to ensure it exists.
+			try {
+			  long the_id = Long.parseLong(match[0][1])
+
+			  // Ensure the item actually exists.
+			  if (the_class.get(the_id)) {
+				// All is fine.
+				valid = true
+			  }
+
+			} catch (Throwable t) {
+				// Do nothing invalid will be returned below
+			}
+    	  }
+		  
+		  // Flag that data isn't valid.
+		  if (!valid) {
+			addError(result)
+		  }
+		}
+	  }
+	}
+	
+	return !isErrorTriggered()
+  }
+}
