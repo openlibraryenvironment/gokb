@@ -243,14 +243,9 @@ validation.rules = [
 
   "${IngestService.PUBLISHER_NAME}" : [
 	[
-	  type: CellMatches,
+	  type: LookedUpValue,
 	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.looked_up_org}",
-		"If you specify a \"${IngestService.PUBLISHER_NAME}\" column then the field should contain " +
-		"identifier text like \"::{Org:ORG_ID}\". Use the gokb lookup function on the right click menu to insert these values.",
-		"and (isNonBlank(value), value.match(/${validation.regex.looked_up_org}/) == null)",
-	  ]
+	  args: [ org.gokb.cred.Org ]
 	]
   ],
 
