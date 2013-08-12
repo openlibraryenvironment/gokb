@@ -35,8 +35,6 @@ class CellAndOtherNotEmpty extends A_ValidationRule implements I_RowValidationRu
   @Override
   public boolean validate(final result, final col_positions, final rowNum, final datarow) {
 	
-	boolean valid = true
-	
 	// First check should be to see if an error has already been triggered by this rule,
 	// we don't want to fill the error messages with repeats.
 	if (!isErrorTriggered()) {
@@ -48,25 +46,20 @@ class CellAndOtherNotEmpty extends A_ValidationRule implements I_RowValidationRu
 	  // Only check the content if the row is present in the data in the first place.
 	  if (this_pos != null && other_pos != null) {
 
-		// Get the matched columns.
-		doRegexMatchOnColumns(col_positions, columnName).each { String col ->
-		  
-		  // For each value...
-		  String value = (getRowValue(datarow, col_positions, col) ?: "") +
-			  (getRowValue(datarow, col_positions, otherColumn) ?: "")
-  
-		  // If blank we need to add a message.
-		  if (value.trim() == "") {
-  
-			// Flag that an error has been found in this row.
-			addError(result)
-			valid = false
-		  }
+		// Get the value.
+		String value = getRowValue(datarow, col_positions, columnName) ?: "" +
+			getRowValue(datarow, col_positions, otherColumn) ?: ""
+
+		// If blank we need to add a message.
+		if (value.trim() == "") {
+
+		  // Flag that an error has been found in this row.
+		  addError(result)
+		  return false
 		}
 	  }
 	}
 	
-	// Return 
-	return !isErrorTriggered() && valid
+	return !isErrorTriggered()
   }
 }

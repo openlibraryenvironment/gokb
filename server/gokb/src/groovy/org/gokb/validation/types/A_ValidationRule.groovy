@@ -64,41 +64,6 @@ abstract class A_ValidationRule {
 	result
   }
   
-  private Map<String, List<String>> col_names = [:]
-  protected List<String> doRegexMatchOnColumns(Map col_positions, String colname) {
-	
-	List<String> val = col_names [colname]
-	
-	// Return now if present
-	if (val != null) return val
-	
-	// Initiate.
-	val = []
-	
-	// Check for asterisk.
-	if (colname.contains("*")) {
-	  
-	  // We need to escape the dots and replace the asterisk.
-	  String regex = colname.replace(".", "\\\\.").replace("*", "[^\\\\.]")
-	  
-	  // Now we have the col_name as a regex we can check to see if any of the colnames match it.
-	  col_positions.keySet().each {
-		if (regex ==~ it) {
-		  // Add to the list.
-		  val << it.toString()
-		}
-	  }
-	} else {
-		// Just need to return the current value only.
-		val << colname
-	}
-	
-	// Cache the result
-	col_names[colname] = val
-	
-	val
-  }
-  
   protected def jsonv(v) {
 	def result = null
 	if ( v ) {
