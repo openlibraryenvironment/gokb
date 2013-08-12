@@ -479,12 +479,16 @@ abstract class KBComponent {
 
   @Override
   public boolean equals(Object obj) {
-	return this.hashCode() == obj.hashCode();
-  }
-
-  @Override
-  public int hashCode() {
-	// TODO Auto-generated method stub
-	return id as Integer;
+	
+	// Deproxy the object first to ensure it isn't a hibernate proxy.
+	def the_obj = KBComponent.deproxy(obj)
+	
+	if (the_obj instanceof KBComponent) {
+	  return (this.getClassName() == the_obj.getClassName()) &&
+	  	(this.getId() == the_obj.getId())
+	}
+	
+	// Return false if we get here.
+	false
   }
 }
