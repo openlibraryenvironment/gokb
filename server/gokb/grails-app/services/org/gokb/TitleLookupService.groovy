@@ -150,7 +150,17 @@ class TitleLookupService {
 	  }
   
 	  // Add all the identifiers.
-	  if (results['ids']) the_title.ids.addAll (results['ids'])
+	  Set<Identifier> ids = the_title.ids
+	  results['ids'].each { Identifier the_id ->
+		
+		// Deproxy the ID
+		Identifier identifier = KBComponent.deproxy(the_id);
+		
+		// Only add if it isn't already present.
+		if (!ids.contains(identifier)) {
+		  ids.add(results['ids'])
+		}
+	  }
   
 	  // Try and save the result now.
 	  if ( the_title.save(failOnError:true,flush:true) ) {
