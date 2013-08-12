@@ -26,7 +26,7 @@ class HasDuplicates extends A_ValidationRule implements I_DeferredRowValidationR
 	return [
 	  col			: columnName,
 	  text			: "One or more rows contain duplicated data for column \"${columnName}\"",
-	  facetValue	: "value.match(/(\\Q${duplicates.join("\\E|\\Q")}\\E)/)",
+	  facetValue	: "value.match(/(\\Q${duplicates.join('\\E|\\Q')}\\E)/)",
 	  facetName		: "Duplicate values in ${columnName}"
 	];
   }
