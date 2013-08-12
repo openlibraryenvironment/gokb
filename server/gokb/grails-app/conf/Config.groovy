@@ -217,6 +217,7 @@ validation.rules = [
 
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
 	[ type: CellMatches,
 	  severity: A_ValidationRule.SEVERITY_ERROR,
 	  args: [
