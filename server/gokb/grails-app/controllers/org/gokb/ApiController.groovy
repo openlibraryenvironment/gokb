@@ -3,11 +3,11 @@ package org.gokb
 import static java.util.UUID.randomUUID
 import grails.converters.JSON
 
-import org.gokb.cred.Org
-import org.gokb.cred.User
+import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import grails.plugins.springsecurity.Secured
+import grails.util.GrailsNameUtils
 
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
@@ -581,28 +581,26 @@ class ApiController {
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
-	def result = [];
 	
 	// Get the "term" parameter for performing a search.
 	def term = params.term
 
 	// Should take a type parameter and do the right thing.
-	switch ( params.type ) {
-	  case 'org' :
-	  	
-		def orgs = Org.createCriteria().listDistinct {
-		  if (term) {
-			ilike "name", "%${term}%"
-		  }
+	try {
+	  Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
+	  	"org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
+	  )
+	  apiReturn ( c.createCriteria().listDistinct {
+		if (term) {
+		  ilike "name", "%${term}%"
 		}
-		
-		orgs.each { Org org ->
-		  result << [ "value" : "${org.name}::{Org:${org.id}}", "label" : (org.name) ]
-		}
-		break;
-	  default:
-		break;
-	}
-	apiReturn(result)
+	  }.collect { KBComponent comp -> 
+	    [ "value" : "${comp.name}::{${c.getSimpleName()}:${comp.id}}", "label" : (comp.name) ]
+	  })
+	  
+	} catch (Throwable t) {
+	  /* Just return an empty list. */
+	  apiReturn ([])
+	}	
   }
 }

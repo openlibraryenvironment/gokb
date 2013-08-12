@@ -212,7 +212,12 @@ validation.rules = [
 
   "${IngestService.HOST_PLATFORM_NAME}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ]
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: LookedUpValue,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [ org.gokb.cred.Platform ]
+	]
   ],
 
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [

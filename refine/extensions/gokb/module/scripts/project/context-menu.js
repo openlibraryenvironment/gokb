@@ -38,7 +38,7 @@ GOKb.contextMenu.rules = {
 	  { disable: true, items: ["gokb-lookup"] }
 	],
 	"enable-lookup" : [
-	  { disable: false, items: ["gokb-lookup", "gokb-lookup-org"] }
+	  { disable: false, items: ["gokb-lookup", "gokb-lookup-org", "gokb-lookup-platform"] }
 	]
 };
 
@@ -58,6 +58,14 @@ GOKb.contextMenu.options = {
 	  	  	alias: "gokb-lookup-org",
 	  	  	action: function () {
 	  	  		GOKb.handlers.lookup ("org");
+	  	  	}
+	  	  },
+	  	  {
+	  	  	text: "Platform",
+//	  	  	icon: "",
+	  	  	alias: "gokb-lookup-platform",
+	  	  	action: function () {
+	  	  		GOKb.handlers.lookup ("platform");
 	  	  	}
 	  	  }
       ]
