@@ -59,7 +59,7 @@ abstract class A_ValidationRule {
 	
 	String result = null
 	if ( col_positions[colname] != null ) {
-	  result << jsonv(datarow.cells[col_positions[colname]])
+	  result = jsonv(datarow.cells[col_positions[colname]])
 	}
 	result
   }
