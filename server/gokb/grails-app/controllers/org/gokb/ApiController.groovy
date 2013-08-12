@@ -124,6 +124,21 @@ class ApiController {
 	// Return the result.
 	apiReturn(result)
   }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def checkSkippedTitles() {
+	
+	long pId = params.long("project");
+	
+	// RefineProject
+	RefineProject rp = RefineProject.get(pId)
+	
+	// The result is the list of titles if we have a project.
+	def result = rp?.getSkippedTitles() ?: []
+	
+	// Return the result.
+	apiReturn(result)
+  }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def estimateDataChanges() {
@@ -290,6 +305,9 @@ class ApiController {
 		if (params.description) project.setDescription(params.description)
 		if (params.name) project.setName(params.name)
 		project.setProjectStatus(RefineProject.Status.CHECKED_IN)
+		
+//		project.save()
+		
 //		project.setLastCheckedOutBy(null)
 		project.setLocalProjectID(null)
 		project.setModified(new Date())
@@ -310,7 +328,7 @@ class ApiController {
 		project.setProgress(null)
 
 		// Save and flush the project
-		project.save(flush:true)
+		project.save(flush:true, failOnError:true)
 
 		if (params.ingest) {
 		  // Try and ingest the project too!
@@ -332,7 +350,7 @@ class ApiController {
 		project.setLocalProjectID(0)
 		project.save(flush: true, failOnError: true)
 
-		apiReturn(project)
+		apiReturn(project.collect(TRANSFORMER_PROJECT))
 		return
 	  }
 	}

@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import org.gokb.GOKbTextUtils
 
 class TitleInstance extends KBComponent {
 
@@ -14,6 +15,17 @@ class TitleInstance extends KBComponent {
 	"medium"		: "Journal",
 	"pureOA"		: "No"
   ]
+  
+  public void addVariantTitle (String title, String locale = "EN-us") {
+	addToVariantNames(
+	  new KBComponentVariantName([
+		"variantType"	: RefdataCategory.lookupOrCreate("KBComponentVariantName.variantType", "Alternate Title"),
+		"locale"		: RefdataCategory.lookupOrCreate("KBComponentVariantName.locale", (locale)),
+		"status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.status', KBComponent.STATUS_CURRENT),
+		"variantName"	: (title)
+	  ])
+	)
+  }
 
   static hasByCombo = [
 	issuer			: Org,

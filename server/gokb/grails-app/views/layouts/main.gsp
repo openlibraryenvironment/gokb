@@ -27,7 +27,7 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
-                  <g:each in="${request.userOptions.availableSearches}" var="srch">
+                  <g:each in="${request?.userOptions?.availableSearches}" var="srch">
                     <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
                   </g:each>
                 </ul>

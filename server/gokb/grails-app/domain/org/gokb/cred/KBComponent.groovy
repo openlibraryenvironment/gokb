@@ -6,13 +6,14 @@ import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
+import org.gokb.GOKbTextUtils;
+import org.hibernate.proxy.HibernateProxy
+import org.hibernate.Hibernate
 
 /**
  * Abstract base class for GoKB Components.
  */
 abstract class KBComponent {
-
-  transient textNormalisationService
 
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
@@ -170,6 +171,7 @@ abstract class KBComponent {
   Set additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
+  Set reviewRequests = []
 
   // Org provOrg
   // String provUpdateFrequency
@@ -194,6 +196,7 @@ abstract class KBComponent {
     incomingCombos:'toComponent',
     additionalProperties: 'fromComponent',
     variantNames: 'owner',
+	reviewRequests:'componentToReview'
   ]
 
   static hasMany = [
@@ -201,7 +204,8 @@ abstract class KBComponent {
     outgoingCombos:Combo,
     incomingCombos:Combo,
     additionalProperties:KBComponentAdditionalProperty,
-    variantNames:KBComponentVariantName
+    variantNames:KBComponentVariantName,
+	reviewRequests:ReviewRequest
   ]
 
   static mapping = {
@@ -316,7 +320,12 @@ abstract class KBComponent {
   }
 
   protected def generateNormname () {
-    normname = textNormalisationService.normalise(name);
+    
+	// Get the norm_name
+	def nname = GOKbTextUtils.normaliseString(name);
+	
+	// Set to null if blank.
+	normname = nname == "" ? null : nname 
   }
 
   def beforeInsert() {
@@ -335,7 +344,7 @@ abstract class KBComponent {
 	  if ( !shortcode ) {
 		shortcode = generateShortcode(name);
 	  }
-	  normname = name.toLowerCase().trim();
+	  generateNormname();
 	}
   }
 
@@ -453,5 +462,33 @@ abstract class KBComponent {
     }
 
     return combos
+  }
+  
+  public boolean isInstanceOf (Class testCase) {
+	boolean val = getMetaClass().getTheClass().isAssignableFrom(testCase)
+	val
+  }
+  
+  public static <T> T deproxy(def element) {
+  	if (element instanceof HibernateProxy) {
+  		return (T) ((HibernateProxy) element).getHibernateLazyInitializer().getImplementation();
+  	}
+	return (T) element;
+  }
+//	return (getMetaClass().getTheClass() instanceof testCase.class)
+
+  @Override
+  public boolean equals(Object obj) {
+	
+	// Deproxy the object first to ensure it isn't a hibernate proxy.
+	def the_obj = KBComponent.deproxy(obj)
+	
+	if (the_obj instanceof KBComponent) {
+	  return (this.getClassName() == the_obj.getClassName()) &&
+	  	(this.getId() == the_obj.getId())
+	}
+	
+	// Return false if we get here.
+	false
   }
 }
