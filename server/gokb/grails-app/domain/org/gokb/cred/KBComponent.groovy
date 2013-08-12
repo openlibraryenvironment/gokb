@@ -476,4 +476,15 @@ abstract class KBComponent {
 	return (T) element;
   }
 //	return (getMetaClass().getTheClass() instanceof testCase.class)
+
+  @Override
+  public boolean equals(Object obj) {
+	return this.hashCode() == obj.hashCode();
+  }
+
+  @Override
+  public int hashCode() {
+	// TODO Auto-generated method stub
+	return id as Integer;
+  }
 }
