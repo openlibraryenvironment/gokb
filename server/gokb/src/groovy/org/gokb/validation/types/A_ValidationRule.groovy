@@ -55,20 +55,12 @@ abstract class A_ValidationRule {
 	flagErrorTriggered()
   }
   
-  protected Map<String,String> getRowValues(datarow, col_positions, colname) {
+  protected List<String> getRowValue(datarow, col_positions, colname) {
 	
-	// Results
-	Map<String, String> result = null
-	
-	// Get the the column names
-	List<String> columns = doRegexMatchOnColumns (col_positions, colname)
-	
-	// For each column add an entry to the map.
-	columns.each { String col ->
-	  result[col] = jsonv(datarow.cells[col_positions[col]])
+	String result = null
+	if ( col_positions[colname] != null ) {
+	  result << jsonv(datarow.cells[col_positions[colname]])
 	}
-	
-	// Return the result.
 	result
   }
   
