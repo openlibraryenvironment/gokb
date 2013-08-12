@@ -55,12 +55,56 @@ abstract class A_ValidationRule {
 	flagErrorTriggered()
   }
   
-  protected def getRowValue(datarow, col_positions, colname) {
-	def result = null
-	if ( col_positions[colname] != null ) {
-	  result = jsonv(datarow.cells[col_positions[colname]])
+  protected Map<String,String> getRowValues(datarow, col_positions, colname) {
+	
+	// Results
+	Map<String, String> result = null
+	
+	// Get the the column names
+	List<String> columns = doRegexMatchOnColumns (col_positions, colname)
+	
+	// For each column add an entry to the map.
+	columns.each { String col ->
+	  result[col] = jsonv(datarow.cells[col_positions[col]])
 	}
+	
+	// Return the result.
 	result
+  }
+  
+  private Map<String, List<String>> col_names = [:]
+  private List<String> doRegexMatchOnColumns(Map col_positions, String colname) {
+	
+	List<String> val = col_names [colname]
+	
+	// Return now if present
+	if (val != null) return val
+	
+	// Initiate.
+	val = []
+	
+	// Check for asterisk.
+	if (colname.contains("*")) {
+	  
+	  // We need to escape the dots and replace the asterisk.
+	  String regex = colname.replace(".", "\\\\.").replace("*", "[^\\\\.]")
+	  
+	  // Now we have the col_name as a regex we can check to see if any of the colnames match it.
+	  col_positions.keySet().each {
+		if (regex ==~ it) {
+		  // Add to the list.
+		  val << it.toString()
+		}
+	  }
+	} else {
+		// Just need to return the current value only.
+		val << colname
+	}
+	
+	// Cache the result
+	col_names[colname] = val
+	
+	val
   }
   
   protected def jsonv(v) {
