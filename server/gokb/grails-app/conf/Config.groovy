@@ -154,8 +154,8 @@ validationRules = [
 validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
 validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
 validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
-validation.regex.looked_up_org = ".*\\:\\:\\{Org\\:(\\d+)\\}\$"
 validation.regex.date = "^[1-9][0-9]{3,3}\\-(0[1-9]|1[0-2])\\-(0[1-9]|[1-2][0-9]|3[0-1])\$"
+validation.regex.kbartembargo = "^[RP]\\d+[DMY]\$"
 
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
@@ -253,6 +253,19 @@ validation.rules = [
 	  args: [ org.gokb.cred.Org ]
 	]
   ],
+
+  "${IngestService.EMBARGO_INFO}" : [
+    [ 
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.kbartembargo}",
+		"Data in the column \"${IngestService.EMBARGO_INFO}\" must follow the <a href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
+		"and (isNonBlank(value), value.match(/^${validation.regex.kbartembargo}\$/) == null)",
+	  ]
+	]
+  ],
+
 
   // Custom ISBN.
   "title.identifier.isbn" : [
