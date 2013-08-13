@@ -266,10 +266,10 @@ class IngestService {
 		  if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
 
 			def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
-
-			// Just add the normname to the platforms list.
-			platformNames << host_norm_platform_name
+//			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+//
+//			// Just add the normname to the platforms list.
+			platformNames << host_platform_name
 			
 			// Package ID
 			def pkg_id	= getRowValue(datarow,col_positions,PACKAGE_NAME)
@@ -354,14 +354,14 @@ class IngestService {
 	result << [ type : "titles", "new" : (titleRows - existingTitles), "updated" : existingTitles ]
 
 	// Host platform criteria...
-	DetachedCriteria platCrit = new DetachedCriteria(Platform).build {
-	  distinct ("id")
-	  'in' ("normname", platformNames)
-	}
-
-	// Run a count.
-	existingPlats = platCrit.count()
-	result << [ type : "platforms", "new" : (platformNames.size() - existingPlats), "updated" : existingPlats ]
+//	DetachedCriteria platCrit = new DetachedCriteria(Platform).build {
+//	  distinct ("id")
+//	  'in' ("normname", platformNames)
+//	}
+//
+//	// Run a count.
+	existingPlats = platformNames.size()
+	result << [ type : "platforms", "new" : 0, "updated" : existingPlats ]
 	
 	// Distinct listed publishers.
 	if (publisherIds.size() > 0) {
