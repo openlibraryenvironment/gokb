@@ -258,7 +258,7 @@ validation.rules = [
 	  severity: A_ValidationRule.SEVERITY_ERROR,
 	  args: [
 		"${validation.regex.kbartembargo}",
-		"Data in the column \"${IngestService.EMBARGO_INFO}\" must follow the <a href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
+		"Data in the column \"${IngestService.EMBARGO_INFO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
 		"if (isNonBlank(value), value.match(/${validation.regex.kbartembargo}/) == null, false)",
 	  ]
 	]
@@ -270,7 +270,7 @@ validation.rules = [
 	  severity: A_ValidationRule.SEVERITY_ERROR,
 	  args: [
 		"${validation.regex.kbartcoveragedepth}",
-		"Data in the column \"${IngestService.COVERAGE_DEPTH}\" must follow the <a href='http://www.uksg.org/kbart/s5/guidelines/data_fields#coverage_depth' >KBART guidelines for an coverage depth</a>.",
+		"Data in the column \"${IngestService.COVERAGE_DEPTH}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#coverage_depth' >KBART guidelines for an coverage depth</a>.",
 		"if (isNonBlank(value), value.match(/${validation.regex.kbartcoveragedepth}/) == null, false)",
 	  ]
 	]
