@@ -156,6 +156,7 @@ validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
 validation.regex.uri = "^(f|ht)tp(s?)://([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(/[a-zA-Z\\d\\-\\._~/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
 validation.regex.date = "^[1-9][0-9]{3,3}\\-(0[1-9]|1[0-2])\\-(0[1-9]|[1-2][0-9]|3[0-1])\$"
 validation.regex.kbartembargo = "^[RP]\\d+[DMY]\$"
+validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|\\Qabstracts\\E)\$"
 
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
@@ -205,7 +206,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.uri}",
 		"One or more rows contain invalid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
-		"and (isNonBlank(value), value.match(/${validation.regex.uri}/) == null)",
+		"if (isNonBlank(value), value.match(/${validation.regex.uri}/) == null, false)",
 	  ]
 	],
   ],
@@ -223,14 +224,11 @@ validation.rules = [
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
 	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.date}",
-		"One or more rows contains no, or invalid data in the column \"${IngestService.DATE_FIRST_PACKAGE_ISSUE}\". Format must be \"yyyy-mm-dd\"",
-		"and (isNonBlank(value), value.match(/^${validation.regex.date}\$/) == null)",
-	  ]
-	]
+	[ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
+  ],
+
+  "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
+    [ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.PACKAGE_NAME}" : [
@@ -261,11 +259,22 @@ validation.rules = [
 	  args: [
 		"${validation.regex.kbartembargo}",
 		"Data in the column \"${IngestService.EMBARGO_INFO}\" must follow the <a href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
-		"and (isNonBlank(value), value.match(/^${validation.regex.kbartembargo}\$/) == null)",
+		"if (isNonBlank(value), value.match(/${validation.regex.kbartembargo}/) == null, false)",
 	  ]
 	]
   ],
 
+  "${IngestService.COVERAGE_DEPTH}" : [
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.kbartcoveragedepth}",
+		"Data in the column \"${IngestService.COVERAGE_DEPTH}\" must follow the <a href='http://www.uksg.org/kbart/s5/guidelines/data_fields#coverage_depth' >KBART guidelines for an coverage depth</a>.",
+		"if (isNonBlank(value), value.match(/${validation.regex.kbartcoveragedepth}/) == null, false)",
+	  ]
+	]
+  ],
 
   // Custom ISBN.
   "title.identifier.isbn" : [
