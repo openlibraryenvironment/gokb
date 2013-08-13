@@ -57,6 +57,6 @@ grails.project.dependency.resolution = {
         compile ':cache:1.0.1'
 		
 		// Joda time to handle the ISO dates.
-		compile 'joda-time:joda-time:2.2'
+		compile ":joda-time:1.4"
     }
 }
