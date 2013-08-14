@@ -12,6 +12,8 @@ import org.apache.commons.compress.compressors.gzip.*
 import org.gokb.cred.*
 import org.gokb.refine.*
 import org.gokb.validation.Validation
+import org.joda.time.DateTime
+import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
 
 
@@ -51,6 +53,9 @@ class IngestService {
   public static final String COVERAGE_DEPTH = 'coveragedepth'
   public static final String COVERAGE_NOTES = 'coveragenotes'
   public static final String EMBARGO_INFO = 'kbartembargo'
+  
+  /** New fields **/
+  public static final String DELAYED_OA = "delayedOA"
 
   public static final String PACKAGE_NAME = 'package.name'
   public static final String PUBLISHER_NAME = 'org.publisher.name'
@@ -924,17 +929,43 @@ class IngestService {
 	propertyInstanceMap.get().clear()
   }
 
-  def parseDate(datestr) {
-	def parsed_date = null;
-	if ( datestr && ( datestr.length() > 0 ) )
-	  for(Iterator i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
-		try {
-		  parsed_date = i.next().parse(datestr.replaceAll('-','/'));
-		}
-		catch ( Exception e ) {
-		}
-	  }
-	parsed_date
+  /**
+   * Dates from refine are no supplied in the ISO format.
+   * @param datestr
+   * @return standard java Date
+   */
+  Date parseDate(String datestr) {
+	
+	// ISO parser.
+	DateTimeFormatter parser = ISODateTimeFormat.dateTimeParser()
+	
+	// Parse the date.
+	Date the_date = null
+	
+	log.debug ("Trying to parse date from ${datestr}")
+	try {
+	  the_date = parser.parseDateTime(datestr).toDate()
+	  
+	} catch (Throwable t) {
+	
+	  log.error ("Error parsing date resulted in null date.")
+	  
+	  // Ensure null date.
+	  the_date = null
+	}
+	
+	the_date
+	
+//	def parsed_date = null;
+//	if ( datestr && ( datestr.length() > 0 ) )
+//	  for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
+//		try {
+//		  parsed_date = i.next().parse(datestr.replaceAll('-','/'));
+//		}
+//		catch ( Exception e ) {
+//		}
+//	  }
+//	parsed_date
   }
 
   def extractRules(parsed_data, project) {
