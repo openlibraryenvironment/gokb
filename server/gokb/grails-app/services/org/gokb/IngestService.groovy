@@ -460,35 +460,38 @@ class IngestService {
 		  if (cn) {
 			// Add to column positions
 			col_positions[cn] = cd.cellIndex;
-
-			// Check to see if it's an identifier.
-			if (cn.startsWith(IDENTIFIER_PREFIX) ) {
-			  def idparts = cn.split(/\./)
-			  if ( idparts.length == 3 ) {
-				// Add to the IDs.
-				identifiers.add([type:idparts[2],colno:cd.cellIndex])
-			  }
-			}
-
-			// TI Fields.
-			if (cn.startsWith(TI_FIELD_PREFIX) ) {
-			  def prop_name = cn.substring(TI_FIELD_PREFIX.length(), cn.length());
-			  def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true, failOnError:true);
-			  gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
-			}
-
-			// TIPP Fields.
-			if (cn.startsWith(TIPP_FIELD_PREFIX) ) {
-			  def prop_name = cn.substring(TIPP_FIELD_PREFIX.length(), cn.length());
-			  def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true, failOnError:true);
-			  gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
+			
+			switch (cn) {
+			  case {it.startsWith(IDENTIFIER_PREFIX)} :
+			  
+			  	// Identifier.
+				def idparts = cn.split(/\./)
+				if ( idparts.length == 3 ) {
+				  // Add to the IDs.
+				  identifiers.add([type:idparts[2],colno:cd.cellIndex])
+				}
+				break
+				
+			  case {it.startsWith(TI_FIELD_PREFIX)} :
+			  
+			  	// Additional property on TI
+				def prop_name = cn.substring(TI_FIELD_PREFIX.length())
+				gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex])
+				break
+				
+			  case {it.startsWith(TIPP_FIELD_PREFIX)} :
+			  
+			  	// Additional property on TIPP
+				def prop_name = cn.substring(TIPP_FIELD_PREFIX.length())
+				gokb_additional_tipp_props.add([name:prop_name, col:cd.cellIndex])
+				break
 			}
 		  }
 		}
 	  }
-	  
-
 	  log.debug("Using col positions: ${col_positions}, identifiers: ${identifiers}");
+	  log.debug("Addition TI props: ${gokb_additional_ti_props}");
+	  log.debug("Addition TIPP props: ${gokb_additional_tipp_props}");
 
 	  int ctr = 0
 	  boolean row_level_problems = false
@@ -523,13 +526,19 @@ class IngestService {
 //				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
 			  
 			  // Lookup the title.
-			  def title_info = titleLookupService.find(
+			  TitleInstance title_info = titleLookupService.find(
 				jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
 				getRowValue(datarow,col_positions,PUBLISHER_NAME),
 				ids);
 			  
 			  // If we match a title then ingest...
 			  if (title_info != null) {
+				
+				// Additional TI properties.
+				gokb_additional_ti_props.each { apd ->
+				  
+				  title_info.appendToAdditionalProperty(apd.prop_name, getRowValue(datarow,apd.col))
+				}
 
 				// Platform.
 				def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
@@ -599,17 +608,10 @@ class IngestService {
 					  url:host_platform_url
 				  )
 
-				  // Add each property in turn.
-				  gokb_additional_props.each { apd ->
-					// Done this way because I was worried about the prop defn crossing the transaction start boundary above
-					def prop_defn = AdditionalPropertyDefinition.findBypropertyName(apd.prop_name)
-					if ( prop_defn != null ) {
-					  def ap = new KBComponentAdditionalProperty( propertyDefn:prop_defn, apValue:getRowValue(datarow,apd.col))
-					  tipp.additionalProperties.add (ap)
-					}
-					else {
-					  log.error("Unable to locate property definition with name ${apd.prop_name}");
-					}
+				  // Add each TIPP property in turn.
+				  gokb_additional_tipp_props.each { apd ->
+					
+					tipp.appendToAdditionalProperty(apd.prop_name, getRowValue(datarow,apd.col))
 				  }
 
 				  // Save the tipp.
