@@ -6,9 +6,8 @@ import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
-import org.gokb.GOKbTextUtils;
+import org.gokb.GOKbTextUtils
 import org.hibernate.proxy.HibernateProxy
-import org.hibernate.Hibernate
 
 /**
  * Abstract base class for GoKB Components.
@@ -490,5 +489,36 @@ abstract class KBComponent {
 	
 	// Return false if we get here.
 	false
+  }
+  
+  public void appendToAdditionalProperty (String prop_name, String val) {
+	
+	// Find the KBComponentAdditionalProperty
+	KBComponentAdditionalProperty prop = additionalProperties.find { KBComponentAdditionalProperty prop ->
+	  prop.getPropertyDefn().getPropertyName() == prop_name
+	}
+	
+	if (prop) {
+	  
+	  // We need to add to the property.
+	  String currentValue = prop.getApValue()
+	  
+	  // Append to the current value.
+	  prop.setApValue("${currentValue}\n\n${val}")
+	  
+	  // Save the property.
+	  prop.save(failOnError:true)
+	} else {
+	
+	  // Add a new property.
+	  def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(failOnError:true)
+	  
+	  addToAdditionalProperties(
+		new KBComponentAdditionalProperty (
+		  propertyDefn : prop_defn,
+		  apValue : val
+		)
+	  )
+	}
   }
 }
