@@ -6,6 +6,7 @@ import grails.gorm.DetachedCriteria
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 
+import org.apache.commons.collections.map.CaseInsensitiveMap
 import org.apache.commons.compress.archivers.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.compressors.gzip.*
@@ -34,31 +35,42 @@ class IngestService {
 	new SimpleDateFormat('yyyy')
   ];
 
+  /** Field prefixes ***/
+  public static final String IDENTIFIER_PREFIX = 'title.identifier.'
+  public static final String TI_FIELD_PREFIX = 'gokb.ti.'
+  public static final String TIPP_FIELD_PREFIX = 'gokb.tipp.'
 
-  public static final String PUBLICATION_TITLE = 'publicationtitle'
-  public static final String DATE_FIRST_PACKAGE_ISSUE = 'datefirstpackageissue'
-  public static final String VOLUME_FIRST_PACKAGE_ISSUE = 'volumefirstpackageissue'
-  public static final String NUMBER_FIRST_PACKAGE_ISSUE = 'numberfirstpackageissue'
-  public static final String DATE_LAST_PACKAGE_ISSUE = 'datelastpackageissue'
-  public static final String VOLUME_LAST_PACKAGE_ISSUE = 'volumelastpackageissue'
-  public static final String NUMBER_LAST_PACKAGE_ISSUE = 'numberlastpackageissue'
-
-  public static final String IDENTIFIER_PREFIX = 'title.identifier'
-  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}.issn"
-  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}.eissn"
+  /*** Supported field names ***/
+  public static final String PUBLICATION_TITLE = 'PublicationTitle'
+  public static final String DATE_FIRST_PACKAGE_ISSUE = 'DateFirstPackageIssue'
+  public static final String VOLUME_FIRST_PACKAGE_ISSUE = 'VolumeFirstPackageIssue'
+  public static final String NUMBER_FIRST_PACKAGE_ISSUE = 'NumberFirstPackageIssue'
+  public static final String DATE_LAST_PACKAGE_ISSUE = 'DateLastPackageIssue'
+  public static final String VOLUME_LAST_PACKAGE_ISSUE = 'VolumeLastPackageIssue'
+  public static final String NUMBER_LAST_PACKAGE_ISSUE = 'NumberLastPackageIssue'
+  
+//  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}.issn"
+//  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}.eissn"
   public static final String HOST_PLATFORM_NAME = 'platform.host.name'
   public static final String HOST_PLATFORM_URL = 'platform.host.url'
-  public static final String HOST_PLATFORM_BASE_URL = 'platform.host.base.url'
 
-  public static final String COVERAGE_DEPTH = 'coveragedepth'
-  public static final String COVERAGE_NOTES = 'coveragenotes'
-  public static final String EMBARGO_INFO = 'kbartembargo'
-  
-  /** New fields **/
-  public static final String DELAYED_OA = "delayedOA"
+  public static final String COVERAGE_DEPTH = 'VoverageDepth'
+  public static final String COVERAGE_NOTES = 'CoverageNotes'
+  public static final String EMBARGO_INFO = 'KBARTEmbargo'
 
-  public static final String PACKAGE_NAME = 'package.name'
+  public static final String PACKAGE_NAME = 'PackageName'
   public static final String PUBLISHER_NAME = 'org.publisher.name'
+  
+  
+  /** Missing fields **/
+  public static final String DELAYED_OA = "delayedOA"
+  public static final String HYBRID_OA = "hybridOA"
+  public static final String HYBRID_OA_URL = "hybridOAurl"
+  public static final String PRIMARY_IPP = "PrimaryTIPP"
+  public static final String TIPP_PAYMENT = "TIPPPayment"
+  public static final String TIPP_STATUS = "TIPPStatus"
+  
+  
 
   /**
    *  Validate a parsed project. 
@@ -199,34 +211,29 @@ class IngestService {
 	long newPubs		 = 0
 	long existingPubs	 = 0
 
-	// Read in the column positions.
-	def col_positions = [:]
-	project_data.columnDefinitions.each { cd ->
-	  col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
-	}
-
-	// All identifiers for this title.
+	// Read in the column positions, and supplied Identifiers
+	CaseInsensitiveMap col_positions = [:]
 	def identifiers = []
-	project_data.columnDefinitions?.each { cd ->
+	project_data.columnDefinitions.each { cd ->
 	  def cn = cd.name?.toLowerCase()
-	  if (cn.startsWith(IDENTIFIER_PREFIX) ) {
-		def idparts = cn.split(/\./)
-		if ( idparts.length == 3 ) {
-//		  if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
-//			// Skip issn/eissn.
-//		  }
-//		  else {
-//			identifiers.add([type:idparts[2],colno:cd.cellIndex])
-//		  }
-		  
-		  identifiers.add([type:idparts[2],colno:cd.cellIndex])
+	  if (cn) {
+		// Add to column positions
+		col_positions[cn] = cd.cellIndex;
+		
+		// Check to see if it's an identifier.
+		if (cn.startsWith(IDENTIFIER_PREFIX) ) {
+		  def idparts = cn.split(/\./)
+		  if ( idparts.length == 3 ) {
+			// Add to the IDs.
+			identifiers.add([type:idparts[2],colno:cd.cellIndex])
+		  }
 		}
 	  }
 	}
 
-	log.debug("Using col positions: ${col_positions}, additional identifiers: ${identifiers}")
+	log.debug("Using col positions: ${col_positions}, identifiers: ${identifiers}")
 	
-	// Combine to create the package Identifier.
+	// Package identifier.
 	def default_pkg_identifier = null
 	
 	// If a project id has been supplied
@@ -437,46 +444,51 @@ class IngestService {
 		log.debug ("Forcibly flushed the session.")
 	  }
 
-	  def col_positions = [:]
-	  project_data.columnDefinitions.each { cd ->
-		col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
-	  }
-
-	  // Group all identifiers together.
+	  // Ignore the case of the map key that is used to store the field positions.
+	  CaseInsensitiveMap col_positions = [:]
 	  def identifiers = []
-	  project_data.columnDefinitions?.each { cd ->
-		def cn = cd.name?.toLowerCase()
-		if (cn.startsWith(IDENTIFIER_PREFIX) ) {
-		  String[] idparts = cn.split(/\./)
-		  if ( idparts.length == 3 ) {
-//			if ( ( idparts[2] == 'issn' ) || (idparts[2] == 'eissn') ) {
-//			  // Skip issn/eissn.
-//			}
-//			else {
-//			  identifiers.add([type:idparts[2],colno:cd.cellIndex])
-//			}
-			
-			// Add all identifiers. Class 1 IDs are handled later on in the process.
-			identifiers.add([type:idparts[2],colno:cd.cellIndex])
-		  }
-		}
-	  }
-
-	  def gokb_additional_props = []
-	  // Extract any gokb scoped fields we are going to store as extra properties
+	  def gokb_additional_tipp_props = []
+	  def gokb_additional_ti_props = []
+	  
+	  // Create a new transaction for data examination.
 	  RefineProject.withNewTransaction { TransactionStatus status ->
+		project_data.columnDefinitions.each { cd ->
+		  
+		  // Column name.
+		  def cn = cd.name
 
-		project_data.columnDefinitions?.each { cd ->
-		  def cn = cd.name?.toLowerCase()
-		  if (cn.startsWith('gokb.') ) {
-			def prop_name = cn.substring(5,cn.length());
-			def prop_defn = AdditionalPropertyDefinition.findBypropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true);
-			gokb_additional_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
+		  if (cn) {
+			// Add to column positions
+			col_positions[cn] = cd.cellIndex;
+
+			// Check to see if it's an identifier.
+			if (cn.startsWith(IDENTIFIER_PREFIX) ) {
+			  def idparts = cn.split(/\./)
+			  if ( idparts.length == 3 ) {
+				// Add to the IDs.
+				identifiers.add([type:idparts[2],colno:cd.cellIndex])
+			  }
+			}
+
+			// TI Fields.
+			if (cn.startsWith(TI_FIELD_PREFIX) ) {
+			  def prop_name = cn.substring(TI_FIELD_PREFIX.length(), cn.length());
+			  def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true, failOnError:true);
+			  gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
+			}
+
+			// TIPP Fields.
+			if (cn.startsWith(TIPP_FIELD_PREFIX) ) {
+			  def prop_name = cn.substring(TIPP_FIELD_PREFIX.length(), cn.length());
+			  def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(flush:true, failOnError:true);
+			  gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex, pd:prop_defn]);
+			}
 		  }
 		}
 	  }
+	  
 
-	  log.debug("Using col positions: ${col_positions}, additional identifiers: ${identifiers}");
+	  log.debug("Using col positions: ${col_positions}, identifiers: ${identifiers}");
 
 	  int ctr = 0
 	  boolean row_level_problems = false
@@ -585,7 +597,7 @@ class IngestService {
 					  //					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
 					  coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
 					  url:host_platform_url
-					  )
+				  )
 
 				  // Add each property in turn.
 				  gokb_additional_props.each { apd ->
