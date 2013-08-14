@@ -276,6 +276,80 @@ validation.rules = [
 	]
   ],
 
+  "${IngestService.DELAYED_OA}" : [
+	[
+	  type: IsOneOf,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		["Yes", "No", "Unknown"]
+	  ]
+	]
+  ],
+
+  "${IngestService.DELAYED_OA_EMBARGO}" : [
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.kbartembargo}",
+		"Data in the column \"${IngestService.DELAYED_OA_EMBARGO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
+		"if (isNonBlank(value), value.match(/${validation.regex.kbartembargo}/) == null, false)",
+	  ]
+	]
+  ],
+
+  "${IngestService.HYBRID_OA}" : [
+	[
+	  type: IsOneOf,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		["Yes", "No", "Unknown"]
+	  ]
+	]
+  ],
+
+  "${IngestService.HYBRID_OA_URL}" : [
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.uri}",
+		"One or more rows contain invalid URIs in the column \"${IngestService.HYBRID_OA_URL}\"",
+		"if (isNonBlank(value), value.match(/${validation.regex.uri}/) == null, false)",
+	  ]
+	]
+  ],
+
+  "${IngestService.PRIMARY_TIPP}" : [
+	[
+	  type: IsOneOf,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		["Yes", "No"]
+	  ]
+	]
+  ],
+
+  "${IngestService.TIPP_PAYMENT}" : [
+	[
+	  type: IsOneOf,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
+	  ]
+	]
+  ],
+
+  "${IngestService.TIPP_STATUS}" : [
+	[
+	  type: IsOneOf,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		["Current", "Retired", "Expected"]
+	  ]
+	]
+  ],
+
   // Custom ISBN.
   "title.identifier.isbn" : [
 	[
