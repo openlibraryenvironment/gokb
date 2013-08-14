@@ -164,39 +164,6 @@ validation.rules = [
 	[ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
-  "${IngestService.PRINT_IDENTIFIER}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.issn}",
-		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.PRINT_IDENTIFIER}\"",
-		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
-	  ]
-	],
-	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
-	[ 
-	  type: CellAndOtherNotEmpty,
-	  severity: A_ValidationRule.SEVERITY_WARNING,
-	  args: [IngestService.ONLINE_IDENTIFIER]
-	]
-  ],
-
-  "${IngestService.ONLINE_IDENTIFIER}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.issn}",
-		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.ONLINE_IDENTIFIER}\"",
-		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
-	  ]
-	],
-	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
-  ],
-
   "${IngestService.HOST_PLATFORM_URL}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
 	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
@@ -350,14 +317,48 @@ validation.rules = [
 	]
   ],
 
+  // ISSN
+  "${IngestService.IDENTIFIER_PREFIX}issn" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.issn}",
+		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}issn\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
+	[
+	  type: CellAndOtherNotEmpty,
+	  severity: A_ValidationRule.SEVERITY_WARNING,
+	  args: ["${IngestService.IDENTIFIER_PREFIX}eissn"]
+	]
+  ],
+  
+  "${IngestService.IDENTIFIER_PREFIX}eissn" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[
+	  type: CellMatches,
+	  severity: A_ValidationRule.SEVERITY_ERROR,
+	  args: [
+		"${validation.regex.issn}",
+		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}eissn\"",
+		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+	  ]
+	],
+	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+
   // Custom ISBN.
-  "title.identifier.isbn" : [
+  "${IngestService.IDENTIFIER_PREFIX}isbn" : [
 	[
 	  type: CellMatches,
 	  severity: A_ValidationRule.SEVERITY_ERROR,
 	  args: [
 		"${validation.regex.isbn}",
-		"One or more rows do not contain valid ISBNs in the column \"title.identifier.isbn\". Note the ISBN should be entered without dashes.",
+		"One or more rows do not contain valid ISBNs in the column \"${IngestService.IDENTIFIER_PREFIX}isbn\". Note the ISBN should be entered without dashes.",
 		"and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null)",
 	  ]
 	],
