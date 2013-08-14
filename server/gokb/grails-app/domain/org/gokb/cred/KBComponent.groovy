@@ -167,7 +167,7 @@ abstract class KBComponent {
   RefdataValue editStatus
 
   Set tags = []
-  Set additionalProperties = []
+  List additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
   Set reviewRequests = []
@@ -239,8 +239,8 @@ abstract class KBComponent {
 	}
   }
 
-  static def generateShortcode(name) {
-	def candidate = name.trim().replaceAll(" ","_")
+  static def generateShortcode(String text) {
+	def candidate = text.trim().replaceAll(" ","_")
 
 	if ( candidate.length() > 100 )
 	  candidate = candidate.substring(0,100)
@@ -493,32 +493,29 @@ abstract class KBComponent {
   
   public void appendToAdditionalProperty (String prop_name, String val) {
 	
-	// Find the KBComponentAdditionalProperty
-	KBComponentAdditionalProperty prop = additionalProperties.find { KBComponentAdditionalProperty prop ->
-	  prop.getPropertyDefn().getPropertyName() == prop_name
-	}
-	
-	if (prop) {
-	  
-	  // We need to add to the property.
-	  String currentValue = prop.getApValue()
-	  
-	  // Append to the current value.
-	  prop.setApValue("${currentValue}\n\n${val}")
-	  
-	  // Save the property.
-	  prop.save(failOnError:true)
-	} else {
-	
-	  // Add a new property.
-	  def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(failOnError:true)
-	  
-	  addToAdditionalProperties(
-		new KBComponentAdditionalProperty (
-		  propertyDefn : prop_defn,
-		  apValue : val
-		)
-	  )
+	// Only need to  add if a value has been supplied.
+	if (val) {
+
+	  // Find the KBComponentAdditionalProperty
+	  KBComponentAdditionalProperty prop = additionalProperties.find { KBComponentAdditionalProperty prop ->
+		prop.getPropertyDefn().getPropertyName() == prop_name
+		prop.getApValue()?.equalsIgnoreCase(val)
+	  }
+
+	  // Only add a prop if we haven't already got one matching the value and definition.
+	  if (!prop) {
+
+		// Add a new property.
+		def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name)
+
+		// Add to the additional properties.
+		addToAdditionalProperties(
+			new KBComponentAdditionalProperty (
+			propertyDefn : prop_defn,
+			apValue : val
+			)
+			)
+	  }
 	}
   }
 }
