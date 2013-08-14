@@ -64,9 +64,10 @@ class IngestService {
   
   /** Missing fields **/
   public static final String DELAYED_OA = "delayedOA"
+  public static final String DELAYED_OA_EMBARGO = "delayedOAEmbargo"
   public static final String HYBRID_OA = "hybridOA"
   public static final String HYBRID_OA_URL = "hybridOAurl"
-  public static final String PRIMARY_IPP = "PrimaryTIPP"
+  public static final String PRIMARY_TIPP = "PrimaryTIPP"
   public static final String TIPP_PAYMENT = "TIPPPayment"
   public static final String TIPP_STATUS = "TIPPStatus"
   
@@ -536,40 +537,24 @@ class IngestService {
 				
 				// Additional TI properties.
 				gokb_additional_ti_props.each { apd ->
-				  
-				  title_info.appendToAdditionalProperty(apd.prop_name, getRowValue(datarow,apd.col))
+				  title_info.appendToAdditionalProperty(
+					apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
+				  )
 				}
 
 				// Platform.
 				def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
 				def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-//				def host_norm_platform_name = GOKbTextUtils.normaliseString(host_platform_name);
 
 				if ( host_platform_name == null ) {
 				  throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
 				}
 				
-				def platform_info = componentLookupService.lookupComponent(host_platform_name)
-
-//				log.debug("Looking up platform...(${host_platform_url},${host_platform_name},${host_norm_platform_name})");
-//				
-//				// def platform_info = Platform.findByPrimaryUrl(host_platform_url)
-//				def platform_info =  Platform.findByNormname(host_norm_platform_name)
-//				if ( !platform_info ) {
-//				  log.debug("Creating a new platform... ${host_platform_name}/${host_norm_platform_name}");
-//				  // platform_info = new Platform(primaryUrl:host_platform_url, name:host_platform_name, normname:host_norm_platform_name)
-//				  platform_info = new Platform(
-//					name:host_platform_name,
-//					normname:host_norm_platform_name,
-//					primaryUrl:getRowValue(datarow,col_positions,HOST_PLATFORM_BASE_URL)
-//				  )
-//
-//				  if (! platform_info.save(failOnError:true) ) {
-//					platform_info.errors.each { e ->
-//					  log.error(e);
-//					}
-//				  }
-//				}
+				// Platforms must already exist in GOKb.
+				Platform platform_info = componentLookupService.lookupComponent(host_platform_name)
+				if (platform_info == null) {
+				  throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
+				}
 	
 				// Does the row specify a package identifier?
 				def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
@@ -607,20 +592,21 @@ class IngestService {
 					  coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
 					  url:host_platform_url
 				  )
-
-				  // Add each TIPP property in turn.
-				  gokb_additional_tipp_props.each { apd ->
-					
-					tipp.appendToAdditionalProperty(apd.prop_name, getRowValue(datarow,apd.col))
-				  }
-
-				  // Save the tipp.
-				  tipp.save(failOnError:true)
 				}
 				else {
 				  // Found the tipp.
 				  log.debug("TIPP already present");
 				}
+				
+				// Add each TIPP property in turn.
+				gokb_additional_tipp_props.each { apd ->
+				  tipp.appendToAdditionalProperty(
+					apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
+				  )
+				}
+				
+				// Need to ensure the TIPP is saved.
+				tipp.save(failOnError:true)
 
 			  } else {
 			  
@@ -1077,7 +1063,7 @@ class IngestService {
 
   def getOrCreatePackage(String identifier, project_id) {
 
-	log.debug("getOrCreatePackage(identifier:${identifier},project:${project_id})");
+	log.debug("Get or create the package ${identifier}");
 
 	// Read the project.
 	RefineProject project = RefineProject.get(project_id)
@@ -1085,22 +1071,19 @@ class IngestService {
 	// The provider.
 	Org provider = project.provider
 
-	// If identifier supplied, then use that. Otherwise, generate.
-	def pkg_identifier = identifier ?: "${provider.name}:${project.id}"
-
 	// Try and find a package for the provider with the name entered.
-	log.debug("identifier will be ${pkg_identifier}")
+	log.debug("identifier is ${identifier}")
 	def pkg = null;
 
     def q = ComboCriteria.createFor(Package.createCriteria())
     def pkg_list = q.list {
       and {
         q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-        q.add ("ids.value", "eq", pkg_identifier)
+        q.add ("ids.value", "eq", identifier)
       }
     }
 
-    log.debug("Lookup of package with identifier ${pkg_identifier} returns ${pkg_list.size()} entries");
+    log.debug("Lookup of package with identifier ${identifier} returns ${pkg_list.size()} entries");
 
     if ( pkg_list.size() == 0 ) {
       log.debug("New package")
@@ -1115,31 +1098,31 @@ class IngestService {
 
 	// Package found?
 	if (!pkg) {
+  
+	  log.debug("New package with identifier ${identifier} for ${provider.name}");
 
-//	  Package.withNewTransaction { tranStat ->
-		log.debug("New package with identifier ${pkg_identifier} for ${provider.name}");
+	  // Create a new package.
+	  pkg = new Package(
+		provider:   (provider)
+	  )
 
-		// Create a new package.
-		pkg = new Package(
-			provider:   (provider),
-			lastProject:project
-		)
+	  // Add a new identifier to the package.
+	  Identifier new_identifier = Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid', identifier)
+	  log.debug("create new combo to link package to identifier. pkg=${pkg.id}, new_id:${new_identifier.id}");
+	  pkg.ids.add (new_identifier)
 
-		// Add a new identifier to the package.
-		Identifier new_identifier = Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid', pkg_identifier)
-		log.debug("create new combo to link package to identifier. pkg=${pkg.id}, new_id:${new_identifier.id}");
-		pkg.ids.add (new_identifier)
-    
-        // Need to set the name to mirror the Identifier.
-        pkg.name = new_identifier.value
-		
-		// Save the package.
-		pkg.save(failOnError:true, flush:true)
-//	  }
+	  // Need to set the name to mirror the Identifier.
+	  pkg.name = new_identifier.value
 	}
 	else {
 	  log.debug("Got existing package ${pkg.id}");
 	}
+	
+	// Set the latest project.
+	pkg.setLastProject(project)
+	
+	// Save and return
+	pkg.save(failOnError:true, flush:true)
 	pkg
   }
 }
