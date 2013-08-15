@@ -48,6 +48,10 @@ class CreateController {
           params.each { p ->
             log.debug("Consider ${p.key} -> ${p.value}");
             if ( newclass.hasPersistentProperty(p.key) ) {
+			  
+			  // Ensure that blank values actually null the value instead of trying to use an empty string.
+			  if (pdef.value == "") pdef.value = null
+			  
               GrailsDomainClassProperty pdef = newclass.getPersistentProperty(p.key) 
               log.debug(pdef);
               if ( pdef.association ) {
@@ -75,7 +79,7 @@ class CreateController {
             }
           }
 
-          result.newobj.save(flush:true)
+          result.newobj.save(flush:true, failOnError:true)
           result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
         }
         catch ( Exception e ) {
