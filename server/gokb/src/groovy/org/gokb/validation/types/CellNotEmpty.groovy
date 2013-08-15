@@ -26,7 +26,7 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
 	return [
 	  col			: columnName,
 	  text			: "One or more rows contain no data for column \"${columnName}\"",
-	  facetValue	: "isBlank(value)",
+	  facetValue	: "if (isBlank(value), 'invalid', null)",
 	  facetName		: "Invalid value in ${columnName}"
 	];
   }

@@ -173,7 +173,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.uri}",
 		"One or more rows contain invalid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
-		"if (isNonBlank(value), value.match(/${validation.regex.uri}/) == null, false)",
+		"if (and (isNonBlank(value), (value.match(/${validation.regex.uri}/) == null)), 'invalid', null)",
 	  ]
 	],
   ],
@@ -226,7 +226,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.kbartembargo}",
 		"Data in the column \"${IngestService.EMBARGO_INFO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
-		"if (isNonBlank(value), value.match(/${validation.regex.kbartembargo}/) == null, false)",
+		"if (and (isNonBlank(value), (value.match(/${validation.regex.kbartembargo}/) == null)), 'invalid', null)",
 	  ]
 	]
   ],
@@ -238,7 +238,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.kbartcoveragedepth}",
 		"Data in the column \"${IngestService.COVERAGE_DEPTH}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#coverage_depth' >KBART guidelines for an coverage depth</a>.",
-		"if (isNonBlank(value), value.match(/${validation.regex.kbartcoveragedepth}/) == null, false)",
+		"if (and(isNonBlank(value), (value.match(/${validation.regex.kbartcoveragedepth}/) == null)), 'invalid', null)",
 	  ]
 	]
   ],
@@ -260,7 +260,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.kbartembargo}",
 		"Data in the column \"${IngestService.DELAYED_OA_EMBARGO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
-		"if (isNonBlank(value), value.match(/${validation.regex.kbartembargo}/) == null, false)",
+		"if (and(isNonBlank(value), (value.match(/${validation.regex.kbartembargo}/) == null)), 'invalid', null)",
 	  ]
 	]
   ],
@@ -282,7 +282,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.uri}",
 		"One or more rows contain invalid URIs in the column \"${IngestService.HYBRID_OA_URL}\"",
-		"if (isNonBlank(value), value.match(/${validation.regex.uri}/) == null, false)",
+		"if (and (isNonBlank(value), (value.match(/${validation.regex.uri}/) == null)), 'invalid', null)",
 	  ]
 	]
   ],
@@ -326,7 +326,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.issn}",
 		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}issn\"",
-		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+		"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 	  ]
 	],
 	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
@@ -345,7 +345,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.issn}",
 		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}eissn\"",
-		"and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null)",
+		"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 	  ]
 	],
 	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
@@ -359,7 +359,7 @@ validation.rules = [
 	  args: [
 		"${validation.regex.isbn}",
 		"One or more rows do not contain valid ISBNs in the column \"${IngestService.IDENTIFIER_PREFIX}isbn\". Note the ISBN should be entered without dashes.",
-		"and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null)",
+		"if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
 	  ]
 	],
 	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]

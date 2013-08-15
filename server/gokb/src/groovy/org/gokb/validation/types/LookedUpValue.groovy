@@ -36,7 +36,7 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
 	  col			: columnName,
 	  text			: "One or more rows contains values in \"${columnName}\" that appear to not have been looked up from gokb. Please use the lookup functions on the right-click menu to populate this field",
 	  facetValue	: "value.match(/(\\Q${invalid_vals.join('\\E|\\Q')}\\E)/)",
-	  facetName		: "None looked up value in ${columnName}"
+	  facetName		: "None looked up values in ${columnName}"
 	];
   }
   

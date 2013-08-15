@@ -28,7 +28,7 @@ class EnsureDate extends A_ValidationRule implements I_RowValidationRule {
 	return [
 	  col			: columnName,
 	  text			: "One or more rows contains invalid dates in the column \"${columnName}\".",
-	  facetValue	: "if (isNonBlank(value), (value.toDate().toString() != value.toString()), false)",
+	  facetValue	: "if (isNonBlank(value), if (value.toDate().toString() != value.toString(), 'invalid', null), null)",
 	  facetName		: "Invalid dates in ${columnName}"
 	]
   }
