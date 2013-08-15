@@ -54,4 +54,9 @@ class TitleInstance extends KBComponent {
     [ [code:'object::statusDeleted', label:'Set Status: Deleted'],
       [code:'title::transfer', label:'Title Transfer'] ]
   }
+
+  @Override
+  public String getNiceName() {
+	return "Title";
+  }
 }

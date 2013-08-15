@@ -514,8 +514,12 @@ abstract class KBComponent {
 			propertyDefn : prop_defn,
 			apValue : val
 			)
-			)
+		)
 	  }
 	}
+  }
+  
+  public String getNiceName () {
+	GrailsNameUtils.getNaturalName(getClassName())
   }
 }
