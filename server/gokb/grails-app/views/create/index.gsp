@@ -11,7 +11,7 @@
       <div class="row-fluid">
 
         <div id="mainarea" class="span12">
-          <div id="msg"/>
+          <div id="msg"></div>
           <div class="well">
             <g:if test="${displaytemplate != null}">
               <g:if test="${displaytemplate.type=='staticgsp'}">
@@ -27,7 +27,7 @@
       </div>
     </div>
 
-    <script language="JavaScript">
+    <script type="text/javascript">
 
       $('#save-btn').click(function() {
           $('.editable').editable('submit', {   //call submit
