@@ -51,14 +51,10 @@
 	    <dt>Coverage Depth</dt>
 	    <dd>${d.coverageDepth}</dd>
 	  </div>
-	
-	  <div class="control-group">
-	    <dt>Coverage Note</dt>
-	    <dd>${d.coverageNote}</dd>
-	  </div>
+		
+		<g:render template="refdataprops" contextPath="../apptemplates" model="${[d:(d), rd:(rd), dtype:(dtype)]}"/>
 	
 	</dl>
-	<g:render template="refdataprops" contextPath="../apptemplates" model="${[d:(d), rd:(rd), dtype:(dtype)]}"/>
 </g:if>
 <script language="JavaScript">
 	$(document).ready(function() {

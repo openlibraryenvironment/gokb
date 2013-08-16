@@ -506,14 +506,14 @@ abstract class KBComponent {
 	  if (!prop) {
 
 		// Add a new property.
-		def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name)
+		def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(failOnError:true)
 
 		// Add to the additional properties.
 		addToAdditionalProperties(
-			new KBComponentAdditionalProperty (
+		  new KBComponentAdditionalProperty (
 			propertyDefn : prop_defn,
 			apValue : val
-			)
+		  )
 		)
 	  }
 	}

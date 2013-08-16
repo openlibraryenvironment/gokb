@@ -23,15 +23,16 @@
 			</dd>
 		</div>
 	</g:if>
-	
-	<div class="control-group">
-		<dt>${ d.getNiceName() } Name</dt>
-		<dd>
-			<g:xEditable class="ipe" owner="${d}" field="name">
-				${d.name}
-			</g:xEditable>
-		</dd>
-	</div>
+	<g:if test="${!d.id || (d.id && d.name)}" >
+		<div class="control-group">
+			<dt>${ d.getNiceName() } Name</dt>
+			<dd>
+				<g:xEditable class="ipe" owner="${d}" field="name">
+					${d.name}
+				</g:xEditable>
+			</dd>
+		</div>
+	</g:if>
 	
 	<g:if test="${d.id != null}">
 		<g:if test="${ d.tags?.size() > 0 }">

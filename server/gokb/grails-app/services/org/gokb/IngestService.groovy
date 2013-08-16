@@ -54,7 +54,7 @@ class IngestService {
   public static final String HOST_PLATFORM_NAME = 'platform.host.name'
   public static final String HOST_PLATFORM_URL = 'platform.host.url'
 
-  public static final String COVERAGE_DEPTH = 'VoverageDepth'
+  public static final String COVERAGE_DEPTH = 'CoverageDepth'
   public static final String COVERAGE_NOTES = 'CoverageNotes'
   public static final String EMBARGO_INFO = 'KBARTEmbargo'
 
@@ -81,49 +81,6 @@ class IngestService {
 	log.debug("Validate");
 
 	def result = Validation.doValidate(project_data)
-//	def result = [:]
-//	result.status = true
-//	result.messages = []
-//
-//	if ( project_data?.processingCompleted ) {
-//	  log.debug("Processing of ingest file completed ok, validating");
-//	}
-//	else {
-//	  log.debug("Processing of ingest file failed, unable to vlidate.");
-//	  result.messages.add([text:'Unable to process ingest file at this time']);
-//	  return result
-//	}
-//
-//	def col_positions = [:]
-//	project_data.columnDefinitions?.each { cd ->
-//	  log.debug("Assigning col ${cd.name} to position ${cd.cellIndex}");
-//	  col_positions[cd.name?.toLowerCase()] = cd.cellIndex;
-//	}
-//
-//	if ( col_positions[PRINT_IDENTIFIER] == null )
-//	  result.messages.add(
-//		  [text:"Import does not specify a ${PRINT_IDENTIFIER} column", type:"missing_column", col: "${PRINT_IDENTIFIER}"]
-//		  );
-//
-//	if ( col_positions[ONLINE_IDENTIFIER] == null )
-//	  result.messages.add([text:"Import does not specify an ${ONLINE_IDENTIFIER} column", type:"missing_column", col: "${ONLINE_IDENTIFIER}"]);
-//
-//	if ( col_positions[PUBLICATION_TITLE] == null )
-//	  result.messages.add([text:"Import does not specify a ${PUBLICATION_TITLE} column", type:"missing_column", col: "${PUBLICATION_TITLE}"]);
-//
-//	if ( col_positions[HOST_PLATFORM_NAME] == null )
-//	  result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_NAME} column", type:"missing_column", col: "${HOST_PLATFORM_NAME}"]);
-//
-//	if ( col_positions[HOST_PLATFORM_URL] == null )
-//	  result.messages.add([text:"Import does not specify a ${HOST_PLATFORM_URL} column", type:"missing_column", col: "${HOST_PLATFORM_URL}"]);
-//
-////	if ( col_positions[PUBLISHER_NAME] == null )
-////	  result.messages.add([text:"Import does not specify a ${PUBLISHER_NAME} column", type:"missing_column", col: "${PUBLISHER_NAME}"]);
-//    if ( col_positions[PACKAGE_NAME] == null )
-//      result.messages.add([text:"Import does not specify a ${PACKAGE_NAME} column", type:"missing_column", col: "${PACKAGE_NAME}"]);
-//      
-//    // Check the cell content here...
-//    validateContent (project_data, col_positions, result)
     
 	if ( result.messages?.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
@@ -131,7 +88,6 @@ class IngestService {
 	}
 	else {
 	  log.debug("No messages, file valid");
-//	  result.messages.add([text:'Checked in file passes GoKB validation step, proceed to ingest']);
 	}
 
 	result
@@ -265,7 +221,7 @@ class IngestService {
 	// Create the sets for processing after run through.
 	Set platformNames   	= []
 	Set packageIdentifiers 	= []
-	Set publisherIds		= []
+	Set publisher_orgs		= []
 
 	log.debug("Finding existing titles...");
 
@@ -280,8 +236,8 @@ class IngestService {
 
 			def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
 //			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
-//
-//			// Just add the normname to the platforms list.
+
+			// Just add the normname to the platforms list.
 			platformNames << host_platform_name
 			
 			// Package ID
@@ -294,28 +250,8 @@ class IngestService {
 			packageIdentifiers << pkg_id.toString()
 			
 			// Lookup a publisher ID if present.
-			def pub_id = componentLookupService.lookupComponent ( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
-			if (pub_id) publisherIds << pub_id
-
-//			// (e)issns.
-//			def issn    = jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]])
-//			def eissn   = jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]])
-//
-//			// issn query.
-//			if (issn != null) {
-//			  and {
-//				tiCrit.add ("ids.namespace.value", "eq", 'issn')
-//				tiCrit.add ("ids.value", "eq", issn)
-//			  }
-//			}
-//
-//			// eissn query
-//			if (eissn != null) {
-//			  and {
-//				tiCrit.add ("ids.namespace.value", "eq", 'eissn')
-//				tiCrit.add ("ids.value", "eq", eissn)
-//			  }
-//			}
+			def pub = componentLookupService.lookupComponent ( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
+			if (pub) publisher_orgs << pub
 
 			// Each identifier type.
 			identifiers.each { ai ->
@@ -366,24 +302,15 @@ class IngestService {
 	// We should now have a query that we can execute to determine (roughly) how many Tipps will be added.
 	result << [ type : "titles", "new" : (titleRows - existingTitles), "updated" : existingTitles ]
 
-	// Host platform criteria...
-//	DetachedCriteria platCrit = new DetachedCriteria(Platform).build {
-//	  distinct ("id")
-//	  'in' ("normname", platformNames)
-//	}
-//
-//	// Run a count.
+	// Run a count.
 	existingPlats = platformNames.size()
 	result << [ type : "platforms", "new" : 0, "updated" : existingPlats ]
 	
 	// Distinct listed publishers.
-	if (publisherIds.size() > 0) {
-	  def publishers = Org.createCriteria().listDistinct {
-		'in' ("id", publisherIds)
-	  }
+	if (publisher_orgs.size() > 0) {
 	  
 	  // Check ones that haven't yet published.
-	  publishers.each { Org publisher ->
+	  publisher_orgs.each { Org publisher ->
 		if (publisher.getPublishedTitles().size() == 0) {
 		  newPubs ++
 		}
@@ -391,21 +318,13 @@ class IngestService {
 	}
 	
 	// Existing publishers
-	existingPubs = publisherIds.size() - newPubs
+	existingPubs = publisher_orgs.size() - newPubs
 	result << [ type : "publishers", "new" : newPubs, "updated" : existingPubs ]
 
 	log.debug("Estimate changes complete...${result}");
 	// Return the result.
 	result
   }
-
-
-//  def getIdentifierComponent(namespace, value) {
-//	def result = null
-//	def pkg_identifier_ns = IdentifierNamespace.findByValue('gokb-pkgid') ?: new IdentifierNamespace(value:'gokb-pkgid').save()
-//	result = Identifier.findByNamespaceAndValue(pkg_identifier_ns, value)
-//	result;
-//  }
 
   /**
    *  Ingest a parsed project. 
@@ -519,12 +438,6 @@ class IngestService {
 
 			  // Title Instance
 			  log.debug("Looking up title...(ids: ${ids})")
-//			  def title_info = titleLookupService.find(
-//				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
-//				  jsonv(datarow.cells[col_positions[PRINT_IDENTIFIER]]),
-//				  jsonv(datarow.cells[col_positions[ONLINE_IDENTIFIER]]),
-//				  ids,
-//				  getRowValue(datarow,col_positions,PUBLISHER_NAME));
 			  
 			  // Lookup the title.
 			  TitleInstance title_info = titleLookupService.find(
@@ -571,34 +484,45 @@ class IngestService {
 					crit.add ("hostPlatform", "eq", platform_info)
 				  }
 				}
+				
+				// Populate the tipp attribute map.
+				def tipp_values = [
+    				title:title_info,
+    				pkg:pkg,
+    				hostPlatform:platform_info,
+    				startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+    				startVolume:getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+    				startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+    				endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+    				endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+    				endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+    				embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+    				coverageDepth:getRowRefdataValue("TitleInstancePackagePlatform.CoverageDepth", datarow, col_positions, COVERAGE_DEPTH),
+    				coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+    				url:host_platform_url,
+    				delayedOA:getRowRefdataValue("TitleInstancePackagePlatform.DelayedOA", datarow, col_positions, DELAYED_OA),
+    				delayedOAEmbargo:getRowValue(datarow, col_positions, DELAYED_OA_EMBARGO),
+    				hybridOA:getRowRefdataValue("TitleInstancePackagePlatform.hybridOA", datarow, col_positions, HYBRID_OA),
+    				hybridOAurl:getRowValue(datarow, col_positions, HYBRID_OA_URL),
+    				primary:getRowRefdataValue("TitleInstancePackagePlatform.Primary", datarow, col_positions, PRIMARY_TIPP),
+    				paymentType:getRowRefdataValue("TitleInstancePackagePlatform.PaymentType", datarow, col_positions, TIPP_PAYMENT),
+    				status:getRowRefdataValue(KBComponent.RD_STATUS, datarow, col_positions, TIPP_STATUS)
+				]
 
 				// We have a Tipp.
 				if ( !tipp ) {
 				  log.debug("Create new tipp")
-				  tipp = new TitleInstancePackagePlatform(
-					  title:title_info,
-					  pkg:pkg,
-					  hostPlatform:platform_info,
-					  startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-					  startVolume: getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-					  startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-					  endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-					  endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-					  endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-					  embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-
-					  //TODO: Coverage depth now defaults only for this phase. Commenting out for now.
-					  //					coverageDepth:getRowValue(datarow,col_positions,COVERAGE_DEPTH),
-					  coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-					  url:host_platform_url
-				  )
+				  tipp = new TitleInstancePackagePlatform(tipp_values)
 				}
 				else {
-				  // Found the tipp.
-				  log.debug("TIPP already present");
+				  
+				  log.debug("TIPP already present, attempting update");
+				
+				  // Set all the tipp values in the file.
+				  tipp.getMetaClass().setProperties(tipp, tipp_values)
 				}
 				
-				// Add each TIPP property in turn.
+				// Add each TIPP custom property in turn.
 				gokb_additional_tipp_props.each { apd ->
 				  tipp.appendToAdditionalProperty(
 					apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
@@ -705,6 +629,19 @@ class IngestService {
 	}
 
 	result
+  }
+  
+  def getRowRefdataValue (ref_cat, datarow, col_positions, colname) {
+	
+	// Read in the value.
+	String value = getRowValue (datarow, col_positions, colname)
+	
+	// We should return null if a blank value has been supplied,
+	// and the default value will be used instead.
+	if (value == null || value.trim() == "") return null
+	
+	// lookup or create the value.
+	RefdataCategory.lookupOrCreate(ref_cat, value)
   }
 
   def getRowValue(datarow, col_positions, colname) {
@@ -935,25 +872,28 @@ class IngestService {
    * @return standard java Date
    */
   Date parseDate(String datestr) {
-	
-	// ISO parser.
-	DateTimeFormatter parser = ISODateTimeFormat.dateTimeParser()
-	
+
 	// Parse the date.
 	Date the_date = null
-	
-	log.debug ("Trying to parse date from ${datestr}")
-	try {
-	  the_date = parser.parseDateTime(datestr).toDate()
-	  
-	} catch (Throwable t) {
-	
-	  log.error ("Error parsing date resulted in null date.")
-	  
-	  // Ensure null date.
-	  the_date = null
+
+	if (datestr) {
+
+	  // ISO parser.
+	  DateTimeFormatter parser = ISODateTimeFormat.dateTimeParser()
+
+	  log.debug ("Trying to parse date from ${datestr}")
+	  try {
+		the_date = parser.parseDateTime(datestr).toDate()
+
+	  } catch (Throwable t) {
+
+		log.debug ("Error parsing date resulted in null date.")
+
+		// Ensure null date.
+		the_date = null
+	  }
 	}
-	
+
 	the_date
 	
 //	def parsed_date = null;

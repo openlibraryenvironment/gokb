@@ -45,7 +45,7 @@ class RefdataCategory {
 	  
 	  // Create and save a new refdata value.
       result = new RefdataValue(owner:cat, value:value)
-	  result.save(failOnError:true)
+	  result.save(failOnError:true, flush:true)
     }
 
 	// return the refdata value.

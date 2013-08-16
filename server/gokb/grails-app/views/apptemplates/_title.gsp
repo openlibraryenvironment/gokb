@@ -21,11 +21,11 @@
 										${v.variantName}
 									</td>
 									<td><g:xEditableRefData owner="${v}" field="status"
-											config='KBComponent.Status' /></td>
+											config='KBComponentVariantName.Status' /></td>
 									<td><g:xEditableRefData owner="${v}" field="variantType"
-											config='VariantNameType' /></td>
+											config='KBComponentVariantName.VariantType' /></td>
 									<td><g:xEditableRefData owner="${v}" field="locale"
-											config='Locale' /></td>
+											config='KBComponentVariantName.Locale' /></td>
 								</tr>
 							</g:each>
 						</tbody>

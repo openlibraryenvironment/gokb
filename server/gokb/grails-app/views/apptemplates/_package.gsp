@@ -28,10 +28,6 @@
 			</tbody>
 		</table>
 	</g:if>
-	<g:else>
-		<p>Other properties will be editable once the package has been
-			saved</p>
-	</g:else>
 </dl>
 
 <script language="JavaScript">
