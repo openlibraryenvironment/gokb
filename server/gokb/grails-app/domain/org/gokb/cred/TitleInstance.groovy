@@ -59,4 +59,12 @@ class TitleInstance extends KBComponent {
   public String getNiceName() {
 	return "Title";
   }
+
+  public Org getCurrentPublisher() {
+    def result = null;
+    publisher.each { p ->
+      result = p
+    }
+    result
+  }
 }

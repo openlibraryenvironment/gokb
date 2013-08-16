@@ -17,12 +17,9 @@
         <div class="row-fluid">
   
           <div class="span6">
-            Title Transfer the following:
-            <ul>
+            Title Transfer the following:<br/>
               <g:each in="${objects_to_action}" var="o">
-                <li>
-                  ${o.name} (Currently : lookup current pub or NONE)
-                </li>
+                <input type="checkbox" name="${o.id}"/> ${o.name} (Currently : o.currentPublisher)<br/>
               </g:each>
               </ul>
           </div>
