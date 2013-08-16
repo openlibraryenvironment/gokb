@@ -9,6 +9,7 @@ import org.gokb.cred.*
 class SearchController {
 
   def genericOIDService
+  def classExaminationService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -50,6 +51,12 @@ class SearchController {
         result.displayobjclassname = result.displayobj.class.name
         result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
         result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
+		
+		// Add any refdata property names for this class to the result.
+		result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
+		result.displayobjclassname_short = result.displayobj.class.simpleName
+		result.isComponent = (result.displayobj instanceof KBComponent)
+		
         if ( result.displaytemplate == null ) {
           log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");
         }

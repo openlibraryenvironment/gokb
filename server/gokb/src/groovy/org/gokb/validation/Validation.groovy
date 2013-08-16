@@ -1,5 +1,6 @@
 package org.gokb.validation
 
+import org.apache.commons.collections.map.CaseInsensitiveMap
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
 import org.gokb.validation.types.I_ColumnValidationRule
@@ -65,7 +66,7 @@ class Validation {
 	checkProcessingComplete (result, project_data)
 	
 	// Create map containing the column positions.
-	def col_positions = [:]
+	CaseInsensitiveMap col_positions = [:]
 	project_data.columnDefinitions?.each { cd ->
 	  log.debug("Assigning col ${cd.name} to position ${cd.cellIndex}");
 	  col_positions[cd.name?.toLowerCase()] = cd.cellIndex;

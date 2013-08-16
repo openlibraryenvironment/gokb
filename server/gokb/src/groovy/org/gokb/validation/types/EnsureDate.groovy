@@ -1,14 +1,16 @@
 package org.gokb.validation.types
 
-class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
+import org.gokb.cred.KBComponent
+
+class EnsureDate extends A_ValidationRule implements I_RowValidationRule {
   
   private static final String ERROR_TYPE = "data_invalid"
   
-  public CellNotEmpty (String columnName, String severity) {
+  public EnsureDate(String columnName, String severity) {
 	super(columnName, severity)
 	
 	if (!(columnName instanceof String)) {
-	  throw new IllegalArgumentException ("CellNotEmpty rule expects a single argument of type String.")
+	  throw new IllegalArgumentException ("EnsureDate rule expects a single argument of type String.")
 	}
   }
 
@@ -25,10 +27,10 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
 	// The extra info to be sent with each error message.
 	return [
 	  col			: columnName,
-	  text			: "One or more rows contain no data for column \"${columnName}\"",
-	  facetValue	: "if (isBlank(value), 'invalid', null)",
-	  facetName		: "Invalid value in ${columnName}"
-	];
+	  text			: "One or more rows contains invalid dates in the column \"${columnName}\".",
+	  facetValue	: "if (isNonBlank(value), if (value.toDate().toString() != value.toString(), 'invalid', null), null)",
+	  facetName		: "Invalid dates in ${columnName}"
+	]
   }
   
   @Override
@@ -44,15 +46,12 @@ class CellNotEmpty extends A_ValidationRule implements I_RowValidationRule {
 	  // Only check the content if the row is present in the data in the first place.
 	  if (pos != null) {
 
-		// Get the value.
-		def value = getRowValue(datarow, col_positions, columnName)
-
-		// If blank we need to add a message.
-		if (!value) {
-
-		  // Flag that an error has been found in this row.
+		// Get the raw value.
+		def definition = datarow.cells[col_positions[columnName]]
+		
+		if (definition && (definition.t == null || definition.t != 'date')) {
+		  // Invalid date value...
 		  addError(result)
-		  return false
 		}
 	  }
 	}

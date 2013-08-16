@@ -11,23 +11,27 @@
       <div class="row-fluid">
 
         <div id="mainarea" class="span12">
-          <div id="msg"/>
+          <div id="msg"></div>
           <div class="well">
             <g:if test="${displaytemplate != null}">
               <g:if test="${displaytemplate.type=='staticgsp'}">
-                <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj]}"/>
-
+                <g:if test="${isComponent}" >
+			        		<g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}"/>
+			        		<g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
+			        		<p>Other properties will be editable once the ${displayobj.niceName} has been saved</p>
+			        	</g:if>
+			        	<g:else>
+			          	<g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
+								</g:else>
                 <button id="save-btn" class="btn btn-primary">Save Record</button>
               </g:if>
             </g:if>
           </div>
         </div>
-
-
       </div>
     </div>
 
-    <script language="JavaScript">
+    <script type="text/javascript">
 
       $('#save-btn').click(function() {
           $('.editable').editable('submit', {   //call submit

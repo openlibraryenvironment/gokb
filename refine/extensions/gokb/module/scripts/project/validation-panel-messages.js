@@ -151,7 +151,7 @@ ValidationPanel.messages.quickRes.addFacet = function(message) {
     'list',
     {
       "name" 				: message.facetName,
-      "columnName" 	: message.col, 
+      "columnName" 	: GOKb.caseInsensitiveColumnName(message.col), 
       "expression" 	: message.facetValue,
     	"omitBlank" : true
     }

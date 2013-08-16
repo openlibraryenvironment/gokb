@@ -56,3 +56,14 @@ GOKb.hijackFunction (
 		return functions[0];
   }
 );
+
+GOKb.caseInsensitiveColumnName = function (name) {
+	var columns = theProject.columnModel.columns;
+  for (var i = 0; i < columns.length; i++) {
+    var column = columns[i];
+    if (column.name.toLowerCase() == name.toLowerCase()) {
+      return column.name;
+    }
+  }
+  return name;
+};

@@ -4,10 +4,12 @@ import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import org.codehaus.groovy.grails.commons.*
 import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
+import org.gokb.cred.KBComponent
 
 class CreateController {
 
   def genericOIDService
+  def classExaminationService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
@@ -22,8 +24,14 @@ class CreateController {
         try {
           result.displayobj = newclass.newInstance()
   
-          if ( params.tmpl )
+          if ( params.tmpl ) {
             result.displaytemplate = grailsApplication.config.globalDisplayTemplates[params.tmpl]
+			
+			/* Extras needed for the refdata */
+			result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.newclassname)
+			result.displayobjclassname_short = result.displayobj.class.simpleName
+			result.isComponent = (result.displayobj instanceof KBComponent)
+          }
         }
         catch ( Exception e ) {
           log.error("Problem",e);
@@ -48,6 +56,10 @@ class CreateController {
           params.each { p ->
             log.debug("Consider ${p.key} -> ${p.value}");
             if ( newclass.hasPersistentProperty(p.key) ) {
+			  
+			  // Ensure that blank values actually null the value instead of trying to use an empty string.
+			  if (p.value == "") p.value = null
+			  
               GrailsDomainClassProperty pdef = newclass.getPersistentProperty(p.key) 
               log.debug(pdef);
               if ( pdef.association ) {
