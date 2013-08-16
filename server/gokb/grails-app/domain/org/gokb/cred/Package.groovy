@@ -23,6 +23,8 @@ class Package extends KBComponent {
   RefdataValue paymentType
   RefdataValue global
   RefineProject lastProject
+  String listVerifier
+  Date listVerifiedDate
   
   private static refdataDefaults = [
     "scope"   : "Front File",
@@ -65,6 +67,7 @@ class Package extends KBComponent {
     fixed column:'pkg_fixed_rv_fk'
     paymentType column:'pkg_payment_type_rv_fk'
     global column:'pkg_global_rv_fk'
+    listVerifier column:'pkg_list_verifier'
   }
 
   static constraints = {

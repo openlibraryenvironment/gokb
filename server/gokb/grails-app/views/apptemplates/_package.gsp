@@ -19,6 +19,16 @@
 		
 		<g:render template="refdataprops" contextPath="../apptemplates" model="${[d:(d), rd:(rd), dtype:(dtype)]}"/>
 
+         <div class="control-group">
+            <dt>List Verifier</dt>
+            <dd><g:xEditable class="ipe" owner="${d}" field="listVerifier"/></dd>
+          </div>
+
+         <div class="control-group">
+            <dt>List Verifier Date</dt>
+            <dd><g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate"/></dd>
+          </div>
+
 		<table class="table table-bordered table-striped" style="clear: both">
 			<tbody>
 				<tr>

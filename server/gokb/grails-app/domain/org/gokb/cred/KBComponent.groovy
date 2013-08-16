@@ -166,6 +166,23 @@ abstract class KBComponent {
    */
   RefdataValue editStatus
 
+  /**
+   *  Provenance
+   */
+  String provenance
+
+  /**
+   * Reference
+   */
+  String reference
+
+  /**
+   * Last updated by
+   */
+  User lastUpdatedBy
+
+
+
   Set tags = []
   List additionalProperties = []
   Set outgoingCombos = []
