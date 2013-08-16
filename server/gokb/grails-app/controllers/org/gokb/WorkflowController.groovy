@@ -47,4 +47,15 @@ class WorkflowController {
       redirect(url: result.ref)
     }
   }
+
+  def processTitleChange() {
+    redirect(controller:'home');
+    params.each { p ->
+      if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+        def tt = p.key.substring(4);
+        log.debug("Title to transfer: ${tt}");
+        // result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+      }
+    }
+  }
 }

@@ -5,12 +5,14 @@
 <dl class="dl-horizontal">
   <div class="control-group">
     <dt>Internal Id</dt>
-    <dd>${d.id}</dd>
+    <dd>${d.id?:'New record'}</dd>
   </div>
   <div class="control-group">
-    <dt>Description</dt>
-    <dd>${d.desc}</dd>
+    <dt>Caregory Name / Description</dt>
+    <dd><g:xEditable class="ipe" owner="${d}" field="desc">${d.desc}</g:xEditable></dd>
   </div>
+
+<g:if test="${d.id != null}">
   <div class="control-group">
     <dt>Values</dt>
     <dd>
@@ -33,4 +35,11 @@
       </ul>
     </dd>
   </div>
+
+</g:if>
+<g:else>
+  <p>Other properties will be editable once the package has been saved</p>
+</g:else>
+
+
 </dl>

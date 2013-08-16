@@ -146,7 +146,7 @@ class AjaxSupportController {
 
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
- def addToCollection() {
+  def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
 
     def contextObj = resolveOID2(params.__context)
@@ -213,6 +213,17 @@ class AjaxSupportController {
       log.error("Unable to ookup domain class ${params.__newObjectClass}");
     }
 
+    redirect(url: request.getHeader('referer'))
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def addToStdCollection() {
+    log.debug("addToStdCollection(${params})");
+    // Adds a link to a collection that is not mapped through a join object
+    def contextObj = resolveOID2(params.__context)
+    if ( contextObj ) {
+      contextObj[params.__property].add(resolveOID2(params.__relatedObject))
+    }
     redirect(url: request.getHeader('referer'))
   }
 

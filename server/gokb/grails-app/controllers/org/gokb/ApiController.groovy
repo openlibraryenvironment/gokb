@@ -8,6 +8,7 @@ import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
+import org.codehaus.groovy.grails.commons.ApplicationHolder
 
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
@@ -59,9 +60,11 @@ class ApiController {
 	}
 	else {
 	  def gokbVersion = request.getHeader("GOKb-version")
+          def serv_url = ApplicationHolder.application.config.serverUrl ?: 'http://gokb.kuali.org/extension/latest.zip'
+
 	  if (gokbVersion != grailsApplication.config.refine_min_version) {
 		apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-		"Please download and install the latest version from <a href='http://gokb.k-int.com/extension/latest.zip' >gokb.k-int.com/extension/latest.zip</a>." +
+		"Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
 		"<br />You will need to restart refine and clear your browser cache after installing the new extension.",
 		"error")
 		return false

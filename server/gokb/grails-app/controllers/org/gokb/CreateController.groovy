@@ -86,9 +86,21 @@ class CreateController {
               log.debug("Persistent class has no property named ${p.key}");
             }
           }
+          log.debug("Completed setting properties");
 
-          result.newobj.save(flush:true, failOnError:true)
-          result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
+          if ( !result.newobj.save(flush:true) ) {
+            log.error("Problem saving new object");
+            result.newobj.errors.each { e ->
+              log.error(e)
+            }
+            flash.message="Problem..."
+            flash.error="Problem..."
+            result.uri = new ApplicationTagLib().createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
+            // render view: 'index', model: [d: result.newobj]
+          }
+          else {
+            result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
+          }
         }
         catch ( Exception e ) {
           log.error("Problem",e);
