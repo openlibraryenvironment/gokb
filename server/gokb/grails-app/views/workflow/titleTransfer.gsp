@@ -19,7 +19,7 @@
           <div class="span6">
             Title Transfer the following:<br/>
               <g:each in="${objects_to_action}" var="o">
-                <input type="checkbox" name="${o.id}"/> ${o.name} (Currently : o.currentPublisher)<br/>
+                <input type="checkbox" name="tt:${o.id}"/> ${o.name} (Currently : o.currentPublisher)<br/>
               </g:each>
               </ul>
           </div>
