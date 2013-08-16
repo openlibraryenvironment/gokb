@@ -34,10 +34,10 @@
 	        </thead>
 	        <tbody>
 	          <tr>
-	            <td>${d.startDate}</td>
+	            <td><g:xEditable class="ipe" owner="${d}" type="date" field="startDate"/></td>
 	            <td>${d.startVolume}</td>
 	            <td>${d.startIssue}</td>
-	            <td>${d.endDate}</td>
+	            <td><g:xEditable class="ipe" owner="${d}" type="date" field="endDate"/></td>
 	            <td>${d.endVolume}</td>
 	            <td>${d.endIssue}</td>
 	            <td>${d.embargo}</td>
@@ -48,12 +48,27 @@
 	  </div>
 	
 	  <div class="control-group">
-	    <dt>Coverage Depth</dt>
-	    <dd>${d.coverageDepth}</dd>
+	    <dt>Host Platform URL</dt>
+	    <dd><g:xEditable class="ipe" owner="${d}" field="url"/></dd>
+	  </div>
+
+	  <div class="control-group">
+	    <dt>Coverage Note</dt>
+	    <dd><g:xEditable class="ipe" owner="${d}" field="coverageNote"/></dd>
 	  </div>
 		
 		<g:render template="refdataprops" contextPath="../apptemplates" model="${[d:(d), rd:(rd), dtype:(dtype)]}"/>
 	
+	  <div class="control-group">
+	    <dt>Delayed OA Embargo</dt>
+	    <dd><g:xEditable class="ipe" owner="${d}" field="delayedOAEmbargo"/></dd>
+	  </div>
+
+	  <div class="control-group">
+	    <dt>Hybrid OA URL</dt>
+	    <dd><g:xEditable class="ipe" owner="${d}" field="hybridOAUrl"/></dd>
+	  </div>
+
 	</dl>
 </g:if>
 <script language="JavaScript">

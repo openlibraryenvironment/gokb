@@ -26,7 +26,10 @@ class RefdataCategory {
 
   static RefdataValue lookupOrCreate(category_name, value) {
 	
-	// The category.
+    if ( value == null )
+      throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");
+
+    // The category.
     def cat = RefdataCategory.findByDesc(category_name);
     if ( !cat ) {
       cat = new RefdataCategory(desc:category_name)
@@ -34,12 +37,12 @@ class RefdataCategory {
     }
 
     // II Commented out the following - Seems to clash with domain class extender!
-    // def result = RefdataValue.findByOwnerAndValue(cat, value)
+    def result = RefdataValue.findByOwnerAndValueIlike(cat, value)
 	
-	// SO: Changed this slightly to do a case-insensitive value match.
-    def result = RefdataValue.findAllWhere (owner:cat).find { RefdataValue val ->
-	  val.getValue().equalsIgnoreCase(value)
-	}
+    // SO: Changed this slightly to do a case-insensitive value match.
+    //def result = RefdataValue.findAllWhere (owner:cat).find { RefdataValue val ->
+    //	  val.getValue().equalsIgnoreCase(value)
+    //	}
 
     if ( !result ) {
 	  
