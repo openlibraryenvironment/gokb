@@ -33,7 +33,7 @@ class IsSimilar extends A_ValidationRule implements I_DeferredRowValidationRule 
 	  text			: "\"${currentValue}\" in column \"${columnName}\" was detected to be similar to an existing value of \"${currentSimilarity}\"",
 	  facetValue	: "value.match(/(\\Q${currentValue}\\E)/)",
 	  facetName		: "Similar values to \"${currentSimilarity}\""
-	];
+	]
   }
   
   @Override

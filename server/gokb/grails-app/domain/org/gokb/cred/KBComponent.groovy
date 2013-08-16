@@ -6,9 +6,8 @@ import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
-import org.gokb.GOKbTextUtils;
+import org.gokb.GOKbTextUtils
 import org.hibernate.proxy.HibernateProxy
-import org.hibernate.Hibernate
 
 /**
  * Abstract base class for GoKB Components.
@@ -168,7 +167,7 @@ abstract class KBComponent {
   RefdataValue editStatus
 
   Set tags = []
-  Set additionalProperties = []
+  List additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
   Set reviewRequests = []
@@ -240,8 +239,8 @@ abstract class KBComponent {
 	}
   }
 
-  static def generateShortcode(name) {
-	def candidate = name.trim().replaceAll(" ","_")
+  static def generateShortcode(String text) {
+	def candidate = text.trim().replaceAll(" ","_")
 
 	if ( candidate.length() > 100 )
 	  candidate = candidate.substring(0,100)
@@ -490,5 +489,37 @@ abstract class KBComponent {
 	
 	// Return false if we get here.
 	false
+  }
+  
+  public void appendToAdditionalProperty (String prop_name, String val) {
+	
+	// Only need to  add if a value has been supplied.
+	if (val) {
+
+	  // Find the KBComponentAdditionalProperty
+	  KBComponentAdditionalProperty prop = additionalProperties.find { KBComponentAdditionalProperty prop ->
+		prop.getPropertyDefn().getPropertyName() == prop_name
+		prop.getApValue()?.equalsIgnoreCase(val)
+	  }
+
+	  // Only add a prop if we haven't already got one matching the value and definition.
+	  if (!prop) {
+
+		// Add a new property.
+		def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(failOnError:true)
+
+		// Add to the additional properties.
+		addToAdditionalProperties(
+		  new KBComponentAdditionalProperty (
+			propertyDefn : prop_defn,
+			apValue : val
+		  )
+		)
+	  }
+	}
+  }
+  
+  public String getNiceName () {
+	GrailsNameUtils.getNaturalName(getClassName())
   }
 }

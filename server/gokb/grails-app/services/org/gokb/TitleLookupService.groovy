@@ -5,7 +5,7 @@ import org.gokb.cred.*;
 class TitleLookupService {
 
   def grailsApplication
-  def orgLookupService
+  def componentLookupService
 
   //  def find(title, issn, eissn) {
   //    find(title, issn, eissn, null, null)
@@ -138,34 +138,17 @@ class TitleLookupService {
 	
 	// If we have a title then lets set the publisher and ids...
 	if (the_title) {
-	  
-	  // Lookup our publisher.
-	  Org publisher = orgLookupService.lookupOrg(publisher_name)
   
 	  // Add the publisher.
-	  if (publisher) {
-  
-		// This is a new title and should therefore have no publisher set as of yet.
-		the_title.publisher = publisher
-	  }
+	  addPublisher(publisher_name, the_title)
   
 	  // Add all the identifiers.
 	  Set<Identifier> ids = the_title.ids
 	  ids.addAll(results['ids'])
-//	  results['ids'].each { Identifier the_id ->
-//		
-//		// Deproxy the ID
-//		Identifier identifier = KBComponent.deproxy(the_id);
-//		
-//		// Only add if it isn't already present.
-//		if (!ids.contains(identifier)) {
-//		  ids.add(the_id)
-//		}
-//	  }
   
 	  // Try and save the result now.
 	  if ( the_title.save(failOnError:true,flush:true) ) {
-		log.debug("Succesfully saved TI: ${the_title.id}");
+		log.debug("Succesfully saved TI: ${the_title.name}");
 	  }
 	  else {
 		the_title.errors.each { e ->
@@ -180,23 +163,26 @@ class TitleLookupService {
   private TitleInstance addPublisher (String publisher_name, TitleInstance ti) {
 	
 	// Lookup our publisher.
-	Org publisher = orgLookupService.lookupOrg(publisher_name)
+	Org publisher = componentLookupService.lookupComponent(publisher_name)
 	
-	def orgs = ti.getPublisher()
+	// Found a publisher.
+	if (publisher) {
+	  def orgs = ti.getPublisher()
 
-	// Add the publisher.
-	if (!orgs.contains(publisher)) {
-	  
-	  if (orgs.size() > 0) {
-		ReviewRequest.raise(
-		  ti,
-		  "Added '${publisher.name}' as alternate publisher on '${ti.name}'.",
-		  "Publisher supplied in ingested file is different to any already present on TI."
-		)
+	  // Add the publisher.
+	  if (!orgs.contains(publisher)) {
+
+		if (orgs.size() > 0) {
+		  ReviewRequest.raise(
+			  ti,
+			  "Added '${publisher.name}' as a publisher on '${ti.name}'.",
+			  "Publisher supplied in ingested file is different to any already present on TI."
+			  )
+		}
+
+		// Add the new publisher.
+		ti.publisher.add (publisher)
 	  }
-
-	  // Add the new publisher.
-	  ti.publisher.add (publisher)
 	}
 	
 	ti

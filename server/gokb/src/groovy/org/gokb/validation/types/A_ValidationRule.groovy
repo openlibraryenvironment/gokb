@@ -55,8 +55,9 @@ abstract class A_ValidationRule {
 	flagErrorTriggered()
   }
   
-  protected def getRowValue(datarow, col_positions, colname) {
-	def result = null
+  protected String getRowValue(datarow, col_positions, colname) {
+	
+	String result = null
 	if ( col_positions[colname] != null ) {
 	  result = jsonv(datarow.cells[col_positions[colname]])
 	}

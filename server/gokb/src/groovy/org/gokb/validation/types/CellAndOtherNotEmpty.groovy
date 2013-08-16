@@ -27,7 +27,7 @@ class CellAndOtherNotEmpty extends A_ValidationRule implements I_RowValidationRu
 	return [
 	  col			: columnName,
 	  text			: "One or more rows contain no data in both column \"${columnName}\" and \"${otherColumn}\"",
-	  facetValue	: "and(isBlank(value), isBlank(cells['${otherColumn}'].value))",
+	  facetValue	: "if (and(isBlank(value), isBlank(cells['${otherColumn}'].value)), 'invalid', null)",
 	  facetName		: "Both ${columnName} and ${otherColumn} blank."
 	];
   }

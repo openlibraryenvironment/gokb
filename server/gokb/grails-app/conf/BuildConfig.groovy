@@ -55,5 +55,8 @@ grails.project.dependency.resolution = {
         runtime ":database-migration:1.3.3"
 
         compile ':cache:1.0.1'
+		
+		// Joda time to handle the ISO dates.
+		compile ":joda-time:1.4"
     }
 }

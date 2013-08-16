@@ -5,7 +5,6 @@ class Identifier extends KBComponent {
   IdentifierNamespace namespace
   String value
 
-
   static constraints = {
     namespace (nullable:true, blank:true)
     value (nullable:true, blank:true)
@@ -28,6 +27,14 @@ class Identifier extends KBComponent {
   protected def generateNormname () {
 	if (!normname && namespace && value) {
 	  normname = "${namespace.value}:${value}".toLowerCase().trim()
+	}
+  }
+  
+  @Override
+  protected def generateShortcode () {
+	if (!shortcode && namespace && value) {
+	  // Generate the short code.
+	  shortcode = generateShortcode("${namespace.value}:${value}")
 	}
   }
 

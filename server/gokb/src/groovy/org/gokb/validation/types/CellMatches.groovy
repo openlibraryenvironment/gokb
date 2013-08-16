@@ -4,11 +4,11 @@ class CellMatches extends A_ValidationRule implements I_RowValidationRule {
   
   private static final String ERROR_TYPE = "data_invalid"
 
-  private String regex
-  private String text
-  private String facetValue
+  protected String regex
+  protected String text
+  protected String facetValue
   
-  public CellMatches (String columnName, String severity, String regex, String text , String facetValue) {
+  public CellMatches (String columnName, String severity, String regex, String text, String facetValue) {
 	super (columnName, severity)
 	
 	if (!(columnName instanceof String)) {
