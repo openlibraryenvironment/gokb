@@ -83,7 +83,7 @@
   </div>
 
   <div class="control-group">
-    <dt>Date Created</dt>
+    <dt>Last Updated</dt>
     <dd>
       ${d?.lastUpdated?:'&nbsp;'}
     </dd>

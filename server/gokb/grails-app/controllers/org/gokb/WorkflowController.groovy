@@ -107,6 +107,33 @@ class WorkflowController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editTitleTransfer() {
+    log.debug("editTitleTransfer() - ${params}");
+
+    if ( params.addTransferTipps ) {
+      // Add Transfer tipps
+      log.debug("Add transfer tipps");
+      if ( ( params.Package != null ) && ( params.Platform != null ) ) {
+        def new_tipp_package = genericOIDService.resolveOID2(params.Package);
+        def new_tipp_platform = genericOIDService.resolveOID2(params.Platform);
+        if ( ( new_tipp_package != null ) && ( new_tipp_platform != null ) ) {
+          params.each { p ->
+            if ( p.key.startsWith('addto-') ) {
+              log.debug("Add new tipp for ${new_tipp_package}, ${new_tipp_platform} to replace ${p.key}");
+            }
+          }
+        }
+        else {
+          log.error("Add transfer tipps but failed to resolve package(${params.Package}) or platform(${params.Platform})");
+        }
+      }
+      else {
+          log.error("Add transfer tipps but package or platform not set");
+      }
+    }
+    else if ( params.process ) {
+      log.debug("Process...");
+    }
+
     def result = [:]
     result.titles = []
     result.tipps = []
@@ -124,6 +151,7 @@ class WorkflowController {
     }
 
     result.newPublisher = Org.get(activity_data.newPublisherId)
+    result.id = params.id
 
     result
   }

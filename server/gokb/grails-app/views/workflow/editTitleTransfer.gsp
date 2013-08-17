@@ -8,7 +8,7 @@
   </head>
   <body>
     <div class="container-fluid">
-      <g:form controller="workflow" action="performTitleChange">
+      <g:form controller="workflow" action="editTitleTransfer" id="${params.id}">
         <div class="row-fluid">
           <div class="span12 hero well">
             Title Transfer (2/2)
@@ -91,15 +91,14 @@
                 <dt>New Platform</dt>
                 <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Platform" baseClass="org.gokb.cred.Platform"/></dd>
               </div>
+              <div class="control-group">
+                <dt></dt>
+                <dd><button type="submit" class="btn btn-primary" name="addTransferTipps" value="AddTipps">Add transfer tipps</button></dd>
+              </div>
             </dl>
-
-
-            
  
             <br/>
-            <input type="submit" value="Process" class="btn btn-primary btn-small"/>
-
-
+                <button type="submit" class="btn btn-primary" name="process" value="process">Process Transfer</button>
           </div>
 
  
