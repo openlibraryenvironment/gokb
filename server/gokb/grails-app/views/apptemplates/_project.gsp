@@ -12,8 +12,8 @@
 		<div class="control-group">
 		  <dt>Project Status</dt>
 		  <dd>
-				${ d.projectStatus.getName() }
-			</dd>
+				${ d.projectStatus?.getName() } &nbsp;
+		</dd>
 		</div>
 		<g:if test="${d.lastCheckedOutBy}" >
 			<div class="control-group">

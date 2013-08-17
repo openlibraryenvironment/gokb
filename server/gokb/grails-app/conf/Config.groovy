@@ -622,6 +622,48 @@ globalSearchTemplates = [
         ]
       ]
     ],
+    'Territories':[
+      baseclass:'org.gokb.cred.Territory',
+      title:'Territories',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name of Territory',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'Licenses':[
+      baseclass:'org.gokb.cred.License',
+      title:'Licenses',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name of License',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+
+
 ]
 
 
@@ -636,7 +678,9 @@ globalDisplayTemplates = [
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
   'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
   'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ],
-  'org.gokb.cred.Office': [ type:'staticgsp', rendername:'office' ]
+  'org.gokb.cred.Office': [ type:'staticgsp', rendername:'office' ],
+  'org.gokb.cred.Territory': [ type:'staticgsp', rendername:'territory' ],
+  'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6
