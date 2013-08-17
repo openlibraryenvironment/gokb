@@ -455,13 +455,17 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-us').save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-gb').save()
 	
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT).save()
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_DELETED).save()
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_EXPECTED).save()
-	RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_RETIRED).save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT).save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_DELETED).save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_EXPECTED).save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_RETIRED).save()
 	
 	// Review Request
-	RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Needs Review').save()
-	RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Reviewed').save()
+    RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Needs Review').save()
+    RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Reviewed').save()
+
+    RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
+    RefdataCategory.lookupOrCreate('Activity.Status', 'Complete').save()
+    RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned').save()
   }
 }
