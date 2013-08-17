@@ -9,7 +9,7 @@ class PackageService {
    * Incremental will edit an existing package. If it's false the package and it's
    * TIPPs will have their status set to retired as well and a new package returned.
    */
-  def findCorrectPackage (String package_name, boolean incremental = true) {
+  def findCorrectPackage (String package_name, boolean incremental) {
 
 	log.debug("Trying to find a package for ${!incremental ? 'none-incremental' : 'incremental'} update using ${package_name}.")
 
@@ -24,7 +24,6 @@ class PackageService {
 
 	  // Just create a new package.
 	  pkg = new Package()
-	  pkg.save(failOnError: true)
 
 	  log.debug("Created package with id ${pkg.id}")
 
@@ -43,16 +42,19 @@ class PackageService {
 
 		// Then retire the package.
 		pkg.retire()
-		log.debug("Package ${pkg.id} retired.")
 		
 		// Create a new package with the IDs
 		Set<Identifier> pkIds = pkg.ids.findAll { Identifier the_id ->
 		  the_id?.getNamespace()?.getValue()?.equalsIgnoreCase('gokb-pkgid')
 		}
 		
+		// Save the old one.
+		if ( pkg.save(failOnError:true) ) {
+		  log.debug ("Retired and saved package ${pkg.id}.")
+		}
+		
 		// New package.
 		pkg = new Package()
-		pkg.save(failOnError:true)
 		
 		// Add all the ids.
 		pkg.ids.addAll(pkIds)
@@ -61,7 +63,7 @@ class PackageService {
 	    // Incremental update just return the package to the ingest service.
 	  }
 	}
-
+	
 	pkg
   }
 
@@ -76,7 +78,7 @@ class PackageService {
 
 		// Also needs to be an active package.
 		q.add ("status.owner.desc", "ilike", KBComponent.RD_STATUS)
-		q.add ("value", "ilike", KBComponent.STATUS_CURRENT)
+		q.add ("status.value", "ilike", KBComponent.STATUS_CURRENT)
 	  }
 	}
 
