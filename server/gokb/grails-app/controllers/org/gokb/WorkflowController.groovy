@@ -2,16 +2,20 @@ package org.gokb
 
 import org.gokb.cred.*
 import grails.plugins.springsecurity.Secured
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
 
 class WorkflowController {
 
   def genericOIDService
+  def springSecurityService
 
   def actionConfig = [
     'object::statusDeleted':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer']
   ];
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def action() { 
     log.debug("WorkflowController::action(${params})");
     def result = [:]
@@ -49,12 +53,18 @@ class WorkflowController {
     }
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleChange() {
     log.debug("processTitleChange");
+    def user = springSecurityService.currentUser
     def result = [:]
     result.titles = []
     result.tipps = []
     result.newtipps = [:]
+
+    def titleTransferData = [:]
+    titleTransferData.title_ids = []
+    titleTransferData.tipps = [:]
 
     params.each { p ->
       if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
@@ -64,9 +74,11 @@ class WorkflowController {
         // result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
         // Find all tipps for the title and add to tipps
         if ( title_instance ) {
-          result.titles.add(title_instance)
+          result.titles.add(title_instance) 
+          titleTransferData.title_ids.add(title_instance.id)
           title_instance.tipps.each { tipp ->
             result.tipps.add(tipp)
+            titleTransferData.tipps[tipp.id] = [newtipps:[]]
           }
         }
         else {
@@ -74,11 +86,45 @@ class WorkflowController {
         }
       }
     }
+
     result.newPublisher = genericOIDService.resolveOID2(params.title)
+    titleTransferData.newPublisherId = result.newPublisher.id
+
+    def builder = new JsonBuilder()
+    builder(titleTransferData)
+
+    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
+    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleTransfer').save()
+
+
+    def new_activity = new Activity(activityData:builder.toString(),
+                                    owner:user,
+                                    status:active_status, 
+                                    type:transfer_type).save()
     
-    result
+    redirect(action:'editTitleTransfer',id:new_activity.id)
   }
 
-  def processTitleChangeTipps() {
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def editTitleTransfer() {
+    def result = [:]
+    result.titles = []
+    result.tipps = []
+    result.newtipps = [:]
+
+    def activity_record = Activity.get(params.id)
+    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
+
+    activity_data.title_ids.each { tid ->
+      result.titles.add(TitleInstance.get(tid))
+    }
+
+    activity_data.tipps.each { tipp ->
+      result.tipps.add(TitleInstancePackagePlatform.get(tipp.key))
+    }
+
+    result.newPublisher = Org.get(activity_data.newPublisherId)
+
+    result
   }
 }

@@ -7,6 +7,7 @@ class Activity {
   Date dateCreated
   Date lastUpdated 
   RefdataValue status
+  RefdataValue type
 
   static mapping = {
     id column:'act_id'
