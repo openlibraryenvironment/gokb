@@ -70,21 +70,21 @@
   <div class="control-group">
     <dt>Date Created</dt>
     <dd>
-      ${p?.dateCreated?:'&nbsp;'}
+      ${d?.dateCreated?:'&nbsp;'}
     </dd>
   </div>
 
   <div class="control-group">
     <dt>Date Created</dt>
     <dd>
-      ${p?.lastUpdated?:'&nbsp;'}
+      ${d?.lastUpdated?:'&nbsp;'}
     </dd>
   </div>
 
   <div class="control-group">
     <dt>Last updated by</dt>
     <dd>
-      ${p?.lastUpdatedBy?.displayName?:'&nbsp;'}
+      ${d?.lastUpdatedBy?.displayName?:'&nbsp;'}
     </dd>
   </div>
 
