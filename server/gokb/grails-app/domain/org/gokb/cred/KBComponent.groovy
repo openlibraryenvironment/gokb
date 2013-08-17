@@ -440,6 +440,10 @@ abstract class KBComponent {
 	// Set the status to deleted.
 	setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
   }
+  
+  public void retire () {
+	setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+  }
 
   @Transient
   public String getClassName () {

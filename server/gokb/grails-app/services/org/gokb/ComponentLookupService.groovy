@@ -11,10 +11,10 @@ class ComponentLookupService {
   
   public <T extends KBComponent> T lookupComponent(String comp_name_string) {
 	
-	// The Org
+	// The Component
 	T comp = null
 	if (comp_name_string) {
-	  def publisher_match = comp_name_string =~ "${LookedUpValue.REGEX_TEMPLATE[0]}([^\\:]+)${LookedUpValue.REGEX_TEMPLATE[1]}"
+	  def publisher_match = comp_name_string =~ "${LookedUpValue.REGEX_TEMPLATE[0]}([^\\:]+)${LookedUpValue.REGEX_TEMPLATE[1]}\$"
 	  
 	  if (publisher_match) {
 		
