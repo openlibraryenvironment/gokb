@@ -23,6 +23,14 @@
     </dd>
   </div>
 
+  <div class="control-group">
+    <dt>Shortcode</dt>
+    <dd>
+      <g:xEditable class="ipe" owner="${d}" field="shortcode"/>
+    </dd>
+  </div>
+
+
   <g:if test="${ d.ids?.size() > 0 }">
     <div class="control-group">
       <dt>Identifiers</dt>
