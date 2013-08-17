@@ -109,6 +109,9 @@ class WorkflowController {
   def editTitleTransfer() {
     log.debug("editTitleTransfer() - ${params}");
 
+    def activity_record = Activity.get(params.id)
+    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
+
     if ( params.addTransferTipps ) {
       // Add Transfer tipps
       log.debug("Add transfer tipps");
@@ -118,7 +121,14 @@ class WorkflowController {
         if ( ( new_tipp_package != null ) && ( new_tipp_platform != null ) ) {
           params.each { p ->
             if ( p.key.startsWith('addto-') ) {
-              log.debug("Add new tipp for ${new_tipp_package}, ${new_tipp_platform} to replace ${p.key}");
+              def tipp_id = p.key.substring(6)
+              log.debug("Add new tipp for ${new_tipp_package}, ${new_tipp_platform} to replace ${tipp_id}");
+              def old_tipp = KBComponent.get(tipp_id);
+              def tipp_info = activity_data.tipps[tipp_id]
+              tipp_info.newtipps.add([
+                                      title_id:old_tipp.title.id, 
+                                      package_id:new_tipp_package.id, 
+                                      platform:new_tipp_platform.id])
             }
           }
         }
@@ -138,9 +148,6 @@ class WorkflowController {
     result.titles = []
     result.tipps = []
     result.newtipps = [:]
-
-    def activity_record = Activity.get(params.id)
-    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
 
     activity_data.title_ids.each { tid ->
       result.titles.add(TitleInstance.get(tid))
