@@ -662,6 +662,27 @@ globalSearchTemplates = [
         ]
       ]
     ],
+    'Users':[
+      baseclass:'org.gokb.cred.User',
+      title:'Users',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Username',
+            qparam:'qp_name',
+            placeholder:'Username',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'username']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+
 
 
 ]
@@ -680,7 +701,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ],
   'org.gokb.cred.Office': [ type:'staticgsp', rendername:'office' ],
   'org.gokb.cred.Territory': [ type:'staticgsp', rendername:'territory' ],
-  'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ]
+  'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
+  'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6

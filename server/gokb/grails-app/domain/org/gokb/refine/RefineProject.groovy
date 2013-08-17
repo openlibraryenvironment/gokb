@@ -26,7 +26,6 @@ class RefineProject extends KBComponent {
 	}
   }
 
-   String name
    String description
      Date modified
    String file
