@@ -698,7 +698,8 @@ globalSearchTemplates = [
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+          [heading:'Url', property:'url'],
         ]
       ]
     ],
