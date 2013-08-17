@@ -112,6 +112,8 @@ class WorkflowController {
     def activity_record = Activity.get(params.id)
     def activity_data = new JsonSlurper().parseText(activity_record.activityData)
 
+    log.debug("Activity record: ${activity_data}");
+
     if ( params.addTransferTipps ) {
       // Add Transfer tipps
       log.debug("Add transfer tipps");
@@ -125,12 +127,34 @@ class WorkflowController {
               log.debug("Add new tipp for ${new_tipp_package}, ${new_tipp_platform} to replace ${tipp_id}");
               def old_tipp = KBComponent.get(tipp_id);
               def tipp_info = activity_data.tipps[tipp_id]
-              tipp_info.newtipps.add([
-                                      title_id:old_tipp.title.id, 
-                                      package_id:new_tipp_package.id, 
-                                      platform:new_tipp_platform.id])
+
+              if ( tipp_info != null ) {
+
+                if ( tipp_info.newtipps == null )
+                  tipp_info.newtipps = [:]
+
+                tipp_info.newtipps.add([
+                                        title_id:old_tipp.title.id, 
+                                        package_id:new_tipp_package.id, 
+                                        platform_id:new_tipp_platform.id,
+                                        start_date:'',
+                                        start_volume:'',
+                                        start_issue:'',
+                                        end_date:'',
+                                        end_volume:'',
+                                        end_issue:''])
+              }
+              else {
+                log.error("Unable to find key (${tipp_id}) In map: ${activity_data.tipps}");
+              }
             }
           }
+
+          // Update the activity data in the database
+          def builder = new JsonBuilder()
+          builder(activity_data)
+          activity_record.activityData = builder.toString();
+          activity_record.save()
         }
         else {
           log.error("Add transfer tipps but failed to resolve package(${params.Package}) or platform(${params.Platform})");
@@ -147,14 +171,40 @@ class WorkflowController {
     def result = [:]
     result.titles = []
     result.tipps = []
-    result.newtipps = [:]
 
     activity_data.title_ids.each { tid ->
       result.titles.add(TitleInstance.get(tid))
     }
 
-    activity_data.tipps.each { tipp ->
-      result.tipps.add(TitleInstancePackagePlatform.get(tipp.key))
+    activity_data.tipps.each { tipp_info ->
+      def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
+      result.tipps.add([
+                        id:tipp_object.id,
+                        type:'CURRENT',
+                        title:tipp_object.title, 
+                        pkg:tipp_object.pkg, 
+                        hostPlatform:tipp_object.hostPlatform,
+                        startDate:tipp_object.startDate,
+                        startVolume:tipp_object.startVolume,
+                        startIssue:tipp_object.startIssue,
+                        endDate:tipp_object.endDate,
+                        endVolume:tipp_object.endVolume,
+                        endIssue:tipp_object.endIssue
+                        ])
+      tipp_info.value.newtipps.each { newtipp_info ->
+        result.tipps.add([
+                          type:'NEW',
+                          title:KBComponent.get(newtipp_info.title_id),
+                          pkg:KBComponent.get(newtipp_info.package_id),
+                          hostPlatform:KBComponent.get(newtipp_info.platform_id),
+                          startDate:newtipp_info.startDate,
+                          startVolume:newtipp_info.startVolume,
+                          startIssue:newtipp_info.startIssue,
+                          endDate:newtipp_info.endDate,
+                          endVolume:newtipp_info.endVolume,
+                          endIssue:newtipp_info.endIssue
+                          ])
+      }
     }
 
     result.newPublisher = Org.get(activity_data.newPublisherId)
