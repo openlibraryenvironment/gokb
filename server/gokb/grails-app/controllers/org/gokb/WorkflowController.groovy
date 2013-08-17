@@ -1,5 +1,6 @@
 package org.gokb
 
+import org.gokb.cred.*
 import grails.plugins.springsecurity.Secured
 
 class WorkflowController {
@@ -49,13 +50,32 @@ class WorkflowController {
   }
 
   def processTitleChange() {
-    redirect(controller:'home');
+    log.debug("processTitleChange");
+    def result = [:]
+    result.titles = []
+    result.tipps = []
     params.each { p ->
       if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
-        def tt = p.key.substring(4);
-        log.debug("Title to transfer: ${tt}");
+        def tt = p.key.substring(3);
+        log.debug("Title to transfer: \"${tt}\"");
+        def title_instance = TitleInstance.get(tt)
         // result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+        // Find all tipps for the title and add to tipps
+        if ( title_instance ) {
+          result.titles.add(title_instance)
+          title_instance.tipps.each { tipp ->
+            result.tipps.add(tipp)
+          }
+        }
+        else {
+          log.error("Unable to locate title with that ID");
+        }
       }
     }
+    result.newPublisher = genericOIDService.resolveOID2(params.title)
+    result
+  }
+
+  def processTitleChangeTipps() {
   }
 }
