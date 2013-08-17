@@ -54,6 +54,8 @@ class WorkflowController {
     def result = [:]
     result.titles = []
     result.tipps = []
+    result.newtipps = [:]
+
     params.each { p ->
       if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
         def tt = p.key.substring(3);
@@ -73,6 +75,7 @@ class WorkflowController {
       }
     }
     result.newPublisher = genericOIDService.resolveOID2(params.title)
+    
     result
   }
 
