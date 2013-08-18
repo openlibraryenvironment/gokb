@@ -389,6 +389,8 @@ grails.gorm.default.constraints = {
 
 
 
+// https://github.com/k-int/gokb-phase1/blob/2853396eb1176a8ae94747810b2ec589847f8557/server/gokb/grails-app/controllers/org/gokb/SearchController.groovy
+
 globalSearchTemplates = [
     'components':[
       baseclass:'org.gokb.cred.KBComponent',
@@ -408,7 +410,13 @@ globalSearchTemplates = [
             qparam:'qp_id',
             placeholder:'ID of item',
             contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'id', 'type' : 'java.lang.Long']
-          ]
+          ],
+          [
+            prompt:'SID',
+            qparam:'qp_sid',
+            placeholder:'SID for item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value']
+          ],
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
