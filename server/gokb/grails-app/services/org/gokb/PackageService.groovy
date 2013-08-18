@@ -23,7 +23,12 @@ class PackageService {
 	  log.debug("No current package found. Just create a new one.")
 
 	  // Just create a new package.
-	  pkg = new Package()
+	  pkg = new Package(name:package_name)
+	  
+	  // Ensure we add and create a new ID
+	  pkg.getIds().add(
+		Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid', package_name)
+	  )
 
 	  log.debug("Created package with id ${pkg.id}")
 
@@ -54,7 +59,7 @@ class PackageService {
 		}
 		
 		// New package.
-		pkg = new Package()
+		pkg = new Package(name:package_name)
 		
 		// Add all the ids.
 		pkg.ids.addAll(pkIds)
