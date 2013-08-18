@@ -64,6 +64,9 @@ class PackageService {
 	  }
 	}
 	
+	// Save the Package.
+	pkg.save(failOnError:true)
+	
 	pkg
   }
 
