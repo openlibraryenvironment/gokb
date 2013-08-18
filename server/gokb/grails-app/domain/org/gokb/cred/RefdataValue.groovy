@@ -29,6 +29,19 @@ class RefdataValue {
   public String toString() {
 	return "${value}"
   }
+  
+  @Override
+  public boolean equals (Object obj) {
+	
+	if (obj != null) {
+	  Object dep_obj = KBComponent.deproxy (obj)
+	  if (dep_obj instanceof RefdataValue) {
+		return dep_obj.id == id
+	  }
+	}
+	
+	return false
+  }
 
   static def refdataFind(params) {
     def result = [];
