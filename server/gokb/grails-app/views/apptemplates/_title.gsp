@@ -90,7 +90,7 @@
     </g:if>
     <g:if test="${d.tipps}">
       <div class="control-group">
-        <dt>Package Appearances</dt>
+        <dt>Availability</dt>
         <dd>
           <table class="table table-striped table-bordered">
             <thead>
