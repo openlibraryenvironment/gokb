@@ -11,7 +11,7 @@
       <g:form controller="workflow" action="editTitleTransfer" id="${params.id}">
         <div class="row-fluid">
           <div class="span12 hero well">
-            Title Transfer (2/2)
+            ${d.activityName} - ${d.status?.value}
           </div>
         </div>
         <div class="row-fluid">

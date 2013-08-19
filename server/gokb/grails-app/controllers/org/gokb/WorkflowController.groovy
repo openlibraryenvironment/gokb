@@ -66,6 +66,9 @@ class WorkflowController {
     titleTransferData.title_ids = []
     titleTransferData.tipps = [:]
 
+    def sw = new StringWriter()
+
+    boolean first = true
     params.each { p ->
       if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
         def tt = p.key.substring(3);
@@ -74,6 +77,15 @@ class WorkflowController {
         // result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
         // Find all tipps for the title and add to tipps
         if ( title_instance ) {
+          if ( first == true ) {
+            first=false
+          }
+          else {
+            sw.write(", ");
+          }
+
+          sw.write(title_instance.name);
+
           result.titles.add(title_instance) 
           titleTransferData.title_ids.add(title_instance.id)
           title_instance.tipps.each { tipp ->
@@ -97,7 +109,9 @@ class WorkflowController {
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleTransfer').save()
 
 
-    def new_activity = new Activity(activityData:builder.toString(),
+    def new_activity = new Activity(
+                                    activityName:"Title transfer ${sw.toString()} to ${result.newPublisher.name}",
+                                    activityData:builder.toString(),
                                     owner:user,
                                     status:active_status, 
                                     type:transfer_type).save()
@@ -172,6 +186,7 @@ class WorkflowController {
     def result = [:]
     result.titles = []
     result.tipps = []
+    result.d = activity_record
 
     activity_data.title_ids.each { tid ->
       result.titles.add(TitleInstance.get(tid))
@@ -253,5 +268,8 @@ class WorkflowController {
       current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
       current_tipp.save()
     }
+
+    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
+    activity_record.save()
   }
 }
