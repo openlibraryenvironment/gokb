@@ -331,7 +331,7 @@ class IngestService {
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project_id, boolean incremental = true) {
+  def ingest(project_data, project_id, boolean incremental = false) {
 	// Return result.
 	def result = [:]
 	Set<String> skipped_titles = []
@@ -642,36 +642,6 @@ class IngestService {
 			// Save.
 			tipp.save(failOnError:true, flush:true)
 			log.debug ("Soft deleted tipp ${tipp_id}")
-		  }
-		}
-	  }
-	
-	  // Go through each of the packages.
-	  for (Set<Long> pkgs : retire_packages.values()) {
-		
-		// The package.
-		Package.withNewTransaction { TransactionStatus status ->
-
-		  for (Long pkg_id : pkgs) {
-
-			Package pkg = Package.get(pkg_id)
-
-			// Retire each TIPP
-			pkg.getTipps().each { def tipp ->
-
-			  // Retire
-			  tipp.retire()
-			  log.debug("TIPP ${tipp.id} retired.")
-			  
-			  // Save the TIPP.
-			  tipp.save(failOnError:true)
-			}
-
-			// Then retire the package.
-			pkg.retire()
-			
-			// Save the package.
-			pkg.save(failOnError:true)
 		  }
 		}
 	  }
