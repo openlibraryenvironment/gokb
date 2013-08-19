@@ -228,5 +228,30 @@ class WorkflowController {
     }
 
     // Step two : Process TIPP adjustments
+    activity_data.tipps.each { tipp_map_entry ->
+      def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
+      log.debug("Processing current tipp : ${current_tipp.id}");
+
+      tipp_map_entry.value.newtipps.each { newtipp ->
+        log.debug("Process new tipp : ${newtipp}");
+
+        def new_package = Package.get(newtipp.package_id)
+        def new_platform = Platform.get(newtipp.platform_id)
+ 
+        def new_tipp = new TitleInstancePackagePlatform(
+                                   pkg:new_package,
+                                   hostPlatform:new_platform,
+                                   title:current_tipp.title,
+                                   startDate:current_tipp.startDate,
+                                   startVolume:current_tipp.startVolume,
+                                   startIssue:current_tipp.startIssue,
+                                   endDate:current_tipp.endDate,
+                                   endVolume:current_tipp.endVolume,
+                                   endIssue:current_tipp.endIssue).save()
+      }
+
+      current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+      current_tipp.save()
+    }
   }
 }
