@@ -55,7 +55,7 @@ class User {
 
   transient def getUserOptions() {
     def userOptions = [:]
-    userOptions.availableSearches = grailsApplication.config.globalSearchTemplates
+    userOptions.availableSearches = grailsApplication.config.globalSearchTemplates.sort{ it.value.title }
     userOptions
   }
 }
