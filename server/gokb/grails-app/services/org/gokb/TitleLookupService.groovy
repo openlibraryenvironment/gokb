@@ -143,8 +143,7 @@ class TitleLookupService {
 	  addPublisher(publisher_name, the_title)
   
 	  // Add all the identifiers.
-	  Set<Identifier> ids = the_title.ids
-	  ids.addAll(results['ids'])
+	  the_title.getIds().addAll(results['ids'])
   
 	  // Try and save the result now.
 	  if ( the_title.save(failOnError:true,flush:true) ) {
