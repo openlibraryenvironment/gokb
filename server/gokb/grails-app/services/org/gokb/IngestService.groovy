@@ -331,7 +331,7 @@ class IngestService {
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project_id, boolean incremental = true) {
+  def ingest(project_data, project_id, boolean incremental = false) {
 	// Return result.
 	def result = [:]
 	Set<String> skipped_titles = []
@@ -364,10 +364,13 @@ class IngestService {
 
 		log.debug ("Forcibly flushed the session.")
 	  }
+	  
+	  // Save the old tipps here.
+	  Map<String, Set<Long>> old_tipps = [:]
+	  
 
 	  // Ignore the case of the map key that is used to store the field positions.
 	  CaseInsensitiveMap col_positions = [:]
-	  Map<String, Set<Long>> old_tipps = [:]
 	  def identifiers = []
 	  def gokb_additional_tipp_props = []
 	  def gokb_additional_ti_props = []
@@ -472,7 +475,7 @@ class IngestService {
 				// The package.
 				String pkg_name = getRowValue(datarow,col_positions,PACKAGE_NAME)
 				Package pkg = packageService.findCorrectPackage(
-					getRowValue(datarow,col_positions,PACKAGE_NAME),
+					pkg_name,
 					incremental
 				);
 
@@ -548,10 +551,15 @@ class IngestService {
 
 				  // Remove from the list.
 				  def pkg_tipps = getPackageTipps(old_tipps, pkg_name, pkg)
-				  pkg_tipps.remove(tipp)
-
-				  // Set all the tipp values in the file.
-				  tipp.getMetaClass().setProperties(tipp, tipp_values)
+				  pkg_tipps.remove(tipp.id)
+				  
+				  // Set all properties on the object.
+				  tipp_values.each { prop, value ->
+					// Only set the property if we have a value.
+					if (value != null && value != "") {
+					  tipp."${prop}" = value
+					}
+				  }
 				}
 
 				// Add each TIPP custom property in turn.
@@ -562,10 +570,6 @@ class IngestService {
 				}
 
 				// Need to ensure everything is saved.
-				title_info.save(failOnError:true, flush:true)
-				project.save(failOnError:true, flush:true)
-				pkg.save(failOnError:true, flush:true)
-				platform_info.save(failOnError:true, flush:true)
 				tipp.save(failOnError:true, flush:true)
 
 			  } else {
@@ -627,7 +631,7 @@ class IngestService {
 		  for (Long tipp_id : tipps) {
 
 			// Ensure the tipp is in this transaction.
-			TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.load(tipp_id)
+			TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
 			// Soft delete.
 			tipp.deleteSoft()
@@ -1113,10 +1117,10 @@ class IngestService {
 	pkg
   }
 
-  private Set<Long> getPackageTipps (Map<String, Set<Long>> packageTippLists, String pkgName, Package pkg) {
+  private static Set<Long> getPackageTipps (Map<String, Set<Long>> packageTippLists, String pkgName, Package pkg) {
 
 	// Get from the map.
-	Set<Long> tipps = packageTippLists[pkgName]
+	Set<Long> tipps = packageTippLists.get(pkgName)
 
 	// If it's null then we haven't initialised it yet.
 	if (tipps == null) {
@@ -1126,7 +1130,7 @@ class IngestService {
 	  }
 
 	  // Ensure we add to the map.
-	  packageTippLists[pkgName] = tipps
+	  packageTippLists.put(pkgName, tipps)
 	}
 
 	// Return the TIPPs.
