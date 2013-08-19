@@ -10,6 +10,7 @@ class BootStrap {
   def grailsApplication
 
   def init = { servletContext ->
+
     // Global System Roles
     def userRole = Role.findByAuthority('ROLE_USER') ?: new Role(authority: 'ROLE_USER', roleType:'global').save(failOnError: true)
     def editorRole = Role.findByAuthority('ROLE_EDITOR') ?: new Role(authority: 'ROLE_EDITOR', roleType:'global').save(failOnError: true)

@@ -712,9 +712,6 @@ globalSearchTemplates = [
         ]
       ]
     ],
-
-
-
 ]
 
 
