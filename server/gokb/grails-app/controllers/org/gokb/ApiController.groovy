@@ -335,7 +335,7 @@ class ApiController {
 		if (params.ingest) {
 		  
 		  // Is this an incremental update.
-		  boolean incremental = (params.boolean.incremental != false)
+		  boolean incremental = (params.boolean("incremental") != false)
 		  
 		  // Try and ingest the project too!
 		  projectIngest(project,parsed_project_file,incremental)
