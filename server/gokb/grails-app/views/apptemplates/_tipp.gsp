@@ -89,9 +89,9 @@
       <g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
     </div>
 
+ 
     <div class="tab-pane" id="status">
-      <h1>Status</h1>
-      <p>hfksfjk</p>
+      <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
     </div>
 
   </div>
