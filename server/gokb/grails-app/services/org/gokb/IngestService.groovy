@@ -445,7 +445,10 @@ class IngestService {
 				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
 				  getRowValue(datarow,col_positions,PUBLISHER_NAME),
 				  ids
-				  );
+			  );
+			
+			  // Load the project.
+			  project = project.merge()
 
 			  // If we match a title then ingest...
 			  if (title_info != null) {
@@ -453,14 +456,14 @@ class IngestService {
 				// Additional TI properties.
 				gokb_additional_ti_props.each { apd ->
 				  title_info.appendToAdditionalProperty(
-					  apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
-					  )
+					apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
+				  )
 				}
 
 				// Platforms must already exist in GOKb, so just to the lookup.
 				Platform platform_info = componentLookupService.lookupComponent(
-					getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
-					)
+				  getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
+				)
 				if (platform_info == null) {
 				  throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
 				}
@@ -471,9 +474,6 @@ class IngestService {
 					getRowValue(datarow,col_positions,PACKAGE_NAME),
 					incremental
 				);
-
-				// Refresh the project in the current session.
-				project.refresh()
 
 				// Set the propvider of the package to that on the project.
 				pkg.setProvider (project.provider)
@@ -516,14 +516,14 @@ class IngestService {
 				if (incremental) {
 				  // TODO: THIS DOES NOT WORK!!!!
 				  // Incremental... Lookup the TIPP
-				  //				  def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
-				  //				  tipp = crit.get {
-				  //					and {
-				  //					  crit.add ("title.id", "eq", title_info.id)
-				  //					  crit.add ("pkg.id", "eq", pkg.id)
-				  //					  crit.add ("hostPlatform.id", "eq", platform_info.id)
-				  //					}
-				  //				  }
+//				  def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+//				  tipp = crit.get {
+//					and {
+//					  crit.add ("title.id", "eq", title_info.id)
+//					  crit.add ("pkg.id", "eq", pkg.id)
+//					  crit.add ("hostPlatform.id", "eq", platform_info.id)
+//					}
+//				  }
 
 				  // Get the tipps from the title.
 				  tipp = title_info.getTipps().find { def the_tipp ->
@@ -556,12 +556,15 @@ class IngestService {
 				// Add each TIPP custom property in turn.
 				gokb_additional_tipp_props.each { apd ->
 				  tipp.appendToAdditionalProperty(
-					  apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
-					  )
+					 apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
+				  )
 				}
 
 				// Need to ensure the TIPP is saved.
-				tipp.save(failOnError:true)
+				tipp.save(failOnError:true, flush:true)
+				project.save(failOnError:true, flush:true)
+				pkg.save(failOnError:true, flush:true)
+				platform_info.save(failOnError:true, flush:true)
 
 			  } else {
 
@@ -587,7 +590,7 @@ class IngestService {
 				cleanUpGorm()
 
 				// Update project progress indicator, save in db so any observers can see progress
-				def project_info = RefineProject.get(project.id)
+				def project_info = RefineProject.load(project.id)
 				project_info.progress = ( ctr / project_data.rowData.size() * 100 )
 				project_info.save(failOnError:true)
 			  }
@@ -608,7 +611,7 @@ class IngestService {
 		  ctr++
 
 		  // Forcibly flush the session.
-		  //      status.flush()
+		  status.flush()
 		}
 	  }
 
@@ -616,50 +619,46 @@ class IngestService {
 		log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
 	  }
 
-
-
 	  // Soft delete the TIPPs not updated here.
-	  for (Set tipps : packageTippLists.values()) {
-		for (def tipp : tipps) {
-		  // Wrap in with transaction.
-		  RefineProject.withNewTransaction { TransactionStatus status ->
+	  RefineProject.withNewTransaction { TransactionStatus status ->
+		for (Set<Long> tipps : packageTippLists.values()) {
+		  for (Long tipp_id : tipps) {
+
+			// Ensure the tipp is in this transaction.
+			TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.load(tipp_id)
 
 			// Soft delete.
 			tipp.deleteSoft()
 
 			// Save.
-			tipp.save(failOnError:true)
-
-			log.debug ("Soft deleted tipp with ${tipp.id}")
+			tipp.save(failOnError:true, flush:true)
+			log.debug ("Soft deleted tipp ${tipp_id}")
 		  }
 		}
-
-		// Update the project file.
-		def project_info = RefineProject.load(project.id)
-
-		// If any rows with data have been skipped then we need to set them against the,
-		// project here, for reporting back into refine.
-		if (skipped_titles) {
-
-		  // Partially ingested
-		  project_info.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
-
-		} else {
-
-		  // Set to ingested.
-		  project_info.setProjectStatus (RefineProject.Status.INGESTED)
-		}
-
-		// Update the skipped rows and the progress.
-		project_info.getSkippedTitles().addAll(skipped_titles)
-		project_info.progress = 100;
-
-		// Save the project.
-		project_info.save(failOnError:true, flush:true)
-
-		// Force the session to flush
-		status.flush()
 	  }
+		
+	  // Ensure the project exists in this session.
+	  project = project.merge()
+
+	  // If any rows with data have been skipped then we need to set them against the,
+	  // project here, for reporting back into refine.
+	  if (skipped_titles) {
+
+		// Partially ingested
+		project.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
+
+	  } else {
+
+		// Set to ingested.
+		project.setProjectStatus (RefineProject.Status.INGESTED)
+	  }
+
+	  // Update the skipped rows and the progress.
+	  project.getSkippedTitles().addAll(skipped_titles)
+	  project.progress = 100;
+
+	  // Save the project.
+	  project.save(failOnError:true, flush:true)
 	}
 	catch ( Exception e ) {
 	  def project_info = RefineProject.get(project_id)
@@ -1112,16 +1111,18 @@ class IngestService {
 	pkg
   }
 
-  private Map<String, Set<TitleInstancePackagePlatform>> packageTippLists = [:]
-  private Set<TitleInstancePackagePlatform> getPackageTipps (String pkgName, Package pkg) {
+  private Map<String, Set<Long>> packageTippLists = [:]
+  private Set<Long> getPackageTipps (String pkgName, Package pkg) {
 
 	// Get from the map.
-	Set<TitleInstancePackagePlatform> tipps = packageTippLists[pkgName]
+	Set<Long> tipps = packageTippLists[pkgName]
 
 	// If it's null then we haven't initialised it yet.
 	if (tipps == null) {
 	  tipps = []
-	  tipps.addAll(pkg.getTipps())
+	  for (def tipp: pkg.getTipps()) {
+		tipps << tipp.id
+	  }
 
 	  // Ensure we add to the map.
 	  packageTippLists[pkgName] = tipps
