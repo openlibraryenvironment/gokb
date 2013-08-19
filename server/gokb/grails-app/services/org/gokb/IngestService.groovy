@@ -331,7 +331,7 @@ class IngestService {
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project_id, boolean incremental = false) {
+  def ingest(project_data, project_id, boolean incremental = true) {
 	// Return result.
 	def result = [:]
 	Set<String> skipped_titles = []
