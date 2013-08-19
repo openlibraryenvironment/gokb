@@ -4,6 +4,36 @@
 <h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
 
 <div id="content">
+
+  <dl class="dl-horizontal">
+
+    <div class="control-group">
+      <dt>Name</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
+    </div>
+
+    <div class="control-group">
+      <dt>Status</dt>
+      <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
+    </div>
+
+    <div class="control-group">
+      <dt>Internal ID</dt>
+      <dd>${d.id}</dd>
+    </div>
+
+    <div class="control-group">
+      <dt>Reference</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="reference"/></dd>
+    </div>
+
+    <div class="control-group">
+      <dt>Short Code</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
+    </div>
+
+  </dl>
+
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
@@ -44,6 +74,15 @@
             </dd>
           </div>
       
+          <div class="control-group">
+            <dt>IDs</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'ids', cols:['namespace.value','value'], colheads:['Namespace','Identifier']]}" />
+            </dd>
+          </div>
+
           <g:if test="${d.parent != null}">
             <div class="control-group">
               <dt>Parent</dt>
