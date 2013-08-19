@@ -1,9 +1,16 @@
 <h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
 
-<g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 
+<div id="content">
+  <ul id="tabs" class="nav nav-tabs">
+    <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP Details</a></li>
+    <li><a href="#header" data-toggle="tab">Header</a></li>
+    <li><a href="#status" data-toggle="tab">Status</a></li>
+  </ul>
+  <div id="my-tab-content" class="tab-content">
+    <div class="tab-pane active" id="tippdetails">
 
-<g:if test="${d.id != null}">
+      <g:if test="${d.id != null}">
 		
 	<dl class="dl-horizontal">
 	
@@ -75,7 +82,22 @@
 	  </div>
 
 	</dl>
-</g:if>
+      </g:if>
+    </div>
+
+    <div class="tab-pane" id="header">
+      <g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+    </div>
+
+    <div class="tab-pane" id="status">
+      <h1>Status</h1>
+      <p>hfksfjk</p>
+    </div>
+
+  </div>
+</div>
+
+
 <script language="JavaScript">
 	$(document).ready(function() {
 
