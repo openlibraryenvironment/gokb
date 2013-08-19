@@ -148,12 +148,13 @@ GOKb.handlers.history = function() {
 	});
 };
 
-GOKb.handlers.estimateChanges = function () {
+GOKb.handlers.estimateChanges = function (incremental) {
+	
 	
   // Get the estimated changes.
   GOKb.doCommand (
     "project-estimate-changes",
-    {"project" : theProject.id},
+    {"project" : theProject.id, "incremental" : (!incremental ? false : true)},
     null,
     {
     	onDone : function (data) {
@@ -193,7 +194,7 @@ GOKb.handlers.estimateChanges = function () {
     				dialog.close();
     				
     				// Fire the next stage of the ingest.
-    				GOKb.handlers.checkInWithProps({ingest : true});
+    				GOKb.handlers.checkInWithProps({"ingest" : true, "incremental" : (!incremental ? false : true)});
     				
     			}).appendTo(
     			  // Append to the footer.

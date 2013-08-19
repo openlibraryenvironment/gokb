@@ -2,13 +2,12 @@ package org.gokb
 
 import static java.util.UUID.randomUUID
 import grails.converters.JSON
+import grails.plugins.springsecurity.Secured
+import grails.util.GrailsNameUtils
 
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
-import grails.plugins.springsecurity.Secured
-import grails.util.GrailsNameUtils
-import org.codehaus.groovy.grails.commons.ApplicationHolder
 
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
@@ -60,7 +59,7 @@ class ApiController {
 	}
 	else {
 	  def gokbVersion = request.getHeader("GOKb-version")
-          def serv_url = ApplicationHolder.application.config.serverUrl ?: 'http://gokb.kuali.org/extension/latest.zip'
+      def serv_url = grailsApplication.config.serverUrl ?: 'http://gokb.kuali.org/extension/latest.zip'
 
 	  if (gokbVersion != grailsApplication.config.refine_min_version) {
 		apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
@@ -334,8 +333,12 @@ class ApiController {
 		project.save(flush:true, failOnError:true)
 
 		if (params.ingest) {
+		  
+		  // Is this an incremental update.
+		  boolean incremental = (params.boolean("incremental") != false)
+		  
 		  // Try and ingest the project too!
-		  projectIngest(project,parsed_project_file)
+		  projectIngest(project,parsed_project_file,incremental)
 		}
 
 		// Return the project data.
@@ -363,7 +366,7 @@ class ApiController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  private def projectIngest (RefineProject project, parsed_data) {
+  private def projectIngest (RefineProject project, parsed_data, boolean incremental) {
 	log.debug("projectIngest....");
 
 	if (project.getProjectStatus() == RefineProject.Status.CHECKED_IN) {
@@ -374,7 +377,7 @@ class ApiController {
 
 	  if ( validationResult.status == true ) {
 		ingestService.extractRules(parsed_data, project)
-		doIngest(parsed_data, project);
+		doIngest(parsed_data, project, incremental);
 	  }
 	  else {
 		log.debug("validation failed, not ingesting");
@@ -421,23 +424,21 @@ class ApiController {
 	apiReturn ( validationResult )
   }
 
-  private def doIngest(parsed_data, project) {
+  private def doIngest(parsed_data, project, boolean incremental) {
 	log.debug("ingesting refine project.. kicking off background task");
 
 
 	// Create a new session to run the ingest service in asynchronous.
 
-	runAsync ({projData, Long projId ->
+	runAsync ({projData, Long projId, boolean inc ->
 	  RefineProject.withNewSession {
 
 		// Fire the ingest of the project id.
-		ingestService.ingest(projData, projId)
-
-
+		ingestService.ingest(projData, projId, inc)
 	  }
 
 	  log.debug ("Finished data insert.")
-	}.curry(parsed_data, project.id))
+	}.curry(parsed_data, project.id, incremental))
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

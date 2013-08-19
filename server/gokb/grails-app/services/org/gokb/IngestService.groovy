@@ -24,6 +24,7 @@ class IngestService {
   def grailsApplication
   def titleLookupService
   def componentLookupService
+  def packageService
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
@@ -48,9 +49,9 @@ class IngestService {
   public static final String DATE_LAST_PACKAGE_ISSUE = 'DateLastPackageIssue'
   public static final String VOLUME_LAST_PACKAGE_ISSUE = 'VolumeLastPackageIssue'
   public static final String NUMBER_LAST_PACKAGE_ISSUE = 'NumberLastPackageIssue'
-  
-//  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}issn"
-//  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}eissn"
+
+  //  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}issn"
+  //  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}eissn"
   public static final String HOST_PLATFORM_NAME = 'platform.host.name'
   public static final String HOST_PLATFORM_URL = 'platform.host.url'
 
@@ -60,18 +61,18 @@ class IngestService {
 
   public static final String PACKAGE_NAME = 'PackageName'
   public static final String PUBLISHER_NAME = 'org.publisher.name'
-  
-  
+
+
   /** Missing fields **/
   public static final String DELAYED_OA = "delayedOA"
   public static final String DELAYED_OA_EMBARGO = "delayedOAEmbargo"
   public static final String HYBRID_OA = "hybridOA"
-  public static final String HYBRID_OA_URL = "hybridOAurl"
+  public static final String HYBRID_OA_URL = "hybridOAUrl"
   public static final String PRIMARY_TIPP = "PrimaryTIPP"
   public static final String TIPP_PAYMENT = "TIPPPayment"
   public static final String TIPP_STATUS = "TIPPStatus"
-  
-  
+
+
 
   /**
    *  Validate a parsed project. 
@@ -81,7 +82,7 @@ class IngestService {
 	log.debug("Validate");
 
 	def result = Validation.doValidate(project_data)
-    
+
 	if ( result.messages?.size() > 0 ) {
 	  log.error("validation has messages: a failure: ${result.messages}");
 	  result.status = false;
@@ -92,63 +93,63 @@ class IngestService {
 
 	result
   }
-  
+
   /**
    * Do some validation on the content here.
    */
   def validateContent (project_data, col_positions, result) {
-    
-    // Only check the content if the status is correct.
-    if (result.status) {
-    
-      // Go through the data and see whether each row is valid.
-      def rowCount = 1
-      
-      // Keep track of package ids in this doc.
-      Set packageIdentifiers = []
-      project_data.rowData.each { datarow ->
-      
-        // Check the presence of the name first.
-        def pkg_name_pos = col_positions[PACKAGE_NAME]
-        
-        if (pkg_name_pos != null) {
-          
-          // Check the value of package name here.
-          def value = getRowValue(datarow,col_positions,PACKAGE_NAME)
-          if (!value || value == "") {
-            result.messages.add([text:"Row ${rowCount} contains no data for column ${PACKAGE_NAME}", type:"data_invalid", col: "${PACKAGE_NAME}"]);
-          } else {
-            // Add to the list of package ids.
-            packageIdentifiers << value.toString()
-          }
-        }
-        rowCount ++
-      }
-      
-      // Check existing packages.
-      if (packageIdentifiers) {
+
+	// Only check the content if the status is correct.
+	if (result.status) {
+
+	  // Go through the data and see whether each row is valid.
+	  def rowCount = 1
+
+	  // Keep track of package ids in this doc.
+	  Set packageIdentifiers = []
+	  project_data.rowData.each { datarow ->
+
+		// Check the presence of the name first.
+		def pkg_name_pos = col_positions[PACKAGE_NAME]
+
+		if (pkg_name_pos != null) {
+
+		  // Check the value of package name here.
+		  def value = getRowValue(datarow,col_positions,PACKAGE_NAME)
+		  if (!value || value == "") {
+			result.messages.add([text:"Row ${rowCount} contains no data for column ${PACKAGE_NAME}", type:"data_invalid", col: "${PACKAGE_NAME}"]);
+		  } else {
+			// Add to the list of package ids.
+			packageIdentifiers << value.toString()
+		  }
+		}
+		rowCount ++
+	  }
+
+	  // Check existing packages.
+	  if (packageIdentifiers) {
 		def q = ComboCriteria.createFor(Package.createCriteria())
 		def existingPkgs = q.list {
 		  and {
-			  q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-			  q.add ("ids.value", "in", [packageIdentifiers])
+			q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+			q.add ("ids.value", "in", [packageIdentifiers])
 		  }
 		}
-        
-        if (existingPkgs) {
-          // Get the package ids that cause the issue.
-          Set offendingIds = []
-          existingPkgs.each {pkg ->
-            pkg.ids.each {Identifier theId ->
-              if (packageIdentifiers.contains(theId.value)) offendingIds << theId.value
-            }
-          }
-          
-          // Add a message.
-          result.messages.add([text:"Data present in column \"${PACKAGE_NAME}\" would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
-        }
-      }
-    }
+
+		if (existingPkgs) {
+		  // Get the package ids that cause the issue.
+		  Set offendingIds = []
+		  existingPkgs.each {pkg ->
+			pkg.ids.each {Identifier theId ->
+			  if (packageIdentifiers.contains(theId.value)) offendingIds << theId.value
+			}
+		  }
+
+		  // Add a message.
+		  result.messages.add([text:"Data present in column \"${PACKAGE_NAME}\" would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
+		}
+	  }
+	}
   }
 
   /**
@@ -176,7 +177,7 @@ class IngestService {
 	  if (cn) {
 		// Add to column positions
 		col_positions[cn] = cd.cellIndex;
-		
+
 		// Check to see if it's an identifier.
 		if (cn.startsWith(IDENTIFIER_PREFIX) ) {
 		  def idparts = cn.split(/\./)
@@ -189,20 +190,20 @@ class IngestService {
 	}
 
 	log.debug("Using col positions: ${col_positions}, identifiers: ${identifiers}")
-	
+
 	// Package identifier.
 	def default_pkg_identifier = null
-	
+
 	// If a project id has been supplied
 	if (project_id != null) {
 	  log.debug("Using refine project id ${project_id}.")
 
 	  // Check the package.
 	  RefineProject project = RefineProject.get(project_id)
-	  
+
 	  // Check that the project exists...
 	  if (project) {
-		
+
 		log.debug("Refine project exists. Use to generate the default pkg_id.")
 
 		// The provider.
@@ -211,8 +212,8 @@ class IngestService {
 		// Set the default pkg id to use when no value supplied.
 		default_pkg_identifier = "${provider.name}:${project_id}"
 	  }
-	} 
-	
+	}
+
 	// Could not create default package id. Assume same new package for each blank row.
 	if (!default_pkg_identifier) {
 	  log.debug("No refine project id supplied. Assuming blank rows are added to the same new package.")
@@ -228,37 +229,37 @@ class IngestService {
 	// Go through each row and build up the tipp criteria.
 	def tiCrit = ComboCriteria.createFor(TitleInstance.createCriteria())
 	existingTitles = tiCrit.get {
-	  
+
 	  or {
 
 		project_data.rowData.each { datarow ->
 		  if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
 
 			def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-//			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+			//			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
 
 			// Just add the normname to the platforms list.
 			platformNames << host_platform_name
-			
+
 			// Package ID
 			def pkg_id	= getRowValue(datarow,col_positions,PACKAGE_NAME)
 			pkg_id = pkg_id?.trim()
 			if (!pkg_id || pkg_id == "") {
 			  pkg_id = default_pkg_identifier
 			}
-			
+
 			packageIdentifiers << pkg_id.toString()
-			
+
 			// Lookup a publisher ID if present.
 			def pub = componentLookupService.lookupComponent ( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
 			if (pub) publisher_orgs << pub
 
 			// Each identifier type.
 			identifiers.each { ai ->
-			  
+
 			  // The value.
 			  def val = jsonv(datarow.cells[ai.colno])
-			  
+
 			  if (val) {
 				and {
 				  tiCrit.add ("ids.namespace.value", "eq", ai.type)
@@ -280,24 +281,24 @@ class IngestService {
 		countDistinct("id")
 	  }
 	}
-	
+
 	// Try and find a package for the provider with the name entered.
 	def q = ComboCriteria.createFor(Package.createCriteria())
 	def existingPkgs = q.get {
 	  and {
-  	    q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-  	    q.add ("ids.value", "in", [packageIdentifiers])
+		q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+		q.add ("ids.value", "in", [packageIdentifiers])
 	  }
-	  
+
 	  projections {
-	   countDistinct ("id")
+		countDistinct ("id")
 	  }
 	}
 
 	// New packages.
 	newPkgs = packageIdentifiers.size() - existingPkgs
 	result << [ type : "packages", "new" : (newPkgs), "updated" : existingPkgs ]
-	
+
 
 	// We should now have a query that we can execute to determine (roughly) how many Tipps will be added.
 	result << [ type : "titles", "new" : (titleRows - existingTitles), "updated" : existingTitles ]
@@ -305,10 +306,10 @@ class IngestService {
 	// Run a count.
 	existingPlats = platformNames.size()
 	result << [ type : "platforms", "new" : 0, "updated" : existingPlats ]
-	
+
 	// Distinct listed publishers.
 	if (publisher_orgs.size() > 0) {
-	  
+
 	  // Check ones that haven't yet published.
 	  publisher_orgs.each { Org publisher ->
 		if (publisher.getPublishedTitles().size() == 0) {
@@ -316,7 +317,7 @@ class IngestService {
 		}
 	  }
 	}
-	
+
 	// Existing publishers
 	existingPubs = publisher_orgs.size() - newPubs
 	result << [ type : "publishers", "new" : newPubs, "updated" : existingPubs ]
@@ -330,7 +331,7 @@ class IngestService {
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project_id) {
+  def ingest(project_data, project_id, boolean incremental = true) {
 	// Return result.
 	def result = [:]
 	Set<String> skipped_titles = []
@@ -352,7 +353,7 @@ class IngestService {
 		project.progress = 0
 		project.setProjectStatus(RefineProject.Status.INGESTING)
 		project.save(failOnError:true)
-		
+
 		// Clear the skipped_titles
 		project.getSkippedTitles().clear()
 
@@ -363,45 +364,51 @@ class IngestService {
 
 		log.debug ("Forcibly flushed the session.")
 	  }
+	  
+	  // Track the old tipps here.
+	  Map<String, Set<Long>> old_tipps = [:]
+	  
+	  // Track the packages in need of retiring here.
+	  Map<String, Long> retire_packages = [:]
 
 	  // Ignore the case of the map key that is used to store the field positions.
 	  CaseInsensitiveMap col_positions = [:]
 	  def identifiers = []
 	  def gokb_additional_tipp_props = []
 	  def gokb_additional_ti_props = []
-	  
+
 	  // Create a new transaction for data examination.
 	  RefineProject.withNewTransaction { TransactionStatus status ->
 		project_data.columnDefinitions.each { cd ->
-		  
+
 		  // Column name.
 		  def cn = cd.name
 
 		  if (cn) {
 			// Add to column positions
 			col_positions[cn] = cd.cellIndex;
-			
+
 			switch (cn) {
 			  case {it.startsWith(IDENTIFIER_PREFIX)} :
-			  
-			  	// Identifier.
+
+			  // Identifier.
 				def idparts = cn.split(/\./)
 				if ( idparts.length == 3 ) {
 				  // Add to the IDs.
 				  identifiers.add([type:idparts[2],colno:cd.cellIndex])
 				}
 				break
-				
+
 			  case {it.startsWith(TI_FIELD_PREFIX)} :
-			  
-			  	// Additional property on TI
+
+			  // Additional property on TI
 				def prop_name = cn.substring(TI_FIELD_PREFIX.length())
 				gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex])
 				break
-				
+
 			  case {it.startsWith(TIPP_FIELD_PREFIX)} :
-			  
-			  	// Additional property on TIPP
+
+			  // Additional property on TIPP
 				def prop_name = cn.substring(TIPP_FIELD_PREFIX.length())
 				gokb_additional_tipp_props.add([name:prop_name, col:cd.cellIndex])
 				break
@@ -438,16 +445,20 @@ class IngestService {
 
 			  // Title Instance
 			  log.debug("Looking up title...(ids: ${ids})")
-			  
+
 			  // Lookup the title.
 			  TitleInstance title_info = titleLookupService.find(
-				jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
-				getRowValue(datarow,col_positions,PUBLISHER_NAME),
-				ids);
-			  
+				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+				  getRowValue(datarow,col_positions,PUBLISHER_NAME),
+				  ids
+			  );
+			
+			  // Load the project.
+			  project = project.merge()
+
 			  // If we match a title then ingest...
 			  if (title_info != null) {
-				
+
 				// Additional TI properties.
 				gokb_additional_ti_props.each { apd ->
 				  title_info.appendToAdditionalProperty(
@@ -455,99 +466,131 @@ class IngestService {
 				  )
 				}
 
-				// Platform.
-				def host_platform_url = jsonv(datarow.cells[col_positions[HOST_PLATFORM_URL]])
-				def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
-
-				if ( host_platform_name == null ) {
-				  throw new Exception("Host platform name is null. Col is ${col_positions[HOST_PLATFORM_NAME]}. Datarow was ${datarow}");
-				}
-				
-				// Platforms must already exist in GOKb.
-				Platform platform_info = componentLookupService.lookupComponent(host_platform_name)
+				// Platforms must already exist in GOKb, so just to the lookup.
+				Platform platform_info = componentLookupService.lookupComponent(
+				  getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
+				)
 				if (platform_info == null) {
 				  throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
 				}
-	
-				// Does the row specify a package identifier?
-				def pkg_identifier_from_row = getRowValue(datarow,col_positions,PACKAGE_NAME)
 
 				// The package.
-				def pkg = getOrCreatePackage(pkg_identifier_from_row, project.id);
+				String pkg_name = getRowValue(datarow,col_positions,PACKAGE_NAME)
+				Package pkg = packageService.findCorrectPackage(
+				  retire_packages,
+				  pkg_name,
+				  incremental
+				);
 
-				// Try and lookup a tipp.
-				def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
-				def tipp = crit.get {
-				  and {
-					crit.add ("title", "eq", title_info)
-					crit.add ("pkg", "eq", pkg)
-					crit.add ("hostPlatform", "eq", platform_info)
-				  }
+				// Set the propvider of the package to that on the project.
+				pkg.setProvider (project.provider)
+
+				// Set the latest project.
+				pkg.setLastProject(project)
+
+				// Save the package.
+				if ( pkg.save(failOnError:true) ) {
+				  log.debug ("Saved package ${pkg.id}")
 				}
-				
+
 				// Populate the tipp attribute map.
 				def tipp_values = [
-    				title:title_info,
-    				pkg:pkg,
-    				hostPlatform:platform_info,
-    				startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-    				startVolume:getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-    				startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-    				endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-    				endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-    				endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-    				embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-    				coverageDepth:getRowRefdataValue("TitleInstancePackagePlatform.CoverageDepth", datarow, col_positions, COVERAGE_DEPTH),
-    				coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-    				url:host_platform_url,
-    				delayedOA:getRowRefdataValue("TitleInstancePackagePlatform.DelayedOA", datarow, col_positions, DELAYED_OA),
-    				delayedOAEmbargo:getRowValue(datarow, col_positions, DELAYED_OA_EMBARGO),
-    				hybridOA:getRowRefdataValue("TitleInstancePackagePlatform.hybridOA", datarow, col_positions, HYBRID_OA),
-    				hybridOAurl:getRowValue(datarow, col_positions, HYBRID_OA_URL),
-    				primary:getRowRefdataValue("TitleInstancePackagePlatform.Primary", datarow, col_positions, PRIMARY_TIPP),
-    				paymentType:getRowRefdataValue("TitleInstancePackagePlatform.PaymentType", datarow, col_positions, TIPP_PAYMENT),
-    				status:getRowRefdataValue(KBComponent.RD_STATUS, datarow, col_positions, TIPP_STATUS)
+				  title:title_info,
+				  pkg:pkg,
+				  hostPlatform:platform_info,
+				  startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+				  startVolume:getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+				  startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+				  endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+				  endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+				  endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+				  embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+				  coverageDepth:getRowRefdataValue("TitleInstancePackagePlatform.CoverageDepth", datarow, col_positions, COVERAGE_DEPTH),
+				  coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+				  url:getRowValue(datarow,col_positions,HOST_PLATFORM_URL),
+				  delayedOA:getRowRefdataValue("TitleInstancePackagePlatform.DelayedOA", datarow, col_positions, DELAYED_OA),
+				  delayedOAEmbargo:getRowValue(datarow, col_positions, DELAYED_OA_EMBARGO),
+				  hybridOA:getRowRefdataValue("TitleInstancePackagePlatform.hybridOA", datarow, col_positions, HYBRID_OA),
+				  hybridOAUrl:getRowValue(datarow, col_positions, HYBRID_OA_URL),
+				  primary:getRowRefdataValue("TitleInstancePackagePlatform.Primary", datarow, col_positions, PRIMARY_TIPP),
+				  paymentType:getRowRefdataValue("TitleInstancePackagePlatform.PaymentType", datarow, col_positions, TIPP_PAYMENT),
+				  status:getRowRefdataValue(KBComponent.RD_STATUS, datarow, col_positions, TIPP_STATUS)
 				]
 
-				// We have a Tipp.
+				def tipp = null
+
+				// Check incrmental.
+				if (incremental) {
+				  // TODO: THIS DOES NOT WORK!!!!
+				  // Incremental... Lookup the TIPP
+//				  def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+//				  tipp = crit.get {
+//					and {
+//					  crit.add ("title.id", "eq", title_info.id)
+//					  crit.add ("pkg.id", "eq", pkg.id)
+//					  crit.add ("hostPlatform.id", "eq", platform_info.id)
+//					}
+//				  }
+
+				  // Get the tipps from the title.
+				  tipp = title_info.getTipps().find { def the_tipp ->
+					// Filter tipps for matching pkg and platform.
+					boolean matched = the_tipp.isCurrent()
+					matched = matched && the_tipp.pkg == pkg
+					matched = matched && the_tipp.hostPlatform == platform_info
+
+					matched
+				  }
+				}
+
+				// Create or update the tipp.
 				if ( !tipp ) {
 				  log.debug("Create new tipp")
 				  tipp = new TitleInstancePackagePlatform(tipp_values)
 				}
 				else {
-				  
+				  // We have a TIPP (only incremental would result in this).
 				  log.debug("TIPP already present, attempting update");
-				
-				  // Set all the tipp values in the file.
-				  tipp.getMetaClass().setProperties(tipp, tipp_values)
+
+				  // Remove from the list.
+				  def pkg_tipps = getPackageTipps(old_tipps, pkg_name, pkg)
+				  pkg_tipps.remove(tipp.id)
+				  
+				  // Set all properties on the object.
+				  tipp_values.each { prop, value ->
+					// Only set the property if we have a value.
+					if (value != null && value != "") {
+					  tipp."${prop}" = value
+					}
+				  }
 				}
-				
+
 				// Add each TIPP custom property in turn.
 				gokb_additional_tipp_props.each { apd ->
 				  tipp.appendToAdditionalProperty(
-					apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
+					 apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
 				  )
 				}
-				
-				// Need to ensure the TIPP is saved.
-				tipp.save(failOnError:true)
+
+				// Need to ensure everything is saved.
+				tipp.save(failOnError:true, flush:true)
 
 			  } else {
-			  
-			  	// Skip this row. Need to log this and save against the project.
+
+				// Skip this row. Need to log this and save against the project.
 				log.debug("Row ${ctr} has been skipped as the data needs to be rectified in the system before it can be ingested.")
-				
+
 				// We store a hash of title joined with package. This isn't ideal.
 				// TODO:Review this.
-				
+
 				def val = (
-				  (getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "") +
-				  (getRowValue(datarow, col_positions, PACKAGE_NAME) ?: "")
-				)
-				
+					(getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "") +
+					(getRowValue(datarow, col_positions, PACKAGE_NAME) ?: "")
+					)
+
 				skipped_titles << val.toString()
 			  }
-			  
+
 			  // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
 			  // instances we've just looked up.
 			  if ( ctr % 25 == 0 ) {
@@ -556,7 +599,7 @@ class IngestService {
 				cleanUpGorm()
 
 				// Update project progress indicator, save in db so any observers can see progress
-				def project_info = RefineProject.get(project.id)
+				def project_info = RefineProject.load(project.id)
 				project_info.progress = ( ctr / project_data.rowData.size() * 100 )
 				project_info.save(failOnError:true)
 			  }
@@ -577,7 +620,7 @@ class IngestService {
 		  ctr++
 
 		  // Forcibly flush the session.
-		  //      status.flush()
+		  status.flush()
 		}
 	  }
 
@@ -585,35 +628,46 @@ class IngestService {
 		log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
 	  }
 
-	  // Wrap in with transaction.
+	  // Soft delete the TIPPs not updated here.
 	  RefineProject.withNewTransaction { TransactionStatus status ->
-		
-    	  // Update the project file.
-    	  def project_info = RefineProject.load(project.id)
-    
-    	  // If any rows with data have been skipped then we need to set them against the,
-    	  // project here, for reporting back into refine.
-    	  if (skipped_titles) {
-    
-    		// Partially ingested
-    		project_info.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
-    
-    	  } else {
-    
-    		// Set to ingested.
-    		project_info.setProjectStatus (RefineProject.Status.INGESTED)
-    	  }
-    
-    	  // Update the skipped rows and the progress.
-    	  project_info.getSkippedTitles().addAll(skipped_titles)
-    	  project_info.progress = 100;
-    
-    	  // Save the project.
-    	  project_info.save(failOnError:true, flush:true)
-		  
-		  // Force the session to flush
-		  status.flush()
+		for (Set<Long> tipps : old_tipps.values()) {
+		  for (Long tipp_id : tipps) {
+
+			// Ensure the tipp is in this transaction.
+			TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+
+			// Soft delete.
+			tipp.deleteSoft()
+
+			// Save.
+			tipp.save(failOnError:true, flush:true)
+			log.debug ("Soft deleted tipp ${tipp_id}")
+		  }
+		}
 	  }
+		
+	  // Ensure the project exists in this session.
+	  project = project.merge()
+
+	  // If any rows with data have been skipped then we need to set them against the,
+	  // project here, for reporting back into refine.
+	  if (skipped_titles) {
+
+		// Partially ingested
+		project.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
+
+	  } else {
+
+		// Set to ingested.
+		project.setProjectStatus (RefineProject.Status.INGESTED)
+	  }
+
+	  // Update the skipped rows and the progress.
+	  project.getSkippedTitles().addAll(skipped_titles)
+	  project.progress = 100;
+
+	  // Save the project.
+	  project.save(failOnError:true, flush:true)
 	}
 	catch ( Exception e ) {
 	  def project_info = RefineProject.get(project_id)
@@ -630,16 +684,16 @@ class IngestService {
 
 	result
   }
-  
+
   def getRowRefdataValue (ref_cat, datarow, col_positions, colname) {
-	
+
 	// Read in the value.
 	String value = getRowValue (datarow, col_positions, colname)
-	
+
 	// We should return null if a blank value has been supplied,
 	// and the default value will be used instead.
 	if (value == null || value.trim() == "") return null
-	
+
 	// lookup or create the value.
 	RefdataCategory.lookupOrCreate(ref_cat, value)
   }
@@ -895,17 +949,17 @@ class IngestService {
 	}
 
 	the_date
-	
-//	def parsed_date = null;
-//	if ( datestr && ( datestr.length() > 0 ) )
-//	  for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
-//		try {
-//		  parsed_date = i.next().parse(datestr.replaceAll('-','/'));
-//		}
-//		catch ( Exception e ) {
-//		}
-//	  }
-//	parsed_date
+
+	//	def parsed_date = null;
+	//	if ( datestr && ( datestr.length() > 0 ) )
+	//	  for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
+	//		try {
+	//		  parsed_date = i.next().parse(datestr.replaceAll('-','/'));
+	//		}
+	//		catch ( Exception e ) {
+	//		}
+	//	  }
+	//	parsed_date
   }
 
   def extractRules(parsed_data, project) {
@@ -1015,35 +1069,35 @@ class IngestService {
 	log.debug("identifier is ${identifier}")
 	def pkg = null;
 
-    def q = ComboCriteria.createFor(Package.createCriteria())
-    def pkg_list = q.list {
-      and {
-        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-        q.add ("ids.value", "eq", identifier)
-      }
-    }
+	def q = ComboCriteria.createFor(Package.createCriteria())
+	def pkg_list = q.list {
+	  and {
+		q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+		q.add ("ids.value", "eq", identifier)
+	  }
+	}
 
-    log.debug("Lookup of package with identifier ${identifier} returns ${pkg_list.size()} entries");
+	log.debug("Lookup of package with identifier ${identifier} returns ${pkg_list.size()} entries");
 
-    if ( pkg_list.size() == 0 ) {
-      log.debug("New package")
-    }
-    else if (  pkg_list.size() == 1 ) {
-      log.debug("Identified a package")
-      pkg = pkg_list.get(0);
-    }
-    else {
-      throw new Exception("Multiple packages with specififed identifier. This should never happen");
-    }
+	if ( pkg_list.size() == 0 ) {
+	  log.debug("New package")
+	}
+	else if (  pkg_list.size() == 1 ) {
+	  log.debug("Identified a package")
+	  pkg = pkg_list.get(0);
+	}
+	else {
+	  throw new Exception("Multiple packages with specififed identifier. This should never happen");
+	}
 
 	// Package found?
 	if (!pkg) {
-  
+
 	  log.debug("New package with identifier ${identifier} for ${provider.name}");
 
 	  // Create a new package.
 	  pkg = new Package(
-		provider:   (provider)
+		  provider:   (provider)
 	  )
 
 	  // Add a new identifier to the package.
@@ -1057,12 +1111,32 @@ class IngestService {
 	else {
 	  log.debug("Got existing package ${pkg.id}");
 	}
-	
+
 	// Set the latest project.
 	pkg.setLastProject(project)
-	
+
 	// Save and return
 	pkg.save(failOnError:true, flush:true)
 	pkg
+  }
+
+  private static Set<Long> getPackageTipps (Map<String, Set<Long>> packageTippLists, String pkgName, Package pkg) {
+
+	// Get from the map.
+	Set<Long> tipps = packageTippLists.get(pkgName)
+
+	// If it's null then we haven't initialised it yet.
+	if (tipps == null) {
+	  tipps = []
+	  for (def tipp: pkg.getTipps()) {
+		tipps << tipp.id
+	  }
+
+	  // Ensure we add to the map.
+	  packageTippLists.put(pkgName, tipps)
+	}
+
+	// Return the TIPPs.
+	tipps
   }
 }

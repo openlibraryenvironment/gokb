@@ -54,7 +54,7 @@ class GOKbTextUtils {
   }
   
   public static double cosineSimilarity(String s1, String s2, int degree = 2) {
-	cosineSimilarity s1.toLowerCase().toCharArray(), s2.toLowerCase().toCharArray(), degree
+	cosineSimilarity s1?.toLowerCase()?.toCharArray(), s2?.toLowerCase()?.toCharArray(), degree
   }
   
   public static double cosineSimilarity(char[] sequence1, char[] sequence2, int degree = 2) {
@@ -66,11 +66,14 @@ class GOKbTextUtils {
   
   private static Map<List, Integer> countNgramFrequency(char[] sequence, int degree) {
 	Map<List, Integer> m = [:]
-	int count = sequence.size()
-  
-	for (int i = 0; i + degree <= count; i++) {
-	  List gram = sequence[i..<(i + degree)]
-	  m[gram] = 1 + m.get(gram, 0)
+	
+	if (sequence) {
+	  int count = sequence.size()
+
+	  for (int i = 0; i + degree <= count; i++) {
+		List gram = sequence[i..<(i + degree)]
+		m[gram] = 1 + m.get(gram, 0)
+	  }
 	}
   
 	m
