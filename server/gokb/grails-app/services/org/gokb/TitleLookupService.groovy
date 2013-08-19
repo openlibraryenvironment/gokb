@@ -156,6 +156,8 @@ class TitleLookupService {
 	  }
 	}
 	
+	the_title.save(flush:true)
+	
 	the_title
   }
   
