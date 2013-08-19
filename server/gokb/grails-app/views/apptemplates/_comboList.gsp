@@ -1,8 +1,8 @@
-<table class="table table-striped">
+<table class="table table-striped table-bordered">
   <thead>
     <tr>
-      <g:each in="${colheads}" var="ch">
-        <th>${ch}</th>
+      <g:each in="${cols}" var="ch">
+        <th>${ch.colhead}</th>
       </g:each>
     </tr>
   </thead>
@@ -10,7 +10,7 @@
     <g:each in="${d[property]}" var="row">
       <tr>
         <g:each in="${cols}" var="c">
-          <td>${groovy.util.Eval.x(row, 'x.' + c)}</td>
+          <td>${groovy.util.Eval.x(row, 'x.' + c.expr)}</td>
         </g:each>
       </tr>
     </g:each>

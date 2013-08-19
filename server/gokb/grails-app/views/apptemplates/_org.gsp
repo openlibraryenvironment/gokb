@@ -79,7 +79,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'ids', cols:['namespace.value','value'], colheads:['Namespace','Identifier']]}" />
+                        model="${[d:d, property:'ids', cols:[[expr:'namespace.value',colhead:'Namespace'],[expr:'value',colhead:'Identifier']]]}" />
             </dd>
           </div>
 
@@ -120,7 +120,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'offices', cols:['name'], colheads:['Office Name']]}" />
+                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']]]}" />
             </dd>
           </div>
 
@@ -129,7 +129,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'heldLicenses', cols:['name'], colheads:['License Name']]}" />
+                        model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']]]}" />
             </dd>
           </div>
 
@@ -138,7 +138,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'providedPlatforms', cols:['name'], colheads:['Platform Name']]}" />
+                        model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name']]]}" />
             </dd>
           </div>
 
@@ -147,18 +147,16 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'publishedTitles', cols:['name'], colheads:['Title Name']]}" />
+                        model="${[d:d, property:'publishedTitles', cols:[[expr:'name',colhead:'Title Name']]]}" />
             </dd>
           </div>
-
-
 
          <div class="control-group">
             <dt>Packages</dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'providedPackages', cols:['name'], colheads:['Package Name']]}" />
+                        model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']]]}" />
             </dd>
           </div>
 
