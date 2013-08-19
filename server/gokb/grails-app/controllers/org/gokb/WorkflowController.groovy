@@ -166,6 +166,7 @@ class WorkflowController {
     }
     else if ( params.process ) {
       log.debug("Process...");
+      processTitleTransfer(activity_record, activity_data);
     }
 
     def result = [:]
@@ -211,5 +212,21 @@ class WorkflowController {
     result.id = params.id
 
     result
+  }
+
+  def processTitleTransfer(activity_record, activity_data) {
+    log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
+
+    def publisher = Org.get(activity_data.newPublisherId);
+
+    // Step one : Close off existing title publisher links and create new publisher links
+    activity_data.title_ids.each { title_id ->
+      log.debug("Process title_id ${title_id} and change publisher to ${publisher}");
+      def title = TitleInstance.get(title_id);
+      title.changePublisher(publisher)
+      title.save()
+    }
+
+    // Step two : Process TIPP adjustments
   }
 }
