@@ -147,7 +147,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'publishedTitles', cols:[[expr:'name',colhead:'Title Name']]]}" />
+                        model="${[d:d, property:'publishedTitles', cols:[[expr:'name',colhead:'Title Name',action:'link']]]}" />
             </dd>
           </div>
 
