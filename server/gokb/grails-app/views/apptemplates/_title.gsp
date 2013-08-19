@@ -108,20 +108,20 @@
                 <table class="table table-striped table-bordered">
                   <thead>
                     <tr>
+                      <th>Status</th>
                       <th>Package</th>
                       <th>Platform</th>
-                      <th>Start Date</th>
-                      <th>Start Volume</th>
-                      <th>Start Issue</th>
-                      <th>End Date</th>
-                      <th>End Volume</th>
-                      <th>End Issue</th>
+                      <th>Start</th>
+                      <th>End</th>
                       <th>Embargo</th>
                     </tr>
                   </thead>
                   <tbody>
                     <g:each in="${d.tipps}" var="tipp">
                       <tr>
+                        <td>
+                          ${tipp.status?.value}
+                        </td>
                         <td><g:link controller="resource" action="show"
                             id="${tipp.pkg.getClassName()+':'+tipp.pkg.id}">
                             ${tipp.pkg.name}
@@ -130,23 +130,17 @@
                             id="${tipp.hostPlatform.getClassName()+':'+tipp.hostPlatform.id}">
                             ${tipp.hostPlatform.name}
                           </g:link></td>
-                        <td><g:formatDate
+                        <td> Date: <g:formatDate
                             format="${session.sessionPreferences?.globalDateFormat}"
-                            date="${tipp.startDate}" /></td>
-                        <td>
-                          ${tipp.startVolume}
+                            date="${tipp.startDate}" /></br>
+                          Volume: ${tipp.startVolume}</br>
+                          Issue: ${tipp.startIssue}
                         </td>
-                        <td>
-                          ${tipp.startIssue}
-                        </td>
-                        <td><g:formatDate
+                        <td>Date: <g:formatDate
                             format="${session.sessionPreferences?.globalDateFormat}"
-                            date="${tipp.endDate}" /></td>
-                        <td>
-                          ${tipp.endVolume}
-                        </td>
-                        <td>
-                          ${tipp.endIssue}
+                            date="${tipp.endDate}" /><br/>
+                          Volume: ${tipp.endVolume}<br/>
+                          Issue: ${tipp.endIssue}
                         </td>
                         <td>
                           ${tipp.embargo}
