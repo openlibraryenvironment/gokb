@@ -38,7 +38,7 @@ class PackageService {
 	  if (!incremental) {
 
 		// Retire each TIPP
-		pkg.getTipps().each { TitleInstancePackagePlatform tipp ->
+		pkg.getTipps().each { def tipp ->
 
 		  // Retire
 		  tipp.retire()
@@ -64,8 +64,6 @@ class PackageService {
 		// Add all the ids.
 		pkg.ids.addAll(pkIds)
 		
-	  } else {
-	    // Incremental update just return the package to the ingest service.
 	  }
 	}
 	
