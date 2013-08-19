@@ -62,9 +62,25 @@ class TitleInstance extends KBComponent {
 
   public Org getCurrentPublisher() {
     def result = null;
-    publisher.each { p ->
-      result = p
+    def publisher_combos = getCombosByPropertyName('publisher')
+    publisher_combos.each { pc ->
+      if ( pc.endDate == null ) {
+        result = pc
+      }
     }
     result
+  }
+
+  /**
+   * Close off any existing publisher relationships and add a new one for this publiser
+   */
+  def changePublisher(new_publisher) {
+    def publisher_combos = getCombosByPropertyName('publisher')
+    publisher_combos.each { pc ->
+      if ( pc.endDate == null ) {
+        pc.endDate = new Date();
+      }
+    }
+    publisher.add(new_publisher);
   }
 }

@@ -389,6 +389,8 @@ grails.gorm.default.constraints = {
 
 
 
+// https://github.com/k-int/gokb-phase1/blob/2853396eb1176a8ae94747810b2ec589847f8557/server/gokb/grails-app/controllers/org/gokb/SearchController.groovy
+
 globalSearchTemplates = [
     'components':[
       baseclass:'org.gokb.cred.KBComponent',
@@ -408,7 +410,13 @@ globalSearchTemplates = [
             qparam:'qp_id',
             placeholder:'ID of item',
             contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'id', 'type' : 'java.lang.Long']
-          ]
+          ],
+          [
+            prompt:'SID',
+            qparam:'qp_sid',
+            placeholder:'SID for item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value']
+          ],
         ],
         qbeResults:[
           [heading:'Id', property:'id'],
@@ -602,6 +610,110 @@ globalSearchTemplates = [
         ]
       ]
     ],
+    'Offices':[
+      baseclass:'org.gokb.cred.Office',
+      title:'Offices',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name or title of Office',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'Territories':[
+      baseclass:'org.gokb.cred.Territory',
+      title:'Territories',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name of Territory',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'Licenses':[
+      baseclass:'org.gokb.cred.License',
+      title:'Licenses',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name or Title',
+            qparam:'qp_name',
+            placeholder:'Name of License',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'Users':[
+      baseclass:'org.gokb.cred.User',
+      title:'Users',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Username',
+            qparam:'qp_name',
+            placeholder:'Username',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'username']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+    'Sources':[
+      baseclass:'org.gokb.cred.Source',
+      title:'Source',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Name of Source',
+            qparam:'qp_name',
+            placeholder:'Name of Source',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+          [heading:'Url', property:'url'],
+        ]
+      ]
+    ],
+
+
+
 ]
 
 
@@ -615,7 +727,12 @@ globalDisplayTemplates = [
   'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
   'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
-  'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ]
+  'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ],
+  'org.gokb.cred.Office': [ type:'staticgsp', rendername:'office' ],
+  'org.gokb.cred.Territory': [ type:'staticgsp', rendername:'territory' ],
+  'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
+  'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
+  'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6

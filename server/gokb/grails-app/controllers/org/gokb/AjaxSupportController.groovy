@@ -79,7 +79,7 @@ class AjaxSupportController {
       def cq = Org.executeQuery(config.countQry,query_params);
       def rq = Org.executeQuery(config.rowQry,
                                 query_params,
-                                [max:params.iDisplayLength?:10,offset:params.iDisplayStart?:0]);
+                                [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0]);
 
       rq.each { it ->
         result["${it.class.name}:${it.id}"] = it[config.cols[0]];

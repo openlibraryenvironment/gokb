@@ -1,10 +1,6 @@
 package org.gokb.cred
 
 class Territory extends KBComponent {
-  String name
-  static constraints = {
-	name (nullable:true, blank:false)
-  }
   
   static manyByCombo = [
 	licenses 	: License,
@@ -22,7 +18,4 @@ class Territory extends KBComponent {
 	users		: 'territories',
   ]
   
-  static mapping = {
-	name column:'territory_name'
-  }
 }

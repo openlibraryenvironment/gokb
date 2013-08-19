@@ -27,10 +27,10 @@ class ResourceController {
         result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
         result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
 		
-		// Add any refdata property names for this class to the result.
-		result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
-		result.displayobjclassname_short = result.displayobj.class.simpleName
-		result.isComponent = (result.displayobj instanceof KBComponent)
+	// Add any refdata property names for this class to the result.
+	result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
+	result.displayobjclassname_short = result.displayobj.class.simpleName
+	result.isComponent = (result.displayobj instanceof KBComponent)
 		
         log.debug("result of lookup: ${result}");
       }

@@ -5,6 +5,12 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
+      <dt>Mission</dt>
+      <dd><g:xEditableRefData owner="${d}" field="mission" config='Org.Mission' /></dd>
+    </div>
+
+
+    <div class="control-group">
       <dt>Roles</dt>
       <dd>
         <g:if test="${d.id != null}">
