@@ -36,7 +36,7 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
-    <li><a href="#header" data-toggle="tab">Header</a></li>
+    <li><a href="#lists" data-toggle="tab">Lists</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>
   <div id="my-tab-content" class="tab-content">
@@ -112,8 +112,57 @@
       </g:if>
     </div>
 
-    <div class="tab-pane" id="header">
-      <g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+    <div class="tab-pane" id="lists">
+        <dl class="dl-horizontal">
+
+          <div class="control-group">
+            <dt>Offices</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'offices', cols:['name'], colheads:['Office Name']]}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Licenses</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'heldLicenses', cols:['name'], colheads:['License Name']]}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Platforms</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'providedPlatforms', cols:['name'], colheads:['Platform Name']]}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Titles</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'publishedTitles', cols:['name'], colheads:['Title Name']]}" />
+            </dd>
+          </div>
+
+
+
+         <div class="control-group">
+            <dt>Packages</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'providedPackages', cols:['name'], colheads:['Package Name']]}" />
+            </dd>
+          </div>
+
+        </dl>
     </div>
 
     <div class="tab-pane" id="status">

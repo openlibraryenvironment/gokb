@@ -17,6 +17,7 @@ class Org extends KBComponent {
 	vendedPackages    : Package,
 	offeredLicenses    : License,
 	heldLicenses    : License,
+	offices         : Office,
 	//  ids      : Identifier
   ]
 
@@ -38,6 +39,7 @@ class Org extends KBComponent {
 	vendedPackages    : 'vendor',
 	offeredLicenses    : 'licensor',
 	heldLicenses    : 'licensee',
+	offices    : 'org',
   ]
 
   //  static mappedBy = [

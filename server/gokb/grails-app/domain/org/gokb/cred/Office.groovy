@@ -14,7 +14,11 @@ class Office extends KBComponent {
   String zipPostcode
   String region
   RefdataValue country
-  
+
+  static hasByCombo = [
+    org : Org,
+  ]
+
   static manyByCombo = [
 	territories : Territory
   ]
