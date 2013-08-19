@@ -1,7 +1,16 @@
-<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
+<h1>
+<g:if test="${d.id != null}">
+  ${d.getNiceName()} : ${d.name ?: d.id} - 
+     <g:link controller="resource" action="show" id="${d.title?.class.name+':'+d.title.id}">${d.title.name}</g:link> in 
+     <g:link controller="resource" action="show" id="${d.pkg?.class.name+':'+d.pkg.id}">${d.pkg.name}</g:link> via 
+     <g:link controller="resource" action="show" id="${d.hostPlatform?.class.name+':'+d.title.id}">${d.hostPlatform.name}</g:link>
+</g:if>
+<g:else>
+  Create New ${d.getNiceName()}
+</g:else>
+</h1>
 
 <div id="content">
-
 
   <dl class="dl-horizontal">
 
