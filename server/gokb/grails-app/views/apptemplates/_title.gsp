@@ -1,4 +1,10 @@
+<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
+
+<g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+
+
 <g:if test="${d.id != null}">
+
   <dl class="dl-horizontal">
 
     <div class="control-group">
