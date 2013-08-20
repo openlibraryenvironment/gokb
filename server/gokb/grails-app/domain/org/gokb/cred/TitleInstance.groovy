@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
+import org.gokb.DomainClassExtender
 
 class TitleInstance extends KBComponent {
 
@@ -122,11 +123,14 @@ class TitleInstance extends KBComponent {
 		// Depending on where the combo is defined we need to add a combo.
 		if (isComboReverse('publisher')) {
 		  combo.fromComponent = new_publisher
-		  addToIncomingCombos(combo)
+		  combo.toComponent = this
 		} else {
 		  combo.toComponent = new_publisher
-		  addToOutgoingCombos(combo)
+		  combo.fromComponent = this
 		}
+		
+		// Save the combo
+		combo.save(failOnError:true)
 		
 		return true
 //        publisher.add(new_publisher)
