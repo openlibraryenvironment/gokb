@@ -101,6 +101,7 @@ class TitleInstance extends KBComponent {
 
       if ( ( current_publisher != null ) && ( current_publisher.id==new_publisher.id ) ) {
         // no change... leave it be
+		return false
       }
       else {
         def publisher_combos = getCombosByPropertyName('publisher')
@@ -126,8 +127,13 @@ class TitleInstance extends KBComponent {
 		  combo.toComponent = new_publisher
 		  addToOutgoingCombos(combo)
 		}
+		
+		return true
 //        publisher.add(new_publisher)
       }
     }
+	
+	// Returning false if we get here implies the publisher has not been changed.
+	return false
   }
 }
