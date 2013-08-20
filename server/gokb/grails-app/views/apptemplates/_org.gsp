@@ -162,6 +162,19 @@
             </dd>
           </div>
 
+         <div class="control-group">
+            <dt>Identifiers</dt>
+            <dd>
+              <g:render template="combosByType" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'ids', cols:[[expr:'toComponent.namespace.value',
+                                                                   colhead:'Namespace'],
+                                                             [expr:'toComponent.value',
+                                                                   colhead:'ID',
+                                                                   action:'link']], direction:'in']}" />
+            </dd>
+          </div>
+
         </dl>
     </div>
 
