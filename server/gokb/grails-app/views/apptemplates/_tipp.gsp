@@ -1,4 +1,4 @@
-<h1>
+<h3>
 <g:if test="${d.id != null}">
   ${d.getNiceName()} : ${d.name ?: d.id} - 
      <g:link controller="resource" action="show" id="${d.title?.class.name+':'+d.title.id}">${d.title.name}</g:link> in 
@@ -8,7 +8,7 @@
 <g:else>
   Create New ${d.getNiceName()}
 </g:else>
-</h1>
+</h3>
 
 <div id="content">
 
