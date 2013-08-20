@@ -192,24 +192,24 @@ class DomainClassExtender {
 	  getComboMapFor (domainClass.getClazz(), mappingName)
 	}
   }
-  
+
   private static addCombineInheritedMap = { DefaultGrailsDomainClass domainClass ->
-	
+
 	// Get the metaclass.
 	domainClass.getMetaClass().combineInheritedMap = { String mapName ->
 	  combineInheritedMapFor (domainClass.getClazz(), mapName)
 	}
   }
-  
+
   private static addCombineInheritedMapFor = { DefaultGrailsDomainClass domainClass ->
 
 	// Get the metaclass.
 	domainClass.getMetaClass().static.combineInheritedMapFor = {Class forClass, String mapName ->
 	  log.debug("combineInheritedValuesFor called on ${delegate} with args ${[forClass, mapName]}")
-	  
+
 	  // Start with this class.
 	  Class theClass = forClass
-	  
+
 	  // Start with an empty map.
 	  Map values = [:]
 	  while (theClass) {
@@ -227,15 +227,15 @@ class DomainClassExtender {
 
 		  // Current values should override the collected.
 		  value.putAll (values)
-		  
+
 		  values.clear()
-          values.putAll(value)
+		  values.putAll(value)
 		}
 
 		// Get the superclass.
 		theClass = theClass.getSuperclass()
 	  }
-	  
+
 	  // Return the combined map.
 	  values
 	}
@@ -261,7 +261,7 @@ class DomainClassExtender {
 	  try {
 
 		// Lookup the value combining values in the superclass too!
-//		value = mc.getProperty(delegate.getClass(), forClass, mapName, true, true)
+		//		value = mc.getProperty(delegate.getClass(), forClass, mapName, true, true)
 		value = combineInheritedMapFor (forClass, mapName)
 	  } catch (Exception e) { value = [:] }
 
@@ -281,10 +281,10 @@ class DomainClassExtender {
 	mc.getComboProperty { String propertyName ->
 	  log.debug("getComboProperty called on ${delegate} with args ${[propertyName]}")
 
-          if ( delegate.id == null ) {
-            // Don't run this method on transient instances
-            return null
-          }
+	  if ( delegate.id == null ) {
+		// Don't run this method on transient instances
+		return null
+	  }
 
 	  // Test this way to allow us to cache null values.
 	  log.debug("Checking cache...")
@@ -299,98 +299,26 @@ class DomainClassExtender {
 	  Class typeClass = lookupComboMapping(Combo.MANY, propertyName)
 
 	  // Generate the type.
-	  RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
+	  String type_string = getComboTypeValue(propertyName)
 
-	  if (typeClass) {
-
-		// The result.
-		def result
-
-		// The delegate.
-		final KBComponent thisComponent = delegate
-
-		if (isComboReverse(propertyName)) {
-
-		  // Reverse.
-		  //          def combos = incomingCombos.findAll {
-		  //            it.type == (type)
-		  //          }
-		  def combos = Combo.createCriteria().list {
-			and {
-			  eq ("type", (type))
-			  eq ("toComponent", (thisComponent))
-			}
-			projections {
-			  property("fromComponent")
-			}
-		  }
-
-		  // Create our new list.
-		  result = new ComboPersistedList (
-			  (thisComponent),
-			  DomainClassExtender.getComboStatusActive(),
-			  type,
-			  combos,
-			  true
-          )
-
-		  //          if (combos) {
-		  //            for (combo in combos) {
-		  //              result.add(combo.fromComponent)
-		  //            }
-		  //          }
-
-		} else {
-		  //          def combos = outgoingCombos.findAll {
-		  //            it.type == (type)
-		  //          }
-		  def combos = Combo.createCriteria().list {
-			and {
-			  eq ("type", (type))
-			  eq ("fromComponent", (thisComponent))
-			}
-			projections {
-			  property("toComponent")
-			}
-		  }
-
-		  // Create our new list.
-		  result = new ComboPersistedList (
-			  (thisComponent),
-			  DomainClassExtender.getComboStatusActive(),
-			  type,
-			  combos,
-			  false
-			  )
-
-		  //          if (combos) {
-		  //            for (combo in combos) {
-		  //              result.add(combo.toComponent)
-		  //            }
-		  //          }
-		}
-
-		// Add the result to the cache.
-		comboPropertyCache().put(cacheKey, result)
-
-		log.debug("${result} found.")
-		return result
-
-	  } else {
-
-		// Try singular.
-		typeClass = lookupComboMapping(Combo.HAS, propertyName)
+	  if (type_string) {
+		RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", type_string)
 
 		if (typeClass) {
-		  def result = null
+
+		  // The result.
+		  def result
+
+		  // The delegate.
+		  final KBComponent thisComponent = delegate
+
 		  if (isComboReverse(propertyName)) {
 
-			// Just return the component.
-			//            Combo combo = incomingCombos.find {
-			//              it.type == (type)
-			//            }
-			final KBComponent thisComponent = delegate
-			result = Combo.createCriteria().get {
+			// Reverse.
+			//          def combos = incomingCombos.findAll {
+			//            it.type == (type)
+			//          }
+			def combos = Combo.createCriteria().list {
 			  and {
 				eq ("type", (type))
 				eq ("toComponent", (thisComponent))
@@ -400,13 +328,26 @@ class DomainClassExtender {
 			  }
 			}
 
-			//            if (combo) result = combo.fromComponent
-		  } else {
-			//            Combo combo = outgoingCombos.find {
-			//              it.type == (type)
+			// Create our new list.
+			result = new ComboPersistedList (
+				(thisComponent),
+				DomainClassExtender.getComboStatusActive(),
+				type,
+				combos,
+				true
+				)
+
+			//          if (combos) {
+			//            for (combo in combos) {
+			//              result.add(combo.fromComponent)
 			//            }
-			final KBComponent thisComponent = delegate
-			result = Combo.createCriteria().get {
+			//          }
+
+		  } else {
+			//          def combos = outgoingCombos.findAll {
+			//            it.type == (type)
+			//          }
+			def combos = Combo.createCriteria().list {
 			  and {
 				eq ("type", (type))
 				eq ("fromComponent", (thisComponent))
@@ -416,7 +357,20 @@ class DomainClassExtender {
 			  }
 			}
 
-			//            if (combo) result = combo.toComponent
+			// Create our new list.
+			result = new ComboPersistedList (
+				(thisComponent),
+				DomainClassExtender.getComboStatusActive(),
+				type,
+				combos,
+				false
+				)
+
+			//          if (combos) {
+			//            for (combo in combos) {
+			//              result.add(combo.toComponent)
+			//            }
+			//          }
 		  }
 
 		  // Add the result to the cache.
@@ -424,13 +378,62 @@ class DomainClassExtender {
 
 		  log.debug("${result} found.")
 		  return result
+
+		} else {
+
+		  // Try singular.
+		  typeClass = lookupComboMapping(Combo.HAS, propertyName)
+
+		  if (typeClass) {
+			def result = null
+			if (isComboReverse(propertyName)) {
+
+			  // Just return the component.
+			  //            Combo combo = incomingCombos.find {
+			  //              it.type == (type)
+			  //            }
+			  final KBComponent thisComponent = delegate
+			  result = Combo.createCriteria().get {
+				and {
+				  eq ("type", (type))
+				  eq ("toComponent", (thisComponent))
+				}
+				projections {
+				  property("fromComponent")
+				}
+			  }
+
+			  //            if (combo) result = combo.fromComponent
+			} else {
+			  //            Combo combo = outgoingCombos.find {
+			  //              it.type == (type)
+			  //            }
+			  final KBComponent thisComponent = delegate
+			  result = Combo.createCriteria().get {
+				and {
+				  eq ("type", (type))
+				  eq ("fromComponent", (thisComponent))
+				}
+				projections {
+				  property("toComponent")
+				}
+			  }
+
+			  //            if (combo) result = combo.toComponent
+			}
+
+			// Add the result to the cache.
+			comboPropertyCache().put(cacheKey, result)
+
+			log.debug("${result} found.")
+			return result
+		  }
+
+		  log.debug("No Property found, throw Exception.")
+		  // If we get here then throw an exception.
+		  throw new MissingPropertyException(propertyName, this.class)
 		}
-
-		log.debug("No Property found, throw Exception.")
-		// If we get here then throw an exception.
-		throw new MissingPropertyException(propertyName, this.class)
 	  }
-
 	}
   }
 
@@ -485,9 +488,9 @@ class DomainClassExtender {
 		  // Set the class also.
 		  mappedByClass = forClass
 		}
-		
+
 		// We have a mapped by class, but we need to check that it isn't declared on one of the super classes.
-        def propNameToUse = GrailsNameUtils.getPropertyName(capProp)
+		def propNameToUse = GrailsNameUtils.getPropertyName(capProp)
 		Class theClass = mappedByClass
 		while (theClass) {
 		  try {
@@ -496,11 +499,11 @@ class DomainClassExtender {
 			  // Set the key.
 			  key = "${GrailsNameUtils.getShortName(theClass)}.${capProp}"
 			}
-			
+
 		  } catch (Throwable t) {
-		  	// Do nothing.
+			// Do nothing.
 		  }
-		  
+
 		  theClass = theClass.getSuperclass();
 		}
 

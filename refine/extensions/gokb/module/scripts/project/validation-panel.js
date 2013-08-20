@@ -235,14 +235,29 @@ ValidationPanel.prototype._render = function() {
   		self._tabHeader.html('Errors <span class="error count">0</span> / <span class="warning count">0</span>');
   		
   		elmts.validationContent
-  			.html("<p>The current project has passed all validation rules.</p>")
+  			.html("<p>The current project has passed all validation rules. You now have 2 " +
+  			      "choices of how to handle the data in this project.</p>")
+  			.append("<h1>Incremental update</h1><p>To update any existing packages in GOKb with data in this file you " +
+  			      " can choose to 'Update packages'</p>")
   			.append(
   			  $("<div>").attr("id", "gokb-ingest-button").append(
 			  		$('<button />')
 			  			.addClass("button")
-			  			.text("Begin ingest process")
+			  			.text("Update packages")
 			  			.click(function() {
-			  				GOKb.handlers.estimateChanges();
+			  				GOKb.handlers.estimateChanges(true);
+			  			})
+			  	)
+		  	)
+		  	.append("<h1>Replacement update</h1><p>If you would like to retire existing packages "+
+		  	        "and create new ones based on this data then choose 'Replace packages'</p>")
+  			.append(
+  			  $("<div>").attr("id", "gokb-ingest-button").append(
+			  		$('<button />')
+			  			.addClass("button")
+			  			.text("Replace packages")
+			  			.click(function() {
+			  				GOKb.handlers.estimateChanges(false);
 			  			})
 			  	)
 		  	)

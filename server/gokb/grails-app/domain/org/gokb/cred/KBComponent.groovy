@@ -441,6 +441,26 @@ abstract class KBComponent {
   setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
   }
 
+  public void retire () {
+	// Set the status to deleted.
+	setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+  }
+  
+  @Transient
+  public boolean isRetired () {
+	return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+  }
+  
+  @Transient
+  public boolean isDeleted () {
+	return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+  }
+  
+  @Transient
+  public boolean isCurrent () {
+	return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
+  }
+
   @Transient
   public String getClassName () {
   getMetaClass().getTheClass().getName()
@@ -480,6 +500,7 @@ abstract class KBComponent {
     return combos
   }
   
+  @Transient
   public boolean isInstanceOf (Class testCase) {
   boolean val = getMetaClass().getTheClass().isAssignableFrom(testCase)
   val
