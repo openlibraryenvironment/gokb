@@ -123,14 +123,11 @@ class TitleInstance extends KBComponent {
 		// Depending on where the combo is defined we need to add a combo.
 		if (isComboReverse('publisher')) {
 		  combo.fromComponent = new_publisher
-		  combo.toComponent = this
+		  addToIncomingCombos(combo)
 		} else {
 		  combo.toComponent = new_publisher
-		  combo.fromComponent = this
+		  addToOutgoingCombos(combo)
 		}
-		
-		// Save the combo
-		combo.save(failOnError:true)
 		
 		return true
 //        publisher.add(new_publisher)
