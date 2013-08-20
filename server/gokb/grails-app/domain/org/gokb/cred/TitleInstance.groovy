@@ -78,9 +78,13 @@ class TitleInstance extends KBComponent {
   public Org getCurrentPublisher() {
     def result = null;
     def publisher_combos = getCombosByPropertyName('publisher')
-    publisher_combos.each { pc ->
+    publisher_combos.each { Combo pc ->
       if ( pc.endDate == null ) {
-        result = pc
+		if (isComboReverse('publisher')) {
+		  result = pc.fromComponent
+		} else {
+		  result = pc.toComponent
+		}
       }
     }
     result
