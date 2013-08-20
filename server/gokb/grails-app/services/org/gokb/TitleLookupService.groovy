@@ -168,7 +168,8 @@ class TitleLookupService {
 	
 	// Lookup our publisher, and set as current if feasible.
 	ti.changePublisher (
-	  componentLookupService.lookupComponent(publisher_name)
+	  componentLookupService.lookupComponent(publisher_name),
+	  true
 	)
 	
 	ti

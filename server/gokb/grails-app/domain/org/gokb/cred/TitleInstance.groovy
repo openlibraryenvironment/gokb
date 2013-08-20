@@ -93,7 +93,7 @@ class TitleInstance extends KBComponent {
   /**
    * Close off any existing publisher relationships and add a new one for this publiser
    */
-  def changePublisher(new_publisher) {
+  def changePublisher(new_publisher, boolean null_start = false) {
 
     if ( new_publisher != null ) {
 
@@ -109,7 +109,24 @@ class TitleInstance extends KBComponent {
             pc.endDate = new Date();
           }
         }
-        publisher.add(new_publisher);
+		
+		// Now create a new Combo
+		RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue('publisher'))
+		Combo combo = new Combo(
+		  type    : (type),
+		  status  : DomainClassExtender.getComboStatusActive(),
+		  startDate : (null_start ? null : new Date())
+		)
+		
+		// Depending on where the combo is defined we need to add a combo.
+		if (isComboReverse('publisher')) {
+		  combo.fromComponent = new_publisher
+		  addToIncomingCombos(combo)
+		} else {
+		  combo.toComponent = new_publisher
+		  addToOutgoingCombos(combo)
+		}
+//        publisher.add(new_publisher)
       }
     }
   }
