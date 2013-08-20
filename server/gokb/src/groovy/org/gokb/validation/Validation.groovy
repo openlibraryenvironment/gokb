@@ -163,7 +163,7 @@ class Validation {
 	  log.debug("Processing of ingest file completed ok, validating")
 	}
 	else {
-	  log.debug("Processing of ingest file failed, unable to vlidate.")
+	  log.debug("Processing of ingest file failed, unable to validate.")
 	  result.messages.add([text:'Unable to process ingest file at this time'])
 	  result.status = false
 	}
