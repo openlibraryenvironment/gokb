@@ -166,28 +166,10 @@ class TitleLookupService {
   
   private TitleInstance addPublisher (String publisher_name, TitleInstance ti) {
 	
-	// Lookup our publisher.
-	Org publisher = componentLookupService.lookupComponent(publisher_name)
-	
-	// Found a publisher.
-	if (publisher) {
-	  def orgs = ti.getPublisher()
-
-	  // Add the publisher.
-	  if (!orgs.contains(publisher)) {
-
-		if (orgs.size() > 0) {
-		  ReviewRequest.raise(
-			  ti,
-			  "Added '${publisher.name}' as a publisher on '${ti.name}'.",
-			  "Publisher supplied in ingested file is different to any already present on TI."
-			  )
-		}
-
-		// Add the new publisher.
-		ti.publisher.add (publisher)
-	  }
-	}
+	// Lookup our publisher, and set as current if feasible.
+	ti.changePublisher (
+	  componentLookupService.lookupComponent(publisher_name)
+	)
 	
 	ti
   }
