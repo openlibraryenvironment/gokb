@@ -14,7 +14,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 
 identifiers.class_ones = [
   "issn",
-  "eissn"
+  "eissn",
+  "doi"
 ] as Set
 
 // if (System.properties["${appName}.config.location"]) {
