@@ -30,3 +30,7 @@
     </g:each>
   </tbody>
 </table>
+
+<g:if test="${targetClass != null}">
+   Add To List : <g:simpleReferenceTypedown name="test1" baseClass="${targetClass}"/> 
+</g:if>
