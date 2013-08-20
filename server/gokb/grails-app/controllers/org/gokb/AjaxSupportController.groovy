@@ -227,6 +227,18 @@ class AjaxSupportController {
     redirect(url: request.getHeader('referer'))
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def unlinkManyToMany() {
+    log.debug("unlinkManyToMany(${params})");
+    // Adds a link to a collection that is not mapped through a join object
+    def contextObj = resolveOID2(params.__context)
+    if ( contextObj ) {
+      contextObj[params.__property].remove(resolveOID2(params.__itemToRemove))
+      contextObj.save()
+    }
+    redirect(url: request.getHeader('referer'))
+  }
+
   def resolveOID2(oid) {
     def oid_components = oid.split(':');
     def result = null;
