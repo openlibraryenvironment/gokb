@@ -13,6 +13,7 @@ import org.apache.commons.compress.compressors.gzip.*
 import org.gokb.cred.*
 import org.gokb.refine.*
 import org.gokb.validation.Validation
+import org.gokb.validation.types.A_ValidationRule
 import org.joda.time.DateTime
 import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
@@ -84,8 +85,16 @@ class IngestService {
 	def result = Validation.doValidate(project_data)
 
 	if ( result.messages?.size() > 0 ) {
-	  log.error("validation has messages: a failure: ${result.messages}");
-	  result.status = false;
+	  log.error("validation has messages: a failure: ${result.messages}")
+	  // TODO: This needs fixing. The validity should be determined by each rule executing.
+	  // Warnings should probably always return true to keep validation halting on warnings.
+	  // Shouldn't have to go through the messages here again.
+	  boolean valid = true
+	  for (int i=0; valid && i<result.messages.size(); i++) {
+		def message = result.messages[i]
+		valid = (message.severity != A_ValidationRule.SEVERITY_ERROR)
+	  }
+	  result.status = valid
 	}
 	else {
 	  log.debug("No messages, file valid");

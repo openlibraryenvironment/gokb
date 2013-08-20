@@ -44,4 +44,17 @@ class Identifier extends KBComponent {
     def identifier = Identifier.findByNamespaceAndValue(namespace,value) ?: new Identifier(namespace:namespace, value:value).save(failOnError:true, flush:true)
     identifier
   }
+
+  @Override
+  public boolean equals(Object obj) {
+	if (obj != null) {
+		def dep = KBComponent.deproxy(obj)
+		if (dep instanceof Identifier) {
+		  return this.value == dep.value &&
+		  	this.namespace == dep.namespace
+		}
+	}
+	
+	return false
+  }
 }

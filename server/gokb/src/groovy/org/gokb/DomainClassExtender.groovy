@@ -722,6 +722,10 @@ class DomainClassExtender {
 
 				// Reverse
 				for (val in value) {
+				  
+				  // Ensure we deproxy here...
+				  val = KBComponent.deproxy(val)
+				  
 				  if (typeClass.isInstance(val)) {
 
 					// Create an active combo
@@ -740,12 +744,16 @@ class DomainClassExtender {
 
 				  } else {
 					throw new IllegalArgumentException(
-					"All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}"
+					"All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}. Found ${val.class.getSimpleName()}."
 					)
 				  }
 				}
 			  } else {
 				for (val in value) {
+				  
+				  // Ensure we deproxy here...
+				  val = KBComponent.deproxy(val)
+				  
 				  if (typeClass.isInstance(val)) {
 					Combo combo = new Combo(
 						type    : (type),
@@ -762,7 +770,7 @@ class DomainClassExtender {
 
 				  } else {
 					throw new IllegalArgumentException(
-					"All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}"
+					"All values in collection for property ${delegate}.${propertyName} should be of defined type: ${typeClass.getName()}. Found ${val.class.getSimpleName()}."
 					)
 				  }
 				}
@@ -771,6 +779,7 @@ class DomainClassExtender {
 			default:
 			// Check single properties.
 			  typeClass = lookupComboMapping(Combo.HAS, propertyName)
+			  value = KBComponent.deproxy(value)
 			  if (typeClass.isInstance(value)) {
 
 				if (isComboReverse(propertyName)) {
@@ -816,7 +825,16 @@ class DomainClassExtender {
 		  //TODO Maybe we could be more selective about what we remove from the cache,
 		  // although it's probably negligible between the processing needed to lookup,
 		  // and derive the value to clear than to rebuild if/when needed.
-		  value?.comboPropertyCache().clear()
+		  
+		  if (value instanceof Collection) {
+			
+			value?.each {
+			  it?.comboPropertyCache().clear()
+			}
+			
+		  } else {
+		  	value?.comboPropertyCache().clear()
+		  }
 		}
 	  } else {
 		log.debug("Thrown missing property exception for ${propertyName} on ${delegate}.")

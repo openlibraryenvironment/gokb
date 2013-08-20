@@ -17,14 +17,29 @@ class TitleInstance extends KBComponent {
   ]
   
   public void addVariantTitle (String title, String locale = "EN-us") {
-	addToVariantNames(
-	  new KBComponentVariantName([
-		"variantType"	: RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title"),
-		"locale"		: RefdataCategory.lookupOrCreate("KBComponentVariantName.Locale", (locale)),
-		"status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
-		"variantName"	: (title)
-	  ])
-	)
+	
+	// Need to compare the existing variant names here. Rather than use the equals method,
+	// we are going to compare certain attributes here.
+	RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
+	RefdataValue locale_rd = RefdataCategory.lookupOrCreate("KBComponentVariantName.Locale", (locale))
+	
+	// Each of the variants...
+	def exisiting = variantNames.find {
+	  KBComponentVariantName name = it
+	  return (name.locale == locale_rd && name.variantType == title_type
+		&& name.getVariantName().equalsIgnoreCase(title))
+	}
+	
+	if (!exisiting) {
+	  addToVariantNames(
+		new KBComponentVariantName([
+		  "variantType"	: (title_type),
+		  "locale"		: (locale_rd),
+		  "status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+		  "variantName"	: (title)
+		])
+	  )
+	}
   }
 
   static hasByCombo = [
