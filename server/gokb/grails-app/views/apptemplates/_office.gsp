@@ -9,6 +9,10 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
+      <dt>Name</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
+    </div>
+    <div class="control-group">
       <dt>Website</dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="website"/></dd>
     </div>

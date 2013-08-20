@@ -21,7 +21,7 @@ class Combo {
   RefdataValue type
   
   // All Combos should have a start date.
-  Date startDate
+  Date startDate = new Date()
   
   // The Combos without an end date are the "current" values.
   Date endDate

@@ -117,10 +117,10 @@
 
           <div class="control-group">
             <dt>Offices</dt>
-            <dd>
+            <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']]]}" />
+                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
             </dd>
           </div>
 
@@ -129,7 +129,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']]]}" />
+                        model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
             </dd>
           </div>
 
@@ -138,7 +138,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name']]]}" />
+                        model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform']]]}" />
             </dd>
           </div>
 
@@ -158,7 +158,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']]]}" />
+                        model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']],targetClass:'org.gokb.cred.Package']}" />
             </dd>
           </div>
 
