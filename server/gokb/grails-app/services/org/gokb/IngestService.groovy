@@ -164,7 +164,10 @@ class IngestService {
   /**
    * Estimate the number of each component that would be Created/Updated as a result of ingesting this data.
    */
-  def estimateChanges(project_data, project_id = null) {
+  def estimateChanges(project_data, project_id = null, boolean incremental) {
+	
+	// The current component status value.
+	RefdataValue current = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
 
 	// The result object.
 	def result = []
@@ -297,6 +300,7 @@ class IngestService {
 	  and {
 		q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
 		q.add ("ids.value", "in", [packageIdentifiers])
+		eq ("status", current)
 	  }
 
 	  projections {
@@ -306,11 +310,26 @@ class IngestService {
 
 	// New packages.
 	newPkgs = packageIdentifiers.size() - existingPkgs
+	
+	if (!incremental) {
+	  // A new package will be created for each existing package too.
+	  newPkgs += existingPkgs
+	}
+	
 	result << [ type : "packages", "new" : (newPkgs), "updated" : existingPkgs ]
 
-
 	// We should now have a query that we can execute to determine (roughly) how many Tipps will be added.
-	result << [ type : "titles", "new" : (titleRows - existingTitles), "updated" : existingTitles ]
+	long newTitles = (titleRows - existingTitles)
+	if (newTitles < 0) {
+	  
+	  // Offset the existing titles as some ids point to multiple components.
+	  existingTitles = existingTitles + newTitles
+	  
+	  // Now make 0.
+	  newTitles -= newTitles
+	}
+	
+	result << [ type : "titles", "new" : (newTitles), "updated" : existingTitles ]
 
 	// Run a count.
 	existingPlats = platformNames.size()

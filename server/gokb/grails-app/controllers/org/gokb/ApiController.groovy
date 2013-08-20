@@ -163,7 +163,7 @@ class ApiController {
 		def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
 
 		log.debug("Try and predetermine the changes.");
-		result = ingestService.estimateChanges(parsed_project_file, params.projectID)
+		result = ingestService.estimateChanges(parsed_project_file, params.projectID, (params.boolean("incremental") != false))
 
 	  } finally {
 		if ( temp_data_zipfile ) {
