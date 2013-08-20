@@ -433,7 +433,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Country','Zambia').save()
         RefdataCategory.lookupOrCreate('Country','Zimbabwe').save()
 //    RefdataCategory.lookupOrCreate("Combo.Type", "Content Provider").save()
-//    RefdataCategory.lookupOrCreate("Combo.Status", "Active").save()
+        RefdataCategory.lookupOrCreate("Combo.Status", "Active").save()
+        RefdataCategory.lookupOrCreate("Combo.Status", "Deleted").save()
 
 //    RefdataCategory.lookupOrCreate('ComboType','Unknown').save()
 //    RefdataCategory.lookupOrCreate('ComboType','Previous').save()

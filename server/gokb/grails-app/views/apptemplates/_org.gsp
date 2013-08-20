@@ -145,9 +145,11 @@
          <div class="control-group">
             <dt>Titles</dt>
             <dd>
-              <g:render template="comboList" 
+              <g:render template="combosByType" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'publishedTitles', cols:[[expr:'name',colhead:'Title Name',action:'link']]]}" />
+                        model="${[d:d, property:'publishedTitles', cols:[[expr:'fromComponent.name',
+                                                                          colhead:'Title Name',
+                                                                          action:'link']], direction:'in']}" />
             </dd>
           </div>
 
@@ -157,6 +159,19 @@
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']]]}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Identifiers</dt>
+            <dd>
+              <g:render template="combosByType" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'ids', cols:[[expr:'toComponent.namespace.value',
+                                                                   colhead:'Namespace'],
+                                                             [expr:'toComponent.value',
+                                                                   colhead:'ID',
+                                                                   action:'link']], direction:'in']}" />
             </dd>
           </div>
 

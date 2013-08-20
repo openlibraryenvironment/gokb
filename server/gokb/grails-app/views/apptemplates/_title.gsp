@@ -4,6 +4,7 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
+    <li><a href="#lists" data-toggle="tab">Lists</a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>
@@ -87,7 +88,7 @@
                             ${p.toComponent.name}
                           </g:link></td>
                         <td>
-                          ${p.status.value}
+                          <g:xEditableRefData owner="${p}" field="status" config='Combo.Status' />
                         </td>
                         <td><g:xEditable class="ipe" owner="${p}"
                             field="startDate" type="date" /></td>
@@ -159,6 +160,21 @@
           </g:if>
         </dl>
       </g:if>
+    </div>
+
+    <div class="tab-pane" id="lists">
+        <div class="control-group">
+            <dt>Identifiers</dt>
+            <dd>
+              <g:render template="combosByType" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'ids', cols:[[expr:'toComponent.namespace.value',
+                                                                   colhead:'Namespace'],
+                                                             [expr:'toComponent.value',
+                                                                   colhead:'ID',
+                                                                   action:'link']], direction:'out']}" />
+            </dd>
+          </div>
     </div>
 
     <div class="tab-pane" id="header">
