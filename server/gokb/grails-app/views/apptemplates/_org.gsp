@@ -126,7 +126,7 @@
 
          <div class="control-group">
             <dt>Licenses</dt>
-            <dd>
+            <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
