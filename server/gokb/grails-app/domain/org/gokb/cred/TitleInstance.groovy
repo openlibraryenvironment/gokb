@@ -24,17 +24,13 @@ class TitleInstance extends KBComponent {
 	RefdataValue locale_rd = RefdataCategory.lookupOrCreate("KBComponentVariantName.Locale", (locale))
 	
 	// Each of the variants...
-	boolean found = false;
-	for (int i=0; !found && i<variantNames.size(); i++) {
-	  KBComponentVariantName name = variantNames[i]
-	  
-	  // See if we already have this title.
-	  found = (name.locale == locale_rd && name.variantType == title_type
+	def exisiting = variantNames.find {
+	  KBComponentVariantName name = it
+	  return (name.locale == locale_rd && name.variantType == title_type
 		&& name.getVariantName().equalsIgnoreCase(title))
-	}  
+	}
 	
-	// Only add if we haven't found the variant name.
-	if (!found) {
+	if (!exisiting) {
 	  addToVariantNames(
 		new KBComponentVariantName([
 		  "variantType"	: (title_type),
