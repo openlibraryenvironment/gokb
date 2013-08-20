@@ -145,9 +145,11 @@
          <div class="control-group">
             <dt>Titles</dt>
             <dd>
-              <g:render template="comboList" 
+              <g:render template="combosByType" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'publishedTitles', cols:[[expr:'name',colhead:'Title Name',action:'link']]]}" />
+                        model="${[d:d, property:'publishedTitles', cols:[[expr:'fromComponent.name',
+                                                                          colhead:'Title Name',
+                                                                          action:'link']], direction:'in']}" />
             </dd>
           </div>
 

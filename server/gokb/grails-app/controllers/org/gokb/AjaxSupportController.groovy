@@ -233,8 +233,31 @@ class AjaxSupportController {
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
     if ( contextObj ) {
-      contextObj[params.__property].remove(resolveOID2(params.__itemToRemove))
-      contextObj.save()
+      def item_to_remove = resolveOID2(params.__itemToRemove)
+      if ( item_to_remove ) {
+        contextObj[params.__property].remove(item_to_remove)
+        contextObj.save()
+      }
+      else {
+        log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
+      }
+    }
+    else {
+      log.error("Unable to resolve context obj : ${params.__context}");
+    }
+    redirect(url: request.getHeader('referer'))
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def delete() {
+    log.debug("delete(${params})");
+    // Adds a link to a collection that is not mapped through a join object
+    def contextObj = resolveOID2(params.__context)
+    if ( contextObj ) {
+      contextObj.delete()
+    }
+    else {
+      log.error("Unable to resolve context obj : ${params.__context}");
     }
     redirect(url: request.getHeader('referer'))
   }
