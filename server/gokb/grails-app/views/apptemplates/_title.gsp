@@ -108,6 +108,7 @@
                 <table class="table table-striped table-bordered">
                   <thead>
                     <tr>
+                      <th>TIPP</th>
                       <th>Status</th>
                       <th>Package</th>
                       <th>Platform</th>
@@ -119,6 +120,10 @@
                   <tbody>
                     <g:each in="${d.tipps}" var="tipp">
                       <tr>
+                        <td><g:link controller="resource" action="show"
+                            id="${tipp.getClassName()+':'+tipp.id}">
+                            ${tipp.id}
+                          </g:link></td>
                         <td>
                           ${tipp.status?.value}
                         </td>
