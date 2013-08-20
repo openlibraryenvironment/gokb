@@ -13,6 +13,7 @@ import org.apache.commons.compress.compressors.gzip.*
 import org.gokb.cred.*
 import org.gokb.refine.*
 import org.gokb.validation.Validation
+import org.gokb.validation.types.A_ValidationRule
 import org.joda.time.DateTime
 import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
@@ -84,8 +85,16 @@ class IngestService {
 	def result = Validation.doValidate(project_data)
 
 	if ( result.messages?.size() > 0 ) {
-	  log.error("validation has messages: a failure: ${result.messages}");
-	  result.status = false;
+	  log.error("validation has messages: a failure: ${result.messages}")
+	  // TODO: This needs fixing. The validity should be determined by each rule executing.
+	  // Warnings should probably always return true to keep validation halting on warnings.
+	  // Shouldn't have to go through the messages here again.
+	  boolean valid = true
+	  for (int i=0; valid && i<result.messages.size(); i++) {
+		def message = result.messages[i]
+		valid = (message.severity != A_ValidationRule.SEVERITY_ERROR)
+	  }
+	  result.status = valid
 	}
 	else {
 	  log.debug("No messages, file valid");
@@ -155,7 +164,10 @@ class IngestService {
   /**
    * Estimate the number of each component that would be Created/Updated as a result of ingesting this data.
    */
-  def estimateChanges(project_data, project_id = null) {
+  def estimateChanges(project_data, project_id = null, boolean incremental) {
+	
+	// The current component status value.
+	RefdataValue current = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
 
 	// The result object.
 	def result = []
@@ -288,6 +300,7 @@ class IngestService {
 	  and {
 		q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
 		q.add ("ids.value", "in", [packageIdentifiers])
+		eq ("status", current)
 	  }
 
 	  projections {
@@ -297,11 +310,26 @@ class IngestService {
 
 	// New packages.
 	newPkgs = packageIdentifiers.size() - existingPkgs
+	
+	if (!incremental) {
+	  // A new package will be created for each existing package too.
+	  newPkgs += existingPkgs
+	}
+	
 	result << [ type : "packages", "new" : (newPkgs), "updated" : existingPkgs ]
 
-
 	// We should now have a query that we can execute to determine (roughly) how many Tipps will be added.
-	result << [ type : "titles", "new" : (titleRows - existingTitles), "updated" : existingTitles ]
+	long newTitles = (titleRows - existingTitles)
+	if (newTitles < 0) {
+	  
+	  // Offset the existing titles as some ids point to multiple components.
+	  existingTitles = existingTitles + newTitles
+	  
+	  // Now make 0.
+	  newTitles -= newTitles
+	}
+	
+	result << [ type : "titles", "new" : (newTitles), "updated" : existingTitles ]
 
 	// Run a count.
 	existingPlats = platformNames.size()

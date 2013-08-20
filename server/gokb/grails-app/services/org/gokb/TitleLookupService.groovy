@@ -143,11 +143,14 @@ class TitleLookupService {
 	  addPublisher(publisher_name, the_title)
   
 	  // Add all the identifiers.
-	  the_title.getIds().addAll(results['ids'])
+	  LinkedHashSet id_set = []
+	  id_set.addAll(the_title.getIds())
+	  id_set.addAll(results['ids'])
+	  the_title.setIds(id_set)
   
 	  // Try and save the result now.
 	  if ( the_title.save(failOnError:true,flush:true) ) {
-		log.debug("Succesfully saved TI: ${the_title.name}");
+		log.debug("Succesfully saved TI: ${the_title.name}")
 	  }
 	  else {
 		the_title.errors.each { e ->
