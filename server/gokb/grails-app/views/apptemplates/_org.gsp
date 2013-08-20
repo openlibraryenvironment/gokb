@@ -120,7 +120,7 @@
             <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office']}" />
+                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
             </dd>
           </div>
 
