@@ -12,6 +12,6 @@
   <dt>Request Timestamp</dt>
   <dd>${d.dateCreated}</dd>
   <dt>Request Status</dt>
-  <dd>${d.status?.value}</dd>
+  <dd><g:xEditableRefData owner="${d}" field="status" config='ReviewRequest.Status' /></dd>
 </dl>
 
