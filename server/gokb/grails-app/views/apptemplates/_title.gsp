@@ -88,7 +88,7 @@
                             ${p.toComponent.name}
                           </g:link></td>
                         <td>
-                          ${p.status.value}
+                          <g:xEditableRefData owner="${p}" field="status" config='Combo.Status' />
                         </td>
                         <td><g:xEditable class="ipe" owner="${p}"
                             field="startDate" type="date" /></td>
