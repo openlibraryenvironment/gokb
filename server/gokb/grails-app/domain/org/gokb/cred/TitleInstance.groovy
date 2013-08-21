@@ -80,7 +80,7 @@ class TitleInstance extends KBComponent {
     def publisher_combos = getCombosByPropertyName('publisher')
     publisher_combos.each { pc ->
       if ( pc.endDate == null ) {
-        result = pc
+        result = pc.toComponent
       }
     }
     result

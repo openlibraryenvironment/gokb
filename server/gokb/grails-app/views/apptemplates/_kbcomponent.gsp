@@ -1,33 +1,18 @@
 <dl class="dl-horizontal">
 
   <div class="control-group">
-    <dt>Internal Id</dt>
+    <dt>GoKB Internal Id</dt>
     <dd>
       ${d.id?:'New Record'}
     </dd>
   </div>
 
   <div class="control-group">
-    <dt>Reference</dt>
-    <dd>
-      <g:xEditable class="ipe" owner="${d}" field="reference"/>
-    </dd>
-  </div>
-
-  <div class="control-group">
-    <dt>Provenance</dt>
-    <dd>
-      <g:xEditable class="ipe" owner="${d}" field="provenance"/>
-    </dd>
-  </div>
-
-  <div class="control-group">
-    <dt>Shortcode</dt>
+    <dt>GoKB Shortcode</dt> 
     <dd>
       <g:xEditable class="ipe" owner="${d}" field="shortcode"/>
     </dd>
   </div>
-
 
   <g:if test="${ d.ids?.size() > 0 }">
     <div class="control-group">

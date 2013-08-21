@@ -598,7 +598,7 @@ globalSearchTemplates = [
     ],
     'reviewRequests':[
       baseclass:'org.gokb.cred.ReviewRequest',
-      title:'Review Requests',
+      title:'Requests For Review',
       qbeConfig:[
         qbeForm:[
         ],

@@ -3,7 +3,7 @@
   ${d.getNiceName()} : ${d.name ?: d.id} - 
      <g:link controller="resource" action="show" id="${d.title?.class.name+':'+d.title.id}">${d.title.name}</g:link> in 
      <g:link controller="resource" action="show" id="${d.pkg?.class.name+':'+d.pkg.id}">${d.pkg.name}</g:link> via 
-     <g:link controller="resource" action="show" id="${d.hostPlatform?.class.name+':'+d.title.id}">${d.hostPlatform.name}</g:link>
+     <g:link controller="resource" action="show" id="${d.hostPlatform?.class.name+':'+d.hostPlatform.id}">${d.hostPlatform.name}</g:link>
 </g:if>
 <g:else>
   Create New ${d.getNiceName()}

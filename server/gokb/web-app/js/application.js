@@ -14,7 +14,10 @@ $(document).ready(function() {
   $.fn.editable.defaults.mode = 'inline';
 
   $('.xEditableValue').editable();
-  $(".xEditableManyToOne").editable();
+
+  $(".xEditableManyToOne").editable(
+  );
+
   $(".simpleHiddenRefdata").editable({
     url: function(params) {
       alert("editable hidden");
@@ -37,6 +40,7 @@ $(document).ready(function() {
       results: function (data, page) {
         return {results: data.values};
       }
+      
   }});
 
 });

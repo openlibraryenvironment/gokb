@@ -5,6 +5,7 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <li><a href="#lists" data-toggle="tab">Lists</a></li>
+    <li><a href="#titlerels" data-toggle="tab">Title Relationships</a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>
@@ -175,6 +176,9 @@
                                                                    action:'link']], direction:'out']}" />
             </dd>
           </div>
+    </div>
+
+    <div class="tab-pane" id="titlerels">
     </div>
 
     <div class="tab-pane" id="header">

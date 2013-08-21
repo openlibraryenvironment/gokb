@@ -43,6 +43,7 @@
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Territory']}">Territory</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstancePackagePlatform']}">TIPP</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
                 </ul>
               </li>

@@ -9,7 +9,7 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
-      <dt>Website</dt>
+      <dt>Territory Name</dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
     </div>
 
