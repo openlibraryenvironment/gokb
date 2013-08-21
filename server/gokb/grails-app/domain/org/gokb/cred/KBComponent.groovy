@@ -478,7 +478,7 @@ abstract class KBComponent {
     def combos
     if ( this.id != null ) {
       // Unsaved components can't have combo relations
-      RefdataValue type = RefdataCategory.lookupOrCreate("Combo.Type", getComboTypeValue(propertyName))
+      RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue(propertyName))
 
       if (isComboReverse(propertyName)) {
        combos = Combo.createCriteria().list {

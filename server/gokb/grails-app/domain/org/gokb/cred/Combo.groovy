@@ -49,7 +49,7 @@ class Combo {
     fromComponent(nullable:false, blank:false)
     toComponent(nullable:false, blank:false)
     endDate(nullable:true, blank:false)
-    startDate(nullable:false, blank:false)
+    startDate(nullable:true, blank:false)
   }
   
   public Date expire (Date endDate = null) {

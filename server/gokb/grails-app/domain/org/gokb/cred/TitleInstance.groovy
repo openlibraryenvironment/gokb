@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
+import org.gokb.DomainClassExtender
 
 class TitleInstance extends KBComponent {
 
@@ -78,9 +79,13 @@ class TitleInstance extends KBComponent {
   public Org getCurrentPublisher() {
     def result = null;
     def publisher_combos = getCombosByPropertyName('publisher')
-    publisher_combos.each { pc ->
+    publisher_combos.each { Combo pc ->
       if ( pc.endDate == null ) {
-        result = pc.toComponent
+	if (isComboReverse('publisher')) {
+	  result = pc.fromComponent
+	} else {
+	  result = pc.toComponent
+	}
       }
     }
     result
@@ -89,7 +94,7 @@ class TitleInstance extends KBComponent {
   /**
    * Close off any existing publisher relationships and add a new one for this publiser
    */
-  def changePublisher(new_publisher) {
+  def changePublisher(new_publisher, boolean null_start = false) {
 
     if ( new_publisher != null ) {
 
@@ -97,6 +102,7 @@ class TitleInstance extends KBComponent {
 
       if ( ( current_publisher != null ) && ( current_publisher.id==new_publisher.id ) ) {
         // no change... leave it be
+		return false
       }
       else {
         def publisher_combos = getCombosByPropertyName('publisher')
@@ -105,8 +111,30 @@ class TitleInstance extends KBComponent {
             pc.endDate = new Date();
           }
         }
-        publisher.add(new_publisher);
+		
+		// Now create a new Combo
+		RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue('publisher'))
+		Combo combo = new Combo(
+		  type    : (type),
+		  status  : DomainClassExtender.getComboStatusActive(),
+		  startDate : (null_start ? null : new Date())
+		)
+		
+		// Depending on where the combo is defined we need to add a combo.
+		if (isComboReverse('publisher')) {
+		  combo.fromComponent = new_publisher
+		  addToIncomingCombos(combo)
+		} else {
+		  combo.toComponent = new_publisher
+		  addToOutgoingCombos(combo)
+		}
+		
+		return true
+//        publisher.add(new_publisher)
       }
     }
+	
+	// Returning false if we get here implies the publisher has not been changed.
+	return false
   }
 }
