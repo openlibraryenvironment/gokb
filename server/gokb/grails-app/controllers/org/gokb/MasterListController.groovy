@@ -25,53 +25,40 @@ class MasterListController {
   def org() { 
     def result = [:]
 
-    // Generate list of cp orgs where a tipp exists for that org as a cp
-    // result.titles = Org.executeQuery("select ti from TitleInstance as ti where exists ( select tipp from TitleInstancePackagePlatform as tipp join tipp.outgoingCombos as oc join tipp.outgoingCombos as pkgcombo join where oc.toComponent = ti and ic.type.value='TitleInstancePackagePlatform.Title' and pkgcombo.type.value='TitleInstancePackagePlatform.Package' )");
-
-    // select ti from TitleInstance as ti
-    // where exists (
-    //   select tipp 
-    //   from TitleInstancePackagePlatform as tipp
-    //       join tipp.outgoingCombos as tipp_title_combos
-    //       join tipp.outgoingCombos as tipp_pkg_combos
-    //       join tipp_pkg_combos.toComponent.outgoingCombos as pkg_provider_combos
-    //   where tipp_title_combos.type.value='TitleInstancePackagePlatform.Title'
-    //     and tipp_pkg_combos.type.value='TitleInstancePackagePlatform.Package'
-    //     and pkg_provider_combos.type.value='Package.Provider'
-    //     and pkg_provider_combos.toComponent = ?
-    // )
-
     Org o = Org.get(params.id)
 
-    def c = TitleInstance.createCriteria()
+    // Generate list of cp orgs where a tipp exists for that org as a cp
+    // select distinct(tipp_title_combos.fromComponent)
+    result.tipps = TitleInstancePackagePlatform.executeQuery('''
+       select tipp
+       from TitleInstancePackagePlatform as tipp
+           join tipp.incomingCombos as tipp_pkg_combos
+           join tipp.incomingCombos as tipp_title_combos
+           join tipp_pkg_combos.fromComponent as pkg
+           join pkg.outgoingCombos as pkg_provider_combos
+       where tipp_pkg_combos.type.value='Package.Tipps'
+         and tipp_title_combos.type.value='TitleInstance.Tipps'
+         and pkg_provider_combos.type.value='Package.Provider'
+         and pkg_provider_combos.toComponent = ?''',[o])
 
-    result.titles = c.list {
-      // Title
-      incomingCombos {
-        type {
-          eq('value','TitleInstancePackagePlatform.Title')
-        }
-        fromComponent {
-          // tipp
-          outgoingCombos {
-            type {
-              eq('value','TitleInstancePackagePlatform.Package')
-            }
-            toComponent {
-              // Package
-              outgoingCombos {
-                type {
-                  eq('value','Package.Provider')
-                }
-                eq('toComponent',o)
-              }
-            }
-          }
-        }
-      }
-    }
+    result.org_packages = Package.executeQuery('''
+      select p 
+      from Package as p
+      join p.outgoingCombos as pkg_provider_combos
+      where pkg_provider_combos.toComponent = ?
+        and pkg_provider_combos.type.value = 'Package.Provider'
+''',[o]);
 
-    log.debug("masterlist for ${o.name} contains ${result.titles.size()} entries");
+    // result.tipps = TitleInstancePackagePlatform.executeQuery('''
+    //   select tipp 
+    //   from TitleInstancePackagePlatform as tipp
+    //   join tipp.incomingCombos as tipp_pkg_combos
+    //   join tipp_pkg_combos.fromComponent as pkg
+    //   join pkg.outgoingCombos as pkg_provider_combos
+    //   where pkg_provider_combos.toComponent = ?
+    //     and pkg_provider_combos.type.value = 'Package.Provider'
+    //     and tipp_pkg_combos.type.value = 'Package.Tipps'
+// ''',[o]);
 
     result
   }

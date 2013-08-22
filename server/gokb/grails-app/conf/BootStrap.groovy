@@ -450,9 +450,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('License.Type','Template').save()
     RefdataCategory.lookupOrCreate('License.Type','Other').save()
 
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Alternate Title').save()
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Previous Title').save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Misspelling').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Acronym').save()
 
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-us').save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-gb').save()
