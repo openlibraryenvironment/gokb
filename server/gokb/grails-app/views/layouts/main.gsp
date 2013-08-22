@@ -47,7 +47,12 @@
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
                 </ul>
               </li>
-              <li><g:link controller="home" action="showRules">Validation Rules</g:link></li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ToDo</a>
+                <ul class="dropdown-menu">
+                  <li><g:link controller="home" action="showRules">Data Review</g:link></li>
+                </ul>
+              </li>
               <li><g:link controller="coreference" action="index">Coreference</g:link></li>
             </ul>
             <ul class="nav pull-right">

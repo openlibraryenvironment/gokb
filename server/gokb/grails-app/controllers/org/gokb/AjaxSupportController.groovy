@@ -336,9 +336,10 @@ class AjaxSupportController {
     def result = null
 
     if ( target && value ) {
-      def binding_properties = [ "${params.name}":value ]
-      log.debug("Binding: ${binding_properties} into ${target} - a ${target.class.name}");
-      bindData(target, binding_properties)
+      // def binding_properties = [ "${params.name}":value ]
+      // log.debug("Binding: ${binding_properties} into ${target} - a ${target.class.name}");
+      // bindData(target, binding_properties)
+      target[params.name] = value
       if ( target.save(flush:true) ) {
         if ( params.resultProp ) {
           result = value[params.resultProp]
