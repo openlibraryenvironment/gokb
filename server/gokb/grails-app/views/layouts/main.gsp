@@ -50,7 +50,7 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">ToDo</a>
                 <ul class="dropdown-menu">
-                  <li><g:link controller="home" action="showRules">Data Review</g:link></li>
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:reviewRequests']}">Data Review</g:link></li>
                 </ul>
               </li>
               <li><g:link controller="coreference" action="index">Coreference</g:link></li>
