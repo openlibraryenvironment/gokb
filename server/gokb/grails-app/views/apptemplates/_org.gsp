@@ -73,6 +73,35 @@
               </g:else>
             </dd>
           </div>
+
+          <div class="control-group">
+            <dt>Alternate Names</dt>
+            <dd>
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Alternate Name</th>
+                    <th>Status</th>
+                    <th>Variant Type</th>
+                    <th>Locale</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <g:each in="${d.variantNames}" var="v">
+                    <tr>
+                      <td>
+                        ${v.variantName}
+                      </td>
+                      <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
+                      <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
+                      <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
+                    </tr>
+                  </g:each>
+                </tbody>
+              </table>
+            </dd>
+          </div>
+
       
           <div class="control-group">
             <dt>IDs</dt>
