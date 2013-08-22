@@ -53,6 +53,7 @@
                   <li><g:link controller="search" action="index" params="${[qbe:'g:reviewRequests']}">Data Review</g:link></li>
                 </ul>
               </li>
+              <li><g:link controller="masterList" action="index">Master List</g:link></li>
               <li><g:link controller="coreference" action="index">Coreference</g:link></li>
             </ul>
             <ul class="nav pull-right">
