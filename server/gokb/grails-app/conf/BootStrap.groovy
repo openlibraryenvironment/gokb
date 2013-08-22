@@ -162,7 +162,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("Package.PaymentType", "Paid").save()
     RefdataCategory.lookupOrCreate("Package.PaymentType", "Opt Out Promotion").save()
     RefdataCategory.lookupOrCreate("Package.PaymentType", "Uncharged").save()
-    RefdataCategory.lookupOrCreate("Package.PaymentType", "Unkown").save()
+    RefdataCategory.lookupOrCreate("Package.PaymentType", "Unknown").save()
 	RefdataCategory.lookupOrCreate("Package.Global", "Consortium").save()
 	RefdataCategory.lookupOrCreate("Package.Global", "Global").save()
 	RefdataCategory.lookupOrCreate("Package.Global", "Other").save()

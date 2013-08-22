@@ -1,8 +1,17 @@
 package org.gokb
 
 import org.gokb.cred.*
+import grails.converters.*
+import grails.plugins.springsecurity.Secured
 
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
+
+
+@Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
 class MasterListController {
+
+  def genericOIDService
+  def classExaminationService
 
   def index() { 
     def result = [:]
@@ -12,4 +21,46 @@ class MasterListController {
 
     result
   }
+
+  def org() { 
+    def result = [:]
+
+    // Generate list of cp orgs where a tipp exists for that org as a cp
+    // result.titles = Org.executeQuery("select ti from TitleInstance as ti where exists ( select tipp from TitleInstancePackagePlatform as tipp join tipp.outgoingCombos as oc join tipp.outgoingCombos as pkgcombo join where oc.toComponent = ti and ic.type.value='TitleInstancePackagePlatform.Title' and pkgcombo.type.value='TitleInstancePackagePlatform.Package' )");
+
+    Org o = Org.get(params.id)
+
+    def c = TitleInstance.createCriteria()
+    result.titles = c.list {
+      // Title
+      incomingCombos {
+        type {
+          eq('value','TitleInstancePackagePlatform.Title')
+        }
+        fromComponent {
+          // tipp
+          outgoingCombos {
+            type {
+              eq('value','TitleInstancePackagePlatform.Package')
+            }
+            toComponent {
+              // Package
+              outgoingCombos {
+                type {
+                  eq('value','Package.Provider')
+                }
+                eq('toComponent',o)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    log.debug("masterlist for ${o.name} contains ${result.titles.size()} entries");
+
+    result
+  }
+
+
 }
