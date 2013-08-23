@@ -60,7 +60,11 @@ class InplaceTagLib {
     out << "<span>"
    
     // Output an editable link
-    out << "<span id=\"${id}\" class=\"ipe\" data-pk=\"${oid}\" data-type=\"${type}\" data-name=\"${attrs.field}\" data-source=\"${data_link}\" data-url=\"${update_link}\">"
+    out << "<span id=\"${id}\" class=\"xEditableManyToOne\" "
+    if ( attrs.owner != null )
+      out << "data-pk=\"${oid}\" "
+
+    out << "data-type=\"${type}\" data-name=\"${attrs.field}\" data-source=\"${data_link}\" data-url=\"${update_link}\">"
 
     // Here we can register different ways of presenting object references. The most pressing need to be
     // outputting a span containing an icon for refdata fields.
@@ -94,7 +98,7 @@ class InplaceTagLib {
   def xEditableManyToOne = { attrs, body ->
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
     def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.config,format:'json'])
-    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
+    def oid = ( ( attrs.owner != null ) && ( attrs.owner.id != null ) ) ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     out << "<a href=\"#\" id=\"${id}\" class=\"xEditableManyToOne\" data-pk=\"${oid}\" data-type=\"select\" data-name=\"${attrs.field}\" data-source=\"${data_link}\">"
     out << body()
