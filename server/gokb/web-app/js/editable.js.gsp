@@ -34,7 +34,33 @@ $(document).ready(function() {
       }
   }});
 
-  $(".xEditableManyToOneS2").editable({
+  $(".xEditableManyToOneS2").each(function(elem) {
+    var dom = $(this).data('domain');
+    $(this).editable({
+      select2: {
+        placeholder: "Search for...",
+        width:'resolve',
+        minimumInputLength: 1,
+        ajax: {
+          url: "<g:createLink controller='ajaxSupport' action='lookup' />",
+          dataType: 'json',
+          data: function (term, page) {
+            return {
+              format:'json',
+              q: term,
+              baseClass:dom,
+              filter1:$(this).data('filter1')
+            }
+          },
+          results: function (data, page) {
+            return {results: data.values};
+          }
+        }
+      }
+    });
+  });
+
+  $(".xEditableManyToOneS2OLD").editable({
     select2: {
       placeholder: "Search for.....",
       width:'resolve',
@@ -56,6 +82,7 @@ $(document).ready(function() {
       }
     }
   });
+
 
 });
 
