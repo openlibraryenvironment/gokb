@@ -60,29 +60,5 @@ $(document).ready(function() {
     });
   });
 
-  $(".xEditableManyToOneS2OLD").editable({
-    select2: {
-      placeholder: "Search for.....",
-      width:'resolve',
-      minimumInputLength: 1,
-      ajax: {
-        url: "<g:createLink controller='ajaxSupport' action='lookup' />",
-        dataType: 'json',
-        data: function (term, page) {
-          return {
-            format:'json',
-            q: term,
-            baseClass:'org.gokb.cred.Org',
-            filter1:$(this).data('filter1')
-          }
-        },
-        results: function (data, page) {
-          return {results: data.values};
-        }
-      }
-    }
-  });
-
-
 });
 
