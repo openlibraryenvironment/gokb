@@ -137,4 +137,5 @@ class TitleInstance extends KBComponent {
 	// Returning false if we get here implies the publisher has not been changed.
 	return false
   }
+
 }

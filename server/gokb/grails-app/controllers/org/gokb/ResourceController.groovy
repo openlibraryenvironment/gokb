@@ -4,12 +4,13 @@ import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils;
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
-import org.gokb.cred.KBComponent
+import org.gokb.cred.*
 
 class ResourceController {
 
   def genericOIDService
   def classExaminationService
+  def springSecurityService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
@@ -17,12 +18,22 @@ class ResourceController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
+    User user = springSecurityService.currentUser
+
     def result = [:]
 
     if ( params.id ) {
       log.debug("Attempt to retrieve ${params.id} and find a global template for it");
       result.displayobj = genericOIDService.resolveOID(params.id)
+
       if ( result.displayobj ) {
+
+        def new_history_entry = new History(controller:params.controller,
+                                            action:params.action,
+                                            actionid:params.id,
+                                            owner:user,
+                                            title:"View ${result.displayobj.toString()}").save()
+
         result.displayobjclassname = result.displayobj.class.name
         result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
         result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]

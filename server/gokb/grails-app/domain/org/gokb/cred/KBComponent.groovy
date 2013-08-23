@@ -561,5 +561,8 @@ abstract class KBComponent {
     GrailsNameUtils.getNaturalName(getClassName())
   }
 
+  public String toString() {
+    "${name} (${getNiceName()} ${id})".toString()
+  }
 
 }

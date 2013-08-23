@@ -27,7 +27,7 @@
 
             Will be transferred from their current publisher to ${newPublisher.name}. <span style="background-color:#FF4D4D;">Current tipps shown with a red background</span> will be deprecated. <span style="background-color:#11bb11;">New tipps with a green background</span> will be created by this transfer.
 
-            <table class="table">
+            <table class="table table-bordered">
               <thead>
                 <tr>
                   <th>Select</th>

@@ -18,6 +18,7 @@ class HomeController {
 
     result.openActivities = Activity.findAllByOwnerAndStatus(user,active_status)
     result.recentlyClosedActivities = Activity.findAllByOwnerAndStatusNotEqual(user,active_status,[max: 10, sort: "lastUpdated", order: "desc"])
+    result.recentlyViewed = History.findAllByOwner(user,[max: 20, sort: "activityDate", order: "desc"])
 
     result
   }

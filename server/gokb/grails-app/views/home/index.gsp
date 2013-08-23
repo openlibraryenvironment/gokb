@@ -12,7 +12,7 @@
        <div id="openActivities" class="span6 well">
          <g:if test="${(openActivities != null ) && ( openActivities.size() > 0 )}">
            <h3>Currently open activities</h3>
-           <table class="table table-striped">
+           <table class="table table-striped table-bordered">
              <thead>
                <tr>
                  <td>Activity</td>
@@ -26,8 +26,8 @@
                  <tr>
                    <td><g:link controller="workflow" action="${activity.activityAction}" id="${activity.id}">${activity.activityName?:'No name'}</g:link></td>
                    <td>${activity.type}</td>
-                   <td>${activity.dateCreated}</td>
-                   <td>${activity.lastUpdated}</td>
+                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.dateCreated}"/></td>
+                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.lastUpdated}"/></td>
                  </tr>
                </g:each>
              </tbody>
@@ -39,7 +39,7 @@
 
          <g:if test="${(recentlyClosedActivities != null ) && ( recentlyClosedActivities.size() > 0 )}">
            <h3>Recently Closed activities</h3>
-           <table class="table table-striped">
+           <table class="table table-striped table-bordered">
              <thead>
                <tr>
                  <td>Activity</td>
@@ -55,8 +55,8 @@
                    <td><g:link controller="workflow" action="${activity.activityAction}" id="${activity.id}">${activity.activityName?:'No name'}</g:link></td>
                    <td>${activity.type.value}</td>
                    <td>${activity.status.value}</td>
-                   <td>${activity.dateCreated}</td>
-                   <td>${activity.lastUpdated}</td>
+                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.dateCreated}"/></td>
+                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.lastUpdated}"/></td>
                  </tr>
                </g:each>
              </tbody>
@@ -68,6 +68,23 @@
 
        </div>
        <div id="recentActivity" class="span6">
+         <h3>History</h3>
+         <table class="table table-striped table-bordered">
+           <thead>
+             <tr>
+               <td>Activity</td>
+               <td>Date</td>
+             </tr>
+           </thead>
+           <tbody>
+             <g:each in="${recentlyViewed}" var="activity">
+               <tr>
+                 <td><g:link controller="${activity.controller}" action="${activity.action}" id="${activity.actionid}">${activity.title}</g:link></td>
+                 <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.activityDate}"/></td>
+               </tr>
+             </g:each>
+           </tbody>
+         </table>
        </div>
      </div>
    </div>
