@@ -34,7 +34,7 @@
            </table>
          </g:if>
          <g:else>
-           <h3>No active open activities</h3>
+           <h3>No open activities</h3>
          </g:else>
 
          <g:if test="${(recentlyClosedActivities != null ) && ( recentlyClosedActivities.size() > 0 )}">
