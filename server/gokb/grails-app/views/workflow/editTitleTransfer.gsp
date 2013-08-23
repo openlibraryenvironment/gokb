@@ -85,7 +85,12 @@
             </dl>
  
             <br/>
-                <button type="submit" class="btn btn-primary" name="process" value="process">Process Transfer</button>
+            <g:if test="${d.status?.value=='Active'}">
+              <button type="submit" class="btn btn-primary" name="process" value="process">Process Transfer</button>
+            </g:if>
+            <g:else>
+              This activity has been completed.
+            </g:else>
           </div>
 
  
