@@ -44,6 +44,7 @@
                <tr>
                  <td>Activity</td>
                  <td>Type</td>
+                 <td>Status</td>
                  <td>Created</td>
                  <td>Last Updated</td>
                </tr>
@@ -52,7 +53,8 @@
                <g:each in="${recentlyClosedActivities}" var="activity">
                  <tr>
                    <td><g:link controller="workflow" action="${activity.activityAction}" id="${activity.id}">${activity.activityName?:'No name'}</g:link></td>
-                   <td>${activity.type}</td>
+                   <td>${activity.type.value}</td>
+                   <td>${activity.status.value}</td>
                    <td>${activity.dateCreated}</td>
                    <td>${activity.lastUpdated}</td>
                  </tr>

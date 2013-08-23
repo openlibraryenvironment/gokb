@@ -21,7 +21,7 @@
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="brand" href="#">GOKb</a>
+          <g:link controller="home" action="index" class="brand">GOKB</g:link>
           <div class="nav-collapse">
             <ul class="nav">
               <li class="dropdown">

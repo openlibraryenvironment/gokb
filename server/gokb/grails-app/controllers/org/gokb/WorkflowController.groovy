@@ -181,6 +181,13 @@ class WorkflowController {
     else if ( params.process ) {
       log.debug("Process...");
       processTitleTransfer(activity_record, activity_data);
+      redirect(controller:'home', action:'index');
+    }
+    else if ( params.abandon ) {
+      log.debug("**ABANDON**...");
+      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
+      activity_record.save()
+      redirect(controller:'home', action:'index');
     }
 
     def result = [:]
