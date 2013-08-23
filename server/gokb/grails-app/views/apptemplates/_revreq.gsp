@@ -31,12 +31,12 @@
           <dd><g:xEditableRefData owner="${d}" field="status" config='ReviewRequest.Status' /></dd>
         </div>
 
-        <g:if test="${d.id != null}">
-
           <div class="control-group">
             <dt>Target</dt>
-            <dd><g:link controller="resource" action="show" id="${d.componentToReview.getClassName()+':'+d.componentToReview.id}">${d.componentToReview.name?:"Un-named"}</g:link></dd>
+            <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.Org">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown></dd>
           </div>
+
+        <g:if test="${d.id != null}">
 
           <div class="control-group">
             <dt>Request Timestamp</dt>

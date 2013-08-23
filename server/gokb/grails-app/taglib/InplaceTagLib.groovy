@@ -61,10 +61,14 @@ class InplaceTagLib {
    
     // Output an editable link
     out << "<span id=\"${id}\" class=\"xEditableManyToOne\" "
-    if ( attrs.owner != null )
+    if ( ( attrs.owner != null ) && ( attrs.owner.id != null ) ) {
       out << "data-pk=\"${oid}\" "
+    }
+    else {
+    }
+    out << "data-url=\"${update_link}\" "
 
-    out << "data-type=\"${type}\" data-name=\"${attrs.field}\" data-source=\"${data_link}\" data-url=\"${update_link}\">"
+    out << "data-type=\"${type}\" data-name=\"${attrs.field}\" data-source=\"${data_link}\" >"
 
     // Here we can register different ways of presenting object references. The most pressing need to be
     // outputting a span containing an icon for refdata fields.

@@ -32,9 +32,7 @@
     <div class="control-group">
       <dt>${ d.getNiceName() } Name</dt>
       <dd>
-        <g:xEditable class="ipe" owner="${d}" field="name">
-          ${d.name}
-        </g:xEditable>
+        <g:xEditable class="ipe" owner="${d}" field="name"/>
       </dd>
     </div>
   </g:if>
