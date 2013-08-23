@@ -562,7 +562,7 @@ abstract class KBComponent {
   }
 
   public String toString() {
-    "${name} (${getNiceName()} ${id})".toString()
+    "${name?:''} (${getNiceName()} ${id})".toString()
   }
 
 }
