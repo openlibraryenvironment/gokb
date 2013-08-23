@@ -25,4 +25,15 @@ class Activity {
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
   }
+
+  transient
+  getActivityAction() {
+    def result = null
+    if ( type != null ) {
+      if ( type.value == 'TitleTransfer' ) {
+        result = 'editTitleTransfer'
+      }
+    }
+    result;
+  }
 }
