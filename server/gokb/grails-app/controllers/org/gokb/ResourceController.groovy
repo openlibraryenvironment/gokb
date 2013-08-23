@@ -42,8 +42,6 @@ class ResourceController {
 	result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
 	result.displayobjclassname_short = result.displayobj.class.simpleName
 	result.isComponent = (result.displayobj instanceof KBComponent)
-		
-        log.debug("result of lookup: ${result}");
       }
       else {
         log.debug("unable to resolve object");

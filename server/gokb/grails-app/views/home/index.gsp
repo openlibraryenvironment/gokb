@@ -67,7 +67,7 @@
          </g:else>
 
        </div>
-       <div id="recentActivity" class="span6">
+       <div id="recentActivity" class="span6 well">
          <h3>History</h3>
          <table class="table table-striped table-bordered">
            <thead>
