@@ -63,7 +63,7 @@
            </table>
          </g:if>
          <g:else>
-           <h3>No active open activities</h3>
+           <h3>No recently closed activities</h3>
          </g:else>
 
        </div>
