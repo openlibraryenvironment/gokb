@@ -56,12 +56,6 @@ class CreateController {
         try {
           result.newobj = newclass.newInstance()
 
-     
-          // def combo_properties = newclass.clazz.hasProperty('hasByCombo') ? newclass.clazz.hasByCombo.keys() : [];
-          def combo_properties = newclass.clazz.hasByCombo?.keySet()
-
-          log.debug("combo_properties: ${combo_properties}");
-
           params.each { p ->
             log.debug("Consider ${p.key} -> ${p.value}");
             if ( newclass.hasPersistentProperty(p.key) ) {
@@ -110,24 +104,26 @@ class CreateController {
           }
           else {
 
-            // The save completed OK.. if we want to be really cool, we can now loop through the properties
-            // and set any combos on the object
 
-            boolean changed=false
-            params.each { p ->
-              if ( combo_properties != null && combo_properties.contains(p.key) ) {
-                log.debug("Deal with a combo doodah ${p.key}:${p.value}");
-                if ( ( p.value != "") && ( p.value != null ) ) {
-                  def related_item = genericOIDService.resolveOID(p.value);
-                  result.newobj[p.key] = related_item
-                  changed = true
+            if (result.displayobj instanceof KBComponent) {
+              // The save completed OK.. if we want to be really cool, we can now loop through the properties
+              // and set any combos on the object
+              boolean changed=false
+              params.each { p ->
+                if ( combo_properties != null && combo_properties.contains(p.key) ) {
+                  log.debug("Deal with a combo doodah ${p.key}:${p.value}");
+                  if ( ( p.value != "") && ( p.value != null ) ) {
+                    def related_item = genericOIDService.resolveOID(p.value);
+                    result.newobj[p.key] = related_item
+                    changed = true
+                  }
                 }
               }
-            }
-
-            if (changed) {
-              log.debug("Resaving with combos set...");
-              result.newobj.save();
+  
+              if (changed) {
+                log.debug("Resaving with combos set...");
+                result.newobj.save();
+              }
             }
  
             result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
