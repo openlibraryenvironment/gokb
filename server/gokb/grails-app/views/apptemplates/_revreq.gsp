@@ -33,7 +33,7 @@
 
           <div class="control-group">
             <dt>Target</dt>
-            <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.TitleInstance">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown></dd>
+            <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.KBComponent">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown> <g:componentLink object="${d.componentToReview}">Link</g:componentLink></dd>
           </div>
 
         <g:if test="${d.id != null}">

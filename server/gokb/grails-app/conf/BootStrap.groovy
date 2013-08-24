@@ -452,6 +452,7 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Misspelling').save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Acronym').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Minor Title Change').save()
 
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-us').save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-gb').save()

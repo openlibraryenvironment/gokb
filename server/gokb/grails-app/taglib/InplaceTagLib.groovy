@@ -196,4 +196,7 @@ class InplaceTagLib {
     out << body()
     out << "</a>";
   }
+
+  def componentLink = { attrs, body ->
+  }
 }
