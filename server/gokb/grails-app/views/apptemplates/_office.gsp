@@ -54,12 +54,13 @@
     <dd><g:xEditable class="ipe" owner="${d}" field="region"/></dd>
   </div>
 
+  <div class="control-group">
+    <dt>Owner Org</dt>
+    <dd><g:manyToOneReferenceTypedown owner="${d}" field="org" name="${comboprop}" baseClass="org.gokb.cred.Org">${d.org?.name?:''}</g:manyToOneReferenceTypedown></dd>
+  </div>
+
   <g:if test="${d.id != null}">
 
-    <div class="control-group">
-      <dt>Owner Org</dt>
-      <dd><g:manyToOneReferenceTypedown owner="${d}" field="org" name="${comboprop}" baseClass="org.gokb.cred.Org">${d.org?.name?:''}</g:manyToOneReferenceTypedown></dd>
-    </div>
 
     <div class="control-group">
       <dt>Country</dt>

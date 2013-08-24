@@ -34,7 +34,7 @@ $(document).ready(function() {
       }
   }});
 
-  $(".xEditableManyToOneS2New").each(function(elem) {
+  $(".xEditableManyToOneS2").each(function(elem) {
     var dom = $(this).data('domain');
     var filter1 = $(this).data('filter1');
     $(this).editable({
@@ -61,7 +61,7 @@ $(document).ready(function() {
     });
   });
 
-  $(".xEditableManyToOneS2").editable({
+  $(".xEditableManyToOneS2Old").editable({
     select2: {
       placeholder: "Search for.....",
       width:'resolve',
