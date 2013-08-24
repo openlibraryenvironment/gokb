@@ -35,6 +35,7 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
                 <ul class="dropdown-menu">
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}">Additional Property Definition</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.License']}">License</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Office']}">Office</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
@@ -42,10 +43,10 @@
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.ReviewRequest']}">Request For Review</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Territory']}">Territory</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstancePackagePlatform']}">TIPP</g:link></li>
-                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
                 </ul>
               </li>
               <li class="dropdown">

@@ -713,11 +713,33 @@ globalSearchTemplates = [
         ]
       ]
     ],
+    'additionalPropertyDefinitions':[
+      baseclass:'org.gokb.cred.AdditionalPropertyDefinition',
+      title:'Additional Property Definitions',
+      qbeConfig:[
+        qbeForm:[
+          [
+            prompt:'Property Name',
+            qparam:'qp_name',
+            placeholder:'Property Name',
+            contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'propertyName']
+          ],
+        ],
+        qbeGlobals:[
+        ],
+        qbeResults:[
+          [heading:'Id', property:'id'],
+          [heading:'Property Name', property:'propertyName', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+        ]
+      ]
+    ],
+
 ]
 
 
 // Types: staticgsp: under views/templates, dyngsp: in database, dynamic:full dynamic generation, other...
 globalDisplayTemplates = [
+  'org.gokb.cred.AdditionalPropertyDefinition': [ type:'staticgsp', rendername:'addpropdef' ],
   'org.gokb.cred.Package': [ type:'staticgsp', rendername:'package' ],
   'org.gokb.cred.Org': [ type:'staticgsp', rendername:'org' ],
   'org.gokb.cred.Platform': [ type:'staticgsp', rendername:'platform' ],

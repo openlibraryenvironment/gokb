@@ -42,7 +42,7 @@
           <div class="control-group">
             <dt>Imprint</dt>
             <dd>
-              <g:xEditable class="ipe" owner="${d}" field="imprint"/>
+              <g:xEditable owner="${d}" field="imprint"/>
             </dd>
           </div>
       
@@ -63,7 +63,7 @@
                     <g:each in="${d.variantNames}" var="v">
                       <tr>
                         <td>
-                          ${v.variantName}
+                          <g:xEditable owner="${v}" field="variantName"/>
                         </td>
                         <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
                         <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>

@@ -190,20 +190,34 @@ class AjaxSupportController {
           }
         }
 
+        // Need to do the right thing depending on who owns the relationship. If new obj
+        // BelongsTo other, should be added to recip collection.
         if ( params.__recip ) {
           log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
           new_obj[params.__recip] = contextObj
-        }
-
-        log.debug("Saving ${new_obj}");
-        if ( new_obj.save() ) {
-          log.debug("Saved OK");
-        }
-        else {
-          new_obj.errors.each { e ->
-            log.debug("Problem ${e}");
+          log.debug("Saving ${new_obj}");
+          if ( new_obj.save() ) {
+            log.debug("Saved OK");
+          }
+          else {
+            new_obj.errors.each { e ->
+              log.debug("Problem ${e}");
+            }
           }
         }
+        else if ( params.__addToColl ) {
+          contextObj[params.__addToColl].add(new_obj)
+          log.debug("Saving ${new_obj}");
+          if ( contextObj.save() ) {
+            log.debug("Saved OK");
+          }
+          else {
+            contextObj.errors.each { e ->
+              log.debug("Problem ${e}");
+            }
+          }
+        } 
+
       }
       else {
         log.debug("Unable to locate instance of context class with oid ${params.__context}");
