@@ -169,21 +169,21 @@ class InplaceTagLib {
     def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
-    out << "<span data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "
+    out << "<a href=\"#\" data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "
 
     if ( attrs.owner?.id != null )
       out << "data-pk=\"${oid}\" "
 
-    out << "data-type=\"select2\" data-name=\"${attrs.field}\" data-value=\"\" data-url=\"${update_link}\" >"
+    out << "data-type=\"select2\" data-name=\"${attrs.field}\" data-url=\"${update_link}\" >"
     out << body()
-    out << "</span>";
+    out << "</a>";
   }
 
-  def altManyToOneReferenceTypedown = { attrs, body ->
+  def manyToOneReferenceTypedownOld = { attrs, body ->
     def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
-    out << "<span id=\"${id}\" class=\"simpleReferenceTypedown\" data-pk=\"${oid}\" data-domain=\"org.gokb.cred.Org\" data-name=\"${attrs.field}\" data-url=\"${update_link}\"/>"
+    out << "<span data-domain=\"org.gokb.cred.Org\" id=\"${id}\" class=\"xEditableManyToOneS2\" data-pk=\"${oid}\" data-type=\"select2\" data-name=\"${attrs.field}\" data-value=\"\" data-url=\"${update_link}\" >"
     out << body()
     out << "</span>";
   }

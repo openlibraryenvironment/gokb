@@ -34,8 +34,9 @@ $(document).ready(function() {
       }
   }});
 
-  $(".xEditableManyToOneS2").each(function(elem) {
+  $(".xEditableManyToOneS2New").each(function(elem) {
     var dom = $(this).data('domain');
+    var filter1 = $(this).data('filter1');
     $(this).editable({
       select2: {
         placeholder: "Search for...",
@@ -49,7 +50,7 @@ $(document).ready(function() {
               format:'json',
               q: term,
               baseClass:dom,
-              filter1:$(this).data('filter1')
+              filter1:filter1
             }
           },
           results: function (data, page) {
@@ -59,6 +60,30 @@ $(document).ready(function() {
       }
     });
   });
+
+  $(".xEditableManyToOneS2").editable({
+    select2: {
+      placeholder: "Search for.....",
+      width:'resolve',
+      minimumInputLength: 1,
+      ajax: {
+        url: "/gokb/ajaxSupport/lookup",
+        dataType: 'json',
+        data: function (term, page) {
+          return {
+            format:'json',
+            q: term,
+            baseClass:'org.gokb.cred.Org',
+            filter1:$(this).data('filter1')
+          }
+        },
+        results: function (data, page) {
+          return {results: data.values};
+        }
+      }
+    }
+  });
+
 
 });
 
