@@ -6,6 +6,7 @@
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <li><a href="#lists" data-toggle="tab">Lists</a></li>
     <li><a href="#titlerels" data-toggle="tab">Title Relationships</a></li>
+    <li><a href="#addprops" data-toggle="tab">Additional Properties</a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>
@@ -179,6 +180,22 @@
     </div>
 
     <div class="tab-pane" id="titlerels">
+    </div>
+
+    <div class="tab-pane" id="addprops">
+      <table class="table table-bordered">
+        <thead>
+          <tr><th>Property</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <g:each in="${d.additionalProperties}" var="cp">
+            <tr>
+              <td>${cp.propertyDefn.propertyName}</td>
+              <td>${cp.apValue}</td>
+            </tr>
+          </g:each>
+        </tbody>
+      </table>
     </div>
 
     <div class="tab-pane" id="header">

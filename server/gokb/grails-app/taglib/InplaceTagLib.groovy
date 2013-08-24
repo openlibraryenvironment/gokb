@@ -198,5 +198,11 @@ class InplaceTagLib {
   }
 
   def componentLink = { attrs, body ->
+    if ( attrs.object != null ) {
+      def object_link = createLink(controller:'resource', action: 'show', id:"${attrs.object.class.name}:${attrs.object.id}")
+      out << "<a href=\"${object_link}\">"
+      out << body()
+      out << "</a>"
+    }
   }
 }
