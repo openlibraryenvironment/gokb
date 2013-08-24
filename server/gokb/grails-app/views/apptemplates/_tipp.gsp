@@ -60,7 +60,8 @@
     <li><a href="#tippcoverage" data-toggle="tab">Coverage</a></li>
     <li><a href="#tippopenaccess" data-toggle="tab">Open Access</a></li>
     <li><a href="#tipplists" data-toggle="tab">Lists</a></li>
-    <li><a href="#addprops" data-toggle="tab">Additional Properties</a></li>
+    <li><a href="#addprops" data-toggle="tab">Additional Properties <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>

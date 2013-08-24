@@ -221,7 +221,7 @@ abstract class KBComponent {
     incomingCombos:Combo,
     additionalProperties:KBComponentAdditionalProperty,
     variantNames:KBComponentVariantName,
-  reviewRequests:ReviewRequest
+    reviewRequests:ReviewRequest
   ]
 
   static mapping = {
