@@ -1,5 +1,7 @@
-<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
+<r:require modules="gokbstyle"/>
+<r:require modules="editable"/>
 
+<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
@@ -17,6 +19,11 @@
       
         <dl class="dl-horizontal">
       
+          <div class="control-group">
+            <dt>Title</dt>
+            <dd><g:xEditable owner="${d}" field="name" /></dd>
+          </div>
+
           <div class="control-group">
             <dt>Medium</dt>
             <dd><g:xEditableRefData owner="${d}" field="medium" config='TitleInstance.Medium' /></dd>
