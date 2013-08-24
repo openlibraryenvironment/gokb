@@ -119,8 +119,10 @@ class AjaxSupportController {
     ],
     'KBComponent.Status' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status'",
       qryParams:[],
       cols:['value'],
       format:'simple'

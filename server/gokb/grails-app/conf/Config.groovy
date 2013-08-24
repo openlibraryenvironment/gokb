@@ -493,9 +493,13 @@ globalSearchTemplates = [
             contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ],
         ],
+	qbeGlobals:[
+	  ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+	],
         qbeResults:[
           [heading:'Id', property:'id'],
-          [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+          [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+          [heading:'Status', property:'status.value']
         ]
       ]
     ],
@@ -567,6 +571,9 @@ globalSearchTemplates = [
             contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
           ],
         ],
+	qbeGlobals:[
+	  ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+	],
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -587,9 +594,9 @@ globalSearchTemplates = [
             contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
           ],
         ],
-	  	qbeGlobals:[
-		  ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
-		],
+	qbeGlobals:[
+	  ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
+	],
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Description', property:'desc']

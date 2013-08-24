@@ -1,3 +1,7 @@
+<r:require modules="gokbstyle"/>
+<r:require modules="editable"/>
+
+
 <h3>
 <g:if test="${d.id != null}">
   ${d.getNiceName()} : ${d.name ?: d.id} - 
