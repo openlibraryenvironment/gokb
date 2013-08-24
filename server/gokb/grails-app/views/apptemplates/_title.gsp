@@ -194,6 +194,10 @@
       <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
     </div>
 
+    <div class="tab-pane" id="review">
+      <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
+    </div>
+
     <div class="tab-pane" id="header">
       <g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
     </div>
