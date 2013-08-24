@@ -56,6 +56,7 @@
     <li><a href="#tippcoverage" data-toggle="tab">Coverage</a></li>
     <li><a href="#tippopenaccess" data-toggle="tab">Open Access</a></li>
     <li><a href="#tipplists" data-toggle="tab">Lists</a></li>
+    <li><a href="#addprops" data-toggle="tab">Additional Properties</a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>
@@ -130,8 +131,12 @@
     </div>
 
     <div class="tab-pane" id="tipplists">
-
     </div>
+
+    <div class="tab-pane" id="addprops">
+      <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
+    </div>
+
 
     <div class="tab-pane active" id="tippdetails">
 
