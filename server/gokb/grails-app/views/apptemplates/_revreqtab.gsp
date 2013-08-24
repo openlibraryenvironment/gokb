@@ -5,10 +5,10 @@
   <tbody>
     <g:each in="${d.reviewRequests}" var="rr">
       <tr>
-        <td>${rr.cause.propertyName}</td>
-        <td>${rr.request}</td>
+        <td>${rr.descriptionOfCause}</td>
+        <td>${rr.reviewRequest}</td>
         <td>${rr.status?.value}</td>
-        <td>${rr.raisedBy?.displayName</td>
+        <td>${rr.raisedBy?.displayName}</td>
         <td>${rr.reviewedBy?.displayName}</td>
         <td></td>
       </tr>
