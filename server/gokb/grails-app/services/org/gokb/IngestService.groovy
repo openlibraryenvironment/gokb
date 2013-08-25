@@ -359,7 +359,7 @@ class IngestService {
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project_id, boolean incremental = true) {
+  def ingest(project_data, project_id, boolean incremental = true, user = null) {
 	// Return result.
 	def result = [:]
 	Set<String> skipped_titles = []
@@ -478,7 +478,8 @@ class IngestService {
 			  TitleInstance title_info = titleLookupService.find(
 				  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
 				  getRowValue(datarow,col_positions,PUBLISHER_NAME),
-				  ids
+				  ids,
+                                  user
 			  );
 			
 			  // Load the project.

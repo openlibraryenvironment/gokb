@@ -338,7 +338,7 @@ class ApiController {
 		  boolean incremental = (params.boolean("incremental") != false)
 		  
 		  // Try and ingest the project too!
-		  projectIngest(project,parsed_project_file,incremental)
+		  projectIngest(project,parsed_project_file,incremental, user)
 		}
 
 		// Return the project data.
@@ -377,7 +377,7 @@ class ApiController {
 
 	  if ( validationResult.status == true ) {
 		ingestService.extractRules(parsed_data, project)
-		doIngest(parsed_data, project, incremental);
+		doIngest(parsed_data, project, incremental, user);
 	  }
 	  else {
 		log.debug("validation failed, not ingesting");
@@ -424,21 +424,21 @@ class ApiController {
 	apiReturn ( validationResult )
   }
 
-  private def doIngest(parsed_data, project, boolean incremental) {
+  private def doIngest(parsed_data, project, boolean incremental, user) {
 	log.debug("ingesting refine project.. kicking off background task");
 
 
 	// Create a new session to run the ingest service in asynchronous.
 
-	runAsync ({projData, Long projId, boolean inc ->
+	runAsync ({projData, Long projId, boolean inc, usr ->
 	  RefineProject.withNewSession {
 
 		// Fire the ingest of the project id.
-		ingestService.ingest(projData, projId, inc)
+		ingestService.ingest(projData, projId, inc, user)
 	  }
 
 	  log.debug ("Finished data insert.")
-	}.curry(parsed_data, project.id, incremental))
+	}.curry(parsed_data, project.id, incremental, user))
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

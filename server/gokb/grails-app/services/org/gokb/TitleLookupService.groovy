@@ -61,7 +61,7 @@ class TitleLookupService {
 	result
   }
 
-  def find (String title, String publisher_name, def identifiers) {
+  def find (String title, String publisher_name, def identifiers, def user = null) {
 	
 	// The TitleInstance
 	TitleInstance the_title = null
@@ -105,7 +105,8 @@ class TitleLookupService {
 			ReviewRequest.raise(
 				the_title,
 				"'${title}' added as a variant of '${the_title.name}'.",
-				"No 1st class ID supplied but reasonable match was made on the title name."
+				"No 1st class ID supplied but reasonable match was made on the title name.",
+                                user
 			)
 			
 		  } else {
@@ -118,7 +119,8 @@ class TitleLookupService {
 			ReviewRequest.raise(
 			  the_title,
 			  "New TI created.",
-			  "No 1st class ID supplied and no match could be made on title name."
+			  "No 1st class ID supplied and no match could be made on title name.",
+                          user
 			)
 		  }
 		}
@@ -127,7 +129,7 @@ class TitleLookupService {
 	    // Single component match.
 		log.debug ("Title class one identifier lookup yielded a single match.")
 
-		the_title = singleTIMatch(title, norm_title, matches[0])
+		the_title = singleTIMatch(title, norm_title, matches[0], user)
 
 		break;
 	  default :
@@ -140,7 +142,7 @@ class TitleLookupService {
 	if (the_title) {
   
 	  // Add the publisher.
-	  addPublisher(publisher_name, the_title)
+	  addPublisher(publisher_name, the_title, user)
   
 	  // Add all the identifiers.
 	  LinkedHashSet id_set = []
@@ -164,7 +166,7 @@ class TitleLookupService {
 	the_title
   }
   
-  private TitleInstance addPublisher (String publisher_name, TitleInstance ti) {
+  private TitleInstance addPublisher (String publisher_name, TitleInstance ti, user = null) {
 	
 	// Lookup our publisher.
 	Org publisher = componentLookupService.lookupComponent(publisher_name)
@@ -187,7 +189,8 @@ class TitleLookupService {
 		  ReviewRequest.raise(
 			ti,
 			"Added '${publisher.name}' as a publisher on '${ti.name}'.",
-			"Publisher supplied in ingested file is different to any already present on TI."
+			"Publisher supplied in ingested file is different to any already present on TI.",
+                        user
 		  )
 		}
 	  }
@@ -252,7 +255,8 @@ class TitleLookupService {
 		ReviewRequest.raise(
 			ti,
 			"'${title}' added as a variant of '${ti.name}'.",
-			"Match was made on 1st class identifier but title name seems to be very different."
+			"Match was made on 1st class identifier but title name seems to be very different.",
+                        user
 		)
 		break
 	}
