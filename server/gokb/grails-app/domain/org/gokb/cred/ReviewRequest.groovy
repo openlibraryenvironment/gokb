@@ -21,6 +21,14 @@ class ReviewRequest {
     reviewRequest column:'rr_req_txt', type:'text'
   }
 
+  transient public postCreateClosure = { ctx ->
+    log.debug("postCreateClosure(${ctx})");
+    if ( ctx.user != null ) {
+      if ( raisedBy == null )
+        raisedBy = ctx.user;
+    }
+  }
+
   static constraints = {
     componentToReview(nullable:false, blank:false)
     descriptionOfCause(nullable:true, blank:true)

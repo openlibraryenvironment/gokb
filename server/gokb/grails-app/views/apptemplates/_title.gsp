@@ -1,7 +1,7 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 
-<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
+<h3>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h3>
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">

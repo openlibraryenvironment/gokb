@@ -37,6 +37,8 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
     <li><a href="#lists" data-toggle="tab">Lists</a></li>
+    <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>
   <div id="my-tab-content" class="tab-content">
@@ -139,6 +141,14 @@
           </g:if>
         </dl>
       </g:if>
+    </div>
+
+    <div class="tab-pane" id="addprops">
+      <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
+    </div>
+
+    <div class="tab-pane" id="review">
+      <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="lists">

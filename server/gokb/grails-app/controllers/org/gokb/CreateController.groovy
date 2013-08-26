@@ -4,17 +4,20 @@ import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import org.codehaus.groovy.grails.commons.*
 import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
-import org.gokb.cred.KBComponent
+import org.gokb.cred.*
 
 class CreateController {
 
   def genericOIDService
   def classExaminationService
+  def springSecurityService
+
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
     log.debug("Create... ${params}");
     def result=[:]
+    User user = springSecurityService.currentUser
 
     // Create a new empty instance of the object to create
     result.newclassname=params.tmpl
@@ -27,10 +30,10 @@ class CreateController {
           if ( params.tmpl ) {
             result.displaytemplate = grailsApplication.config.globalDisplayTemplates[params.tmpl]
       
-    /* Extras needed for the refdata */
-    result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.newclassname)
-    result.displayobjclassname_short = result.displayobj.class.simpleName
-    result.isComponent = (result.displayobj instanceof KBComponent)
+            /* Extras needed for the refdata */
+            result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.newclassname)
+            result.displayobjclassname_short = result.displayobj.class.simpleName
+            result.isComponent = (result.displayobj instanceof KBComponent)
           }
         }
         catch ( Exception e ) {
@@ -45,8 +48,9 @@ class CreateController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def process() {
     def result=['responseText':'OK']
-    log.debug("create::process params - ${params}");
-    log.debug("create::process request - ${request}");
+
+    User user = springSecurityService.currentUser
+
     if ( params.cls ) {
 
       def newclass = grailsApplication.getArtefact("Domain",params.cls)
@@ -92,6 +96,12 @@ class CreateController {
           }
           log.debug("Completed setting properties");
 
+          if ( result.newobj?.postCreateClosure != null ) {
+            log.debug("Created object has a post create closure.. call it");
+            result.newobj.postCreateClosure.call([user:user])
+          }
+
+
           if ( !result.newobj.save(flush:true) ) {
             log.error("Problem saving new object");
             result.newobj.errors.each { e ->
@@ -119,6 +129,7 @@ class CreateController {
                   }
                 }
               }
+
   
               if (changed) {
                 log.debug("Resaving with combos set...");
