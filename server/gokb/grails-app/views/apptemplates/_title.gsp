@@ -8,7 +8,7 @@
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <li><a href="#lists" data-toggle="tab">Lists</a></li>
     <li><a href="#titlerels" data-toggle="tab">Title Relationships</a></li>
-    <li><a href="#addprops" data-toggle="tab">Additional Properties</a></li>
+    <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
