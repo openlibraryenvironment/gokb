@@ -175,6 +175,10 @@ class BootStrap {
 	RefdataCategory.lookupOrCreate("Platform.Role", "Admin").save()
 	RefdataCategory.lookupOrCreate("Platform.Role", "Host").save()
 
+	RefdataCategory.lookupOrCreate("Platform.Software", "Atupon").save()
+
+	RefdataCategory.lookupOrCreate("Platform.Service", "Highwire").save()
+
 	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database").save()
 	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio").save()
 	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book").save()

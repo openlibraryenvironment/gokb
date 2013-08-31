@@ -6,11 +6,13 @@ class Platform extends KBComponent {
 
   String primaryUrl
   RefdataValue authentication
+  RefdataValue software
+  RefdataValue service
 
   static hasMany = [roles: RefdataValue]
   
   static hasByCombo = [
-	provider			: Org
+	provider : Org
   ]
   
   private static refdataDefaults = [
