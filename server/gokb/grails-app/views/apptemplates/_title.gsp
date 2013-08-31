@@ -47,36 +47,34 @@
             </dd>
           </div>
       
-          <g:if test="${d.variantNames}">
-            <div class="control-group">
-              <dt>Alternate Titles</dt>
-              <dd>
-                <table class="table table-striped table-bordered">
-                  <thead>
+          <div class="control-group">
+            <dt>Alternate Titles</dt>
+            <dd>
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Variant Title</th>
+                    <th>Status</th>
+                    <th>Variant Type</th>
+                    <th>Locale</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <g:each in="${d.variantNames}" var="v">
                     <tr>
-                      <th>Variant Title</th>
-                      <th>Status</th>
-                      <th>Variant Type</th>
-                      <th>Locale</th>
+                      <td>
+                        <g:xEditable owner="${v}" field="variantName"/>
+                      </td>
+                      <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
+                      <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
+                      <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    <g:each in="${d.variantNames}" var="v">
-                      <tr>
-                        <td>
-                          <g:xEditable owner="${v}" field="variantName"/>
-                        </td>
-                        <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
-                        <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
-                        <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
-                      </tr>
-                    </g:each>
-                  </tbody>
-                </table>
-              </dd>
-            </div>
-          </g:if>
-          <g:if test="${d.publisher}">
+                  </g:each>
+                </tbody>
+              </table>
+            </dd>
+          </div>
+
             <div class="control-group">
       
               <dt>Publishers</dt>
@@ -111,8 +109,6 @@
               </dd>
             </div>
       
-          </g:if>
-          <g:if test="${d.tipps}">
             <div class="control-group">
               <dt>Availability</dt>
               <dd>
@@ -167,7 +163,8 @@
                 </table>
               </dd>
             </div>
-          </g:if>
+
+
         </dl>
       </g:if>
     </div>

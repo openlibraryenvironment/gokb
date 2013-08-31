@@ -21,9 +21,4 @@
     </dd>
   </div>
 
-  <div class="control-group">
-    <dt>Edit Status</dt>
-    <dd><g:xEditableRefData owner="${d}" field="editStatus" config="KBComponent.EditStatus" /></dd>
-  </div>
-
 </dl>
