@@ -201,7 +201,7 @@ validation.rules = [
 
   "${IngestService.PACKAGE_NAME}" : [
 	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
 	[ 
 	  type: IsSimilar,
 	  severity: A_ValidationRule.SEVERITY_WARNING,
@@ -213,6 +213,7 @@ validation.rules = [
   ],
 
   "${IngestService.PUBLISHER_NAME}" : [
+	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
 	[
 	  type: LookedUpValue,
 	  severity: A_ValidationRule.SEVERITY_ERROR,
