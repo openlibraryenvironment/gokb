@@ -60,6 +60,14 @@
               </li>
               <li><g:link controller="masterList" action="index">Master List</g:link></li>
               <li><g:link controller="coreference" action="index">Coreference</g:link></li>
+              <sec:ifAnyGranted roles="ROLE_ADMIN">
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Admin</a>
+                  <ul class="dropdown-menu">
+                    <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
+                  </ul>
+                </li>
+              </sec:ifAnyGranted>
             </ul>
             <ul class="nav pull-right">
               <sec:ifLoggedIn>

@@ -77,6 +77,28 @@
           </div>
 
           <div class="control-group">
+            <dt>Tags</dt>
+            <dd>
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Tag Category</th>
+                    <th>Tag Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <g:each in="${d.tags}" var="t">
+                    <tr>
+                      <td>${t.owner.desc}</td>
+                      <td>${t.value}</td>
+                    </tr>
+                  </g:each>
+                </tbody>
+              </table>
+            </dd>
+          </div>
+
+          <div class="control-group">
             <dt>Alternate Names</dt>
             <dd>
               <table class="table table-striped table-bordered">
