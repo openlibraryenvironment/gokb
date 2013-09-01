@@ -17,7 +17,7 @@ $(document).ready(function() {
   $(".simpleReferenceTypedown").select2({
     placeholder: "Search for...",
     width:'resolve',
-    minimumInputLength: 1,
+    minimumInputLength: 0,
     ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
       url: "<g:createLink controller='ajaxSupport' action='lookup'/>",
       dataType: 'json',
