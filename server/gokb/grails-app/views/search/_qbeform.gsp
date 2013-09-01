@@ -9,7 +9,7 @@
     <div class="control-group">
       <label class="control-label" for="${fld.qparam}">${fld.prompt}</label>
       <div class="controls">
-        <g:if test="${fld.type='lookup'}">
+        <g:if test="${fld.type=='lookup'}">
           <g:simpleReferenceTypedown id="refdata_combo_${fld.qparam}"
                                      class="input-xxlarge" 
                                      style="width:350px;" 
