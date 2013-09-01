@@ -60,7 +60,7 @@ class IngestService {
   public static final String COVERAGE_NOTES = 'CoverageNotes'
   public static final String EMBARGO_INFO = 'KBARTEmbargo'
 
-  public static final String PACKAGE_NAME = 'PackageName'
+  public static final String PACKAGE_NAME = 'package.name'
   public static final String PUBLISHER_NAME = 'org.publisher.name'
 
 
