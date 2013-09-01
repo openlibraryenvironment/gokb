@@ -146,47 +146,48 @@ class SearchController {
 
   private def  processContextTree = { qry, tree, value, paramdef, Class the_class = null ->
     if ( tree ) {
-    
-    // Turn it into a list.
-    if (!(tree instanceof Iterable)) {
-      tree = [tree]
-    } 
-    
-    def the_value = value
-    if ( paramdef.type == 'lookup' ) {
-      log.debug("Processing a lookup.. value from form was ${value}");
-      the_value = genericOIDService.resolveOID2(value)
-    }
-  
-    // Each item in the tree.
-    tree.each { contextTree ->
-
-        switch ( contextTree.ctxtp ) {
-          case 'filter':
-  
-            // Filters work in the same way as queries,
-            // but the value is in the contextTree instead of the submitted value.
-            the_value = contextTree.value
       
-          case 'qry':
-            // Use our custom criteria builder to compare the values.
-            if (contextTree.type) {
-              // Try and parse the number.
-              the_value = the_value.asType(Class.forName("${contextTree.type}"));
-            }
+      // Turn it into a list.
+      if (!(tree instanceof Iterable)) {
+        tree = [tree]
+      } 
       
-      // Check the negation.
-      if (contextTree.negate) {
-        qry."not" {
-        qry.add(contextTree.prop, contextTree.comparator, the_value)
-        }
-      } else {
-         qry.add(contextTree.prop, contextTree.comparator, the_value)
+      def the_value = value
+      if ( paramdef.type == 'lookup' ) {
+        log.debug("Processing a lookup.. value from form was ${value}");
+        the_value = genericOIDService.resolveOID2(value)
       }
-            
-            break;
-        }
-    }
+    
+      // Each item in the tree.
+      tree.each { contextTree ->
+  
+          switch ( contextTree.ctxtp ) {
+            case 'filter':
+    
+              // Filters work in the same way as queries,
+              // but the value is in the contextTree instead of the submitted value.
+              the_value = contextTree.value
+        
+            case 'qry':
+              // Use our custom criteria builder to compare the values.
+              if (contextTree.type) {
+                // Try and parse the number.
+                the_value = the_value.asType(Class.forName("${contextTree.type}"));
+              }
+        
+              // Check the negation.
+              if (contextTree.negate) {
+                qry."not" {
+                  qry.add(contextTree.prop, contextTree.comparator, the_value)
+                }
+              } else {
+                 log.debug("Adding ${contextTree.prop} ${contextTree.comparator} ${the_value}");
+                 qry.add(contextTree.prop, contextTree.comparator, the_value)
+              }
+              
+              break;
+          }
+      }
     }
   }
 }

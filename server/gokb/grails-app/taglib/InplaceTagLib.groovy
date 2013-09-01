@@ -2,6 +2,8 @@ import com.k_int.kbplus.*
 
 class InplaceTagLib {
 
+  def genericOIDService
+
   /**
    * Attributes:
    *   owner - Object
@@ -150,13 +152,19 @@ class InplaceTagLib {
    * user typing into the box. Takes advantage of refdataFind and refdataCreate methods on the domain class.
    */ 
   def simpleReferenceTypedown = { attrs, body ->
-    out << "<input type=\"hidden\" name=\"${attrs.name}\" data-domain=\"${attrs.baseClass}\" "
+    out << "<input type=\"hidden\" value=\"${attrs.value?:''}\" name=\"${attrs.name}\" data-domain=\"${attrs.baseClass}\" "
     if ( attrs.id ) {
       out << "id=\"${attrs.id}\" "
     }
     if ( attrs.style ) {
       out << "style=\"${attrs.style}\" "
     }
+
+    if ( ( attrs.value != null ) && ( attrs.value.length() > 0 ) ) {
+      def o = genericOIDService.resolveOID2(attrs.value)
+      out << "data-displayValue=\"${o.toString()}\" ";
+    }
+
 
     if ( attrs.filter1 ) {
       out << "data-filter1=\"${attrs.filter1}\" "

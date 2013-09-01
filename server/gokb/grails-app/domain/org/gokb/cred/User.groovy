@@ -79,4 +79,8 @@ class User {
     result
   }
 
+  public String toString() {
+    return "${username} / ${displayName?:'No display name'}".toString();
+  }
+
 }

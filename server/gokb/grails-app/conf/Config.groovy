@@ -615,7 +615,7 @@ globalSearchTemplates = [
             prompt:'Status',
             qparam:'qp_status',
             placeholder:'Name or title of item',
-            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'raisedBy']
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status']
           ],
           [
             type:'lookup',
@@ -623,7 +623,7 @@ globalSearchTemplates = [
             prompt:'User',
             qparam:'qp_user',
             placeholder:'Allocated To',
-            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status']
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'raisedBy']
           ],
         ],
         qbeGlobals:[
@@ -633,7 +633,7 @@ globalSearchTemplates = [
           [heading:'Cause', property:'descriptionOfCause'],
           [heading:'Request', property:'reviewRequest'],
           [heading:'Status', property:'status?.value'],
-          [heading:'Raised By', property:'raisedBy?.displayName'],
+          [heading:'Raised By', property:'raisedBy?.username'],
           [heading:'Timestamp', property:'dateCreated'],
         ]
       ]

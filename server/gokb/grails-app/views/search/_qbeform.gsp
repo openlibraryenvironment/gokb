@@ -10,11 +10,13 @@
       <label class="control-label" for="${fld.qparam}">${fld.prompt}</label>
       <div class="controls">
         <g:if test="${fld.type='lookup'}">
-          <g:simpleReferenceTypedown class="input-xxlarge" 
+          <g:simpleReferenceTypedown id="refdata_combo_${fld.qparam}"
+                                     class="input-xxlarge" 
                                      style="width:350px;" 
                                      name="${fld.qparam}" 
                                      baseClass="${fld.baseClass}"
-                                     filter1="${fld.filter1?:''}"/>
+                                     filter1="${fld.filter1?:''}"
+                                     value="${params[fld.qparam]}"/>
         </g:if>
         <g:else>
           <input type="text" name="${fld.qparam}" id="${fld.qparam}" placeholder="${fld.placeholder}" value="${params[fld.qparam]}">
