@@ -2,7 +2,7 @@ package org.gokb
 
 class AdminController {
 
-  def tidyOrgData {
+  def tidyOrgData() {
     redirect(url: request.getHeader('referer'))
   }
 }
