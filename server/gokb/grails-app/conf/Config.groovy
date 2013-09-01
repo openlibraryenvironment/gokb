@@ -608,6 +608,23 @@ globalSearchTemplates = [
       title:'Requests For Review',
       qbeConfig:[
         qbeForm:[
+          [
+            type:'lookup',
+            baseClass:'org.gokb.cred.RefdataValue',
+            filter1:'ReviewRequest.Status',
+            prompt:'Status',
+            qparam:'qp_status',
+            placeholder:'Name or title of item',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'raisedBy']
+          ],
+          [
+            type:'lookup',
+            baseClass:'org.gokb.cred.User',
+            prompt:'User',
+            qparam:'qp_user',
+            placeholder:'Allocated To',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status']
+          ],
         ],
         qbeGlobals:[
         ],
@@ -615,6 +632,8 @@ globalSearchTemplates = [
           [heading:'Id', property:'id'],
           [heading:'Cause', property:'descriptionOfCause'],
           [heading:'Request', property:'reviewRequest'],
+          [heading:'Status', property:'status?.value'],
+          [heading:'Raised By', property:'raisedBy?.displayName'],
           [heading:'Timestamp', property:'dateCreated'],
         ]
       ]
