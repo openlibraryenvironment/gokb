@@ -50,7 +50,7 @@ $(document).ready(function() {
       select2: {
         placeholder: "Search for...",
         width:'resolve',
-        minimumInputLength: 1,
+        minimumInputLength: 0,
         ajax: {
           url: "<g:createLink controller='ajaxSupport' action='lookup' />",
           dataType: 'json',

@@ -179,6 +179,10 @@ class InplaceTagLib {
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
     out << "<a href=\"#\" data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "
 
+    if ( ( attrs.filter1 != null ) && ( attrs.filter1.length() > 0 ) ) {
+      out << "data-filter1=\"${attrs.filter1}\" "
+    }
+
     if ( attrs.owner?.id != null )
       out << "data-pk=\"${oid}\" "
 

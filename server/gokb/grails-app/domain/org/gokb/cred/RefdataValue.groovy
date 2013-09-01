@@ -5,6 +5,7 @@ class RefdataValue {
   String value
   String icon
   String description
+  RefdataValue useInstead
 
   static belongsTo = [
     owner:RefdataCategory
@@ -16,13 +17,14 @@ class RefdataValue {
           owner column:'rdv_owner', index:'rdv_entry_idx'
           value column:'rdv_value', index:'rdv_entry_idx'
     description column:'rdv_desc'
+     useInstead column:'rdv_use_instead'
            icon column:'rdv_icon'
   }
 
   static constraints = {
-    icon(nullable:true)
+           icon(nullable:true, blank:true)
     description(nullable:true, blank:true, maxSize:64)
-
+     useInstead(nullable:true, blank:false)
   }
   
   @Override
