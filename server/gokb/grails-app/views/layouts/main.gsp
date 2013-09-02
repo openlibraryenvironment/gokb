@@ -65,6 +65,7 @@
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Admin</a>
                   <ul class="dropdown-menu">
                     <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
+                    <li><g:link controller="home" action="about">About</g:link></li>
                   </ul>
                 </li>
               </sec:ifAnyGranted>

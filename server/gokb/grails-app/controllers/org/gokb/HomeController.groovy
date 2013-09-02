@@ -30,4 +30,7 @@ class HomeController {
     result.rules = grailsApplication.config.validationRules
     result
   }
+
+  def about() {
+  }
 }
