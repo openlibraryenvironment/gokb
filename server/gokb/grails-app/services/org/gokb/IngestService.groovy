@@ -666,7 +666,16 @@ class IngestService {
 			TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
 			// Soft delete.
-			tipp.deleteSoft()
+                        // II: Trial not deleting old tipps...
+			// tipp.deleteSoft()
+                        ReviewRequest.raise(
+                                tipp,
+                                "TIPP Not present when performing package update",
+                                "This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
+                                user
+                        )
+
+
 
 			// Save.
 			tipp.save(failOnError:true, flush:true)
