@@ -91,6 +91,38 @@
     <div class="navbar-push"></div>
 
     <g:layoutBody/>
+
+  <div id="Footer">
+      <div class="navbar navbar-footer">
+          <div class="navbar-inner">
+              <div class="container">
+                  <div>
+                      <ul class="footer-sublinks nav">
+                        <li><g:link controller="home" action="about">GoKB <g:meta name="app.version"/> / build <g:meta name="app.buildNumber"/></g:link></li>
+                      </ul>
+                  </div>
+
+                  <div class="pull-right">
+                      <div class="nav-collapse">
+                          <ul class="nav">
+                              <li class="dropdown">
+                                  <a href="#"
+                                     class="dropdown-toggle"
+                                     data-toggle="dropdown">
+                                      Tools
+                                      <b class="caret"></b>
+                                  </a>
+                                  <ul class="dropdown-menu">
+                                      <li>test</li>
+                                  </ul>
+                              </li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
     <g:javascript library="application"/>
     <r:layoutResources />
   </body>
