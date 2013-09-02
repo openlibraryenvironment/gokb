@@ -553,6 +553,14 @@ globalSearchTemplates = [
             placeholder:'Title',
             contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'title.name'],
           ],
+          [
+            type:'lookup',
+            baseClass:'org.gokb.cred.Org',
+            prompt:'Content Provider',
+            qparam:'qp_cp',
+            placeholder:'Content Provider',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider']
+          ],
 //          [
 //            prompt:'Content Provider',
 //            qparam:'qp_cp_name',
@@ -570,6 +578,14 @@ globalSearchTemplates = [
             qparam:'qp_pkg_id',
             placeholder:'Package ID',
             contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
+          ],
+          [
+            type:'lookup',
+            baseClass:'org.gokb.cred.Package',
+            prompt:'Package',
+            qparam:'qp_pkg',
+            placeholder:'Package',
+            contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg']
           ],
         ],
 	qbeGlobals:[
