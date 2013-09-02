@@ -8,8 +8,8 @@
         <td>${rr.descriptionOfCause}</td>
         <td>${rr.reviewRequest}</td>
         <td>${rr.status?.value}</td>
-        <td>${rr.raisedBy?.displayName}</td>
-        <td>${rr.reviewedBy?.displayName}</td>
+        <td>${rr.raisedBy?.displayName?:rr.raisedBy?.username}</td>
+        <td>${rr.reviewedBy?.displayName?:rr.reviewedBy?.username}</td>
         <td></td>
       </tr>
     </g:each>
