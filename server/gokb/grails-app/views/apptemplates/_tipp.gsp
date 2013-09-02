@@ -160,11 +160,6 @@
 	  </div>
 
 	  <div class="control-group">
-	    <dt>Primary ?</dt>
-            <dd><g:xEditableRefData owner="${d}" field="primary" config="TitleInstancePackagePlatform.Primary" /></dd>
-	  </div>
-
-	  <div class="control-group">
 	    <dt>Payment Type</dt>
             <dd><g:xEditableRefData owner="${d}" field="paymentType" config="TitleInstancePackagePlatform.PaymentType" /></dd>
 	  </div>

@@ -36,8 +36,8 @@
           </div>
       
           <div class="control-group">
-            <dt>Reason Retired</dt>
-            <dd><g:xEditableRefData owner="${d}" field="reasonRetired" config='TitleInstance.ReasonRetired' /></dd>
+            <dt>Continuing Series</dt>
+            <dd><g:xEditableRefData owner="${d}" field="continuingSeries" config='TitleInstance.ContinuingSeries' /></dd>
           </div>
       
           <div class="control-group">
@@ -197,10 +197,19 @@
 
     <div class="tab-pane" id="header">
       <g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+
+        <dl class="dl-horizontal">
+          <div class="control-group">
+            <dt>Status Reason</dt>
+            <dd><g:xEditableRefData owner="${d}" field="reasonRetired" config='TitleInstance.ReasonRetired' /></dd>
+          </div>
+        </dl>
+      
     </div>
 
     <div class="tab-pane" id="status">
       <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+
     </div>
 
   </div>

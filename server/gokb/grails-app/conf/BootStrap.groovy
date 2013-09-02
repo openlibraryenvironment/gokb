@@ -134,6 +134,7 @@ class BootStrap {
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Complimentary").save()
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Limited Promotion").save()
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Paid").save()
+	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "OA").save()
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Opt Out Promotion").save()
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Uncharged").save()
 	RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Unknown").save()
@@ -157,12 +158,17 @@ class BootStrap {
 	RefdataCategory.lookupOrCreate("Package.Fixed", "No").save()
 	RefdataCategory.lookupOrCreate("Package.Fixed", "Yes").save()
 	RefdataCategory.lookupOrCreate("Package.Fixed", "Unknown").save()
-    RefdataCategory.lookupOrCreate("Package.PaymentType", "Complimentary").save()
-    RefdataCategory.lookupOrCreate("Package.PaymentType", "Limited Promotion").save()
-    RefdataCategory.lookupOrCreate("Package.PaymentType", "Paid").save()
-    RefdataCategory.lookupOrCreate("Package.PaymentType", "Opt Out Promotion").save()
-    RefdataCategory.lookupOrCreate("Package.PaymentType", "Uncharged").save()
-    RefdataCategory.lookupOrCreate("Package.PaymentType", "Unknown").save()
+
+        RefdataCategory.lookupOrCreate("Package.PaymentType", "Complimentary").save()
+        RefdataCategory.lookupOrCreate("Package.PaymentType", "Limited Promotion").save()
+        RefdataCategory.lookupOrCreate("Package.PaymentType", "Paid").save()
+        RefdataCategory.lookupOrCreate("Package.PaymentType", "Opt Out Promotion").save()
+        RefdataCategory.lookupOrCreate("Package.PaymentType", "Uncharged").save()
+        RefdataCategory.lookupOrCreate("Package.PaymentType", "Unknown").save()
+
+	RefdataCategory.lookupOrCreate("Package.LinkType", "Parent").save()
+	RefdataCategory.lookupOrCreate("Package.LinkType", "Previous").save()
+
 	RefdataCategory.lookupOrCreate("Package.Global", "Consortium").save()
 	RefdataCategory.lookupOrCreate("Package.Global", "Global").save()
 	RefdataCategory.lookupOrCreate("Package.Global", "Other").save()
@@ -189,11 +195,32 @@ class BootStrap {
 	
 	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes").save()
 	RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "No").save()
-    RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Unknown").save()
+        RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Unknown").save()
 	
+	RefdataCategory.lookupOrCreate("TitleInstance.ContinuingSeries", "Yes").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.ContinuingSeries", "No").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.ContinuingSeries", "Unknown").save()
+
 	RefdataCategory.lookupOrCreate("TitleInstance.ReasonRetired", "Ceased").save()
-	RefdataCategory.lookupOrCreate("TitleInstance.ReasonRetired", "Transferred").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.ReasonRetired", "Paused").save()
 	
+	RefdataCategory.lookupOrCreate("Tipp.StatusReason", "Xfer Out").save()
+	RefdataCategory.lookupOrCreate("Tipp.StatusReason", "Xfer In").save()
+
+	RefdataCategory.lookupOrCreate("Tipp.LinkType", "Comes With").save()
+	RefdataCategory.lookupOrCreate("Tipp.LinkType", "Parent").save()
+	RefdataCategory.lookupOrCreate("Tipp.LinkType", "Previous").save()
+
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Translated").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Absorbed").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "In Series").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Merged").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Renamed").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Split").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Supplement").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Transferred").save()
+	RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Unknown").save()
+
 	RefdataCategory.lookupOrCreate('Org.Mission','Academic').save()
 	RefdataCategory.lookupOrCreate('Org.Mission','Commercial').save()
 	RefdataCategory.lookupOrCreate('Org.Mission','Community Agency').save()
@@ -455,8 +482,12 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('License.Type','Other').save()
 
     RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Misspelling').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Authorized').save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Acronym').save()
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Minor Title Change').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Minor Change').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType','Nickname').save()
+
+
 
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-us').save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-gb').save()

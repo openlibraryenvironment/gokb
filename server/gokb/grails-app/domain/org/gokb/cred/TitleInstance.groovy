@@ -9,6 +9,7 @@ class TitleInstance extends KBComponent {
   // title is now NAME in the base component class...
   RefdataValue	medium
   RefdataValue	pureOA
+  RefdataValue	continuingSeries
   RefdataValue	reasonRetired
   String imprint
   
