@@ -11,8 +11,8 @@ modules = {
   }
   overrides {
     'bootstrap-css' {
-      resource id: 'bootstrap-css', url:'/css/gokbbootstrap.min.css'
-      resource id: 'bootstrap-responsive-css', url:'/css/gokbbootstrap-responsive.min.css'
+      resource id: 'bootstrap-css', url:'/css/gokbbootstrap-2.min.css'
+      resource id: 'bootstrap-responsive-css', url:'/css/gokbbootstrap-2-responsive.min.css'
     }
   } 
 }
