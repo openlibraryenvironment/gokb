@@ -9,12 +9,16 @@ class SearchBuilderController {
   }
 
   def getClasses() {
+    // grailsApplication.getArtefacts("Domain")*.clazz
+
     def result=[
       values:[
-        [id:'1', text:'one'],
-        [id:'2', text:'two'],
       ]
     ]
+
+    grailsApplication.getArtefacts("Domain").each { c ->
+      result.values.add([id:c.fullName,text:c.fullName])
+    }
 
     render result as JSON
   }

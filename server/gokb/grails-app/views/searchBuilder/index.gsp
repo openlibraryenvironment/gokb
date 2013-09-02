@@ -26,7 +26,7 @@
 
             <div class="control-group">
               <dt>Base Class</dt>
-              <dd><input type="hidden" name="cgfClassName" class="cfgClassName"/></dd>
+              <dd><input type="hidden" name="cgfClassName" class="cfgClassName input-xxlarge"/></dd>
             </div>
   
             <div class="control-group">
