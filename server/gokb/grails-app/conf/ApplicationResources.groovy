@@ -17,5 +17,6 @@ modules = {
   } 
   dynatree {
     resource url:'js/jquery.dynatree.min.js'
+    resource url:'css/ui.dynatree.css'
   }
 }
