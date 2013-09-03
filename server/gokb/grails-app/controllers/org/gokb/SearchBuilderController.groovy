@@ -36,14 +36,20 @@ class SearchBuilderController {
           log.debug("${p.name} (assoc=${p.isAssociation()}) (oneToMany=${p.isOneToMany()}) (ManyToOne=${p.isManyToOne()}) (OneToOne=${p.isOneToOne()})");
           if ( p.isAssociation() ) {
             if ( p.isManyToOne() || p.isOneToOne() ) {
-              result.add([ title:p.name, isLazy:true, key: params.key?:''+"."+p.name ])
+              result.add([ title: "${p.name} (${p.getReferencedDomainClass().fullName})", 
+                           isLazy:true, 
+                           key: params.key?:''+"."+p.name,
+                           qbeClassName:p.getReferencedDomainClass().fullName ])
             }
             else {
-              result.add([ title:p.name, isLazy:true, key: params.key?:''+"."+p.name ])
+              result.add([ title: "${p.name} (${p.getReferencedDomainClass().fullName})", 
+                           isLazy:true, 
+                           key: params.key?:''+"."+p.name,
+                           qbeClassName:p.getReferencedDomainClass().fullName ])
             }
           }
           else {
-            result.add([ title:p.name, isLazy:true, key: params.key?:''+"."+p.name ])
+            result.add([ title:p.name, isLazy:false, key: params.key?:''+"."+p.name ])
           }
         }
       }
