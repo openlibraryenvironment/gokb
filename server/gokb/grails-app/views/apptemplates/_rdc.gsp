@@ -8,7 +8,7 @@
     <dd>${d.id?:'New record'}</dd>
   </div>
   <div class="control-group">
-    <dt>Caregory Name / Description</dt>
+    <dt>Category Name / Description</dt>
     <dd><g:xEditable class="ipe" owner="${d}" field="desc">${d.desc}</g:xEditable></dd>
   </div>
 
