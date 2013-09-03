@@ -6,7 +6,11 @@
 <html>
   <head>
     <meta name="layout" content="main"/>
+
     <r:require modules="gokbstyle"/>
+    <r:require module="jquery-ui"/>
+    <r:require modules="dynatree"/>
+
     <title>GOKbo : About</title>
   </head>
   <body>
@@ -40,7 +44,9 @@
             <li class="active"><a href="#QBEForm" data-toggle="tab">QBE Form</a></li>
             <li><a href="#QResults" data-toggle="tab">Results</a></li>
           </ul>
+
           <div id="my-tab-content" class="tab-content">
+
             <div class="tab-pane active" id="QBEForm">
               <div class="container">
                 <div class="row">
@@ -51,6 +57,7 @@
                   </div>
                   <div class="span6">
                     <h3>Datamodel</h3>
+                    <div id="QBEDomainTree" class="domainModelTree"></div>
                   </div>
                 </div>
               </div>
@@ -66,6 +73,7 @@
                   </div>
                   <div class="span6">
                     <h3>Datamodel</h3>
+                    <div id="ResultsDomainTree" class="domainModelTree"></div>
                   </div>
                 </div>
               </div>
@@ -77,6 +85,7 @@
     </div>
   
     <script language="JavaScript">
+
       $(document).ready(function() {
         $(".cfgClassName").select2({
           placeholder: "Search for...",
@@ -95,6 +104,24 @@
               return {results: data.values};
             }
           }
+        });
+
+        $("#QBEDomainTree").dynatree({
+          onActivate: function(node) {
+            // A DynaTreeNode object is passed to the activation handler
+            // Note: we also get this event, if persistence is on, and the page is reloaded.
+            alert("You activated " + node.data.title);
+          },
+          children: [
+            {title: "Item 1"},
+            {title: "Folder 2", isFolder: true, key: "folder2",
+              children: [
+                {title: "Sub-item 2.1"},
+                {title: "Sub-item 2.2"}
+              ]
+            },
+            {title: "Item 3"}
+          ]
         });
       });
     </script>

@@ -15,4 +15,7 @@ modules = {
       resource id: 'bootstrap-responsive-css', url:'/css/gokbbootstrap-2-responsive.min.css'
     }
   } 
+  dynatree {
+    resource url:'js/jquery.dynatree.min.js'
+  }
 }
