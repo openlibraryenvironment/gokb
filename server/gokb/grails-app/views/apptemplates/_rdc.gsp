@@ -26,7 +26,7 @@
           <g:each in="${d.values}" var="v">
             <tr>
               <td>${v.value}</td>
-              <td><g:manyToOneReferenceTypedown owner="${d}" field="useInstead" baseClass="org.gokb.cred.RefdataValue" filter1="${d.desc}">${useInstead?.value}</g:manyToOneReferenceTypedown></td>
+              <td><g:manyToOneReferenceTypedown owner="${v}" field="useInstead" baseClass="org.gokb.cred.RefdataValue" filter1="${d.desc}">${useInstead?.value}</g:manyToOneReferenceTypedown></td>
               <td></td>
             </tr>
           </g:each>
