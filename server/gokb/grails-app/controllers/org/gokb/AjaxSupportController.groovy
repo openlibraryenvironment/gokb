@@ -351,11 +351,12 @@ class AjaxSupportController {
 
     def result = null
 
-    if ( target && value ) {
+    if ( ( target != null ) && ( value != null ) ) {
       // def binding_properties = [ "${params.name}":value ]
       // log.debug("Binding: ${binding_properties} into ${target} - a ${target.class.name}");
       // bindData(target, binding_properties)
       target[params.name] = value
+      log.debug("Saving...");
       if ( target.save(flush:true) ) {
         if ( params.resultProp ) {
           result = value[params.resultProp]
@@ -373,7 +374,7 @@ class AjaxSupportController {
       }
     }
     else {
-      log.debug("no type (target=${target_components}, value=${value_components}");
+      log.error("no type (target=${target_components}, value=${value_components}");
     }
 
     def resp = [ newValue: result ]
