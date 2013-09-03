@@ -124,6 +124,7 @@
           //   {title: "Item 3"}
           ],
           onLazyRead: function(node){
+            console.log("onLazyRead...");
             node.appendAjax({
               url: "<g:createLink controller='searchBuilder' action='getClassProperties'/>",
               data: {key: node.data.key,
@@ -135,6 +136,7 @@
       });
 
       function updateSelClass(classname) {
+        console.log("updateSelClass..."+classname);
 
         var rootNode = $("#QBEDomainTree").dynatree("getRoot");
 
@@ -142,16 +144,17 @@
 
         // Call the DynaTreeNode.addChild() member function and pass options for the new node
         var childNode = rootNode.addChild({
-            title: "Child node 1 :: "+classname,
-            tooltip: "This child node was added programmatically.",
-            isFolder: true
+            title: classname,
+            tooltip: "Query builder for "+classname,
+            isFolder: true,
+            isLazy: true
         });
 
-        //
-        childNode.addChild({
-            title: "Document using a custom icon",
-            icon: "customdoc1.gif"
-        });
+        // this adds a child node....
+        // childNode.addChild({
+        //     title: "Document using a custom icon",
+        //     icon: "customdoc1.gif"
+        // });
 
       }
     </script>

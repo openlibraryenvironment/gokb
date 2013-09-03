@@ -24,7 +24,7 @@ class SearchBuilderController {
   }
 
   def getClassProperties() {
-    log.debug("getClassProperties(${props})");
+    log.debug("getClassProperties(${params})");
     def result=[
       [ title:'Prop1', isLazy:true, key: 'XX11' ],
       [ title:'Prop2', isLazy:true, key: 'XX12' ],
