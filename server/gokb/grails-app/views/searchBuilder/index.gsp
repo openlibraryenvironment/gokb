@@ -124,11 +124,11 @@
           //   {title: "Item 3"}
           ],
           onLazyRead: function(node){
-            console.log("onLazyRead...");
+            console.log("onLazyRead...%o %s",node,node.qbeClassName);
             node.appendAjax({
               url: "<g:createLink controller='searchBuilder' action='getClassProperties'/>",
               data: {key: node.data.key,
-                mode: "funnyMode"
+                qbeClassName: node.data.qbeClassName
               }
             });
           }
@@ -139,15 +139,16 @@
         console.log("updateSelClass..."+classname);
 
         var rootNode = $("#QBEDomainTree").dynatree("getRoot");
-
         rootNode.removeChildren();
+        rootNode.qbeClassName= classname;
 
         // Call the DynaTreeNode.addChild() member function and pass options for the new node
         var childNode = rootNode.addChild({
             title: classname,
             tooltip: "Query builder for "+classname,
             isFolder: true,
-            isLazy: true
+            isLazy: true,
+            qbeClassName: classname
         });
 
         // this adds a child node....
