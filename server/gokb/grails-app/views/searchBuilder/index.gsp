@@ -30,7 +30,7 @@
 
             <div class="control-group">
               <dt>Base Class</dt>
-              <dd><input type="hidden" name="cgfClassName" class="cfgClassName input-xxlarge" onChange="javascript:updateSelClass();"/></dd>
+              <dd><input type="hidden" name="cgfClassName" class="cfgClassName input-xxlarge" onChange="javascript:updateSelClass(this.value);"/></dd>
             </div>
   
             <div class="control-group">
@@ -134,13 +134,15 @@
         });
       });
 
-      function updateSelClass() {
+      function updateSelClass(classname) {
 
         var rootNode = $("#QBEDomainTree").dynatree("getRoot");
 
+        rootNode.removeChildren();
+
         // Call the DynaTreeNode.addChild() member function and pass options for the new node
         var childNode = rootNode.addChild({
-            title: "Child node 1",
+            title: "Child node 1 :: "+classname,
             tooltip: "This child node was added programmatically.",
             isFolder: true
         });
