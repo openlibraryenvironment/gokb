@@ -30,7 +30,7 @@
 
             <div class="control-group">
               <dt>Base Class</dt>
-              <dd><input type="hidden" name="cgfClassName" class="cfgClassName input-xxlarge"/></dd>
+              <dd><input type="hidden" name="cgfClassName" class="cfgClassName input-xxlarge" onChange="javascript:updateSelClass();"/></dd>
             </div>
   
             <div class="control-group">
@@ -87,6 +87,7 @@
     <script language="JavaScript">
 
       $(document).ready(function() {
+
         $(".cfgClassName").select2({
           placeholder: "Search for...",
           width:'resolve',
@@ -113,17 +114,44 @@
             alert("You activated " + node.data.title);
           },
           children: [
-            {title: "Item 1"},
-            {title: "Folder 2", isFolder: true, key: "folder2",
-              children: [
-                {title: "Sub-item 2.1"},
-                {title: "Sub-item 2.2"}
-              ]
-            },
-            {title: "Item 3"}
-          ]
+          //   {title: "Item 1"},
+          //   {title: "Folder 2", isFolder: true, key: "folder2",
+          //     children: [
+          //       {title: "Sub-item 2.1"},
+          //       {title: "Sub-item 2.2"}
+          //     ]
+          //   },
+          //   {title: "Item 3"}
+          ],
+          onLazyRead: function(node){
+            node.appendAjax({
+              url: "<g:createLink controller='searchBuilder' action='getClassProperties'/>",
+              data: {key: node.data.key,
+                mode: "funnyMode"
+              }
+            });
+          }
         });
       });
+
+      function updateSelClass() {
+
+        var rootNode = $("#QBEDomainTree").dynatree("getRoot");
+
+        // Call the DynaTreeNode.addChild() member function and pass options for the new node
+        var childNode = rootNode.addChild({
+            title: "Child node 1",
+            tooltip: "This child node was added programmatically.",
+            isFolder: true
+        });
+
+        //
+        childNode.addChild({
+            title: "Document using a custom icon",
+            icon: "customdoc1.gif"
+        });
+
+      }
     </script>
 
 

@@ -22,4 +22,15 @@ class SearchBuilderController {
 
     render result as JSON
   }
+
+  def getClassProperties() {
+    log.debug("getClassProperties(${props})");
+    def result=[
+      [ title:'Prop1', isLazy:true, key: 'XX11' ],
+      [ title:'Prop2', isLazy:true, key: 'XX12' ],
+      [ title:'Prop3', isLazy:true, key: 'XX13' ],
+    ]
+
+    render result as JSON
+  }
 }
