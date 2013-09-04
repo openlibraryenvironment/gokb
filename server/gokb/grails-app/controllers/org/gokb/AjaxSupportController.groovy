@@ -53,8 +53,8 @@ class AjaxSupportController {
 	  // Use generic config.
 	  config = [
 		domain:'RefdataValue',
-		countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='${params.id}'",
-		rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='${params.id}'",
+		countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
+		rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
 		qryParams:[],
 		cols:['value'],
 		format:'simple'
@@ -111,8 +111,8 @@ class AjaxSupportController {
     ],
     'PackageType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='Package Type'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='Package Type'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='Package Type'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='Package Type'",
       qryParams:[],
       cols:['value'],
       format:'simple'
@@ -121,24 +121,24 @@ class AjaxSupportController {
       domain:'RefdataValue',
       // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
       // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponent.Status'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponent.Status'",
       qryParams:[],
       cols:['value'],
       format:'simple'
     ],
     'VariantNameType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.VariantType'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.VariantType'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.VariantType'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.VariantType'",
       qryParams:[],
       cols:['value'],
       format:'simple'
     ],
     'Locale' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.Locale'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponentVariantName.Locale'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.Locale'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.Locale'",
       qryParams:[],
       cols:['value'],
       format:'simple'
@@ -351,11 +351,12 @@ class AjaxSupportController {
 
     def result = null
 
-    if ( target && value ) {
+    if ( ( target != null ) && ( value != null ) ) {
       // def binding_properties = [ "${params.name}":value ]
       // log.debug("Binding: ${binding_properties} into ${target} - a ${target.class.name}");
       // bindData(target, binding_properties)
       target[params.name] = value
+      log.debug("Saving...");
       if ( target.save(flush:true) ) {
         if ( params.resultProp ) {
           result = value[params.resultProp]
@@ -373,7 +374,7 @@ class AjaxSupportController {
       }
     }
     else {
-      log.debug("no type (target=${target_components}, value=${value_components}");
+      log.error("no type (target=${target_components}, value=${value_components}");
     }
 
     def resp = [ newValue: result ]
