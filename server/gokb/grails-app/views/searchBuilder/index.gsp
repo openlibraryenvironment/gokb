@@ -48,24 +48,31 @@
           <div id="my-tab-content" class="tab-content">
 
             <div class="tab-pane active" id="QBEForm">
-              <div class="container">
-                <div class="row">
-                  <div class="span6">
-                    <h3>QBE Fields</h3>
+              <div class="container-fluid">
+                <div class="row-fluid">
+                  <div class="span4">
+                    <h3>Available Search Fields</h3>
+                    <div id="QBEDomainTree" class="domainModelTree"></div>
+                  </div>
+                  <div class="span4">
+                    <h3>QBE Form</h3>
                     <ul>
+                      <li>Test</li>
                     </ul>
                   </div>
-                  <div class="span6">
-                    <h3>Datamodel</h3>
-                    <div id="QBEDomainTree" class="domainModelTree"></div>
+                  <div class="span4">
+                    <h3>Properties</h3>
+                    <ul>
+                      <li>Test</li>
+                    </ul>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="tab-pane" id="QResults">
-              <div class="container">
-                <div class="row">
+              <div class="container-fluid">
+                <div class="row-fluid">
                   <div class="span6">
                     <h3>Result Columns</h3>
                     <ul>
@@ -114,14 +121,6 @@
             alert("You activated " + node.data.title);
           },
           children: [
-          //   {title: "Item 1"},
-          //   {title: "Folder 2", isFolder: true, key: "folder2",
-          //     children: [
-          //       {title: "Sub-item 2.1"},
-          //       {title: "Sub-item 2.2"}
-          //     ]
-          //   },
-          //   {title: "Item 3"}
           ],
           onLazyRead: function(node){
             console.log("onLazyRead...%o %s",node,node.qbeClassName);
@@ -150,6 +149,8 @@
             isLazy: true,
             qbeClassName: classname
         });
+
+        childNode.expand();
 
         // this adds a child node....
         // childNode.addChild({
