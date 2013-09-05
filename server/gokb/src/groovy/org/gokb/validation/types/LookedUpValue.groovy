@@ -61,47 +61,47 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
   
   // First check should be to see if an error has already been triggered by this rule,
   // we don't want to fill the error messages with repeats.
-  if (!isErrorTriggered()) {
+    if (!isErrorTriggered()) {
+    
+      // Get the index for the column.
+      def pos = col_positions[columnName]
   
-    // Get the index for the column.
-    def pos = col_positions[columnName]
-
-    // Only check the content if the row is present in the data in the first place.
-    if (pos != null) {
-
-    // Get the value.
-    def value = getRowValue(datarow, col_positions, columnName)
+      // Only check the content if the row is present in the data in the first place.
+      if (pos != null) {
     
-    if ( (value != null) && ( value.length() > 0 ) {
-      
-      // Default to invalid.
-      boolean valid = false
+        // Get the value.
+        def value = getRowValue(datarow, col_positions, columnName)
+        
+        if ( (value != null) && ( value.length() > 0 ) ) {
+          
+          // Default to invalid.
+          boolean valid = false
+        
+          // Check the value matches the regex first of all..
+          def match = value =~ regex
+          if (match) {
     
-      // Check the value matches the regex first of all..
-      def match = value =~ regex
-      if (match) {
-
-      // Matches so let's do a lookup to ensure it exists.
-      try {
-        long the_id = Long.parseLong(match[0][1])
-
-        // Ensure the item actually exists.
-        if (the_class.get(the_id)) {
-        // All is fine.
-        valid = true
-        }
-
-      } catch (Throwable t) {
-        // Do nothing invalid will be returned below
-      }
-        }
+            // Matches so let's do a lookup to ensure it exists.
+            try {
+              long the_id = Long.parseLong(match[0][1])
       
-      // Flag that data isn't valid.
-      if (!valid) {
-      invalid_vals << value
+              // Ensure the item actually exists.
+              if (the_class.get(the_id)) {
+                // All is fine.
+                valid = true
+              }
+    
+            } catch (Throwable t) {
+              // Do nothing invalid will be returned below
+            }
+          }
+          
+          // Flag that data isn't valid.
+          if (!valid) {
+       `     invalid_vals << value
+          }
+        }
       }
     }
-    }
-  }
   }
 }
