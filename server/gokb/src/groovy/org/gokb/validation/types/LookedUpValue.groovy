@@ -98,7 +98,7 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
           
           // Flag that data isn't valid.
           if (!valid) {
-       `     invalid_vals << value
+            invalid_vals << value
           }
         }
       }
