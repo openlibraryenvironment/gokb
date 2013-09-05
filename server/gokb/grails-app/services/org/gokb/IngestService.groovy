@@ -19,6 +19,7 @@ import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
 
 
+
 class IngestService {
 
   // Automatically injected services from grails-app/services
