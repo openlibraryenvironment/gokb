@@ -3,6 +3,7 @@
 // in the classpath in ConfigSlurper format
 
 
+
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
 import org.gokb.validation.types.*
@@ -106,7 +107,7 @@ log4j = {
            'org.springframework',
            'org.hibernate',
            'net.sf.ehcache.hibernate'
-		   
+       
    debug  'grails.app.controllers',
           'grails.app.service',
           'grails.app.services',
@@ -161,38 +162,38 @@ validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|
 
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
-	[ type: ColumnRequired			, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
+  [ type: ColumnRequired			, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.HOST_PLATFORM_URL}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.uri}",
-		"One or more rows contain invalid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
-		"if (and (isNonBlank(value), (value.match(/${validation.regex.uri}/) == null)), 'invalid', null)",
-	  ]
-	],
+  [ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.uri}",
+    "One or more rows contain invalid URIs in the column \"${IngestService.HOST_PLATFORM_URL}\"",
+    "if (and (isNonBlank(value), (value.match(/${validation.regex.uri}/) == null)), 'invalid', null)",
+    ]
+  ],
   ],
 
   "${IngestService.HOST_PLATFORM_NAME}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[
-	  type: LookedUpValue,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [ org.gokb.cred.Platform ]
-	]
+  [ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [
+    type: LookedUpValue,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [ org.gokb.cred.Platform ]
+  ]
   ],
 
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_WARNING ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
-	[ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
+  [ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_WARNING ],
+  [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
+  [ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
@@ -200,171 +201,171 @@ validation.rules = [
   ],
 
   "${IngestService.PACKAGE_NAME}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
-	[ 
-	  type: IsSimilar,
-	  severity: A_ValidationRule.SEVERITY_WARNING,
-	  args: [
-		org.gokb.cred.Package,
-		9
-	  ]
-	]
+  [ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
+  [ 
+    type: IsSimilar,
+    severity: A_ValidationRule.SEVERITY_WARNING,
+    args: [
+    org.gokb.cred.Package,
+    9
+    ]
+  ]
   ],
 
   "${IngestService.PUBLISHER_NAME}" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[
-	  type: LookedUpValue,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [ org.gokb.cred.Org ]
-	]
+  [ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [
+    type: LookedUpValue,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [ org.gokb.cred.Org ]
+  ]
   ],
 
   "${IngestService.EMBARGO_INFO}" : [
     [ 
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.kbartembargo}",
-		"Data in the column \"${IngestService.EMBARGO_INFO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
-		"if (and (isNonBlank(value), (value.match(/${validation.regex.kbartembargo}/) == null)), 'invalid', null)",
-	  ]
-	]
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.kbartembargo}",
+    "Data in the column \"${IngestService.EMBARGO_INFO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
+    "if (and (isNonBlank(value), (value.match(/${validation.regex.kbartembargo}/) == null)), 'invalid', null)",
+    ]
+  ]
   ],
 
   "${IngestService.COVERAGE_DEPTH}" : [
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.kbartcoveragedepth}",
-		"Data in the column \"${IngestService.COVERAGE_DEPTH}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#coverage_depth' >KBART guidelines for an coverage depth</a>.",
-		"if (and(isNonBlank(value), (value.match(/${validation.regex.kbartcoveragedepth}/) == null)), 'invalid', null)",
-	  ]
-	]
+  [
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.kbartcoveragedepth}",
+    "Data in the column \"${IngestService.COVERAGE_DEPTH}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#coverage_depth' >KBART guidelines for an coverage depth</a>.",
+    "if (and(isNonBlank(value), (value.match(/${validation.regex.kbartcoveragedepth}/) == null)), 'invalid', null)",
+    ]
+  ]
   ],
 
   "${IngestService.DELAYED_OA}" : [
-	[
-	  type: IsOneOf,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		["Yes", "No", "Unknown"]
-	  ]
-	]
+  [
+    type: IsOneOf,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    ["Yes", "No", "Unknown"]
+    ]
+  ]
   ],
 
   "${IngestService.DELAYED_OA_EMBARGO}" : [
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.kbartembargo}",
-		"Data in the column \"${IngestService.DELAYED_OA_EMBARGO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
-		"if (and(isNonBlank(value), (value.match(/${validation.regex.kbartembargo}/) == null)), 'invalid', null)",
-	  ]
-	]
+  [
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.kbartembargo}",
+    "Data in the column \"${IngestService.DELAYED_OA_EMBARGO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
+    "if (and(isNonBlank(value), (value.match(/${validation.regex.kbartembargo}/) == null)), 'invalid', null)",
+    ]
+  ]
   ],
 
   "${IngestService.HYBRID_OA}" : [
-	[
-	  type: IsOneOf,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		["Yes", "No", "Unknown"]
-	  ]
-	]
+  [
+    type: IsOneOf,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    ["Yes", "No", "Unknown"]
+    ]
+  ]
   ],
 
   "${IngestService.HYBRID_OA_URL}" : [
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.uri}",
-		"One or more rows contain invalid URIs in the column \"${IngestService.HYBRID_OA_URL}\"",
-		"if (and (isNonBlank(value), (value.match(/${validation.regex.uri}/) == null)), 'invalid', null)",
-	  ]
-	]
+  [
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.uri}",
+    "One or more rows contain invalid URIs in the column \"${IngestService.HYBRID_OA_URL}\"",
+    "if (and (isNonBlank(value), (value.match(/${validation.regex.uri}/) == null)), 'invalid', null)",
+    ]
+  ]
   ],
 
   "${IngestService.PRIMARY_TIPP}" : [
-	[
-	  type: IsOneOf,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		["Yes", "No"]
-	  ]
-	]
+  [
+    type: IsOneOf,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    ["Yes", "No"]
+    ]
+  ]
   ],
 
   "${IngestService.TIPP_PAYMENT}" : [
-	[
-	  type: IsOneOf,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
-	  ]
-	]
+  [
+    type: IsOneOf,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    ["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
+    ]
+  ]
   ],
 
   "${IngestService.TIPP_STATUS}" : [
-	[
-	  type: IsOneOf,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		["Current", "Retired", "Expected"]
-	  ]
-	]
+  [
+    type: IsOneOf,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    ["Current", "Retired", "Expected"]
+    ]
+  ]
   ],
 
   // ISSN
   "${IngestService.IDENTIFIER_PREFIX}issn" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.issn}",
-		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}issn\"",
-		"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
-	  ]
-	],
-	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
-	[
-	  type: CellAndOtherNotEmpty,
-	  severity: A_ValidationRule.SEVERITY_WARNING,
-	  args: ["${IngestService.IDENTIFIER_PREFIX}eissn"]
-	]
+  [ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.issn}",
+    "One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}issn\"",
+    "if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
+    ]
+  ],
+  [ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
+  [
+    type: CellAndOtherNotEmpty,
+    severity: A_ValidationRule.SEVERITY_WARNING,
+    args: ["${IngestService.IDENTIFIER_PREFIX}eissn"]
+  ]
   ],
   
   "${IngestService.IDENTIFIER_PREFIX}eissn" : [
-	[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.issn}",
-		"One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}eissn\"",
-		"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
-	  ]
-	],
-	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  [ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+  [
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.issn}",
+    "One or more rows do not conform to the format 'XXXX-XXXX' for the column \"${IngestService.IDENTIFIER_PREFIX}eissn\"",
+    "if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
+    ]
+  ],
+  [ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
   ],
 
   // Custom ISBN.
   "${IngestService.IDENTIFIER_PREFIX}isbn" : [
-	[
-	  type: CellMatches,
-	  severity: A_ValidationRule.SEVERITY_ERROR,
-	  args: [
-		"${validation.regex.isbn}",
-		"One or more rows do not contain valid ISBNs in the column \"${IngestService.IDENTIFIER_PREFIX}isbn\". Note the ISBN should be entered without dashes.",
-		"if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
-	  ]
-	],
-	[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+  [
+    type: CellMatches,
+    severity: A_ValidationRule.SEVERITY_ERROR,
+    args: [
+    "${validation.regex.isbn}",
+    "One or more rows do not contain valid ISBNs in the column \"${IngestService.IDENTIFIER_PREFIX}isbn\". Note the ISBN should be entered without dashes.",
+    "if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
+    ]
+  ],
+  [ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
   ],
 ]
 
@@ -494,9 +495,9 @@ globalSearchTemplates = [
             contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
           ],
         ],
-	qbeGlobals:[
-	  ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
-	],
+  qbeGlobals:[
+    ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+  ],
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -588,9 +589,9 @@ globalSearchTemplates = [
             contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg']
           ],
         ],
-	qbeGlobals:[
-	  ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
-	],
+  qbeGlobals:[
+    ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+  ],
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -611,9 +612,9 @@ globalSearchTemplates = [
             contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'desc']
           ],
         ],
-	qbeGlobals:[
-	  ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
-	],
+  qbeGlobals:[
+    ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
+  ],
         qbeResults:[
           [heading:'Id', property:'id'],
           [heading:'Description', property:'desc']
