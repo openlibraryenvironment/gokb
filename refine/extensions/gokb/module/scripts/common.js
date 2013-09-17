@@ -530,6 +530,7 @@ GOKb.multiAutoComplete = function(elements, data, separator) {
  */
 GOKb.lookupCont = null;
 GOKb.lookup = null;
+GOKb.lookupEventBound = false;
 GOKb.getLookup = function (location, callback) {
 	
 	// Try and get the container.
@@ -542,7 +543,7 @@ GOKb.getLookup = function (location, callback) {
 	}
 		
 	// Let's now set a add a lookup. With blank set of data.
-	GOKb.lookupCont.lookup({		
+	GOKb.lookupCont.lookup({
 	});
 		
 	// The customised lookup object.
@@ -550,6 +551,16 @@ GOKb.getLookup = function (location, callback) {
 		_lookup : GOKb.lookupCont.data("lookup"),
 		open : function () {
 			this._lookup._open();
+			
+			// Bind a search event listener here to clear the list.
+			if (!GOKb.lookupEventBound ) {
+				this._lookup._autocomplete.on( "autocompletesearch", function( event, ui ) {
+					$(".ui-lookup-results ul").empty();
+				});
+				
+				// Set the flag.
+				GOKb.lookupEventBound = true;
+			}
 		},
 		close : function () {
 			this._lookup._close();
