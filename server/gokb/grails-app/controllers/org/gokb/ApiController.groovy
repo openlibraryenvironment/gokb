@@ -111,7 +111,7 @@ class ApiController {
 	long pId = params.long("project");
 	
 	// RefineProject
-	RefineProject rp = RefineProject.createCriteria().get {
+	RefineProject rp = RefineProject.createCriteria().list {
 	  and {
 		ne ("localProjectID", pId)
 		eq ("hash", md5)
