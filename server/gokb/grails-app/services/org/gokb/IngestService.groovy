@@ -74,8 +74,6 @@ class IngestService {
 	public static final String TIPP_PAYMENT = "TIPPPayment"
 	public static final String TIPP_STATUS = "TIPPStatus"
 
-
-
 	/**
 	 *  Validate a parsed project. 
 	 *  @param project_data Parsed map of project data
@@ -385,7 +383,7 @@ class IngestService {
 				// Clear the skipped_titles
 				project.getSkippedTitles().clear()
 
-				project.save(failOnError:true)
+				project.save(failOnError:true, flush:true)
 
 				log.debug ("Updated the project.")
 
@@ -672,16 +670,24 @@ class IngestService {
 						// Soft delete.
 						// II: Trial not deleting old tipps...
 						// tipp.deleteSoft()
-						ReviewRequest.raise(
-								tipp,
-								"TIPP Not present when performing package update",
-								"This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
-								user
-								)
+						
+						if (tipp.isCurrent()) {
+  						ReviewRequest.raise(
+  							tipp,
+  							"TIPP Not present when performing package update",
+  							"This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
+  							user
+  						)
 
-						// Save.
-						tipp.save(failOnError:true, flush:true)
-						log.debug ("Soft deleted tipp ${tipp_id}")
+  						// Save.
+  						tipp.save(failOnError:true, flush:true)
+  						log.debug ("Raised review request for TIPP ${tipp_id}.")
+							
+						} else {
+						
+							// Ignoring this title as it's not a current TIPP.
+							log.debug ("Ignoring TIPP ${tipp_id} as it's not marked as a Current.")
+						}
 					}
 				}
 			}
@@ -691,21 +697,23 @@ class IngestService {
 
 			// If any rows with data have been skipped then we need to set them against the,
 			// project here, for reporting back into refine.
-			if (skipped_titles) {
+			if (skipped_titles.size() > 0) {
 
 				// Partially ingested
 				project.setProjectStatus (RefineProject.Status.PARTIALLY_INGESTED)
+
+  			// Update the skipped rows and the progress.
+  			project.getSkippedTitles().addAll(skipped_titles)
 
 			} else {
 
 				// Set to ingested.
 				project.setProjectStatus (RefineProject.Status.INGESTED)
 			}
-
-			// Update the skipped rows and the progress.
-			project.getSkippedTitles().addAll(skipped_titles)
-			project.progress = 100;
-
+			
+			// Update the progress.
+			project.progress = 100
+			
 			// Save the project.
 			project.save(failOnError:true, flush:true)
 		}
