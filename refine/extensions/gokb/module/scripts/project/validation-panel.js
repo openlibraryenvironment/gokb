@@ -97,7 +97,8 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
     		    		if ("result" in data && "status" in data.result) {
     		    			
     		    			// Merge the results into the existing object.
-    		    			$.extend (true, self.data["dataCheck"], data.result)
+//    		    			$.extend (true, self.data.dataCheck, data.result)
+    		    			$.merge( self.data.dataCheck.messages, data.result.messages )
 //    		    			self.data["dataCheck"] = data.result;
     		    			
     		    		  // Then render.
@@ -143,7 +144,7 @@ ValidationPanel.prototype._render = function() {
 		}
 	}
   
-  if ("dataCheck" in data && "status" in data.dataCheck) {
+  if ("dataCheck" in data) {
 		
 		if ("messages" in data.dataCheck) {
 			
