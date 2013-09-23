@@ -49,7 +49,7 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
       		
       		if ("result" in data && data.result.length > 0) {
       			// (cells['publicationtitle'].value + cells['package.name'].value).match('\\QAfrican and Asian StudiesBrill:Master:2013\\E|\\QAfrican DiasporaBrill:Master:2013\\E') != null
-      			var grel = "(cells['publicationtitle'].value + cells['package.name'].value).match('\\\\Q";
+      			var grel = "(cells[gokbCaseInsensitiveCellLookup('publicationtitle')].value + cells[gokbCaseInsensitiveCellLookup('package.name')].value).match('\\\\Q";
       			for (var i=0; i<data.result.length;i++) {
       				grel += (i > 0 ? '\\\\E|\\\\Q' : "") + data.result[i];
       			}
