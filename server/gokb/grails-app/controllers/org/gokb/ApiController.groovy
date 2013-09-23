@@ -59,7 +59,7 @@ class ApiController {
 		}
 		else {
 			def gokbVersion = request.getHeader("GOKb-version")
-			def serv_url = grailsApplication.config.serverUrl ?: 'http://gokb.kuali.org/extension/latest.zip'
+			def serv_url = grailsApplication.config.serverUrl ?: 'http://gokb.kuali.org'
 
 			if (gokbVersion != grailsApplication.config.refine_min_version) {
 				apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
