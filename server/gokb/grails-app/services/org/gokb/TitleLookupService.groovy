@@ -151,7 +151,7 @@ class TitleLookupService {
 			the_title.setIds(id_set)
 
 			// Try and save the result now.
-			if ( the_title.save(failOnError:true,flush:true) ) {
+			if ( the_title.save(failOnError:true, flush:true) ) {
 				log.debug("Succesfully saved TI: ${the_title.name}")
 			}
 			else {
@@ -160,8 +160,6 @@ class TitleLookupService {
 				}
 			}
 		}
-
-		the_title.save(flush:true)
 
 		the_title
 	}

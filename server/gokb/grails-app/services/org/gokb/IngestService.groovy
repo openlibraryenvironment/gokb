@@ -383,7 +383,7 @@ class IngestService {
 				// Clear the skipped_titles
 				project.getSkippedTitles().clear()
 
-				project.save(failOnError:true)
+				project.save(failOnError:true, flush:true)
 
 				log.debug ("Updated the project.")
 
