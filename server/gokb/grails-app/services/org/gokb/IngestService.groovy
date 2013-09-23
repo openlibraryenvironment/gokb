@@ -681,7 +681,12 @@ class IngestService {
 
   						// Save.
   						tipp.save(failOnError:true, flush:true)
-  						log.debug ("Raised review request for TIPP ${tipp_id}")
+  						log.debug ("Raised review request for TIPP ${tipp_id}.")
+							
+						} else {
+						
+							// Ignoring this title as it's not a current TIPP.
+							log.debug ("Ignoring TIPP ${tipp_id} as it's not marked as a Current.")
 						}
 					}
 				}
