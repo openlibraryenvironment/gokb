@@ -321,6 +321,11 @@ validation.rules = [
 		]
 	],
 
+  // All Identifiers
+  "${IngestService.IDENTIFIER_PREFIX}*" : [
+    [ type: HasDuplicates , severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+
 	// ISSN
 	"${IngestService.IDENTIFIER_PREFIX}issn" : [
 		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
@@ -333,7 +338,7 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
+//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellAndOtherNotEmpty,
 			severity: A_ValidationRule.SEVERITY_WARNING,
@@ -352,7 +357,7 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 
 	// Custom ISBN.
@@ -366,7 +371,7 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
 			]
 		],
-		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 ]
 
