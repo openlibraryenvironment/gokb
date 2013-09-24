@@ -166,6 +166,18 @@ validation.rules = [
 		[ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
 
+  // All platforms
+  "platform.*.*" : [
+    [
+      type: MustMatchRefdataValue,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: [
+        /platform\.([^\.]*)\..*/,
+        "Platform.Roles"
+      ]
+    ]
+  ],
+
 	"${IngestService.HOST_PLATFORM_URL}" : [
 		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
