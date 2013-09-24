@@ -25,7 +25,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "1.4"
+refine_min_version = "1.5"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -165,6 +165,18 @@ validation.rules = [
 		[ type: ColumnRequired			, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
+
+  // All platforms
+  "platform.*.*" : [
+    [
+      type: MustMatchRefdataValue,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: [
+        /platform\.([^\.]*)\..*/,
+        "Platform.Roles"
+      ]
+    ]
+  ],
 
 	"${IngestService.HOST_PLATFORM_URL}" : [
 		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
@@ -321,6 +333,11 @@ validation.rules = [
 		]
 	],
 
+  // All Identifiers
+  "${IngestService.IDENTIFIER_PREFIX}*" : [
+    [ type: HasDuplicates , severity: A_ValidationRule.SEVERITY_WARNING ]
+  ],
+
 	// ISSN
 	"${IngestService.IDENTIFIER_PREFIX}issn" : [
 		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
@@ -333,7 +350,7 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
+//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellAndOtherNotEmpty,
 			severity: A_ValidationRule.SEVERITY_WARNING,
@@ -352,7 +369,7 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 
 	// Custom ISBN.
@@ -366,7 +383,7 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
 			]
 		],
-		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
+//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 ]
 

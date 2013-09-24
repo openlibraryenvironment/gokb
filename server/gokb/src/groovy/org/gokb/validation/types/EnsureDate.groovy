@@ -4,7 +4,7 @@ import org.gokb.cred.KBComponent
 
 class EnsureDate extends A_ValidationRule implements I_RowValidationRule {
 
-  private static final String ERROR_TYPE = "data_invalid"
+  private static final String ERROR_TYPE = "date_invalid"
 
   public EnsureDate(String columnName, String severity) {
     super(columnName, severity)
@@ -26,10 +26,11 @@ class EnsureDate extends A_ValidationRule implements I_RowValidationRule {
 
     // The extra info to be sent with each error message.
     return [
-      col			: columnName,
-      text			: "One or more rows contains invalid dates in the column \"${columnName}\".",
-      facetValue	: "if (isNonBlank(value), if (value.toDate().toString() != value.toString(), 'invalid', null), null)",
-      facetName		: "Invalid dates in ${columnName}"
+      col			       : columnName,
+      text			     : "One or more rows contains invalid dates in the column \"${columnName}\".",
+      facetValue	   : "if (isNonBlank(value), if (value.toDate().toString() != value.toString(), 'invalid', null), null)",
+      facetName		   : "Invalid dates in ${columnName}",
+      transformation : "value.toDate()"
     ]
   }
 
