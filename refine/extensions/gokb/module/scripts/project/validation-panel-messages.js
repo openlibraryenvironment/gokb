@@ -44,6 +44,13 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			// Suggest adding column or renaming column.
 			opts = opts.concat (
 			  [
+			    {
+			   		id 		: message.type + "add",
+			   		label : "Append a blank column",
+			   		click : function() {
+			   			ValidationPanel.messages.quickRes.addBlankColumn(message);
+			   		}
+			    },
 			   	{
 			   		id 		: message.type + "rename",
 			   		label : "Rename a column",
@@ -56,8 +63,43 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			
 			break;
 			
+		case 'incorrect_column_name' :
+			
+			// Suggest adding column or renaming column.
+			opts = opts.concat (
+			  [
+			   	{
+			   		id 		: message.type + "rename",
+			   		label : "Rename this column to...",
+			   		click : function() {
+			   			ValidationPanel.messages.quickRes.renameColumnTo(message)
+			   		}
+			    },
+			    {
+			   		id 		: message.type + "remove",
+			   		label : "Remove this column",
+			   		click : function() {
+			   			ValidationPanel.messages.quickRes.removeColumn(message)
+			   		}
+			    },
+			  ]
+			);
+			
+			break;
+		
+		case 'date_invalid' :
+			opts = opts.concat (
+			  [
+			    {
+			  	  id 		: message.type + "convert",
+			  	  label : "Attempt automatic conversion",
+			  	  click : function() {
+			  		  ValidationPanel.messages.quickRes.transform(message)
+			  	  }
+			    },
+			  ]
+			);
 		case 'data_invalid' :
-		  // No quick suggestions yet.
 			opts = opts.concat (
 			  [
 			   	{
@@ -73,6 +115,83 @@ ValidationPanel.messages.quickRes.options = function (message) {
 	}
 	
 	return opts;
+}
+
+/**
+ * Add blank column
+ */
+ValidationPanel.messages.quickRes.addBlankColumn = function (message) {
+	
+	// Get the column model of the current project.
+	var cols = theProject.columnModel.columns;
+	
+	// In refine all columns must be created based on another. So we simply take the first column as a base.
+	Refine.postCoreProcess(
+	  "add-column", 
+	  {
+	  	baseColumnName: cols[0].name, 
+	  	expression: "\"\"", 
+	  	newColumnName: message.col, 
+	  	columnInsertIndex: cols.length
+	  },
+	  null,
+	  { modelsChanged: true }
+	);
+}
+
+/**
+ * Remove the invalid column.
+ */
+ValidationPanel.messages.quickRes.removeColumn = function (message) {
+	
+	// Remove the column the message has been raised for.
+	Refine.postCoreProcess(
+	  "remove-column", 
+	  {
+	  	columnName: message.col
+	  },
+	  null,
+	  { modelsChanged: true }
+	);
+};
+
+/**
+ * Transform the data in this column using the data supplied.
+ */
+ValidationPanel.messages.quickRes.transform = function (message) {
+	Refine.postCoreProcess(
+	  "text-transform",
+	  {
+	  	columnName: message.col,
+	  	expression: message.transformation,
+	  	onError: 'keep-original',
+	  	repeat: false,
+	  	repeatCount: 0
+	  },
+	  null,
+	  { cellsChanged: true }
+	);
+}
+
+
+/**
+ * Rename this column to a free text value.
+ */
+ValidationPanel.messages.quickRes.renameColumnTo = function (message) {
+	
+	// Rename the column that the message has been raised against to a free text value.
+	var newColumnName = window.prompt("Enter new column name", message.col);
+  if (newColumnName !== null) {
+    Refine.postCoreProcess(
+      "rename-column", 
+      {
+        oldColumnName: message.col,
+        newColumnName: newColumnName
+      },
+      null,
+      { modelsChanged: true }
+    );
+  }
 }
 
 /**
