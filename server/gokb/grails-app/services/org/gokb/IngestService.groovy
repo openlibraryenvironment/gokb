@@ -416,8 +416,8 @@ class IngestService {
 						// Add to column positions
 						col_positions[cn] = cd.cellIndex;
 
-						switch (cn) {
-							case {it.startsWith(IDENTIFIER_PREFIX)} :
+						switch (cn.toLowerCase()) {
+							case {it.startsWith(IDENTIFIER_PREFIX.toLowerCase())} :
 
 							// Identifier.
 								def idparts = cn.split(/\./)
@@ -427,14 +427,14 @@ class IngestService {
 								}
 								break
 
-							case {it.startsWith(TI_FIELD_PREFIX)} :
+							case {it.startsWith(TI_FIELD_PREFIX.toLowerCase())} :
 
 							// Additional property on TI
 								def prop_name = cn.substring(TI_FIELD_PREFIX.length())
 								gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex])
 								break
 
-							case {it.startsWith(TIPP_FIELD_PREFIX)} :
+							case {it.startsWith(TIPP_FIELD_PREFIX.toLowerCase())} :
 
 							// Additional property on TIPP
 								def prop_name = cn.substring(TIPP_FIELD_PREFIX.length())
@@ -491,8 +491,8 @@ class IngestService {
 								// Additional TI properties.
 								gokb_additional_ti_props.each { apd ->
 									title_info.appendToAdditionalProperty(
-											apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
-											)
+											apd.name.toLowerCase(), jsonv(datarow.cells[apd.col])
+									)
 								}
 
 								// Platforms must already exist in GOKb, so just to the lookup.
@@ -599,7 +599,7 @@ class IngestService {
 								// Add each TIPP custom property in turn.
 								gokb_additional_tipp_props.each { apd ->
 									tipp.appendToAdditionalProperty(
-											apd.prop_name.toLowerCase(), jsonv(datarow.cells[apd.col])
+											apd.name.toLowerCase(), jsonv(datarow.cells[apd.col])
 											)
 								}
 
