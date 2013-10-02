@@ -42,7 +42,7 @@
             </td>
           </g:each>
           <td>
-            <g:link class="btn" controller="search" action="index" params="${params+['det':counter]}">Show -></g:link>
+            <g:link class="btn btn-primary" controller="search" action="index" params="${params+['det':counter]}">Show -></g:link>
           </td>
         </tr>
       </g:each>
@@ -52,7 +52,7 @@
     <h4>Available actions for selected rows</h4>
     <select id="selectedBulkAction" name="selectedBulkAction">
     </select>
-    <button type="submit" class="btn">Action</button>
+    <button type="submit" class="btn btn-primary">Action</button>
   </div>
 </g:form>
 
