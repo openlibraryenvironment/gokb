@@ -51,7 +51,9 @@ class EnsureDate extends A_ValidationRule implements I_RowValidationRule {
         def definition = datarow.cells[col_positions[columnName]]
 
         if (definition) {
-          def value = definition.v?.trim()
+          
+          
+          def value = definition.v ? (definition.v as String).trim() : null
 
           if (value != null && value != "" && (definition.t == null || definition.t != 'date')) {
             // Invalid date value...
