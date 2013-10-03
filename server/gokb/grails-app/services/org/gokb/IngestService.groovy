@@ -550,11 +550,6 @@ class IngestService {
 
                 def tipp = null
 
-                // Save the data.
-                //								pkg.merge(flush:true, failOnError:true)
-                //								title_info.save(flush:true, failOnError:true)
-                //								platform_info.merge(flush:true, failOnError:true)
-
                 // Check incrmental.
                 if (incremental) {
                   // TODO: THIS DOES NOT WORK!!!!
@@ -573,10 +568,8 @@ class IngestService {
 
                   tipp = title_info.getTipps().find { def the_tipp ->
                     // Filter tipps for matching pkg and platform.
-                    boolean matched = the_tipp.isCurrent()
-                    matched = matched && the_tipp.pkg == pkg
+                    boolean matched = the_tipp.pkg == pkg
                     matched = matched && the_tipp.hostPlatform == platform_info
-
                     matched
                   }
                 }
