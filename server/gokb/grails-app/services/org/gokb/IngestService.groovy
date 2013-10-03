@@ -488,8 +488,6 @@ class IngestService {
               // If we match a title then ingest...
               if (title_info != null) {
 
-                title_info.merge(failOnError:true)
-
                 // Additional TI properties.
                 gokb_additional_ti_props.each { apd ->
                   title_info.appendToAdditionalProperty(
@@ -498,7 +496,7 @@ class IngestService {
                 }
 
                 // Save any changes to the title here.
-                title_info.save(failOnError:true)
+                title_info.save(failOnError:true, flush:true)
 
                 // Platforms must already exist in GOKb, so just to the lookup.
                 Platform platform_info = componentLookupService.lookupComponent(
@@ -508,9 +506,6 @@ class IngestService {
                   throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
                 }
 
-                // Save in this session.
-                platform_info.merge(failOnError:true)
-
                 // The package.
                 String pkg_name = getRowValue(datarow,col_positions,PACKAGE_NAME)
                 Package pkg = packageService.findCorrectPackage(
@@ -518,9 +513,6 @@ class IngestService {
                     pkg_name,
                     incremental
                     );
-
-                // Save in this session
-                pkg.merge(failOnError:true)
 
                 // Set the propvider of the package to that on the project.
                 Org provider = project.provider
@@ -530,7 +522,7 @@ class IngestService {
                 pkg.setLastProject(project)
 
                 // Save the Package changes.
-                pkg.save(failOnError:true)
+                pkg.save(failOnError:true, flush:true)
 
                 // Populate the tipp attribute map.
                 def tipp_values = [
