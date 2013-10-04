@@ -21,13 +21,13 @@
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="brand" href="#">GOKb</a>
+          <g:link controller="home" action="index" class="brand">GOKB</g:link>
           <div class="nav-collapse">
             <ul class="nav">
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
-                  <g:each in="${request.userOptions.availableSearches}" var="srch">
+                  <g:each in="${request?.userOptions?.availableSearches}" var="srch">
                     <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
                   </g:each>
                 </ul>
@@ -35,15 +35,40 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
                 <ul class="dropdown-menu">
-                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.License']}">License</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Office']}">Office</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.ReviewRequest']}">Request For Review</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
-                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstancePackagePlatform']}">TIPP</g:link></li>
+                  <sec:ifAnyGranted roles="ROLE_ADMIN">
+                    <li class="divider"></li>
+                    <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}">Additional Property Definition</g:link></li>
+                    <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
+                    <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Territory']}">Territory</g:link></li>
+                  </sec:ifAnyGranted>
                 </ul>
               </li>
-              <li><g:link controller="home" action="showRules">Validation Rules</g:link></li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ToDo</a>
+                <ul class="dropdown-menu">
+                  <li><g:link controller="search" action="index" params="${[qbe:'g:reviewRequests']}">Data Review</g:link></li>
+                </ul>
+              </li>
+              <li><g:link controller="masterList" action="index">Master List</g:link></li>
               <li><g:link controller="coreference" action="index">Coreference</g:link></li>
+              <sec:ifAnyGranted roles="ROLE_ADMIN">
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Admin</a>
+                  <ul class="dropdown-menu">
+                    <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
+                    <li><g:link controller="home" action="about">About</g:link></li>
+                  </ul>
+                </li>
+              </sec:ifAnyGranted>
             </ul>
             <ul class="nav pull-right">
               <sec:ifLoggedIn>
@@ -66,6 +91,38 @@
     <div class="navbar-push"></div>
 
     <g:layoutBody/>
+
+  <div id="Footer">
+      <div class="navbar navbar-footer">
+          <div class="navbar-inner">
+              <div class="container">
+                  <div>
+                      <ul class="footer-sublinks nav">
+                        <li><g:link controller="home" action="about">GoKB <g:meta name="app.version"/> / build <g:meta name="app.buildNumber"/></g:link></li>
+                      </ul>
+                  </div>
+
+                  <div class="pull-right">
+                      <div class="nav-collapse">
+                          <ul class="nav">
+                              <li class="dropdown">
+                                  <a href="#"
+                                     class="dropdown-toggle"
+                                     data-toggle="dropdown">
+                                      Tools
+                                      <b class="caret"></b>
+                                  </a>
+                                  <ul class="dropdown-menu">
+                                      <li>test</li>
+                                  </ul>
+                              </li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
     <g:javascript library="application"/>
     <r:layoutResources />
   </body>

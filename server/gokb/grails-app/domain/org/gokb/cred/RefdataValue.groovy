@@ -5,6 +5,7 @@ class RefdataValue {
   String value
   String icon
   String description
+  RefdataValue useInstead
 
   static belongsTo = [
     owner:RefdataCategory
@@ -16,18 +17,32 @@ class RefdataValue {
           owner column:'rdv_owner', index:'rdv_entry_idx'
           value column:'rdv_value', index:'rdv_entry_idx'
     description column:'rdv_desc'
+     useInstead column:'rdv_use_instead'
            icon column:'rdv_icon'
   }
 
   static constraints = {
-    icon(nullable:true)
+           icon(nullable:true, blank:true)
     description(nullable:true, blank:true, maxSize:64)
-
+     useInstead(nullable:true, blank:false)
   }
   
   @Override
   public String toString() {
 	return "${value}"
+  }
+  
+  @Override
+  public boolean equals (Object obj) {
+	
+	if (obj != null) {
+	  Object dep_obj = KBComponent.deproxy (obj)
+	  if (dep_obj instanceof RefdataValue) {
+		return dep_obj.id == id
+	  }
+	}
+	
+	return false
   }
 
   static def refdataFind(params) {
@@ -36,7 +51,7 @@ class RefdataValue {
     // ql = RefdataValue.findAllByValueIlikeOrDescriptionIlike("%${params.q}%","%${params.q}%",params)
     // ql = RefdataValue.findWhere("%${params.q}%","%${params.q}%",params)
 
-    def query = "from RefdataValue as rv where lower(rv.value) like ?"
+    def query = "from RefdataValue as rv where rv.useInstead is null and lower(rv.value) like ?"
     def query_params = ["%${params.q.toLowerCase()}%"]
 
     if ( ( params.filter1 != null ) && ( params.filter1.length() > 0 ) ) {

@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Reject any commit that would add a line with tabs.
+#
+# You can enable this as a repo policy with
+#
+#   git config hooks.allowtabs true
+
+allowtabs=$(git config hooks.allowtabs)
+
+if [ "$allowtabs" != "true" ] &&
+   git diff --cached | egrep '^\+.*	'>/dev/null
+then
+   cat<<END;
+Error: This commit would contain a tab, which is against this repo's policy.
+
+If you know what you are doing you can force this commit with:
+
+  git commit --no-verify
+
+Or change the repo policy like so:
+
+  git config hooks.allowtabs true
+
+Tabs:
+END
+  git grep -n --cached '	'
+  exit 1
+fi

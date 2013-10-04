@@ -17,7 +17,7 @@ $(document).ready(function() {
   $(".simpleReferenceTypedown").select2({
     placeholder: "Search for...",
     width:'resolve',
-    minimumInputLength: 1,
+    minimumInputLength: 0,
     ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
       url: "<g:createLink controller='ajaxSupport' action='lookup'/>",
       dataType: 'json',
@@ -30,9 +30,69 @@ $(document).ready(function() {
         };
       },
       results: function (data, page) {
+        // console.log("resultsFn");
         return {results: data.values};
       }
-  }});
+    },
+    initSelection : function (element, callback) {
+      var idv=$(element).val();
+      console.log("initSelection..%o"+idv,element);
+      var txt=$(element).context.dataset.displayvalue;
+      var data = {id: idv, text: txt};
+      callback(data);
+    }
+  });
+
+  $(".xEditableManyToOneS2").each(function(elem) {
+    var dom = $(this).data('domain');
+    var filter1 = $(this).data('filter1');
+    $(this).editable({
+      select2: {
+        placeholder: "Search for...",
+        width:'resolve',
+        minimumInputLength: 0,
+        ajax: {
+          url: "<g:createLink controller='ajaxSupport' action='lookup' />",
+          dataType: 'json',
+          data: function (term, page) {
+            return {
+              format:'json',
+              q: term,
+              baseClass:dom,
+              filter1:filter1
+            }
+          },
+          results: function (data, page) {
+            return {results: data.values};
+          }
+        }
+      }
+    });
+  });
+
+  $(".xEditableManyToOneS2Old").editable({
+    select2: {
+      placeholder: "Search for.....",
+      width:'resolve',
+      minimumInputLength: 1,
+      ajax: {
+        url: "/gokb/ajaxSupport/lookup",
+        dataType: 'json',
+        data: function (term, page) {
+          return {
+            format:'json',
+            q: term,
+            baseClass:'org.gokb.cred.Org',
+            filter1:$(this).data('filter1')
+          }
+        },
+        results: function (data, page) {
+          return {results: data.values};
+        }
+      }
+    }
+  });
+
 
 });
 

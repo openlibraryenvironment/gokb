@@ -205,7 +205,7 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 		case 'INGESTED' :
 		case 'INGEST_FAILED' :
 		case 'PARTIALLY_INGESTED' :
-			controls.append(
+			controls.append (
 			  this.createControlLink(
 			    project,
 			    'command/gokb/project-checkout?projectID=' + project.id,

@@ -48,6 +48,19 @@ class AjaxSupportController {
     def result = [:]
 
     def config = refdata_config[params.id]
+	
+	if (!config) {
+	  // Use generic config.
+	  config = [
+		domain:'RefdataValue',
+		countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
+		rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
+		qryParams:[],
+		cols:['value'],
+		format:'simple'
+	  ]
+	}
+	
     if ( config ) {
       def query_params = []
       config.qryParams.each { qp ->
@@ -66,7 +79,7 @@ class AjaxSupportController {
       def cq = Org.executeQuery(config.countQry,query_params);
       def rq = Org.executeQuery(config.rowQry,
                                 query_params,
-                                [max:params.iDisplayLength?:10,offset:params.iDisplayStart?:0]);
+                                [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0]);
 
       rq.each { it ->
         result["${it.class.name}:${it.id}"] = it[config.cols[0]];
@@ -83,47 +96,49 @@ class AjaxSupportController {
       countQry:'select count(o) from Org as o where lower(o.name) like ?',
       rowQry:'select o from Org as o where lower(o.name) like ? order by o.name asc',
       qryParams:[
-                  [
-                    param:'sSearch',
-                    clos:{ value ->
-                      def result = '%'
-                      if ( value && ( value.length() > 0 ) )
-                        result = "%${value.trim().toLowerCase()}%"
-                      result
-                    }
-                  ]
-                ],
+		[
+		  param:'sSearch',
+		  clos:{ value ->
+			def result = '%'
+			if ( value && ( value.length() > 0 ) )
+			  result = "%${value.trim().toLowerCase()}%"
+			result
+		  }
+		]
+	  ],
       cols:['name'],
       format:'map'
     ],
     'PackageType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='Package Type'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='Package Type'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='Package Type'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='Package Type'",
       qryParams:[],
       cols:['value'],
       format:'simple'
     ],
     'KBComponent.Status' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponent.Status'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponent.Status'",
       qryParams:[],
       cols:['value'],
       format:'simple'
     ],
     'VariantNameType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='VariantNameType' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='VariantNameType' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.VariantType'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.VariantType'",
       qryParams:[],
       cols:['value'],
       format:'simple'
     ],
     'Locale' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='Locale' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='Locale' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.Locale'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.Locale'",
       qryParams:[],
       cols:['value'],
       format:'simple'
@@ -133,7 +148,7 @@ class AjaxSupportController {
 
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
- def addToCollection() {
+  def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
 
     def contextObj = resolveOID2(params.__context)
@@ -177,20 +192,34 @@ class AjaxSupportController {
           }
         }
 
+        // Need to do the right thing depending on who owns the relationship. If new obj
+        // BelongsTo other, should be added to recip collection.
         if ( params.__recip ) {
           log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
           new_obj[params.__recip] = contextObj
-        }
-
-        log.debug("Saving ${new_obj}");
-        if ( new_obj.save() ) {
-          log.debug("Saved OK");
-        }
-        else {
-          new_obj.errors.each { e ->
-            log.debug("Problem ${e}");
+          log.debug("Saving ${new_obj}");
+          if ( new_obj.save() ) {
+            log.debug("Saved OK");
+          }
+          else {
+            new_obj.errors.each { e ->
+              log.debug("Problem ${e}");
+            }
           }
         }
+        else if ( params.__addToColl ) {
+          contextObj[params.__addToColl].add(new_obj)
+          log.debug("Saving ${new_obj}");
+          if ( contextObj.save() ) {
+            log.debug("Saved OK");
+          }
+          else {
+            contextObj.errors.each { e ->
+              log.debug("Problem ${e}");
+            }
+          }
+        } 
+
       }
       else {
         log.debug("Unable to locate instance of context class with oid ${params.__context}");
@@ -200,6 +229,52 @@ class AjaxSupportController {
       log.error("Unable to ookup domain class ${params.__newObjectClass}");
     }
 
+    redirect(url: request.getHeader('referer'))
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def addToStdCollection() {
+    log.debug("addToStdCollection(${params})");
+    // Adds a link to a collection that is not mapped through a join object
+    def contextObj = resolveOID2(params.__context)
+    if ( contextObj ) {
+      contextObj[params.__property].add(resolveOID2(params.__relatedObject))
+    }
+    redirect(url: request.getHeader('referer'))
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def unlinkManyToMany() {
+    log.debug("unlinkManyToMany(${params})");
+    // Adds a link to a collection that is not mapped through a join object
+    def contextObj = resolveOID2(params.__context)
+    if ( contextObj ) {
+      def item_to_remove = resolveOID2(params.__itemToRemove)
+      if ( item_to_remove ) {
+        contextObj[params.__property].remove(item_to_remove)
+        contextObj.save()
+      }
+      else {
+        log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
+      }
+    }
+    else {
+      log.error("Unable to resolve context obj : ${params.__context}");
+    }
+    redirect(url: request.getHeader('referer'))
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def delete() {
+    log.debug("delete(${params})");
+    // Adds a link to a collection that is not mapped through a join object
+    def contextObj = resolveOID2(params.__context)
+    if ( contextObj ) {
+      contextObj.delete()
+    }
+    else {
+      log.error("Unable to resolve context obj : ${params.__context}");
+    }
     redirect(url: request.getHeader('referer'))
   }
 
@@ -276,10 +351,12 @@ class AjaxSupportController {
 
     def result = null
 
-    if ( target && value ) {
-      def binding_properties = [ "${params.name}":value ]
+    if ( ( target != null ) && ( value != null ) ) {
+      // def binding_properties = [ "${params.name}":value ]
       // log.debug("Binding: ${binding_properties} into ${target} - a ${target.class.name}");
-      bindData(target, binding_properties)
+      // bindData(target, binding_properties)
+      target[params.name] = value
+      log.debug("Saving...");
       if ( target.save(flush:true) ) {
         if ( params.resultProp ) {
           result = value[params.resultProp]
@@ -297,7 +374,7 @@ class AjaxSupportController {
       }
     }
     else {
-      log.debug("no type (target=${target_components}, value=${value_components}");
+      log.error("no type (target=${target_components}, value=${value_components}");
     }
 
     def resp = [ newValue: result ]

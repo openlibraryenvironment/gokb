@@ -1,118 +1,256 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 
-<h1>Organisation: ${d.name}</h1>
+<h3>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h3>
 
-<dl class="dl-horizontal">
+<div id="content">
 
-  <div class="control-group">
-    <dt>Internal ID</dt>
-    <dd>${d.id}</dd>
-  </div>
+  <dl class="dl-horizontal">
 
-  <div class="control-group">
-    <dt>Org Name</dt>
-    <dd><g:xEditable class="ipe" owner="${d}" field="name">${d.name}</g:xEditable></dd>
-  </div>
-
-  <div class="control-group">
-    <dt>Status</dt><dd><span class="ipe" 
-         data-pk="${d.getClassName()}:${d.id}" 
-         data-type="select" 
-         data-name="packageStatus"
-         data-url="<g:createLink controller='ajaxSupport' action='setRef'/>",
-         data-source="<g:createLink controller='ajaxSupport' action='getRefdata' id='KBComponent.Status'/>">${d.status?.value?:'Not Set'}</span></dd>
-  </div>
-
-  <div class="control-group">
-    <dt>Roles</dt>
-    <dd>
-      <ul>
-        <g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
-          <li>${t.value}</li>
-        </g:each>
-      </ul>
-      <br/>
-
-          <g:if test="${1==1}">
-            <g:form controller="ajax" action="addToCollection" class="form-inline">
-              <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
-              <input type="hidden" name="__newObjectClass" value="com.k_int.kbplus.IdentifierOccurrence"/>
-              <input type="hidden" name="__recip" value="org"/>
-              <input type="hidden" name="identifier" id="addIdentifierSelect"/>
-              <input type="submit" value="Add Identifier..." class="btn btn-primary btn-small"/>
-            </g:form>
-          </g:if>
-
-      Add role: <g:simpleReferenceTypedown name="roleRefdataValue" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
-    </dd>
-  </div>
-
-  <g:if test="${ d.tags?.size() > 0 }" >
-    <dt>Tags</dt>
-    <dd>
-      <ul>
-        <g:each in="${(d.tags as List).sort({"${it.owner.desc}:${it.value}"})}" var="t">
-          <li>${t.owner.desc} : ${t.value}</li>
-        </g:each>
-      </ul>
-    </dd>
-  </g:if>
-
-  <div class="control-group">
-      <dt>Identifiers</dt>
-      <dd>
-        <ul>
-          <g:each in="${d.ids}" var="id">
-            <li>${id.namespace.value}:${id.value}</li>
-          </g:each>
-        </ul>
-      </dd>
-  </div>
-
-  <g:if test="${d.parent != null}">
     <div class="control-group">
-      <dt>Parent</dt>
-      <dd><g:link controller="resource" action="show" id="${d.parent.getClassName()+':'+d.parent.id}">${d.parent.name}</g:link></dd>
+      <dt>Name</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
     </div>
-  </g:if>
 
-  <g:if test="${d.children?.size() > 0}">
-    <dt>Children</dt>
-    <dd>
-      <ul>
-        <g:each in="${d.children}" var="c">
-          <li><g:link controller="resource" action="show" id="${c.getClassName()+':'+c.id}">${c.name}</g:link></li>
-        </g:each>
-      </ul>
-    </dd>
-  </g:if>
+    <div class="control-group">
+      <dt>Status</dt>
+      <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
+    </div>
 
-  <g:if test="${d.getOtherIncomingCombos()?.size() > 0}">
-    <dt>Incoming Combos</dt>
-    <dd>
-      <ul>
-        <g:each in="${d.getOtherIncomingCombos()}" var="c">
-          <li><g:link controller="resource" action="show" id="${c.fromComponent.getClassName()+':'+c.fromComponent.id}">${c.fromComponent.name}</g:link> -- ${c.type?.value} --> This Org</li>
-        </g:each>
-      </ul>
-    </dd>
-  </g:if>
+    <div class="control-group">
+      <dt>Internal ID</dt>
+      <dd>${d.id}</dd>
+    </div>
 
-  <g:if test="${d.getOtherOutgoingCombos()?.size() > 0}">
-    <dt>Outgoing Combos</dt>
-    <dd>
-      <ul>
-        <g:each in="${d.getOtherOutgoingCombos()}" var="c">
-          <li>This Org -- ${c.type?.value} --> <g:link controller="resource" action="show" id="${c.toComponent.getClassName()+':'+c.toComponent.id}">${c.toComponent.name}</g:link></li>
-        </g:each>
-      </ul>
-    </dd>
-  </g:if>
-</dl>
+    <div class="control-group">
+      <dt>Reference</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="reference"/></dd>
+    </div>
+
+    <div class="control-group">
+      <dt>Short Code</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
+    </div>
+
+  </dl>
+
+  <ul id="tabs" class="nav nav-tabs">
+    <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
+    <li><a href="#lists" data-toggle="tab">Lists</a></li>
+    <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
+    <li><a href="#status" data-toggle="tab">Status</a></li>
+  </ul>
+  <div id="my-tab-content" class="tab-content">
+    <div class="tab-pane active" id="orgdetails">
+      <g:if test="${d.id != null}">
+        <dl class="dl-horizontal">
+      
+          <div class="control-group">
+            <dt>Mission</dt>
+            <dd><g:xEditableRefData owner="${d}" field="mission" config='Org.Mission' /></dd>
+          </div>
+      
+      
+          <div class="control-group">
+            <dt>Roles</dt>
+            <dd>
+              <g:if test="${d.id != null}">
+                <ul>
+                  <g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
+                    <li>${t.value}</li>
+                  </g:each>
+                </ul>
+                <br/>
+      
+                <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
+                  <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
+                  <input type="hidden" name="__property" value="roles"/>
+                  <g:simpleReferenceTypedown name="__relatedObject" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
+                  <input type="submit" value="Add..." class="btn btn-primary btn-small"/>
+                </g:form>
+              </g:if>
+              <g:else>
+                Record must be saved before roles can be edited.
+              </g:else>
+            </dd>
+          </div>
+
+          <div class="control-group">
+            <dt>Tags</dt>
+            <dd>
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Tag Category</th>
+                    <th>Tag Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <g:each in="${d.tags}" var="t">
+                    <tr>
+                      <td>${t.owner.desc}</td>
+                      <td>${t.value}</td>
+                    </tr>
+                  </g:each>
+                </tbody>
+              </table>
+            </dd>
+          </div>
+
+          <div class="control-group">
+            <dt>Alternate Names</dt>
+            <dd>
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Alternate Name</th>
+                    <th>Status</th>
+                    <th>Variant Type</th>
+                    <th>Locale</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <g:each in="${d.variantNames}" var="v">
+                    <tr>
+                      <td>
+                        ${v.variantName}
+                      </td>
+                      <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
+                      <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
+                      <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
+                    </tr>
+                  </g:each>
+                </tbody>
+              </table>
+            </dd>
+          </div>
+
+      
+          <div class="control-group">
+            <dt>IDs</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'ids', cols:[[expr:'namespace.value',colhead:'Namespace'],[expr:'value',colhead:'Identifier']]]}" />
+            </dd>
+          </div>
+
+          <g:if test="${d.parent != null}">
+            <div class="control-group">
+              <dt>Parent</dt>
+              <dd>
+                <g:link controller="resource" action="show"
+                  id="${d.parent.getClassName()+':'+d.parent.id}">
+                  ${d.parent.name}
+                </g:link>
+              </dd>
+            </div>
+          </g:if>
+      
+          <g:if test="${d.children?.size() > 0}">
+            <dt>Children</dt>
+            <dd>
+              <ul>
+                <g:each in="${d.children}" var="c">
+                  <li><g:link controller="resource" action="show"
+                      id="${c.getClassName()+':'+c.id}">
+                      ${c.name}
+                    </g:link></li>
+                </g:each>
+              </ul>
+            </dd>
+          </g:if>
+        </dl>
+      </g:if>
+    </div>
+
+    <div class="tab-pane" id="addprops">
+      <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
+    </div>
+
+    <div class="tab-pane" id="review">
+      <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
+    </div>
+
+    <div class="tab-pane" id="lists">
+        <dl class="dl-horizontal">
+
+          <div class="control-group">
+            <dt>Offices</dt>
+            <dd class="well">
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Licenses</dt>
+            <dd class="well">
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Platforms</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform']]]}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Titles</dt>
+            <dd>
+              <g:render template="combosByType" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'publishedTitles', cols:[[expr:'fromComponent.name',
+                                                                          colhead:'Title Name',
+                                                                          action:'link']], direction:'in']}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Packages</dt>
+            <dd>
+              <g:render template="comboList" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']],targetClass:'org.gokb.cred.Package']}" />
+            </dd>
+          </div>
+
+         <div class="control-group">
+            <dt>Identifiers</dt>
+            <dd>
+              <g:render template="combosByType" 
+                        contextPath="../apptemplates" 
+                        model="${[d:d, property:'ids', cols:[[expr:'toComponent.namespace.value',
+                                                                   colhead:'Namespace'],
+                                                             [expr:'toComponent.value',
+                                                                   colhead:'ID',
+                                                                   action:'link']], direction:'in']}" />
+            </dd>
+          </div>
+
+        </dl>
+    </div>
+
+    <div class="tab-pane" id="status">
+      <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+    </div>
+
+  </div>
+</div>
+
+
 
 <script language="JavaScript">
   $(document).ready(function() {
+
     $.fn.editable.defaults.mode = 'inline';
     $('.ipe').editable();
   });

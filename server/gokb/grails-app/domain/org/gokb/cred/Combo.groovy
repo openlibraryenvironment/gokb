@@ -5,9 +5,6 @@ package org.gokb.cred
  *
  */
 
-import java.util.Date;
-
-import grails.util.GrailsNameUtils
 
 class Combo {
   
@@ -24,7 +21,7 @@ class Combo {
   RefdataValue type
   
   // All Combos should have a start date.
-  Date startDate
+  Date startDate = new Date()
   
   // The Combos without an end date are the "current" values.
   Date endDate
@@ -52,7 +49,7 @@ class Combo {
     fromComponent(nullable:false, blank:false)
     toComponent(nullable:false, blank:false)
     endDate(nullable:true, blank:false)
-    startDate(nullable:false, blank:false)
+    startDate(nullable:true, blank:false)
   }
   
   public Date expire (Date endDate = null) {

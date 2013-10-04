@@ -38,4 +38,23 @@ class License extends KBComponent {
 	file	 	column:'license_document'
 	type 		column:'license_type_fk_rd'
   }
+
+  /**
+   *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
+   *  objects implementing this method can be easily located and listed / selected
+   */
+  static def refdataFind(params) {
+    def result = [];
+    def ql = null;
+    ql = License.findAllByNameIlike("${params.q}%",params)
+
+    if ( ql ) {
+      ql.each { t ->
+      result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+      }
+    }
+
+    result
+  }
+
 }

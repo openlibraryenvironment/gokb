@@ -1,6 +1,6 @@
 var html = "text/html";
 var encoding = "UTF-8";
-var ClientSideResourceManager = Packages.com.google.refine.ClientSideResourceManager;
+var ClientSideResourceManager = Packages.com.k_int.gokb.refine.ExtendedResourceManager;
 
 /*
  * Register our custom commands.
@@ -15,6 +15,7 @@ function registerCommands() {
   RS.registerCommand(module, "rules-suggest", new Packages.com.k_int.gokb.refine.commands.SuggestRules());
   RS.registerCommand(module, "datastore-save", new Packages.com.k_int.gokb.refine.commands.SaveDatastore());
   RS.registerCommand(module, "login", new Packages.com.k_int.gokb.refine.commands.Login());
+  RS.registerCommand(module, "lookup", new Packages.com.k_int.gokb.refine.commands.Lookup());
   Packages.java.lang.System.out.println("done");
 }
 
@@ -24,6 +25,7 @@ function registerCommands() {
 function registerFunctions() {
 	Packages.java.lang.System.out.print("\tRegistering functions...");
 	registerFunction("ExtractHost", new com.k_int.gokb.refine.functions.ExtractHost());
+	registerFunction("CaseInsensitiveCellLookup", new com.k_int.gokb.refine.functions.CaseInsensitiveCellLookup());
 	Packages.java.lang.System.out.println("done");
 }
 
@@ -50,6 +52,7 @@ function init() {
 		 module,
 		 [
 	     "scripts/plugins/jquery.uniform.min.js",
+	     "scripts/plugins/jquery.ui-lookup.js",
 	     "scripts/common.js",
 	     "scripts/forms.js",
 	     "scripts/index.js",
@@ -71,12 +74,23 @@ function init() {
   );
 
   // Script files to inject into /project page
+  ClientSideResourceManager.prependPaths(
+    "project/scripts",
+  	module,
+  	[
+  	 "scripts/jquery/jquery.js",
+  	 "scripts/jquery/jquery-ui.min.js"
+  	]
+  );
   ClientSideResourceManager.addPaths(
     "project/scripts",
     module,
     [
      "scripts/plugins/jquery.plugin.selectablerows.js",
      "scripts/plugins/jquery.uniform.min.js",
+     "scripts/plugins/jquery.insert-at-caret.js",
+     "scripts/plugins/jquery.contextmenu.js",
+     "scripts/plugins/jquery.ui-lookup.js",
      "scripts/common.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
@@ -84,7 +98,8 @@ function init() {
      "scripts/project.js",
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
-     "scripts/project/title-complete.js",
+     "scripts/project/context-menu.js",
+//     "scripts/project/title-complete.js",
     ]
   );
 
@@ -96,6 +111,7 @@ function init() {
       "styles/jqui/jquery-ui.css",
       "styles/uniform.default.css",
       "styles/uniform.aristo.css",
+      "styles/contextmenu.css",
       "styles/common.less",
     ]
   );
