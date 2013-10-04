@@ -845,7 +845,7 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 
 cosine.good_threshold = 0.75
 
-serverUrl = 'http://gokb.k-int.com'
+serverUrl = 'http://gokb.k-int.com/kuali'
 
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
 
