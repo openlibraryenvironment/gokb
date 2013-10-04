@@ -5701,3 +5701,8 @@ to {
 #mainarea .navbar .brand {
 	color:#FFF;
 }
+
+table tr.grouped th,
+table tr.grouped td {
+	border-top: none;
+}
