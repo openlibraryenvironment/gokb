@@ -194,6 +194,10 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 	if (!controls.length) {
 		controls = $('<span />').attr('class', 'proj-controls-' + project.id);
 	}
+	
+	// Clear the controls first.
+	controls.html("");
+	
 	var self = this;
 	
 	switch (project.projectStatus.name) {
