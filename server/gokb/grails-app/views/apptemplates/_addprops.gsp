@@ -1,14 +1,25 @@
+<g:set var="current_key" value="" />
 <table class="table table-bordered">
   <thead>
     <tr><th>Property</th><th>Value</th><th>Actions</th></tr>
   </thead>
   <tbody>
-    <g:each in="${d.additionalProperties}" var="cp">
-      <tr>
-        <td>${cp.propertyDefn.propertyName}</td>
-        <td>${cp.apValue}</td>
-        <td></td>
-      </tr>
+    <g:each in="${d.additionalProperties.sort{it.propertyDefn?.propertyName}}" var="cp">
+      <g:if test="${ current_key != cp.propertyDefn?.propertyName }" >
+        <tr>
+	        <g:set var="current_key" value="${cp.propertyDefn?.propertyName}" />
+	        <td>${cp.propertyDefn?.propertyName}</td>
+	        <td>${cp.apValue}</td>
+	        <td></td>
+	      </tr>
+	    </g:if>
+      <g:else>
+        <tr class="grouped" >
+          <td></td>
+	        <td>${cp.apValue}</td>
+	        <td></td>
+	      </tr>
+      </g:else>
     </g:each>
     <tr>
       <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">

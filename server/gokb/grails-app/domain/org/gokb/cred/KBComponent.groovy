@@ -536,7 +536,7 @@ abstract class KBComponent {
 
       // Find the KBComponentAdditionalProperty
       KBComponentAdditionalProperty prop = additionalProperties.find { KBComponentAdditionalProperty prop ->
-        prop.getPropertyDefn().getPropertyName() == prop_name
+        prop.getPropertyDefn().getPropertyName() == prop_name &&
         prop.getApValue()?.equalsIgnoreCase(val)
       }
 
