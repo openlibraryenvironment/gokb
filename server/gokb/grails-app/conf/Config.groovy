@@ -606,6 +606,14 @@ globalSearchTemplates = [
 					placeholder:'Package',
 					contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg']
 				],
+                                [
+                                        type:'lookup',
+                                        baseClass:'org.gokb.cred.Platform',
+                                        prompt:'Platform',
+                                        qparam:'qp_plat',
+                                        placeholder:'Platform',
+                                        contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'hostPlatform']
+                                ],
 			],
 			qbeGlobals:[
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
