@@ -78,13 +78,13 @@ class ApiController {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.serverUrl ?: 'http://gokb.kuali.org'
 
-      if (gokbVersion != grailsApplication.config.refine_min_version) {
-        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
-        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
-        "error")
-        return false
-      }
+//      if (gokbVersion != grailsApplication.config.refine_min_version) {
+//        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
+//        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
+//        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
+//        "error")
+//        return false
+//      }
     }
   }
 
@@ -605,21 +605,65 @@ class ApiController {
 
     // Get the "term" parameter for performing a search.
     def term = params.term
+    
+    // Object attributes to search.
+    def match_in = ["name"]
+    match_in += params.list("match")
+    
+    // Attributes to return.
+    def attr = ["label"]
+    attr += params.list("attr")
 
     // Should take a type parameter and do the right thing.
     try {
       Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
           "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
           )
-      apiReturn ( c.createCriteria().listDistinct {
+      
+      def criteria = ComboCriteria.createFor(c.createCriteria())
+      apiReturn ( criteria.listDistinct {
         if (term) {
-          ilike "name", "%${term}%"
+          
+          // Add a condition for each parameter we wish to search.
+          or {
+            match_in.each { String param_name ->
+              criteria.add ("${param_name}", "ilike", "%${term}%")
+            }
+          }
         }
       }.collect { KBComponent comp ->
-        [ "value" : "${comp.name}::{${c.getSimpleName()}:${comp.id}}", "label" : (comp.name) ]
+      
+        // Add each requested parameter to the return map. Label is a special case as we return "name"
+        // for this. This is to keep backwards compatibility with the JQuery autocomplete default behaviour.
+        def item = [ "value" : "${comp.name}::{${c.getSimpleName()}:${comp.id}}"]
+        
+        // Go through the list.
+        attr.each { String attribute_name ->
+          if (attribute_name == "label") {
+            item["${attribute_name}"] = comp.name
+          } else {
+          
+            // Support deep properties using dot notation.
+            String[] props = "${attribute_name}".split(/\./)
+            
+            def target = comp
+            
+            // Each property.
+            props.each { String prop ->
+              target = target?."${prop}"
+            }
+            
+            // Once here we have the final target.
+            item["${attribute_name}"] = target
+          }
+        }
+        
+        // Return the map entry.
+        item
       })
 
     } catch (Throwable t) {
+      t.printStackTrace()
       /* Just return an empty list. */
       apiReturn ([])
     }

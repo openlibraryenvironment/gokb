@@ -252,19 +252,51 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 /**
  * Display a box to allow a user to search for an id in the given namespace.
  */
-GOKb.handlers.lookup = function(namespace) {
+GOKb.handlers.lookup = function(namespace, match, attr) {
+	
+	var url = "/command/gokb/lookup?type=" + namespace;
+	
+	// Arrays.
+	var m = [];
+	if (match) m = $.merge(m,match);
+	var a = [];
+	if (attr) a = $.merge(a,attr);
+	
+	// Extra URL parameters.
+	var params = {
+		"match" : m,
+		"attr"	: a
+	};
 	
 	// Active element.
 	var activeElem = $(document.activeElement);
 	
 	// Perform a lookup.
 	var lookup = GOKb.getLookup (
-	  "/command/gokb/lookup?type=" + namespace,
+	  url + "&" + $.param(params, true),
 	  function (item) {
 
 	  	// Insert the selected value at the location.
 	  	activeElem.insertAtCaret(item.value);
 	  }
 	);
-	lookup.open();
+	
+	// Now we have our lookup object we can now open it with a custom renderer set.	
+	lookup.open(function( ul, item ) {
+		var link = $("<a />")
+			.text(item.label)
+		;
+		
+		// Append each of the items properties as well as the label.
+		$.each(item, function(key, val) {
+			if (key != "value" && key != "label" )
+			link.append("<br /><span class='sub-title'>" + key + ":</span> <span class='sub-value'>" + val + "</span>");
+		});
+		
+		// Return the list item with the link.
+		return $( "<li>" )
+			.append(link)
+			.appendTo( ul )
+		;
+	});
 };
