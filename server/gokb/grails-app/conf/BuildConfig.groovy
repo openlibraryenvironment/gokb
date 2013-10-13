@@ -33,10 +33,11 @@ grails.project.dependency.resolution = {
     }
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
-
         runtime 'mysql:mysql-connector-java:5.1.25'
         // To allow us to un-tgz uploaded data files
         runtime 'org.apache.commons:commons-compress:1.4.1'
+        runtime 'org.apache.tika:tika-core:1.4'
+        runtime 'xalan:xalan:2.7.1'
     }
 
     plugins {
@@ -56,7 +57,7 @@ grails.project.dependency.resolution = {
 
         compile ':cache:1.0.1'
 		
-		// Joda time to handle the ISO dates.
-		compile ":joda-time:1.4"
+	// Joda time to handle the ISO dates.
+	compile ":joda-time:1.4"
     }
 }

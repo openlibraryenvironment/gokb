@@ -7,6 +7,7 @@ class DataFile extends KBComponent {
   String uploadName
   String uploadMimeType
   String filesize
+  String doctype
 
   static constraints = {
     guid (nullable:false, blank:false)
@@ -14,6 +15,7 @@ class DataFile extends KBComponent {
     uploadName (nullable:true, blank:false)
     uploadMimeType (nullable:true, blank:false)
     filesize (nullable:true, blank:false)
+    doctype (nullable:true, blank:false)
   }
 
   static mapping = {
@@ -22,5 +24,6 @@ class DataFile extends KBComponent {
     uploadName column:'df_upload_name'
     uploadMimeType column:'df_mime_type'
     filesize column:'df_filesize'
+    doctype column:'df_doctype'
   }
 }

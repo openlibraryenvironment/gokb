@@ -23,6 +23,11 @@
       <dd><g:xEditableRefData owner="${d}" field="type" config='License.Type' /></dd>
     </div>
 
+   <div class="control-group">
+      <dt>Summary Statement</dt>
+      <dd>${d.summaryStatement}</dd>
+    </div>
+
 
   </dl>
 </g:if>
