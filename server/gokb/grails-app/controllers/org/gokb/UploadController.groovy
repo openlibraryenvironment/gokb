@@ -9,6 +9,8 @@ import org.gokb.cred.*
 
 class UploadController {
 
+  def uploadAnalysisService
+
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
   }
@@ -26,7 +28,7 @@ class UploadController {
         def deposit_token = java.util.UUID.randomUUID().toString();
         def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
 
-        def info = analyze(temp_file);
+        def info = analyse(temp_file);
 
         log.debug("Got file with md5 ${info.md5sumHex}.. lookup");
 
@@ -41,7 +43,11 @@ class UploadController {
                                           md5:info.md5sumHex,
                                           uploadName:upload_filename, 
                                           name:upload_filename, 
+                                          filesize:info.filesize, 
                                           uploadMimeType:upload_mime_type).save(flush:true)
+
+          uploadAnalysisService.analyse(temp_file, new_datafile);
+
           redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${new_datafile.id}")
         }
       }
@@ -82,9 +88,10 @@ class UploadController {
     }
   }
 
-  def analyze(temp_file) {
+  def analyse(temp_file) {
 
     def result=[:]
+    result.filesize = 0;
 
     log.debug("analyze...");
 
@@ -95,6 +102,7 @@ class UploadController {
     int md5_read = 0;
     while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
       md5_digest.update(md5_buffer, 0, md5_read);
+      result.filesize += md5_read
     }
     md5_is.close();
     byte[] md5sum = md5_digest.digest();

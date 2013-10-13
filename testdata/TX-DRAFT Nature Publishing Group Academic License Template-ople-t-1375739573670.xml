@@ -1,0 +1,1606 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<PublicationsLicenseExpression xmlns:oxf="http://www.orbeon.com/oxf/processors"
+                               xmlns="http://www.editeur.org/onix-pl"
+                               xmlns:ev="http://www.w3.org/2001/xml-events"
+                               xmlns:onix="http://www.editeur.org/onix-pl"
+                               xmlns:xforms="http://www.w3.org/2002/xforms"
+                               xmlns:ople="http://www.editeur.org/ople"
+                               xmlns:p="http://www.orbeon.com/oxf/pipeline"
+                               xmlns:saxon="http://saxon.sf.net/"
+                               xmlns:context="java:org.orbeon.oxf.pipeline.StaticExternalContext"
+                               xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                               xmlns:exist="http://exist.sourceforge.net/NS/exist"
+                               xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                               datestamp="20130805T205353"
+                               sourcename="OPLE V1.0 Build 1.2.0"
+                               version="1.0">
+    <ExpressionDetail>
+        <ExpressionType>onixPL:LicenseTemplate</ExpressionType>
+        <ExpressionStatus>onixPL:Draft</ExpressionStatus>
+        <Authority>NISO ONIX-PL Encoding Project 2013</Authority>
+        <Description>Nature Publishing Group US Academic License</Description>
+        <ExpressionRelatedAgent>
+            <ExpressionAgentRelator>onixPL:PreparedBy</ExpressionAgentRelator>
+            <Name>Selden Durgom Lamoureux</Name>
+        </ExpressionRelatedAgent>
+        <ExpressionRelatedTimePoint>
+            <ExpressionTimePointRelator>onixPL:PreparedOn</ExpressionTimePointRelator>
+            <TimePointIdentifier>
+                <TimePointIDType>onixPL:YYYYMMDD</TimePointIDType>
+                <IDValue>20130805</IDValue>
+            </TimePointIdentifier>
+        </ExpressionRelatedTimePoint>
+    </ExpressionDetail>
+    <LicenseDetail>
+        <LicenseIdentifier>
+            <LicenseIDType>onixPL:LicenseeContractNumber</LicenseIDType>
+            <IDValue>[to be entered by Licensee]</IDValue>
+        </LicenseIdentifier>
+        <Description>Nature Publishing Group Academic Site License Agreement US</Description>
+        <LicenseStatus>onixPL:Template</LicenseStatus>
+        <LicenseRenewalType>onixPL:Explicit</LicenseRenewalType>
+        <LicenseDocument>
+            <LicenseDocumentType>onixPL:LicenseSchedule</LicenseDocumentType>
+            <DocumentLabel>Schedule</DocumentLabel>
+        </LicenseDocument>
+        <LicenseDocument>
+            <LicenseDocumentType>onixPL:LicenseMainTerms</LicenseDocumentType>
+            <DocumentLabel>Terms</DocumentLabel>
+        </LicenseDocument>
+        <LicenseRelatedAgent>
+            <LicenseAgentRelator>onixPL:Licensor</LicenseAgentRelator>
+            <RelatedAgent>Licensor</RelatedAgent>
+        </LicenseRelatedAgent>
+        <LicenseRelatedAgent>
+            <LicenseAgentRelator>onixPL:Licensee</LicenseAgentRelator>
+            <RelatedAgent>Licensee</RelatedAgent>
+        </LicenseRelatedAgent>
+        <LicenseRelatedAgent>
+            <LicenseAgentRelator>onixPL:AuthorizedUsers</LicenseAgentRelator>
+            <RelatedAgent>AuthorizedUser</RelatedAgent>
+        </LicenseRelatedAgent>
+        <LicenseRelatedResource>
+            <LicenseResourceRelator>onixPL:LicensedContent</LicenseResourceRelator>
+            <RelatedResource>LicensedContent</RelatedResource>
+        </LicenseRelatedResource>
+        <LicenseRelatedTimePoint>
+            <LicenseTimePointRelator>onixPL:LicenseStartDate</LicenseTimePointRelator>
+            <RelatedTimePoint>LicenseStartDate</RelatedTimePoint>
+        </LicenseRelatedTimePoint>
+        <LicenseRelatedTimePoint>
+            <LicenseTimePointRelator>onixPL:LicenseEndDate</LicenseTimePointRelator>
+            <RelatedTimePoint>LicenseEndDate</RelatedTimePoint>
+        </LicenseRelatedTimePoint>
+        <LicenseRelatedPlace>
+            <LicensePlaceRelator>onixPL:PlaceOfGoverningLaw</LicensePlaceRelator>
+            <RelatedPlace>PlaceOfGoverningLaw</RelatedPlace>
+        </LicenseRelatedPlace>
+        <LicenseRelatedPlace>
+            <LicensePlaceRelator>onixPL:PlaceOfJurisdiction</LicensePlaceRelator>
+            <RelatedPlace>PlaceOfJurisdiction</RelatedPlace>
+        </LicenseRelatedPlace>
+    </LicenseDetail>
+    <Definitions>
+        <AgentDefinition>
+            <AgentLabel>Licensor</AgentLabel>
+            <AgentType>onixPL:Organization</AgentType>
+            <AgentName>
+                <Name>Nature America, Inc. d/b/a Nature Publishing Group</Name>
+            </AgentName>
+            <LicenseTextLink href="d1e108d1e168920130530T153153.064Z"/>
+            <AgentRelatedPlace>
+                <AgentPlaceRelator>onixPL:PrincipalPlaceOfBusiness</AgentPlaceRelator>
+                <RelatedPlace>LicensorPrincipalPlaceOfBusiness</RelatedPlace>
+            </AgentRelatedPlace>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>Licensee</AgentLabel>
+            <AgentType>onixPL:Organization</AgentType>
+            <AgentName>
+                <Name>[Name of licensee]</Name>
+            </AgentName>
+            <LicenseTextLink href="d1e108d1e168920130530T153155.664Z"/>
+            <AgentRelatedPlace>
+                <AgentPlaceRelator>onixPL:PrincipalPlaceOfBusiness</AgentPlaceRelator>
+                <RelatedPlace>LicenseePrincipalPlaceOfBusiness</RelatedPlace>
+            </AgentRelatedPlace>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>AuthorizedUser</AgentLabel>
+            <AgentType>onixPL:Person</AgentType>
+            <Annotation>
+                <AnnotationType>onixPL:AmbiguityInLicenseText</AnnotationType>
+                <AnnotationText>It seems likely that category (d) in clause 1.1.2 may be intended to cover walk-in users, but this would be inconsistent with the statement that all categories have 'general access' to the licensee's network.  Provisionally, the Dictionary term 'Library Users Unaffiliated' could be regarded as covering categories (c) and (d).</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T153356.378Z"/>
+            <AgentRelatedAgent>
+                <AgentAgentRelator>onixPL:IsAnyOf</AgentAgentRelator>
+                <RelatedAgent>onixPL:LicenseeStudent</RelatedAgent>
+                <RelatedAgent>onixPL:LicenseeStaff</RelatedAgent>
+                <RelatedAgent>onixPL:LibraryUserUnaffiliated</RelatedAgent>
+            </AgentRelatedAgent>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>NISO ONIX-PL Encoding Project 2013</AgentLabel>
+            <AgentType>onixPL:Organization</AgentType>
+            <Description>NISO grant funded by Mellon</Description>
+        </AgentDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>LicensedContent</ResourceLabel>
+            <Description>Currently subscribed journals</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T084328.042Z"/>
+            <ResourceRelatedResource>
+                <ResourceResourceRelator>onixPL:IsAnyOf</ResourceResourceRelator>
+                <RelatedResource>LicensedContent - Nature</RelatedResource>
+                <RelatedResource>LicensedContent - NPG Journals</RelatedResource>
+                <RelatedResource>LicensedContent - Third-Party Journals</RelatedResource>
+            </ResourceRelatedResource>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>LicensedContent - Nature</ResourceLabel>
+            <Description>The journal Nature</Description>
+            <LicenseTextLink href="d1e108d1e168920081221T141134.187Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>LicensedContent - NPG Journals</ResourceLabel>
+            <Description>Journals published by Nature Publishing Group (including Scientific American)</Description>
+            <LicenseTextLink href="d1e108d1e168920130521T152216.727Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>LicensedContent - Third-Party Journals</ResourceLabel>
+            <Description>Journals hosted by NPG but not published by NPG</Description>
+            <LicenseTextLink href="d1e108d1e168920130521T152219.367Z"/>
+        </ResourceDefinition>
+        <TimePointDefinition>
+            <TimePointLabel>LicenseStartDate</TimePointLabel>
+            <TimePointIdentifier>
+                <TimePointIDType>onixPL:YYYYMMDD</TimePointIDType>
+                <IDValue>00000000</IDValue>
+            </TimePointIdentifier>
+            <LicenseTextLink href="d1e108d1e168920130521T152803.678Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153406.678Z"/>
+        </TimePointDefinition>
+        <TimePointDefinition>
+            <TimePointLabel>LicenseEndDate</TimePointLabel>
+            <TimePointIdentifier>
+                <TimePointIDType>onixPL:YYYYMMDD</TimePointIDType>
+                <IDValue>00000000</IDValue>
+            </TimePointIdentifier>
+            <LicenseTextLink href="d1e108d1e168920130626T141725.431Z"/>
+        </TimePointDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>PlaceOfGoverningLaw</PlaceLabel>
+            <PlaceName>
+                <Name>State of New York</Name>
+            </PlaceName>
+            <LicenseTextLink href="d1e108d1e168920130521T171142.838Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>PlaceOfJurisdiction</PlaceLabel>
+            <PlaceName>
+                <Name>State of New York</Name>
+            </PlaceName>
+            <LicenseTextLink href="d1e108d1e168920130530T152752.393Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicensorPrincipalPlaceOfBusiness</PlaceLabel>
+            <PlaceName>
+                <PlaceNameType>onixPL:AddressAsFreeText</PlaceNameType>
+                <Name>75 Varick Street, 9th Floor, New York, NY 10013-1917.</Name>
+            </PlaceName>
+            <LicenseTextLink href="d1e108d1e168920130530T153153.064Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicensorAddressForNotices</PlaceLabel>
+            <LicenseTextLink href="d1e108d1e168920130521T152817.368Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicenseePrincipalPlaceOfBusiness</PlaceLabel>
+            <LicenseTextLink href="d1e108d1e168920130530T153155.664Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicenseeAddressForNotices</PlaceLabel>
+            <LicenseTextLink href="d1e108d1e168920130521T153054.778Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicenseeSite</PlaceLabel>
+            <PlaceName>
+                <PlaceNameType>onixPL:AddressAsFreeText</PlaceNameType>
+                <Name>[Enter Site Address(es) from Schedule]</Name>
+            </PlaceName>
+            <Description>Licensee's location(s) which constitute(s) the Site referred to in the license.</Description>
+            <LicenseTextLink href="d1e108d1e168920130521T154821.809Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T194757.171Z"/>
+        </PlaceDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>License</DocumentLabel>
+            <DocumentType>onixPL:Document</DocumentType>
+            <Description>NATURE PUBLISHING GROUP ACADEMIC LICENSE AGREEMENT, US 2011 Version </Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Schedule</DocumentLabel>
+            <DocumentType>onixPL:Document</DocumentType>
+            <Description>Licensed materials and information about the parties involved.</Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Terms</DocumentLabel>
+            <DocumentType>onixPL:Document</DocumentType>
+            <Description>Terms and conditions</Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Fair Use Provisions of the Copyright Law of the United States of America</DocumentLabel>
+            <DocumentType>onixPL:WebResource</DocumentType>
+            <DocumentIdentifier>
+                <DocumentIDType>onixPL:URL</DocumentIDType>
+                <IDValue>http://www.copyright.gov/title17/92chap1.html</IDValue>
+            </DocumentIdentifier>
+            <Description>Section 107 (Limitations on exclusive rights: Fair use) </Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>COUNTER Code of Practice</DocumentLabel>
+            <DocumentType>onixPL:WebResource</DocumentType>
+            <DocumentIdentifier>
+                <DocumentIDType>onixPL:URL</DocumentIDType>
+                <IDValue>http://www.projectcounter.org/code_practice.html</IDValue>
+            </DocumentIdentifier>
+            <Description>Launched in March 2002, COUNTER (Counting Online Usage of Networked Electronic Resources) is an international initiative serving librarians, publishers and intermediaries by setting standards that facilitate the recording and reporting of online usage statistics in a consistent, credible and compatible way.</Description>
+        </DocumentDefinition>
+    </Definitions>
+    <LicenseGrant>
+        <LicenseGrantType>onixPL:NonExclusive</LicenseGrantType>
+        <LicenseTextLink href="d1e108d1e168920130521T155116.62Z"/>
+    </LicenseGrant>
+    <UsageTerms>
+        <Usage>
+            <UsageType>onixPL:Access</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T155120.11Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153417.868Z"/>
+            <User>onixPL:Licensee</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsagePurpose>onixPL:AcademicUse</UsagePurpose>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfUsage</UsagePlaceRelator>
+                <RelatedPlace>LicenseeSite</RelatedPlace>
+            </UsageRelatedPlace>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Access</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T155259.23Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153417.868Z"/>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsagePurpose>onixPL:AcademicUse</UsagePurpose>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfUsage</UsagePlaceRelator>
+                <RelatedPlace>LicenseeSite</RelatedPlace>
+            </UsageRelatedPlace>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfUsage</UsagePlaceRelator>
+                <RelatedPlace>onixPL:RemoteLocation</RelatedPlace>
+            </UsageRelatedPlace>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:PrintCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T155553.321Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153417.868Z"/>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsagePurpose>onixPL:AcademicUse</UsagePurpose>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfUsage</UsagePlaceRelator>
+                <RelatedPlace>LicenseeSite</RelatedPlace>
+            </UsageRelatedPlace>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeDigitalCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T155553.321Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153417.868Z"/>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsagePurpose>onixPL:AcademicUse</UsagePurpose>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfUsage</UsagePlaceRelator>
+                <RelatedPlace>LicenseeSite</RelatedPlace>
+            </UsageRelatedPlace>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Include</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T155628.841Z"/>
+            <User>onixPL:LicenseeFaculty</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsagePurpose>onixPL:AcademicUse</UsagePurpose>
+            <UsageRelatedResource>
+                <UsageResourceRelator>onixPL:TargetResource</UsageResourceRelator>
+                <RelatedResource>onixPL:CoursePackElectronic</RelatedResource>
+                <RelatedResource>onixPL:CoursePackPrinted</RelatedResource>
+            </UsageRelatedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:SupplyCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <Annotation>
+                <AnnotationType>onixPL:Interpretation</AnnotationType>
+                <AnnotationText>Post and fax are assumed to be the acceptable options for distribution for purposes of ILL.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T155837.661Z"/>
+            <User>onixPL:Licensee</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsageMethod>onixPL:HardCopySupply</UsageMethod>
+            <UsageRelatedAgent>
+                <UsageAgentRelator>onixPL:ReceivingAgent</UsageAgentRelator>
+                <RelatedAgent>onixPL:ThirdPartyNonCommercialLibrary</RelatedAgent>
+            </UsageRelatedAgent>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Include</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T155906.021Z"/>
+            <User>onixPL:Licensee</User>
+            <UsedResource>onixPL:LinkToLicensedContent</UsedResource>
+            <UsageCondition>onixPL:AccessByAuthorizedUsersOnly</UsageCondition>
+            <UsageRelatedResource>
+                <UsageResourceRelator>onixPL:TargetResource</UsageResourceRelator>
+                <RelatedResource>onixPL:LicenseeContent</RelatedResource>
+            </UsageRelatedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Sell</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161420.023Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Use</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161420.023Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsagePurpose>onixPL:CommercialUse</UsagePurpose>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeAvailable</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161422.123Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageRelatedAgent>
+                <UsageAgentRelator>onixPL:ReceivingAgent</UsageAgentRelator>
+                <RelatedAgent>onixPL:ThirdParty</RelatedAgent>
+            </UsageRelatedAgent>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeAvailable</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161424.113Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageMethod>onixPL:PublicNetwork</UsageMethod>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:RemoveObscureOrModify</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161425.913Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:CopyrightNoticesOrDisclaimers</UsedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeDerivedWork</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161427.833Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Modify</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161429.373Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeAvailable</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161824.123Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageRelatedAgent>
+                <UsageAgentRelator>onixPL:ReceivingAgent</UsageAgentRelator>
+                <RelatedAgent>onixPL:ThirdParty</RelatedAgent>
+            </UsageRelatedAgent>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfUsage</UsagePlaceRelator>
+                <RelatedPlace>onixPL:RemoteLocation</RelatedPlace>
+            </UsageRelatedPlace>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:SystematicallyCopy</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130521T161829.483Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+        </Usage>
+    </UsageTerms>
+    <SupplyTerms>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:StartOfService</SupplyTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T161833.183Z"/>
+            <SupplyTermRelatedTimePoint>
+                <SupplyTermTimePointRelator>onixPL:SupplyStartDate</SupplyTermTimePointRelator>
+                <RelatedTimePoint>onixPL:LicenseStartDate</RelatedTimePoint>
+            </SupplyTermRelatedTimePoint>
+        </SupplyTerm>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:UsageStatistics</SupplyTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T170352.208Z"/>
+            <OtherDocumentReference>
+                <ReferenceRelator>onixPL:InAccordanceWith</ReferenceRelator>
+                <DocumentLabel>COUNTER Code of Practice</DocumentLabel>
+            </OtherDocumentReference>
+        </SupplyTerm>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:ChangesToLicensedContent</SupplyTermType>
+            <Annotation>
+                <AnnotationType>onixPL:AmbiguityInLicenseText</AnnotationType>
+                <AnnotationText>Clause 8.7 allows the Licensor to change licensed content without notice, while Clause 4.3 requires 30 days notice for the withdrawal of any part(s) of licensed content.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T170136.358Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T162137.473Z"/>
+        </SupplyTerm>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:UserSupport</SupplyTermType>
+            <Annotation>
+                <AnnotationType>onixPL:Interpretation</AnnotationType>
+                <AnnotationText>Although there is no clause in the main terms detailing user support, the references to Customer Support and Help Desk in the definitions and in the Schedule imply some level of provision.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T153403.498Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T152817.368Z"/>
+        </SupplyTerm>
+    </SupplyTerms>
+    <ContinuingAccessTerms>
+        <ContinuingAccessTerm>
+            <ContinuingAccessTermType>onixPL:ContinuingAccess</ContinuingAccessTermType>
+            <Annotation>
+                <AnnotationType>onixPL:FeesPayableNote</AnnotationType>
+                <AnnotationText>There is a fee for post-cancellation access to Nature and NPG-owned content, but it is undetermined.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T162452.614Z"/>
+            <ContinuingAccessTermRelatedResource>
+                <ContinuingAccessTermResourceRelator>onixPL:ApplicableTo</ContinuingAccessTermResourceRelator>
+                <RelatedResource>LicensedContent - Nature</RelatedResource>
+                <RelatedResource>LicensedContent - NPG Journals</RelatedResource>
+            </ContinuingAccessTermRelatedResource>
+        </ContinuingAccessTerm>
+        <ContinuingAccessTerm>
+            <ContinuingAccessTermType>onixPL:ContinuingAccess</ContinuingAccessTermType>
+            <Annotation>
+                <AnnotationType>onixPL:FeesPayableNote</AnnotationType>
+                <AnnotationText>There may be a fee for post-cancellation access to third-party content, but it is undetermined.</AnnotationText>
+            </Annotation>
+            <Annotation>
+                <AnnotationType>onixPL:ContinuingAccessSupplyNote</AnnotationType>
+                <AnnotationText>Post-cancellation access to third-party content on the Licensor network may not be available.  If post-cancellation online access is not available, third-party content may be supplied to Licensee on physical media in an undetermined format. </AnnotationText>
+            </Annotation>
+            <Annotation>
+                <AnnotationType>onixPL:SpecialConditions</AnnotationType>
+                <AnnotationText>The 'Media License' refers to a document which the third-party publisher might choose to create for the purpose of describing the terms under which a physical copy of Third Party Journal content may be used. </AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T163056.425Z"/>
+            <ContinuingAccessTermRelatedResource>
+                <ContinuingAccessTermResourceRelator>onixPL:ApplicableTo</ContinuingAccessTermResourceRelator>
+                <RelatedResource>LicensedContent - Third-Party Journals</RelatedResource>
+            </ContinuingAccessTermRelatedResource>
+        </ContinuingAccessTerm>
+        <ContinuingAccessTerm>
+            <ContinuingAccessTermType>onixPL:ContinuingAccess</ContinuingAccessTermType>
+            <Annotation>
+                <AnnotationType>onixPL:Interpretation</AnnotationType>
+                <AnnotationText>The 'Post Supply License' refers to the complete collection of continuing access rights which may be available under Clause 4.6 up to this point.  There is no right of continuing access to material published before the Supply Period.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T163521.105Z"/>
+        </ContinuingAccessTerm>
+    </ContinuingAccessTerms>
+    <PaymentTerms>
+        <PaymentTerm>
+            <PaymentTermType>onixPL:PaymentConditions</PaymentTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T163907.586Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T163929.796Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T163954.936Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T164739.316Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T164816.456Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153358.928Z"/>
+            <LicenseTextLink href="d1e108d1e168920130530T184331.969Z"/>
+            <LicenseTextLink href="d1e108d1e168920130530T184335.029Z"/>
+            <LicenseTextLink href="d1e108d1e168920130530T184337.439Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153411.228Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T154801.339Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T153414.808Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T152813.758Z"/>
+        </PaymentTerm>
+        <PaymentTerm>
+            <PaymentTermType>onixPL:PaymentConditions</PaymentTermType>
+            <Annotation>
+                <AnnotationType>onixPL:SpecialConditions</AnnotationType>
+                <AnnotationText>Pro-rated refund is offered for early termination under certain conditions when Licensee is not at fault.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T162140.563Z"/>
+        </PaymentTerm>
+        <PaymentTerm>
+            <PaymentTermType>onixPL:PaymentConditions</PaymentTermType>
+            <Annotation>
+                <AnnotationType>onixPL:ContinuingAccessSupplyNote</AnnotationType>
+                <AnnotationText>This prerogative to increase fees refers to the post-cancellation access fees.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130521T163746.306Z"/>
+        </PaymentTerm>
+    </PaymentTerms>
+    <GeneralTerms>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:EntireAgreement</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T154929.43Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:TerminationWithoutPrejudiceToRights</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T154956.76Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NoWaiver</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T155023.66Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NoPartnership</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T155046.68Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:Assignment</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T160711.882Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T160906.822Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:IntellectualPropertyRights</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T160715.362Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T170014.258Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T161822.153Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:AllRightsReserved</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T160715.362Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:TermOfAgreement</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T161833.183Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T154912.75Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T141725.431Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:Renewal</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T161833.183Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T154713.029Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:TerminationByBreach</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T162134.453Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T163651.026Z"/>
+            <GeneralTermQuantity>
+                <GeneralTermQuantityType>onixPL:PeriodForCureOfBreach</GeneralTermQuantityType>
+                <QuantityDetail>
+                    <Proximity>onixPL:NotMoreThan</Proximity>
+                    <Value>30</Value>
+                    <QuantityUnit>onixPL:Days</QuantityUnit>
+                </QuantityDetail>
+            </GeneralTermQuantity>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicensorTerminationRight</GeneralTermType>
+            <Authority>Licensor</Authority>
+            <LicenseTextLink href="d1e108d1e168920130521T162137.473Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:TerminationByBankruptcy</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T162146.443Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ActionOnTermination</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T163712.736Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ActionAgainstMisuse</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T163610.985Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:DamageToLicensorsBusiness</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T161819.583Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicenseeProvisionOfResources</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T160720.472Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NotificationOfTermsToAuthorizedUsers</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T165312.097Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:MonitoringAndDetectionOfMisuse</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T165337.967Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T165449.287Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NotificationOfMisuse</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T165401.337Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicensorIntellectualPropertyWarranty</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T165548.627Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicensorIndemnity</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T165614.637Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicensorWarrantyDisclaimer</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T165733.987Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T165804.287Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T170106.268Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ConfidentialityOfAgreement</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T170014.258Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ForceMajeure</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T170556.959Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T170620.802Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NoticeProcedure</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T170838.297Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LimitationOfLiability</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T165424.607Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T170912.687Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T170953.967Z"/>
+            <LicenseTextLink href="d1e108d1e168920130521T171022.387Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:GoverningLaw</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T171142.838Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:Jurisdiction</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130530T152752.393Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NonEnforceability</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T171403.428Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NoWaiver</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T171448.248Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ThirdPartyRights</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130521T171529.818Z"/>
+        </GeneralTerm>
+    </GeneralTerms>
+    <LicenseDocumentText>
+        <DocumentLabel>Schedule</DocumentLabel>
+        <TextElement id="d1e108d1e168920130521T151354.436Z">
+            <SortNumber>0.1</SortNumber>
+            <Text>NATURE PUBLISHING GROUP ACADEMIC LICENSE AGREEMENT SCHEDULE
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T151402.466Z">
+            <SortNumber>0.1.1</SortNumber>
+            <Text>Academic License US 2011</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T151405.256Z">
+            <SortNumber>0.1.2</SortNumber>
+            <Text> AGREEMENT DATE:
+</Text>
+        </TextElement>
+        <TextElement id="d1e1639.1">
+            <SortNumber>0.1.3</SortNumber>
+            <Text>AGREEMENT REF NO: </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920081221T140951.109Z">
+            <SortNumber>0.1.4</SortNumber>
+            <Text>PARTIES:	
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130530T153153.064Z">
+            <SortNumber>0.1.4.1</SortNumber>
+            <Text>Licensor:  Nature America, Inc. d/b/a Nature Publishing Group, whose principal place of business is at 75 Varick Street, 9th Floor, New York, NY 10013-1917.
+
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130530T153155.664Z">
+            <SortNumber>0.1.4.2</SortNumber>
+            <Text>Licensee:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T194757.171Z">
+            <SortNumber>0.1.4.3</SortNumber>
+            <Text>Site Address:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920081221T141041.453Z">
+            <SortNumber>0.2</SortNumber>
+            <Text>LICENSED MATERIAL: Tick the box next to the title(s) to which you wish to apply for a Site license.  </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920081221T141134.187Z">
+            <SortNumber>0.2.1</SortNumber>
+            <Text>SECTION A. NATURE
+0  Nature
+The electronic versions of (a) the most recent print edition of Nature; and (b) all previous print editions of Nature that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nature together with any additional material that the Licensor makes available to the Licensee.
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152216.727Z">
+            <SortNumber>0.2.2</SortNumber>
+            <Text>SECTION B.  NPG JOURNALS
+0  Nature Biotechnology
+The electronic versions of (a) the most recent print edition of Nature Biotechnology; and (b) all previous print editions of Nature Biotechnology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nbt together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Cell Biology
+The electronic versions of (a) the most recent print edition of Nature Cell Biology; and (b) all previous print editions of Nature Cell Biology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ncb together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Chemical Biology
+The electronic versions of (a) the most recent print edition of Nature Chemical Biology; and (b) all previous print editions of Nature Chemical Biology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nchembio together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Chemistry
+The electronic versions of (a) the most recent print edition of Nature Chemistry; and (b) all previous print editions of Nature Chemistry that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nchem together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Climate Change
+The electronic versions of (a) the most recent print edition of Nature Climate Change; and (b) all previous print editions of Nature Climate Change that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nclimate together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Communications
+The electronic versions of (a) the most recent edition of Nature Communications; and (b) all previous editions of Nature Communications that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ncomms  together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Genetics
+The electronic versions of (a) the most recent print edition of Nature Genetics; and (b) all previous print editions of Nature Genetics that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ng together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Geoscience
+The electronic versions of (a) the most recent print edition of Nature Geoscience; and (b) all previous print editions of Nature Geoscience that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/naturegeoscience together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Immunology
+The electronic versions of (a) the most recent print edition of Nature Immunology; and (b) all previous print editions of Nature Immunology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ni together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Materials
+The electronic versions of (a) the most recent print edition of Nature Materials; and (b) all previous print editions of Nature Materials that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nmat together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Medicine
+The electronic versions of (a) the most recent print edition of Nature Medicine; and (b) all previous print editions of Nature Medicine that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nm together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Methods
+The electronic versions of (a) the most recent print edition of Nature Methods; and (b) all previous print editions of Nature Methods that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nmeth together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Nanotechnology
+The electronic versions of (a) the most recent print edition of Nature Nanotechnology; and (b) all previous print editions of Nature Nanotechnology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nnano together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Neuroscience
+The electronic versions of (a) the most recent print edition of Nature Neuroscience; and (b) all previous print editions of Nature Neuroscience that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/neuro together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Photonics
+The electronic versions of (a) the most recent print edition of Nature Photonics; and (b) all previous print editions of Nature Photonics that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nphoton together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Physics
+The electronic versions of (a) the most recent print edition of Nature Physics; and (b) all previous print editions of Nature Physics that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nphys together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Protocols
+The electronic version of all Nature Protocols material first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all material first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.natureprotocols.com together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Structural &amp; Molecular Biology
+The electronic versions of (a) the most recent print edition of Nature Structural &amp; Molecular Biology; and (b) all previous print editions of Nature Structural &amp; Molecular Biology and Nature Structural Biology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nsmb together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Cancer
+The electronic versions of (a) the most recent print edition of Nature Reviews Cancer; and (b) all previous print editions of Nature Reviews Cancer that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrc together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Drug Discovery
+The electronic versions of (a) the most recent print edition of Nature Reviews Drug Discovery; and (b) all previous print editions of Nature Reviews Drug Discovery that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrd together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Genetics
+The electronic versions of (a) the most recent print edition of Nature Reviews Genetics; and (b) all previous print editions of Nature Reviews Genetics that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrg together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Immunology
+The electronic versions of (a) the most recent print edition of Nature Reviews Immunology; and (b) all previous print editions of Nature Reviews Immunology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nri together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Microbiology
+The electronic versions of (a) the most recent print edition of Nature Reviews Microbiology; and (b) all previous print editions of Nature Reviews Microbiology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrmicro together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Molecular Cell Biology
+The electronic versions of (a) the most recent print edition of Nature Reviews Molecular Cell Biology; and (b) all previous print editions of Nature Reviews Molecular Cell Biology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrm together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Neuroscience
+The electronic versions of (a) the most recent print edition of Nature Reviews Neuroscience; and (b) all previous print editions of Nature Reviews Neuroscience that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrn together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Cardiology
+The electronic versions of (a) the most recent print edition of Nature Reviews Cardiology; and (b) all previous print editions of Nature Reviews Cardiology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrcardio together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews  Endocrinology
+The electronic versions of (a) the most recent print edition of Nature Reviews  Endocrinology; and (b) all previous print editions of Nature Reviews  Endocrinology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrendo together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews  Gastroenterology &amp; Hepatology
+The electronic versions of (a) the most recent print edition of Nature Reviews Gastroenterology &amp; Hepatology; and (b) all previous print editions of Nature Reviews Gastroenterology &amp; Hepatology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrgastro together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Nephrology
+The electronic versions of (a) the most recent print edition of Nature Reviews Nephrology; and (b) all previous print editions of Nature Reviews Nephrology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrneph together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Neurology
+The electronic versions of (a) the most recent print edition of Nature Reviews Neurology; and (b) all previous print editions of Nature Reviews Neurology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrneurol  together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Clinical Oncology
+The electronic versions of (a) the most recent print edition of Nature Reviews Clinical Oncology; and (b) all previous print editions of Nature Reviews Clinical Oncology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrclinonc together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Rheumatology
+The electronic versions of (a) the most recent print edition of Nature Reviews Rheumatology; and (b) all previous print editions of Nature Reviews Rheumatology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrrheum together with any additional material that the Licensor makes available to the Licensee.
+
+0  Nature Reviews Urology 
+The electronic versions of (a) the most recent print edition of Nature Reviews Urology; and (b) all previous print editions of Nature Reviews Urology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/nrurol  together with any additional material that the Licensor makes available to the Licensee.
+
+0  Bone Marrow Transplantation 
+The electronic versions of (a) the most recent print edition of Bone Marrow Transplantation; and (b) all previous print editions of Bone Marrow Transplantation that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/bmt together with any additional material that the Licensor makes available to the Licensee
+
+0  Cancer Gene Therapy 
+The electronic versions of (a) the most recent print edition of Cancer Gene Therapy; and (b) all previous print editions of Cancer Gene Therapy that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/cgt together with any additional material that the Licensor makes available to the Licensee.
+
+0  European Journal of Clinical Nutrition
+The electronic versions of (a) the most recent print edition of European Journal of Clinical Nutrition; and (b) all previous print editions of European Journal of Clinical Nutrition that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ejcn together with any additional material that the Licensor makes available to the Licensee.
+
+0  Gene Therapy
+The electronic versions of (a) the most recent print edition of Gene Therapy; and (b) all previous print editions of Gene Therapy that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/gt together with any additional material that the Licensor makes available to the Licensee.
+
+0  Genes and Immunity
+The electronic versions of (a) the most recent print edition of Genes and Immunity; and (b) all previous print editions of Genes and Immunity that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/gene together with any additional material that the Licensor makes available to the Licensee.
+
+0  International Journal of Impotence Research
+The electronic versions of (a) the most recent print edition of International Journal of Impotence Research; and (b) all previous print editions of International Journal of Impotence Research that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ijir together with any additional material that the Licensor makes available to the Licensee.
+
+0  International Journal of Obesity
+The electronic versions of (a) the most recent print edition of International Journal of Obesity; and (b) all previous print editions of International Journal of Obesity that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ijo together with any additional material that the Licensor makes available to the Licensee.
+
+0  Journal of Exposure Science and Environmental Epidemiology
+The electronic versions of (a) the most recent print edition of Journal of Exposure Science and Environmental Epidemiology; and (b) all previous print editions of Journal of Exposure Science and Environmental Epidemiology and Journal of Exposure Analysis and Environmental Epidemiology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/jes together with any additional material that the Licensor makes available to the Licensee.
+
+0  Journal of Human Hypertension
+The electronic versions of (a) the most recent print edition of Journal of Human Hypertension; and (b) all previous print editions of Journal of Human Hypertension that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/jhh together with any additional material that the Licensor makes available to the Licensee.
+
+0  Journal of Perinatology
+The electronic versions of (a) the most recent print edition of Journal of Perinatology; and (b) all previous print editions of Journal of Perinatology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/jp together with any additional material that the Licensor makes available to the Licensee.
+
+0  Lab Animal
+The electronic versions of (a) the most recent print edition of Lab Animal; and (b) all previous print editions of Lab Animal that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.labanimal.com together with any additional material that the Licensor makes available to the Licensee.
+
+0  Leukemia
+The electronic versions of (a) the most recent print edition of Leukemia; and (b) all previous print editions of Leukemia that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/leu together with any additional material that the Licensor makes available to the Licensee.
+
+0  Molecular Psychiatry
+The electronic versions of (a) the most recent print edition of Molecular Psychiatry; and (b) all previous print editions of Molecular Psychiatry that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/mp together with any additional material that the Licensor makes available to the Licensee.
+
+0  Oncogene 
+The electronic versions of (a) the most recent print edition of Oncogene and (b) all previous print editions of Oncogene that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/onc together with any additional material that the Licensor makes available to the Licensee.
+
+0  The Pharmacogenomics Journal
+The electronic versions of (a) the most recent print edition of The Pharmacogenomics Journal; and (b) all previous print editions of The Pharmacogenomics Journal that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/tpj together with any additional material that the Licensor makes available to the Licensee.
+
+0  Prostate Cancer and Prostatic Diseases
+The electronic versions of (a) the most recent print edition of Prostate Cancer and Prostatic Diseases; and (b) all previous print editions of Prostate Cancer and Prostatic Diseases that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/pcan together with any additional material that the Licensor makes available to the Licensee.
+
+0  Scientific American
+The electronic versions of (a) the most recent print edition of Scientific American; and (b) all previous print editions of Scientific American that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/scientificamerican together with the most recent edition of Scientific American Mind made available at the date of access, and all previous editions, in each case available for access on the Internet at the URL http://www.nature.com/scientificamericanmind  from time to time together with any additional material that the Licensor makes available to the Licensee. 
+
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152219.367Z">
+            <SortNumber>0.2.3</SortNumber>
+            <Text>SECTION C. THIRD-PARTY JOURNALS
+
+0  Acta Pharmacologica Sinica    
+The electronic versions of (a) the most recent print edition of Acta Pharmacologica Sinica; and (b) all previous print editions of Acta Pharmacologica Sinica that were first published within the previous 
+twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/aps together with any additional material that the Licensor makes available to the Licensee.
+
+0  American Journal of Gastroenterology
+The electronic versions of (a) the most recent print edition of American Journal of Gastroenterology; and (b) all previous print editions of American Journal of Gastroenterology published since 1998, in each case as available for access on the Internet at the URL http://www.nature.com/ajg together with any additional material that the Licensor makes available to the Licensee.
+
+0  Asian Journal of Andrology
+ The electronic versions of (a) the most recent print edition of Asian Journal of Andrology; and (b) all previous print editions of Asian Journal of Andrology that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/aja  together with any additional material that the Licensor makes available to the Licensee.
+
+0  BoneKEy Reports
+The electronic versions of (a) the most recent online edition of BoneKEy Reports; and (b) all previous online editions of BoneKEy Reports that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/bonekey together with any additional material that the Licensor makes available to the Licensee.
+
+0  British Dental Journal
+The electronic versions of (a) the most recent print edition of British Dental Journal; and (b) all previous print editions of British Dental Journal that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/bdj together with any additional material that the Licensor makes available to the Licensee.
+
+0  British Journal of Cancer 
+The electronic versions of (a) the most recent print edition of British Journal of Cancer and (b) all previous print editions of British Journal of Cancer first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/bjc from time to time together with any additional material that the Licensor makes available to the Licensee.
+
+0  Cell Death and Differentiation
+The electronic versions of (a) the most recent print edition of Cell Death and Differentiation; and (b) all previous print editions of Cell Death and Differentiation that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/cdd together with any additional material that the Licensor makes available to the Licensee.
+
+0  Cell Research
+The electronic versions of (a) the most recent print edition of Cell Research; and (b) all previous print editions of Cell Research first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/cr together with any additional material that the Licensor makes available to the Licensee.
+
+0  Cellular and Molecular Immunology
+The electronic versions of (a) the most recent print edition of Cellular and Molecular Immunology; and (b) all previous print editions of Cellular and Molecular Immunology that were first published within the later of (i) four (4) years prior the Commencement Date and (ii) 2008, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/cmi together with any additional material that the Licensor makes available to the Licensee.
+
+0  Clinical Pharmacology and Therapeutics   
+The electronic versions of (a) the most recent print edition of Clinical Pharmacology and Therapeutics and (b) all previous print editions of Clinical Pharmacology and Therapeutics first published since 1980, in each case as available for access on the Internet at the URL http://www.nature.com/clpt from time to time together with any additional material that the Licensor makes available to the Licensee.
+
+0  The EMBO Journal and EMBO Reports
+The electronic versions of (a) the most recent print edition of EMBO Journal and EMBO Reports; and (b) all previous print editions of EMBO Journal and EMBO Reports that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/emboj and http://www.nature.com/embor together with any additional material that the Licensor makes available to the Licensee.
+
+0  European Journal of Human Genetics
+The electronic versions of (a) the most recent print edition of European Journal of Human Genetics; and (b) all previous print editions of European Journal of Human Genetics that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/ejhg together with any additional material that the Licensor makes available to the Licensee.
+
+0  Evidence-Based Dentistry
+The electronic versions of (a) the most recent print edition of Evidence-Based Dentistry; and (b) all previous print editions of Evidence-Based Dentistry that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ebd together with any additional material that the Licensor makes available to the Licensee.
+
+0  Eye
+The electronic versions of (a) the most recent print edition of Eye; and (b) all previous print editions of Eye that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/eye together with any additional material that the Licensor makes available to the Licensee.
+
+0  Genetics in Medicine
+The electronic versions of (a) the most recent print edition of Genetics in Medicine; and (b) all previous print editions of Genetics in Medicine that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/gim    together with any additional material that the Licensor makes available to the Licensee.
+
+0  Heredity
+The electronic versions of (a) the most recent print edition of Heredity; and (b) all previous print editions of Heredity that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/hdy together with any additional material that the Licensor makes available to the Licensee.
+
+0  Hypertension Research    
+The electronic versions of (a) the most recent print edition of Hypertension Research; and (b) all previous print editions of Hypertension Research that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/hr together with any additional material that the Licensor makes available to the Licensee.
+
+0  Immunology and Cell Biology
+The electronic versions of (a) the most recent print edition of Immunology and Cell Biology; and (b) all previous print editions of Immunology and Cell Biology that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/icb together with any additional material that the Licensor makes available to the Licensee.
+
+0  The ISME Journal
+The electronic versions of (a) the most recent print edition of The ISME Journal; and (b) all previous print editions of The ISME Journal that were first published within the previous twelve (12) months, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ismej together with any additional material that the Licensor makes available to the Licensee.
+
+0  The Journal of Antibiotics    
+The electronic versions of (a) the most recent print edition of The Journal of Antibiotics; and (b) all previous print editions of The Journal of Antibiotics that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ja together with any additional material that the Licensor makes available to the Licensee.
+
+0  Journal of Cerebral Blood Flow &amp; Metabolism
+The electronic versions of (a) the most recent print edition of Journal of Cerebral Blood Flow &amp; Metabolism; and (b) all previous print editions of Journal of Cerebral Blood Flow &amp; Metabolism that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/jcbfm together with any additional material that the Licensor makes available to the Licensee.
+
+0  Journal of Human Genetics   
+The electronic versions of (a) the most recent print edition of Journal of Human Genetics; and (b) all previous print editions of Journal of Human Genetics that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/jhg together with any additional material that the Licensor makes available to the Licensee.
+
+0  Journal of Investigative Dermatology
+The electronic versions of (a) the most recent print edition of Journal of Investigative Dermatology; and (b) all previous print editions of Journal of Investigative Dermatology that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/jid together with any additional material that the Licensor makes available to the Licensee.
+
+0  Kidney International
+The electronic versions of (a) the most recent print edition of Kidney International; and (b) all previous print editions of Kidney International that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/ki together with any additional material that the Licensor makes available to the Licensee.
+
+0  Laboratory Investigation
+The electronic versions of (a) the most recent print edition of Laboratory Investigation; and (b) all previous print editions of Laboratory Investigation that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/labinvest together with any additional material that the Licensor makes available to the Licensee.
+
+0  Modern Pathology
+The electronic versions of (a) the most recent print edition of Modern Pathology; and (b) all previous print editions of Modern Pathology that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/modpathol together with any additional material that the Licensor makes available to the Licensee.
+
+0  Molecular Therapy
+The electronic versions of (a) the most recent print edition of Molecular Therapy; and (b) all previous print editions of Molecular Therapy that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/mt together with any additional material that the Licensor makes available to the Licensee.
+
+0  Mucosal Immunology    
+The electronic versions of (a) the most recent print edition of Mucosal Immunology and (b) all previous print editions of Mucosal Immunology that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/mi from time to time together with any additional material that the Licensor makes available to the Licensee.
+
+0  Neuropsychopharmacology
+The electronic versions of (a) the most recent print edition of Neuropsychopharmacology; and (b) all previous print editions of Neuropsychopharmacology that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/npp together with any additional material that the Licensor makes available to the Licensee.
+
+0  Pediatric Research
+The electronic versions of (a) the most recent print edition of Pediatric Research; and (b) all previous print editions of Pediatric Research that were first published within the previous twelve (12) months, in each case as available for access on the Internet at the URL http://www.nature.com/pr together with any additional material that the Licensor makes available to the Licensee.
+
+0  Polymer Journal
+The electronic versions of (a) the most recent print edition of Polymer Journal; and (b) all previous print editions of Polymer Journal that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/pj together with any additional material that the Licensor makes available to the Licensee.
+
+0   SciBX: Science-Business Exchange
+The electronic versions of (a) the most recent print edition of SciBX: Science-Business Exchange; and (b) all previous print editions of SciBX: Science-Business Exchange that were first published within the later of (i) four (4) years prior the Commencement Date and (ii) 2008, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/scibx together with any additional material that the Licensor makes available to the Licensee.
+ 
+0  Spinal Cord
+The electronic versions of (a) the most recent print edition of Spinal Cord; and (b) all previous print editions of Spinal Cord that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/sc together with any additional material that the Licensor makes available to the Licensee.
+
+0  Vital
+The electronic versions of (a) the most recent print edition of Vital; and (b) all previous print editions of Vital that were first published within the previous four (4) years, from the later of the Commencement Date or the most recent of any subsequent Renewal Date (both as defined herein), but in any event all editions first published since the Commencement Date, in each case as available for access on the Internet at the URL http://www.nature.com/vital together with any additional material that the Licensor makes available to the Licensee.
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152221.047Z">
+            <SortNumber>0.2.4</SortNumber>
+            <Text>SECTION D. 
+Intentionally Blank</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152614.158Z">
+            <SortNumber>0.3</SortNumber>
+            <Text>LICENSE DETAILS:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152713.608Z">
+            <SortNumber>0.3.1</SortNumber>
+            <Text>Chargeable Users:
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130530T184331.969Z">
+            <SortNumber>0.3.1.1</SortNumber>
+            <TextPreceding>Chargeable Users:</TextPreceding>
+            <Text>Licensee&#8217;s average number of staff and students (as defined in the attached Terms) during the 12 month period prior to the Commencement Date: </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130530T184335.029Z">
+            <SortNumber>0.3.1.2</SortNumber>
+            <TextPreceding>Chargeable Users:</TextPreceding>
+            <Text>Licensee's Full Staff and Students: [   ] (for Nature and Scientific American) </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130530T184337.439Z">
+            <SortNumber>0.3.1.3</SortNumber>
+            <TextPreceding>Chargeable Users:</TextPreceding>
+            <Text>Licensee's Scientific Department Staff and Students: [     ] (for NPG Journals (excluding Scientific American) and Third-Party Journals)  
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152740.878Z">
+            <SortNumber>0.3.2</SortNumber>
+            <Text>IP Address of Licensee Network: </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152803.678Z">
+            <SortNumber>0.3.3</SortNumber>
+            <Text>Commencement Date: </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141725.431Z">
+            <SortNumber>0.3.4</SortNumber>
+            <Text>Supply Period: 12 months from the Commencement Date or as otherwise extended in accordance with clause 4.1 of the attached terms.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152813.758Z">
+            <SortNumber>0.3.5</SortNumber>
+            <Text>License Fee:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152815.838Z">
+            <SortNumber>0.3.6</SortNumber>
+            <Text>Special terms :</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T152817.368Z">
+            <SortNumber>0.3.7</SortNumber>
+            <Text>Licensor Details	 
+Manager:
+Tel:  	 
+Fax:  	 
+Email:	  
+Helpdesk: 
+Tel: 1-888-331-6288	
+E-mail: institutions@us.nature.com
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153054.778Z">
+            <SortNumber>0.3.8</SortNumber>
+            <Text>Licensee Details:  
+Tel:
+Fax:  
+Email:
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153131.318Z">
+            <SortNumber>0.3.9</SortNumber>
+            <Text>The parties each agree to the terms of this Agreement (which expression includes this Schedule and the attached Terms).
+
+
+Signed by: ......................................... 	
+For and on behalf of
+Nature America, Inc.
+
+
+Signed by: ........................................
+For and on behalf of
+Licensee
+</Text>
+        </TextElement>
+    </LicenseDocumentText>
+    <LicenseDocumentText>
+        <DocumentLabel>Terms</DocumentLabel>
+        <TextElement id="d1e108d1e1689.2">
+            <SortNumber>0.1</SortNumber>
+            <Text>TERMS</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153346.258Z">
+            <SortNumber>1.</SortNumber>
+            <DisplayNumber>1.</DisplayNumber>
+            <Text>INTERPRETATION</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153349.148Z">
+            <SortNumber>1.1</SortNumber>
+            <Text>In this Agreement (as defined below), unless the context requires otherwise, the following expressions have the following meanings:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153354.158Z">
+            <SortNumber>1.1.1</SortNumber>
+            <Text>"Agreement": means as defined in the Schedule;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153356.378Z">
+            <SortNumber>1.1.2</SortNumber>
+            <Text>"Authorized User":  (a) every member of the teaching and research staff employed by or otherwise accredited to the Licensee whether full-time or part time; (b) every student enrolled or accredited to the Licensee for the purposes of full-time or part-time attendance; (c) individual members of the public registered as users of the Licensee's library or information service; and (d) individual members of the public permitted to use the Licensee's library or information services; in each case who are permitted general access to the Network by the Licensee;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153358.928Z">
+            <SortNumber>1.1.3</SortNumber>
+            <Text>"Chargeable Users": as set out in the Schedule; </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153403.498Z">
+            <SortNumber>1.1.4</SortNumber>
+            <Text>"Customer Support": the Helpdesk (as set out in the Schedule) providing reasonable e-mail and telephone support;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153406.678Z">
+            <SortNumber>1.1.5</SortNumber>
+            <Text>"Commencement Date": as set out in the Schedule;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153411.228Z">
+            <SortNumber>1.1.6</SortNumber>
+            <Text>"Full Staff and Students": the full time students enrolled or accredited to the Licensee and the full time teaching and research staff employed by or otherwise accredited to the Licensee (relevant to Nature and Scientific American only); </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153414.808Z">
+            <SortNumber>1.1.7</SortNumber>
+            <Text>"License Fee": as set out in the Schedule;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T084328.042Z">
+            <SortNumber>1.1.8</SortNumber>
+            <Text>"Licensed Material": those agreed Nature, NPG Journals and Third-Party Journals elements indicated on the Schedule;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T153417.868Z">
+            <SortNumber>1.1.9</SortNumber>
+            <Text>"Network":  the Licensee's local area network system of connected computers at the Site, the IP address for which is set out in the Schedule;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T154713.029Z">
+            <SortNumber>1.1.10</SortNumber>
+            <Text>"Renewal Date": means as defined in Clause 4.1;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T154736.599Z">
+            <SortNumber>1.1.11</SortNumber>
+            <Text>"Schedule": the attached schedule preceding the Terms to this Agreement;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T154801.339Z">
+            <SortNumber>1.1.12</SortNumber>
+            <Text>"Scientific Department Staff and Students": the full time students enrolled or accredited to the Scientific Department of the Licensee and the full time teaching and research staff employed by or otherwise accredited to the Scientific Department of the Licensee (relevant to NPG Journals (excluding Scientific American) and Third-Party Journals only); </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T154821.809Z">
+            <SortNumber>1.1.13</SortNumber>
+            <Text>"Site": the premises located at the Site Address set out in the Schedule; and </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T154912.75Z">
+            <SortNumber>1.1.14</SortNumber>
+            <Text>"Supply Period": as set out in the Schedule or as otherwise extended pursuant to Clause 4.1.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T154929.43Z">
+            <SortNumber>1.2</SortNumber>
+            <DisplayNumber>1.2</DisplayNumber>
+            <Text>The Agreement contains the entire agreement and undertaking between the parties relating to the Licensed Material and supersedes any prior agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T154956.76Z">
+            <SortNumber>1.3</SortNumber>
+            <DisplayNumber>1.3</DisplayNumber>
+            <Text>The termination of this Agreement shall not prejudice the rights and remedies of either party against the other in respect of any prior breach of covenant, terms, warranty or condition.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155023.66Z">
+            <SortNumber>1.4</SortNumber>
+            <DisplayNumber>1.4</DisplayNumber>
+            <Text>The failure of any party to enforce any provision of this Agreement on any one occasion shall not affect its right to enforce another provision or the same provision on another occasion.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155046.68Z">
+            <SortNumber>1.5</SortNumber>
+            <DisplayNumber>1.5</DisplayNumber>
+            <Text>Nothing contained in this Agreement shall constitute or shall be construed as constituting a partnership, joint venture, or contract of employment between the parties.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155113.57Z">
+            <SortNumber>2</SortNumber>
+            <DisplayNumber>2</DisplayNumber>
+            <Text>DELIVERY AND GRANT OF RIGHTS</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155116.62Z">
+            <SortNumber>2.1</SortNumber>
+            <DisplayNumber>2.1</DisplayNumber>
+            <Text>In consideration of the payments made by the Licensee, and subject to the Licensee observing its obligations under this Agreement, the Licensor grants to the Licensee the following non-exclusive rights ("the Rights") for the Supply Period: </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155120.11Z">
+            <SortNumber>2.1.1</SortNumber>
+            <DisplayNumber>2.1 (a)</DisplayNumber>
+            <Text>access via the Network at any time (subject to Clause 7) the Licensor's server, or as the case may be any service provided by an agent on its behalf, for the purpose of accessing the Licensed Material for research, teaching, and private study purposes by means of workstations located at the Site connected to the Network;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155259.23Z">
+            <SortNumber>2.1.2</SortNumber>
+            <DisplayNumber>2.1 (b)</DisplayNumber>
+            <Text>make the Licensed Material accessible directly or remotely via the Network to the Authorized Users for their research, teaching, and private study purposes in accordance with the Licensee's customary policies and practices acceptable to the Licensor; </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155553.321Z">
+            <SortNumber>2.1.3</SortNumber>
+            <DisplayNumber>2.1 (c)</DisplayNumber>
+            <Text>permit Authorized Users to print and/or download individual articles and other individual items from searches of the Licensed Material for research, teaching, and private study purposes by means of workstations located at the Site connected to the Network;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155628.841Z">
+            <SortNumber>2.1.4</SortNumber>
+            <DisplayNumber>2.1 (d)</DisplayNumber>
+            <Text>permit teaching staff accredited to the Licensee to reproduce individual articles from the Licensed Material for distribution to students accredited to the Licensee for the purpose of including such individual articles in course study packs;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155837.661Z">
+            <SortNumber>2.1.5</SortNumber>
+            <DisplayNumber>2.1 (e)</DisplayNumber>
+            <Text>reproduce single copies of individual articles from the Licensed Material in hard copy print form for distribution without charge in hard copy form (but not electronically) to individual libraries of not for profit, non commercial organizations in accordance with fair usage guidelines. No right or license is hereby granted to any person provided with such a copy to copy or otherwise deal with that individual article; and</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T155906.021Z">
+            <SortNumber>2.1.6</SortNumber>
+            <DisplayNumber>2.1 (f)</DisplayNumber>
+            <Text>create a hypertext link to any part of the Licensed Material provided that no person other than an Authorized User may use such hypertext link.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T160711.882Z">
+            <SortNumber>2.2</SortNumber>
+            <DisplayNumber>2.2</DisplayNumber>
+            <Text>The Rights are personal to the Licensee and do not extend to its subsidiary or parent organizations, or to any other related or affiliated organizations.  The Licensee may not assign, sub-license, transfer, charge or otherwise dispose of its rights under this Agreement without the prior written consent of the Licensor.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T160715.362Z">
+            <SortNumber>2.3</SortNumber>
+            <DisplayNumber>2.3</DisplayNumber>
+            <Text>Title to, and ownership of, the Licensed Material (including any copies made by or on behalf of the Licensee including by the Authorized Users) is not transferred to the Licensee and remains vested in the Licensor, subject to the Rights granted in Clause 2.1 and Clause 4.6.  The Licensee acknowledges that any rights not expressly granted in this License are reserved to the Licensor.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T160720.472Z">
+            <SortNumber>2.4</SortNumber>
+            <DisplayNumber>2.4</DisplayNumber>
+            <Text>The Licensee is responsible for the provision of and payment for the computer equipment and telecommunication services necessary for access to and use of the Licensed Material.  The Licensor shall not issue credits or refunds against charges incurred by the Licensee in relation to such telecommunication services or those incurred contacting Customer Support.  The Licensee accepts that the Licensor has no control over such telecommunication services and that the Licensor shall have no liability to the Licensee for the acts or omissions of providers of telecommunication services or for faults in or failures of their apparatus or of the Licensee's computer equipment.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T160906.822Z">
+            <SortNumber>2.5</SortNumber>
+            <DisplayNumber>2.5</DisplayNumber>
+            <Text>The Licensor may assign this Agreement without the consent of the Licensee.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161351.553Z">
+            <SortNumber>3</SortNumber>
+            <DisplayNumber>3</DisplayNumber>
+            <Text>USAGE RESTRICTIONS</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161416.633Z">
+            <SortNumber>3.1</SortNumber>
+            <Text>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161420.023Z">
+            <SortNumber>3.1.1</SortNumber>
+            <DisplayNumber>3 (a)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>sell, distribute, license, rent or otherwise exploit the Licensed Material, or any element of it, for any commercial purpose;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161422.123Z">
+            <SortNumber>3.1.2</SortNumber>
+            <DisplayNumber>3.1 (b)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>make the Licensed Material, or any element of it, available by any means to persons other than Authorized Users;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161424.113Z">
+            <SortNumber>3.1.3</SortNumber>
+            <DisplayNumber>3.1 (c)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>make the Licensed Material, or any element of it, available on, or by, electronic bulletin boards, news groups, Web sites, FTP or any other means of posting or transmitting material on the Internet, an on-line service or wide area network;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161425.913Z">
+            <SortNumber>3.1.4</SortNumber>
+            <DisplayNumber>3.1 (d)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>remove or obscure the Licensor's copyright notice from the Licensed Material including hard-copy print-outs;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161427.833Z">
+            <SortNumber>3.1.5</SortNumber>
+            <DisplayNumber>3.1 (e)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>use the Licensed Material to create any derivative work, product or service, or merge the Licensed Material with any other product, database, or service;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161429.373Z">
+            <SortNumber>3.1.6</SortNumber>
+            <DisplayNumber>3.1 (f)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>alter, amend, modify, translate, or change the Licensed Material;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161819.583Z">
+            <SortNumber>3.1.7</SortNumber>
+            <DisplayNumber>3.1 (g)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>undertake any activity that may have a damaging effect on the Licensor's ability to achieve revenue through selling and marketing the Licensed Material; </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161822.153Z">
+            <SortNumber>3.1.8</SortNumber>
+            <DisplayNumber>3.1 (h)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>otherwise use the Licensed Material supplied in accordance with this Agreement in a manner that would infringe the copyright or other proprietary rights contained within it; </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161824.123Z">
+            <SortNumber>3.1.9</SortNumber>
+            <DisplayNumber>3.1 (i)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>make the Licensed Material or any part of it available by remote access to any person other than Authorized Users; or</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161829.483Z">
+            <SortNumber>3.1.10</SortNumber>
+            <DisplayNumber>3.1 (j)</DisplayNumber>
+            <TextPreceding>Except as expressly permitted in Clause 2.1, the Licensee warrants that it will not, nor will it license or permit others to, directly or indirectly, without the Licensor's prior written consent:</TextPreceding>
+            <Text>make mass, automated or systematic extractions from or hard copy storage of the Licensed Material.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161831.383Z">
+            <SortNumber>4</SortNumber>
+            <DisplayNumber>4</DisplayNumber>
+            <Text>TERM AND TERMINATION</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T161833.183Z">
+            <SortNumber>4.1</SortNumber>
+            <DisplayNumber>4.1</DisplayNumber>
+            <Text>This Agreement shall begin on the Commencement Date and continue for the initial period of the Supply Period as defined in the Schedule. The Licensor may agree to extend the Supply Period for additional one-year periods, from the end of the initial period or any subsequent additional one-year period (the &#8220;Renewal Date&#8221;), subject to payment of appropriate fees and acceptance thereof by the Licensor.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T162134.453Z">
+            <SortNumber>4.2</SortNumber>
+            <DisplayNumber>4.2</DisplayNumber>
+            <Text>Either party may terminate the Supply Period at any time upon written notice to the other if the other party commits a material breach of any term of this Agreement (for the avoidance of doubt non-payment of any fees as they fall due under this Agreement by the Licensee shall constitute a material breach).  The termination will become effective thirty days after receipt of written notice unless, in the case of a remediable breach, during the relevant period of thirty days the defaulting party has remedied the breach.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T162137.473Z">
+            <SortNumber>4.3</SortNumber>
+            <DisplayNumber>4.3</DisplayNumber>
+            <Text>Licensor may terminate the Supply Period or the Supply Period for any part(s) of the Licensed Material only at any time upon thirty days&#8217; written notice to the Licensee.  </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T162140.563Z">
+            <SortNumber>4.4</SortNumber>
+            <DisplayNumber>4.4</DisplayNumber>
+            <Text>If termination of the Supply Period occurs as a result of notice being given by the Licensee under Clause 4.2, 4.5 or 10.2 or by the Licensor under Clause 4.3 or 10.2 the Licensor shall repay the Licensee a pro-rateable proportion of the License Fee as represents the paid for but unexpired Supply Period at the date of termination.  If the Supply Period is terminated for any part(s) of the Licensed Material only under Clause 4.3 then the Licensor shall repay the Licensee a pro-rateable proportion of that part of the License Fee that represents the Licensed Material so terminated only.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T162146.443Z">
+            <SortNumber>4.5</SortNumber>
+            <DisplayNumber>4.5</DisplayNumber>
+            <Text>Either party may terminate the Supply Period forthwith on notice in writing to the other if the other party is unable to pay its debts or ceases or threatens to cease to carry on business, goes into administration, receivership or administrative receivership, or any event analogous to any of the foregoing occurs in any jurisdiction.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T162148.853Z">
+            <SortNumber>4.6</SortNumber>
+            <DisplayNumber>4.6</DisplayNumber>
+            <Text>On expiry or termination of the Supply Period, Licensee shall have no rights of any kind to any Licensed Material published after the date of termination. On expiry or termination of the Supply Period, otherwise than as a result of notice being given by the Licensor under Clause 4.2, 4.3 or 4.5,  the Licensee's non-exclusive license of the Rights shall, subject to (except as otherwise set forth in this Clause 4.6) all the terms and conditions in this Agreement (including without limitation this sub-clause 4.6, Clause 4.8 and the other provisions of this Clause 4), continue indefinitely in respect of the Licensed Material first published during the Supply Period as follows:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T162452.614Z">
+            <SortNumber>4.6.1</SortNumber>
+            <DisplayNumber>4.6 (a)</DisplayNumber>
+            <TextPreceding>On expiry or termination of the Supply Period, Licensee shall have no rights of any kind to any Licensed Material published after the date of termination. On expiry or termination of the Supply Period, otherwise than as a result of notice being given by the Licensor under Clause 4.2, 4.3 or 4.5,  the Licensee's non-exclusive license of the Rights shall, subject to (except as otherwise set forth in this Clause 4.6) all the terms and conditions in this Agreement (including without limitation this sub-clause 4.6, Clause 4.8 and the other provisions of this Clause 4), continue indefinitely in respect of the Licensed Material first published during the Supply Period as follows:</TextPreceding>
+            <Text>Those agreed Nature and NPG Journals elements indicated in Section A and B of the Schedule SUBJECT ALWAYS to the Licensee's continued compliance with the terms of this Agreement and payment of such reasonable annual access fee as Licensor may from time to time charge (or such alternative supply arrangement terms and costs as the parties may agree); and </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163056.425Z">
+            <SortNumber>4.6.2</SortNumber>
+            <DisplayNumber>4.6 (b)</DisplayNumber>
+            <TextPreceding>On expiry or termination of the Supply Period, Licensee shall have no rights of any kind to any Licensed Material published after the date of termination. On expiry or termination of the Supply Period, otherwise than as a result of notice being given by the Licensor under Clause 4.2, 4.3 or 4.5,  the Licensee's non-exclusive license of the Rights shall, subject to (except as otherwise set forth in this Clause 4.6) all the terms and conditions in this Agreement (including without limitation this sub-clause 4.6, Clause 4.8 and the other provisions of this Clause 4), continue indefinitely in respect of the Licensed Material first published during the Supply Period as follows:</TextPreceding>
+            <Text>Those agreed Third Party Journals elements indicated in Section C of the Schedule (the &#8220;C Content&#8221;) SUBJECT ALWAYS to the Licensee's continued compliance with the terms of this Agreement and payment of such reasonable annual access fee as Licensor may from time to time charge  (or such alternative supply arrangement terms and costs as the parties may agree); PROVIDED THAT due to rights restrictions it may only be possible to allow access to the C Content via the Network for a limited period or not at all. The Licensor shall, after the end of such limited period or if it is not able to allow any access via the Network and provided that it has the rights to do so, deliver the C Content in a physical  storage media (the &#8220;Media&#8221;) to the Licensee SUBJECT ALWAYS to the Licensee's compliance with the terms of any additional license terms notified to the Licensee on delivery of the Media (the &#8220;Media License&#8221;) that are appropriate for such physical media (for the avoidance of doubt, in respect of the use of the Media and the C Content by the Licensee the terms of the Media License shall prevail over the terms of this Agreement if there is a conflict or other inconsistency) and payment of such reasonable supply fee as Licensor may from time to time charge to cover its handling costs (or such alternative supply arrangement terms and costs as the parties may agree). </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163521.105Z">
+            <SortNumber>4.6.3</SortNumber>
+            <Text>(the "Post Supply License").
+
+For the avoidance of doubt, the Post Supply License shall not include access to any Licensed Material published prior to the Supply Period to which access may have been granted during the Supply Period.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163610.985Z">
+            <SortNumber>4.7</SortNumber>
+            <DisplayNumber>4.7</DisplayNumber>
+            <Text>Without prejudice to any other rights the Licensor may have, the Licensor may suspend the provision of the Licensed Material to the Licensee with immediate effect on written notice without liability if the Licensor believes the Licensed Material is being used in a manner that contravenes the provisions of this Agreement or the Media License or in the event of delay or failure to pay in accordance with clause 5.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163651.026Z">
+            <SortNumber>4.8</SortNumber>
+            <Text>The Licensor may terminate this Agreement (including the Post Supply License) at any time upon written notice to the Licensee if the Licensee commits a breach of any term of this Agreement or the Media License.  The termination will become effective thirty days after receipt of written notice unless, in the case of a remediable default, during the relevant period of thirty days the Licensee has remedied the default.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163712.736Z">
+            <SortNumber>4.9</SortNumber>
+            <DisplayNumber>4.9</DisplayNumber>
+            <Text>On termination of the Supply Period as a result of notice being given by the Licensor under Clause 4.2, 4.3 or 4.5 or on termination of the Post Supply License as a result of notice being given by the Licensor under Clause 4.8,  the Licensee shall have no further rights of any kind in the Licensed Material and the Licensee agrees to destroy and use its best endeavours to procure that all Authorized Users destroy, all Licensed Material stored on its Network or in CD-Rom or other hard copy form both on paper and in any digital information storage media or other physical media storage, including, but not limited to, system servers, hard disks, diskettes, and back up tapes.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163746.306Z">
+            <SortNumber>4.10</SortNumber>
+            <DisplayNumber>4.10</DisplayNumber>
+            <Text>When calculating the reasonable annual access fee payable by the Licensee pursuant to clause 4.6 the Licensor shall be entitled to increase such fee on an annual basis including but not limited to reflect any increase in the number of Chargeable Users, any change in the business of the Licensee or any increase in supply or other costs incurred by the Licensor. </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163846.946Z">
+            <SortNumber>5</SortNumber>
+            <DisplayNumber>5</DisplayNumber>
+            <Text>LICENSE FEE</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163907.586Z">
+            <SortNumber>5.1</SortNumber>
+            <DisplayNumber>5.1</DisplayNumber>
+            <Text>The Licensee agrees to pay to the Licensor the License Fee and any other payments under this Agreement within 30 days of the date of invoice. </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163929.796Z">
+            <SortNumber>5.2</SortNumber>
+            <DisplayNumber>5.2</DisplayNumber>
+            <Text>All amounts payable by the Licensee under this Agreement shall be exclusive of any sales, use, value added or similar taxes</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T163954.936Z">
+            <SortNumber>5.3</SortNumber>
+            <DisplayNumber>5.3</DisplayNumber>
+            <Text>If Licensee fails to make any payment due to Licensor under this Agreement by the due date for payment, then, without limiting Licensor&#8217;s remedies under Clause 4 (TERM AND TERMINATION), Licensee shall pay interest on the overdue amount at the rate of 1% per month or the maximum rate allowed by applicable law.  Such interest shall accrue on a daily basis from the due date until actual payment of the overdue amount, whether before or after judgement.  Licensee shall pay the interest together with the overdue amount.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T164020.746Z">
+            <SortNumber>6</SortNumber>
+            <DisplayNumber>6</DisplayNumber>
+            <Text>NATURE, NPG JOURNALS, AND/OR THIRD-PARTY JOURNALS LICENSE FEE </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T164739.316Z">
+            <SortNumber>6.1</SortNumber>
+            <DisplayNumber>6.1</DisplayNumber>
+            <Text>Where the Licensed Material includes Nature, NPG Journals, and/or Third-Party Journals, the License Fee is calculated on the basis of Chargeable Users. The Licensee warrants that its Chargeable Users during the 12 months prior to the Commencement Date did not exceed the number of Chargeable Users as stated in the Schedule in respect of Nature, NPG Journals and/or Third-Party Journals.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T164816.456Z">
+            <SortNumber>6.2</SortNumber>
+            <DisplayNumber>6.2</DisplayNumber>
+            <Text>The License Fee is assessed on the number of the Licensee's Chargeable Users during the 12 month period prior to the Commencement Date for the initial 12 month period of the Supply Period and for each 12 month period prior to any subsequent 12 month extensions agreed to by the Licensor. The Licensee must immediately notify the Licensor if at any time the actual number of Chargeable Users exceeds the number of Chargeable Users stated in the Schedule. The Licensee acknowledges that in the event that such number of Chargeable Users increases during the initial 12 month period of the Supply Period or in any subsequent 12 month extension period agreed to by the Licensor the License Fee will be increased in accordance with the Licensee's then applicable charges for any subsequent 12 month extension period agreed to by the Licensor.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T164841.617Z">
+            <SortNumber>7</SortNumber>
+            <DisplayNumber>7</DisplayNumber>
+            <Text>LICENSEE'S UNDERTAKINGS</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165312.097Z">
+            <SortNumber>7.1</SortNumber>
+            <DisplayNumber>7.1</DisplayNumber>
+            <Text>The Licensee will take all reasonable steps to ensure that the Licensed Material is used only in accordance with the terms and conditions of this Agreement and shall inform Authorized Users of the permitted use restrictions and other provisions set out in this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165337.967Z">
+            <SortNumber>7.2</SortNumber>
+            <DisplayNumber>7.2</DisplayNumber>
+            <Text>The Licensee shall put into place reasonable procedures to monitor the compliance with the terms and conditions of this Agreement by the Authorized Users.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165401.337Z">
+            <SortNumber>7.3</SortNumber>
+            <DisplayNumber>7.3</DisplayNumber>
+            <Text>The Licensee will notify the Licensor immediately of infringements that come to the Licensee's notice and the Licensee agrees to co-operate with the Licensor as appropriate to stop further abuse should it occur.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165424.607Z">
+            <SortNumber>7.4</SortNumber>
+            <DisplayNumber>7.4</DisplayNumber>
+            <Text>Subject to Clause 4.9, nothing in this Agreement shall make the Licensee liable for breach of the restrictions set out in the terms and conditions of this Agreement by any Authorized User as long as the Licensee complied with the terms of Clauses 6, 7.1, 7.2 and 7.3 and did not cause, intentionally assist in or encourage such breach nor allowed it to continue after having received notice of such breach whether from the Licensor or otherwise.  However, in the event of continuing abuse the Licensor shall be entitled to terminate this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165449.287Z">
+            <SortNumber>7.5</SortNumber>
+            <DisplayNumber>7.5</DisplayNumber>
+            <Text>The Licensor shall be entitled to monitor the use of the Licensed Material through the Licensors servers, or as the case may be any service provided by an agent on its behalf, so as to monitor compliance with this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165519.117Z">
+            <SortNumber>8</SortNumber>
+            <DisplayNumber>8</DisplayNumber>
+            <Text>WARRANTIES, UNDERTAKINGS AND INDEMNITIES
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165548.627Z">
+            <SortNumber>8.1</SortNumber>
+            <DisplayNumber>8.1</DisplayNumber>
+            <Text>The Licensor warrants to the Licensee that it has full right and authority to grant the Rights to the Licensee and that the use by the Licensee of the Licensed Material in accordance with this Agreement will not infringe the rights of any third party.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165614.637Z">
+            <SortNumber>8.2</SortNumber>
+            <DisplayNumber>8.2</DisplayNumber>
+            <Text>The Licensor shall indemnify the Licensee for the amount of any award of damages against the Licensee by a court of competent jurisdiction as a result of any claim arising from a breach of the warranty in Clause 8.1 provided that the Licensee must  inform the Licensor immediately upon becoming aware of any claim, not attempt to compromise or settle the claim and give reasonable assistance to the Licensor who shall be entitled to assume sole conduct of any defence and shall have the right at its option:
+(a) to procure the right for the Licensee to continue using the Licensed Material; 
+(b) to make such alterations, modifications or adjustments to the Licensed Material that it becomes non-infringing without incurring a material reduction in performance or function; or
+(c) to replace the Licensed Material with non-infringing substitutes provided that such substitutes do not entail a material reduction in performance or function. 
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165733.987Z">
+            <SortNumber>8.3</SortNumber>
+            <DisplayNumber>8.3</DisplayNumber>
+            <Text>The Licensor shall not be liable to the Licensee for any loss or damage whatsoever resulting from omissions or inaccuracies in the Licensed Material regardless of how caused.  The Licensor does not warrant that access to the Licensed Material will be free from errors or faults.  In the event of a fault, the Licensee shall notify Customer Support of the same by telephone, electronic mail or in writing.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T165804.287Z">
+            <SortNumber>8.4</SortNumber>
+            <DisplayNumber>8.4</DisplayNumber>
+            <Text>Without prejudice to the generality of the foregoing, the Licensor shall not be liable for any claim arising from:
+ (a)  any failure or malfunction resulting wholly or to any material extent from the Licensee's negligence, operator error, use other than in accordance with the User Documentation or any other misuse or abuse of the Licensed Materials;
+ (b)	the failure by the Licensee to implement recommendations previously advised by the Licensor in respect of, or solutions for, faults in the Licensed Material; or
+(c)  the decompilation or modification of the Licensed Material or its merger with any other program or any maintenance repair adjustment alteration or enhancement of the Licensed Material by any person other than the Licensor or its authorized agent; or (d)	the Licensee or any Authorized User being unable to exercise the Rights due to the Licensed Material being unavailable as a result of any act or omission of the Licensor provided that the period for which the Licensed Material is not available shall not exceed a period of 50 hours (in aggregate) in any continuous period of 1000 hours.
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170014.258Z">
+            <SortNumber>8.5</SortNumber>
+            <DisplayNumber>8.5</DisplayNumber>
+            <Text>The Licensee shall use its best efforts to safeguard the intellectual property, confidential information including without limitation the terms of this Agreement, and proprietary rights of the Licensor.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170106.268Z">
+            <SortNumber>8.6</SortNumber>
+            <DisplayNumber>8.6</DisplayNumber>
+            <Text>THE LICENSED MATERIAL IS PROVIDED "AS IS."  NEITHER THE LICENSOR NOR ANYONE ELSE MAKES ANY WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, WARRANTIES OF SATISFACTORY QUALITY, ACCURACY OR FITNESS FOR A PARTICULAR PURPOSE. EXCEPT AS OTHERWISE EXPRESSLY PROVIDED IN THIS CLAUSE 8 AND CLAUSE 12, ALL CONDITIONS, WARRANTIES, TERMS, REPRESENTATIONS, AND UNDERTAKINGS EXPRESS OR IMPLIED, STATUTORY OR OTHERWISE IN RESPECT OF THE LICENSED MATERIAL ARE TO THE FULLEST EXTENT PERMITTED BY LAW EXPRESSLY EXCLUDED.
+NO ORAL OR WRITTEN INFORMATION OR ADVICE GIVEN BY ANY REPRESENTATIVE OF THE LICENSOR OR BY ANYONE ELSE SHALL CREATE ANY WARRANTIES.  
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170136.358Z">
+            <SortNumber>8.7</SortNumber>
+            <DisplayNumber>8.7</DisplayNumber>
+            <Text>The content of the Licensed Material is subject to change without notice.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170202.668Z">
+            <SortNumber>9</SortNumber>
+            <DisplayNumber>9</DisplayNumber>
+            <Text>USAGE STATISTICS (RELEVANT TO NATURE, NPG JOURNALS AND/OR THIRD-PARTY JOURNALS)
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170352.208Z">
+            <SortNumber>9.1</SortNumber>
+            <Text>The Licensor confirms to the Licensee that usage statistics covering the online usage of Nature, NPG Journals and/or Third-Party Journals covered by this Agreement will be provided. The Licensor further confirms that it shall use all reasonable endeavours to ensure that such usage statistics will adhere to the specifications of the COUNTER Code of Practice, including data elements collected and their definitions; data processing guidelines, usage report content, frequency and delivery method PROVIDED THAT these statistics are strictly for the Licensee&#8217;s private internal use and the Licensor shall not be required to disclose any information to the Licensee which it is prohibited from disclosing to the Licensee due to any legal or regulatory constraint imposed upon it including without limitation any applicable privacy or data protection legislation or regulations or  contractual obligations.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170430.439Z">
+            <SortNumber>10</SortNumber>
+            <DisplayNumber>10</DisplayNumber>
+            <Text>FORCE MAJEURE</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170556.959Z">
+            <SortNumber>10.1</SortNumber>
+            <DisplayNumber>10.1</DisplayNumber>
+            <Text>Either party's failure to perform any term or condition of this Agreement as a result of conditions beyond its control such as, but not limited to, war, strikes, floods, governmental restrictions, power failures, or damage or destruction of any network facilities or services, shall not be deemed a breach of this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170620.802Z">
+            <SortNumber>10.2</SortNumber>
+            <DisplayNumber>10.2</DisplayNumber>
+            <Text>If any event set out in Clause 10.1 shall continue for a period in excess of 30 days either party shall be entitled to terminate this Agreement forthwith by written notice to the other.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170702.652Z">
+            <SortNumber>11</SortNumber>
+            <DisplayNumber>11</DisplayNumber>
+            <Text>NOTICE</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170838.297Z">
+            <SortNumber>11.1</SortNumber>
+            <Text>Any notice to be served on either party by the other made under this Agreement shall be in writing sent by prepaid recorded delivery or registered post to the address of the addressee as set out in the Schedule or to such other address as notified by either party to the other as its address for service of notices and all such notices shall be deemed to have been received within 48 hours after posting.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170853.987Z">
+            <SortNumber>12</SortNumber>
+            <DisplayNumber>12</DisplayNumber>
+            <Text>LIABILITY</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170912.687Z">
+            <SortNumber>12.1</SortNumber>
+            <DisplayNumber>12.1</DisplayNumber>
+            <Text>Neither party excludes or limits liability to the other party for death or personal injury caused by its own negligence or any other liability the exclusion or limitation of which is prohibited by law.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T170953.967Z">
+            <SortNumber>12.2</SortNumber>
+            <DisplayNumber>12.2</DisplayNumber>
+            <Text>Except as provided for in Clause 12.1 above, the liability of the Licensor in respect of any and all claims (whether in contract or in tort) arising out of or in connection with this Agreement is limited in respect of each event or series of connected events to the greater of US$10,000 or an amount equal to the fees paid under this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171022.387Z">
+            <SortNumber>12.3</SortNumber>
+            <DisplayNumber>12.3</DisplayNumber>
+            <Text>Except as provided for in Clause 12.1, notwithstanding anything else contained in this Agreement, in no event shall the Licensor be liable to the Licensee for:
+(a) loss of profits, business, revenue, goodwill, anticipated savings; and/or
+(b) indirect, special, incidental or consequential loss or damage; and
+ (c) any inaccuracy in the Licensed Material.
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171113.007Z">
+            <SortNumber>13</SortNumber>
+            <DisplayNumber>13</DisplayNumber>
+            <Text>GOVERNING LAW</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171142.838Z">
+            <SortNumber>13.1</SortNumber>
+            <Text>This Agreement, and the rights and liabilities of the parties with respect to this Agreement and its subject matter, shall be governed by the laws of the State of New York, without reference to the principles of conflicts of laws thereof. </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130530T152752.393Z">
+            <SortNumber>13.2</SortNumber>
+            <Text>Any dispute arising out of or relating to this Agreement or its subject matter not settled by the parties may be resolved only by the courts of the State of New York or, if subject matter jurisdiction exists, by the United States federal courts, with venue in the County of New York (in the case of state court) or in the Southern District of New York (in the case of federal court). Each of the parties hereby consents to the jurisdiction of such courts over it in any action involving any such dispute. Each of the parties agrees not to commence or maintain a legal proceeding involving any such dispute in any forum except a court of the State of New York located in New York County or the United States District Court for the Southern District of New York (other than to enforce a judgement obtained in such courts) and agrees not to contest the venue of any action involving any such dispute in the County of New York or the Southern District of New York, as the case may be, nor to assert in any such court the doctrine of forum non conveniens or the like.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171347.588Z">
+            <SortNumber>14</SortNumber>
+            <DisplayNumber>14</DisplayNumber>
+            <Text>SEVERABILITY</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171403.428Z">
+            <SortNumber>14.1</SortNumber>
+            <Text>In the event any provision of this Agreement is held by a court or other tribunal of competent jurisdiction to be contrary to law, the remaining provisions of this Agreement will remain in full force and effect.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171429.738Z">
+            <SortNumber>15</SortNumber>
+            <DisplayNumber>15</DisplayNumber>
+            <Text>WAIVERS</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171448.248Z">
+            <SortNumber>15.1</SortNumber>
+            <Text>No provision of this Agreement or breach thereof may be waived except in a writing signed by the party against whom the waiver is sought to be enforced.  </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171511.558Z">
+            <SortNumber>16</SortNumber>
+            <DisplayNumber>16</DisplayNumber>
+            <Text>THIRD PARTY RIGHTS</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130521T171529.818Z">
+            <SortNumber>16.1</SortNumber>
+            <Text>Nothing in this Agreement is intended to confer rights on any third party.</Text>
+        </TextElement>
+    </LicenseDocumentText>
+</PublicationsLicenseExpression>
