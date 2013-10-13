@@ -28,11 +28,11 @@ class DataFile extends KBComponent {
   }
 
   static manyByCombo = [
-    attachedToComponents  :  KBComponent
+    attachedToComponents : KBComponent
   ]
 
   static mappedByCombo = [
-        attachedToComponents  :  'fileAttachments',
+    attachedToComponents : 'fileAttachments'
   ]
 
 }

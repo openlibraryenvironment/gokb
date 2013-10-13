@@ -50,6 +50,11 @@
                 </g:if>
               </div>
             </div>
+
+            <g:if test="${(qbetemplate.message != null)}">
+              <p style="text-align:center"><bootstrap:alert class="alert-info">${qbetemplate.message}</bootstrap:alert></p>
+            </g:if>
+
             <g:render template="qbeform" contextPath="."
               model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}" />
             <g:if test="${recset != null}">

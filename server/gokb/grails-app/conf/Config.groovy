@@ -725,6 +725,7 @@ globalSearchTemplates = [
 	'Licenses':[
 		baseclass:'org.gokb.cred.License',
 		title:'Licenses',
+                message:'Please contact a@b.c.d for more information on license downloads',
 		qbeConfig:[
 			qbeForm:[
 				[

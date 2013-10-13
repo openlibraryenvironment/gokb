@@ -43,13 +43,21 @@
   <div class="control-group">
     <dt>Attached To</dt>
     <dd>
-      ${d.attachedToComponents}
-      <g:render template="combosByType" 
-                contextPath="../apptemplates" 
-                model="${[d:d, property:'attachedToComponents', cols:[[expr:'fromComponent.name',
-                                                                       colhead:'Component',
-                                                                       action:'link'],
-                                                                     ], direction:'in']}" />
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Component</th>
+          </tr>
+        </thead>
+        <tbody>
+          <g:each in="${d.incomingCombos}" var="r">
+            <g:set var="linkedoid" value="${org.gokb.cred.KBComponent.deproxy(r.fromComponent).class.name}:${r.fromComponent.id}"/>
+            <tr>
+              <td><g:link controller="resource" action="show" id="${linkedoid}">${r.fromComponent.name}</g:link></td>
+            </tr>
+          </g:each>
+        </tbody>
+      </table>
     </dd>
   </div>
 
