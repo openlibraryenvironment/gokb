@@ -3,8 +3,7 @@
 <g:set var="counter" value="${offset}" />
 
 <g:form controller="workflow" action="action" method="get">
-  <table class="table table-striped">
-   <caption>Search results</caption>
+  <table class="table table-striped table-condensed table-bordered">
     <thead>
       <tr>
         <th></th>
