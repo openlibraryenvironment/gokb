@@ -205,6 +205,7 @@ abstract class KBComponent {
   // ids moved to combos.
   static manyByCombo = [
     ids : Identifier,
+    fileAttachments : DataFile,
   ]
 
   static mappedBy = [

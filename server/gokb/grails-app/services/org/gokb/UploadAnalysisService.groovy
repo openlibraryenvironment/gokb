@@ -67,6 +67,7 @@ class UploadAnalysisService {
 
     // Extract high level details
     license.name = parsedXml.ExpressionDetail.Description.text()
+    // license.fileAttachments.add(datafile);
 
     def baos = new ByteArrayOutputStream()
     def xslt = grailsApplication.mainContext.getResource('/WEB-INF/resources/onixToSummary.xsl').inputStream
@@ -84,5 +85,9 @@ class UploadAnalysisService {
     }
 
     license.save(flush:true)
+
+    // Create the combo
+    license.fileAttachments.add(datafile);
+    license.save(flush:true);
   }
 }

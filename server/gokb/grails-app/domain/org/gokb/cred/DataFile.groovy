@@ -26,4 +26,13 @@ class DataFile extends KBComponent {
     filesize column:'df_filesize'
     doctype column:'df_doctype'
   }
+
+  static manyByCombo = [
+    attachedToComponents  :  KBComponent
+  ]
+
+  static mappedByCombo = [
+        attachedToComponents  :  'fileAttachments',
+  ]
+
 }
