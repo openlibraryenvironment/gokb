@@ -803,6 +803,28 @@ globalSearchTemplates = [
 			]
 		]
 	],
+        'dataFiles':[
+                baseclass:'org.gokb.cred.DataFile',
+                title:'Data Files',
+                qbeConfig:[
+                        qbeForm:[
+                                [
+                                        prompt:'File Name',
+                                        qparam:'qp_name',
+                                        placeholder:'Name',
+                                        contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+                                ],
+                        ],
+                        qbeGlobals:[
+                        ],
+                        qbeResults:[
+                                [heading:'Id', property:'id'],
+                                [heading:'Name', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+                                [heading:'Mime Type', property:'uploadMimeType'],
+                        ]
+                ]
+        ],
+
 
 ]
 
@@ -823,7 +845,8 @@ globalDisplayTemplates = [
 	'org.gokb.cred.Territory': [ type:'staticgsp', rendername:'territory' ],
 	'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
 	'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
-	'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ]
+	'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
+        'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6
