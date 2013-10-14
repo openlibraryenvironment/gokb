@@ -65,7 +65,7 @@ GOKb.contextMenu.options = {
 //	  	  	icon: "",
 	  	  	alias: "gokb-lookup-platform",
 	  	  	action: function () {
-	  	  		GOKb.handlers.lookup ("platform");
+	  	  		GOKb.handlers.lookup ("platform", ["primaryUrl"], ["primaryUrl"]);
 	  	  	}
 	  	  }
       ]

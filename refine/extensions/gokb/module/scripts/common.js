@@ -549,7 +549,8 @@ GOKb.getLookup = function (location, callback) {
 	// The customised lookup object.
 	GOKb.lookup = {
 		_lookup : GOKb.lookupCont.data("lookup"),
-		open : function () {
+		_original_renderer : null,
+		open : function (renderer) {
 			this._lookup._open();
 			
 			// Bind a search event listener here to clear the list.
@@ -560,6 +561,26 @@ GOKb.getLookup = function (location, callback) {
 				
 				// Set the flag.
 				GOKb.lookupEventBound = true;
+			}
+			
+			// Get the data for the autocomplete box.
+			var auto_complete_data = this._lookup._autocomplete.data('autocomplete');
+			if (this._original_renderer == null) {
+				
+				// Save the original renderer the first time we call this method.
+				this._original_renderer = auto_complete_data._renderItem
+			}
+			
+			// If the renderer is blank then just set to the original.
+			if (renderer == undefined || !renderer) {
+				
+				// Restore original.
+				auto_complete_data._renderItem = this._original_renderer;
+				
+			} else {
+				
+				// Set to our custom handler.
+				auto_complete_data._renderItem = renderer;
 			}
 		},
 		close : function () {
