@@ -284,13 +284,16 @@ GOKb.handlers.lookup = function(namespace, match, attr) {
 	// Now we have our lookup object we can now open it with a custom renderer set.	
 	lookup.open(function( ul, item ) {
 		var link = $("<a />")
-			.text(item.label)
+			.append(
+			  "<span class='item-name' />"
+			).text(item.label)
 		;
 		
 		// Append each of the items properties as well as the label.
 		$.each(item, function(key, val) {
 			if (key != "value" && key != "label" )
-			link.append("<br /><span class='sub-title'>" + key + ":</span> <span class='sub-value'>" + val + "</span>");
+			link.append("<br /><span class='item-sub-title'>" + key + ":</span> " +
+			            "<span class='item-sub-value'>" + val + "</span>");
 		});
 		
 		// Return the list item with the link.
