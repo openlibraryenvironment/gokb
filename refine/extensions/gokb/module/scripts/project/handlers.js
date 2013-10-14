@@ -296,6 +296,7 @@ GOKb.handlers.lookup = function(namespace, match, attr) {
 		// Return the list item with the link.
 		return $( "<li>" )
 			.append(link)
+			.data( "item.autocomplete", item )
 			.appendTo( ul )
 		;
 	});
