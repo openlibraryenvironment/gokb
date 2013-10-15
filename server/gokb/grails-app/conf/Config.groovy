@@ -821,6 +821,7 @@ globalSearchTemplates = [
                         qbeResults:[
                                 [heading:'Id', property:'id'],
                                 [heading:'Name', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+                                [heading:'Created On', property:'dateCreated'],
                                 [heading:'Mime Type', property:'uploadMimeType'],
                         ]
                 ]
