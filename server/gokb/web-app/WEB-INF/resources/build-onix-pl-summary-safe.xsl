@@ -2169,7 +2169,7 @@
 					<xsl:choose>
 						<xsl:when test="onix:QuantityDetail/onix:Value=1">
 							<xsl:call-template name="space-camel-case">
-								<xsl:with-param name="in-string" select="substring-after(onix:QuantityDetail/onix:QuantityUnit,':')"/>
+								<xsl:with-param name="in-string" select="substring-after(ople:make-singular(onix:QuantityDetail/onix:QuantityUnit),':')"/>
 							</xsl:call-template>
 						</xsl:when>
 						<xsl:otherwise>
@@ -2276,7 +2276,7 @@
 							<xsl:choose>
 								<xsl:when test="onix:QuantityDetail/onix:Value=1">
 									<xsl:call-template name="space-camel-case">
-										<xsl:with-param name="in-string" select="substring-after(onix:QuantityDetail/onix:QuantityUnit,':')"/>
+										<xsl:with-param name="in-string" select="substring-after(ople:make-singular(onix:QuantityDetail/onix:QuantityUnit),':')"/>
 									</xsl:call-template>
 								</xsl:when>
 								<xsl:otherwise>
@@ -2496,4 +2496,19 @@
 			</xsl:call-template>
 		</xsl:if>
 	</xsl:template>
+	<xsl:function name="ople:make-singular">
+		<xsl:param name="unit"/>
+		<xsl:choose>
+			<xsl:when test="substring($unit,string-length($unit)-2,3)='ies'">
+				<xsl:value-of select="concat(substring($unit,1,string-length($unit)-3),'y')"/>
+			</xsl:when>
+			<xsl:when test="substring($unit,string-length($unit),1)='s'">
+				<xsl:value-of select="substring($unit,1,string-length($unit)-1)"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$unit"/>
+			</xsl:otherwise>
+		</xsl:choose>
+		
+	</xsl:function>
 </xsl:stylesheet>
