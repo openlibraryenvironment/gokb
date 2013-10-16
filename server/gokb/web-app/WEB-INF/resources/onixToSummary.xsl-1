@@ -65,42 +65,33 @@
   </xsl:template>
 
   <xsl:template match="//onix:PublicationsLicenseExpression/onix:LicenseDetail">
-    <xsl:apply-templates select="onix:LicenseStatus"/>
-    <xsl:apply-templates select="onix:LicenseRenewalType"/>
-    <xsl:apply-templates select="onix:LicenseIdentifier"/>
-    <xsl:apply-templates select="onix:LicenseRelatedTimePoint"/>
-    <xsl:apply-templates select="onix:LicenseRelatedPlace"/>
-  </xsl:template>
-
-  <xsl:template match="onix:LicenseStatus">
-    License Status : <xsl:value-of select="."/>
-  </xsl:template>
-
-  <xsl:template match="onix:LicenseRenewalType">
-    License Renewal : <xsl:value-of select="."/>
-  </xsl:template>
-
-  <xsl:template match="onix:LicenseIdentifier">
-    <!--
+    <xsl:call-template name="onixCodedTextElement">
+      <xsl:with-param name="elem" select="onix:LicenseStatus"/>
+    </xsl:call-template>
+    <xsl:call-template name="onixCodedTextElement">
+      <xsl:with-param name="elem" select="onix:LicenseRenewalType"/>
+    </xsl:call-template>
     <xsl:call-template name="onixCodedTextElement">
       <xsl:with-param name="elem" select="onix:LicenseIdentifier[onix:LicenseIDType='onixPL:LicensorContractNumber']/onix:IDValue"/>
     </xsl:call-template>
-    -->
-    <xsl:value-of select="./onix:LicenseIDType"/> : <xsl:value-of select="./onix:IDValue"/>
-  </xsl:template>
+    <xsl:call-template name="onixCodedTextElement">
+      <xsl:with-param name="elem" select="onix:LicenseIdentifier[onix:LicenseIDType='onixPL:LicenseeContractNumber']/onix:IDValue"/>
+    </xsl:call-template>
+    <xsl:call-template name="onixCodedTextElement">
+      <xsl:with-param name="elem" select="onix:LicenseRelatedTimePoint[onix:LicenseTimePointRelator='onixPL:LicenseStartDate']/onix:RelatedTimePoint"/>
+    </xsl:call-template>
+    <xsl:call-template name="onixCodedTextElement">
+      <xsl:with-param name="elem" select="onix:LicenseRelatedTimePoint[onix:LicenseTimePointRelator='onixPL:LicenseEndDate']/onix:RelatedTimePoint"/>
+    </xsl:call-template>
 
-  <xsl:template match="onix:LicenseRelatedTimePoint">
-    <xsl:value-of select="./onix:LicenseTimePointRelator"/> : <xsl:value-of select="./onix:RelatedTimePoint"/>
+    Place of governing law:
+    Place of Jurisdiction:
+    Authority for License Description:
   </xsl:template>
-
-  <xsl:template match="onix:LicenseRelatedPlace">
-    <xsl:value-of select="./onix:LicensePlaceRelator"/> : <xsl:value-of select="./onix:RelatedPlace"/>
-  </xsl:template>
-
 
   <xsl:template name="onixCodedTextElement">
     <xsl:param name="elem"/>
-    <xsl:value-of select="$elem"/>
+    {$elem}: <xsl:value-of select="$elem"/>
   </xsl:template>
 
 </xsl:stylesheet>
