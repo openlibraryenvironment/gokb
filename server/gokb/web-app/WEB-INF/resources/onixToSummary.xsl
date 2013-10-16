@@ -16,45 +16,7 @@
 
   <xsl:output method="xhtml" exclude-result-prefixes="oxf xxforms context xs p exist ople saxon ev xforms onix"/>
   <xsl:variable name="apos">'</xsl:variable>
-  <xsl:variable name="preposition">
-    <Prepositions xmlns="">
-      <Usage>
-        <Type>onixPL:MakeDerivedWork</Type>
-        <Value>from </Value>
-      </Usage>
-      <Usage>
-        <Type>onixPL:MakeDigitalCopy</Type>
-        <Value>of </Value>
-      </Usage>
-      <Usage>
-        <Type>onixPL:MakeTemporaryDigitalCopy</Type>
-        <Value>of </Value>
-      </Usage>
-      <Usage>
-        <Type>onixPL:PrintCopy</Type>
-        <Value>of </Value>
-      </Usage>
-      <Usage>
-        <Type>onixPL:ProvideIntegratedAccess</Type>
-        <Value>to </Value>
-      </Usage>
-      <Usage>
-        <Type>onixPL:ProvideIntegratedIndex</Type>
-        <Value>to </Value>
-      </Usage>
-      <Usage>
-        <Type>onixPL:SupplyCopy</Type>
-        <Value>of </Value>
-      </Usage>
-    </Prepositions>
-  </xsl:variable>
-  <xsl:variable name="valid-uri-schemes">
-    <ValidURISchemes xmlns="">
-      <Scheme>http</Scheme>
-      <Scheme>ftp</Scheme>
-      <Scheme>doi</Scheme>
-    </ValidURISchemes>
-  </xsl:variable>
+
   <xsl:template match="/">
     <h1>
       <xsl:text>Summary of ONIX-PL expression of license "</xsl:text>
@@ -65,11 +27,15 @@
   </xsl:template>
 
   <xsl:template match="//onix:PublicationsLicenseExpression/onix:LicenseDetail">
+    <xsl:value-of select="onix:Description"/>
     <xsl:apply-templates select="onix:LicenseStatus"/>
     <xsl:apply-templates select="onix:LicenseRenewalType"/>
     <xsl:apply-templates select="onix:LicenseIdentifier"/>
     <xsl:apply-templates select="onix:LicenseRelatedTimePoint"/>
     <xsl:apply-templates select="onix:LicenseRelatedPlace"/>
+
+    License Document(s)
+    <xsl:apply-templates select="onix:LicenseDocument"/>
   </xsl:template>
 
   <xsl:template match="onix:LicenseStatus">
@@ -81,11 +47,6 @@
   </xsl:template>
 
   <xsl:template match="onix:LicenseIdentifier">
-    <!--
-    <xsl:call-template name="onixCodedTextElement">
-      <xsl:with-param name="elem" select="onix:LicenseIdentifier[onix:LicenseIDType='onixPL:LicensorContractNumber']/onix:IDValue"/>
-    </xsl:call-template>
-    -->
     <xsl:value-of select="./onix:LicenseIDType"/> : <xsl:value-of select="./onix:IDValue"/>
   </xsl:template>
 
@@ -97,10 +58,8 @@
     <xsl:value-of select="./onix:LicensePlaceRelator"/> : <xsl:value-of select="./onix:RelatedPlace"/>
   </xsl:template>
 
-
-  <xsl:template name="onixCodedTextElement">
-    <xsl:param name="elem"/>
-    <xsl:value-of select="$elem"/>
+  <xsl:template match="onix:LicenseDocument">
+    <xsl:value-of select="./onix:LicenseDocumentType"/> : <xsl:value-of select="./onix:DocumentLabel"/>
   </xsl:template>
 
 </xsl:stylesheet>
