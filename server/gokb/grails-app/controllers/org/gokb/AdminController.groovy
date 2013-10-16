@@ -40,7 +40,7 @@ class AdminController {
     redirect(url: request.getHeader('referer'))
   }
 
-  reSummariseLicenses() {
+  def reSummariseLicenses() {
     redirect(url: request.getHeader('referer'))
   }
 }
