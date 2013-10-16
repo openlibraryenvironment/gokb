@@ -14,7 +14,9 @@
                 xmlns:exist="http://exist.sourceforge.net/NS/exist"
                 xmlns:xxforms="http://orbeon.org/oxf/xml/xforms">
 
-  <xsl:output method="xhtml" exclude-result-prefixes="oxf xxforms context xs p exist ople saxon ev xforms onix"/>
+  <xsl:output method="xhtml" 
+              exclude-result-prefixes="oxf xxforms context xs p exist ople saxon ev xforms onix"/>
+
   <xsl:variable name="apos">'</xsl:variable>
 
   <xsl:template match="/">
@@ -23,21 +25,21 @@
       <xsl:value-of select="//onix:LicenseDetail/onix:Description"/>
       <xsl:text>"</xsl:text>
     </h1>
-    <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:LicenseDetail"/>
-    <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:Definitions"/>
+    <div class="container">
+      <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:LicenseDetail"/>
+      <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:Definitions"/>
+    </div>
   </xsl:template>
 
   <xsl:template match="//onix:PublicationsLicenseExpression/onix:LicenseDetail">
-    <xsl:value-of select="onix:Description"/>
-    <xsl:apply-templates select="onix:LicenseStatus"/>
-    <xsl:apply-templates select="onix:LicenseRenewalType"/>
-    <xsl:apply-templates select="onix:LicenseIdentifier"/>
-    <xsl:apply-templates select="onix:LicenseRelatedTimePoint"/>
-    <xsl:apply-templates select="onix:LicenseRelatedPlace"/>
-
-    License Document(s)
-    <xsl:apply-templates select="onix:LicenseDocument"/>
-
+        <xsl:value-of select="onix:Description"/>
+        <xsl:apply-templates select="onix:LicenseStatus"/>
+        <xsl:apply-templates select="onix:LicenseRenewalType"/>
+        <xsl:apply-templates select="onix:LicenseIdentifier"/>
+        <xsl:apply-templates select="onix:LicenseRelatedTimePoint"/>
+        <xsl:apply-templates select="onix:LicenseRelatedPlace"/>
+        License Document(s)
+        <xsl:apply-templates select="onix:LicenseDocument"/>
   </xsl:template>
   
 
@@ -67,26 +69,37 @@
   </xsl:template>
 
   <xsl:template match="onix:AgentDefinition">
-    <xsl:value-of select="onix:AgentLabel"/>
-    <xsl:value-of select="onix:AgentName/onix:Name"/>
-    <xsl:value-of select="onix:AgentRelatedPlace"/>
+    <div class="row">
+      <div class="span6">
+        <xsl:value-of select="onix:AgentLabel"/>
+        <xsl:value-of select="onix:AgentName/onix:Name"/>
+        <xsl:value-of select="onix:AgentRelatedPlace"/>
+      </div>
+      <div class="span6">
+        <xsl:apply-templates select="onix:LicenseTextLink"/>
+      </div>
+    </div>
   </xsl:template>
 
   <xsl:template match="onix:AgentRelatedPlace">
-    <xsl:value-of select="onix:AgentPlaceRelator"/>
-    <xsl:value-of select="onix:RelatedPlace"/>
+    <xsl:value-of select="onix:AgentPlaceRelator"/>:<xsl:value-of select="onix:RelatedPlace"/>
   </xsl:template>
   
   <xsl:template match="onix:ResourceDefinition">
-    <xsl:value-of select="onix:ResourceLabel"/>
-    <xsl:value-of select="onix:Description"/>
-    <xsl:apply-templates select="onix:LicenseTextLink"/>
+    <div class="row">
+      <div class="span6">
+        <xsl:value-of select="onix:ResourceLabel"/>:<xsl:value-of select="onix:Description"/>
+      </div>
+      <div class="span6">
+        <xsl:apply-templates select="onix:LicenseTextLink"/>
+      </div>
+    </div>
   </xsl:template>
 
   <xsl:template match="onix:LicenseTextLink">
     <xsl:variable name="ref" select="./@href"/>
-   *****LICENSE TEXT... <xsl:value-of select="$ref"/>
-    <xsl:value-of select="//onix:PublicationsLicenseExpression/onix:LicenseDocumentText/onix:TextElement[@id=$ref]/../onix:DocumentLabel"/>
+    <!-- xsl:value-of select="$ref" -->
+    <xsl:value-of select="//onix:PublicationsLicenseExpression/onix:LicenseDocumentText/onix:TextElement[@id=$ref]/../onix:DocumentLabel"/><br/>
     <xsl:value-of select="//onix:PublicationsLicenseExpression/onix:LicenseDocumentText/onix:TextElement[@id=$ref]/onix:Text"/>
   </xsl:template>
 
