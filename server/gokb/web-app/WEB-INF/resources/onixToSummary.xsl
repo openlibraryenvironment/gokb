@@ -24,6 +24,7 @@
       <xsl:text>"</xsl:text>
     </h1>
     <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:LicenseDetail"/>
+    <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:Definitions"/>
   </xsl:template>
 
   <xsl:template match="//onix:PublicationsLicenseExpression/onix:LicenseDetail">
@@ -36,7 +37,9 @@
 
     License Document(s)
     <xsl:apply-templates select="onix:LicenseDocument"/>
+
   </xsl:template>
+  
 
   <xsl:template match="onix:LicenseStatus">
     License Status : <xsl:value-of select="."/>
@@ -56,6 +59,35 @@
 
   <xsl:template match="onix:LicenseRelatedPlace">
     <xsl:value-of select="./onix:LicensePlaceRelator"/> : <xsl:value-of select="./onix:RelatedPlace"/>
+  </xsl:template>
+
+  <xsl:template match="//onix:PublicationsLicenseExpression/onix:Definitions">
+    <xsl:apply-templates select="onix:AgentDefinition"/>
+    <xsl:apply-templates select="onix:ResourceDefinition"/>
+  </xsl:template>
+
+  <xsl:template match="onix:AgentDefinition">
+    <xsl:value-of select="onix:AgentLabel"/>
+    <xsl:value-of select="onix:AgentName/onix:Name"/>
+    <xsl:value-of select="onix:AgentRelatedPlace"/>
+  </xsl:template>
+
+  <xsl:template match="onix:AgentRelatedPlace">
+    <xsl:value-of select="onix:AgentPlaceRelator"/>
+    <xsl:value-of select="onix:RelatedPlace"/>
+  </xsl:template>
+  
+  <xsl:template match="onix:ResourceDefinition">
+    <xsl:value-of select="onix:ResourceLabel"/>
+    <xsl:value-of select="onix:Description"/>
+    <xsl:apply-templates select="onix:LicenseTextLink"/>
+  </xsl:template>
+
+  <xsl:template match="onix:LicenseTextLink">
+    <xsl:variable name="ref" select="./@href"/>
+   *****LICENSE TEXT... <xsl:value-of select="$ref"/>
+    <xsl:value-of select="//onix:PublicationsLicenseExpression/onix:LicenseDocumentText/onix:TextElement[@id=$ref]/../onix:DocumentLabel"/>
+    <xsl:value-of select="//onix:PublicationsLicenseExpression/onix:LicenseDocumentText/onix:TextElement[@id=$ref]/onix:Text"/>
   </xsl:template>
 
   <xsl:template match="onix:LicenseDocument">
