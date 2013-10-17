@@ -41,6 +41,9 @@ class AdminController {
   }
 
   def reSummariseLicenses() {
+    License.findAll("select l, oc.toComponent from License as l join l.outgoingCombos as oc where oc.toComponent.doctype=''").each { lic ->
+      log.debug(lic);
+    }
     redirect(url: request.getHeader('referer'))
   }
 }
