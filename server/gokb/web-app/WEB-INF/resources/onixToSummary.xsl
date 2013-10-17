@@ -20,21 +20,21 @@
   <xsl:variable name="apos">'</xsl:variable>
 
   <xsl:template match="/">
-    <h3>
-      <xsl:text>Summary of ONIX-PL expression of license "</xsl:text>
-      <xsl:value-of select="//onix:LicenseDetail/onix:Description"/>
-      <xsl:text>"</xsl:text>
-    </h3>
     <div class="container">
-      <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:LicenseDetail"/>
+      <div class="row">
+        <h4>
+          <xsl:text>Summary of ONIX-PL expression of license "</xsl:text>
+          <xsl:value-of select="//onix:LicenseDetail/onix:Description"/>
+          <xsl:text>"</xsl:text>
+        </h4>
+        <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:LicenseDetail"/>
+      </div>
       <xsl:apply-templates select="//onix:PublicationsLicenseExpression/onix:Definitions"/>
     </div>
   </xsl:template>
 
   <xsl:template match="//onix:PublicationsLicenseExpression/onix:LicenseDetail">
     <dl class="dl-horizontal">
-
-        <xsl:value-of select="onix:Description"/>
         <xsl:apply-templates select="onix:LicenseStatus"/>
         <xsl:apply-templates select="onix:LicenseRenewalType"/>
         <xsl:apply-templates select="onix:LicenseIdentifier"/>
@@ -42,35 +42,32 @@
         <xsl:apply-templates select="onix:LicenseRelatedPlace"/>
     </dl>
     <h4>License Document(s)</h4>
-    <dl class="dl-horizontal">
-        <xsl:apply-templates select="onix:LicenseDocument"/>
-    </dl>
-  
+    <dl class="dl-horizontal"><xsl:apply-templates select="onix:LicenseDocument"/></dl>
   </xsl:template>
   
 
   <xsl:template match="onix:LicenseStatus">
-    <div class="control-group">
-      <dt>License Status</dt><dd><xsl:value-of select="."/></dd>
-    </div>
+    <div class="control-group"><dt>License Status</dt><dd><xsl:value-of select="."/></dd></div>
   </xsl:template>
 
   <xsl:template match="onix:LicenseRenewalType">
-    <div class="control-group">
-      <dt>License Renewal</dt><dd><xsl:value-of select="."/></dd>
-    </div>
+    <div class="control-group"><dt>License Renewal</dt><dd><xsl:value-of select="."/></dd></div>
   </xsl:template>
 
   <xsl:template match="onix:LicenseIdentifier">
-    <xsl:value-of select="./onix:LicenseIDType"/> : <xsl:value-of select="./onix:IDValue"/>
+    <div class="control-group"><dt><xsl:value-of select="./onix:LicenseIDType"/></dt><dd><xsl:value-of select="./onix:IDValue"/></dd></div>
   </xsl:template>
 
   <xsl:template match="onix:LicenseRelatedTimePoint">
-    <xsl:value-of select="./onix:LicenseTimePointRelator"/> : <xsl:value-of select="./onix:RelatedTimePoint"/>
+      <div class="control-group">
+      <dt><xsl:value-of select="./onix:LicenseTimePointRelator"/></dt><dd><xsl:value-of select="./onix:RelatedTimePoint"/></dd>
+      </div>
   </xsl:template>
 
   <xsl:template match="onix:LicenseRelatedPlace">
-    <xsl:value-of select="./onix:LicensePlaceRelator"/> : <xsl:value-of select="./onix:RelatedPlace"/>
+      <div class="control-group">
+      <dt><xsl:value-of select="./onix:LicensePlaceRelator"/></dt><dd><xsl:value-of select="./onix:RelatedPlace"/></dd>
+      </div>
   </xsl:template>
 
   <xsl:template match="//onix:PublicationsLicenseExpression/onix:Definitions">
@@ -81,9 +78,11 @@
   <xsl:template match="onix:AgentDefinition">
     <div class="row">
       <div class="span6">
-        <div class="control-group"><dt>Agent Label</dt><dd><xsl:value-of select="onix:AgentLabel"/></dd></div>
-        <div class="control-group"><dt>Agent Name</dt><dd><xsl:value-of select="onix:AgentName/onix:Name"/></dd></div>
-        <div class="control-group"><dt>Agent Place</dt><dd><xsl:value-of select="onix:AgentRelatedPlace"/></dd></div>
+        <dl class="dl-horizontal">
+          <div class="control-group"><dt>Agent Label</dt><dd><xsl:value-of select="onix:AgentLabel"/></dd></div>
+          <div class="control-group"><dt>Agent Name</dt><dd><xsl:value-of select="onix:AgentName/onix:Name"/></dd></div>
+          <div class="control-group"><dt>Agent Place</dt><dd><xsl:value-of select="onix:AgentRelatedPlace"/></dd></div>
+        </dl>
       </div>
       <div class="span6">
         <xsl:apply-templates select="onix:LicenseTextLink"/>
@@ -92,13 +91,15 @@
   </xsl:template>
 
   <xsl:template match="onix:AgentRelatedPlace">
-    <div class="control-group"><dt><xsl:value-of select="onix:AgentPlaceRelator"/></dt><dd><xsl:value-of select="onix:RelatedPlace"/></dd></div>
+    <xsl:value-of select="onix:AgentPlaceRelator"/>:<xsl:value-of select="onix:RelatedPlace"/>
   </xsl:template>
   
   <xsl:template match="onix:ResourceDefinition">
     <div class="row">
       <div class="span6">
-        <div class="control-group"><dt><xsl:value-of select="onix:ResourceLabel"/></dt><dd><xsl:value-of select="onix:Description"/></dd></div>
+        <dl class="dl-horizontal">
+          <div class="control-group"><dt><xsl:value-of select="onix:ResourceLabel"/></dt><dd><xsl:value-of select="onix:Description"/></dd></div>
+        </dl>
       </div>
       <div class="span6">
         <xsl:apply-templates select="onix:LicenseTextLink"/>
@@ -114,7 +115,7 @@
   </xsl:template>
 
   <xsl:template match="onix:LicenseDocument">
-    <xsl:value-of select="./onix:LicenseDocumentType"/> : <xsl:value-of select="./onix:DocumentLabel"/>
+    <div class="control-group"><dt><xsl:value-of select="onix:LicenseDocumentType"/></dt><dd><xsl:value-of select="onix:DocumentLabel"/></dd></div>
   </xsl:template>
 
 </xsl:stylesheet>

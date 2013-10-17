@@ -67,8 +67,18 @@ class UploadAnalysisService {
 
     // Extract high level details
     license.name = parsedXml.ExpressionDetail.Description.text()
-    // license.fileAttachments.add(datafile);
 
+    // Generate Summary
+    license.summaryStatement = generateSummary(uploaded_file)
+    license.save(flush:true)
+
+    // Create the combo
+    license.fileAttachments.add(datafile);
+    license.save(flush:true);
+  }
+
+  def generateSummary(onix_file) {
+    def result = null
     def baos = new ByteArrayOutputStream()
     def xslt = grailsApplication.mainContext.getResource('/WEB-INF/resources/onixToSummary.xsl').inputStream
 
@@ -76,18 +86,13 @@ class UploadAnalysisService {
       // Run transform against document and store output in license.summaryStatement
       def factory = TransformerFactory.newInstance()
       def transformer = factory.newTransformer(new StreamSource(xslt))
-      transformer.transform(new StreamSource(new FileReader(uploaded_file)), new StreamResult(baos))
+      transformer.transform(new StreamSource(new FileReader(onix_file)), new StreamResult(baos))
 
-      license.summaryStatement = baos.toString()
+      result = baos.toString()
     }
     else {
       log.error("Unable to get handle to /onixToSummary.xsl XSL");
     }
-
-    license.save(flush:true)
-
-    // Create the combo
-    license.fileAttachments.add(datafile);
-    license.save(flush:true);
+    result
   }
 }
