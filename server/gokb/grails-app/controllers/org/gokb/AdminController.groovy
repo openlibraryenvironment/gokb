@@ -41,8 +41,14 @@ class AdminController {
   }
 
   def reSummariseLicenses() {
-    License.findAll("select l, oc.toComponent from License as l join l.outgoingCombos as oc where oc.toComponent.doctype=''").each { lic ->
-      log.debug(lic);
+    DataFile.executeQuery("select d from DataFile as d where d.doctype=?",['http://www.editeur.org/onix-pl:PublicationsLicenseExpression']).each { df ->
+      log.debug(df);
+      df.incomingCombos.each { ic ->
+        log.debug(ic);
+        if ( ic.fromComponent instanceof License ) {
+          log.debug("Regenerate license for ${ic.fromComponent.id}");
+        }
+      }
     }
     redirect(url: request.getHeader('referer'))
   }
