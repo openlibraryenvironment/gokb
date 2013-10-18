@@ -104,6 +104,7 @@
       </div>
       <div class="span6">
         <xsl:apply-templates select="onix:LicenseTextLink"/>
+        &#160;
       </div>
     </div>
   </xsl:template>
