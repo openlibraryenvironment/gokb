@@ -22,14 +22,14 @@
       <dt>License Type</dt>
       <dd><g:xEditableRefData owner="${d}" field="type" config='License.Type' /></dd>
     </div>
-
-   <div class="control-group">
-      <dt>Summary Statement</dt>
-      <dd>${d.summaryStatement}</dd>
-    </div>
-
-
   </dl>
+
+  <g:if test="${((d.summaryStatement != null) && (d.summaryStatement.length() > 0 ) )}">
+    <h4>Summary Of License</h4>
+    ${d.summaryStatement}
+  </g:if>
+
+
 </g:if>
 <script language="JavaScript">
   $(document).ready(function() {
