@@ -344,6 +344,13 @@ GOKb.doCommand = function(command, params, data, callbacks, ajaxOpts) {
 };
 
 /**
+ * Helper for GOKb processes that need to refresh the data after complete. 
+ */
+GOKb.postProcess = function(command, params, body, updateOptions, callbacks) {
+  Refine.postProcess("gokb", command, params, body, updateOptions, callbacks);
+};
+
+/**
  * Helper method to execute a command in the Refine backend
  */
 GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
