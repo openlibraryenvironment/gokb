@@ -41,8 +41,7 @@ GOKb.contextMenu.rules = {
 	  { disable: false, items: [
 	    "gokb-lookup",
 	    "gokb-lookup-org",
-	    "gokb-lookup-platform",
-	    "gokb-lookup-title"]
+	    "gokb-lookup-platform"]
 	  }
 	]
 };
