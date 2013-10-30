@@ -12,7 +12,8 @@ class WorkflowController {
 
   def actionConfig = [
     'object::statusDeleted':[actionType:'simple'],
-    'title::transfer':      [actionType:'workflow', view:'titleTransfer']
+    'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
+    'platform::replacewith':[actionType:'workflow', view:'platformReplacement']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
