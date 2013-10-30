@@ -36,6 +36,7 @@ GOKb.hijackFunction (
 );
 
 // Replace the current CreateUpdate function with our own to update the validation panel.
+GOKb.validationPanelRun = true;
 GOKb.hijackFunction (
   'Refine.createUpdateFunction',
   function(options, onFinallyDone, oldFunction) {
@@ -43,14 +44,16 @@ GOKb.hijackFunction (
 		var functions = [oldFunction.apply(this, arguments)];
 		
 		// Push our update function to list of functions to be executed.
-//		if (options.everythingChanged || options.modelsChanged || options.rowsChanged || options.rowMetadataChanged || options.cellsChanged) {
+		if (GOKb.validationPanelRun || options.everythingChanged || options.modelsChanged || options.rowsChanged || options.rowMetadataChanged || options.cellsChanged) {
 			
 			// If one of the above flags is true then we need to update the validation tab.
 			// Passing in the previously added function.
 			functions.unshift(function() {
 				GOKb.validationPanel.update(functions[1]);
 	    });
-//		}
+			
+			GOKb.validationPanelRun = false;
+		}
 		
 		// Execute our function.
 		return functions[0];
