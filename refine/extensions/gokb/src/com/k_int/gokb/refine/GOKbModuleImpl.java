@@ -4,7 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
-import java.util.Properties;
 
 import javax.servlet.ServletConfig;
 
@@ -45,13 +44,6 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
 
     @Override
     public void init(ServletConfig config) throws Exception {
-        
-        // Set java to prefer IPv4. This is to get around an issue on the windows platform,
-        // where some anti-virus/firewall applications wrongly close sockets opened in a
-        // JAVA application.
-        _logger.info("Setting IPv4 preference.");
-        Properties props = System.getProperties();
-        props.setProperty("java.net.preferIPv4Stack", "true");
         
         // Core module.
         ButterflyModule coreMod = getModule("core");
