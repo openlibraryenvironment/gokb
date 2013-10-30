@@ -280,4 +280,14 @@ class WorkflowController {
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
     activity_record.save()
   }
+
+  def processPackageReplacement() {
+    params.each { p ->
+      if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+         def tt = p.key.substring(3);
+         log.debug("Platform to replace: \"${tt}\"");
+      }
+    }
+    render view:'packageReplacementResult'
+  }
 }
