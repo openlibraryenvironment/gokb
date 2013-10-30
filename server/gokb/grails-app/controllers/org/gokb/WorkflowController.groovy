@@ -286,8 +286,13 @@ class WorkflowController {
       if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
          def tt = p.key.substring(3);
          log.debug("Platform to replace: \"${tt}\"");
+         def old_platform = Platform.get(tt)
+         def new_platform = genericOIDService.resolveOID2(params.newplatform)
+
+         log.debug("old: ${old_platform} new: ${new_platform}");
+         Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[old_platform, new_platform]);
       }
     }
-    render view:'packageReplacementResult'
+    render view:'platformReplacementResult'
   }
 }
