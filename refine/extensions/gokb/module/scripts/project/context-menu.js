@@ -38,7 +38,12 @@ GOKb.contextMenu.rules = {
 	  { disable: true, items: ["gokb-lookup"] }
 	],
 	"enable-lookup" : [
-	  { disable: false, items: ["gokb-lookup", "gokb-lookup-org", "gokb-lookup-platform"] }
+	  { disable: false, items: [
+	    "gokb-lookup",
+	    "gokb-lookup-org",
+	    "gokb-lookup-platform",
+	    "gokb-lookup-title"]
+	  }
 	]
 };
 
@@ -65,9 +70,9 @@ GOKb.contextMenu.options = {
 //	  	  	icon: "",
 	  	  	alias: "gokb-lookup-platform",
 	  	  	action: function () {
-	  	  		GOKb.handlers.lookup ("platform", ["primaryUrl"], ["primaryUrl"]);
+	  	  		GOKb.handlers.lookup ("platform", ["variantNames.variantName"], ["variantNames.variantName"]);
 	  	  	}
-	  	  }
+	  	  },
       ]
     },
   ],

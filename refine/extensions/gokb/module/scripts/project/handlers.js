@@ -289,11 +289,27 @@ GOKb.handlers.lookup = function(namespace, match, attr) {
 			).text(item.label)
 		;
 		
+		var appendAttribute = function (target, key, val) {
+			target.append(
+			  "<br /><span class='item-sub-title'>" + key.replace(/^(.+\.)*(.+)$/, "$2") + ":</span> " +
+        "<span class='item-sub-value'>" +
+        	(val ? val : "") + "</span>"
+      );
+		};
+		
 		// Append each of the items properties as well as the label.
 		$.each(item, function(key, val) {
-			if (key != "value" && key != "label" )
-			link.append("<br /><span class='item-sub-title'>" + key + ":</span> " +
-			            "<span class='item-sub-value'>" + val + "</span>");
+			if (key != "value" && key != "label" ) {
+				if (val instanceof Array) {
+					// Output for each entry.
+					$.each(val, function(i, v) {
+						appendAttribute (link, key, v);
+					});
+				} else {
+					// Just append the one.
+					appendAttribute (link, key, val);
+				}
+			}
 		});
 		
 		// Return the list item with the link.
