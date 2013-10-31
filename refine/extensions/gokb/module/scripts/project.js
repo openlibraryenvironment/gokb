@@ -35,6 +35,38 @@ GOKb.hijackFunction (
   }
 );
 
+// Replace the base resize method.
+GOKb.hijackFunction (
+  "resize",
+  function (oldFunction) {
+  	
+  	// Widen the left panel by x pixels.
+  	var pixels = 25;
+
+    // Execute the old code.
+    oldFunction.apply(this, arguments);
+    
+    // Get the left and right panels.
+    var rp = ui.rightPanelDiv;
+    var lp = ui.leftPanelDiv;
+    
+    // Increase the width of the left panel and decrease the right.
+    lp.width (
+      lp.width() + pixels
+    );
+    
+    rp.width (
+      rp.width() - pixels
+    );
+    
+    // Get the right panel position.
+    var rp_pos = rp.offset();
+    rp_pos.left = rp_pos.left + pixels;
+    
+    rp.offset(rp_pos);
+  }
+);
+
 // Replace the adjustTable method.
 GOKb.hijackFunction (
   "DataTableView.prototype._adjustDataTables",
