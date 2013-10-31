@@ -61,7 +61,7 @@ GOKb.contextMenu.options = {
 //	  	  	icon: "",
 	  	  	alias: "gokb-lookup-org",
 	  	  	action: function () {
-	  	  		GOKb.handlers.lookup ("org");
+	  	  		GOKb.handlers.lookup ("org", ["variantNames.variantName"], ["variantNames.variantName"]);
 	  	  	}
 	  	  },
 	  	  {
