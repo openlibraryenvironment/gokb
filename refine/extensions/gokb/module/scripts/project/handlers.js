@@ -253,6 +253,7 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
  */
 GOKb.handlers.lookup = function(namespace, match, attr) {
 
+  // URL for the lookup.
   var url = "/command/gokb/lookup?type=" + namespace;
 
   // Arrays.
@@ -281,31 +282,48 @@ GOKb.handlers.lookup = function(namespace, match, attr) {
 
   // Now we have our lookup object we can now open it with a custom renderer set.  
   lookup.open(function( ul, item ) {
+    
+    // Regex for highlighting.
+    var highlight = new RegExp('(' + RegExp.escape(this.term) + ')', "i");
+    
+    // Create a link.
     var link = $("<a />")
       .append(
-        "<span class='item-name' />"
-      ).text(item.label)
+        $("<span class='item-name' />").html(
+          item.label.replace(highlight, "<span class='highlight' >$1</span>")
+        )
+      )
     ;
-
-    var appendAttribute = function (target, key, val) {
-      target.append(
-        "<br /><span class='item-sub-title'>" + key.replace(/^(.+\.)*(.+)$/, "$2") + ":</span> " +
-        "<span class='item-sub-value'>" +
-        (val ? val : "") + "</span>"
-      );
+    
+    // The method to append attributes.
+    var appendAttribute = function (target, key, val, highlight) {
+      
+      // Regex for field names.
+      var removeParents = /^(.+\.)*(.+)$/;
+      
+      // Just append the field.
+      if (val.match(highlight)) {
+        target.append(
+          "<br /><span class='item-sub-title'>" + key.replace(removeParents, "$2") + ":</span> " +
+          "<span class='item-sub-value'>" +
+          (val ? val.replace(highlight, "<span class='highlight' >$1</span>") : "") + "</span>"
+        );
+      }
     };
 
     // Append each of the items properties as well as the label.
     $.each(item, function(key, val) {
       if (key != "value" && key != "label" ) {
         if (val instanceof Array) {
+          
           // Output for each entry.
           $.each(val, function(i, v) {
-            appendAttribute (link, key, v);
+            appendAttribute (link, key, v, highlight);
           });
         } else {
+          
           // Just append the one.
-          appendAttribute (link, key, val);
+          appendAttribute (link, key, val, highlight);
         }
       }
     });
