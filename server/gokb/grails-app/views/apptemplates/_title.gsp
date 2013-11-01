@@ -72,8 +72,21 @@
                   </g:each>
                 </tbody>
               </table>
+              <h4>Add Variant Title</h4>
+              <dl class="dl-horizontal">
+                <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+                  <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
+                  <input type="hidden" name="__newObjectClass" value="org.gokb.cred.KBComponentVariantName"/>
+                  <input type="hidden" name="__recip" value="owner"/>
+                  <dt>Variant Name</dt><dd><input type="text" name="variantName"/></dd>
+                  <dt>Locale</dt><dd><g:simpleReferenceTypedown name="locale" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.Locale" /></dd>
+                  <dt>Variant Type</dt><dd><g:simpleReferenceTypedown name="variantType" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.VariantType" /></dd>
+                  <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+                </g:form>
+              </dl>
             </dd>
           </div>
+
 
             <div class="control-group">
       
