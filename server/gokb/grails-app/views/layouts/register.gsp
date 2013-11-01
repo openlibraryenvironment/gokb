@@ -21,13 +21,6 @@
 
 <g:layoutBody/>
 
-
-<%--
-<g:javascript src='jquery/jquery.jgrowl.js' plugin='spring-security-ui'/>
-<g:javascript src='jquery/jquery.checkbox.js' plugin='spring-security-ui'/>
-<g:javascript src='spring-security-ui.js' plugin='spring-security-ui'/>
---%>
-
 <s2ui:showFlash/>
 
 </body>

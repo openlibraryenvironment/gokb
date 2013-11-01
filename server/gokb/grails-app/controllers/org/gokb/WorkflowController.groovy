@@ -12,7 +12,8 @@ class WorkflowController {
 
   def actionConfig = [
     'object::statusDeleted':[actionType:'simple'],
-    'title::transfer':      [actionType:'workflow', view:'titleTransfer']
+    'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
+    'platform::replacewith':[actionType:'workflow', view:'platformReplacement']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -278,5 +279,20 @@ class WorkflowController {
 
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
     activity_record.save()
+  }
+
+  def processPackageReplacement() {
+    params.each { p ->
+      if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+         def tt = p.key.substring(3);
+         log.debug("Platform to replace: \"${tt}\"");
+         def old_platform = Platform.get(tt)
+         def new_platform = genericOIDService.resolveOID2(params.newplatform)
+
+         log.debug("old: ${old_platform} new: ${new_platform}");
+         Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[old_platform, new_platform]);
+      }
+    }
+    render view:'platformReplacementResult'
   }
 }

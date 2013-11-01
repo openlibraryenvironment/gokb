@@ -12,6 +12,7 @@
     <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
 
     <g:layoutHead/>
+    <g:javascript library="application"/>
     <r:layoutResources />
 
   </head>
@@ -124,11 +125,10 @@
               </div>
           </div>
       </div>
+    </div>
 
-    <g:javascript library="application"/>
-    <r:layoutResources />
     <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
-      <script>
+      <g:javascript >
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
         m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -136,8 +136,8 @@
   
         ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
         ga('send', 'pageview');
-      </script>
+      </g:javascript>
     </g:if>
-
   </body>
+  <r:layoutResources />
 </html>

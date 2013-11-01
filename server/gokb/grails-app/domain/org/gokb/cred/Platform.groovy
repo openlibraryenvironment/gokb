@@ -58,4 +58,10 @@ class Platform extends KBComponent {
     result
   }
 
+  def availableActions() {
+    [ 
+      [code:'platform::replacewith', label:'Replace platform with...'] 
+    ]
+  }
+
 }

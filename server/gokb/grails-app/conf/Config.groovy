@@ -162,12 +162,13 @@ validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|
 
 validation.rules = [
 	"${IngestService.PUBLICATION_TITLE}" : [
-		[ type: ColumnRequired			, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing			, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
 
   // All platforms
   "platform.*.*" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
       type: MustMatchRefdataValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -179,7 +180,7 @@ validation.rules = [
   ],
 
 	"${IngestService.HOST_PLATFORM_URL}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: CellMatches,
@@ -193,7 +194,7 @@ validation.rules = [
 	],
 
 	"${IngestService.HOST_PLATFORM_NAME}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: LookedUpValue,
@@ -203,17 +204,18 @@ validation.rules = [
 	],
 
 	"${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_WARNING ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
 
 	"${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
 
 	"${IngestService.PACKAGE_NAME}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsSimilar,
@@ -226,7 +228,7 @@ validation.rules = [
 	],
 
 	"${IngestService.PUBLISHER_NAME}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: LookedUpValue,
@@ -236,6 +238,7 @@ validation.rules = [
 	],
 
 	"${IngestService.EMBARGO_INFO}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -248,6 +251,7 @@ validation.rules = [
 	],
 
 	"${IngestService.COVERAGE_DEPTH}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -260,6 +264,7 @@ validation.rules = [
 	],
 
 	"${IngestService.DELAYED_OA}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -270,6 +275,7 @@ validation.rules = [
 	],
 
 	"${IngestService.DELAYED_OA_EMBARGO}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -282,6 +288,7 @@ validation.rules = [
 	],
 
 	"${IngestService.HYBRID_OA}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -292,6 +299,7 @@ validation.rules = [
 	],
 
 	"${IngestService.HYBRID_OA_URL}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -304,6 +312,7 @@ validation.rules = [
 	],
 
 	"${IngestService.PRIMARY_TIPP}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -314,6 +323,7 @@ validation.rules = [
 	],
 
 	"${IngestService.TIPP_PAYMENT}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -324,6 +334,7 @@ validation.rules = [
 	],
 
 	"${IngestService.TIPP_STATUS}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -340,7 +351,7 @@ validation.rules = [
 
 	// ISSN
 	"${IngestService.IDENTIFIER_PREFIX}issn" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -350,7 +361,6 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellAndOtherNotEmpty,
 			severity: A_ValidationRule.SEVERITY_WARNING,
@@ -359,7 +369,7 @@ validation.rules = [
 	],
 
 	"${IngestService.IDENTIFIER_PREFIX}eissn" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -369,7 +379,6 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 
 	// Custom ISBN.
@@ -383,7 +392,6 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
 			]
 		],
-//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 ]
 
@@ -497,7 +505,7 @@ globalSearchTemplates = [
 			],
 			qbeResults:[
 				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
 			]
 		]
 	],
@@ -886,3 +894,27 @@ grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
  * We need to disable springs password encoding as we handle this in our domain model.
  */
 grails.plugins.springsecurity.ui.encodePassword = false
+
+// Uncomment and edit the following lines to start using Grails encoding & escaping improvements
+
+/* remove this line 
+// GSP settings
+grails {
+    views {
+        gsp {
+            encoding = 'UTF-8'
+            htmlcodec = 'xml' // use xml escaping instead of HTML4 escaping
+            codecs {
+                expression = 'html' // escapes values inside null
+                scriptlet = 'none' // escapes output from scriptlets in GSPs
+                taglib = 'none' // escapes output from taglibs
+                staticparts = 'none' // escapes output from static template parts
+            }
+        }
+        // escapes all not-encoded output at final stage of outputting
+        filteringCodecForContentType {
+            //'text/html' = 'html'
+        }
+    }
+}
+remove this line */

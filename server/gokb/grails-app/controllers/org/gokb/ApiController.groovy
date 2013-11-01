@@ -617,13 +617,12 @@ class ApiController {
     // Should take a type parameter and do the right thing.
     try {
       Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
-          "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
-          )
+        "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
+      )
       
       def criteria = ComboCriteria.createFor(c.createCriteria())
       apiReturn ( criteria.listDistinct {
         if (term) {
-          
           // Add a condition for each parameter we wish to search.
           or {
             match_in.each { String param_name ->
@@ -663,7 +662,7 @@ class ApiController {
       })
 
     } catch (Throwable t) {
-      t.printStackTrace()
+      log.error(t);
       /* Just return an empty list. */
       apiReturn ([])
     }

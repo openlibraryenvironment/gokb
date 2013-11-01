@@ -4,8 +4,28 @@
 <h3>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h3>
 
 <div id="content">
+
+  <dl class="dl-horizontal">
+
+    <div class="control-group">
+      <dt>Name</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
+    </div>
+
+    <div class="control-group">
+      <dt>Status</dt>
+      <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
+    </div>
+
+    <div class="control-group">
+      <dt>Short Code</dt>
+      <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
+    </div>
+
+  </dl>
+
   <ul id="tabs" class="nav nav-tabs">
-    <li class="active"><a href="#platformdetails" data-toggle="tab">Title Details</a></li>
+    <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
     <li><a href="#header" data-toggle="tab">Header</a></li>
     <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>

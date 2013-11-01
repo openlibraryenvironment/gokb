@@ -67,3 +67,30 @@ ExtensionBar.addExtensionMenu({
   "label" : "GOKb",
   "submenu" : GOKb.menuItems
 });
+
+/**
+ * Add to the data table "All" column menu.
+ */
+DataTableView.extendMenu(function(dataTableView, menu) {
+	
+	// Find the column menu.
+	var col_menu = null;
+	for (var i=0; i<menu.length && !col_menu; i++) {
+		if (menu[i].id == 'core/edit-rows') {
+			col_menu = menu[i].submenu;
+		}
+	}
+	
+	if (!col_menu) col_menu = menu;
+	
+	// Add any Menu items here.
+	col_menu.push(
+		{
+	    id: "gokb-add-row",
+	    "label": "Prepend Rows",
+	    "click": function() {
+	    	GOKb.handlers.addRows();
+	    }
+	  }
+	);
+});
