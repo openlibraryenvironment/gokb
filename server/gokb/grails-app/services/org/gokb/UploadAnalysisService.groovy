@@ -80,7 +80,8 @@ class UploadAnalysisService {
   def generateSummary(onix_file) {
     def result = null
     def baos = new ByteArrayOutputStream()
-    def xslt = grailsApplication.mainContext.getResource('/WEB-INF/resources/onixToSummary.xsl').inputStream
+    // def xslt = grailsApplication.mainContext.getResource('/WEB-INF/resources/onixToSummary.xsl').inputStream
+    def xslt = grailsApplication.mainContext.getResource('/WEB-INF/resources/build-onix-pl-summary-view.xsl').inputStream
 
     if ( xslt != null ) {
       // Run transform against document and store output in license.summaryStatement
