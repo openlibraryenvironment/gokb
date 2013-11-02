@@ -15,7 +15,7 @@
           <h1>GOKb file upload</h1>
           <p>
             Use this form to upload any file to GOKb. After upload you will be able to link the file to components in the database. If GOKb can
-            interpret the contents of your file (For example, if the file is regognised as an ONYX license file) then the system will
+            interpret the contents of your file (For example, if the file is regognised as an ONIX license file) then the system will
             attempt to create the corresponding system objects and link them to the uploaded file.
           </p>
           <p>
