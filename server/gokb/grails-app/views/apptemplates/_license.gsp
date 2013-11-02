@@ -31,6 +31,10 @@
 
 
 </g:if>
+
+
+<script language="JavaScript" src="http://gokb.k-int.com/wz_tooltip.js"/>
+
 <script language="JavaScript">
   $(document).ready(function() {
 
