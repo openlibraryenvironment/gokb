@@ -50,14 +50,20 @@ class AdminController {
       df.incomingCombos.each { ic ->
         log.debug(ic);
         if ( ic.fromComponent instanceof License ) {
-          log.debug("Regenerate license for ${ic.fromComponent.id}");
+          try {
+            log.debug("Regenerate license for ${ic.fromComponent.id}");
 
-          def sub1 = df.guid.substring(0,2);
-          def sub2 = df.guid.substring(2,4);
-          def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${df.guid}";
-          def source_file = new File(temp_file_name);
-          ic.fromComponent.summaryStatement = uploadAnalysisService.generateSummary(source_file);
-          ic.fromComponent.save(flush:true);
+            def sub1 = df.guid.substring(0,2);
+            def sub2 = df.guid.substring(2,4);
+            def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${df.guid}";
+            def source_file = new File(temp_file_name);
+            ic.fromComponent.summaryStatement = uploadAnalysisService.generateSummary(source_file);
+            ic.fromComponent.save(flush:true);
+            log.debug("Completed regeneration... size is ${ic.fromComponent.summaryStatement?.length()}");
+          }
+          catch ( Exception e ) {
+            log.error("Problem",e);
+          }
         }
       }
     }

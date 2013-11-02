@@ -39,7 +39,7 @@ class License extends KBComponent {
                  url column:'license_url'
                 file column:'license_document'
                 type column:'license_type_fk_rd'
-    summaryStatement column:'summary_txt', type:'text'
+    summaryStatement column:'summary_txt', type: 'text'
   }
 
   /**

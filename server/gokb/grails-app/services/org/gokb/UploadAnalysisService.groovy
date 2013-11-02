@@ -78,7 +78,7 @@ class UploadAnalysisService {
   }
 
   def generateSummary(onix_file) {
-    def result = null
+    String result = null
     def baos = new ByteArrayOutputStream()
     // def xslt = grailsApplication.mainContext.getResource('/WEB-INF/resources/onixToSummary.xsl').inputStream
     def xslt = grailsApplication.mainContext.getResource('/WEB-INF/resources/build-onix-pl-summary-view.xsl').inputStream
@@ -94,6 +94,7 @@ class UploadAnalysisService {
     else {
       log.error("Unable to get handle to /onixToSummary.xsl XSL");
     }
+    log.debug("generateSummary returning byte[] of length ${result?.length()}");
     result
   }
 }
