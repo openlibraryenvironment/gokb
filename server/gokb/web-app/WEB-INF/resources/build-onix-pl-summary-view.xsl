@@ -137,7 +137,7 @@
                   <xsl:for-each select="//onix:LicenseDetail/onix:LicenseRelatedTimePoint">
                     <div>
                       <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='LicenseTimePointRelatorCode']/rng:choice/rng:value[. = current()/onix:LicenseTimePointRelator]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-                      <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+                      <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
                         <xsl:call-template name="space-camel-case">
                           <xsl:with-param name="in-string" select="substring-after(onix:LicenseTimePointRelator,':')"/>
                         </xsl:call-template>
