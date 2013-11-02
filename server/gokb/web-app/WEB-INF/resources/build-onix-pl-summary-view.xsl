@@ -98,7 +98,7 @@
               <td>&#xA0;</td>
               <td colspan="2">
                 <div>
-                  <span class="label">
+                  <span class="onixlabel">
                     <xsl:text>License status: </xsl:text>
                   </span>
                   <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='LicenseStatusCode']/rng:choice/rng:value[. = current()//onix:LicenseDetail/onix:LicenseStatus]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
@@ -110,7 +110,7 @@
                 </div>
                 <xsl:if test="//onix:LicenseDetail/onix:LicenseRenewalType">
                   <div>
-                    <span class="label">
+                    <span class="onixlabel">
                       <xsl:text>License renewal type: </xsl:text>
                     </span>
                     <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='LicenseRenewalTypeCode']/rng:choice/rng:value[. = current()//onix:LicenseDetail/onix:LicenseRenewalType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
@@ -124,7 +124,7 @@
                 <xsl:for-each select="//onix:LicenseDetail/onix:LicenseIdentifier">
                   <div>
                     <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='LicenseIDTypeCode']/rng:choice/rng:value[. = current()/onix:LicenseIDType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-                    <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+                    <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
                       <xsl:call-template name="space-camel-case">
                         <xsl:with-param name="in-string" select="substring-after(onix:LicenseIDType,':')"/>
                       </xsl:call-template>
@@ -187,7 +187,7 @@
                     <xsl:for-each select="//onix:LicenseDetail/onix:LicenseRelatedPlace">
                       <div>
                         <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='LicensePlaceRelatorCode']/rng:choice/rng:value[. = current()/onix:LicensePlaceRelator]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-                        <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+                        <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
                           <xsl:call-template name="space-camel-case">
                             <xsl:with-param name="in-string" select="substring-after(onix:LicensePlaceRelator,':')"/>
                           </xsl:call-template>
@@ -230,7 +230,7 @@
                       <xsl:choose>
                         <xsl:when test="onix:AnnotationType">
                           <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='AnnotationTypeCode']/rng:choice/rng:value[. = current()/onix:AnnotationType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-                          <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+                          <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
                             <xsl:call-template name="space-camel-case">
                               <xsl:with-param name="in-string" select="substring-after(onix:AnnotationType,':')"/>
                             </xsl:call-template>
@@ -238,7 +238,7 @@
                           </span>
                         </xsl:when>
                         <xsl:otherwise>
-                          <span class="label">Note: </span>
+                          <span class="onixlabel">Note: </span>
                         </xsl:otherwise>
                       </xsl:choose>
                     </span>
@@ -282,7 +282,7 @@
                 <td colspan="2">
                   <div class="license-document">
                     <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='LicenseDocumentTypeCode']/rng:choice/rng:value[. = current()/onix:LicenseDocumentType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-                    <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+                    <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
                       <xsl:call-template name="space-camel-case">
                         <xsl:with-param name="in-string" select="substring-after(onix:LicenseDocumentType,':')"/>
                       </xsl:call-template>
@@ -1465,7 +1465,7 @@
     <xsl:for-each select="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:AgentRelatedAgent[onix:AgentAgentRelator!='onixPL:IsAnyOf']">
       <div>
         <xsl:variable name="relator-code-value-desc" select="translate($code-lists//rng:define[@name='AgentAgentRelatorCode']/rng:choice/rng:value[. = current()/onix:AgentAgentRelator]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-        <span class="label code-value" onmouseover="{concat('Tip(',$apos,$relator-code-value-desc,$apos,')')}" onmouseout="UnTip()">
+        <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$relator-code-value-desc,$apos,')')}" onmouseout="UnTip()">
           <xsl:call-template name="space-camel-case">
             <xsl:with-param name="in-string" select="substring-after(onix:AgentAgentRelator,':')"/>
           </xsl:call-template>
@@ -1538,7 +1538,7 @@
     <xsl:for-each select="onix:AgentIdentifier">
       <div class="agent-details">
         <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='AgentIDTypeCode']/rng:choice/rng:value[. = current()/onix:AgentIDType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-        <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+        <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
           <xsl:call-template name="space-camel-case">
             <xsl:with-param name="in-string" select="substring-after(onix:AgentIDType,':')"/>
           </xsl:call-template>
@@ -1549,7 +1549,7 @@
     </xsl:for-each>
     <xsl:if test="onix:Description">
       <div class="agent-details">
-        <span class="label">Description: </span>
+        <span class="onixlabel">Description: </span>
         <xsl:value-of select="onix:Description"/>
       </div>
     </xsl:if>
@@ -1558,7 +1558,7 @@
     <xsl:for-each select="onix:AgentRelatedPlace">
       <div class="agent-details">
         <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='AgentPlaceRelatorCode']/rng:choice/rng:value[. = current()/onix:AgentPlaceRelator]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-        <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+        <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
           <xsl:call-template name="space-camel-case">
             <xsl:with-param name="in-string">
               <xsl:value-of select="substring-after(onix:AgentPlaceRelator,':')"/>
@@ -1659,7 +1659,7 @@
     <xsl:param name="resource-role"/>
     <xsl:if test="onix:Description">
       <div class="resource-details">
-        <span class="label">Description: </span>
+        <span class="onixlabel">Description: </span>
         <xsl:value-of select="onix:Description"/>
       </div>
     </xsl:if>
@@ -1703,14 +1703,14 @@
       <div style="margin-left: 48pt;">
         <xsl:choose>
           <xsl:when test="onix:DocumentIDType='onixPL:Proprietary' and onix:IDTypeName">
-            <span class="label">
+            <span class="onixlabel">
               <xsl:value-of select="onix:IDTypeName"/>
               <xsl:text> (proprietary): </xsl:text>
             </span>
           </xsl:when>
           <xsl:otherwise>
             <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='DocumentIDTypeCode']/rng:choice/rng:value[. = current()/onix:DocumentIDType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-            <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+            <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
               <xsl:call-template name="space-camel-case">
                 <xsl:with-param name="in-string" select="substring-after(onix:DocumentIDType,':')"/>
               </xsl:call-template>
@@ -1738,7 +1738,7 @@
         <xsl:choose>
           <xsl:when test="onix:AnnotationType">
             <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='AnnotationTypeCode']/rng:choice/rng:value[. = current()/onix:AnnotationType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-            <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+            <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
               <xsl:call-template name="space-camel-case">
                 <xsl:with-param name="in-string" select="substring-after(onix:AnnotationType,':')"/>
               </xsl:call-template>
@@ -1746,7 +1746,7 @@
             </span>
           </xsl:when>
           <xsl:otherwise>
-            <span class="label">Note: </span>
+            <span class="onixlabel">Note: </span>
           </xsl:otherwise>
         </xsl:choose>
         <xsl:value-of select="onix:AnnotationText"/>
@@ -2085,7 +2085,7 @@
         </xsl:if>
         <xsl:if test="onix:UsageQuantityType!='onixPL:NumberOfCopiesPermitted'">
           <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name='UsageQuantityTypeCode']/rng:choice/rng:value[. = current()/onix:UsageQuantityType]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-          <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+          <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
             <xsl:call-template name="space-camel-case">
               <xsl:with-param name="in-string" select="substring-after(onix:UsageQuantityType,':')"/>
             </xsl:call-template>
@@ -2183,7 +2183,7 @@
           <xsl:if test="onix:TermStatus">
             <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name=concat($terms-type,'TermStatusCode')]/rng:choice/rng:value[. = current()/onix:TermStatus]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
             <br/>
-            <span class="label">Status: </span>
+            <span class="onixlabel">Status: </span>
             <span class="code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
               <xsl:call-template name="space-camel-case">
                 <xsl:with-param name="in-string" select="substring-after(onix:TermStatus,':')"/>
@@ -2193,7 +2193,7 @@
           <xsl:for-each select="*[name()=concat($terms-type,'Quantity')]">
             <br/>
             <xsl:variable name="code-value-desc" select="translate($code-lists//rng:define[@name=concat($terms-type,'QuantityTypeCode')]/rng:choice/rng:value[. = current()/*[name()=concat($terms-type,'QuantityType')]]/following-sibling::a:documentation[1]/a:note,$apos,'&#x2019;')"/>
-            <span class="label code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
+            <span class="onixlabel code-value" onmouseover="{concat('Tip(',$apos,$code-value-desc,$apos,')')}" onmouseout="UnTip()">
               <xsl:call-template name="space-camel-case">
                 <xsl:with-param name="in-string" select="substring-after(*[name()=concat($terms-type,'QuantityType')],':')"/>
               </xsl:call-template>
