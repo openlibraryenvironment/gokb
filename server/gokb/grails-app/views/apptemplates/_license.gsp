@@ -37,6 +37,26 @@
       </g:if>
     </div>
     <div class="tab-pane" id="lists">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Filetype</th>
+            <th>Size</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <g:each in="${d.fileAttachments}" var="f">
+            <tr>
+              <td>${f.uploadName}</td>
+              <td>${f.uploadMimeType}</td>
+              <td>${f.filesize}</td>
+              <td>${f.doctype}</td>
+            </tr>
+          </g:each>
+        </tbody>
+      </table>
     </div>
   </div>
 
