@@ -18,16 +18,28 @@
       <dd><g:xEditable class="ipe" owner="${d}" field="file"/></dd>
     </div>
 
-   <div class="control-group">
+    <div class="control-group">
       <dt>License Type</dt>
       <dd><g:xEditableRefData owner="${d}" field="type" config='License.Type' /></dd>
     </div>
   </dl>
 
-  <g:if test="${((d.summaryStatement != null) && (d.summaryStatement.length() > 0 ) )}">
-    <h4>Summary Of License</h4>
-    ${d.summaryStatement}
-  </g:if>
+  <ul id="tabs" class="nav nav-tabs">
+    <li class="active"><a href="#licsummary" data-toggle="tab">License Summary</a></li>
+    <li><a href="#lists" data-toggle="tab">Lists</a></li>
+  </ul>
+
+  <div id="my-tab-content" class="tab-content">
+    <div class="tab-pane active" id="licsummary">
+      <g:if test="${((d.summaryStatement != null) && (d.summaryStatement.length() > 0 ) )}">
+        <h4>Summary Of License</h4>
+        ${d.summaryStatement}
+      </g:if>
+    </div>
+    <div class="tab-pane" id="lists">
+    </div>
+  </div>
+
 
 
 </g:if>
