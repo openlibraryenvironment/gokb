@@ -49,7 +49,7 @@
         <tbody>
           <g:each in="${d.fileAttachments}" var="f">
             <tr>
-              <td>${f.uploadName}</td>
+              <td><g:link controller="workflow" action="download" id="${f.guid}">${f.uploadName}</g:link></td>
               <td>${f.uploadMimeType}</td>
               <td>${f.filesize}</td>
               <td>${f.doctype}</td>
