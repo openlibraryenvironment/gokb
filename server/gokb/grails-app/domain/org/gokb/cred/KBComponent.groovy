@@ -8,10 +8,13 @@ import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
 import org.hibernate.proxy.HibernateProxy
+import groovy.util.logging.*
 
 /**
  * Abstract base class for GoKB Components.
  */
+
+@Log4j
 abstract class KBComponent {
 
   static final String RD_STATUS         = "KBComponent.Status"
@@ -282,7 +285,7 @@ abstract class KBComponent {
 
   @Transient
   static def lookupByIO(String idtype, String idvalue) {
-    // println("lookupByIdentifier(${idtype},${idvalue})");
+    // println("lookupByIO(${idtype},${idvalue})");
     // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
     def result = null
 
@@ -298,21 +301,35 @@ abstract class KBComponent {
         // Found an identifier.. Get all components where that identifier is linked via
         // the ids combo map.
         def crit = KBComponent.createCriteria()
+        def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
 
         def lr = crit.list {
-          or {
-            outgoingCombos {
+          outgoingCombos {
+            and {
               eq ( 'toComponent', identifier)
-            }
-            incomingCombos {
-              eq ( 'fromComponent', identifier)
+              eq ( 'type', combotype)
             }
           }
         }
 
-        if ( lr && lr.size() == 1 )
-          result=lr.get(0);
+        if ( lr ) {
+          if ( lr.size() == 0 ) {
+            // println("Not found");
+          }
+          else if ( lr.size() == 1 ) {
+            result=lr.get(0);
+          }
+          else {
+            // println("Too many");
+          }
+        }
       }
+      else {
+        // println("No Identifier");
+      }
+    }
+    else {
+      // println("No Namespace");
     }
     result
   }

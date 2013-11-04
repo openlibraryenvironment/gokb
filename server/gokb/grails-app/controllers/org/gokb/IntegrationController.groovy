@@ -211,6 +211,19 @@ class IntegrationController {
     log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}");
 
     // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
+    if ( ( org_to_update ) && ( request.JSON.name?.length() > 0 ) ) {
+      boolean found = false
+      org_to_update.variantNames.each { vn ->
+        if ( vn.variantName == request.JSON.name ) {
+          found = true
+        }
+      }
+
+      if ( !found ) {
+        def new_variant_name = new KBComponentVariantName(variantName:request.JSON.name, owner:org_to_update)
+        new_variant_name.save();
+      }
+    }
 
     // Update any combos that point to the variant so that they now point to the authorized entry
 

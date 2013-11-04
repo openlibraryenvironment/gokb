@@ -35,6 +35,16 @@ class AdminController {
           if ( nmo.parent != null ) {
             def new_pub_combo = new Combo(fromComponent:ic.fromComponent, toComponent:nmo.parent, type:ic.type, status:ic.status).save();
           }
+          else {
+            def authorized_rdv = RefdataCategory.lookupOrCreate('Org.Authorized', 'Y')
+            log.debug("No parent set.. try and find an authorised org with the appropriate name(${ic.toComponent.name})");
+            def authorized_orgs = Org.executeQuery("select distinct o from Org o join o.variantNames as vn where ( o.name = ? or vn.variantName = ?) AND ? in elements(o.tags)", [ic.toComponent.name, ic.toComponent.name, authorized_rdv]);
+            if ( authorized_orgs.size() == 1 ) {
+              def ao = authorized_orgs.get(0)
+              log.debug("Create new publisher link to ${ao}");
+              def new_pub_combo = new Combo(fromComponent:ic.fromComponent, toComponent:ao, type:ic.type, status:ic.status).save();
+            }
+          }
         }
       }
       nmo.outgoingCombos.each { oc ->

@@ -32,3 +32,6 @@ alter table role CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 alter table rule CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 alter table user CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 alter table user_role CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
+
+update combo set combo_type_rv_fk = 90 where combo_type_rv_fk = 82;
+
