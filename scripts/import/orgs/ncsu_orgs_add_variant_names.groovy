@@ -76,6 +76,9 @@ while ((nl = r.readNext()) != null) {
     variant_name_request.idvalue = "ncsu:${nl[1]}".toString()
     variant_name_request.name = nl[3]
 
+    variant_name_request.variantidns = 'ncsu-internal'
+    variant_name_request.variantidvalue = "ncsu:${nl[0]}".toString()
+
     println(variant_name_request)
 
     // Post the json document

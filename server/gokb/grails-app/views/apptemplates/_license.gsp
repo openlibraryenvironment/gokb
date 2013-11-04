@@ -65,7 +65,6 @@
 </g:if>
 
 
-<script language="JavaScript" src="http://gokb.k-int.com/wz_tooltip.js"/>
 
 <script language="JavaScript">
   function showHidden(hidden) {
@@ -75,13 +74,12 @@
     else
       objHidden.display="block";
   }
-</script>
 
-
-<script language="JavaScript">
   $(document).ready(function() {
 
     $.fn.editable.defaults.mode = 'inline';
     $('.ipe').editable();
   });
 </script>
+
+<script language="JavaScript" src="http://gokb.k-int.com/wz_tooltip.js"/>

@@ -198,6 +198,25 @@ class IntegrationController {
   def registerVariantName() {
     def result=[:]
     log.debug("registerVariantName ${params} ${request.JSON}");
+
+    // See if we can locate the variant name as a first class component
+    
+    def variant_org = null;
+    if ( request.JSON.variantidns != null && request.JSON.variantidvalue != null ) {
+      variant_org = KBComponent.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
+      log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}");
+    }
+
+    def org_to_update = KBComponent.lookupByIO(request.JSON.idns,request.JSON.idvalue)
+    log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}");
+
+    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
+
+    // Update any combos that point to the variant so that they now point to the authorized entry
+
+    // Delete any remaining variant org combox
+    // Delete the variant org
+
     render result as JSON
   }
 }

@@ -10,6 +10,8 @@ class AdminController {
 
     def result = [:]
 
+    def publisher_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Publisher');
+
     result.nonMasterOrgs = Org.executeQuery('''
        select org
        from org.gokb.cred.Org as org
@@ -19,10 +21,21 @@ class AdminController {
     ''');
 
     result.nonMasterOrgs.each { nmo ->
+
+      if ( nmo.parent != null )
+        nmo.parent.variantNames.add(new KBComponentVariantName(variantName:nmo.name, owner:nmo.parent)).save();
+
       log.debug("${nmo.id} ${nmo.parent?.id}")
       def combosToDelete = []
       nmo.incomingCombos.each { ic ->
         combosToDelete.add(ic); //ic.delete(flush:true)
+
+        if ( ic.type == publisher_combo_type ) {
+          log.debug("Got a publisher combo");
+          if ( nmo.parent != null ) {
+            def new_pub_combo = new Combo(fromComponent:ic.fromComponent, toComponent:nmo.parent, type:ic.type, status:ic.status).save();
+          }
+        }
       }
       nmo.outgoingCombos.each { oc ->
         combosToDelete.add(oc); //ic.delete(flush:true)
