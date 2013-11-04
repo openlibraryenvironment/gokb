@@ -92,5 +92,13 @@ DataTableView.extendMenu(function(dataTableView, menu) {
 	    	GOKb.handlers.addRows();
 	    }
 	  }
+//		,
+//	  {
+//	  	id: "gokb-trim-all",
+//	  	"label": "Trim all whitespace",
+//	  	"click": function () {
+//	  		GOKb.handlers.trimData();
+//	  	}
+//	  }
 	);
 });

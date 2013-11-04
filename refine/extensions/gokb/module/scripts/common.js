@@ -489,7 +489,7 @@ GOKb.autoComplete = function(elements, data) {
 /**
  * Function to add multi-value auto-complete to the supplied jquery matches.
  */
-GOKb.multiAutoComplete = function(elements, data, separator) {
+GOKb.multiAutoComplete = function (elements, data, separator) {
 
   separator = separator || ",";
   
@@ -538,7 +538,7 @@ GOKb.multiAutoComplete = function(elements, data, separator) {
 GOKb.lookupCont = null;
 GOKb.lookup = null;
 GOKb.lookupEventBound = false;
-GOKb.getLookup = function (location, callback) {
+GOKb.getLookup = function (location, callback, quickCreate) {
   
   // Try and get the container.
   if (GOKb.lookupCont == null) {
@@ -557,8 +557,57 @@ GOKb.getLookup = function (location, callback) {
   GOKb.lookup = {
     _lookup : GOKb.lookupCont.data("lookup"),
     _original_renderer : null,
+    _quickCreate : null,
     open : function (renderer) {
       this._lookup._open();
+      
+      if (quickCreate == true) {
+      	
+      	if (this._quickCreate == null) {
+      		
+      		var _self = this;
+      		
+      		// Reference for the autocomplete.
+      		var ac = $(_self._lookup._autocomplete[0]);
+      		
+      		// Create the button.
+      		_self._quickCreate = $("<button />")
+		  			.prop('disabled', true)
+      		  .text ("Create New")
+      		  .click(function(){
+      	  		var val = ac.val();
+      	  		
+      	  		if (val && val != "") {
+	      	  		// On click we need to confirm the creation.
+	      	  		var r=confirm("Are you sure you wish to create \"" + val + "\"");
+	      	  		if (r==true) {
+	      	  		  alert("Create a new item");
+	      	  		} else {
+	      	  			alert("Cancel!");
+	      	  		}
+      	  		}
+	      	  });
+      		
+      		ac.on('input', function() {
+    		  	if ($(this).val() && $(this).val() != "") {
+    		  		// Enable the create button.
+    		  		_self._quickCreate.prop('disabled', false);
+    		  	} else {
+    		  		// Disable the button.
+    		  		_self._quickCreate.prop('disabled', true);
+    		  	}
+    		  });
+      	
+	      	// Append a button for the quick creation.
+      		ac.after (
+	      	  _self._quickCreate
+	      	);
+      	}
+      } else {
+      	// False. Remove the button.
+      	this._quickCreate.remove()
+      	this._quickCreate = null;
+      }
       
       // Bind a search event listener here to clear the list.
       if (!GOKb.lookupEventBound ) {
