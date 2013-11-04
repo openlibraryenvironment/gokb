@@ -107,12 +107,15 @@ DataTableView.extendMenu(function(dataTableView, menu) {
 //	  }
 	);
 	
-	row_menu.push(
+	col_menu.push(
 		{
-		  id: "gokb-add-row",
-		  "label": "Prepend Rows",
+		  id: "gokb-add-column",
+		  "label": "Add Column",
 		  "click": function() {
-		  	GOKb.handlers.addRows();
+		  	var name = window.prompt("Enter a column name title", "");
+		  	if (name && name != "") {
+		  		GOKb.handlers.createBlankColumn(name);
+		  	}
 	    }
 	  }
 	);

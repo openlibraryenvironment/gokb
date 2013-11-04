@@ -115,7 +115,7 @@ ValidationPanel.messages.quickRes.options = function (message) {
 	}
 	
 	return opts;
-}
+};
 
 /**
  * Add blank column
@@ -124,7 +124,7 @@ ValidationPanel.messages.quickRes.addBlankColumn = function (message) {
 	
 	// Create a blank column.
 	GOKb.handlers.createBlankColumn ( message.col );
-}
+};
 
 /**
  * Remove the invalid column.
