@@ -122,21 +122,8 @@ ValidationPanel.messages.quickRes.options = function (message) {
  */
 ValidationPanel.messages.quickRes.addBlankColumn = function (message) {
 	
-	// Get the column model of the current project.
-	var cols = theProject.columnModel.columns;
-	
-	// In refine all columns must be created based on another. So we simply take the first column as a base.
-	Refine.postCoreProcess(
-	  "add-column", 
-	  {
-	  	baseColumnName: cols[0].name, 
-	  	expression: "\"\"", 
-	  	newColumnName: message.col, 
-	  	columnInsertIndex: cols.length
-	  },
-	  null,
-	  { modelsChanged: true }
-	);
+	// Create a blank column.
+	GOKb.handlers.createBlankColumn ( message.col );
 }
 
 /**

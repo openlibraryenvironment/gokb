@@ -360,4 +360,23 @@ GOKb.handlers.addRows = function () {
  */
 GOKb.handlers.trimData = function () {
 	// Just run the refine transform.
+};
+
+GOKb.handlers.createBlankColumn = function (col_name) {
+
+	// Get the column model of the current project.
+	var cols = theProject.columnModel.columns;
+	
+	// In refine all columns must be created based on another. So we simply take the first column as a base.
+	Refine.postCoreProcess(
+	  "add-column", 
+	  {
+	  	baseColumnName: cols[0].name, 
+	  	expression: "\"\"", 
+	  	newColumnName: col_name, 
+	  	columnInsertIndex: cols.length
+	  },
+	  null,
+	  { modelsChanged: true }
+	);
 }
