@@ -26,7 +26,7 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#licsummary" data-toggle="tab">License Summary</a></li>
-    <li><a href="#lists" data-toggle="tab">Lists</a></li>
+    <li><a href="#lists" data-toggle="tab">Files</a></li>
   </ul>
 
   <div id="my-tab-content" class="tab-content">
