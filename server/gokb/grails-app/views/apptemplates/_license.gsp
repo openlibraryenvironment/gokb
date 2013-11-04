@@ -67,12 +67,16 @@
 
 
 <script language="JavaScript">
+
   function showHidden(hidden) {
     var objHidden = document.getElementById(hidden).style;
-    if(objHidden.display=="block")
-      objHidden.display="none"
-    else
-      objHidden.display="block";
+    if(objHidden.style.display=="block") {
+      objHidden.display="none";
+      objHidden.visibility="hidden";
+    } else {
+        objHidden.display="block";
+        objHidden.visibility="visible";
+    }
   }
 
   $(document).ready(function() {
