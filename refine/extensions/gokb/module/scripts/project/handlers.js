@@ -251,7 +251,7 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 /**
  * Display a box to allow a user to search for an id in the given namespace.
  */
-GOKb.handlers.lookup = function(namespace, match, attr) {
+GOKb.handlers.lookup = function(namespace, match, attr, quickCreate) {
 
   // URL for the lookup.
   var url = "/command/gokb/lookup?type=" + namespace;
@@ -277,7 +277,8 @@ GOKb.handlers.lookup = function(namespace, match, attr) {
     function (item) {
       // Insert the selected value at the location.
       activeElem.insertAtCaret(item.value);
-    }
+    },
+    quickCreate
   );
 
   // Now we have our lookup object we can now open it with a custom renderer set.  
@@ -338,7 +339,7 @@ GOKb.handlers.lookup = function(namespace, match, attr) {
 };
 
 /**
- * The handler for addin rows to the data.
+ * The handler for adding rows to the data.
  */
 GOKb.handlers.addRows = function () {
   var number = window.prompt("Enter the number of rows to add", "1");
@@ -353,3 +354,29 @@ GOKb.handlers.addRows = function () {
     );
   }
 };
+
+/**
+ * Trim the data for each of the columns.
+ */
+GOKb.handlers.trimData = function () {
+	// Just run the refine transform.
+};
+
+GOKb.handlers.createBlankColumn = function (col_name) {
+
+	// Get the column model of the current project.
+	var cols = theProject.columnModel.columns;
+	
+	// In refine all columns must be created based on another. So we simply take the first column as a base.
+	Refine.postCoreProcess(
+	  "add-column", 
+	  {
+	  	baseColumnName: cols[0].name, 
+	  	expression: "\"\"", 
+	  	newColumnName: col_name, 
+	  	columnInsertIndex: cols.length
+	  },
+	  null,
+	  { modelsChanged: true }
+	);
+}
