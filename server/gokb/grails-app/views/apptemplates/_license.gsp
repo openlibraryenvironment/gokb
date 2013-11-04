@@ -67,7 +67,7 @@
 
 <script language="JavaScript" src="http://gokb.k-int.com/wz_tooltip.js"/>
 
-<script type="text/javascript">
+<script language="JavaScript">
   function showHidden(hidden) {
     var objHidden = document.getElementById(hidden).style;
     if(objHidden.display=="block")
