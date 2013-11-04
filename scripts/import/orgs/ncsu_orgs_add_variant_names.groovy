@@ -26,8 +26,8 @@ import java.text.SimpleDateFormat
 
 if ( args.length != 2 ) {
   println("usage: ncsu_orgs_add_variant_names.groovy csv_orgs_file url of add variant name service");
-  println("Examples: ./ncsu_orgs_add_variant_names.groovy ./ncsu-auth-orgs-roles-2013-01-11.csv \"http://localhost:8080/gokb/integration/addVariantName\"");
-  println("Examples: ./ncsu_orgs_add_variant_names.groovy ./ncsu-auth-orgs-roles-2013-01-11.csv \"http://gokb.k-int.com/gokb/integration/addVariantName\"");
+  println("Examples: ./ncsu_orgs_add_variant_names.groovy ./ncsu-auth-orgs-roles-2013-01-11.csv \"http://localhost:8080/gokb/integration/registerVariantName\"");
+  println("Examples: ./ncsu_orgs_add_variant_names.groovy ./ncsu-auth-orgs-roles-2013-01-11.csv \"http://gokb.k-int.com/gokb/integration/registerVariantName\"");
   System.exit(1)
 }
 // Load the fam reconcilliation data
@@ -67,16 +67,25 @@ println("Column heads: ${nl}");
 while ((nl = r.readNext()) != null) {
   // println("Process line ${nl}");
   // Internal ID,ParentOrg. ID,Authorized Name,Organization Name,Provider,Vendor,Publisher,Licensor
+  def variant_name_request = [:]
 
-  if ( nl[0] != nl [1] ) {
-    println("Add a variant name (${nl[3]}) for the org with identifier ncsu:${nl[1]}. Authorized status of this name is ${nl[2]}");
+  if ( ( nl[0] != nl [1] ) && ( nl[2] == 'N' ) ) {
+    println("Add a variant name (${nl[3]}) for the org with ns:ncsu-internal, identifier ncsu:${nl[1]}. Authorized status of this name is ${nl[2]}");
+    
+    variant_name_request.idns = 'ncsu-internal'
+    variant_name_request.idvalue = "ncsu:${nl[1]}".toString()
+    variant_name_request.name = nl[3]
+
+    println(variant_name_request)
+
+    // Post the json document
+    target_service.request( POST, JSON ) { req ->
+      body = variant_name_request
+      response.success = { resp, json ->
+        println(json);
+      }
+    }
   }
-
-  // Post the json document
-  // target_service.request( POST, JSON ) { req ->
-  //   body = org_assert
-  //   response.success = { resp, json ->
-  //     println(json);
-  //   }
-  // }
+  else {
+  }
 }

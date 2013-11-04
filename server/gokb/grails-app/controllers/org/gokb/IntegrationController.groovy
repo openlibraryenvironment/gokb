@@ -194,4 +194,10 @@ class IntegrationController {
     }
     located_or_new_org
   }
+
+  def registerVariantName() {
+    def result=[:]
+    log.debug("registerVariantName ${params} ${request.JSON}");
+    render result as JSON
+  }
 }
