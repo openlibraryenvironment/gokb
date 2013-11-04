@@ -70,7 +70,7 @@
 
   function showHidden(hidden) {
     var objHidden = document.getElementById(hidden).style;
-    if(objHidden.style.display=="block") {
+    if(objHidden.display=="block") {
       objHidden.display="none";
       objHidden.visibility="hidden";
     } else {
