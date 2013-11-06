@@ -506,5 +506,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned').save()
 
     RefdataCategory.lookupOrCreate('Activity.Type', 'TitleTransfer').save()
+
+    RefdataCategory.lookupOrCreate('YN', 'Yes').save()
+    RefdataCategory.lookupOrCreate('YN', 'No').save()
   }
 }
