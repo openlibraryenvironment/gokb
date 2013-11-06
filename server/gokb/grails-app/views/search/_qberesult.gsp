@@ -42,7 +42,7 @@
           </g:each>
           <td>
             <g:if test="${request.user?.showQuickView?.value=='Yes'}">
-              <g:link class="btn btn-primary" controller="search" action="index" params="${params+['det':counter]}">Show -></g:link>
+              <g:link class="btn btn-primary pull-right" controller="search" action="index" params="${params+['det':counter]}">view >></g:link>
             </g:if>
           </td>
         </tr>
