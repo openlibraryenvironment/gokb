@@ -8,7 +8,7 @@
       <tr>
         <th></th>
         <g:each in="${qbeConfig.qbeResults}" var="c">
-          <th>${c.heading}</th>
+          <th><g:link params="${params+['sort':c.heading]}">${c.heading}</g:link></th>
         </g:each>
         <th></th>
       </tr>
