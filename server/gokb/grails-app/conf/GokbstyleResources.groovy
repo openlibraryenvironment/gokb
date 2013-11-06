@@ -1,5 +1,3 @@
-import org.codehaus.groovy.grails.commons.ApplicationHolder
-
 modules = {
   gokbstyle {
     dependsOn 'bootstrap'
