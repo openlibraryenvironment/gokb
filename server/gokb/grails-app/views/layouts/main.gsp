@@ -78,6 +78,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">${request.user?.displayName?:request.user?.username} <b class="caret"></b></a>
                   <ul class="dropdown-menu">
+                    <li><g:link controller="profile">Profile</g:link></li>
                     <li><g:link controller="logout">Logout</g:link></li>
                   </ul>
                 </li>
