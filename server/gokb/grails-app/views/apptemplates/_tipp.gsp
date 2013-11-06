@@ -114,8 +114,6 @@
 				class="badge badge-warning">
 					${d.reviewRequests?.size()}
 			</span></a></li>
-		<li><a href="#header" data-toggle="tab">Header</a></li>
-		<li><a href="#status" data-toggle="tab">Status</a></li>
 	</ul>
 
 
@@ -250,18 +248,8 @@
 				model="${[d:d]}" />
 		</div>
 
-		<div class="tab-pane" id="header">
-			<g:render template="kbcomponent" contextPath="../apptemplates"
-				model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
-		</div>
-
-
-		<div class="tab-pane" id="status">
-			<g:render template="componentStatus" contextPath="../apptemplates"
-				model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
-		</div>
-
 	</div>
+<g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 
 

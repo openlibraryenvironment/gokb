@@ -1,17 +1,27 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 
-<h3>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h3>
+<dl class="dl-horizontal">
+
+  <div class="control-group">
+    <dt>Title</dt>
+    <dd><g:xEditable owner="${d}" field="name" /></dd>
+  </div>
+
+  <div class="control-group">
+    <dt>Status Reason</dt>
+    <dd><g:xEditableRefData owner="${d}" field="reasonRetired" config='TitleInstance.ReasonRetired' /></dd>
+  </div>
+
+</dl>
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
-    <li><a href="#lists" data-toggle="tab">Lists</a></li>
+    <li><a href="#identifiers" data-toggle="tab">Identifiers</a></li>
     <li><a href="#titlerels" data-toggle="tab">Title Relationships</a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
-    <li><a href="#header" data-toggle="tab">Header</a></li>
-    <li><a href="#status" data-toggle="tab">Status</a></li>
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
@@ -20,11 +30,6 @@
       
         <dl class="dl-horizontal">
       
-          <div class="control-group">
-            <dt>Title</dt>
-            <dd><g:xEditable owner="${d}" field="name" /></dd>
-          </div>
-
           <div class="control-group">
             <dt>Medium</dt>
             <dd><g:xEditableRefData owner="${d}" field="medium" config='TitleInstance.Medium' /></dd>
@@ -48,7 +53,8 @@
           </div>
       
           <div class="control-group">
-            <dt>Alternate Titles</dt>
+            <dt>Alternate Titles
+            <button class="hidden-license-details btn" data-toggle="collapse" data-target="#collapseableAddTitle"><i class="icon-plus"></i></button></dt>
             <dd>
               <table class="table table-striped table-bordered">
                 <thead>
@@ -72,22 +78,17 @@
                   </g:each>
                 </tbody>
               </table>
-            </dd>
-          </div>
-          <div class="control-group">
-            <dt><button class="hidden-license-details btn" data-toggle="collapse" data-target="#collapseableAddTitle">Add variant <i class="icon-plus"></i></button></dt>
-            <dd>
               <dl id="collapseableAddTitle" class="dl-horizontal collapse">
                 <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
                   <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
                   <input type="hidden" name="__newObjectClass" value="org.gokb.cred.KBComponentVariantName"/>
                   <input type="hidden" name="__recip" value="owner"/>
-                  <dt>Variant Name</dt><dd><input type="text" name="variantName"/></dd>
+                  <dt>Add Title Variant</dt><dd><input type="text" name="variantName"/></dd>
                   <dt>Locale</dt><dd><g:simpleReferenceTypedown name="locale" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.Locale" /></dd>
                   <dt>Variant Type</dt><dd><g:simpleReferenceTypedown name="variantType" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.VariantType" /></dd>
                   <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
                 </g:form>
-              </dl>&nbsp;
+              </dl>
             </dd>
           </div>
 
@@ -186,19 +187,14 @@
       </g:if>
     </div>
 
-    <div class="tab-pane" id="lists">
-        <div class="control-group">
-            <dt>Identifiers</dt>
-            <dd>
-              <g:render template="combosByType" 
+    <div class="tab-pane" id="identifiers">
+      <g:render template="combosByType" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'ids', cols:[[expr:'toComponent.namespace.value',
                                                                    colhead:'Namespace'],
                                                              [expr:'toComponent.value',
                                                                    colhead:'ID',
                                                                    action:'link']], direction:'out']}" />
-            </dd>
-          </div>
     </div>
 
     <div class="tab-pane" id="titlerels">
@@ -212,24 +208,8 @@
       <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
     </div>
 
-    <div class="tab-pane" id="header">
-      <g:render template="kbcomponent" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
-
-        <dl class="dl-horizontal">
-          <div class="control-group">
-            <dt>Status Reason</dt>
-            <dd><g:xEditableRefData owner="${d}" field="reasonRetired" config='TitleInstance.ReasonRetired' /></dd>
-          </div>
-        </dl>
-      
-    </div>
-
-    <div class="tab-pane" id="status">
-      <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
-
-    </div>
-
   </div>
+  <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 
 
