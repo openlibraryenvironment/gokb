@@ -13,6 +13,8 @@ class User {
   boolean accountExpired
   boolean accountLocked
   boolean passwordExpired
+
+  RefdataValue showQuickView
   
   static manyByCombo = [
     territories : Territory
@@ -22,6 +24,7 @@ class User {
     username blank: false, unique: true
     password blank: false
     displayName blank: true, nullable:true
+    showQuickView blank: true, nullable:true
     email blank: true, nullable:true
   }
 

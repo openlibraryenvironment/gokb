@@ -448,8 +448,7 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Type', property:'class.name'],
+				[heading:'Type', property:'class.simpleName'],
 				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
 			]
 		]
@@ -467,8 +466,7 @@ globalSearchTemplates = [
 				]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Nominal Platform', property:'nominalPlatform?.name']
 			]
 		]
@@ -486,8 +484,7 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
 			]
 		]
 	],
@@ -504,7 +501,6 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
 			]
 		]
@@ -525,7 +521,6 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Status', property:'status.value']
 			]
@@ -544,9 +539,8 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Fingerprint', property:'fingerprint'],
-				[heading:'Description', property:'description', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Description', property:'description', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
@@ -563,8 +557,7 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name', property:'name'],
+				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Provider', property:'provider?.name']
 			]
 		]
@@ -627,7 +620,6 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Status', property:'status.value'],
 				[heading:'Package', property:'pkg.name']
@@ -650,7 +642,6 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Description', property:'desc']
 			]
 		]
@@ -681,7 +672,6 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Cause', property:'descriptionOfCause'],
 				[heading:'Request', property:'reviewRequest'],
 				[heading:'Status', property:'status?.value'],
@@ -705,8 +695,7 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
@@ -725,8 +714,7 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
@@ -746,8 +734,7 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
@@ -766,8 +753,8 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Username', property:'username', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				// [heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
 			]
 		]
 	],
@@ -786,8 +773,8 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				// [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
 				[heading:'Url', property:'url'],
 			]
 		]
@@ -807,8 +794,8 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Property Name', property:'propertyName', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Property Name', property:'propertyName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				// [heading:'Property Name', property:'propertyName', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
 			]
 		]
 	],
@@ -827,15 +814,12 @@ globalSearchTemplates = [
                         qbeGlobals:[
                         ],
                         qbeResults:[
-                                [heading:'Id', property:'id'],
 				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
                                 [heading:'Created On', property:'dateCreated'],
                                 [heading:'Mime Type', property:'uploadMimeType'],
                         ]
                 ]
         ],
-
-
 ]
 
 

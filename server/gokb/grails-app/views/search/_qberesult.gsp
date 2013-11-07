@@ -8,7 +8,7 @@
       <tr>
         <th></th>
         <g:each in="${qbeConfig.qbeResults}" var="c">
-          <th>${c.heading}</th>
+          <th><g:link params="${params+['sort':c.property]}">${c.heading}</g:link></th>
         </g:each>
         <th></th>
       </tr>
@@ -41,7 +41,9 @@
             </td>
           </g:each>
           <td>
-            <g:link class="btn btn-primary" controller="search" action="index" params="${params+['det':counter]}">Show -></g:link>
+            <g:if test="${request.user?.showQuickView?.value=='Yes'}">
+              <g:link class="btn btn-primary pull-right" controller="search" action="index" params="${params+['det':counter]}">view >></g:link>
+            </g:if>
           </td>
         </tr>
       </g:each>
