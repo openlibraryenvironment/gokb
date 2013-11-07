@@ -282,6 +282,7 @@ class WorkflowController {
   }
 
   def processPackageReplacement() {
+    def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     params.each { p ->
       if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
          def tt = p.key.substring(3);
@@ -291,6 +292,9 @@ class WorkflowController {
 
          log.debug("old: ${old_platform} new: ${new_platform}");
          Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[old_platform, new_platform]);
+
+         old_platform.status = deleted_status
+         old_platform.save(flush:true)
       }
     }
     render view:'platformReplacementResult'
