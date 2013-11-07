@@ -292,10 +292,15 @@ class WorkflowController {
          def new_platform = genericOIDService.resolveOID2(params.newplatform)
 
          log.debug("old: ${old_platform} new: ${new_platform}");
-         Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[old_platform, new_platform]);
+         try {
+           Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[new_platform,old_platform]);
 
-         old_platform.status = deleted_status
-         old_platform.save(flush:true)
+           old_platform.status = deleted_status
+           old_platform.save(flush:true)
+         }
+         catch ( Exception e ) {
+           log.debug("Problem executing update");
+         }
       }
     }
     render view:'platformReplacementResult'
