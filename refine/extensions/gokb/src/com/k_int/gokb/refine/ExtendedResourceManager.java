@@ -20,7 +20,7 @@ import edu.mit.simile.butterfly.ButterflyModule;
  * libraries to be replaced with updated versions.
  */
 public class ExtendedResourceManager extends ClientSideResourceManager {
-  final static Logger logger = LoggerFactory.getLogger("GOKb Extended resource manager.");
+  final static Logger logger = LoggerFactory.getLogger("GOKb-resources");
 
   static public class ExtendedResourceBundle extends ClientSideResourceBundle {
 
@@ -164,7 +164,7 @@ public class ExtendedResourceManager extends ClientSideResourceManager {
         // This is the path we wish to remove, so do it.
         qPaths.remove();
         bundle.getPathSet().remove(qp.fullPath);
-        logger.info ("Removed " + qp.fullPath + " as a match for " + resourceRegex);
+        logger.info ("Removed " + module.getName() + " resource '" + qp.fullPath + "' as a match for " + resourceRegex);
 
         // If we have a replacement then swap it out here.
         if (new_path != null) {
@@ -189,7 +189,7 @@ public class ExtendedResourceManager extends ClientSideResourceManager {
 
             // Also add to the set.
             bundle.getPathSet().add(fqp);
-            logger.info ("\t...replaced with " + fqp);
+            logger.info ("\t...replaced with " + from_mod.getName() + " resource '" + fqp + "'");
           }
         }
         done = true;
