@@ -86,37 +86,85 @@ public class ExtendedResourceManager extends ClientSideResourceManager {
             count ++;
         }
     }
+    
+    static protected String resolveRegex (ButterflyModule module, String path) {
+      String prefix, suffix;
+      
+      // Check for a slash.
+      int pos = path.lastIndexOf("/");
+      
+      // We only act if there is a slash.
+      if (pos > -1) {
+        // Need to split this string.
+        prefix = path.substring(0, pos);
+        suffix = path.substring(pos + 1);
+      } else {
+        // Just make relative to root.
+        prefix = "";
+        suffix = path;
+      }
+      
+      // The whole thing is to be treated as a regular expression which means,
+      // we need to not treat slashes as escape characters.
+      prefix = "\\Q" + resolve(module, prefix) + "\\E";
+
+      // Return the prefix and suffix. 
+      return prefix + suffix;
+    }
 
     static public void removePath (
+        String bundleName,
+        ButterflyModule module,
+        String regex) {
+      
+      // Just replace with null.
+      replacePath (bundleName, module, regex, null);
+    }
+    
+    static public void replacePath (
             String bundleName,
             ButterflyModule module,
-            String path) {
+            String regex,
+            String new_path) {
 
         // Get the bundle and create if not there.
         ExtendedResourceBundle bundle = getBundle(bundleName);
 
         // Get the full path.
-        String fullPath = resolve(module, path);
-        if (fullPath == null) {
+        String resourceRexex = resolveRegex(module, regex);
+        if (resourceRexex == null) {
             logger.error("Failed to remove paths for unmounted module " + module.getName());
         }
-        if (bundle.getPathSet().contains(fullPath)) {
 
-            // Need to look for the matching QualifiedPath
-            ListIterator<QualifiedPath> qPaths = bundle.getPathList().listIterator();
+        // Need to look for the matching QualifiedPath.
+        ListIterator<QualifiedPath> qPaths = bundle.getPathList().listIterator();
 
-            boolean done = false;
+        boolean done = false;
 
-            while (!done && qPaths.hasNext()) {
-                QualifiedPath qp = qPaths.next();
-                if (fullPath.equals(qp.fullPath)) {
+        while (!done && qPaths.hasNext()) {
+            QualifiedPath qp = qPaths.next();
+            if (qp.fullPath.matches(resourceRexex)) {
 
-                    // This is the path we wish to remove, so do it.
-                    qPaths.remove();
-                    bundle.getPathSet().remove(fullPath);
-                    logger.debug("Removed entry for " + fullPath);
-                    done = true;
+                // This is the path we wish to remove, so do it.
+                qPaths.remove();
+                bundle.getPathSet().remove(qp.fullPath);
+                logger.debug("Removed " + qp.fullPath + " as a match for " + resourceRexex);
+                
+                // If we have a replacement then swap it out here.
+                if (new_path != null) {
+                  // Create new fully qualified path.
+                  QualifiedPath new_qp = new QualifiedPath();
+                  new_qp.module = module;
+                  new_qp.path = new_path;
+                  new_qp.fullPath = resolve(module, new_path);
+                  
+                  // Add at current list position.
+                  qPaths.add(new_qp);
+                  
+                  // Also add to the set.
+                  bundle.getPathSet().add(new_qp.fullPath);
                 }
+                done = true;
             }
         }
     }
