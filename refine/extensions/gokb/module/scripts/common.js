@@ -423,9 +423,11 @@ GOKb.toTable = function (header, data, addStripe) {
         
       } else {
         // Append each element
-        $.each(this, function(){
-          td.append(this);
-        });
+        if (this instanceof jQuery || this instanceof Array) {
+          $.each(this, function() {
+            td.append(this);
+          });
+        }
       }
     });
   });
