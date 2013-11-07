@@ -104,8 +104,7 @@ function init() {
     module,
     [
      "styles/jqui/jquery-ui.css",
-     "styles/uniform.default.css",
-     "styles/uniform.aristo.css",
+     "styles/uniform.aristo.min.css",
      "styles/common.less",
      "styles/index.less",
     ]
@@ -138,8 +137,7 @@ function init() {
     module,
     [
       "styles/jqui/jquery-ui.css",
-      "styles/uniform.default.css",
-      "styles/uniform.aristo.css",
+      "styles/uniform.aristo.min.css",
       "styles/contextmenu.css",
       "styles/common.less",
     ]
