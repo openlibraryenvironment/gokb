@@ -106,7 +106,7 @@ public class ExtendedResourceManager extends ClientSideResourceManager {
       
       // The whole thing is to be treated as a regular expression which means,
       // we need to not treat slashes as escape characters.
-      prefix = "\\Q" + resolve(module, prefix) + "\\E";
+      prefix = "\\Q" + resolve(module, prefix) + "/\\E";
 
       // Return the prefix and suffix. 
       return prefix + suffix;
@@ -118,14 +118,29 @@ public class ExtendedResourceManager extends ClientSideResourceManager {
         String regex) {
       
       // Just replace with null.
-      replacePath (bundleName, module, regex, null);
+      replacePath (bundleName, module, regex, null, null);
+    }
+    
+    static public void replacePaths (
+        String bundleName,
+        ButterflyModule module,
+        String[] regexes,
+        String new_path,
+        ButterflyModule new_mod) {
+      
+      // Just run for each resource. We check for duplicates,
+      // so only one instance of the replacement will be added.
+      for (String regex : regexes) {
+        replacePath (bundleName, module, regex, new_path, new_mod);
+      }
     }
     
     static public void replacePath (
             String bundleName,
             ButterflyModule module,
             String regex,
-            String new_path) {
+            String new_path,
+            ButterflyModule new_mod) {
 
         // Get the bundle and create if not there.
         ExtendedResourceBundle bundle = getBundle(bundleName);
@@ -152,17 +167,28 @@ public class ExtendedResourceManager extends ClientSideResourceManager {
                 
                 // If we have a replacement then swap it out here.
                 if (new_path != null) {
-                  // Create new fully qualified path.
-                  QualifiedPath new_qp = new QualifiedPath();
-                  new_qp.module = module;
-                  new_qp.path = new_path;
-                  new_qp.fullPath = resolve(module, new_path);
                   
-                  // Add at current list position.
-                  qPaths.add(new_qp);
+                  // From module.
+                  ButterflyModule from_mod = (new_mod != null ? new_mod : module);
                   
-                  // Also add to the set.
-                  bundle.getPathSet().add(new_qp.fullPath);
+                  // Create a fully qualified name.
+                  String fqp = resolve(from_mod, new_path);
+                  
+                  // Check the path hasn't already been added.
+                  if (!bundle.getPathSet().contains(fqp)) {
+                  
+                    // Create new fully qualified path.
+                    QualifiedPath new_qp = new QualifiedPath();
+                    new_qp.module = from_mod;
+                    new_qp.path = new_path;
+                    new_qp.fullPath = fqp;
+                    
+                    // Add at current list position.
+                    qPaths.add(new_qp);
+                    
+                    // Also add to the set.
+                    bundle.getPathSet().add(fqp);
+                  }
                 }
                 done = true;
             }
