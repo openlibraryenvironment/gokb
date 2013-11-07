@@ -72,14 +72,14 @@ function init() {
   ClientSideResourceManager.replacePath(
     "index/scripts",
     coreMod,
-    'jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8]).*\\.js',
+    'externals/jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8]).*\\.js',
     'scripts/jquery/jquery-ui.min.js',
     module
   );
   ClientSideResourceManager.replacePath(
     "project/scripts",
     coreMod,
-    'jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8]).*\\.js',
+    'externals/jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8]).*\\.js',
     'scripts/jquery/jquery-ui.min.js',
     module
   );
