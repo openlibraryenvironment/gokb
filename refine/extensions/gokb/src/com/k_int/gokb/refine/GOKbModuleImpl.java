@@ -22,7 +22,6 @@ import com.google.refine.importing.ImportingManager;
 import edu.mit.simile.butterfly.ButterflyModule;
 import edu.mit.simile.butterfly.ButterflyModuleImpl;
 
-
 public class GOKbModuleImpl extends ButterflyModuleImpl {
 
     final static Logger _logger = LoggerFactory.getLogger("GOKb-ModuleImpl");
@@ -31,37 +30,27 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     public static ExtendedProperties properties;
 
     public static final String VERSION = "1.6";
-    
+
     private static String userDetails = null;
-    
+
     public static String getCurrentUserDetails() {
         return userDetails;
     }
-    
+
     public static void setCurrentUserDetails(String username, String password) {
         userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
     }
 
     @Override
     public void init(ServletConfig config) throws Exception {
-        
-        // Core module.
-        ButterflyModule coreMod = getModule("core");
-        
-        // Remove the jQuery libs for open refine 2.6
-        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-1.7.2.min.js");
-        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-ui/jquery-ui-1.8.20.custom.min.js");
-        
-        // Remove the jQuery libs for google refine 2.5
-        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-1.4.2.min.js");
-        ExtendedResourceManager.removePath("project/scripts", coreMod, "externals/jquery-ui/jquery-ui-1.8.custom.min.js");
+
         // Run default init method.
         super.init(config);
 
         // Perform our extended initialisation...
         extendModuleProperties();
         swapImportControllers();
-        
+
         // Output the url currently in use.
         _logger.info("Using URL '" + getProperties().getString("api.url") + "'");
 
@@ -114,7 +103,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
                             );
                 } catch (Exception e){
 
-                    // Log the error 
+                    // Log the error
+
                     _logger.error(e.getLocalizedMessage(), e);
                 }
             }
@@ -152,7 +142,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
                     // Add module properties to the GOKb properties to allow,
                     // command-line passed params to override these values.
                     p.combine(getProperties());
-                    
+
                     // Set this modules properties.
                     setProperties(p);
                 }
@@ -177,6 +167,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
             coreMod,
             controllerName,
             new GOKbImportingController()
-        );        
+        );
+
     }
 }
