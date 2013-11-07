@@ -1,6 +1,7 @@
 var html = "text/html";
 var encoding = "UTF-8";
 var ClientSideResourceManager = Packages.com.k_int.gokb.refine.ExtendedResourceManager;
+var coreMod = module.getModule("core");
 
 /*
  * Register our custom commands.
@@ -40,7 +41,7 @@ function registerFunction (name, clazz) {
 
 
 /*
- * Function invoked to initialize the extension.
+ * Function invoked to initialise the extension.
  */
 function init() {
   Packages.java.lang.System.out.println("Initializing GOKb...");
@@ -48,6 +49,42 @@ function init() {
   registerCommands();
   registerFunctions();
   
+  // Remove jQuery version 1.4.x - 1.7.x and replace with jQuery 1.8.
+  // Latest OpenRefine code now uses jQuery 1.9. To keep compatibility with older,
+  // refine versions we only replace pre-1.8 versions with 1.8. If no match is found
+  // then the 1.8 library should not be added.
+  ClientSideResourceManager.replacePath(
+    "index/scripts",
+    coreMod,
+    'externals/\\Qjquery-\\E(1\\.[4-7]).*\\.js',
+    'scripts/jquery/jquery.js',
+    module
+  );
+  ClientSideResourceManager.replacePath(
+    "project/scripts",
+    coreMod,
+    'externals/\\Qjquery-\\E(1\\.[4-7]).*\\.js',
+    'scripts/jquery/jquery.js',
+    module
+  );
+  
+  // Replace jQuery UI version 1.8.x and lower with 1.8.24
+  ClientSideResourceManager.replacePath(
+    "index/scripts",
+    coreMod,
+    'jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8]).*\\.js',
+    'scripts/jquery/jquery-ui.min.js',
+    module
+  );
+  ClientSideResourceManager.replacePath(
+    "project/scripts",
+    coreMod,
+    'jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8]).*\\.js',
+    'scripts/jquery/jquery-ui.min.js',
+    module
+  );
+  
+  // Index paths.
   ClientSideResourceManager.addPaths(
 		 "index/scripts",
 		 module,
@@ -74,15 +111,6 @@ function init() {
     ]
   );
 
-  // Script files to inject into /project page
-  ClientSideResourceManager.prependPaths(
-    "project/scripts",
-  	module,
-  	[
-  	 "scripts/jquery/jquery.js",
-  	 "scripts/jquery/jquery-ui.min.js"
-  	]
-  );
   ClientSideResourceManager.addPaths(
     "project/scripts",
     module,
