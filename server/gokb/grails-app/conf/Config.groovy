@@ -424,6 +424,7 @@ globalSearchTemplates = [
 	'components':[
 		baseclass:'org.gokb.cred.KBComponent',
 		title:'Components',
+                group:'Secondary',
 		qbeConfig:[
 			// For querying over associations and joins, here we will need to set up scopes to be referenced in the qbeForm config
 			// Until we need them tho, they are omitted. qbeForm entries with no explicit scope are at the root object.
@@ -456,6 +457,7 @@ globalSearchTemplates = [
 	'packages':[
 		baseclass:'org.gokb.cred.Package',
 		title:'Packages',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -474,6 +476,7 @@ globalSearchTemplates = [
 	'orgs':[
 		baseclass:'org.gokb.cred.Org',
 		title:'Organisations',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -491,6 +494,7 @@ globalSearchTemplates = [
 	'platforms':[
 		baseclass:'org.gokb.cred.Platform',
 		title:'Platforms',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -508,6 +512,7 @@ globalSearchTemplates = [
 	'titles':[
 		baseclass:'org.gokb.cred.TitleInstance',
 		title:'Titles',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -529,6 +534,7 @@ globalSearchTemplates = [
 	'rules':[
 		baseclass:'org.gokb.refine.Rule',
 		title:'Rules',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -547,6 +553,7 @@ globalSearchTemplates = [
 	'projects':[
 		baseclass:'org.gokb.refine.RefineProject',
 		title:'Projects',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -565,6 +572,7 @@ globalSearchTemplates = [
 	'tipps':[
 		baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
 		title:'TIPPs',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -629,6 +637,7 @@ globalSearchTemplates = [
 	'refdataCategories':[
 		baseclass:'org.gokb.cred.RefdataCategory',
 		title:'Refdata Categories ',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -649,6 +658,7 @@ globalSearchTemplates = [
 	'reviewRequests':[
 		baseclass:'org.gokb.cred.ReviewRequest',
 		title:'Requests For Review',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -683,6 +693,7 @@ globalSearchTemplates = [
 	'Offices':[
 		baseclass:'org.gokb.cred.Office',
 		title:'Offices',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -702,6 +713,7 @@ globalSearchTemplates = [
 	'Territories':[
 		baseclass:'org.gokb.cred.Territory',
 		title:'Territories',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -721,6 +733,7 @@ globalSearchTemplates = [
 	'Licenses':[
 		baseclass:'org.gokb.cred.License',
 		title:'Licenses',
+                group:'Secondary',
                 message:'Please contact nisohq@niso.org for more information on license downloads',
 		qbeConfig:[
 			qbeForm:[
@@ -741,6 +754,7 @@ globalSearchTemplates = [
 	'Users':[
 		baseclass:'org.gokb.cred.User',
 		title:'Users',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -761,6 +775,7 @@ globalSearchTemplates = [
 	'Sources':[
 		baseclass:'org.gokb.cred.Source',
 		title:'Source',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -782,6 +797,7 @@ globalSearchTemplates = [
 	'additionalPropertyDefinitions':[
 		baseclass:'org.gokb.cred.AdditionalPropertyDefinition',
 		title:'Additional Property Definitions',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -802,6 +818,7 @@ globalSearchTemplates = [
         'dataFiles':[
                 baseclass:'org.gokb.cred.DataFile',
                 title:'Data Files',
+                group:'Secondary',
                 qbeConfig:[
                         qbeForm:[
                                 [
