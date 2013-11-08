@@ -68,7 +68,9 @@ class UploadAnalysisService {
     // Extract high level details
     license.name = "${parsedXml.ExpressionDetail.Description.text()}"
     if ( license.name == '' ) {
-      license.name = 'No description in license'
+      license.name = "${parsedXml.LicenseDetail.Description.text()}"
+      if ( license.name == '' )
+        license.name = 'No description in license'
     }
 
     // Generate Summary
