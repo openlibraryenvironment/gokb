@@ -7,6 +7,7 @@ grails.project.source.level = 1.6
 
 //grails.project.war.file = "target/${appName}-${appVersion}.war"
 //grails.project.dependency.resolver = "maven"
+grails.project.dependency.resolver = "maven"
 
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
@@ -46,7 +47,7 @@ grails.project.dependency.resolution = {
         runtime ':hibernate:3.6.10.2'
         runtime ":jquery:1.8.3"
         runtime ":resources:1.2"
-        runtime ':gsp-resources:latest.integration'
+        runtime ':gsp-resources:0.4.4'
 
         // Uncomment these (or add new ones) to enable additional resources capabilities
         //runtime ":zipped-resources:1.0"

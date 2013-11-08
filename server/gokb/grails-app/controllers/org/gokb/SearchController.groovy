@@ -142,7 +142,7 @@ class SearchController {
         }
       }
       if ( params.sort ) {
-        order(params.sort)
+        order(params.sort,params.order)
       }
     }
     // Look at create alias as a means of supporting sorting within a scope
