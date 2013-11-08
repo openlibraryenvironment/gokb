@@ -164,7 +164,7 @@ public class ExtendedResourceManager extends ClientSideResourceManager {
         // This is the path we wish to remove, so do it.
         qPaths.remove();
         bundle.getPathSet().remove(qp.fullPath);
-        logger.info ("Removed " + module.getName() + " resource '" + qp.fullPath + "' as a match for " + resourceRegex);
+        logger.info ("Removed " + module.getName() + " " + bundleName + " resource '" + qp.fullPath + "' as a match for " + resourceRegex);
 
         // If we have a replacement then swap it out here.
         if (new_path != null) {
