@@ -194,4 +194,42 @@ class IntegrationController {
     }
     located_or_new_org
   }
+
+  def registerVariantName() {
+    def result=[:]
+    log.debug("registerVariantName ${params} ${request.JSON}");
+
+    // See if we can locate the variant name as a first class component
+    
+    def variant_org = null;
+    if ( request.JSON.variantidns != null && request.JSON.variantidvalue != null ) {
+      variant_org = KBComponent.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
+      log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}");
+    }
+
+    def org_to_update = KBComponent.lookupByIO(request.JSON.idns,request.JSON.idvalue)
+    log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}");
+
+    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
+    if ( ( org_to_update ) && ( request.JSON.name?.length() > 0 ) ) {
+      boolean found = false
+      org_to_update.variantNames.each { vn ->
+        if ( vn.variantName == request.JSON.name ) {
+          found = true
+        }
+      }
+
+      if ( !found ) {
+        def new_variant_name = new KBComponentVariantName(variantName:request.JSON.name, owner:org_to_update)
+        new_variant_name.save();
+      }
+    }
+
+    // Update any combos that point to the variant so that they now point to the authorized entry
+
+    // Delete any remaining variant org combox
+    // Delete the variant org
+
+    render result as JSON
+  }
 }

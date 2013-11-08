@@ -1,10 +1,10 @@
 package org.gokb.validation.types
 
-class ColumnRequired extends A_ValidationRule implements I_ColumnValidationRule {
+class ColumnMissing extends A_ValidationRule implements I_ColumnValidationRule {
 
   private static final String ERROR_TYPE = "missing_column"
 
-  public ColumnRequired (String columnName, String severity) {
+  public ColumnMissing(String columnName, String severity) {
 
     // Call super constructor.
     super (columnName, severity)

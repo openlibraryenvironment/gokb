@@ -16,7 +16,7 @@
             <g:if test="${displaytemplate != null}">
               <g:if test="${displaytemplate.type=='staticgsp'}">
 		<g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
-                <button id="save-btn" class="btn btn-primary">Save Record</button>
+                <button id="save-btn" class="btn btn-primary pull-right">Create and Edit >></button><br/>&nbsp;
               </g:if>
             </g:if>
           </div>

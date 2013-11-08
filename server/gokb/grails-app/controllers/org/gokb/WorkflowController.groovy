@@ -12,7 +12,8 @@ class WorkflowController {
 
   def actionConfig = [
     'object::statusDeleted':[actionType:'simple'],
-    'title::transfer':      [actionType:'workflow', view:'titleTransfer']
+    'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
+    'platform::replacewith':[actionType:'workflow', view:'platformReplacement']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -278,5 +279,55 @@ class WorkflowController {
 
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
     activity_record.save()
+  }
+
+  def processPackageReplacement() {
+    def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    params.each { p ->
+      log.debug("Testing ${p.key}");
+      if ( ( p.key.startsWith('tt') ) && ( p.value ) && ( p.value instanceof String ) ) {
+         def tt = p.key.substring(3);
+         log.debug("Platform to replace: \"${tt}\"");
+         def old_platform = Platform.get(tt)
+         def new_platform = genericOIDService.resolveOID2(params.newplatform)
+
+         log.debug("old: ${old_platform} new: ${new_platform}");
+         try {
+           Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[new_platform,old_platform]);
+
+           old_platform.status = deleted_status
+           old_platform.save(flush:true)
+         }
+         catch ( Exception e ) {
+           log.debug("Problem executing update");
+         }
+      }
+    }
+    render view:'platformReplacementResult'
+  }
+
+  def download() {
+    log.debug("Download ${params}");
+
+    DataFile df = DataFile.findByGuid(params.id)
+    if ( df != null ) {
+      response.setContentType(df.uploadMimeType)
+      response.addHeader("content-disposition", "attachment; filename=\"${df.uploadName}\"")
+      def outs = response.outputStream
+
+      def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+
+      log.debug("copyUploadedFile...");
+      def deposit_token = df.guid
+      def sub1 = deposit_token.substring(0,2);
+      def sub2 = deposit_token.substring(2,4);
+      def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
+      def temp_file = new File(temp_file_name);
+
+      org.apache.commons.io.IOUtils.copy(new FileReader(temp_file), outs);
+
+      outs.flush()
+      outs.close()
+    }
   }
 }

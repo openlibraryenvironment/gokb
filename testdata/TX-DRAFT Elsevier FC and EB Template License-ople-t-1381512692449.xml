@@ -1,0 +1,1375 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<PublicationsLicenseExpression xmlns:oxf="http://www.orbeon.com/oxf/processors"
+                               xmlns="http://www.editeur.org/onix-pl"
+                               xmlns:ev="http://www.w3.org/2001/xml-events"
+                               xmlns:onix="http://www.editeur.org/onix-pl"
+                               xmlns:xforms="http://www.w3.org/2002/xforms"
+                               xmlns:ople="http://www.editeur.org/ople"
+                               xmlns:p="http://www.orbeon.com/oxf/pipeline"
+                               xmlns:saxon="http://saxon.sf.net/"
+                               xmlns:context="java:org.orbeon.oxf.pipeline.StaticExternalContext"
+                               xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                               xmlns:exist="http://exist.sourceforge.net/NS/exist"
+                               xmlns:xxforms="http://orbeon.org/oxf/xml/xforms"
+                               datestamp="20131011T133321"
+                               sourcename="OPLE V1.0 Build 1.2.0"
+                               version="1.0">
+    <ExpressionDetail>
+        <ExpressionType>onixPL:LicenseTemplate</ExpressionType>
+        <ExpressionStatus>onixPL:Draft</ExpressionStatus>
+        <Authority>NISO ONIX-PL Encoding Project 2013</Authority>
+        <Description>Elsevier FreedomCollection and eBooksCollections License Template for Acadmic Libraries</Description>
+        <ExpressionRelatedAgent>
+            <ExpressionAgentRelator>onixPL:PreparedBy</ExpressionAgentRelator>
+            <Name>Selden Durgom Lamoureux</Name>
+        </ExpressionRelatedAgent>
+        <ExpressionRelatedTimePoint>
+            <ExpressionTimePointRelator>onixPL:PreparedOn</ExpressionTimePointRelator>
+            <TimePointIdentifier>
+                <TimePointIDType>onixPL:YYYYMMDD</TimePointIDType>
+                <IDValue>20130626</IDValue>
+            </TimePointIdentifier>
+        </ExpressionRelatedTimePoint>
+    </ExpressionDetail>
+    <LicenseDetail>
+        <LicenseIdentifier>
+            <LicenseIDType>onixPL:LicensorContractNumber</LicenseIDType>
+            <IDValue>?????</IDValue>
+        </LicenseIdentifier>
+        <LicenseIdentifier>
+            <LicenseIDType>onixPL:LicensorContractNumber</LicenseIDType>
+            <IDValue>?????</IDValue>
+        </LicenseIdentifier>
+        <Description>Elsevier FreedomCollection and eBooksCollections License Template</Description>
+        <LicenseStatus>onixPL:Template</LicenseStatus>
+        <LicenseRenewalType>onixPL:Automatic</LicenseRenewalType>
+        <LicenseDocument>
+            <LicenseDocumentType>onixPL:LicenseMainTerms</LicenseDocumentType>
+            <DocumentLabel>Agreement</DocumentLabel>
+        </LicenseDocument>
+        <LicenseDocument>
+            <LicenseDocumentType>onixPL:LicenseSchedule</LicenseDocumentType>
+            <DocumentLabel>Schedule-1</DocumentLabel>
+        </LicenseDocument>
+        <LicenseDocument>
+            <LicenseDocumentType>onixPL:LicenseSchedule</LicenseDocumentType>
+            <DocumentLabel>Schedule-1.1</DocumentLabel>
+        </LicenseDocument>
+        <LicenseDocument>
+            <LicenseDocumentType>onixPL:LicenseSchedule</LicenseDocumentType>
+            <DocumentLabel>Schedule-2</DocumentLabel>
+        </LicenseDocument>
+        <LicenseRelatedAgent>
+            <LicenseAgentRelator>onixPL:Licensor</LicenseAgentRelator>
+            <RelatedAgent>Elsevier</RelatedAgent>
+        </LicenseRelatedAgent>
+        <LicenseRelatedAgent>
+            <LicenseAgentRelator>onixPL:Licensee</LicenseAgentRelator>
+            <RelatedAgent>Subscriber</RelatedAgent>
+        </LicenseRelatedAgent>
+        <LicenseRelatedAgent>
+            <LicenseAgentRelator>onixPL:AuthorizedUsers</LicenseAgentRelator>
+            <RelatedAgent>AuthorizedUser</RelatedAgent>
+        </LicenseRelatedAgent>
+        <LicenseRelatedAgent>
+            <LicenseAgentRelator>onixPL:LicenseeLicenseAdministrator</LicenseAgentRelator>
+            <RelatedAgent>LicenseePrimaryContact</RelatedAgent>
+        </LicenseRelatedAgent>
+        <LicenseRelatedResource>
+            <LicenseResourceRelator>onixPL:LicensedContent</LicenseResourceRelator>
+            <RelatedResource>LicensedContent</RelatedResource>
+        </LicenseRelatedResource>
+        <LicenseRelatedTimePoint>
+            <LicenseTimePointRelator>onixPL:LicenseStartDate</LicenseTimePointRelator>
+            <RelatedTimePoint>LicenseStartDate</RelatedTimePoint>
+        </LicenseRelatedTimePoint>
+        <LicenseRelatedTimePoint>
+            <LicenseTimePointRelator>onixPL:LicenseEndDate</LicenseTimePointRelator>
+            <RelatedTimePoint>LicenseEndDate</RelatedTimePoint>
+        </LicenseRelatedTimePoint>
+    </LicenseDetail>
+    <Definitions>
+        <AgentDefinition>
+            <AgentLabel>Elsevier</AgentLabel>
+            <AgentType>onixPL:Organization</AgentType>
+            <AgentName>
+                <Name>Elsevier B.V.</Name>
+            </AgentName>
+            <LicenseTextLink href="d1e1639.1"/>
+            <AgentRelatedPlace>
+                <AgentPlaceRelator>onixPL:PrincipalPlaceOfBusiness</AgentPlaceRelator>
+                <RelatedPlace>LicensorPrincipalPlaceOfBusiness</RelatedPlace>
+            </AgentRelatedPlace>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>Subscriber</AgentLabel>
+            <AgentType>onixPL:Organization</AgentType>
+            <AgentName>
+                <Name>[Name of licensee]</Name>
+            </AgentName>
+            <LicenseTextLink href="d1e1639.1"/>
+            <AgentRelatedPlace>
+                <AgentPlaceRelator>onixPL:PrincipalPlaceOfBusiness</AgentPlaceRelator>
+                <RelatedPlace>LicenseePrincipalPlaceOfBusiness</RelatedPlace>
+            </AgentRelatedPlace>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>LicenseeAffiliatedUser</AgentLabel>
+            <AgentType>onixPL:Person</AgentType>
+            <Description>Authorized users who are affiliated with one of the licensee sites covered by the license; not including walk-in users or contractors.</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T014435.019Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221228.068Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221605.747Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221630.186Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221829.687Z"/>
+            <AgentRelatedAgent>
+                <AgentAgentRelator>onixPL:IsAnyOf</AgentAgentRelator>
+                <RelatedAgent>onixPL:LicenseeStudent</RelatedAgent>
+                <RelatedAgent>onixPL:LicenseeFaculty</RelatedAgent>
+                <RelatedAgent>onixPL:LicenseeNonFacultyStaff</RelatedAgent>
+                <RelatedAgent>onixPL:LicenseeResearcher</RelatedAgent>
+            </AgentRelatedAgent>
+            <AgentRelatedPlace>
+                <AgentPlaceRelator>onixPL:SiteRestriction</AgentPlaceRelator>
+                <RelatedPlace>LicenseeSite</RelatedPlace>
+            </AgentRelatedPlace>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>LicenseeAffiliatedContractor</AgentLabel>
+            <AgentType>onixPL:Person</AgentType>
+            <Description>A person who is, or is employed by, an independent contractor to the licensee affiliated with one of the sites covered by the license.</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T014435.019Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221228.068Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221605.747Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221630.186Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221829.687Z"/>
+            <AgentRelatedPlace>
+                <AgentPlaceRelator>onixPL:SiteRestriction</AgentPlaceRelator>
+                <RelatedPlace>LicenseeSite</RelatedPlace>
+            </AgentRelatedPlace>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>AuthorizedUser</AgentLabel>
+            <AgentType>onixPL:Person</AgentType>
+            <LicenseTextLink href="d1e108d1e168920130626T014435.019Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221228.068Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221605.747Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221630.186Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221829.687Z"/>
+            <AgentRelatedAgent>
+                <AgentAgentRelator>onixPL:IsAnyOf</AgentAgentRelator>
+                <RelatedAgent>LicenseeAffiliatedUser</RelatedAgent>
+                <RelatedAgent>LicenseeAffiliatedContractor</RelatedAgent>
+                <RelatedAgent>onixPL:WalkInUser</RelatedAgent>
+            </AgentRelatedAgent>
+            <AgentRelatedPlace>
+                <AgentPlaceRelator>onixPL:SiteRestriction</AgentPlaceRelator>
+                <RelatedPlace>LicenseeSite</RelatedPlace>
+            </AgentRelatedPlace>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>NISO ONIX-PL Encoding Project 2013</AgentLabel>
+            <AgentType>onixPL:Organization</AgentType>
+            <Description>NISO grant funded by Mellon</Description>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>LicenseePrimaryContact</AgentLabel>
+            <AgentType>onixPL:Person</AgentType>
+            <AgentName>
+                <Name>[Enter primary contact name]</Name>
+            </AgentName>
+            <LicenseTextLink href="d1e108d1e168920130626T144921.841Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T145445.182Z"/>
+        </AgentDefinition>
+        <AgentDefinition>
+            <AgentLabel>LicenseeBillingContact</AgentLabel>
+            <AgentType>onixPL:Person</AgentType>
+            <AgentName>
+                <Name>[Enter billing contact name]</Name>
+            </AgentName>
+            <LicenseTextLink href="d1e108d1e168920130626T145428.685Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T145445.182Z"/>
+        </AgentDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>LicensedContent</ResourceLabel>
+            <Description>Content available on ScienceDirect to which the Licensee has access either by subscription payment or by pay-per-view (Transaction Content).</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T144316.306Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T144445.65Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T142805.483Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <ResourceRelatedResource>
+                <ResourceResourceRelator>onixPL:IsAnyOf</ResourceResourceRelator>
+                <RelatedResource>SubscribedProducts</RelatedResource>
+                <RelatedResource>TransactionContent</RelatedResource>
+            </ResourceRelatedResource>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>SubscribedProducts</ResourceLabel>
+            <Description>Content available on ScienceDirect to which the Licensee has access by subscription payment.</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T144316.306Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T144445.65Z"/>
+            <ResourceRelatedResource>
+                <ResourceResourceRelator>onixPL:IsAnyOf</ResourceResourceRelator>
+                <RelatedResource>FreedomCollectionJournals</RelatedResource>
+                <RelatedResource>eBooksCollections</RelatedResource>
+                <RelatedResource>AcquiredJournals</RelatedResource>
+            </ResourceRelatedResource>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>FreedomCollectionJournals</ResourceLabel>
+            <Description>Journal titles included in the Freedom Collection and not in the Subscriber's acquired Journal Collection(s).</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T142805.483Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>eBooksCollections</ResourceLabel>
+            <Description>Subscriber's acquired collections of Elsevier eBooks</Description>
+            <Annotation>
+                <AnnotationType>onixPL:AmbiguityInLicenseText</AnnotationType>
+                <AnnotationText>It is unclear from the license text whether eBooks may also be purchased as well as subscribed, though it would appear in Schedule 1 Elsevier eBooks Additional Terms and Conditions clause that this is the case.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T144316.306Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>AcquiredJournals</ResourceLabel>
+            <Description>Journals included in the Subscriber's acquired Journal Collection(s) described in Schedule 1.1.</Description>
+            <Annotation>
+                <AnnotationType>onixPL:Interpretation</AnnotationType>
+                <AnnotationText>Purchased backfile collections are not specifically mentioned but are assumed to be included in the Subscriber's Acquired Journals.  This should become clear when negotiating the license.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T144445.65Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T142746.832Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>TransferredTitles</ResourceLabel>
+            <Description>Journal titles to which the Subscriber holds a subscription and which are published by third party publishers who have transferred publication rights to Elsevier during the term of this license.  For the purposes of this license, such titles become part of the Subscriber's Acquired Journals.</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T143721.597Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>TransactionContent</ResourceLabel>
+            <Description>Certain journal articles and book chapters from the ScienceDirect online service not previously acquired by the Subscriber, but which may be accessed through the use of pre-paid Transactions (PPT).</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T144522.173Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>OpenAccessContent</ResourceLabel>
+            <Description>Content included in the Subscribed Products that is identified at the article level as open access and containing its own terms and conditions of use.</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T015414.93Z"/>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>SubscribedProductPart</ResourceLabel>
+            <Description>An individual item from any of the Subscribed Products.</Description>
+            <ResourceRelatedResource>
+                <ResourceResourceRelator>onixPL:IsPartOf</ResourceResourceRelator>
+                <RelatedResource>SubscribedProducts</RelatedResource>
+            </ResourceRelatedResource>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>TransactionContentPart</ResourceLabel>
+            <Description>An individual item, eg journal article or book chapter, from Transaction Content.</Description>
+            <ResourceRelatedResource>
+                <ResourceResourceRelator>onixPL:IsPartOf</ResourceResourceRelator>
+                <RelatedResource>TransactionContent</RelatedResource>
+            </ResourceRelatedResource>
+        </ResourceDefinition>
+        <ResourceDefinition>
+            <ResourceLabel>LinkToSubscribedProducts</ResourceLabel>
+            <Description>A hyperlink to any of the Subscribed Products.</Description>
+        </ResourceDefinition>
+        <TimePointDefinition>
+            <TimePointLabel>LicenseStartDate</TimePointLabel>
+            <TimePointIdentifier>
+                <TimePointIDType>onixPL:YYYYMMDD</TimePointIDType>
+                <IDValue>00000000</IDValue>
+            </TimePointIdentifier>
+            <LicenseTextLink href="d1e108d1e168920130626T140930.454Z"/>
+        </TimePointDefinition>
+        <TimePointDefinition>
+            <TimePointLabel>LicenseEndDate</TimePointLabel>
+            <TimePointIdentifier>
+                <TimePointIDType>onixPL:YYYYMMDD</TimePointIDType>
+                <IDValue>00000000</IDValue>
+            </TimePointIdentifier>
+            <LicenseTextLink href="d1e108d1e168920130626T140930.454Z"/>
+        </TimePointDefinition>
+        <TimePointDefinition>
+            <TimePointLabel>NotificationOfTerminationDate</TimePointLabel>
+            <TimePointIdentifier>
+                <TimePointIDType>onixPL:YYYYMMDD</TimePointIDType>
+                <IDValue>00000801</IDValue>
+            </TimePointIdentifier>
+            <Description>Date by which either party must notify the other that it does not intend to renew.</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T141026.864Z"/>
+        </TimePointDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicensorPrincipalPlaceOfBusiness</PlaceLabel>
+            <PlaceName>
+                <PlaceNameType>onixPL:AddressAsFreeText</PlaceNameType>
+                <Name>Elsevier B.V., Radarweg 29. 1043 NX Amsterdam, The Netherlands</Name>
+            </PlaceName>
+            <LicenseTextLink href="d1e1639.1"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicensorAddressForNotices</PlaceLabel>
+            <PlaceName>
+                <PlaceNameType>onixPL:AddressAsFreeText</PlaceNameType>
+                <Name>Elsevier B.V., Radarweg 29, 1043 NX Amsterdam, The Netherlands</Name>
+            </PlaceName>
+            <LicenseTextLink href="d1e108d1e168920130704T020645.335Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicenseePrincipalPlaceOfBusiness</PlaceLabel>
+            <PlaceName>
+                <PlaceNameType>onixPL:AddressAsFreeText</PlaceNameType>
+                <Name>[Address]</Name>
+            </PlaceName>
+            <LicenseTextLink href="d1e1639.1"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicenseeAddressForNotices</PlaceLabel>
+            <PlaceName>
+                <PlaceNameType>onixPL:AddressAsFreeText</PlaceNameType>
+                <Name>[Address]</Name>
+            </PlaceName>
+            <LicenseTextLink href="d1e108d1e168920130704T021058.438Z"/>
+        </PlaceDefinition>
+        <PlaceDefinition>
+            <PlaceLabel>LicenseeSite</PlaceLabel>
+            <Description>Subscriber's location(s) that are covered by the license.</Description>
+            <LicenseTextLink href="d1e108d1e168920130626T014435.019Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T144709.21Z"/>
+        </PlaceDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Agreement</DocumentLabel>
+            <DocumentType>onixPL:Document</DocumentType>
+            <DocumentIdentifier>
+                <DocumentIDType>onixPL:LicensorContractNumber</DocumentIDType>
+                <IDValue>No. 1-3886812455</IDValue>
+            </DocumentIdentifier>
+            <DocumentIdentifier>
+                <DocumentIDType>onixPL:LicensorContractNumber</DocumentIDType>
+                <IDValue>CRM 17.0.0  12/11</IDValue>
+            </DocumentIdentifier>
+            <Description>Elsevier Subscription Agreement for Freedom Collection and eBooks Collections for US Academic Libraries.</Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Schedule-1</DocumentLabel>
+            <DocumentType>onixPL:Document</DocumentType>
+            <Description>Elsevier Subscription Agreement Schedule 1 Subscribed Products/Access/Fees</Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Schedule-1.1</DocumentLabel>
+            <DocumentType>onixPL:Document</DocumentType>
+            <Description>Elsevier Subscription Agreement Schedule 1.1 Journal Subscription</Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Schedule-2</DocumentLabel>
+            <DocumentType>onixPL:Document</DocumentType>
+            <Description>Elsevier Subscription Agreement Schedule 2 Sites/Authentication/Contacts</Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Section 108 of the United States Copyright Act of 1976</DocumentLabel>
+            <DocumentType>onixPL:WebResource</DocumentType>
+            <DocumentIdentifier>
+                <DocumentIDType>onixPL:URL</DocumentIDType>
+                <IDValue>http://www.copyright.gov/title17/92chap1.html#108</IDValue>
+            </DocumentIdentifier>
+            <Description>&#167; 108 . Limitations on exclusive rights: Reproduction by libraries and archives. </Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>CONTU Guidelines  (National Commission on New Technological Uses of Copyrighted Works)</DocumentLabel>
+            <DocumentType>onixPL:WebResource</DocumentType>
+            <DocumentIdentifier>
+                <DocumentIDType>onixPL:URL</DocumentIDType>
+                <IDValue>http://old.cni.org/docs/infopols/CONTU.html</IDValue>
+            </DocumentIdentifier>
+            <Description>The CONTU guidelines were developed to assist librarians and copyright proprietors in understanding the amount of photocopying for use in interlibrary loan arrangements permitted under the copyright law. </Description>
+        </DocumentDefinition>
+        <DocumentDefinition>
+            <DocumentLabel>Freedom Collection Journal Title List</DocumentLabel>
+            <DocumentType>onixPL:WebResource</DocumentType>
+            <DocumentIdentifier>
+                <DocumentIDType>onixPL:URL</DocumentIDType>
+                <IDValue>http://www.info.sciverse.com/sciencedirect/content/journals/titles</IDValue>
+            </DocumentIdentifier>
+            <Description>  Listing of all journal titles included in the Freedom Collection</Description>
+        </DocumentDefinition>
+    </Definitions>
+    <LicenseGrant>
+        <LicenseGrantType>onixPL:NonExclusive</LicenseGrantType>
+        <LicenseGrantType>onixPL:NonTransferable</LicenseGrantType>
+        <LicenseTextLink href="d1e108d1e168920130626T014430.789Z"/>
+    </LicenseGrant>
+    <UsageTerms>
+        <Usage>
+            <UsageType>onixPL:Access</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015043.189Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <User>LicenseeAffiliatedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Access</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015043.189Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <User>onixPL:WalkInUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfUsage</UsagePlaceRelator>
+                <RelatedPlace>onixPL:LicenseePremises</RelatedPlace>
+            </UsageRelatedPlace>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:PrintCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015045.639Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <User>LicenseeAffiliatedUser</User>
+            <User>onixPL:WalkInUser</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsagePurpose>onixPL:PersonalUse</UsagePurpose>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeDigitalCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015045.639Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <User>LicenseeAffiliatedUser</User>
+            <User>onixPL:WalkInUser</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsagePurpose>onixPL:PersonalUse</UsagePurpose>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Include</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <Annotation>
+                <AnnotationType>onixPL:SpecialConditions</AnnotationType>
+                <AnnotationText>Use of links and statements accompanying these links is subject to reasonable requests from Elsevier to change appearance of links.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T015047.799Z"/>
+            <User>LicenseeAffiliatedUser</User>
+            <UsedResource>LinkToSubscribedProducts</UsedResource>
+            <UsageRelatedResource>
+                <UsageResourceRelator>onixPL:TargetResource</UsageResourceRelator>
+                <RelatedResource>onixPL:LicenseeWebsite</RelatedResource>
+                <RelatedResource>onixPL:CoursePackElectronic</RelatedResource>
+                <RelatedResource>onixPL:CourseReserveElectronic</RelatedResource>
+                <RelatedResource>onixPL:DigitalInstructionalMaterial</RelatedResource>
+            </UsageRelatedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:SupplyCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015054.359Z"/>
+            <User>LicenseeAffiliatedUser</User>
+            <User>onixPL:WalkInUser</User>
+            <UsedResource>SubscribedProductPart</UsedResource>
+            <UsagePurpose>onixPL:AcademicUse</UsagePurpose>
+            <UsageRelatedAgent>
+                <UsageAgentRelator>onixPL:ReceivingAgent</UsageAgentRelator>
+                <RelatedAgent>onixPL:AuthorizedUser</RelatedAgent>
+                <RelatedAgent>onixPL:ThirdPartyPerson</RelatedAgent>
+            </UsageRelatedAgent>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:SupplyCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <User>onixPL:LicenseeLibraryStaff</User>
+            <UsedResource>TransactionContentPart</UsedResource>
+            <UsagePurpose>onixPL:PersonalUse</UsagePurpose>
+            <UsageRelatedAgent>
+                <UsageAgentRelator>onixPL:ReceivingAgent</UsageAgentRelator>
+                <RelatedAgent>onixPL:AuthorizedUser</RelatedAgent>
+            </UsageRelatedAgent>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:SupplyCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015412.41Z"/>
+            <OtherDocumentReference>
+                <ReferenceRelator>onixPL:InAccordanceWith</ReferenceRelator>
+                <DocumentLabel>Section 108 of the United States Copyright Act of 1976</DocumentLabel>
+            </OtherDocumentReference>
+            <OtherDocumentReference>
+                <ReferenceRelator>onixPL:InAccordanceWith</ReferenceRelator>
+                <DocumentLabel>CONTU Guidelines  (National Commission on New Technological Uses of Copyrighted Works)</DocumentLabel>
+            </OtherDocumentReference>
+            <User>onixPL:LicenseeLibraryStaff</User>
+            <UsedResource>SubscribedProductPart</UsedResource>
+            <UsageRelatedAgent>
+                <UsageAgentRelator>onixPL:ReceivingAgent</UsageAgentRelator>
+                <RelatedAgent>onixPL:ThirdPartyNonCommercialLibrary</RelatedAgent>
+            </UsageRelatedAgent>
+            <UsageRelatedPlace>
+                <UsagePlaceRelator>onixPL:PlaceOfReceivingAgent</UsagePlaceRelator>
+                <RelatedPlace>onixPL:CountryOfLicensee</RelatedPlace>
+            </UsageRelatedPlace>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Use</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <Annotation>
+                <AnnotationType>onixPL:SpecialConditions</AnnotationType>
+                <AnnotationText>Terms and Conditions of use are described in the open access article and supersede other terms and conditions.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T015414.93Z"/>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>OpenAccessContent</UsedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Modify</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015834.3Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageException>
+                <UsageExceptionType>onixPL:ExceptAsPermitted</UsageExceptionType>
+            </UsageException>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeDerivedWork</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015834.3Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageException>
+                <UsageExceptionType>onixPL:ExceptAsPermitted</UsageExceptionType>
+            </UsageException>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:RemoveObscureOrModify</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015836.56Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:CopyrightNoticesOrDisclaimers</UsedResource>
+            <UsageException>
+                <UsageExceptionType>onixPL:ExceptAsPermitted</UsageExceptionType>
+            </UsageException>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:AccessByRobot</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015838.26Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageException>
+                <UsageExceptionType>onixPL:ExceptAsPermitted</UsageExceptionType>
+            </UsageException>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:SystematicallyCopy</UsageType>
+            <UsageStatus>onixPL:Prohibited</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015839.86Z"/>
+            <User>onixPL:Licensee</User>
+            <User>onixPL:AuthorizedUser</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsageException>
+                <UsageExceptionType>onixPL:ExceptAsPermitted</UsageExceptionType>
+            </UsageException>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Access</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015043.189Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T020102.97Z"/>
+            <User>LicenseeAffiliatedContractor</User>
+            <UsedResource>onixPL:LicensedContent</UsedResource>
+            <UsagePurpose>onixPL:LicenseeContractedResearch</UsagePurpose>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:PrintCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015045.639Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T020102.97Z"/>
+            <User>LicenseeAffiliatedContractor</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsagePurpose>onixPL:LicenseeContractedResearch</UsagePurpose>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:MakeDigitalCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015045.639Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T015246.419Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T020102.97Z"/>
+            <User>LicenseeAffiliatedContractor</User>
+            <UsedResource>onixPL:LicensedContentPart</UsedResource>
+            <UsagePurpose>onixPL:LicenseeContractedResearch</UsagePurpose>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:Include</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <Annotation>
+                <AnnotationType>onixPL:SpecialConditions</AnnotationType>
+                <AnnotationText>Use of links and statements accompanying these links is subject to reasonable requests from Elsevier to change appearance of links.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T015047.799Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T020102.97Z"/>
+            <User>LicenseeAffiliatedContractor</User>
+            <UsedResource>LinkToSubscribedProducts</UsedResource>
+            <UsagePurpose>onixPL:LicenseeContractedResearch</UsagePurpose>
+            <UsageRelatedResource>
+                <UsageResourceRelator>onixPL:TargetResource</UsageResourceRelator>
+                <RelatedResource>onixPL:LicenseeWebsite</RelatedResource>
+                <RelatedResource>onixPL:CoursePackElectronic</RelatedResource>
+                <RelatedResource>onixPL:CourseReserveElectronic</RelatedResource>
+                <RelatedResource>onixPL:DigitalInstructionalMaterial</RelatedResource>
+            </UsageRelatedResource>
+        </Usage>
+        <Usage>
+            <UsageType>onixPL:SupplyCopy</UsageType>
+            <UsageStatus>onixPL:Permitted</UsageStatus>
+            <LicenseTextLink href="d1e108d1e168920130626T015054.359Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T020102.97Z"/>
+            <User>LicenseeAffiliatedContractor</User>
+            <UsedResource>SubscribedProductPart</UsedResource>
+            <UsagePurpose>onixPL:LicenseeContractedResearch</UsagePurpose>
+            <UsageRelatedAgent>
+                <UsageAgentRelator>onixPL:ReceivingAgent</UsageAgentRelator>
+                <RelatedAgent>onixPL:AuthorizedUser</RelatedAgent>
+                <RelatedAgent>onixPL:ThirdPartyPerson</RelatedAgent>
+            </UsageRelatedAgent>
+        </Usage>
+    </UsageTerms>
+    <SupplyTerms>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:NetworkAccess</SupplyTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T140005.454Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T140411.599Z"/>
+        </SupplyTerm>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:ServicePerformance</SupplyTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T140148.718Z"/>
+        </SupplyTerm>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:ChangesToLicensedContent</SupplyTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T140221.331Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T143558.669Z"/>
+        </SupplyTerm>
+        <SupplyTerm>
+            <SupplyTermType>onixPL:UsageStatistics</SupplyTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T140301.753Z"/>
+        </SupplyTerm>
+    </SupplyTerms>
+    <ContinuingAccessTerms>
+        <ContinuingAccessTerm>
+            <ContinuingAccessTermType>onixPL:ContinuingAccess</ContinuingAccessTermType>
+            <Annotation>
+                <AnnotationType>onixPL:PriceBasisNote</AnnotationType>
+                <AnnotationText>Perpetual access is granted by a one-time fee plus an annual access fee (to begin in the second year, and based on the previous year's usage).  The annual access fee is waived when the Subscriber maintains an annual subscription on ScienceDirect online.
+
+The Subscriber may also choose to acquire an electronic copy of the eBooks for cost.</AnnotationText>
+            </Annotation>
+            <Annotation>
+                <AnnotationType>onixPL:SpecialConditions</AnnotationType>
+                <AnnotationText>Continuing access to the eBook Collections content is to be in accordance with the usage provisions of this Agreement.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T144553.314Z"/>
+            <LicenseDocumentReference>
+                <DocumentLabel>Schedule 1</DocumentLabel>
+            </LicenseDocumentReference>
+            <ContinuingAccessTermRelatedResource>
+                <ContinuingAccessTermResourceRelator>onixPL:ApplicableTo</ContinuingAccessTermResourceRelator>
+                <RelatedResource>eBooksCollections</RelatedResource>
+            </ContinuingAccessTermRelatedResource>
+        </ContinuingAccessTerm>
+        <ContinuingAccessTerm>
+            <ContinuingAccessTermType>onixPL:ContinuingAccess</ContinuingAccessTermType>
+            <Annotation>
+                <AnnotationType>onixPL:PriceBasisNote</AnnotationType>
+                <AnnotationText>When Subscriber terminates all annual subscriptions on ScienceDirect, they may either choose to receive a file for local loading, or continue to access online for an annual access fee based on the number of downloads from the previous year.
+
+No fee for online access through ScienceDirect is required post cancellation when Subscriber remains a ScienceDirect subscriber, as long as Elsevier continues to hold the rights to the content. 
+</AnnotationText>
+            </Annotation>
+            <Annotation>
+                <AnnotationType>onixPL:SpecialConditions</AnnotationType>
+                <AnnotationText>Continuing access is to be in accordance with the usage provisions of this License.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T143756.371Z"/>
+            <LicenseDocumentReference>
+                <DocumentLabel>Schedule 1.1</DocumentLabel>
+            </LicenseDocumentReference>
+            <ContinuingAccessTermRelatedResource>
+                <ContinuingAccessTermResourceRelator>onixPL:ApplicableTo</ContinuingAccessTermResourceRelator>
+                <RelatedResource>AcquiredJournals</RelatedResource>
+            </ContinuingAccessTermRelatedResource>
+        </ContinuingAccessTerm>
+    </ContinuingAccessTerms>
+    <PaymentTerms>
+        <PaymentTerm>
+            <PaymentTermType>onixPL:PaymentConditions</PaymentTermType>
+            <Annotation>
+                <AnnotationType>onixPL:FeesPayableNote</AnnotationType>
+                <AnnotationText>Payable within 30 days of invoice.</AnnotationText>
+            </Annotation>
+            <LicenseTextLink href="d1e108d1e168920130626T140749.322Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T140808.755Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T140829.213Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T144316.306Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T144522.173Z"/>
+            <LicenseTextLink href="d1e108d1e168920130813T221808.687Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T144905.067Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T145428.685Z"/>
+        </PaymentTerm>
+    </PaymentTerms>
+    <GeneralTerms>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:IntellectualPropertyRights</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T020200.38Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NotificationOfTermsToAuthorizedUsers</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T140518.477Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:PreventionOfMisuse</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T140518.477Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T140529.972Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ActionAgainstMisuse</GeneralTermType>
+            <Authority>Subscriber</Authority>
+            <LicenseTextLink href="d1e108d1e168920130626T140545.593Z"/>
+            <LicenseTextLink href="d1e108d1e168920130626T140653.385Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LimitationOfLiability</GeneralTermType>
+            <Authority>Subscriber</Authority>
+            <LicenseTextLink href="d1e108d1e168920130626T140712.805Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicensorIntellectualPropertyWarranty</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141146.723Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicensorIndemnity</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141224.845Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LicensorWarrantyDisclaimer</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141302.349Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:LimitationOfLiability</GeneralTermType>
+            <Authority>Elsevier</Authority>
+            <LicenseTextLink href="d1e108d1e168920130626T141355.955Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ForceMajeure</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141457.703Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NonEnforceability</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141539.964Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:EntireAgreement</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141631.424Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:Amendment</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141710.268Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:Assignment</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141750.427Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ConfidentialityOfUserData</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141842.867Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:ConfidentialityOfAgreement</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T142001.339Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:NoticeProcedure</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141919.602Z"/>
+            <LicenseTextLink href="d1e108d1e168920130704T020645.335Z"/>
+            <LicenseTextLink href="d1e108d1e168920130704T021058.438Z"/>
+        </GeneralTerm>
+        <GeneralTerm>
+            <GeneralTermType>onixPL:Renewal</GeneralTermType>
+            <LicenseTextLink href="d1e108d1e168920130626T141026.864Z"/>
+        </GeneralTerm>
+    </GeneralTerms>
+    <LicenseDocumentText>
+        <DocumentLabel>Agreement</DocumentLabel>
+        <TextElement id="d1e108d1e168920130626T013948.107Z">
+            <SortNumber>0.1</SortNumber>
+            <Text>ELSEVIER SUBSCRIPTION AGREEMENT</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T013951.057Z">
+            <SortNumber>0.2</SortNumber>
+            <Text>No. 1-3886812455</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T013952.947Z">
+            <SortNumber>0.3</SortNumber>
+            <Text>CRM 17.0.0  12/11</Text>
+        </TextElement>
+        <TextElement id="d1e1639.1">
+            <SortNumber>0.4</SortNumber>
+            <Text>This agreement (&#8220;Agreement&#8221;) is entered into as of ________ by and between ______________________, __________________, USA (the &#8220;Subscriber&#8221;), and Elsevier B.V., Radarweg 29, 1043 NX Amsterdam, The Netherlands (&#8220;Elsevier&#8221;).</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920081221T140951.109Z">
+            <SortNumber>0.5</SortNumber>
+            <Text>The parties hereto agree as follows:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920081221T141041.453Z">
+            <SortNumber>1</SortNumber>
+            <Text>SECTION 1.  SUBSCRIPTION.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920081221T141134.187Z">
+            <SortNumber>1.1</SortNumber>
+            <DisplayNumber>1.1</DisplayNumber>
+            <Text>1.1	Subscribed Products.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T014430.789Z">
+            <SortNumber>1.1.1</SortNumber>
+            <Text>Elsevier hereby grants to the Subscriber the non-exclusive, non-transferable right to access and use the products and services identified in Schedule 1 (&#8220;Subscribed Products&#8221;) and provide the Subscribed Products to its Authorized Users (as defined herein) subject to the terms and conditions of this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T014433.319Z">
+            <SortNumber>1.2</SortNumber>
+            <DisplayNumber>1.2</DisplayNumber>
+            <Text>Authorized Users/Sites.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T014435.019Z">
+            <SortNumber>1.2.1</SortNumber>
+            <Text>Authorized Users are the full-time and part-time students, faculty, staff, researchers, and individuals who are or are employed by independent contractors of the Subscriber affiliated with the Subscriber&#8217;s locations listed on Schedule 2 (the &#8220;Sites&#8221;) and individuals using computer terminals within the library facilities at the Sites permitted by the Subscriber to access the Subscribed Products for purposes of personal research, education or other non-corporate use.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T014436.589Z">
+            <SortNumber>1.3</SortNumber>
+            <DisplayNumber>1.3</DisplayNumber>
+            <Text>Authorized Uses.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T014438.239Z">
+            <SortNumber>1.3.1</SortNumber>
+            <Text>Each Authorized User may:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015043.189Z">
+            <SortNumber>1.3.2</SortNumber>
+            <TextPreceding>Each Authorized User may:</TextPreceding>
+            <Text>access, search, browse and view the Subscribed Products; </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015045.639Z">
+            <SortNumber>1.3.3</SortNumber>
+            <TextPreceding>Each Authorized User may:</TextPreceding>
+            <Text>print, make electronic copies of and store for the exclusive use of such Authorized User individual items from the Subscribed Products;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015047.799Z">
+            <SortNumber>1.3.4</SortNumber>
+            <TextPreceding>Each Authorized User may:</TextPreceding>
+            <Text>incorporate links to the Subscribed Products on the Subscriber&#8217;s intranet and internet websites  and in electronic coursepacks, reserves and course management systems and instructor websites, provided that the appearance of such links and/or statements accompanying such links will be changed as  reasonably requested by Elsevier; </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015054.359Z">
+            <SortNumber>1.3.5</SortNumber>
+            <TextPreceding>Each Authorized User may:</TextPreceding>
+            <Text>provide print or electronic copies of individual items from the Subscribed Products to other Authorized Users and to third-party colleagues for their scholarly or research use; and</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015246.419Z">
+            <SortNumber>1.3.6</SortNumber>
+            <TextPreceding>Each Authorized User may:</TextPreceding>
+            <Text>access, search, browse, view, print, make electronic copies and store for the exclusive use of such Authorized User or, if the Authorized User is a librarian/information specialist, for the exclusive use of another Authorized User certain journal articles and book chapters from the  ScienceDirect&#174; online service that are not subscribed to as part of the Subscribed Products, with each twenty-four (24) hour access period for a selected article or chapter, a &#8220;Transaction&#8221;.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015412.41Z">
+            <SortNumber>1.3.7</SortNumber>
+            <Text>The Subscriber may:
+deliver journal articles from Subscribed Titles (as defined herein) and, if any, book chapters from the Subscribed Products to fulfill requests as part of the practice commonly known as &#8220;interlibrary loan&#8221; from non-commercial libraries located within the United States, provided that the Subscriber&#8217;s staff reviews the requests and fulfills the requests in compliance with Section 108 of the U.S. Copyright Law (17 U.S.C. &#167; 108) and the Guidelines for the Proviso of Subsection 108(g)(2) (Final Report of the National Commission on New Technological Uses of Copyrighted Works, 1978). </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015414.93Z">
+            <SortNumber>1.3.8</SortNumber>
+            <Text>Notwithstanding anything to the contrary contained in this Agreement, open access content in the Subscribed Products is subject to the terms and conditions stated in the applicable user license identified in the individual journal article.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015416.54Z">
+            <SortNumber>1.4</SortNumber>
+            <DisplayNumber>1.4</DisplayNumber>
+            <Text>Restrictions on Use of Subscribed Products.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015418.15Z">
+            <SortNumber>1.4.1</SortNumber>
+            <Text>Except as expressly stated in this Agreement or otherwise permitted in writing by Elsevier, the Subscriber and its Authorized Users may not:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015834.3Z">
+            <SortNumber>1.4.2</SortNumber>
+            <TextPreceding>Except as expressly stated in this Agreement or otherwise permitted in writing by Elsevier, the Subscriber and its Authorized Users may not:</TextPreceding>
+            <Text>abridge, modify, translate or create any derivative work based on the Subscribed Products, except to the extent necessary to make them perceptible on a computer screen to Authorized Users;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015836.56Z">
+            <SortNumber>1.4.3</SortNumber>
+            <TextPreceding>Except as expressly stated in this Agreement or otherwise permitted in writing by Elsevier, the Subscriber and its Authorized Users may not:</TextPreceding>
+            <Text>remove, obscure or modify in any way any copyright notices, other notices or disclaimers as they appear in the Subscribed Products;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015838.26Z">
+            <SortNumber>1.4.4</SortNumber>
+            <TextPreceding>Except as expressly stated in this Agreement or otherwise permitted in writing by Elsevier, the Subscriber and its Authorized Users may not:</TextPreceding>
+            <Text>use any robots, spiders, crawlers or other automated downloading programs, algorithms or devices to continuously and automatically search, scrape, extract, deep link, index or disrupt the working of the Subscribed Products; or</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T015839.86Z">
+            <SortNumber>1.4.5</SortNumber>
+            <TextPreceding>Except as expressly stated in this Agreement or otherwise permitted in writing by Elsevier, the Subscriber and its Authorized Users may not:</TextPreceding>
+            <Text>substantially or systematically reproduce, retain or redistribute the Subscribed Products.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T020102.97Z">
+            <SortNumber>1.4.6</SortNumber>
+            <Text>Authorized Users who are individuals who are or are employed by independent contractors may use the Subscribed Products only for the purposes of the contracted research work for the Subscriber.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T020105.57Z">
+            <SortNumber>1.5</SortNumber>
+            <DisplayNumber>1.5</DisplayNumber>
+            <Text>Intellectual Property Ownership.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T020200.38Z">
+            <SortNumber>1.5.1</SortNumber>
+            <Text>The Subscriber acknowledges that all right, title and interest in and to the Subscribed Products remain with Elsevier and its suppliers, except as expressly set forth in this Agreement, and that the unauthorized redistribution of the Subscribed Products could materially harm Elsevier and its suppliers.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T135842.216Z">
+            <SortNumber>2</SortNumber>
+            <Text>SECTION 2.  ELSEVIER PERFORMANCE OBLIGATIONS.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T135940.615Z">
+            <SortNumber>2.1</SortNumber>
+            <DisplayNumber>2.1</DisplayNumber>
+            <Text>Access to Subscribed Products.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140005.454Z">
+            <SortNumber>2.1.1</SortNumber>
+            <Text>Elsevier will make the Subscribed Products accessible to the Subscriber and its Authorized Users from the internet address set forth on Schedule 1 or as may be otherwise set forth herein.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140028.254Z">
+            <SortNumber>2.2</SortNumber>
+            <DisplayNumber>2.2</DisplayNumber>
+            <Text>Quality of Service.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140148.718Z">
+            <SortNumber>2.2.1</SortNumber>
+            <Text>Elsevier will use reasonable efforts to provide the Subscribed Products with a quality of service consistent with industry standards, specifically, to provide continuous service with an average of 98% up-time per year, with the 2% down-time including scheduled maintenance and repairs performed at a time to minimize inconvenience to the Subscriber and its Authorized Users, and to restore service as soon as possible in the event of an interruption or suspension of service.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140105.758Z">
+            <SortNumber>2.3</SortNumber>
+            <DisplayNumber>2.3</DisplayNumber>
+            <Text>Withdrawal of Content.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140221.331Z">
+            <SortNumber>2.3.1</SortNumber>
+            <Text>Elsevier reserves the right to withdraw from the Subscribed Products content that it no longer retains the right to provide or that it has reasonable grounds to believe is unlawful, harmful, false or infringing.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140239.87Z">
+            <SortNumber>2.4</SortNumber>
+            <DisplayNumber>2.4</DisplayNumber>
+            <Text>Usage Data Reports.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140301.753Z">
+            <SortNumber>2.4.1</SortNumber>
+            <Text>Elsevier will make usage data reports on the Subscriber&#8217;s usage activity accessible online on a monthly basis to the librarians/administrators employed by the Subscriber for internal use only.  Such reports may be accessed by vendors or other third parties retained by the Subscriber only with the express written permission of Elsevier and for the purpose of usage analysis of the Subscriber.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140322.436Z">
+            <SortNumber>3</SortNumber>
+            <Text>SECTION 3.  SUBSCRIBER PERFORMANCE OBLIGATIONS.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140349.39Z">
+            <SortNumber>3.1</SortNumber>
+            <DisplayNumber>3.1</DisplayNumber>
+            <Text>Authentication.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140411.599Z">
+            <SortNumber>3.1.1</SortNumber>
+            <Text>Access to the Subscribed Products will be authenticated by the use of Internet Protocol (&#8220;IP&#8221;) address(es) and/or usernames and passwords and/or a delegated authentication mechanism requiring at least two different credentials, as identified on Schedule 2.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140431.284Z">
+            <SortNumber>3.2</SortNumber>
+            <DisplayNumber>3.2</DisplayNumber>
+            <Text>Protection from Unauthorized Access and Use.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140453.994Z">
+            <SortNumber>3.2.1</SortNumber>
+            <Text>The Subscriber will use reasonable efforts to:</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140518.477Z">
+            <SortNumber>3.2.2</SortNumber>
+            <TextPreceding>The Subscriber will use reasonable efforts to:</TextPreceding>
+            <Text>limit access to and use of the Subscribed Products to Authorized Users and notify all Authorized Users of the usage restrictions set forth in this Agreement and that they must comply with such restrictions;</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140529.972Z">
+            <SortNumber>3.2.3</SortNumber>
+            <TextPreceding>The Subscriber will use reasonable efforts to:</TextPreceding>
+            <Text>issue any passwords or credentials used to access the Subscribed Products only to Authorized Users, not divulge any passwords or credentials to any third party, and notify all Authorized Users not to divulge any passwords or credentials to any third party; and</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140545.593Z">
+            <SortNumber>3.2.4</SortNumber>
+            <TextPreceding>The Subscriber will use reasonable efforts to:</TextPreceding>
+            <Text>promptly upon becoming aware of any unauthorized use of the Subscribed Products, inform Elsevier and take appropriate steps to end such activity and to prevent any recurrence.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140653.385Z">
+            <SortNumber>3.3</SortNumber>
+            <Text>In the event of any unauthorized use of the Subscribed Products, Elsevier may suspend the access and/or require that the Subscriber suspend the access from where the unauthorized use occurred upon notice to the Subscriber.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140712.805Z">
+            <SortNumber>3.4</SortNumber>
+            <Text>The Subscriber will not be liable for unauthorized use of the Subscribed Products by any Authorized Users provided that the unauthorized use did not result from the Subscriber&#8217;s own negligence or willful misconduct and that the Subscriber did not permit such unauthorized use to continue after having actual notice thereof.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140727.3Z">
+            <SortNumber>4</SortNumber>
+            <Text>SECTION 4.  FEES AND PAYMENT TERMS.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140749.322Z">
+            <SortNumber>4.1</SortNumber>
+            <Text>The Subscriber will pay to Elsevier the fees set forth in Schedule 1 (the &#8220;Fees&#8221;) within thirty (30) days of date of invoice. </Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140808.755Z">
+            <SortNumber>4.2</SortNumber>
+            <Text>Late payments will be subject to interest charges of 1% per month on the unpaid balance.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140829.213Z">
+            <SortNumber>4.3</SortNumber>
+            <Text>The Fees will be exclusive of any sales, use, value added, withholding or similar tax and the Subscriber will be liable for any such taxes in addition to the Fees.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140848.032Z">
+            <SortNumber>5</SortNumber>
+            <Text>SECTION 5.  TERM.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140905.401Z">
+            <SortNumber>5.1</SortNumber>
+            <DisplayNumber>5.1</DisplayNumber>
+            <Text>Term.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140930.454Z">
+            <SortNumber>5.1.1</SortNumber>
+            <Text>The term of this Agreement will commence on _____________ and continue until _____________.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T140955.164Z">
+            <SortNumber>5.2</SortNumber>
+            <DisplayNumber>5.2</DisplayNumber>
+            <Text>Renewal.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141026.864Z">
+            <SortNumber>5.2.1</SortNumber>
+            <Text>This Agreement will be automatically renewed for successive one-year terms, subject to appropriate adjustments to Schedule 1, unless either party gives notice to the other by 1 August prior to the end of the then current term that it does not intend to renew.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141055.021Z">
+            <SortNumber>6</SortNumber>
+            <Text>SECTION 6.  ELSEVIER WARRANTIES AND INDEMNITIES.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141116.853Z">
+            <SortNumber>6.1</SortNumber>
+            <DisplayNumber>6.1</DisplayNumber>
+            <Text>Warranties.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141146.723Z">
+            <SortNumber>6.1.1</SortNumber>
+            <Text>Elsevier warrants that use of the Subscribed Products in accordance with the terms and conditions herein will not infringe the intellectual property rights of any third party.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141203.062Z">
+            <SortNumber>6.2</SortNumber>
+            <DisplayNumber>6.2</DisplayNumber>
+            <Text>Indemnities.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141224.845Z">
+            <SortNumber>6.2.1</SortNumber>
+            <Text>Elsevier will indemnify, defend and hold harmless the Subscriber and its Authorized Users from and against any loss, damage, costs, liability and expenses (including reasonable attorneys&#8217; fees) arising from or out of any third-party action or claim that use of the Subscribed Products in accordance with the terms and conditions herein infringes the intellectual property rights of such third party.  If any such action or claim is made, the Subscriber will promptly notify and reasonably cooperate with Elsevier.  This indemnity obligation will survive the termination of this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141241.522Z">
+            <SortNumber>6.3</SortNumber>
+            <DisplayNumber>6.3</DisplayNumber>
+            <Text>Disclaimer.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141302.349Z">
+            <SortNumber>6.3.1</SortNumber>
+            <Text>EXCEPT FOR THE EXPRESS WARRANTIES AND INDEMNITIES STATED HEREIN AND TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE SUBSCRIBED PRODUCTS ARE PROVIDED &#8220;AS IS&#8221; AND ELSEVIER AND ITS SUPPLIERS EXPRESSLY DISCLAIM ALL WARRANTIES AND REPRESENTATIONS OF ANY KIND WITH REGARD TO THE SUBSCRIBED PRODUCTS AND ANY OTHER DATA, DOCUMENTATION OR MATERIALS PROVIDED IN CONNECTION WITH THIS AGREEMENT, INCLUDING BUT NOT LIMITED TO ANY ERRORS, INACCURACIES, OMISSIONS, OR DEFECTS CONTAINED THEREIN, AND ANY IMPLIED OR EXPRESS WARRANTY AS TO MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141325.281Z">
+            <SortNumber>6.4</SortNumber>
+            <DisplayNumber>6.4</DisplayNumber>
+            <Text>Limitation of Liability.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141355.955Z">
+            <SortNumber>6.4.1</SortNumber>
+            <Text>Except for the express warranties and indemnities stated herein and to the extent permitted by applicable law, in no event will Elsevier or its suppliers be liable for any indirect, incidental, special, consequential or punitive damages including, but not limited to, loss of data, business interruption or loss of profits, arising out of or in connection with this Agreement, or will the liability of Elsevier and its suppliers to the Subscriber exceed a sum equal to the Fees paid by the Subscriber hereunder, even if Elsevier or any supplier has been advised of the possibility of such liability or damages.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141413.472Z">
+            <SortNumber>7</SortNumber>
+            <Text>SECTION 7.  GENERAL.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141430.017Z">
+            <SortNumber>7.1</SortNumber>
+            <DisplayNumber>7.1</DisplayNumber>
+            <Text>Force Majeure.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141457.703Z">
+            <SortNumber>7.1.1</SortNumber>
+            <Text>Neither party&#8217;s delay or failure to perform any provision of this Agreement as a result of circumstances beyond its control (including, but not limited to, war, strikes, fires, floods, power failures, telecommunications or Internet failures or damage to or destruction of any network facilities or servers) will be deemed a breach of this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141515.294Z">
+            <SortNumber>7.2</SortNumber>
+            <DisplayNumber>7.2</DisplayNumber>
+            <Text>Severability.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141539.964Z">
+            <SortNumber>7.2.1</SortNumber>
+            <Text>The invalidity or unenforceability of any provision of this Agreement will not affect any other provisions of this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141608.122Z">
+            <SortNumber>7.3</SortNumber>
+            <DisplayNumber>7.3</DisplayNumber>
+            <Text>Entire Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141631.424Z">
+            <SortNumber>7.3.1</SortNumber>
+            <Text>This Agreement contains the entire understanding and agreement of the parties and merges and supersedes any and all prior and contemporaneous agreements, communications, proposals and purchase orders, written or oral, between the parties with respect to the subject matter contained herein.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141648.193Z">
+            <SortNumber>7.4</SortNumber>
+            <DisplayNumber>7.4</DisplayNumber>
+            <Text>Modification.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141710.268Z">
+            <SortNumber>7.4.1</SortNumber>
+            <Text>No modification, amendment or waiver of any provision of this Agreement will be valid unless in writing and signed by the parties.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141728.537Z">
+            <SortNumber>7.5</SortNumber>
+            <DisplayNumber>7.5</DisplayNumber>
+            <Text>Assignment.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141750.427Z">
+            <SortNumber>7.5.1</SortNumber>
+            <Text>The Subscriber will not assign, transfer or license any of its rights or obligations under this Agreement unless it obtains the prior written consent of Elsevier, which consent will not unreasonably be withheld.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141815.776Z">
+            <SortNumber>7.6</SortNumber>
+            <DisplayNumber>7.6</DisplayNumber>
+            <Text>Privacy.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141842.867Z">
+            <SortNumber>7.6.1</SortNumber>
+            <Text>Elsevier will not, without the prior written consent of the Subscriber, transfer any personal information of any Authorized Users to any non-affiliated third party or use it for any purpose other than as described in this Agreement and in the online privacy policy for the relevant online service.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141858.814Z">
+            <SortNumber>7.7</SortNumber>
+            <DisplayNumber>7.7</DisplayNumber>
+            <Text>Notices.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141919.602Z">
+            <SortNumber>7.7.1</SortNumber>
+            <Text>All notices given pursuant to this Agreement will be in writing and delivered to the party to whom such notice is directed at the address specified below or the electronic mail address as such party will have designated by notice hereunder.
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130704T020645.335Z">
+            <SortNumber>7.7.2</SortNumber>
+            <TextPreceding>All notices given pursuant to this Agreement will be in writing and delivered to the party to whom such notice is directed at the address specified below or the electronic mail address as such party will have designated by notice hereunder.</TextPreceding>
+            <Text>If to Elsevier:  Elsevier B.V., Radarweg 29, 1043 NX Amsterdam, The Netherlands.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130704T021058.438Z">
+            <SortNumber>7.7.3</SortNumber>
+            <TextPreceding>All notices given pursuant to this Agreement will be in writing and delivered to the party to whom such notice is directed at the address specified below or the electronic mail address as such party will have designated by notice hereunder.</TextPreceding>
+            <Text>If to the Subscriber:  _____________________________________.
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T141940.081Z">
+            <SortNumber>7.8</SortNumber>
+            <DisplayNumber>7.8</DisplayNumber>
+            <Text>Confidentiality.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T142001.339Z">
+            <SortNumber>7.8.1</SortNumber>
+            <Text>The Subscriber and its employees, officers, directors and agents will maintain as confidential and not disclose to any non-affiliated third party without Elsevier&#8217;s prior written consent or except as required by law the financial terms and commercial conditions of this Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T142019.999Z">
+            <SortNumber>7.9</SortNumber>
+            <DisplayNumber>7.9</DisplayNumber>
+            <Text>Execution.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T142041.85Z">
+            <SortNumber>7.9.1</SortNumber>
+            <Text>This Agreement and any amendment thereto may be executed in counterparts, and signatures exchanged by facsimile or other electronic means are effective to the same extent as original signatures.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement by their respective, duly authorized representatives as of the date first above written.
+
+______________________________
+(Subscriber)
+
+
+_______________________________
+Name:
+Title:
+ 
+ELSEVIER B.V.
+(Elsevier)
+
+
+_______________________________
+Name:  Martin O&#8217;Malley
+Title:    Managing Director, Global Sales &amp; Customer Marketing, Science &amp; Technology</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130703T155138.377Z">
+            <SortNumber>7.9.2</SortNumber>
+            <Text>No. 1-3886812455</Text>
+        </TextElement>
+    </LicenseDocumentText>
+    <LicenseDocumentText>
+        <DocumentLabel>Schedule-1</DocumentLabel>
+        <TextElement id="d1e108d1e1689.3">
+            <SortNumber>1</SortNumber>
+            <Text>ELSEVIER SUBSCRIPTION AGREEMENT
+Schedule 1
+Subscribed Products/Access/Fees
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144243.616Z">
+            <SortNumber>2</SortNumber>
+            <Text>_________________________[name of subscriber]</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144302.122Z">
+            <SortNumber>3</SortNumber>
+            <Text>No. 1-3886812455</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144316.306Z">
+            <SortNumber>4</SortNumber>
+            <Text>SUBSCRIBED PRODUCTS &#8211; PUBLISHER	
+ScienceDirect&#174; online &#8211; Elsevier B.V.	
+Freedom Collection		
+ &#8226; Freedom Collection Fee		
+Elsevier eBooks Collections
+ACCESS
+sciencedirect.com       
+2013 TOTAL FEES		</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144425.703Z">
+            <SortNumber>5</SortNumber>
+            <Text>Journal Collection(s)</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144445.65Z">
+            <SortNumber>5.1</SortNumber>
+            <Text>The Subscriber&#8217;s Journal Collection(s) is described in Schedule 1.1.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144507.29Z">
+            <SortNumber>6</SortNumber>
+            <Text>Transaction Fee</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144522.173Z">
+            <SortNumber>6.1</SortNumber>
+            <Text>The Subscriber may purchase pre-paid Transactions (&#8220;PPT&#8221;) upon mutual agreement of the parties in writing.  Unused PPT will be forfeited one (1) year after issue or upon termination of this Agreement, whichever is earlier.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144539.381Z">
+            <SortNumber>7</SortNumber>
+            <Text>Elsevier eBooks Additional Terms and Conditions</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144553.314Z">
+            <SortNumber>7.1</SortNumber>
+            <Text>The perpetual access granted hereunder for the above eBooks is subject to payment of a one-time fee set forth in the fee table above and, after the initial year of the term of this Agreement, an annual access fee based on the number of chapters downloaded from such eBooks during the prior twelve (12) months at a rate of US$0.081 per download, with a minimum annual fee of US$500 (adjusted annually for inflation and cost increases) for the Subscriber&#8217;s access to the platform. The annual access fee will not be charged if the Subscriber maintains an annual subscription on ScienceDirect online. Elsevier will make available for inspection by a duly authorized auditor of the Subscriber, at the Subscriber&#8217;s sole expense, the records concerning the calculation of such annual access fee one time per year during regular business hours upon thirty (30) days written notice to Elsevier. In the event that the Subscriber does not pay any eBooks annual access fee or maintain any annual subscription on ScienceDirect online, the Subscriber may, at its option, acquire, load and technically format on a server that enables access and use by Authorized Users an electronic copy of such eBooks for cost in accordance with the usage provisions of the Agreement. The copy may not contain links and other features and functionality associated with the online version. A collection discount and a &#8220;slippage&#8221; discount of ten percent (10%), to account for titles that were expected to appear in the collection but that are not published by the end of the calendar year (31 December), have been applied to the Fees for each &#8220;frontlist&#8221; collection. If the Fees paid for a &#8220;frontlist&#8221; collection were greater than the value of the published titles in the collection at the end of the calendar year less the collection discount, Elsevier will credit to the Subscriber the difference.</Text>
+        </TextElement>
+    </LicenseDocumentText>
+    <LicenseDocumentText>
+        <DocumentLabel>Schedule-1.1</DocumentLabel>
+        <TextElement id="d1e108d1e1689.2">
+            <SortNumber>1</SortNumber>
+            <Text>ELSEVIER SUBSCRIPTION AGREEMENT
+Schedule 1.1
+Journal Subscription
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T142746.832Z">
+            <SortNumber>2</SortNumber>
+            <Text>Journal Collection(s):</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T142805.483Z">
+            <SortNumber>2.1</SortNumber>
+            <Text>Freedom Collection: Electronic access to the full text of all articles from the Elsevier journal titles published since 1 January 2009 set forth in the Freedom Collection Journal Title List at http://www.info.sciverse.com/sciencedirect/content/journals/titles, as may be updated annually with the changes effective as of 1 January of the following calendar year of the term of the Agreement.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T143544.162Z">
+            <SortNumber>3</SortNumber>
+            <Text>Option to Substitute or Refund Withdrawn Subscribed Titles</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T143558.669Z">
+            <SortNumber>3.1</SortNumber>
+            <Text>The Subscriber may substitute any withdrawn Subscribed Title with one or more journal titles of total comparable value (in current year list price) at any time upon notice to Elsevier. In the event that no substitute journal title is available, Elsevier will refund to the Subscriber the amount of the Fees paid for the withdrawn Subscribed Title for the remainder of the term.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T143707.94Z">
+            <SortNumber>4</SortNumber>
+            <Text>Transferred Titles</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T143721.597Z">
+            <SortNumber>4.1</SortNumber>
+            <Text>Society journal titles for which the Subscriber holds an electronic subscription through a third-party publisher whose publication rights are transferred to Elsevier and made accessible on ScienceDirect during the term (&#8220;Transferred Titles&#8221;) will be deemed Subscribed Titles effective as of the date of transfer and for the then current publication year and the publication years previously paid unless and until the Subscriber notifies Elsevier that it no longer wishes to continue such electronic subscription on ScienceDirect.  The option to substitute Subscribed Titles does not apply to Transferred Titles.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T143740.737Z">
+            <SortNumber>5</SortNumber>
+            <Text>Access to Formerly Subscribed Titles</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T143756.371Z">
+            <SortNumber>5.1</SortNumber>
+            <Text>Upon termination of all of the Subscriber&#8217;s annual subscriptions on ScienceDirect online, the Subscriber may, at its option, (1) acquire, load and technically format on a server that enables access and use by Authorized Users an electronic copy of all or part of its Subscribed Titles for the publication years paid for cost and/or (2) continue to access such Subscribed Titles online for an annual access fee based on the number of full-text articles downloaded from such titles during the prior twelve (12) months at a rate of US$0.081 per download, with a minimum annual fee of US$500 (adjusted annually for inflation and cost increases) for the Subscriber&#8217;s access to the platform, in accordance with the usage provisions of this Agreement, which provisions will survive the termination of the Agreement.  Elsevier will make available for inspection by a duly authorized auditor of the Subscriber, at the Subscriber&#8217;s sole expense, the records concerning the calculation of the annual access fee one time per year during regular business hours upon thirty (30) days written notice to Elsevier. The electronic copy may not contain links and other features and functionality associated with the online version.  If a particular Subscribed Title is withdrawn by Elsevier or not renewed by the Subscriber, but the Subscriber remains a ScienceDirect online subscriber, the Subscriber may continue to access online, at no additional charge, such formerly Subscribed Title for the publication years paid, provided that Elsevier continues to hold the electronic rights thereto.</Text>
+        </TextElement>
+    </LicenseDocumentText>
+    <LicenseDocumentText>
+        <DocumentLabel>Schedule-2</DocumentLabel>
+        <TextElement id="d1e108d1e1689.4">
+            <SortNumber>1</SortNumber>
+            <Text>ELSEVIER SUBSCRIPTION AGREEMENT
+Schedule 2
+Sites/Authentication/Contacts
+
+
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144709.21Z">
+            <SortNumber>2</SortNumber>
+            <Text>Subscriber: ____________________</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130813T221228.068Z">
+            <SortNumber>2.1</SortNumber>
+            <Text>Site [Name and location]: [#] Authorized Users: Authentication [Contact detail]</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130813T221605.747Z">
+            <SortNumber>2.2</SortNumber>
+            <Text>Site [Name and location]: [#] Authorized Users: Authentication [Contact detail]</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130813T221630.186Z">
+            <SortNumber>2.3</SortNumber>
+            <Text>[Add or delete Site detail elements as required]</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130813T221808.687Z">
+            <SortNumber>3</SortNumber>
+            <Text>Estimated total number of Authorized Users:  _____</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130813T221829.687Z">
+            <SortNumber>4</SortNumber>
+            <Text>For the avoidance of doubt, other institutions and organizations that reside or do business at the above locations (including without limitation companies that are owned wholly or in part by, or affiliated with, the Subscriber) are not Sites, unless expressly stated above.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144905.067Z">
+            <SortNumber>5</SortNumber>
+            <Text>The Subscriber will promptly notify Elsevier of any material changes in the number of Authorized Users, which changes may result in Elsevier terminating the Agreement at the end of the year for which the Fees were paid unless the parties are able to agree to appropriate fee adjustments for any subsequent years of the term, and may add, withdraw or substitute authentication mechanisms upon mutual agreement of the parties in writing.</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T144921.841Z">
+            <SortNumber>6</SortNumber>
+            <Text>Primary Contact	
+Name:
+Title:
+Name/Address (if different from Section 7.7):
+E-mail: 	
+Phone:
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T145428.685Z">
+            <SortNumber>7</SortNumber>
+            <Text>Billing Contact	
+Name:
+Title:
+Name/Address (if different from Section 7.7):
+E-mail: 	
+Phone:
+</Text>
+        </TextElement>
+        <TextElement id="d1e108d1e168920130626T145445.182Z">
+            <SortNumber>8</SortNumber>
+            <Text>The Subscriber will promptly notify Elsevier of any changes to any of the contact information above.</Text>
+        </TextElement>
+    </LicenseDocumentText>
+</PublicationsLicenseExpression>

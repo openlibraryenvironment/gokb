@@ -127,12 +127,12 @@ class SearchController {
     result.recset = c.list(max: result.max, offset: result.offset) {
       and {
     
-    // Add any global.
-    qbetemplate.qbeConfig.qbeGlobals?.each { ap ->
-      processContextTree(c, ap, ap.value, ap)
-    }
+        // Add any global.
+        qbetemplate.qbeConfig.qbeGlobals?.each { ap ->
+          processContextTree(c, ap, ap.value, ap)
+        }
     
-    // Form elements.
+        // Form elements.
         qbetemplate.qbeConfig.qbeForm.each { ap ->
           log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
@@ -141,7 +141,12 @@ class SearchController {
           }
         }
       }
+      if ( params.sort ) {
+        order(params.sort)
+      }
     }
+    // Look at create alias as a means of supporting sorting within a scope
+    // http://stackoverflow.com/questions/3594301/sorting-query-results-according-to-parent-property-in-grails
   }
 
   private def  processContextTree = { qry, tree, value, paramdef, Class the_class = null ->

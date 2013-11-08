@@ -134,12 +134,13 @@
 		</form>
 	</div>
 </div>
-<script type='text/javascript'>
+<g:javascript>
 	<!--
 	(function() {
 		document.forms['loginForm'].elements['j_username'].focus();
 	})();
 	// -->
-</script>
+</g:javascript>
 </body>
+<r:layoutResources />
 </html>

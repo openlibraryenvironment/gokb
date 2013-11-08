@@ -7,11 +7,12 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title><g:layoutTitle default="GoKB"/></title>
+    <title><g:layoutTitle default="GOKb"/></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
 
     <g:layoutHead/>
+    <g:javascript library="application"/>
     <r:layoutResources />
 
   </head>
@@ -21,7 +22,7 @@
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <g:link controller="home" action="index" class="brand">GOKB</g:link>
+          <g:link controller="home" action="index" class="brand">GOKb</g:link>
           <div class="nav-collapse">
             <ul class="nav">
               <li class="dropdown">
@@ -58,6 +59,7 @@
                   <li><g:link controller="search" action="index" params="${[qbe:'g:reviewRequests']}">Data Review</g:link></li>
                 </ul>
               </li>
+              <li><g:link controller="upload" action="index">File Upload</g:link></li>
               <li><g:link controller="masterList" action="index">Master List</g:link></li>
               <li><g:link controller="coreference" action="index">Coreference</g:link></li>
               <sec:ifAnyGranted roles="ROLE_ADMIN">
@@ -65,6 +67,7 @@
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Admin</a>
                   <ul class="dropdown-menu">
                     <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
+                    <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
                     <li><g:link controller="home" action="about">About</g:link></li>
                   </ul>
                 </li>
@@ -75,6 +78,7 @@
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown">${request.user?.displayName?:request.user?.username} <b class="caret"></b></a>
                   <ul class="dropdown-menu">
+                    <li><g:link controller="profile">Profile</g:link></li>
                     <li><g:link controller="logout">Logout</g:link></li>
                   </ul>
                 </li>
@@ -98,7 +102,7 @@
               <div class="container">
                   <div>
                       <ul class="footer-sublinks nav">
-                        <li><g:link controller="home" action="about">GoKB <g:meta name="app.version"/> / build <g:meta name="app.buildNumber"/></g:link></li>
+                        <li><g:link controller="home" action="about">GOKb <g:meta name="app.version"/> / build <g:meta name="app.buildNumber"/></g:link></li>
                       </ul>
                   </div>
 
@@ -122,11 +126,10 @@
               </div>
           </div>
       </div>
+    </div>
 
-    <g:javascript library="application"/>
-    <r:layoutResources />
     <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
-      <script>
+      <g:javascript >
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
         m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -134,8 +137,8 @@
   
         ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
         ga('send', 'pageview');
-      </script>
+      </g:javascript>
     </g:if>
-
   </body>
+  <r:layoutResources />
 </html>

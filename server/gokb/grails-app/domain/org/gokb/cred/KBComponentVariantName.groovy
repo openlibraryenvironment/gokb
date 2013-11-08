@@ -25,7 +25,7 @@ class KBComponentVariantName {
 
   static constraints = {
         variantName (nullable:false, blank:false, maxSize:2048)
-        normVariantName  (nullable:false, blank:false, maxSize:2048)
+        normVariantName  (nullable:true, blank:true, maxSize:2048)
         variantType (nullable:true, blank:false)
         locale (nullable:true, blank:false)
         owner (nullable:false, blank:false)

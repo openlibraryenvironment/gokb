@@ -25,7 +25,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "1.5"
+refine_min_version = "1.6"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -162,12 +162,13 @@ validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|
 
 validation.rules = [
 	"${IngestService.PUBLICATION_TITLE}" : [
-		[ type: ColumnRequired			, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing			, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
 
   // All platforms
   "platform.*.*" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
       type: MustMatchRefdataValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -179,7 +180,7 @@ validation.rules = [
   ],
 
 	"${IngestService.HOST_PLATFORM_URL}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: CellMatches,
@@ -193,7 +194,7 @@ validation.rules = [
 	],
 
 	"${IngestService.HOST_PLATFORM_NAME}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: LookedUpValue,
@@ -203,17 +204,18 @@ validation.rules = [
 	],
 
 	"${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_WARNING ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
 
 	"${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
 	],
 
 	"${IngestService.PACKAGE_NAME}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsSimilar,
@@ -226,7 +228,7 @@ validation.rules = [
 	],
 
 	"${IngestService.PUBLISHER_NAME}" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: LookedUpValue,
@@ -236,6 +238,7 @@ validation.rules = [
 	],
 
 	"${IngestService.EMBARGO_INFO}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -248,6 +251,7 @@ validation.rules = [
 	],
 
 	"${IngestService.COVERAGE_DEPTH}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -260,6 +264,7 @@ validation.rules = [
 	],
 
 	"${IngestService.DELAYED_OA}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -270,6 +275,7 @@ validation.rules = [
 	],
 
 	"${IngestService.DELAYED_OA_EMBARGO}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -282,6 +288,7 @@ validation.rules = [
 	],
 
 	"${IngestService.HYBRID_OA}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -292,6 +299,7 @@ validation.rules = [
 	],
 
 	"${IngestService.HYBRID_OA_URL}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -304,6 +312,7 @@ validation.rules = [
 	],
 
 	"${IngestService.PRIMARY_TIPP}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -314,6 +323,7 @@ validation.rules = [
 	],
 
 	"${IngestService.TIPP_PAYMENT}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -324,6 +334,7 @@ validation.rules = [
 	],
 
 	"${IngestService.TIPP_STATUS}" : [
+    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: IsOneOf,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -340,7 +351,7 @@ validation.rules = [
 
 	// ISSN
 	"${IngestService.IDENTIFIER_PREFIX}issn" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -350,7 +361,6 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ],
 		[
 			type: CellAndOtherNotEmpty,
 			severity: A_ValidationRule.SEVERITY_WARNING,
@@ -359,7 +369,7 @@ validation.rules = [
 	],
 
 	"${IngestService.IDENTIFIER_PREFIX}eissn" : [
-		[ type: ColumnRequired	, severity: A_ValidationRule.SEVERITY_ERROR ],
+		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[
 			type: CellMatches,
 			severity: A_ValidationRule.SEVERITY_ERROR,
@@ -369,7 +379,6 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.issn}/) == null), 'invalid', null)",
 			]
 		],
-//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 
 	// Custom ISBN.
@@ -383,7 +392,6 @@ validation.rules = [
 				"if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
 			]
 		],
-//		[ type: HasDuplicates	, severity: A_ValidationRule.SEVERITY_WARNING ]
 	],
 ]
 
@@ -440,8 +448,7 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Type', property:'class.name'],
+				[heading:'Type', property:'class.simpleName'],
 				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
 			]
 		]
@@ -459,8 +466,7 @@ globalSearchTemplates = [
 				]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Nominal Platform', property:'nominalPlatform?.name']
 			]
 		]
@@ -478,8 +484,7 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
 			]
 		]
 	],
@@ -496,8 +501,7 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
 			]
 		]
 	],
@@ -517,7 +521,6 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Status', property:'status.value']
 			]
@@ -536,9 +539,8 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Fingerprint', property:'fingerprint'],
-				[heading:'Description', property:'description', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Description', property:'description', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
@@ -555,8 +557,7 @@ globalSearchTemplates = [
 				],
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name', property:'name'],
+				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Provider', property:'provider?.name']
 			]
 		]
@@ -606,12 +607,19 @@ globalSearchTemplates = [
 					placeholder:'Package',
 					contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg']
 				],
+                                [
+                                        type:'lookup',
+                                        baseClass:'org.gokb.cred.Platform',
+                                        prompt:'Platform',
+                                        qparam:'qp_plat',
+                                        placeholder:'Platform',
+                                        contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'hostPlatform']
+                                ],
 			],
 			qbeGlobals:[
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Status', property:'status.value'],
 				[heading:'Package', property:'pkg.name']
@@ -634,7 +642,6 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Description', property:'desc']
 			]
 		]
@@ -665,7 +672,6 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
 				[heading:'Cause', property:'descriptionOfCause'],
 				[heading:'Request', property:'reviewRequest'],
 				[heading:'Status', property:'status?.value'],
@@ -689,8 +695,7 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
@@ -709,14 +714,14 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
 	'Licenses':[
 		baseclass:'org.gokb.cred.License',
 		title:'Licenses',
+                message:'Please contact nisohq@niso.org for more information on license downloads',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -729,8 +734,7 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 			]
 		]
 	],
@@ -749,8 +753,8 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Username', property:'username', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				// [heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
 			]
 		]
 	],
@@ -769,8 +773,8 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				// [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
 				[heading:'Url', property:'url'],
 			]
 		]
@@ -790,12 +794,32 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Id', property:'id'],
-				[heading:'Property Name', property:'propertyName', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
+				[heading:'Property Name', property:'propertyName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				// [heading:'Property Name', property:'propertyName', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
 			]
 		]
 	],
-
+        'dataFiles':[
+                baseclass:'org.gokb.cred.DataFile',
+                title:'Data Files',
+                qbeConfig:[
+                        qbeForm:[
+                                [
+                                        prompt:'File Name',
+                                        qparam:'qp_name',
+                                        placeholder:'Name',
+                                        contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+                                ],
+                        ],
+                        qbeGlobals:[
+                        ],
+                        qbeResults:[
+				[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+                                [heading:'Created On', property:'dateCreated'],
+                                [heading:'Mime Type', property:'uploadMimeType'],
+                        ]
+                ]
+        ],
 ]
 
 
@@ -815,7 +839,8 @@ globalDisplayTemplates = [
 	'org.gokb.cred.Territory': [ type:'staticgsp', rendername:'territory' ],
 	'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
 	'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
-	'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ]
+	'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
+        'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6
@@ -853,3 +878,27 @@ grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
  * We need to disable springs password encoding as we handle this in our domain model.
  */
 grails.plugins.springsecurity.ui.encodePassword = false
+
+// Uncomment and edit the following lines to start using Grails encoding & escaping improvements
+
+/* remove this line 
+// GSP settings
+grails {
+    views {
+        gsp {
+            encoding = 'UTF-8'
+            htmlcodec = 'xml' // use xml escaping instead of HTML4 escaping
+            codecs {
+                expression = 'html' // escapes values inside null
+                scriptlet = 'none' // escapes output from scriptlets in GSPs
+                taglib = 'none' // escapes output from taglibs
+                staticparts = 'none' // escapes output from static template parts
+            }
+        }
+        // escapes all not-encoded output at final stage of outputting
+        filteringCodecForContentType {
+            //'text/html' = 'html'
+        }
+    }
+}
+remove this line */
