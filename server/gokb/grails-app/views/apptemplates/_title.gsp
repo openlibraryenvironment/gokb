@@ -13,6 +13,16 @@
     <dd><g:xEditableRefData owner="${d}" field="reasonRetired" config='TitleInstance.ReasonRetired' /></dd>
   </div>
 
+  <div class="control-group">
+    <dt>Status</dt>
+    <dd><g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' /></dd>
+  </div>
+
+  <div class="control-group">
+    <dt>Edit Statis</dt>
+    <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
+  </div>
+
 </dl>
 
 <div id="content">
