@@ -25,6 +25,7 @@ target(main: "Generate the property matrix for KBComponents") {
     def propertyNames = []
 
     def componentClasses = []
+    componentClasses.add(component_class)
     
 
     component_class.getSubClasses().each { csc ->

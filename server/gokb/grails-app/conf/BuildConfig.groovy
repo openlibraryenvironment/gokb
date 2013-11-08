@@ -7,7 +7,7 @@ grails.project.source.level = 1.6
 
 //grails.project.war.file = "target/${appName}-${appVersion}.war"
 //grails.project.dependency.resolver = "maven"
-grails.project.dependency.resolver = "maven"
+// grails.project.dependency.resolver = "maven"
 
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
