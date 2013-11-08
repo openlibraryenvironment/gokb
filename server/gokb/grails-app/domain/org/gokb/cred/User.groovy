@@ -13,6 +13,7 @@ class User {
   boolean accountExpired
   boolean accountLocked
   boolean passwordExpired
+  Long defaultPageSize = new Long(10);
 
   RefdataValue showQuickView
   
@@ -26,6 +27,7 @@ class User {
     displayName blank: true, nullable:true
     showQuickView blank: true, nullable:true
     email blank: true, nullable:true
+    defaultPageSize blank: true, nullable:true
   }
 
   static mapping = {
