@@ -151,7 +151,7 @@ class TitleInstance extends KBComponent {
   }
 
   @Transient
-  def oaiConfig = [
+  static def oaiConfig = [
     lastModified:{it.lastUpdated},
     isDeleted:{false},
     schemas:[

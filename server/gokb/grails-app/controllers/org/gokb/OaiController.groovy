@@ -13,9 +13,10 @@ class OaiController {
     def result = [:]
 
     grailsApplication.getArtefacts("Domain").each { dc ->
-      log.debug(dc.clazz.simpleName);
-      if ( 1==2 ) {
-        result[dc.clazz.simpleName] = [:]
+      def cfg = dc.clazz.declaredFields.find { it.name == 'oaiConfig' }
+      if ( cfg != null ) {
+        log.debug("....");
+        result[dc.clazz.simpleName] = dc.clazz.oaiConfig
       }
     }
 
