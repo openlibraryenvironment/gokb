@@ -65,11 +65,19 @@ GOKb.contextMenu.options = {
           }
         },
         {
+          text: "Package",
+//          icon: "",
+          alias: "gokb-lookup-package",
+          action: function () {
+            GOKb.handlers.lookup ($(document.activeElement), "package", ["variantNames.variantName"], ["variantNames.variantName"], true);
+          }
+        },
+        {
           text: "Platform",
 //          icon: "",
           alias: "gokb-lookup-platform",
           action: function () {
-            GOKb.handlers.lookup ($(document.activeElement), "platform", ["variantNames.variantName"], ["variantNames.variantName"], true);
+            GOKb.handlers.lookup ($(document.activeElement), "platform", ["variantNames.variantName"], ["variantNames.variantName"]);
           }
         },
       ]
