@@ -41,6 +41,7 @@ GOKb.contextMenu.rules = {
     { disable: false, items: [
       "gokb-lookup",
       "gokb-lookup-org",
+      "gokb-lookup-package",
       "gokb-lookup-platform"]
     }
   ]
