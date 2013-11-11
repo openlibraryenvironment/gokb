@@ -525,7 +525,7 @@ GOKb.multiAutoComplete = function (elements, data, separator) {
 GOKb.lookupCont = null;
 GOKb.lookup = null;
 GOKb.lookupEventBound = false;
-GOKb.getLookup = function (location, callback, quickCreate) {
+GOKb.getLookup = function (el, location, callback, quickCreate) {
   
   // Try and get the container.
   if (GOKb.lookupCont == null) {
@@ -542,13 +542,16 @@ GOKb.getLookup = function (location, callback, quickCreate) {
     
   // The customised lookup object.
   GOKb.lookup = {
-    _lookup : GOKb.lookupCont.data("lookup"),
+    _lookup : GOKb.lookupCont.data("ui-lookup") ?
+      GOKb.lookupCont.data("ui-lookup") :
+      GOKb.lookupCont.data("lookup"),
     _original_renderer : null,
     _quickCreate : null,
+    _el : el,
     open : function (renderer) {
       this._lookup._open();
       
-      if (quickCreate == true) {
+      if (quickCreate != false) {
       	
       	if (this._quickCreate == null) {
       		
@@ -568,10 +571,26 @@ GOKb.getLookup = function (location, callback, quickCreate) {
 	      	  		// On click we need to confirm the creation.
 	      	  		var r=confirm("Are you sure you wish to create \"" + val + "\"");
 	      	  		if (r==true) {
-	      	  		  alert("Create a new item");
-	      	  		} else {
-	      	  			alert("Cancel!");
+	      	  		  // Try and create the new item.
+	      	  		  GOKb.doCommand(
+	      	  		    "quickCreate",
+	      	  		    {},
+	      	  		    {
+	      	  		      "qq_type" : quickCreate,
+	      	  		      "name": val
+	      	  		    },
+	      	  		    {
+	      	  		      "onDone" : function (data) {
+	      	  		        // Run the callback and then close the dialog.
+	      	  		        callback({"label": data.result, "value": data.result}, _self._el);
+	      	  		        GOKb.lookup._lookup.destroy();
+	      	  		        GOKb.lookup = null;
+	      	  		      }
+	      	  		    }
+	      	  		  );
 	      	  		}
+
+	      	  		// Just do nothing.
       	  		}
 	      	  });
       		
@@ -607,7 +626,10 @@ GOKb.getLookup = function (location, callback, quickCreate) {
       }
       
       // Get the data for the autocomplete box.
-      var auto_complete_data = this._lookup._autocomplete.data('autocomplete');
+      var auto_complete_data = this._lookup._autocomplete.data('ui-autocomplete');
+      
+      if (!auto_complete_data) auto_complete_data = this._lookup._autocomplete.data('autocomplete')
+      
       if (this._original_renderer == null) {
         
         // Save the original renderer the first time we call this method.
@@ -630,8 +652,9 @@ GOKb.getLookup = function (location, callback, quickCreate) {
       this._lookup._close();
     },
     setCallback : function (cb) {
-      this._lookup.options.select = function (item) {
-        cb(item);
+      _self = this;
+      _self._lookup.options.select = function (item) {
+        cb(item, _self._el);
         GOKb.lookup._lookup.destroy();
         GOKb.lookup = null;
       };
@@ -653,9 +676,9 @@ GOKb.getLookup = function (location, callback, quickCreate) {
     }
   };
   
-  // Set the Z-Index
+  // Set the Z-Index here.
   GOKb.lookup._lookup._dialog.dialog('option', { stack: false, zIndex:100000 });
-  
+
   // We should now have a lookup box.
   GOKb.lookup.setSource(location);
   GOKb.lookup.setCallback(callback);
