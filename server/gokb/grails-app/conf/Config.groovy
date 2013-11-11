@@ -217,14 +217,19 @@ validation.rules = [
 	"${IngestService.PACKAGE_NAME}" : [
 		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
-		[
-			type: IsSimilar,
-			severity: A_ValidationRule.SEVERITY_WARNING,
-			args: [
-				org.gokb.cred.Package,
-				9
-			]
-		]
+//		[
+//			type: IsSimilar,
+//			severity: A_ValidationRule.SEVERITY_WARNING,
+//			args: [
+//				org.gokb.cred.Package,
+//				9
+//			]
+//		]
+    [
+      type: LookedUpValue,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: [ org.gokb.cred.Package ]
+    ]
 	],
 
 	"${IngestService.PUBLISHER_NAME}" : [
