@@ -61,7 +61,7 @@ GOKb.contextMenu.options = {
 //          icon: "",
           alias: "gokb-lookup-org",
           action: function () {
-            GOKb.handlers.lookup ("org", ["variantNames.variantName"], ["variantNames.variantName"]);
+            GOKb.handlers.lookup ($(document.activeElement), "org", ["variantNames.variantName"], ["variantNames.variantName"]);
           }
         },
         {
@@ -69,7 +69,7 @@ GOKb.contextMenu.options = {
 //          icon: "",
           alias: "gokb-lookup-platform",
           action: function () {
-            GOKb.handlers.lookup ("platform", ["variantNames.variantName"], ["variantNames.variantName"], true);
+            GOKb.handlers.lookup ($(document.activeElement), "platform", ["variantNames.variantName"], ["variantNames.variantName"], true);
           }
         },
       ]
