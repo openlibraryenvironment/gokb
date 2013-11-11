@@ -667,4 +667,42 @@ class ApiController {
       apiReturn ([])
     }
   }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def quickCreate() {
+    // Get the type of component we are going to attempt to create.
+    def type = params.qq_type
+    
+    try {
+      Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
+        "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(type)}"
+      )
+      
+      // Try and create a new instance passing in the supplied parameters.
+      def comp = c.newInstance(params)
+      
+      // Set all the parameters passed in.
+      params.each { prop, value ->
+        // Only set the property if we have a value.
+        if (value != null && value != "") {
+          try {
+            comp."${prop}" = value
+          } catch (Throwable t) {
+            /* Suppress the error */
+          }
+        }
+      }
+      
+      // Save.
+      comp.save(failOnError: true)
+      
+      // Now that the object has been saved we need to return the string.
+      apiReturn("${comp.name}::{${c.getSimpleName()}:${comp.id}}")
+      
+    } catch (Throwable t) {
+      /* Just return an empty list. */
+      log.error(t)
+      apiReturn (null, "There was an error creating a new Component of ${type}")
+    }
+  }
 }
