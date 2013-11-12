@@ -13,6 +13,8 @@ class SearchController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
+    User user = springSecurityService.currentUser
+
     log.debug("enter SearchController::index...");
     def result = [:]
 

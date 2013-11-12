@@ -820,6 +820,28 @@ globalSearchTemplates = [
                         ]
                 ]
         ],
+        'domains':[
+                baseclass:'org.gokb.cred.KBDomainInfo',
+                title:'Domains',
+                qbeConfig:[
+                        qbeForm:[
+                                [
+                                        prompt:'Name',
+                                        qparam:'qp_name',
+                                        placeholder:'Name',
+                                        contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName']
+                                ],
+                        ],
+                        qbeGlobals:[
+                        ],
+                        qbeResults:[
+                                [heading:'Name', property:'dcName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+                                [heading:'Display Name', property:'displayName'],
+                                [heading:'Type', property:'type?.value']
+                        ]
+                ]
+        ],
+
 ]
 
 
