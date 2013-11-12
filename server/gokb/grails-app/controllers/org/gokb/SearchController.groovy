@@ -9,6 +9,7 @@ import org.gokb.cred.*
 class SearchController {
 
   def genericOIDService
+  def springSecurityService
   def classExaminationService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -18,7 +19,7 @@ class SearchController {
     log.debug("enter SearchController::index...");
     def result = [:]
 
-    result.max = params.max ? Integer.parseInt(params.max) : 10;
+    result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
     if ( params.det )
