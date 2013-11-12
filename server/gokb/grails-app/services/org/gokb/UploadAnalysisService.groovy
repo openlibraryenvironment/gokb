@@ -66,15 +66,24 @@ class UploadAnalysisService {
     def license = new License()
 
     // Extract high level details
-    license.name = parsedXml.ExpressionDetail.Description.text()
+    license.name = "${parsedXml.ExpressionDetail.Description.text()}"
+    if ( license.name == '' ) {
+      license.name = "${parsedXml.LicenseDetail.Description.text()}"
+      if ( license.name == '' )
+        license.name = 'No description in license'
+    }
 
     // Generate Summary
     license.summaryStatement = generateSummary(uploaded_file)
-    license.save(flush:true)
 
-    // Create the combo
-    license.fileAttachments.add(datafile);
-    license.save(flush:true);
+    if ( license.save(flush:true) ) {
+      license.fileAttachments.add(datafile);
+      license.save(flush:true);
+    }
+    else {
+      log.debug("Problem saving new license: ${license.errors}");
+    }
+
   }
 
   def generateSummary(onix_file) {

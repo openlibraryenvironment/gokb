@@ -80,7 +80,7 @@ GOKb.handlers.suggest = function() {
               DialogSystem.dismissUntil(dialog.level - 1);
             }
           }).appendTo(
-                      dialog.bindings.dialogFooter
+            dialog.bindings.dialogFooter
           );
         } else {
           // Just output nothing found.
@@ -251,7 +251,7 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 /**
  * Display a box to allow a user to search for an id in the given namespace.
  */
-GOKb.handlers.lookup = function(namespace, match, attr, quickCreate) {
+GOKb.handlers.lookup = function(element, namespace, match, attr, quickCreate) {
 
   // URL for the lookup.
   var url = "/command/gokb/lookup?type=" + namespace;
@@ -268,17 +268,16 @@ GOKb.handlers.lookup = function(namespace, match, attr, quickCreate) {
     "attr"  : a
   };
 
-  // Active element.
-  var activeElem = $(document.activeElement);
-
   // Perform a lookup.
   var lookup = GOKb.getLookup (
+    element,
     url + "&" + $.param(params, true),
-    function (item) {
+    function (item, actEl) {
+      
       // Insert the selected value at the location.
-      activeElem.insertAtCaret(item.value);
+      actEl.insertAtCaret(item.value);
     },
-    quickCreate
+    quickCreate ? namespace : false
   );
 
   // Now we have our lookup object we can now open it with a custom renderer set.  

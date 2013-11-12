@@ -5,7 +5,7 @@
 
   <div class="control-group">
     <dt>Title</dt>
-    <dd><g:xEditable owner="${d}" field="name" /></dd>
+    <dd>${d.name} (Modify title through variants below)</dd>
   </div>
 
   <div class="control-group">
@@ -73,6 +73,7 @@
                     <th>Status</th>
                     <th>Variant Type</th>
                     <th>Locale</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -84,6 +85,8 @@
                       <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
                       <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
                       <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
+                      <td><g:link controller="workflow" action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
+                          <g:link controller="workflow" action="DeleteVariant" id="${v.id}">Delete</g:link></td>
                     </tr>
                   </g:each>
                 </tbody>

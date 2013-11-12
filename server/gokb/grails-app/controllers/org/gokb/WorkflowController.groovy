@@ -330,4 +330,36 @@ class WorkflowController {
       outs.close()
     }
   }
+
+  def authorizeVariant() {
+    log.debug(params);
+    def result = [:]
+    result.ref=request.getHeader('referer')
+    def variant = KBComponentVariantName.get(params.id)
+
+    if ( variant != null ) {
+      // Does the current owner.name exist in a variant? If not, we should create one so we don't loose the info
+      def current_name_as_variant = variant.owner.variantNames.find { it.variantName == variant.owner.name }
+
+      if ( current_name_as_variant == null ) {
+        def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant.owner.name).save(flush:true);
+      }
+
+      variant.owner.name = variant.variantName
+      variant.owner.save(flush:true);
+    }
+
+    redirect(url: result.ref)
+  }
+
+  def deleteVariant() {
+    log.debug(params);
+    def result = [:]
+    result.ref=request.getHeader('referer')
+    def variant = KBComponentVariantName.get(params.id)
+    if (variant != null ) {
+      variant.delete()
+    }
+    redirect(url: result.ref)
+  }
 }

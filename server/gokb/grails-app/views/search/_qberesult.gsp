@@ -8,7 +8,19 @@
       <tr>
         <th></th>
         <g:each in="${qbeConfig.qbeResults}" var="c">
-          <th><g:link params="${params+['sort':c.property]}">${c.heading}</g:link></th>
+          <th>
+            <g:if test="${c.sort}">
+              <g:if test="${params.sort==c.sort && params.order=='asc'}">
+                <g:link params="${params+['sort':c.sort,order:'desc']}">${c.heading}</g:link>
+              </g:if>
+              <g:else>
+                <g:link params="${params+['sort':c.sort,order:'asc']}">${c.heading}</g:link>
+              </g:else>
+            </g:if>
+            <g:else>
+              ${c.heading}
+            </g:else>
+          </th>
         </g:each>
         <th></th>
       </tr>

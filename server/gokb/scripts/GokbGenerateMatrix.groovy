@@ -25,6 +25,7 @@ target(main: "Generate the property matrix for KBComponents") {
     def propertyNames = []
 
     def componentClasses = []
+    componentClasses.add(component_class)
     
 
     component_class.getSubClasses().each { csc ->
@@ -66,8 +67,8 @@ target(main: "Generate the property matrix for KBComponents") {
     def noArgs = [].toArray()
 
     componentClasses.each { cc1 ->
-      combo_relations_matrix[0][x+1] = cc1.name
-      combo_relations_matrix[x+1][0] = cc1.name
+      combo_relations_matrix[0][x+1] = cc1.clazz.simpleName
+      combo_relations_matrix[x+1][0] = cc1.clazz.simpleName
       y=0;
       componentClasses.each { cc2 ->
         def t1 = cc1.clazz.metaClass.getStaticMetaMethod('getManyByCombo', noArgs)
@@ -171,7 +172,7 @@ target(main: "Generate the property matrix for KBComponents") {
 
 def genMatrixRow(cls,propnames) {
   def newrow = new String[propnames.size()+1]
-  newrow[0]=cls.fullName
+  newrow[0]=cls.clazz.simpleName
   cls.getProperties().each { clsp ->
     def idx = propnames.indexOf(clsp.name)
     newrow[idx+1]='Y'
