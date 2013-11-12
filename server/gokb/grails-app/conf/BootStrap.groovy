@@ -36,7 +36,7 @@ class BootStrap {
       UserRole.create adminUser, userRole
     }
 
-	String fs = grailsApplication.config.project_dir
+    String fs = grailsApplication.config.project_dir
 	
     log.debug("Make sure project files directory exists, config says it's at ${fs}");
     File f = new File(fs)
@@ -45,19 +45,28 @@ class BootStrap {
       f.mkdirs()
     }
 
-
     refdataCats()
-	addValidationRules()
 
-    // assertPublisher('Wiley');
-    // assertPublisher('Random House');
-    // assertPublisher('Cambridge University Press');
-    // assertPublisher('Sage');
-    
+    registerDomainClasses()
+
+    addValidationRules()
+
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass();
   }
   
+  def registerDomainClasses() {
+    def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
+    grailsApplication.domainClasses.each { dc ->
+      log.debug("Ensure ${dc.name} has entry in KBDomainInfo table");
+      def dcinfo = KBDomainInfo.findByDcName(dc.clazz.name)
+      if ( dcinfo == null ) {
+        dcinfo = new KBDomainInfo(dcName:dc.clazz.name, displayName:dc.name, type:std_domain_type);
+        dcinfo.save(flush:true);
+      }
+    }
+  }
+
   def alterDefaultMetaclass = {
     
     // Inject helpers to Domain classes.
@@ -509,5 +518,9 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('YN', 'Yes').save()
     RefdataCategory.lookupOrCreate('YN', 'No').save()
+
+    RefdataCategory.lookupOrCreate('DCType', 'Admin').save()
+    RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
+    RefdataCategory.lookupOrCreate('DCType', 'Support').save()
   }
 }

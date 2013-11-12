@@ -25,7 +25,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "1.6"
+refine_min_version = "1.7"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -217,14 +217,19 @@ validation.rules = [
 	"${IngestService.PACKAGE_NAME}" : [
 		[ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
 		[ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
-		[
-			type: IsSimilar,
-			severity: A_ValidationRule.SEVERITY_WARNING,
-			args: [
-				org.gokb.cred.Package,
-				9
-			]
-		]
+//		[
+//			type: IsSimilar,
+//			severity: A_ValidationRule.SEVERITY_WARNING,
+//			args: [
+//				org.gokb.cred.Package,
+//				9
+//			]
+//		]
+    [
+      type: LookedUpValue,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: [ org.gokb.cred.Package ]
+    ]
 	],
 
 	"${IngestService.PUBLISHER_NAME}" : [
@@ -424,6 +429,7 @@ globalSearchTemplates = [
 	'components':[
 		baseclass:'org.gokb.cred.KBComponent',
 		title:'Components',
+                group:'Secondary',
 		qbeConfig:[
 			// For querying over associations and joins, here we will need to set up scopes to be referenced in the qbeForm config
 			// Until we need them tho, they are omitted. qbeForm entries with no explicit scope are at the root object.
@@ -456,6 +462,7 @@ globalSearchTemplates = [
 	'packages':[
 		baseclass:'org.gokb.cred.Package',
 		title:'Packages',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -474,6 +481,7 @@ globalSearchTemplates = [
 	'orgs':[
 		baseclass:'org.gokb.cred.Org',
 		title:'Organisations',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -491,6 +499,7 @@ globalSearchTemplates = [
 	'platforms':[
 		baseclass:'org.gokb.cred.Platform',
 		title:'Platforms',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -508,6 +517,7 @@ globalSearchTemplates = [
 	'titles':[
 		baseclass:'org.gokb.cred.TitleInstance',
 		title:'Titles',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -521,7 +531,7 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
 				[heading:'Status', property:'status.value']
 			]
 		]
@@ -529,6 +539,7 @@ globalSearchTemplates = [
 	'rules':[
 		baseclass:'org.gokb.refine.Rule',
 		title:'Rules',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -547,6 +558,7 @@ globalSearchTemplates = [
 	'projects':[
 		baseclass:'org.gokb.refine.RefineProject',
 		title:'Projects',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -565,6 +577,7 @@ globalSearchTemplates = [
 	'tipps':[
 		baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
 		title:'TIPPs',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -629,6 +642,7 @@ globalSearchTemplates = [
 	'refdataCategories':[
 		baseclass:'org.gokb.cred.RefdataCategory',
 		title:'Refdata Categories ',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -649,6 +663,7 @@ globalSearchTemplates = [
 	'reviewRequests':[
 		baseclass:'org.gokb.cred.ReviewRequest',
 		title:'Requests For Review',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -683,6 +698,7 @@ globalSearchTemplates = [
 	'Offices':[
 		baseclass:'org.gokb.cred.Office',
 		title:'Offices',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -702,6 +718,7 @@ globalSearchTemplates = [
 	'Territories':[
 		baseclass:'org.gokb.cred.Territory',
 		title:'Territories',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -721,6 +738,7 @@ globalSearchTemplates = [
 	'Licenses':[
 		baseclass:'org.gokb.cred.License',
 		title:'Licenses',
+                group:'Secondary',
                 message:'Please contact nisohq@niso.org for more information on license downloads',
 		qbeConfig:[
 			qbeForm:[
@@ -741,6 +759,7 @@ globalSearchTemplates = [
 	'Users':[
 		baseclass:'org.gokb.cred.User',
 		title:'Users',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -761,6 +780,7 @@ globalSearchTemplates = [
 	'Sources':[
 		baseclass:'org.gokb.cred.Source',
 		title:'Source',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -782,6 +802,7 @@ globalSearchTemplates = [
 	'additionalPropertyDefinitions':[
 		baseclass:'org.gokb.cred.AdditionalPropertyDefinition',
 		title:'Additional Property Definitions',
+                group:'Secondary',
 		qbeConfig:[
 			qbeForm:[
 				[
@@ -802,6 +823,7 @@ globalSearchTemplates = [
         'dataFiles':[
                 baseclass:'org.gokb.cred.DataFile',
                 title:'Data Files',
+                group:'Secondary',
                 qbeConfig:[
                         qbeForm:[
                                 [
@@ -820,6 +842,28 @@ globalSearchTemplates = [
                         ]
                 ]
         ],
+        'domains':[
+                baseclass:'org.gokb.cred.KBDomainInfo',
+                title:'Domains',
+                qbeConfig:[
+                        qbeForm:[
+                                [
+                                        prompt:'Name',
+                                        qparam:'qp_name',
+                                        placeholder:'Name',
+                                        contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName']
+                                ],
+                        ],
+                        qbeGlobals:[
+                        ],
+                        qbeResults:[
+                                [heading:'Name', property:'dcName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+                                [heading:'Display Name', property:'displayName'],
+                                [heading:'Type', property:'type?.value']
+                        ]
+                ]
+        ],
+
 ]
 
 
@@ -840,7 +884,8 @@ globalDisplayTemplates = [
 	'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
 	'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
 	'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
-        'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ]
+        'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
+        'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6

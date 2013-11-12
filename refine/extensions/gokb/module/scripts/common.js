@@ -296,31 +296,16 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
     currentSuccess(dataR);
   };
   
-  // Set success to our new function.
-  ajaxObj.success = newSucessFunction;
-  ajaxObj.error = error;
+  // As of jQuery 1.9 success, error and complete have been removed.
+  // We should now call the fail, done and always methods on the returned object instead.
+  delete ajaxObj.success;
+  delete ajaxObj.error;
   
-//  /*
-//   * Prior to jQuery 1.6 the ajax methods did not return an object to which we,
-//   * could attach the complete callback to by use of the always method.
-//   * 
-//   * So here we need to check the version and attach our callback to the initial
-//   * ajax object if we are using jQuery 1.5 or lower.
-//   */
-//  if (GOKb.jqVersion > 1.5) {
-//    
-//    // Fire the ajax and attach the always function.
-//    $.ajax(ajaxObj)
-//      .always(complete)
-//    ;
-//  } else {
-//    
-//    // Set the complete method equal to our callback.
-//    ajaxObj.complete = complete;
-//    
-    // Fire the ajax request.
-    $.ajax(ajaxObj);
-//  }
+  // Set the callbacks.
+  $.ajax(ajaxObj)
+    .done ( newSucessFunction )
+    .fail ( error )
+  ;
   
   // Show waiting message if function has not completed within a second.
   window.setTimeout(function() {
@@ -438,9 +423,11 @@ GOKb.toTable = function (header, data, addStripe) {
         
       } else {
         // Append each element
-        $.each(this, function(){
-          td.append(this);
-        });
+        if (this instanceof jQuery || this instanceof Array) {
+          $.each(this, function() {
+            td.append(this);
+          });
+        }
       }
     });
   });
@@ -538,7 +525,7 @@ GOKb.multiAutoComplete = function (elements, data, separator) {
 GOKb.lookupCont = null;
 GOKb.lookup = null;
 GOKb.lookupEventBound = false;
-GOKb.getLookup = function (location, callback, quickCreate) {
+GOKb.getLookup = function (el, location, callback, quickCreate) {
   
   // Try and get the container.
   if (GOKb.lookupCont == null) {
@@ -555,13 +542,16 @@ GOKb.getLookup = function (location, callback, quickCreate) {
     
   // The customised lookup object.
   GOKb.lookup = {
-    _lookup : GOKb.lookupCont.data("lookup"),
+    _lookup : GOKb.lookupCont.data("ui-lookup") ?
+      GOKb.lookupCont.data("ui-lookup") :
+      GOKb.lookupCont.data("lookup"),
     _original_renderer : null,
     _quickCreate : null,
+    _el : el,
     open : function (renderer) {
       this._lookup._open();
       
-      if (quickCreate == true) {
+      if (quickCreate != false) {
       	
       	if (this._quickCreate == null) {
       		
@@ -581,10 +571,26 @@ GOKb.getLookup = function (location, callback, quickCreate) {
 	      	  		// On click we need to confirm the creation.
 	      	  		var r=confirm("Are you sure you wish to create \"" + val + "\"");
 	      	  		if (r==true) {
-	      	  		  alert("Create a new item");
-	      	  		} else {
-	      	  			alert("Cancel!");
+	      	  		  // Try and create the new item.
+	      	  		  GOKb.doCommand(
+	      	  		    "quickCreate",
+	      	  		    {},
+	      	  		    {
+	      	  		      "qq_type" : quickCreate,
+	      	  		      "name": val
+	      	  		    },
+	      	  		    {
+	      	  		      "onDone" : function (data) {
+	      	  		        // Run the callback and then close the dialog.
+	      	  		        callback({"label": data.result, "value": data.result}, _self._el);
+	      	  		        GOKb.lookup._lookup.destroy();
+	      	  		        GOKb.lookup = null;
+	      	  		      }
+	      	  		    }
+	      	  		  );
 	      	  		}
+
+	      	  		// Just do nothing.
       	  		}
 	      	  });
       		
@@ -620,7 +626,10 @@ GOKb.getLookup = function (location, callback, quickCreate) {
       }
       
       // Get the data for the autocomplete box.
-      var auto_complete_data = this._lookup._autocomplete.data('autocomplete');
+      var auto_complete_data = this._lookup._autocomplete.data('ui-autocomplete');
+      
+      if (!auto_complete_data) auto_complete_data = this._lookup._autocomplete.data('autocomplete')
+      
       if (this._original_renderer == null) {
         
         // Save the original renderer the first time we call this method.
@@ -643,8 +652,9 @@ GOKb.getLookup = function (location, callback, quickCreate) {
       this._lookup._close();
     },
     setCallback : function (cb) {
-      this._lookup.options.select = function (item) {
-        cb(item);
+      _self = this;
+      _self._lookup.options.select = function (item) {
+        cb(item, _self._el);
         GOKb.lookup._lookup.destroy();
         GOKb.lookup = null;
       };
@@ -666,9 +676,9 @@ GOKb.getLookup = function (location, callback, quickCreate) {
     }
   };
   
-  // Set the Z-Index
+  // Set the Z-Index here.
   GOKb.lookup._lookup._dialog.dialog('option', { stack: false, zIndex:100000 });
-  
+
   // We should now have a lookup box.
   GOKb.lookup.setSource(location);
   GOKb.lookup.setCallback(callback);

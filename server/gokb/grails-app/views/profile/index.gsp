@@ -17,6 +17,10 @@
            <dt>Show Quick View : </dt>
            <dd><g:xEditableRefData owner="${user}" field="showQuickView" config="YN" /></dd>
          </div>
+         <div class="control-group">
+           <dt>Default Page Size : </dt>
+           <dd><g:xEditable owner="${user}" field="defaultPageSize" /></dd>
+         </div>
        </div>
      </div>
    </div>

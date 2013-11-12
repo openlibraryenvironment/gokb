@@ -53,7 +53,7 @@ public class GOKbImportingController extends DefaultImportingController {
                 public void run(){
                     try {
                         ImportingJob job = ImportingManager.getJob(jobID);
-                        JSONObject conf = job.config;
+                        JSONObject conf = job.getOrCreateDefaultConfig();
 
                         // Examine the job and wait for the project to be updated.
                         String state = (String) conf.get("state");
@@ -107,16 +107,18 @@ public class GOKbImportingController extends DefaultImportingController {
                             // Just keep refreshing the job.
                             job = ImportingManager.getJob(jobID);
                         }
+                        
+                        JSONObject config = job.getOrCreateDefaultConfig();
 
                         // Add the hash to the project metadata.
-                        Long pid = job.config.getLong("projectID");
+                        Long pid = config.getLong("projectID");
                         logger.debug("Project ID: " + pid);
 
                         if (pid != null) {
                             
                             // Load the metadata and add the hash.
                             ProjectMetadata md = ProjectManager.singleton.getProjectMetadata(pid);
-                            md.setCustomMetadata("hash", job.config.getString("hash"));
+                            md.setCustomMetadata("hash", config.getString("hash"));
                         }
                     } catch (Exception e) {
                         logger.error("Error while trying to set the MD5 hash.", e);

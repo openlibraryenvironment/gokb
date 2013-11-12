@@ -9,14 +9,17 @@ import org.gokb.cred.*
 class SearchController {
 
   def genericOIDService
+  def springSecurityService
   def classExaminationService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
+    User user = springSecurityService.currentUser
+
     log.debug("enter SearchController::index...");
     def result = [:]
 
-    result.max = params.max ? Integer.parseInt(params.max) : 10;
+    result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
     if ( params.det )
@@ -142,7 +145,7 @@ class SearchController {
         }
       }
       if ( params.sort ) {
-        order(params.sort)
+        order(params.sort,params.order)
       }
     }
     // Look at create alias as a means of supporting sorting within a scope
