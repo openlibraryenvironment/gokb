@@ -25,7 +25,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "1.6"
+refine_min_version = "1.7"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
