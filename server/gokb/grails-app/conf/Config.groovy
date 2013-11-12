@@ -884,7 +884,8 @@ globalDisplayTemplates = [
 	'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
 	'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
 	'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
-        'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ]
+        'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
+        'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6
