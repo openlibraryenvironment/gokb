@@ -355,10 +355,17 @@ GOKb.handlers.addRows = function () {
 };
 
 /**
- * Trim the data for each of the columns.
+ * Trim the data for all columns.
  */
 GOKb.handlers.trimData = function () {
-	// Just run the refine transform.
+  
+	// Execute command to trim cell data.
+  GOKb.postProcess(
+    "data-trimws",
+    null,
+    null,
+    {cellsChanged: true} // Ensure we flag that the cells have changed.
+  );
 };
 
 GOKb.handlers.createBlankColumn = function (col_name) {
