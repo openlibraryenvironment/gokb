@@ -117,13 +117,15 @@ DataTableView.extendMenu(function(dataTableView, menu) {
 		  		GOKb.handlers.createBlankColumn(name);
 		  	}
 	    }
-	  },
-	  {
-	    "id" : "gokb-trim",
-	    "label" : "Trim all white-space",
-	    "click" : function() {
-	      GOKb.handlers.trimData();
-	    }
 	  }
 	);
+	
+	// Append to main menu.
+	menu.push({
+	  "id" : "gokb-trim",
+	  "label" : "Trim all data",
+	  "click" : function() {
+	    GOKb.handlers.trimData();
+	  }
+  });
 });
