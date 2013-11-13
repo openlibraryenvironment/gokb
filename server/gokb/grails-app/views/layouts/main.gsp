@@ -25,14 +25,19 @@
           <g:link controller="home" action="index" class="brand">GOKb</g:link>
           <div class="nav-collapse">
             <ul class="nav">
+
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
-                  <g:each in="${request?.userOptions?.availableSearches}" var="srch">
-                    <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
+                  <g:each in="${session.userPereferences.mainMenuSections}" var="sec">
+                    <g:each in="${sec}" var="srch">
+                      <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
+                    </g:each>
+                    <li class="divider"></li>
                   </g:each>
                 </ul>
               </li>
+
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
                 <ul class="dropdown-menu">
