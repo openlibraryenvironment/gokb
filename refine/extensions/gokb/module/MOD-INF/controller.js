@@ -15,6 +15,7 @@ function registerCommands() {
   RS.registerCommand(module, "project-estimate-changes", new Packages.com.k_int.gokb.refine.commands.EstimateDataChanges());
   RS.registerCommand(module, "rules-suggest", new Packages.com.k_int.gokb.refine.commands.SuggestRules());
   RS.registerCommand(module, "data-addrows", new Packages.com.k_int.gokb.refine.commands.AddRowsCommand());
+  RS.registerCommand(module, "data-trimws", new Packages.com.k_int.gokb.refine.commands.TrimWhitespaceCommand());
   RS.registerCommand(module, "datastore-save", new Packages.com.k_int.gokb.refine.commands.SaveDatastore());
   RS.registerCommand(module, "login", new Packages.com.k_int.gokb.refine.commands.Login());
   RS.registerCommand(module, "lookup", new Packages.com.k_int.gokb.refine.commands.Lookup());
