@@ -19,7 +19,7 @@
       <table class="table table-bordered">
         <thead>
           <tr>
-            <td>Value</td><td>Deprecate (Use)</td><td>Actions</td>
+            <td>Value</td><td>Deprecate (Use)</td><td>Sort Key</td><td>Actions</td>
           </tr>
         </thead>
         <tbody>
@@ -27,6 +27,7 @@
             <tr>
               <td>${v.value}</td>
               <td><g:manyToOneReferenceTypedown owner="${v}" field="useInstead" baseClass="org.gokb.cred.RefdataValue" filter1="${d.desc}">${v.useInstead?.value}</g:manyToOneReferenceTypedown></td>
+              <td><g:xEditable class="ipe" owner="${v}" field="sortKey"/></td>
               <td></td>
             </tr>
           </g:each>
@@ -43,6 +44,7 @@
           <input type="hidden" name="__recip" value="owner"/>
           <dt>Refdata Value</dt><dd><input type="text" name="value"/></dd>
           <dt>Display Class</dt><dd><input type="text" name="icon"/></dd>
+          <dt>Sort Key</dt><dd><input type="text" name="sortKey"/></dd>
           <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
         </g:form>
       </dl>

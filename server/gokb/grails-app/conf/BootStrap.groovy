@@ -519,8 +519,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('YN', 'Yes').save()
     RefdataCategory.lookupOrCreate('YN', 'No').save()
 
-    RefdataCategory.lookupOrCreate('DCType', 'Admin').save()
-    RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
-    RefdataCategory.lookupOrCreate('DCType', 'Support').save()
+    RefdataCategory.lookupOrCreate('DCType', 'Admin', "100").save()
+    RefdataCategory.lookupOrCreate('DCType', 'Standard', "200").save()
+    RefdataCategory.lookupOrCreate('DCType', 'Support', "300").save()
   }
 }
