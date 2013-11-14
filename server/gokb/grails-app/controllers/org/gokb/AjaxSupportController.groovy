@@ -414,6 +414,10 @@ class AjaxSupportController {
       // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
       def grantee = grantee_obj instanceof User ? grantee_obj.username : grantee_obj.authority
       aclUtilService.addPermission(dc, grantee, org.springframework.security.acls.domain.BasePermission.READ )
+      aclUtilService.addPermission(dc, grantee, org.springframework.security.acls.domain.BasePermission.WRITE )
+      aclUtilService.addPermission(dc, grantee, org.springframework.security.acls.domain.BasePermission.ADMINISTRATION )
+      aclUtilService.addPermission(dc, grantee, org.springframework.security.acls.domain.BasePermission.DELETE )
+      aclUtilService.addPermission(dc, grantee, org.springframework.security.acls.domain.BasePermission.CREATE )
     }
     redirect(url: request.getHeader('referer'))
   }
