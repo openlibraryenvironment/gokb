@@ -6,6 +6,8 @@ Acl: ${acl?:'NULL'}
     <tr>
       <th>Grantee</th>
       <th>Permission</th>
+      <th>Mask</th>
+      <th>Pattern</th>
     </tr>
     <tr>
       <td>
@@ -17,6 +19,8 @@ Acl: ${acl?:'NULL'}
         </g:else>
       </td>
       <td>${ent.permission}</td>
+      <td>${ent.permission.mask}</td>
+      <td>${ent.permission.pattern}</td>
     </tr>
   </g:each>
 </table>
