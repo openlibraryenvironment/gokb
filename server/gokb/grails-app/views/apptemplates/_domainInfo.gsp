@@ -19,3 +19,14 @@
   </div>
 
 </dl>
+
+<div id="content">
+  <ul id="tabs" class="nav nav-tabs">
+    <li class="active"><a href="#permissions" data-toggle="tab">Permissions</a></li>
+  </ul>
+  <div id="my-tab-content" class="tab-content">
+    <div class="tab-pane active" id="permissions">
+      Fill out permissions control - User/Group/Perm - Add/remove
+    </div>
+  </div>
+</div>
