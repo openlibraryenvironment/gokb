@@ -11,6 +11,7 @@ class ResourceController {
   def genericOIDService
   def classExaminationService
   def springSecurityService
+  def aclUtilService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
@@ -42,6 +43,11 @@ class ResourceController {
 	result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
 	result.displayobjclassname_short = result.displayobj.class.simpleName
 	result.isComponent = (result.displayobj instanceof KBComponent)
+
+        // Acl readAcl(domainObject)
+        // see import org.springframework.security.acls.model.*
+        // org.springframework.security.acls.model.Acl - http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
+        result.acl = aclUtilService.readAcl(result.displayobj)
       }
       else {
         log.debug("unable to resolve object");
