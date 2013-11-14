@@ -26,13 +26,9 @@
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="permissions">
-      Fill out permissions control - User/Group/Perm - Add/remove
-      <pre>
-        ${acl}
-      </pre>
       <g:render template="perms" 
                 contextPath="../apptemplates" 
-                model="${[d:d, property:'ids']}"/>
+                model="${[d:d, acl:acl]}"/>
     </div>
   </div>
 </div>

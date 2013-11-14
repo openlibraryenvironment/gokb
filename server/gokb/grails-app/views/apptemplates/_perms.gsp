@@ -1,3 +1,16 @@
+<pre>
+Acl: ${acl?:'NULL'}
+</pre>
+<table>
+  <g:each in="${acl?.entries}" var="ent">
+    <tr>
+      <td>${ent.sid}</td>
+      <td>${ent.permission}</td>
+    </tr>
+  </g:each>
+</table>
+
+
 <dl class="dl-horizontal">
   Grant User Permission:
   <g:form controller="ajaxSupport" action="grant" class="form-inline">

@@ -8,6 +8,8 @@ import grails.plugins.springsecurity.Secured
 class AjaxSupportController {
 
   def genericOIDService
+  def aclUtilService
+
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def edit() { 
@@ -404,4 +406,15 @@ class AjaxSupportController {
   }
 
 
+  def grant() {
+    log.debug("Grant: ${params}");
+    def grantee_obj = genericOIDService.resolveOID(params.grantee)
+    def dc = genericOIDService.resolveOID(params.__context)
+    if ( ( grantee_obj != null ) && ( dc != null ) ) {
+      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
+      def grantee = grantee_obj instanceof User ? grantee_obj.username : grantee_obj.authority
+      aclUtilService.addPermission(dc, grantee, org.springframework.security.acls.domain.BasePermission.READ )
+    }
+    redirect(url: request.getHeader('referer'))
+  }
 }
