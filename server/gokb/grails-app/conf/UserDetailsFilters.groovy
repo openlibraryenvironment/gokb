@@ -15,14 +15,14 @@ class UserDetailsFilters {
         // else {
         // }
         if ( springSecurityService.principal instanceof String ) {
-          log.debug("User is string: ${springSecurityService.principal}");
+          //log.debug("User is string: ${springSecurityService.principal}");
         }
         else if (springSecurityService.principal?.id != null ) {
           request.user = User.get(springSecurityService.principal.id);
           request.userOptions = request.user.getUserOptions();
 
           if ( session.userPereferences == null ) {
-            log.debug("Set up user prefs");
+            //log.debug("Set up user prefs");
             session.userPereferences = [:]
             // Generate Menu for this user.
             session.userPereferences.mainMenuSections = []
@@ -31,18 +31,18 @@ class UserDetailsFilters {
             // Step 1 : List all domains available to this user order by type, grouped into type
             def domains = KBDomainInfo.executeQuery("select d from KBDomainInfo as d order by d.type.sortKey, d.displayName")
             domains.each { d ->
-              log.debug("Process ${d.displayName} - ${d.type.id}");
+              //log.debug("Process ${d.displayName} - ${d.type.id}");
               if ( d.type.id != current_type ) {
                 current_type = d.type.id
                 current_list = [:]
                 session.userPereferences.mainMenuSections.add(current_list)
-                log.debug("Added new menu section for ${d.type.value}");
+                //log.debug("Added new menu section for ${d.type.value}");
               }
               
               // Find any searches for that domain that the user has access to and add them to the menu section
               def searches_for_this_domain = grailsApplication.config.globalSearchTemplates.findAll{it.value.baseclass==d.dcName}
               searches_for_this_domain.each {
-                log.debug("Adding search for ${it.key} - ${it.value.baseclass}");
+                //log.debug("Adding search for ${it.key} - ${it.value.baseclass}");
                 current_list[it.key] = it.value
               }
             }
