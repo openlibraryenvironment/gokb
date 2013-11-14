@@ -611,8 +611,10 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
       	}
       } else {
       	// False. Remove the button.
-      	this._quickCreate.remove()
-      	this._quickCreate = null;
+        if (this._quickCreate) {
+        	this._quickCreate.remove()
+        	this._quickCreate = null;
+        }
       }
       
       // Bind a search event listener here to clear the list.
