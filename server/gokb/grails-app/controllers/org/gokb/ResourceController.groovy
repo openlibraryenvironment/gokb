@@ -47,7 +47,12 @@ class ResourceController {
         // Acl readAcl(domainObject)
         // see import org.springframework.security.acls.model.*
         // org.springframework.security.acls.model.Acl - http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
-        result.acl = aclUtilService.readAcl(result.displayobj)
+        // Hate this with a passion, but can't find a method to check for existence of an ACL
+        try {
+          result.acl = aclUtilService.readAcl(result.displayobj)
+        } catch (Exception nfe) {
+        }
+
       }
       else {
         log.debug("unable to resolve object");

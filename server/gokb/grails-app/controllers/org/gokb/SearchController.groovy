@@ -61,7 +61,10 @@ class SearchController {
         result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
         result.displayobjclassname_short = result.displayobj.class.simpleName
         result.isComponent = (result.displayobj instanceof KBComponent)
-        result.acl = aclUtilService.readAcl(result.displayobj)
+        try {
+          result.acl = aclUtilService.readAcl(result.displayobj)
+	} catch (Exception nfe) {
+	}
     
         if ( result.displaytemplate == null ) {
           log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");
