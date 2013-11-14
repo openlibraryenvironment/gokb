@@ -63,6 +63,11 @@ grails.project.dependency.resolution = {
 	// Joda time to handle the ISO dates.
 	compile ":joda-time:1.4"
 
+        compile ":spring-security-core:1.2.7.3"
+        compile ":spring-security-ui:0.2"
+        compile ":spring-security-acl:1.1.1"
+
+
         compile ':mail:1.0.1', {
            excludes 'spring-test'
         }
