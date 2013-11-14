@@ -889,11 +889,11 @@ globalDisplayTemplates = [
 ]
 
 permNames = [
-    1 : 'Read',
-    2 : 'Write',
-    4 : 'Create',
-    8 : 'Delete',
-   16 : 'Administration',
+    1 : 'Read',  // org.springframework.security.acls.domain.BasePermission.READ
+    2 : 'Write', // org.springframework.security.acls.domain.BasePermission.WRITE
+    4 : 'Create',// org.springframework.security.acls.domain.BasePermission.CREATE
+    8 : 'Delete',// org.springframework.security.acls.domain.BasePermission.DELETE
+   16 : 'Administration', // org.springframework.security.acls.domain.BasePermission.ADMINISTRATION
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6
