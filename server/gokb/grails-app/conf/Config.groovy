@@ -888,6 +888,14 @@ globalDisplayTemplates = [
         'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
 ]
 
+permNames = [
+    1 : 'Read',
+    2 : 'Write',
+    4 : 'Create',
+    8 : 'Delete',
+   16 : 'Administration',
+]
+
 grails.plugins.springsecurity.ui.password.minLength = 6
 grails.plugins.springsecurity.ui.password.maxLength = 64
 grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'

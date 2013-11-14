@@ -8,6 +8,7 @@ Acl: ${acl?:'NULL'}
       <th>Permission</th>
       <th>Mask</th>
       <th>Pattern</th>
+      <th>Perm Name</th>
     </tr>
     <tr>
       <td>
@@ -21,6 +22,7 @@ Acl: ${acl?:'NULL'}
       <td>${ent.permission}</td>
       <td>${ent.permission.mask}</td>
       <td>${ent.permission.pattern}</td>
+      <td>${grailsApplication.config.permNames[ent.permission.mask]}</td>
     </tr>
   </g:each>
 </table>
