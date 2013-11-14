@@ -1,10 +1,21 @@
 <pre>
 Acl: ${acl?:'NULL'}
 </pre>
-<table>
+<table class="table table-bordered">
   <g:each in="${acl?.entries}" var="ent">
     <tr>
-      <td>${ent.sid}</td>
+      <th>Grantee</th>
+      <th>Permission</th>
+    </tr>
+    <tr>
+      <td>
+        <g:if test="${ent.sid instanceof org.springframework.security.acls.domain.PrincipalSid}">
+          User: ${ent.sid.principal}
+        </g:if>
+        <g:else>
+          Group: ${ent.sid.grantedAuthority}
+        </g:else>
+      </td>
       <td>${ent.permission}</td>
     </tr>
   </g:each>
