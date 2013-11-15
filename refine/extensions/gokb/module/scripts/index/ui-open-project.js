@@ -103,6 +103,55 @@ GOKb.ui.projects = function (elmt) {
   this.regularlyUpdate(this);
 };
 
+// Load the available workspaces from refine.
+GOKb.ui.projects.prototype.populateWorkspaces = function (elems) {
+  
+  // Get the workspaces.
+  GOKb.doCommand(
+    "get-workspaces",
+    null,
+    null,
+    {
+      onDone : function (data) {
+        if ("worspaces" in data && "current" in data) {
+          
+          // The list to which we are going to append.
+          var list = $(elems.workplaces);
+          
+          // Go through each of the workspaces.
+          for (var i=0; i<data.workspaces.length; i++) {
+            
+            // Selected?
+            var selected = data.current == i;
+            
+            // Add each workspace to the list.
+            list.append(
+              $("<option />", {
+                value: i,
+                text: data.workspace[i].name
+              })
+              
+              // Set selected if the current value is set.
+              .prop("selected", selected)
+            );
+          }
+          
+          // Add the onchange handler for the dropdown now.
+          list.change(function(e){
+            
+            // Get the selected value.
+            var val = $(this[this.selectedIndex]).val();
+            
+            // Redirect to the workspace, which in turn will send us back to /.
+            window.location.href = "/gokb/set-active-workspace?ws=" + val;
+          });
+        }
+      }
+    },
+    ajaxOpts
+  );
+}
+
 // Return a control link.
 GOKb.ui.projects.prototype.createControlLink = function (project, loc, text, title) {
 	return $('<a></a>')
