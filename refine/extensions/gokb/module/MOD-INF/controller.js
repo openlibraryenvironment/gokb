@@ -9,6 +9,7 @@ var coreMod = module.getModule("core");
 function registerCommands() {
   Packages.java.lang.System.out.print("\tRegistering commands...");
   var RS = Packages.com.google.refine.RefineServlet;
+  RS.registerCommand(module, "get-workspaces", new Packages.com.k_int.gokb.refine.commands.GetWorkspaces());
   RS.registerCommand(module, "set-active-workspace", new Packages.com.k_int.gokb.refine.commands.SetWorkspace());
   RS.registerCommand(module, "project-checkout", new Packages.com.k_int.gokb.refine.commands.CheckOutProject());
   RS.registerCommand(module, "project-checkin", new Packages.com.k_int.gokb.refine.commands.CheckInProject());
