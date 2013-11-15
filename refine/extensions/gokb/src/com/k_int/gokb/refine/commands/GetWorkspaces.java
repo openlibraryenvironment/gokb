@@ -35,7 +35,7 @@ public class GetWorkspaces extends Command {
       
       // Open an object.
       writer.object();
-      writer.key("worspaces");
+      writer.key("workspaces");
       
       // Open the array.
       writer.array();

@@ -101,6 +101,9 @@ GOKb.ui.projects = function (elmt) {
   
   // Do the update regularly.
   this.regularlyUpdate(this);
+  
+  // Fire the populate methods.
+  this.populateWorkspaces(this._elmts);
 };
 
 // Load the available workspaces from refine.
@@ -109,14 +112,17 @@ GOKb.ui.projects.prototype.populateWorkspaces = function (elems) {
   // Get the workspaces.
   GOKb.doCommand(
     "get-workspaces",
-    null,
-    null,
+    {},
+    {},
     {
       onDone : function (data) {
-        if ("worspaces" in data && "current" in data) {
+        if ("workspaces" in data && "current" in data) {
           
           // The list to which we are going to append.
-          var list = $(elems.workplaces);
+          var list = $(elems.workspaces);
+          
+          // Clear the list first.
+          list.empty();
           
           // Go through each of the workspaces.
           for (var i=0; i<data.workspaces.length; i++) {
@@ -128,7 +134,7 @@ GOKb.ui.projects.prototype.populateWorkspaces = function (elems) {
             list.append(
               $("<option />", {
                 value: i,
-                text: data.workspace[i].name
+                text: data.workspaces[i].name
               })
               
               // Set selected if the current value is set.
@@ -143,12 +149,11 @@ GOKb.ui.projects.prototype.populateWorkspaces = function (elems) {
             var val = $(this[this.selectedIndex]).val();
             
             // Redirect to the workspace, which in turn will send us back to /.
-            window.location.href = "/gokb/set-active-workspace?ws=" + val;
+            window.location.href = "/command/gokb/set-active-workspace?ws=" + val;
           });
         }
       }
-    },
-    ajaxOpts
+    }
   );
 }
 
