@@ -7,6 +7,7 @@
     <th>Pattern</th>
     -->
     <th>Perm Name</th>
+    <th>Action</th>
   </tr>
   <g:each in="${acl?.entries}" var="ent">
     <tr>
@@ -24,6 +25,7 @@
       <td>${ent.permission.pattern}</td>
       -->
       <td>${grailsApplication.config.permNames[ent.permission.mask]?.name}</td>
+      <td><g:link controller="ajaxSupport" action="revoke" params="${[:]}">Revoke</g:link>
     </tr>
   </g:each>
 </table>
