@@ -105,10 +105,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       }
     }
     
-    private RefineWorkspace currentWorkspace;    
+    private int currentWorkspaceId;
     public void setActiveWorkspace(int workspace_id) {
       
-      currentWorkspace = workspaces[workspace_id];
+      // Set the id. 
+      currentWorkspaceId = workspace_id;
+      
+      // Get the current WS.
+      RefineWorkspace currentWorkspace = workspaces[currentWorkspaceId];
       
       // First we need to save the current workspace.
       FileProjectManager.singleton.save(true);
@@ -120,8 +124,16 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         currentWorkspace.getURL() + "'");
     }
     
+    public RefineWorkspace[] getWorkspaces() {
+      return workspaces;
+    }
+    
     public String getCurrentWorkspaceURL() {
-      return currentWorkspace.getURL();
+      return workspaces[currentWorkspaceId].getURL();
+    }
+
+    public int getCurrentWorkspaceId () {
+      return currentWorkspaceId;
     }
 
     private void addProxiedCommands() {
