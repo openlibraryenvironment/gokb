@@ -1,15 +1,14 @@
-<pre>
-Acl: ${acl?:'NULL'}
-</pre>
 <table class="table table-bordered">
+  <tr>
+    <th>Grantee</th>
+    <!--
+    <th>Permission</th>
+    <th>Mask</th>
+    <th>Pattern</th>
+    -->
+    <th>Perm Name</th>
+  </tr>
   <g:each in="${acl?.entries}" var="ent">
-    <tr>
-      <th>Grantee</th>
-      <th>Permission</th>
-      <th>Mask</th>
-      <th>Pattern</th>
-      <th>Perm Name</th>
-    </tr>
     <tr>
       <td>
         <g:if test="${ent.sid instanceof org.springframework.security.acls.domain.PrincipalSid}">
@@ -19,9 +18,11 @@ Acl: ${acl?:'NULL'}
           Group: ${ent.sid.grantedAuthority}
         </g:else>
       </td>
+      <!--
       <td>${ent.permission}</td>
       <td>${ent.permission.mask}</td>
       <td>${ent.permission.pattern}</td>
+      -->
       <td>${grailsApplication.config.permNames[ent.permission.mask]?.name}</td>
     </tr>
   </g:each>
