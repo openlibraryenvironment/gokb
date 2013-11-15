@@ -6,6 +6,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONException;
+import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +35,13 @@ public class SetWorkspace extends Command {
             GOKbModuleImpl.singleton.setActiveWorkspace(workspace_id);
             
             // Redirect to the front page.
-            response.sendRedirect("/");
-
+            JSONWriter writer = new JSONWriter(response.getWriter());
+            writer.object();
+            writer.key("status"); writer.value(true);
+            writer.endObject();
+            
+        }  catch (JSONException e) {
+          respondException(response, e);
         } finally {
             // Make sure we clear the busy flag.
             pm.setBusy(false);

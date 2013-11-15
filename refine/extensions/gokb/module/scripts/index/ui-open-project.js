@@ -142,14 +142,25 @@ GOKb.ui.projects.prototype.populateWorkspaces = function (elems) {
             );
           }
           
+          // Apply the uniform plugin.
+          list.uniform();
+          
           // Add the onchange handler for the dropdown now.
           list.change(function(e){
             
             // Get the selected value.
             var val = $(this[this.selectedIndex]).val();
             
-            // Redirect to the workspace, which in turn will send us back to /.
-            window.location.href = "/command/gokb/set-active-workspace?ws=" + val;
+            GOKb.doCommand(
+              "set-active-workspace",
+              {ws: val},
+              {},
+              {
+                onDone : function () {
+                  window.location.reload(true);
+                }
+              }
+            );
           });
         }
       }

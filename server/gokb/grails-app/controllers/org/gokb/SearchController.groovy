@@ -63,8 +63,8 @@ class SearchController {
         result.isComponent = (result.displayobj instanceof KBComponent)
         try {
           result.acl = aclUtilService.readAcl(result.displayobj)
-	} catch (Exception nfe) {
-	}
+      	} catch (Exception nfe) {
+      	}
     
         if ( result.displaytemplate == null ) {
           log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");

@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletConfig;
@@ -78,6 +79,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       // Load the list from the properties file.
       @SuppressWarnings("unchecked")
       List<String> apis = properties.getList("api.entry");
+      
+      // Include local?
+      if (properties.getBoolean("localapi")) {
+        apis.addAll(0,
+          Arrays.asList(new String[]{
+            "Local", "local", "http://localhost:8080/gokb/api/"
+        }));
+      }
       
       // Check that the list length is even as each should be in pairs.
       if (apis.size() % 3 != 0) {
