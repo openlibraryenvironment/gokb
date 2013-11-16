@@ -72,9 +72,13 @@ class InplaceTagLib {
 
     out << "data-type=\"${type}\" data-name=\"${attrs.field}\" data-source=\"${data_link}\" >"
 
+    // SO: Ensure the owner object is attached to this session so that lazily initialised properties can be,
+    // pulled in without an exception.
+    def owner = attrs.owner.attach()
+    
     // Here we can register different ways of presenting object references. The most pressing need to be
     // outputting a span containing an icon for refdata fields.
-    out << renderObjectValue(attrs.owner[attrs.field])
+    out << renderObjectValue(owner[attrs.field])
 
     out << "</span></span>"
   }
