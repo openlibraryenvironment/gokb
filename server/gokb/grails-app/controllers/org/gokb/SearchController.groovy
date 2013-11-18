@@ -62,9 +62,6 @@ class SearchController {
         result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
         result.displayobjclassname_short = result.displayobj.class.simpleName
         result.isComponent = (result.displayobj instanceof KBComponent)
-//        try {
-//          result.acl = gokbAclService.readAcl(result.displayobj)
-//      	} catch (NotFoundException nfe) { /* Ignore this exception */ }
         
         result.acl = gokbAclService.readAclSilently(result.displayobj)
     
