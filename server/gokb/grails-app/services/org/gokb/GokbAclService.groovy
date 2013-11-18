@@ -1,4 +1,4 @@
-package gokb
+package org.gokb
 
 import grails.transaction.Transactional
 import org.grails.plugins.springsecurity.service.acl.AclUtilService
