@@ -12,7 +12,7 @@ class SearchController {
   def genericOIDService
   def springSecurityService
   def classExaminationService
-  def aclUtilService
+  def gokbAclService
 
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -62,11 +62,11 @@ class SearchController {
         result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
         result.displayobjclassname_short = result.displayobj.class.simpleName
         result.isComponent = (result.displayobj instanceof KBComponent)
-        try {
-          result.acl = aclUtilService.readAcl(result.displayobj)
-      	} catch (NotFoundException nfe) { 
-          /* Ignore this exception */ 
-        }
+//        try {
+//          result.acl = gokbAclService.readAcl(result.displayobj)
+//      	} catch (NotFoundException nfe) { /* Ignore this exception */ }
+        
+        result.acl = gokbAclService.readAclSilently(result.displayobj)
     
         if ( result.displaytemplate == null ) {
           log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");

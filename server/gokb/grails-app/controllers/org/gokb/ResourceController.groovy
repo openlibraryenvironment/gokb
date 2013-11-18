@@ -12,7 +12,7 @@ class ResourceController {
   def genericOIDService
   def classExaminationService
   def springSecurityService
-  def aclUtilService
+  def gokbAclService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -52,9 +52,11 @@ class ResourceController {
 
         // SO: There is no method visible. The only method I could see, retrieveObjectIdentity is protected.
         // Changing to NotFoundException only so other exceptions are not supressed.
-        try {
-          result.acl = aclUtilService.readAcl(result.displayobj)
-        } catch (NotFoundException nfe) { /* Ignore this exception */ }
+//        try {
+//          result.acl = gokbAclService.readAcl(result.displayobj)
+//        } catch (NotFoundException nfe) { /* Ignore this exception */ }
+        
+        result.acl = gokbAclService.readAclSilently(result.displayobj)
 
       }
       else {
