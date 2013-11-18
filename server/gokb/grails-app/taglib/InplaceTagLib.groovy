@@ -62,13 +62,8 @@ class InplaceTagLib {
     out << "<span>"
    
     // Output an editable link
-    def owner = null
     out << "<span id=\"${id}\" class=\"xEditableManyToOne\" "
     if ( ( attrs.owner != null ) && ( attrs.owner.id != null ) ) {
-      // SO: Ensure the owner object is attached to this session so that lazily initialised properties can be,
-      // pulled in without an exception.
-      owner = attrs.owner.attach()
-      
       out << "data-pk=\"${oid}\" "
     }
     else {
@@ -76,10 +71,10 @@ class InplaceTagLib {
     out << "data-url=\"${update_link}\" "
 
     out << "data-type=\"${type}\" data-name=\"${attrs.field}\" data-source=\"${data_link}\" >"
-    
+
     // Here we can register different ways of presenting object references. The most pressing need to be
     // outputting a span containing an icon for refdata fields.
-    out << renderObjectValue(owner[attrs.field])
+    out << renderObjectValue(attrs.owner[attrs.field])
 
     out << "</span></span>"
   }
