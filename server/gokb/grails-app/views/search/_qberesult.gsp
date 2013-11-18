@@ -75,37 +75,37 @@
 
     var allActionsAvailable = []; 
 			
-		// Step through each checked box.
-		$('input.obj-action-ck-box:checked').each(function(i) {
-			var elem = $(this);
-			if (i == 0) {
-				var json = elem.attr('data-actns');
-				
-				// Set all actions available to this objects actions.
-				allActionsAvailable = $.parseJSON(json);
-			} else {
-				var json = elem.attr('data-actns');
-				
-				var elementActions = $.parseJSON(json);
+	// Step through each checked box.
+	$('input.obj-action-ck-box:checked').each(function(i) {
+		var elem = $(this);
+		if (i == 0) {
+			var json = elem.attr('data-actns');
+			
+			// Set all actions available to this objects actions.
+			allActionsAvailable = $.parseJSON(json);
+		} else {
+			var json = elem.attr('data-actns');
+			
+			var elementActions = $.parseJSON(json);
 
-				// Filter the array using a callback that checks that this element actions contains
-				// the object.
-				allActionsAvailable = $.grep(allActionsAvailable, function(action, index) {
-					var match = $.grep(elementActions, function (el, i) {
-						return el.code == action.code && el.label == action.label;
-					});
-					return match.length > 0
+			// Filter the array using a callback that checks that this element actions contains
+			// the object.
+			allActionsAvailable = $.grep(allActionsAvailable, function(action, index) {
+				var match = $.grep(elementActions, function (el, i) {
+					return el.code == action.code && el.label == action.label;
 				});
-			}
-		});
+				return match.length > 0
+			});
+		}
+	});
 
-		var opts = $('select#selectedBulkAction').prop("options");
-		opts.length = 0;
-		
-		// Add the options to the dropdown.
-		$.each(allActionsAvailable, function (index, action) {
-			opts[index] = new Option(action.label, action.code);
-		});
+	var opts = $('select#selectedBulkAction').prop("options");
+	opts.length = 0;
+	
+	// Add the options to the dropdown.
+	$.each(allActionsAvailable, function (index, action) {
+		opts[index] = new Option(action.label, action.code);
+	});
     
   }
 </script>

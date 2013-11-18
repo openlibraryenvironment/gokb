@@ -62,8 +62,10 @@ class SearchController {
         result.displayobjclassname_short = result.displayobj.class.simpleName
         result.isComponent = (result.displayobj instanceof KBComponent)
         try {
-          result.acl = aclUtilService.readAcl(result.displayobj)
+          // result.acl = aclUtilService.readAcl(result.displayobj)
+          result.acl = null
 	} catch (Exception nfe) {
+          log.debug("Unable to get ACL for this service");
 	}
     
         if ( result.displaytemplate == null ) {
