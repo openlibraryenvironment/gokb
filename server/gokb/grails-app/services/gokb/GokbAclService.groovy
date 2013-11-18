@@ -15,6 +15,9 @@ class GokbAclService extends AclUtilService {
   
   Acl readAclSilently(domainObject) {
     
+    // Just return null if no object is supplied.
+    if (domainObject == null) return null
+    
     // Get the ACL Object identity.
     ObjectIdentity object_identity = objectIdentityRetrievalStrategy.getObjectIdentity(domainObject)
     
