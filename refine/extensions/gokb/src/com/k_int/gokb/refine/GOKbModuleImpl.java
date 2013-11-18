@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletConfig;
@@ -79,6 +80,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       @SuppressWarnings("unchecked")
       List<String> apis = properties.getList("api.entry");
       
+      // Include local?
+      if (properties.getBoolean("localapi")) {
+        apis.addAll(0,
+          Arrays.asList(new String[]{
+            "Local", "local", "http://localhost:8080/gokb/api/"
+        }));
+      }
+      
       // Check that the list length is even as each should be in pairs.
       if (apis.size() % 3 != 0) {
         _logger.error("APIs must be defined as name/folder_suffix/url tuples.");
@@ -105,10 +114,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       }
     }
     
-    private RefineWorkspace currentWorkspace;    
+    private int currentWorkspaceId;
     public void setActiveWorkspace(int workspace_id) {
       
-      currentWorkspace = workspaces[workspace_id];
+      // Set the id. 
+      currentWorkspaceId = workspace_id;
+      
+      // Get the current WS.
+      RefineWorkspace currentWorkspace = workspaces[currentWorkspaceId];
       
       // First we need to save the current workspace.
       FileProjectManager.singleton.save(true);
@@ -120,8 +133,16 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         currentWorkspace.getURL() + "'");
     }
     
+    public RefineWorkspace[] getWorkspaces() {
+      return workspaces;
+    }
+    
     public String getCurrentWorkspaceURL() {
-      return currentWorkspace.getURL();
+      return workspaces[currentWorkspaceId].getURL();
+    }
+
+    public int getCurrentWorkspaceId () {
+      return currentWorkspaceId;
     }
 
     private void addProxiedCommands() {

@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.converters.*
+import org.springframework.security.acls.model.NotFoundException
 import grails.plugins.springsecurity.Secured
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
@@ -62,11 +63,10 @@ class SearchController {
         result.displayobjclassname_short = result.displayobj.class.simpleName
         result.isComponent = (result.displayobj instanceof KBComponent)
         try {
-          // result.acl = aclUtilService.readAcl(result.displayobj)
-          result.acl = null
-	} catch (Exception nfe) {
-          log.debug("Unable to get ACL for this service");
-	}
+          result.acl = aclUtilService.readAcl(result.displayobj)
+      	} catch (NotFoundException nfe) { 
+          /* Ignore this exception */ 
+        }
     
         if ( result.displaytemplate == null ) {
           log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");
