@@ -54,12 +54,20 @@ class WorkflowController {
                 
                 log.debug ("Attempting to fire method ${method_config[1]} (${method_params})")
                 
-                try {
-                  // Just try and fire the method.
-                  target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
-                } catch (Throwable t) {
-                  t.printStackTrace()
-                  log.error(t)
+                KBComponent.withNewTransaction {def trans_status ->
+                  try {
+                    
+                    // Just try and fire the method.
+                    target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
+                    
+                    target.save(failOnError:true)
+                  } catch (Throwable t) {
+                  
+                    // Rollback and log error.
+                    trans_status.setRollbackOnly()
+                    t.printStackTrace()
+                    log.error(t)
+                  }
                 }
               }
               break
