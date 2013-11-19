@@ -11,7 +11,7 @@ class WorkflowController {
   def springSecurityService
 
   def actionConfig = [
-    'object::deleteSoft':[actionType:'simple'],
+    'method::deleteSoft':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement']
   ];
@@ -49,12 +49,13 @@ class WorkflowController {
           // We should just call the method on the targets.
           result.objects_to_action.each {def target ->
             
-            log.debug ("Attempting to fire method ${method_config[1]} (${method_config[2]})")
+            log.debug ("Attempting to fire method ${method_config[1]} (${method_params})")
             
-            // Just try and fire the method.
             try {
-              target.invokeMethod("${method_config[1]}", method_params)
+              // Just try and fire the method.
+              target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
             } catch (Throwable t) {
+              t.printStackTrace()
               log.error(t)
             }
           }

@@ -79,7 +79,7 @@ class TitleInstance extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'object::deleteSoft', label:'Set Status: Deleted'],
+    [ [code:'method::deleteSoft', label:'Set Status: Deleted'],
       [code:'title::transfer', label:'Title Transfer'] ]
   }
 

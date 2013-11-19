@@ -107,7 +107,7 @@ class Package extends KBComponent {
   
   def availableActions() {
     [
-      [code:'object::deleteSoft', label:'Set Status: Deleted (+ associated TIPPs)']
+      [code:'method::deleteSoft', label:'Set Status: Deleted (+ associated TIPPs)']
     ]
   }
   
