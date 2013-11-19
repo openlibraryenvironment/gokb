@@ -456,12 +456,14 @@ abstract class KBComponent {
 
   public void deleteSoft () {
     // Set the status to deleted.
-    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED)).save(failOnError:true)
+    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+    save(failOnError:true)
   }
 
   public void retire () {
     // Set the status to deleted.
-    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED)).save(failOnError:true)
+    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+    save(failOnError:true)
   }
 
   @Transient
