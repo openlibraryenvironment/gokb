@@ -17,10 +17,6 @@ if (typeof jQuery !== 'undefined') {
       
       // Enable or disable the elements.
       $('select,input', $('#bulkActionControls')).prop('disabled', !status);
-      
-      // Always disable here as the on change should enable it once a none default option
-      // has been selected.
-      $('button', $('#bulkActionControls')).prop('disabled', true);
     }
     
     /**
@@ -136,13 +132,16 @@ if (typeof jQuery !== 'undefined') {
       });
       
       // On page load we need to update available actions.
-      updateAvailableActions ();
+      if ( $('select#selectedBulkAction').length > 0 ) {
+        updateAvailableActions ();
+      }
       
       // Also bind the method to the change method. 
       $('input.obj-action-ck-box').change( updateAvailableActions );
       
       // Need to bind onchange listener to list.
-      $('select#selectedBulkAction').change(function() {
+      $('select#selectedBulkAction,select#selectedAction')
+      .change(function() {
         
         // The dropdown.
         var dd = $(this);
@@ -152,7 +151,10 @@ if (typeof jQuery !== 'undefined') {
         
         // Disable all buttons if the first option is the one selected. 
         dd.siblings('button').prop('disabled', (selected < 1));
-      });
+      })
+      
+      // Also disable sibling buttons.
+      .siblings('button').prop('disabled', true);
     });
     
   })(jQuery);

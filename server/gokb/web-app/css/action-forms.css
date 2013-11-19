@@ -1,7 +1,7 @@
-#selectedBulkAction {
+#selectedBulkAction, #selectedAction {
   width:100%;
 }
 
-#bulkActionControls {
+#bulkActionControls, #actionControls{
   width: 300px;
 }
