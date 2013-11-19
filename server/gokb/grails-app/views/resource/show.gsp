@@ -10,7 +10,7 @@
   	  <div class="pull-right well" id="actionControls">
   	  	<g:form controller="workflow" action="action" method="post" >
           <h4>Available actions</h4>
-          <select id="selectedAction" name="selectedAction">
+          <select id="selectedAction" name="selectedBulkAction">
             <option value="">-- Select an action to perform --</option>
             <g:each var="action" in="${displayobj.availableActions()}" >
               <option value="${action.code}">${action.label}</option>
