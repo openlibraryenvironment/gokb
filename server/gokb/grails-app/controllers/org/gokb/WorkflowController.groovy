@@ -54,12 +54,14 @@ class WorkflowController {
                 
                 log.debug ("Attempting to fire method ${method_config[1]} (${method_params})")
                 
+                // Wrap in a transaction.
                 KBComponent.withNewTransaction {def trans_status ->
                   try {
                     
                     // Just try and fire the method.
                     target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
                     
+                    // Save the object.
                     target.save(failOnError:true)
                   } catch (Throwable t) {
                   
