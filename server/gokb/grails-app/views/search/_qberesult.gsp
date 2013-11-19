@@ -2,7 +2,7 @@
 
 <g:set var="counter" value="${offset}" />
 
-<g:form controller="workflow" action="action" method="get" class='action-form' >
+<g:form controller="workflow" action="action" method="post" class='action-form' >
   <table class="table table-striped table-condensed table-bordered">
     <thead>
       <tr>
@@ -63,8 +63,7 @@
   </table>
   <div class="pull-right well" id="bulkActionControls">
     <h4>Available actions for selected rows</h4>
-    <select id="selectedBulkAction" name="selectedBulkAction">
-    </select>
+    <select id="selectedBulkAction" name="selectedBulkAction"></select>
     <button type="submit" class="btn btn-primary">Action</button>
   </div>
 </g:form>
