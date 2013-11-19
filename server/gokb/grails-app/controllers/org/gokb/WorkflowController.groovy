@@ -11,7 +11,7 @@ class WorkflowController {
   def springSecurityService
 
   def actionConfig = [
-    'object::statusDeleted':[actionType:'simple'],
+    'object::deleteSoft':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement']
   ];
