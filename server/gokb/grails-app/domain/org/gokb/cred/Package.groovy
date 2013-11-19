@@ -102,22 +102,22 @@ class Package extends KBComponent {
     
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
-    deleteTipps()
+    def tipps = getTipps()
+     
+    tipps.each { def tipp ->
+      
+      // Ensure they aren't the javassist type classes here, as we will get a NoSuchMethod exception
+      // thrown below if we don't.
+      tipp = deproxy(tipp)
+      
+      tipp.deleteSoft()
+      tipp.save(errorOnFail:true)
+    }
   }
   
   def availableActions() {
     [
       [code:'method::deleteSoft', label:'Set Status: Deleted (+ associated TIPPs)']
     ]
-  }
-  
-  public void deleteTipps() {
-    
-    // Set the status of this packages tipps to deleted.
-    getTipps().each { TitleInstancePackagePlatform tipp ->
-      
-      tipp.deleteSoft()
-      tipp.save()
-    }
   }
 }
