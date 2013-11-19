@@ -109,6 +109,7 @@ if (typeof jQuery !== 'undefined') {
             .dialog({
               title : "Confrimation required",
               resizable: false,
+              width: "30%",
               modal: true,
               buttons: {
                 "Yes": function() {
