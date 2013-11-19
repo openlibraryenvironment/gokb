@@ -1,6 +1,7 @@
 modules = {
   application {
-    resource url:'js/application.js.gsp'
+    dependsOn 'jquery-ui'
+    resource url:'js/application.js'
     resource url:'js/bootstrap-editable.min.js'
   }
   editable {
