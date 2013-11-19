@@ -35,7 +35,30 @@ class WorkflowController {
       }
 
       switch ( action_config.actionType ) {
-        case 'simple': 
+        case 'simple':
+          
+          // We don't really care what the first part of the key is at this stage.
+          def method_config = params.selectedBulkAction.split(/\:\:/) as List
+          
+          // Everything after the first 2 "parts" are args for the method.
+          def method_params = []
+          if (method_config.size() > 2) {
+            method_params.addAll(method_config.subList(2, method_config.size()))
+          }
+          
+          // We should just call the method on the targets.
+          result.objects_to_action.each {def target ->
+            
+            log.debug ("Attempting to fire method ${method_config[1]} (${method_config[2]})")
+            
+            // Just try and fire the method.
+            try {
+              target.invokeMethod("${method_config[1]}", method_params)
+            } catch (Throwable t) {
+              log.error(t)
+            }
+          }
+          
           // Do stuff
           redirect(url: result.ref)
           break;
