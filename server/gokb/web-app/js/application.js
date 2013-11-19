@@ -1,47 +1,64 @@
 if (typeof jQuery !== 'undefined') {
-	(function($) {
-		$('#spinner').ajaxStart(function() {
-			$(this).fadeIn();
-		}).ajaxStop(function() {
-			$(this).fadeOut();
-		});
-	})(jQuery);
-}
-
-// $(function(){
-$(document).ready(function() {
-
-  $.fn.editable.defaults.mode = 'inline';
-
-  $('.xEditableValue').editable();
-
-  $(".xEditableManyToOne").editable(
-  );
-
-  $(".simpleHiddenRefdata").editable({
-    url: function(params) {
-      alert("editable hidden");
-    }
-  });
-
-  $(".simpleReferenceTypedown").select2({
-    placeholder: "Search for...",
-    minimumInputLength: 1,
-    ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
-      url: "<g:createLink controller='ajaxSupport' action='lookup'/>",
-      dataType: 'json',
-      data: function (term, page) {
-        return {
-          format:'json',
-          q: term,
-          baseClass:$(this).data('domain')
-        };
-      },
-      results: function (data, page) {
-        return {results: data.values};
+  (function($) {
+    $('#spinner').ajaxStart(function() {
+      $(this).fadeIn();
+    }).ajaxStop(function() {
+      $(this).fadeOut();
+    });
+    
+    // Add the submit handler to the "action" form to prompt for confirmation
+    // On certain types of action.
+    $("form.action-form button[type='submit'], form.action-form input[type='submit']").click(function(event) {
+      
+      // The button.
+      var button = $(this);
+      
+      // Prevent the click.
+      event.preventDefault();
+      
+      // Selected option.
+      var opt = $('#selectedBulkAction option:selected');
+      
+      if (opt.attr('value').indexOf("method::") == 0) {
+        
+        // We need to confirm these actions.
+        var text = opt.text();
+        
+        // Create a dialog.
+        var dialog = $( "<div id='dialog-confirm' />" )
+          .text(
+            "Are you sure you with to perform the action " + text +
+              " for the selected resource(s)?"
+          )
+        ;
+        
+        dialog
+          .dialog({
+            title : "Confrimation required",
+            resizable: false,
+            modal: true,
+            buttons: {
+              "Yes": function() {
+                
+                // Close the dialog.
+                dialog.dialog( "close" );
+                
+                // Submit the form that is attached to the dropdown.
+                button.closest("form").submit();
+                
+              },
+              "No": function() {
+                
+                // Just close...
+                dialog.dialog( "close" );
+              }
+            }
+          }
+        ).dialog("open");
       }
       
-  }});
-
-});
-
+      // Return false.
+      return false;
+    });
+  })(jQuery);
+}
