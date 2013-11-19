@@ -111,7 +111,6 @@ class Package extends KBComponent {
       tipp = deproxy(tipp)
       
       tipp.deleteSoft()
-      tipp.save(errorOnFail:true)
     }
   }
   
