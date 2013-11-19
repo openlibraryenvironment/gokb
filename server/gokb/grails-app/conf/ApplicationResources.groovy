@@ -2,6 +2,8 @@ modules = {
   application {
     dependsOn 'jquery-ui'
     resource url:'js/application.js'
+    resource url:'js/action-forms.js'
+    resource url:'css/action-forms.css'
     resource url:'js/bootstrap-editable.min.js'
   }
   editable {
