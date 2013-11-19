@@ -2,7 +2,7 @@
 
 <g:set var="counter" value="${offset}" />
 
-<g:form controller="workflow" action="action" method="get">
+<g:form controller="workflow" action="action" method="get" class='action-form' >
   <table class="table table-striped table-condensed table-bordered">
     <thead>
       <tr>
