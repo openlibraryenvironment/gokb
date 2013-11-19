@@ -454,7 +454,7 @@ abstract class KBComponent {
     combs
   }
 
-  public Date deleteSoft (Date endDate = new Date()) {
+  public void deleteSoft () {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
   }
@@ -483,9 +483,6 @@ abstract class KBComponent {
   public String getClassName () {
     getMetaClass().getTheClass().getName()
   }
-
-  //  @Transient
-  //  abstract getPermissableCombos()
 
 
   /**
