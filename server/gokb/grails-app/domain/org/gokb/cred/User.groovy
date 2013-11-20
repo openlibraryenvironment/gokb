@@ -16,7 +16,8 @@ class User {
   Long defaultPageSize = new Long(10);
 
   RefdataValue showQuickView
-  
+  RefdataValue showInfoIcon
+    
   static manyByCombo = [
     territories : Territory
   ]
