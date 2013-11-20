@@ -1,5 +1,19 @@
+/**
+ * Global context variable for the confirm method.
+ */
+var confirm;
+
 if (typeof jQuery !== 'undefined') {
   (function($) {
+    
+    confirm = function (opts) {
+      
+      // Default to empty object.      
+      $.confirm(opts || {});
+      
+      // Add btn-danger class to keep inline with the rest of the site..
+      $('.confirmation-modal .cancel').addClass('btn-danger');
+    }
     
     /**
      * Method that disables the form for actions.
@@ -77,7 +91,7 @@ if (typeof jQuery !== 'undefined') {
     
       // Add the submit handler to the "action" form to prompt for confirmation
       // On certain types of action.
-      $("form.action-form button[type='submit'], form.action-form input[type='submit']").click(function(event) {
+      $("#bulkActionControls button[type='submit'],#actionControls button[type='submit']").click(function(event) {
         
         // The button.
         var button = $(this);
@@ -86,45 +100,26 @@ if (typeof jQuery !== 'undefined') {
         event.preventDefault();
         
         // Selected option.
-        var opt = $('#selectedBulkAction option:selected');
+        var opt = $('#selectedBulkAction option:selected, #selectedAction option:selected');
         
         if (opt.attr('value').indexOf("method::") == 0) {
           
           // We need to confirm these actions.
           var text = opt.text();
           
-          // Create a dialog.
-          var dialog = $( "<div id='dialog-confirm' />" )
-            .text(
-              "Are you sure you with to perform the action " + text +
-                " for the selected resource(s)?"
-            )
-          ;
-          
-          dialog
-            .dialog({
-              title : "Confrimation required",
-              resizable: false,
-              width: "30%",
-              modal: true,
-              buttons: {
-                "Yes": function() {
-                  
-                  // Close the dialog.
-                  dialog.dialog( "close" );
-                  
-                  // Submit the form that is attached to the dropdown.
-                  button.closest("form").submit();
-                  
-                },
-                "No": function() {
-                  
-                  // Just close...
-                  dialog.dialog( "close" );
-                }
-              }
-            }
-          ).dialog("open");
+          // Confirm.
+          confirm({
+            text: "Are you sure you with to perform the action " + opt.text() +
+              " for the selected resource(s)?",
+            confirmButton: "Yes I am",
+            cancelButton: "No",
+            confirm: function(button) {
+              
+              // Submit the form that is attached to the dropdown.
+              button.closest("form").submit();
+            },
+            cancel: function(button) { /* Just close */ }
+          });
         }
         
         // Return false.

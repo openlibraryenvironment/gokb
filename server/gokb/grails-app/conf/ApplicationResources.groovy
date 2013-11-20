@@ -1,6 +1,7 @@
 modules = {
   application {
-    dependsOn 'jquery-ui'
+    dependsOn 'jquery'
+    resource url:'js/jquery.confirm.min.js'
     resource url:'js/application.js'
     resource url:'js/action-forms.js'
     resource url:'css/action-forms.css'
