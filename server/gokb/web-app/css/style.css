@@ -7,3 +7,11 @@
   padding-top: 45px;
 }
 
+.editable-inline textarea {
+  line-height:1.2em;
+  height:1.2em;
+  width:400px;
+  white-space: nowrap;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
