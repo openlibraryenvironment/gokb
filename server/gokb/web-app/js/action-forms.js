@@ -1,12 +1,12 @@
 /**
- * Global context variable for the confirm method.
+ * Global context variable to namespace any custom code.
  */
-var confirm;
+var gokb = {};
 
 if (typeof jQuery !== 'undefined') {
   (function($) {
     
-    confirm = function (opts) {
+    gokb.confirm = function (opts) {
       
       // Default to empty object.      
       $.confirm(opts || {});
@@ -108,7 +108,7 @@ if (typeof jQuery !== 'undefined') {
           var text = opt.text();
           
           // Confirm.
-          confirm({
+          gokb.confirm ({
             text: "Are you sure you with to perform the action " + opt.text() +
               " for the selected resource(s)?",
             confirmButton: "Yes I am",
