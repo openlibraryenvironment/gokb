@@ -18,10 +18,10 @@ class Label {
     private static String createCacheKey (Object object, String propertyName, String viewType) {
       
       // Ensure it isn't proxy.
-      Object obj = KBComponent.deproxy(object)
+      object = KBComponent.deproxy(object)
       
       // Now create the key.
-      String key = "${obj.class.name}::${propertyName}::${viewType}"
+      String key = "${object.class.name}::${propertyName}::${viewType}"
       
       key
     }
