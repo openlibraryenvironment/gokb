@@ -1,6 +1,8 @@
-package org.gokb.cred
+package org.gokb
 
-class Label {
+import org.gokb.cred.KBComponent
+
+class Annotation {
     
     String componentType
     String viewType
@@ -14,7 +16,7 @@ class Label {
       value         (nullable:true,   blank:false)
     }
     
-    private static final Map<String, Label> LABEL_CACHE = [:]
+    private static final Map<String, Annotation> ANNOTATION_CACHE = [:]
     private static String createCacheKey (Object object, String propertyName, String viewType) {
       
       // Ensure it isn't proxy.
@@ -27,47 +29,50 @@ class Label {
     }
     
     
-    private static Label getFor (Object object, String propertyName, String viewType) {
+    private static Annotation getFor (Object object, String propertyName, String viewType) {
       
       // Create the cache key.
       String key = createCacheKey(object, propertyName, viewType)
       
       // Check the cache.
-      Label label = LABEL_CACHE[key]
-      if (label == null) {
+      Annotation annotation = ANNOTATION_CACHE.get(key)
+      if (annotation == null) {
         
-        // Chances are if we are missing one label,we will need to fetch the rest for this
+        // Chances are if we are missing one Annotation,we will need to fetch the rest for this
         // object/view combination too.
-        Label.createCriteria().list {
+        Annotation.createCriteria().list {
           and {
             eq ("componentType", (object.class.name))
             eq ("viewType", (viewType))
           }
-        }.each { Label l ->
+        }.each { Annotation l ->
           
           // Create key.
-          String new_key = createCacheKey(l, propertyName, viewType)
+          String new_key = createCacheKey(object, propertyName, viewType)
           
-          // Set label if we find the correct label.
-          if (l.propertyName == propertyName) label = l
+          // Set Annotation if we find the correct Annotation.
+          if (l.propertyName == propertyName) annotation = l
           
           // Add to cache.
-          LABEL_CACHE[new_key] = l
+          ANNOTATION_CACHE.put(new_key, l)
         }
         
-        // We still might not have found our label if one wasn't present in the DB.
-        if (label == null) {
-          label = new Label ([
+        // We still might not have found our Annotation if one wasn't present in the DB.
+        if (annotation == null) {
+          annotation = new Annotation ([
             "componentType"   : (object.class.name),
             "propertyName"    : (propertyName),
             "viewType"        : (viewType) 
           ])
           
           // Save and return.
-          label.save(failOnError:true)
+          annotation.save(failOnError:true)
+          
+          // Cache the annotation.
+          ANNOTATION_CACHE.put(key, annotation)
         }
       }
       
-      label
+      annotation
     }
 }
