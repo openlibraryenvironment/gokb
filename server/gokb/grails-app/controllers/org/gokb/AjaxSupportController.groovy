@@ -378,7 +378,7 @@ class AjaxSupportController {
       }
     }
     else {
-      log.error("no type (target=${target_components}, value=${value_components}");
+      log.error("no type (target=${params.pk}, value=${params.value}");
     }
 
     def resp = [ newValue: result ]
