@@ -23,7 +23,7 @@ class UserDetailsFilters {
 
           if ( session.userPereferences == null ) {
             //log.debug("Set up user prefs");
-            session.userPereferences = [:]
+            session.userPereferences = request.user.getUserPreferences()
             // Generate Menu for this user.
             session.userPereferences.mainMenuSections = []
             def current_type = null
@@ -51,6 +51,4 @@ class UserDetailsFilters {
       }
     }
   }
-
-
 }

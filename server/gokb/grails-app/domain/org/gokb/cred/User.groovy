@@ -64,6 +64,20 @@ class User {
     userOptions.availableSearches = grailsApplication.config.globalSearchTemplates.sort{ it.value.title }
     userOptions
   }
+  
+  transient def getUserPreferences() {
+    def userPrefs = [:]
+    if (showInfoIcon?.value) {
+      userPrefs["showInfoIcon"] = showInfoIcon.value?.equalsIgnoreCase("Yes") ? true : false
+    }
+    
+    if (showQuickView?.value) {
+      userPrefs["showQuickView"] = showQuickView?.value?.equalsIgnoreCase("Yes") ? true : false
+    }
+    
+    // Return the prefs.
+    userPrefs
+  }
 
   static def refdataFind(params) {
     def result = [];
