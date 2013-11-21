@@ -28,7 +28,10 @@ class AnnotationTagLib {
       
       // Override with supplied attributes.
       attr.putAll(attributes)
-      attr['class'] = attr['class'] ? "${attr['class']} annotated" : "annotated"
+      
+      if (session.userPereferences.showInfoIcon) {
+        attr['class'] = attr['class'] ? "${attr['class']} annotated" : "annotated"
+      }
       
       // Get the element.
       def element = attr.remove("element")
@@ -52,7 +55,7 @@ class AnnotationTagLib {
       out << ">" + body() + "</${element}>"
       
       // Output the annotation if we have one.
-      if (annotation?.value) {
+      if (session.userPereferences.showInfoIcon && annotation?.value) {
       
         // Now output the label in an adjacent span div tag.
         out << "<div class='annotation%{attr['id'] ? attr['id'] + '-annotation' : ''}'>${annotation.value}</div>"
