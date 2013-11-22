@@ -48,7 +48,7 @@ class Annotation {
         }.each { Annotation l ->
           
           // Create key.
-          String new_key = createCacheKey(object, propertyName, viewType)
+          String new_key = createCacheKey(object, l.propertyName, viewType)
           
           // Set Annotation if we find the correct Annotation.
           if (l.propertyName == propertyName) annotation = l
