@@ -22,7 +22,7 @@
         "html"    : true,
         "trigger" : "manual",
         "title"   : target.text(),
-        "content" : annotation.html()
+        "content" : $('<div />').append(annotation.detach().show()).html()
         
       }).click(function(e) {
         
@@ -40,6 +40,9 @@
         // event registered on the html.
         e.stopPropagation();
       });
+      
+      // Now remove the annotation from the dom.
+      annotation.remove()
     }
   });
   
