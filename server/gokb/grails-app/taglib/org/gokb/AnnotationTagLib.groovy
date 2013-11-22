@@ -2,10 +2,13 @@ package org.gokb
 
 import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
 import org.codehaus.groovy.grails.web.pages.GroovyPage
+import org.gokb.cred.Role
+import org.gokb.cred.User
 
 class AnnotationTagLib {
   static defaultEncodeAs = 'raw'
-  //static encodeAsForTags = [tagName: 'raw']
+  
+  def springSecurityService
 
   private String getGspFilePath(GroovyPage page) {
     String name = page.getGroovyPageFileName()
@@ -29,10 +32,6 @@ class AnnotationTagLib {
     // Override with supplied attributes.
     attr.putAll(attributes)
 
-    if (session.userPereferences.showInfoIcon) {
-      attr['class'] = attr['class'] ? "${attr['class']} annotated" : "annotated"
-    }
-
     // Get the element.
     def element = attr.remove("element")
 
@@ -46,6 +45,19 @@ class AnnotationTagLib {
       // Get the label for the object property for this view.
       annotation = Annotation.getFor(attr.remove('owner'), attr.remove('property'), view)
     }
+    
+    // Annotation required?
+    User user = springSecurityService.currentUser
+    boolean isAdmin = user.getAuthorities().find { Role role -> 
+      "ROLE_ADMIN".equalsIgnoreCase(role.authority)
+    }
+    
+    boolean show_annotation = session.userPereferences.showInfoIcon && (isAdmin || annotation?.value != null)
+    
+    // Add the necessary class if we need it.
+    if ( show_annotation ) {
+      attr['class'] = attr['class'] ? "${attr['class']} annotated" : "annotated"
+    }
 
     // Now just output the desired element.
     out << "<${element}"
@@ -54,11 +66,11 @@ class AnnotationTagLib {
     }
     out << ">" + body() + "</${element}>"
 
-    // Output the annotation if we have one.
-    if (session.userPereferences.showInfoIcon && annotation?.value) {
+    // Output the annotation if we should.
+    if (show_annotation) {
 
       // Now output the label in an adjacent span div tag.
-      out << "<div class=\"annotation${attr['id'] ? attr['id'] + '-annotation' : ''}\">${annotation.value}</div>"
+      out << "<div class=\"annotation${attr['id'] ? attr['id'] + '-annotation' : ''}\">${annotation.value ?: 'not set'}</div>"
     }
   }
 }
