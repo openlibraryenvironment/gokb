@@ -7,6 +7,16 @@ class UserDetailsFilters {
   // grailsApplication.config.appDefaultPrefs
 
   def filters = {
+    
+    // DO not allow any pages to be served from browser cache.
+    noCacheFilter(controller:'*', action:'*') {
+       after = {
+           response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
+           response.setHeader("Pragma", "no-cache") // HTTP 1.0.
+           response.setDateHeader("Expires", -1)
+       }
+    }
+    
     setUsetFilter(controller:'*', action:'*') {
       before = {
         // if ( session.sessionPreferences == null ) {
