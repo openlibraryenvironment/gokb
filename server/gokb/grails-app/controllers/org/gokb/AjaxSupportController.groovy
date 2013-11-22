@@ -365,6 +365,12 @@ class AjaxSupportController {
         if ( params.resultProp ) {
           result = value[params.resultProp]
         }
+        
+        // We should clear the session values for a user if this is a user to force reload of the,
+        // parameters.
+        if (target instanceof User) {
+          session.userPereferences = null
+        } 
         else {
           if ( value ) {
             result = renderObjectValue(value);
