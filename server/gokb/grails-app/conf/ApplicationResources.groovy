@@ -1,10 +1,12 @@
 modules = {
   application {
-    dependsOn 'jquery'
+    dependsOn 'bootstrap-popover'
     resource url:'js/jquery.confirm.min.js'
     resource url:'js/application.js'
     resource url:'js/action-forms.js'
     resource url:'css/action-forms.css'
+    resource url:'js/annotations.js'
+    resource url:'css/annotations.css'
     resource url:'js/bootstrap-editable.min.js'
   }
   editable {

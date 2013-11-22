@@ -1,0 +1,14 @@
+.annotated {
+  background:transparent url(../images/get_info.png) right top no-repeat;
+  padding-right: 20px;
+  cursor:help;
+}
+
+div.annotation {
+  display:none;
+}
+
+/* Styles for the popup itself */
+.popover {
+  font-weight:normal;
+}
