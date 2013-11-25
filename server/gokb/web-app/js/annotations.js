@@ -20,15 +20,36 @@
       // Add buttons as a sibling of the editor.
       var wrapper = $('<div />').addClass('editor-buttons').append(
         $('<button class="btn btn-small btn-success" />').text("Save").click(function() {
-          alert("Saved");
-          editor_el.destroy();
-          showHideEditorButtons(editor_el, false);
 
-          // Shift the element back.
+          // The popover
           var popover = editor_el.closest('.popover');
+
+          // Save the data.
+          var value = editor_el.code();
           
-          // Refresh the position.
-          refreshAnnotationPos (popover.prev('.annotated'), popover);
+          // The edited element.
+          var el = $('.annotation-editable', popover)
+          
+          // Post via ajax.
+          $.ajax({
+            type: "POST",
+            url: el.attr('data-url'),
+            data: {
+              "pk"    : el.attr('data-pk'),
+              "name"  : el.attr('data-name'),
+              "value" : value
+            }
+          }).done(function( msg ) {
+            
+            // Close the editor
+            editor_el.destroy();
+            
+            // Remove the editor buttons.
+            showHideEditorButtons(editor_el, false);
+            
+            // Refresh the position.
+            refreshAnnotationPos (popover.prev('.annotated'), popover);
+          });
         })
       );
       
@@ -56,7 +77,9 @@
   }
   
   // Add a tooltip to each editable annotation to direct the admin user.
-  $('.annotation-editable').tooltip();
+  $('.annotation-editable').tooltip({
+    "title" : "Double-click to edit this annotation."
+  });
   
   // Add the double click listener to the HTML. All double clicks will bubble up to here so we need
   // to be selective on how we respond.
