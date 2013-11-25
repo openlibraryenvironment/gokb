@@ -55,8 +55,6 @@ class AnnotationTagLib {
       "ROLE_ADMIN".equalsIgnoreCase(role.authority)
     }
     
-    isAdmin = false
-    
     // Should the annotation be shown?
     boolean show_annotation = session.userPereferences.showInfoIcon && (isAdmin || annotation?.value != null)
     
@@ -93,8 +91,12 @@ class AnnotationTagLib {
       }
       
       if (attr['id']) {
-        // Add an extra class.
-        ann_props['class'] << 'annotation-editable'
+        // Add an extra classes.
+        ann_props['class'] << ["annotation-${attr['id']}", "annotation-${attr['id']}-editable"]
+      }
+      
+      if (!annotation.value) {
+        ann_props['class'] << "annotation-empty"
       }
 
       // Now output the annotation in an adjacent div tag.
@@ -103,7 +105,7 @@ class AnnotationTagLib {
         p_value.join(" ")
         out << " ${p_name}=\"${p_value.join(' ')}\""
       }
-      out << ">${annotation.value ?: 'not set'}</div>"
+      out << ">${annotation.value ?: 'Empty'}</div>"
     }
   }
   
