@@ -8,7 +8,33 @@ div.annotation {
   display:none;
 }
 
+div.annotation-editable {
+  cursor: text;
+}
+div.annotation-editable:hover {
+  border: 1px dashed #0088CC;
+}
+
+.popover div.editor-buttons {
+  padding: 10px 0 0 0;
+  text-align:right;
+}
+
+.popover div.editor-buttons .btn {
+  margin-left: 10px;
+}
+
 /* Styles for the popup itself */
 .popover {
   font-weight:normal;
+  min-width:350px;
+}
+
+/* Fix for modal backdrop rendering over modal from editor */
+.modal-backdrop {
+    z-index: 1009;
+}
+
+.note-editor [class*=" icon-"] {
+  background-image:none;
 }
