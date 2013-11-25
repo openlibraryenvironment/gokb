@@ -1,8 +1,12 @@
 modules = {
   application {
     dependsOn 'bootstrap-popover'
+    dependsOn 'font-awesome'
     resource url:'js/jquery.confirm.min.js'
     resource url:'js/application.js'
+    resource url:'js/summernote.min.js'
+    resource url:'css/summernote.css'
+    resource url:'css/summernote-bs2.css'
     resource url:'js/action-forms.js'
     resource url:'css/action-forms.css'
     resource url:'js/annotations.js'
