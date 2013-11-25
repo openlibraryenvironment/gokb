@@ -27,6 +27,7 @@ div.annotation-editable:hover {
 /* Styles for the popup itself */
 .popover {
   font-weight:normal;
+  font-size:14px;
   min-width:350px;
 }
 
