@@ -4,6 +4,7 @@ import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
 import org.codehaus.groovy.grails.web.pages.GroovyPage
 import org.gokb.cred.Role
 import org.gokb.cred.User
+import org.hibernate.proxy.HibernateProxy
 
 class AnnotationTagLib {
   static defaultEncodeAs = 'raw'
@@ -36,14 +37,16 @@ class AnnotationTagLib {
     def element = attr.remove("element")
 
     // Get the annotation object.
+    def owner = attr.remove('owner')
+    def property = attr.remove('property')
     Annotation annotation
-    if ( attr['owner'] && attr['property']) {
+    if ( owner && property) {
 
       // Get the GSP that called this tag.
       String view = getGspFilePath(pageScope.getOwner())
 
       // Get the label for the object property for this view.
-      annotation = Annotation.getFor(attr.remove('owner'), attr.remove('property'), view)
+      annotation = Annotation.getFor(owner, property, view)
     }
     
     // Annotation required?
@@ -52,6 +55,9 @@ class AnnotationTagLib {
       "ROLE_ADMIN".equalsIgnoreCase(role.authority)
     }
     
+    isAdmin = false
+    
+    // Should the annotation be shown?
     boolean show_annotation = session.userPereferences.showInfoIcon && (isAdmin || annotation?.value != null)
     
     // Add the necessary class if we need it.
@@ -68,9 +74,43 @@ class AnnotationTagLib {
 
     // Output the annotation if we should.
     if (show_annotation) {
+      
+      // Map of lists of values.
+      def ann_props = [:].withDefault {
+        []
+      }
+      
+      // Add our props.
+      ann_props['data-url'] << createLink(controller:'ajaxSupport', action: 'editableSetValue')
+      ann_props['data-pk'] << "${deproxy(annotation).class.name}:${annotation.id}"
+      ann_props['data-name'] << "value"
+      ann_props['class'] << 'annotation'
+      
+      if (isAdmin) {
+        // Add a title to direct admins to double click.
+        ann_props['title'] << "Double-click to edit this annotation."
+        ann_props['class'] << 'annotation-editable'
+      }
+      
+      if (attr['id']) {
+        // Add an extra class.
+        ann_props['class'] << 'annotation-editable'
+      }
 
-      // Now output the label in an adjacent span div tag.
-      out << "<div ${isAdmin ? 'title=\"Double-click to edit this annotation.\" ' : ''}class=\"annotation${isAdmin ? ' annotation-editable ' : ''}${attr['id'] ? attr['id'] + '-annotation' : ''} \">${annotation.value ?: 'not set'}</div>"
+      // Now output the annotation in an adjacent div tag.
+      out << "<div"
+      ann_props.each {p_name, List p_value ->
+        p_value.join(" ")
+        out << " ${p_name}=\"${p_value.join(' ')}\""
+      }
+      out << ">${annotation.value ?: 'not set'}</div>"
     }
+  }
+  
+  public static <T> T deproxy(def element) {
+    if (element instanceof HibernateProxy) {
+      return (T) ((HibernateProxy) element).getHibernateLazyInitializer().getImplementation();
+    }
+    return (T) element;
   }
 }
