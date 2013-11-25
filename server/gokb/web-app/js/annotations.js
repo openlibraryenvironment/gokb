@@ -49,7 +49,7 @@
           }).done(function( msg ) {
             
             // Remove the empty class if it exists.
-            el.removeClass('editable-empty');
+            el.removeClass('annotation-empty');
             
             // Close the editor
             editor_el.destroy();
