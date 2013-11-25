@@ -70,7 +70,7 @@ class AnnotationTagLib {
     if (show_annotation) {
 
       // Now output the label in an adjacent span div tag.
-      out << "<div class=\"annotation${isAdmin ? ' annotation-editable ' : ''}${attr['id'] ? attr['id'] + '-annotation' : ''} \">${annotation.value ?: 'not set'}</div>"
+      out << "<div ${isAdmin ? 'title=\"Double-click to edit this annotation.\" ' : ''}class=\"annotation${isAdmin ? ' annotation-editable ' : ''}${attr['id'] ? attr['id'] + '-annotation' : ''} \">${annotation.value ?: 'not set'}</div>"
     }
   }
 }
