@@ -8,6 +8,11 @@ class Annotation {
     String viewType
     String propertyName
     String value
+    
+    def afterUpdate() {
+      // Update listener that removes updates the cache for this item.
+      replaceInCache(this)
+    }
 
     static constraints = {
       componentType (nullable:false,  blank:false)
@@ -28,6 +33,10 @@ class Annotation {
       key
     }
     
+    public static replaceInCache(Annotation annotation) {
+      String key = "${annotation.componentType}::${annotation.propertyName}::${annotation.viewType}"
+      ANNOTATION_CACHE.put(key, annotation)
+    }
     
     private static Annotation getFor (Object object, String propertyName, String viewType) {
       
@@ -48,7 +57,7 @@ class Annotation {
         }.each { Annotation l ->
           
           // Create key.
-          String new_key = createCacheKey(object, l.propertyName, viewType)
+          String new_key = "${l.componentType}::${l.propertyName}::${l.viewType}"
           
           // Set Annotation if we find the correct Annotation.
           if (l.propertyName == propertyName) annotation = l
