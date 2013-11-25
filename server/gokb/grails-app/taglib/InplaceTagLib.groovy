@@ -56,7 +56,7 @@ class InplaceTagLib {
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
     def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.config,format:'json'])
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
-    def oid = attrs.owner.id != null ? "${deproxy(attrs.owner.class).name}:${attrs.owner.id}" : ''
+    def oid = attrs.owner.id != null ? "${deproxy(attrs.owner).class.name}:${attrs.owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def type = attrs.type ?: "select"
    
