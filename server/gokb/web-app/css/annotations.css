@@ -11,8 +11,14 @@ div.annotation {
 div.annotation-editable {
   cursor: text;
 }
+
 div.annotation-editable:hover {
   border: 1px dashed #0088CC;
+}
+
+div.annotation-empty {
+  color: #5A3DA6;
+  font-style: italic;
 }
 
 .popover div.editor-buttons {
@@ -38,4 +44,10 @@ div.annotation-editable:hover {
 
 .note-editor [class*=" icon-"] {
   background-image:none;
+}
+
+.note-editor .note-editable {
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 10px;
 }

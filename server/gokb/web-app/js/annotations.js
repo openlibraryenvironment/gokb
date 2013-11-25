@@ -1,5 +1,12 @@
 (function($) {
   
+  var original_html = {};
+  
+  function quickUID() {
+    return Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
+  }
+  
   function refreshAnnotationPos (annotated, annotation) {
     
     var annotated_centre = (annotated.outerHeight() / 2) + annotated.offset().top;
@@ -41,6 +48,9 @@
             }
           }).done(function( msg ) {
             
+            // Remove the empty class if it exists.
+            el.removeClass('editable-empty');
+            
             // Close the editor
             editor_el.destroy();
             
@@ -61,9 +71,13 @@
 
           // Shift the element back.
           var popover = editor_el.closest('.popover');
+          var annotated = popover.prev('.annotated');
+          
+          // Restore original value.
+          editor_el.html(original_html[editor_el.attr("id")]);
           
           // Refresh the position.
-          refreshAnnotationPos (popover.prev('.annotated'), popover);
+          refreshAnnotationPos (annotated, popover);
         })
       );
       
@@ -76,9 +90,14 @@
     }
   }
   
-  // Add a tooltip to each editable annotation to direct the admin user.
-  $('.annotation-editable').tooltip({
-    "title" : "Double-click to edit this annotation."
+  // Quick generate an ID if one isn't present.
+  $('.annotation-editable').each(function(){
+    var el = $(this);
+    
+    if (!el.attr('id')) {
+      // Add one.
+      el.attr('id', quickUID());
+    }
   });
   
   // Add the double click listener to the HTML. All double clicks will bubble up to here so we need
@@ -101,6 +120,7 @@
         ],
         oninit: function() {
           showHideEditorButtons(me, true);
+          original_html[me.attr("id")] = me.html();
         }
       });
       
@@ -141,6 +161,18 @@
         // Also need to ensure we remove the buttons.
         showHideEditorButtons(annotation, false);
         
+      }).on("shown", function(e) {
+        
+        // Bind the tooltip to the content every time the annotation is shown as it's lost.
+        // after first show.
+        var editableEl = $('.annotation-editable', $(this).next());
+        if (editableEl.length > 0) {
+          
+          editableEl.tooltip({
+            "title" : editableEl.attr("data-original-title")
+          });
+        }
+        
       }).click(function(e) {
         
         // Toggle this element.
@@ -157,7 +189,6 @@
         // Ensure we stop this even bubbling here so it doesn't trigger the on click,
         // event registered on the HTML.
         e.stopPropagation();
-        
       });
     }
   });
