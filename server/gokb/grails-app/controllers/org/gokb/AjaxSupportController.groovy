@@ -1,8 +1,8 @@
 package org.gokb
 
 import grails.converters.JSON
+import com.k_int.ClassUtils
 import org.gokb.cred.*
-
 import grails.plugins.springsecurity.Secured
 
 class AjaxSupportController {
@@ -84,7 +84,8 @@ class AjaxSupportController {
                                 [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0]);
 
       rq.each { it ->
-        result["${it.class.name}:${it.id}"] = it[config.cols[0]];
+        def o = ClassUtils.deproxy(it)
+        result["${o.class.name}:${o.id}"] = o[config.cols[0]];
       }
     }
 
