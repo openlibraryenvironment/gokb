@@ -25,6 +25,7 @@ package org.gokb
  */
 
 import grails.util.GrailsNameUtils
+import com.k_int.ClassUtils
 import groovy.util.logging.*
 
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
@@ -724,7 +725,7 @@ class DomainClassExtender {
 				for (val in value) {
 				  
 				  // Ensure we deproxy here...
-				  val = KBComponent.deproxy(val)
+				  val = ClassUtils.deproxy(val)
 				  
 				  if (typeClass.isInstance(val)) {
 
@@ -752,7 +753,7 @@ class DomainClassExtender {
 				for (val in value) {
 				  
 				  // Ensure we deproxy here...
-				  val = KBComponent.deproxy(val)
+				  val = ClassUtils.deproxy(val)
 				  
 				  if (typeClass.isInstance(val)) {
 					Combo combo = new Combo(
@@ -779,7 +780,7 @@ class DomainClassExtender {
 			default:
 			// Check single properties.
 			  typeClass = lookupComboMapping(Combo.HAS, propertyName)
-			  value = KBComponent.deproxy(value)
+			  value = ClassUtils.deproxy(value)
 			  if (typeClass.isInstance(value)) {
 
 				if (isComboReverse(propertyName)) {

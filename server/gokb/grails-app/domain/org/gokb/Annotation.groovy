@@ -1,6 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.KBComponent
+import com.k_int.ClassUtils
 
 class Annotation {
     
@@ -25,7 +26,7 @@ class Annotation {
     private static String createCacheKey (Object object, String propertyName, String viewType) {
       
       // Ensure it isn't proxy.
-      object = KBComponent.deproxy(object)
+      object = ClassUtils.deproxy(object)
       
       // Now create the key.
       String key = "${object.class.name}::${propertyName}::${viewType}"

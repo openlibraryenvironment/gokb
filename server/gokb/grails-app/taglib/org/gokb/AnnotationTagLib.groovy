@@ -1,6 +1,7 @@
 package org.gokb
 
 import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
+import com.k_int.ClassUtils
 import org.codehaus.groovy.grails.web.pages.GroovyPage
 import org.gokb.cred.Role
 import org.gokb.cred.User
@@ -80,7 +81,7 @@ class AnnotationTagLib {
       
       // Add our props.
       ann_props['data-url'] << createLink(controller:'ajaxSupport', action: 'editableSetValue')
-      ann_props['data-pk'] << "${deproxy(annotation).class.name}:${annotation.id}"
+      ann_props['data-pk'] << "${ClassUtils.deproxy(annotation).class.name}:${annotation.id}"
       ann_props['data-name'] << "value"
       ann_props['class'] << 'annotation'
       
@@ -107,12 +108,5 @@ class AnnotationTagLib {
       }
       out << ">${annotation.value ?: 'Empty'}</div>"
     }
-  }
-  
-  public static <T> T deproxy(def element) {
-    if (element instanceof HibernateProxy) {
-      return (T) ((HibernateProxy) element).getHibernateLazyInitializer().getImplementation();
-    }
-    return (T) element;
   }
 }

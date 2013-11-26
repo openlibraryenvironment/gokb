@@ -1,7 +1,7 @@
 package org.gokb.cred
 
 import grails.util.GrailsNameUtils
-
+import com.k_int.ClassUtils
 import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
@@ -524,10 +524,7 @@ abstract class KBComponent {
   }
 
   public static <T> T deproxy(def element) {
-    if (element instanceof HibernateProxy) {
-      return (T) ((HibernateProxy) element).getHibernateLazyInitializer().getImplementation();
-    }
-    return (T) element;
+    ClassUtils.deproxy(element)
   }
   //  return (getMetaClass().getTheClass() instanceof testCase.class)
 

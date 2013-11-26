@@ -16,7 +16,7 @@ class IdentifierNamespace {
   public boolean equals(Object obj) {
 	if (obj != null) {
 	
-	  def dep = KBComponent.deproxy(obj)
+	  def dep = ClassUtils.deproxy(obj)
 	  if (dep instanceof IdentifierNamespace) {
 		// Check the value attributes.
 		return (this.value == dep.value)

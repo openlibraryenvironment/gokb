@@ -1,6 +1,7 @@
 package org.gokb
 
-import org.gokb.cred.*;
+import org.gokb.cred.*
+import com.k_int.ClassUtils
 
 class TitleLookupService {
 
@@ -47,7 +48,7 @@ class TitleLookupService {
           comp.each { KBComponent c ->
 
             // Ensure we're not looking at a Hibernate Proxy class representation of the class
-            KBComponent dproxied = KBComponent.deproxy(c);
+            KBComponent dproxied = ClassUtils.deproxy(c);
 
             // Only add if it's a title.
             if ( dproxied instanceof TitleInstance ) {
