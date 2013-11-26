@@ -13,39 +13,39 @@ class RefdataValue {
   ]
 
   static mapping = {
-             id column:'rdv_id'
-        version column:'rdv_version'
-          owner column:'rdv_owner', index:'rdv_entry_idx'
-          value column:'rdv_value', index:'rdv_entry_idx'
+    id column:'rdv_id'
+    version column:'rdv_version'
+    owner column:'rdv_owner', index:'rdv_entry_idx'
+    value column:'rdv_value', index:'rdv_entry_idx'
     description column:'rdv_desc'
-        sortKey column:'rdv_sortkey'
-     useInstead column:'rdv_use_instead'
-           icon column:'rdv_icon'
+    sortKey column:'rdv_sortkey'
+    useInstead column:'rdv_use_instead'
+    icon column:'rdv_icon'
   }
 
   static constraints = {
-           icon(nullable:true, blank:true)
+    icon(nullable:true, blank:true)
     description(nullable:true, blank:true, maxSize:64)
-     useInstead(nullable:true, blank:false)
-        sortKey(nullable:true, blank:false)
+    useInstead(nullable:true, blank:false)
+    sortKey(nullable:true, blank:false)
   }
-  
+
   @Override
   public String toString() {
-	return "${value}"
+    return "${value}"
   }
-  
+
   @Override
   public boolean equals (Object obj) {
-	
-	if (obj != null) {
-	  Object dep_obj = KBComponent.deproxy (obj)
-	  if (dep_obj instanceof RefdataValue) {
-		return dep_obj.id == id
-	  }
-	}
-	
-	return false
+
+    if (obj != null) {
+      Object dep_obj = KBComponent.deproxy (obj)
+      if (dep_obj instanceof RefdataValue) {
+        return dep_obj.id == id
+      }
+    }
+
+    return false
   }
 
   static def refdataFind(params) {
@@ -73,7 +73,7 @@ class RefdataValue {
     result
   }
 
-//  def availableActions() {
-//    [ [ code:'object::delete' , label: 'Delete' ] ]
-//  }
+  //  def availableActions() {
+  //    [ [ code:'object::delete' , label: 'Delete' ] ]
+  //  }
 }
