@@ -39,7 +39,7 @@ class UserDetailsFilters {
             def current_type = null
             def current_list = null;
             // Step 1 : List all domains available to this user order by type, grouped into type
-            def domains = KBDomainInfo.executeQuery("select d from KBDomainInfo as d order by d.type.sortKey, d.displayName")
+            def domains = KBDomainInfo.executeQuery("select d from KBDomainInfo as d order by d.type.sortKey, d.type.id, d.displayName")
             domains.each { d ->
               //log.debug("Process ${d.displayName} - ${d.type.id}");
               if ( d.type.id != current_type ) {
