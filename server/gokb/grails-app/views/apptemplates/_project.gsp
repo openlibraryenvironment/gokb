@@ -8,27 +8,27 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
-      <dt>Name</dt>
+      <dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
     </div>
 
     <div class="control-group">
-      <dt>Status</dt>
+      <dt><g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel></dt>
       <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
     </div>
 
     <div class="control-group">
-      <dt>Internal ID</dt>
+      <dt><g:annotatedLabel owner="${d}" property="id">Internal ID</g:annotatedLabel></dt>
       <dd>${d.id}</dd>
     </div>
 
     <div class="control-group">
-      <dt>Reference</dt>
+      <dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="reference"/></dd>
     </div>
 
     <div class="control-group">
-      <dt>Short Code</dt>
+      <dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
     </div>
 
@@ -44,56 +44,56 @@
   
     
         <div class="control-group">
-          <dt>Description</dt>
+          <dt><g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel></dt>
           <dd><g:xEditable class="ipe" owner="${d}" field="description">${d.description}</g:xEditable></dd>
         </div>
       
         <div class="control-group">
-          <dt>Created By</dt>
+          <dt><g:annotatedLabel owner="${d}" property="createdBy">Created By</g:annotatedLabel></dt>
           <dd>${d.createdBy?.displayName}&nbsp;</dd>
         </div>
     
         <div class="control-group">
-          <dt>Checked Out By</dt>
+          <dt><g:annotatedLabel owner="${d}" property="checkedOutBy">Checked Out By</g:annotatedLabel></dt>
           <dd>${d.lastCheckedOutBy?.displayName}&nbsp;</dd>
         </div>
     
         <div class="control-group">
-          <dt>Last Modified By</dt>
+          <dt><g:annotatedLabel owner="${d}" property="lastModifiedBy">Last Modified By</g:annotatedLabel></dt>
           <dd>${d.modifiedBy?.displayName}&nbsp;</dd>
         </div>
     
         <div class="control-group">
-          <dt>Local Project ID</dt>
+          <dt><g:annotatedLabel owner="${d}" property="localProjectId">Local Project ID</g:annotatedLabel></dt>
           <dd>${d.localProjectID}&nbsp;</dd>
         </div>
     
         <div class="control-group">
-          <dt>Progress</dt>
+          <dt><g:annotatedLabel owner="${d}" property="progress">Progress</g:annotatedLabel></dt>
           <dd>${d.progress}&nbsp;</dd>
         </div>
     
         <g:if test="${d.id != null}">
           <div class="control-group">
-            <dt>Provider</dt>
+            <dt><g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel></dt>
             <dd>${d.provider?.name ?: 'Not yet set'}</dd>
           </div>
           <div class="control-group">
-            <dt>Project Status</dt>
+            <dt><g:annotatedLabel owner="${d}" property="projectStatus">Project Status</g:annotatedLabel></dt>
             <dd>
               ${ d.projectStatus?.getName() } &nbsp;
           </dd>
           </div>
           <g:if test="${d.lastCheckedOutBy}" >
             <div class="control-group">
-              <dt>Last Checked Out By</dt>
+              <dt><g:annotatedLabel owner="${d}" property="lastCheckedOutBy">Last Checked Out By</g:annotatedLabel></dt>
               <dd>
                 <g:link url="mailto:${ d.lastCheckedOutBy.email }">${ d.lastCheckedOutBy.displayName ?: d.lastCheckedOutBy.username }</g:link> 
               </dd>
             </div>
           </g:if>
           <div class="control-group">
-            <dt>Last validation result</dt>
+            <dt><g:annotatedLabel owner="${d}" property="lastValidationResult">Last validation result</g:annotatedLabel></dt>
             <dd>${d.lastValidationResult?:'Not yet validated'}</dd>
           </div>
           <!--  dt>Candidate Rules</dt>

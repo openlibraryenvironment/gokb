@@ -9,7 +9,7 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
-      <dt>URL</dt>
+      <dt><g:annotatedLabel owner="${d}" property="url">URL</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="url"/></dd>
     </div>
 

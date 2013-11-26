@@ -5,17 +5,17 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
-      <dt>User Name</dt>
+      <dt><g:annotatedLabel owner="${d}" property="username">User Name</g:annotatedLabel></dt>
       <dd>${d.username}</dd>
     </div>
 
     <div class="control-group">
-      <dt>Display Name</dt>
+      <dt><g:annotatedLabel owner="${d}" property="displayName">Display Name</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="displayName"/></dd>
     </div>
 
     <div class="control-group">
-      <dt>Email</dt>
+      <dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="email"/></dd>
     </div>
 

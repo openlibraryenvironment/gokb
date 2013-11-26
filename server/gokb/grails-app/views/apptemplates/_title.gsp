@@ -4,22 +4,22 @@
 <dl class="dl-horizontal">
 
   <div class="control-group">
-    <dt>Title</dt>
+    <dt><g:annotatedLabel owner="${d}" property="name">Title</g:annotatedLabel></dt>
     <dd>${d.name} (Modify title through variants below)</dd>
   </div>
 
   <div class="control-group">
-    <dt>Status Reason</dt>
+    <dt><g:annotatedLabel owner="${d}" property="reasonRetired">Status Reason</g:annotatedLabel></dt>
     <dd><g:xEditableRefData owner="${d}" field="reasonRetired" config='TitleInstance.ReasonRetired' /></dd>
   </div>
 
   <div class="control-group">
-    <dt>Status</dt>
+    <dt><g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel></dt>
     <dd><g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' /></dd>
   </div>
 
   <div class="control-group">
-    <dt>Edit Status</dt>
+    <dt><g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel></dt>
     <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
   </div>
 
@@ -41,29 +41,29 @@
         <dl class="dl-horizontal">
       
           <div class="control-group">
-            <dt>Medium</dt>
+            <dt><g:annotatedLabel owner="${d}" property="medium">Medium</g:annotatedLabel></dt>
             <dd><g:xEditableRefData owner="${d}" field="medium" config='TitleInstance.Medium' /></dd>
           </div>
       
           <div class="control-group">
-            <dt>pureOA</dt>
+            <dt><g:annotatedLabel owner="${d}" property="pureOA">pureOA</g:annotatedLabel></dt>
             <dd><g:xEditableRefData owner="${d}" field="pureOA" config='TitleInstance.PureOA' /></dd>
           </div>
       
           <div class="control-group">
-            <dt>Continuing Series</dt>
+            <dt><g:annotatedLabel owner="${d}" property="continuingSeries">Continuing Series</g:annotatedLabel></dt>
             <dd><g:xEditableRefData owner="${d}" field="continuingSeries" config='TitleInstance.ContinuingSeries' /></dd>
           </div>
       
           <div class="control-group">
-            <dt>Imprint</dt>
+            <dt><g:annotatedLabel owner="${d}" property="imprint">Imprint</g:annotatedLabel></dt>
             <dd>
               <g:xEditable owner="${d}" field="imprint"/>
             </dd>
           </div>
       
           <div class="control-group">
-            <dt>Alternate Titles
+            <dt><g:annotatedLabel owner="${d}" property="alternateTitles">Alternate Titles</g:annotatedLabel>
             <button class="hidden-license-details btn" data-toggle="collapse" data-target="#collapseableAddTitle"><i class="icon-plus"></i></button></dt>
             <dd>
               <table class="table table-striped table-bordered">
@@ -108,7 +108,7 @@
 
             <div class="control-group">
       
-              <dt>Publishers</dt>
+              <dt><g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel></dt>
               <dd>
                 <table class="table table-striped table-bordered">
                   <thead>
@@ -141,7 +141,7 @@
             </div>
       
             <div class="control-group">
-              <dt>Availability</dt>
+              <dt><g:annotatedLabel owner="${d}" property="availability">Availability</g:annotatedLabel></dt>
               <dd>
                 <table class="table table-striped table-bordered">
                   <thead>

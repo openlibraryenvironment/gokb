@@ -6,42 +6,42 @@
 <dl class="dl-horizontal">
 
   <div class="control-group">
-    <dt>Name</dt>
+    <dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
     <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
   </div>
 
   <div class="control-group">
-    <dt>GUID</dt>
+    <dt><g:annotatedLabel owner="${d}" property="guid">GUID</g:annotatedLabel></dt>
     <dd>${d.guid}</dd>
   </div>
 
   <div class="control-group">
-    <dt>MD5</dt>
+    <dt><g:annotatedLabel owner="${d}" property="md5">MD5</g:annotatedLabel></dt>
     <dd>${d.md5}</dd>
   </div>
 
   <div class="control-group">
-    <dt>Upload Filename</dt>
+    <dt><g:annotatedLabel owner="${d}" property="uploadFilename">Upload Filename</g:annotatedLabel></dt>
     <dd>${d.uploadName}</dd>
   </div>
 
   <div class="control-group">
-    <dt>Upload Mime Type</dt>
+    <dt><g:annotatedLabel owner="${d}" property="mime">Upload Mime Type</g:annotatedLabel></dt>
     <dd>${d.uploadMimeType}</dd>
   </div>
 
   <div class="control-group">
-    <dt>Filesize</dt>
+    <dt><g:annotatedLabel owner="${d}" property="filesize">Filesize</g:annotatedLabel></dt>
     <dd>${d.filesize}</dd>
   </div>
 
   <div class="control-group">
-    <dt>Doctype</dt>
+    <dt><g:annotatedLabel owner="${d}" property="doctype">Doctype</g:annotatedLabel></dt>
     <dd>${d.doctype}</dd>
   </div>
 
   <div class="control-group">
-    <dt>Attached To</dt>
+    <dt><g:annotatedLabel owner="${d}" property="attachedTo">Attached To</g:annotatedLabel></dt>
     <dd>
       <table class="table table-striped table-bordered">
         <thead>

@@ -34,7 +34,7 @@
 	<dl class="dl-horizontal">
 		<g:if test="${d.title != null}">
 			<div class="control-group">
-				<dt>Title</dt>
+				<dt><g:annotatedLabel owner="${d}" property="title">Title</g:annotatedLabel></dt>
 				<dd>
 					<g:link controller="resource" action="show"
 						id="${d.title.class.name+':'+d.title?.id}">
@@ -46,7 +46,7 @@
 
 		<g:if test="${d.pkg != null}">
 			<div class="control-group">
-				<dt>Package</dt>
+				<dt><g:annotatedLabel owner="${d}" property="package">Package</g:annotatedLabel></dt>
 				<dd>
 					<g:link controller="resource" action="show"
 						id="${d.pkg.class.name+':'+d.pkg?.id}">
@@ -58,7 +58,7 @@
 
 		<g:if test="${d.hostPlatform != null}">
 			<div class="control-group">
-				<dt>Platform</dt>
+				<dt><g:annotatedLabel owner="${d}" property="platform">Platform</g:annotatedLabel></dt>
 				<dd>
 					<g:link controller="resource" action="show"
 						id="${d.hostPlatform.class.name+':'+d.hostPlatform.id}">
@@ -69,7 +69,7 @@
 		</g:if>
 
 		<div class="control-group">
-			<dt>Status</dt>
+			<dt><g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel></dt>
 			<dd>
 				<g:xEditableRefData owner="${d}" field="status"
 					config="KBComponent.Status" />
@@ -77,21 +77,21 @@
 		</div>
 
 		<div class="control-group">
-			<dt>Internal ID</dt>
+			<dt><g:annotatedLabel owner="${d}" property="id">Internal ID</g:annotatedLabel></dt>
 			<dd>
 				${d.id}
 			</dd>
 		</div>
 
 		<div class="control-group">
-			<dt>Reference</dt>
+			<dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>
 			<dd>
 				<g:xEditable class="ipe" owner="${d}" field="reference" />
 			</dd>
 		</div>
 
 		<div class="control-group">
-			<dt>Short Code</dt>
+			<dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
 			<dd>
 				<g:xEditable class="ipe" owner="${d}" field="shortcode" />
 			</dd>
@@ -122,7 +122,7 @@
 		<div class="tab-pane" id="tippcoverage">
 			<dl class="dl-horizontal">
 				<div class="control-group">
-					<dt>Coverage</dt>
+					<dt><g:annotatedLabel owner="${d}" property="coverage">Coverage</g:annotatedLabel></dt>
 					<dd>
 						<table class="table table-striped">
 							<thead>
@@ -157,7 +157,7 @@
 				</div>
 
 				<div class="control-group">
-					<dt>Coverage Note</dt>
+					<dt><g:annotatedLabel owner="${d}" property="covergaeNote">Coverage Note</g:annotatedLabel></dt>
 					<dd>
 						<g:xEditable class="ipe" owner="${d}" field="coverageNote" />
 					</dd>
@@ -170,7 +170,7 @@
 
 			<dl class="dl-horizontal">
 				<div class="control-group">
-					<dt>Delayed OA ?</dt>
+					<dt><g:annotatedLabel owner="${d}" property="delayedOA">Delayed OA ?</g:annotatedLabel></dt>
 					<dd>
 						<g:xEditableRefData owner="${d}" field="delayedOA"
 							config="TitleInstancePackagePlatform.DelayedOA" />
@@ -178,14 +178,14 @@
 				</div>
 
 				<div class="control-group">
-					<dt>Delayed OA Embargo</dt>
+					<dt><g:annotatedLabel owner="${d}" property="delayedOAEmbargo">Delayed OA Embargo</g:annotatedLabel></dt>
 					<dd>
 						<g:xEditable class="ipe" owner="${d}" field="delayedOAEmbargo" />
 					</dd>
 				</div>
 
 				<div class="control-group">
-					<dt>Hybrid OA ?</dt>
+					<dt><g:annotatedLabel owner="${d}" property="hybridOA">Hybrid OA ?</g:annotatedLabel></dt>
 					<dd>
 						<g:xEditableRefData owner="${d}" field="hybridOA"
 							config="TitleInstancePackagePlatform.HybridOA" />
@@ -193,7 +193,7 @@
 				</div>
 
 				<div class="control-group">
-					<dt>Hybrid OA URL</dt>
+					<dt><g:annotatedLabel owner="${d}" property="hybridOAUrl">Hybrid OA URL</g:annotatedLabel></dt>
 					<dd>
 						<g:xEditable class="ipe" owner="${d}" field="hybridOAUrl" />
 					</dd>
@@ -217,14 +217,14 @@
 				<dl class="dl-horizontal">
 
 					<div class="control-group">
-						<dt>Host Platform URL</dt>
+						<dt><g:annotatedLabel owner="${d}" property="url">Host Platform URL</g:annotatedLabel></dt>
 						<dd>
 							<g:xEditable class="ipe" owner="${d}" field="url" />
 						</dd>
 					</div>
 
 					<div class="control-group">
-						<dt>Format</dt>
+						<dt><g:annotatedLabel owner="${d}" property="format">Format</g:annotatedLabel></dt>
 						<dd>
 							<g:xEditableRefData owner="${d}" field="format"
 								config="TitleInstancePackagePlatform.Format" />
@@ -232,7 +232,7 @@
 					</div>
 
 					<div class="control-group">
-						<dt>Payment Type</dt>
+						<dt><g:annotatedLabel owner="${d}" property="paymentType">Payment Type</g:annotatedLabel></dt>
 						<dd>
 							<g:xEditableRefData owner="${d}" field="paymentType"
 								config="TitleInstancePackagePlatform.PaymentType" />

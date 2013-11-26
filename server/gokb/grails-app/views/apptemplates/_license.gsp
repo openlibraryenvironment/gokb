@@ -9,17 +9,17 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
-      <dt>License URL</dt>
+      <dt><g:annotatedLabel owner="${d}" property="licenseURL">License URL</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="url"/></dd>
     </div>
 
     <div class="control-group">
-      <dt>License Doc</dt>
+      <dt><g:annotatedLabel owner="${d}" property="licenseDoc">License Doc</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="file"/></dd>
     </div>
 
     <div class="control-group">
-      <dt>License Type</dt>
+      <dt><g:annotatedLabel owner="${d}" property="licenseType">License Type</g:annotatedLabel></dt>
       <dd><g:xEditableRefData owner="${d}" field="type" config='License.Type' /></dd>
     </div>
   </dl>

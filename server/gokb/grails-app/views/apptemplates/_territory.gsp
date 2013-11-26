@@ -9,7 +9,7 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
-      <dt>Territory Name</dt>
+      <dt><g:annotatedLabel owner="${d}" property="name">Territory Name</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
     </div>
 

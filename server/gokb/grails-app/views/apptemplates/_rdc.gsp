@@ -4,17 +4,17 @@
 <h1>Refdata Category: ${d.desc}</h1>
 <dl class="dl-horizontal">
   <div class="control-group">
-    <dt>Internal Id</dt>
+    <dt><g:annotatedLabel owner="${d}" property="id">Internal Id</g:annotatedLabel></dt>
     <dd>${d.id?:'New record'}</dd>
   </div>
   <div class="control-group">
-    <dt>Category Name / Description</dt>
+    <dt><g:annotatedLabel owner="${d}" property="description">Category Name / Description</g:annotatedLabel></dt>
     <dd><g:xEditable class="ipe" owner="${d}" field="desc">${d.desc}</g:xEditable></dd>
   </div>
 
 <g:if test="${d.id != null}">
   <div class="control-group">
-    <dt>Values</dt>
+    <dt><g:annotatedLabel owner="${d}" property="values">Values</g:annotatedLabel></dt>
     <dd>
       <table class="table table-bordered">
         <thead>
@@ -36,7 +36,7 @@
 
       <hr/>
 
-      <h4>Add refdata value</h4>
+      <h4><g:annotatedLabel owner="${d}" property="addRD">Add refdata value</g:annotatedLabel></h4>
       <dl class="dl-horizontal">
         <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
           <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>

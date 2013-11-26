@@ -8,27 +8,27 @@
   <dl class="dl-horizontal">
 
     <div class="control-group">
-      <dt>Name</dt>
+      <dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
     </div>
 
     <div class="control-group">
-      <dt>Status</dt>
+      <dt><g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel></dt>
       <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
     </div>
 
     <div class="control-group">
-      <dt>Internal ID</dt>
+      <dt><g:annotatedLabel owner="${d}" property="internalId">Internal ID</g:annotatedLabel></dt>
       <dd>${d.id}</dd>
     </div>
 
     <div class="control-group">
-      <dt>Reference</dt>
+      <dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="reference"/></dd>
     </div>
 
     <div class="control-group">
-      <dt>Short Code</dt>
+      <dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
     </div>
 
@@ -47,13 +47,13 @@
         <dl class="dl-horizontal">
       
           <div class="control-group">
-            <dt>Mission</dt>
+            <dt><g:annotatedLabel owner="${d}" property="mission">Mission</g:annotatedLabel></dt>
             <dd><g:xEditableRefData owner="${d}" field="mission" config='Org.Mission' /></dd>
           </div>
       
       
           <div class="control-group">
-            <dt>Roles</dt>
+            <dt><g:annotatedLabel owner="${d}" property="roles">Roles</g:annotatedLabel></dt>
             <dd>
               <g:if test="${d.id != null}">
                 <ul>
@@ -77,7 +77,7 @@
           </div>
 
           <div class="control-group">
-            <dt>Tags</dt>
+            <dt><g:annotatedLabel owner="${d}" property="tags">Tags</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
                 <thead>
@@ -99,7 +99,7 @@
           </div>
 
           <div class="control-group">
-            <dt>Alternate Names</dt>
+            <dt><g:annotatedLabel owner="${d}" property="alternateNames">Alternate Names</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
                 <thead>
@@ -124,7 +124,7 @@
                 </tbody>
               </table>
 
-              <h4>Add Variant Name</h4>
+              <h4><g:annotatedLabel owner="${d}" property="addVariantName">Add Variant Name</g:annotatedLabel></h4>
               <dl class="dl-horizontal">
                 <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
                   <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
@@ -142,7 +142,7 @@
 
       
           <div class="control-group">
-            <dt>IDs</dt>
+            <dt><g:annotatedLabel owner="${d}" property="ids">IDs</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
@@ -152,7 +152,7 @@
 
           <g:if test="${d.parent != null}">
             <div class="control-group">
-              <dt>Parent</dt>
+              <dt><g:annotatedLabel owner="${d}" property="parent">Parent</g:annotatedLabel></dt>
               <dd>
                 <g:link controller="resource" action="show"
                   id="${d.parent.getClassName()+':'+d.parent.id}">
@@ -163,7 +163,7 @@
           </g:if>
       
           <g:if test="${d.children?.size() > 0}">
-            <dt>Children</dt>
+            <dt><g:annotatedLabel owner="${d}" property="children">Children</g:annotatedLabel></dt>
             <dd>
               <ul>
                 <g:each in="${d.children}" var="c">
@@ -191,7 +191,7 @@
         <dl class="dl-horizontal">
 
           <div class="control-group">
-            <dt>Offices</dt>
+            <dt><g:annotatedLabel owner="${d}" property="offices">Offices</g:annotatedLabel></dt>
             <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
@@ -200,7 +200,7 @@
           </div>
 
          <div class="control-group">
-            <dt>Licenses</dt>
+            <dt><g:annotatedLabel owner="${d}" property="licenses">Licenses</g:annotatedLabel></dt>
             <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
@@ -209,7 +209,7 @@
           </div>
 
          <div class="control-group">
-            <dt>Platforms</dt>
+            <dt><g:annotatedLabel owner="${d}" property="platforms">Platforms</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
@@ -218,7 +218,7 @@
           </div>
 
          <div class="control-group">
-            <dt>Titles</dt>
+            <dt><g:annotatedLabel owner="${d}" property="titles">Titles</g:annotatedLabel></dt>
             <dd>
               <g:render template="combosByType" 
                         contextPath="../apptemplates" 
@@ -229,7 +229,7 @@
           </div>
 
          <div class="control-group">
-            <dt>Packages</dt>
+            <dt><g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
@@ -238,7 +238,7 @@
           </div>
 
          <div class="control-group">
-            <dt>Identifiers</dt>
+            <dt><g:annotatedLabel owner="${d}" property="identifiers">Identifiers</g:annotatedLabel></dt>
             <dd>
               <g:render template="combosByType" 
                         contextPath="../apptemplates" 
@@ -259,9 +259,6 @@
 
   </div>
 </div>
-
-
-
 <script language="JavaScript">
   $(document).ready(function() {
 
