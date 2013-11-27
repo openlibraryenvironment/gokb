@@ -7,8 +7,8 @@
   </head>
   <body class="" >
     <g:if test="${displayobj.respondsTo('availableActions')}">
-  	  <div class="pull-right well" id="actionControls">
-  	  	<g:form controller="workflow" action="action" method="post" >
+        <div class="pull-right well" id="actionControls">
+  	<g:form controller="workflow" action="action" method="post"  class='action-form' >
           <h4>Available actions</h4>
           <select id="selectedAction" name="selectedBulkAction">
             <option value="">-- Select an action to perform --</option>
@@ -18,6 +18,7 @@
           </select>
           <input type="hidden" name="bulk:${displayobj.class.name}:${displayobj.id}" value="true" />
           <button type="submit" class="btn btn-primary">Action</button>
+          <input type="submit"/>
         </g:form>
       </div>
     </g:if>
