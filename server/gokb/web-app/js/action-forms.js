@@ -95,32 +95,29 @@ if (typeof jQuery !== 'undefined') {
         
         // The button.
         var button = $(this);
-        
+          
         // Prevent the click bubbling through to eventually submitting the form.
         event.preventDefault();
         
         // Selected option.
         var opt = $('#selectedBulkAction option:selected, #selectedAction option:selected');
+          
+        // We need to confirm these actions.
+        var text = opt.text();
         
-        if (opt.attr('value').indexOf("method::") == 0) {
-          
-          // We need to confirm these actions.
-          var text = opt.text();
-          
-          // Confirm.
-          gokb.confirm ({
-            text: "Are you sure you with to perform the action " + opt.text() +
-              " for the selected resource(s)?",
-            confirmButton: "Yes I am",
-            cancelButton: "No",
-            confirm: function(button) {
-              
-              // Submit the form that is attached to the dropdown.
-              button.closest("form").submit();
-            },
-            cancel: function(button) { /* Just close */ }
-          });
-        }
+        // Confirm.
+        gokb.confirm ({
+          text: "Are you sure you with to perform the action " + opt.text() +
+            " for the selected resource(s)?",
+          confirmButton: "Yes I am",
+          cancelButton: "No",
+          confirm: function() {
+            
+            // Submit the form that is attached to the dropdown.
+            button.closest("form").submit();
+          },
+          cancel: function() { /* Just close */ }
+        });
         
         // Return false.
         return false;
