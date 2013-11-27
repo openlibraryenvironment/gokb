@@ -69,7 +69,7 @@ class AnnotationTagLib {
     attr.each { att, val ->
       out << " ${att}=\"${val}\" "
     }
-    out << ">" + body() + "</${element}>"
+    out << ">" + body() + " <i class='icon-info-sign'></i></${element}>"
 
     // Output the annotation if we should.
     if (show_annotation) {
