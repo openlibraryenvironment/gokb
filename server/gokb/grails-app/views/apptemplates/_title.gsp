@@ -63,8 +63,9 @@
           </div>
       
           <div class="control-group">
-            <dt><g:annotatedLabel owner="${d}" property="alternateTitles">Alternate Titles</g:annotatedLabel>
-            <button class="hidden-license-details btn" data-toggle="collapse" data-target="#collapseableAddTitle"><i class="icon-plus"></i></button></dt>
+            <dt>
+              <g:annotatedLabel owner="${d}" property="alternateTitles">Alternate Titles</g:annotatedLabel>
+            </dt>
             <dd>
               <table class="table table-striped table-bordered">
                 <thead>
@@ -91,6 +92,7 @@
                   </g:each>
                 </tbody>
               </table>
+              <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddTitle" >Add new <i class="icon-plus"></i></button>
               <dl id="collapseableAddTitle" class="dl-horizontal collapse">
                 <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
                   <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
