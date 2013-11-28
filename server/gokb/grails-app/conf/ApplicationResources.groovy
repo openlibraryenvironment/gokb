@@ -4,6 +4,7 @@ modules = {
     dependsOn 'font-awesome'
     resource url:'js/jquery.confirm.min.js'
     resource url:'js/application.js'
+    resource url:'js/inline-content.js'
     resource url:'js/summernote.min.js'
     resource url:'css/summernote.css'
     resource url:'css/summernote-bs2.css'

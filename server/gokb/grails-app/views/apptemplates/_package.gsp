@@ -61,7 +61,7 @@
     </div>
 
     <div class="tab-pane" id="titledetails">
-      <g:link controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link>
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link>
       <div id="embtitles">
       </div>
     </div>
