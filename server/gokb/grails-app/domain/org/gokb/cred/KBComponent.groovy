@@ -184,6 +184,10 @@ abstract class KBComponent {
    */
   User lastUpdatedBy
 
+  /**
+   * The source for the record (Whatever it is)
+   */
+  Source source
 
 
   Set tags = []
