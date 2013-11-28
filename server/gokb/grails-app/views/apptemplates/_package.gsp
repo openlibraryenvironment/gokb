@@ -41,14 +41,6 @@
       <dd><g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /></dd>
     </div>
 
-    <table class="table table-bordered table-striped" style="clear: both">
-      <tbody>
-        <tr>
-          <td><g:link controller="search" action="index"
-              params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link></td>
-        </tr>
-      </tbody>
-    </table>
   </g:if>
 </dl>
 
@@ -56,6 +48,7 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
+    <li><a href="#titledetails" data-toggle="tab">Titles</a></li>
     <li><a href="#altnames" data-toggle="tab">Alt Names</a></li>
   </ul>
 
@@ -65,6 +58,12 @@
       <dl class="dl-horizontal">
         <g:render template="refdataprops" contextPath="../apptemplates" model="${[d:(d), rd:(rd), dtype:(dtype)]}" />
       </dl>
+    </div>
+
+    <div class="tab-pane" id="titledetails">
+      <g:link controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link>
+      <div id="embtitles">
+      </div>
     </div>
 
     <div class="tab-pane" id="altnames">
@@ -137,8 +136,8 @@
 
 <script language="JavaScript">
   $(document).ready(function() {
-
     $.fn.editable.defaults.mode = 'inline';
     $('.ipe').editable();
+    $('#embtitles').load('<g:createLink controller='search' action='embeddedSearch' params="${[qbe:'g:tipps', qp_pkg_id:d.id]}"/>');
   });
 </script>

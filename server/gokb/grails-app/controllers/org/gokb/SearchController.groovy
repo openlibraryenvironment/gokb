@@ -203,4 +203,7 @@ class SearchController {
       }
     }
   }
+
+  def embeddedSearch() {
+  }
 }
