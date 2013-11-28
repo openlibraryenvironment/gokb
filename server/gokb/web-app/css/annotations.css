@@ -2,6 +2,10 @@
   cursor:help;
 }
 
+.annotated .icon-info-sign {
+  color:#3D57A6;
+}
+
 div.annotation {
   display:none;
 }
