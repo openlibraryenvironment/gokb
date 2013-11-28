@@ -76,12 +76,14 @@
 			</dd>
 		</div>
 
+                <!--
 		<div class="control-group">
 			<dt><g:annotatedLabel owner="${d}" property="id">Internal ID</g:annotatedLabel></dt>
 			<dd>
 				${d.id}
 			</dd>
 		</div>
+                -->
 
 		<div class="control-group">
 			<dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>

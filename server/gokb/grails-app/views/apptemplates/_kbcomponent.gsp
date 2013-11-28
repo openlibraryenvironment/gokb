@@ -1,11 +1,13 @@
 <dl class="dl-horizontal">
 
+  <!--
   <div class="control-group">
     <dt><g:annotatedLabel owner="${d}" property="id">GoKB Internal Id</g:annotatedLabel></dt>
     <dd>
       ${d.id?:'New Record'}
     </dd>
   </div>
+  -->
 
   <div class="control-group">
     <dt><g:annotatedLabel owner="${d}" property="shortcode">GoKB Shortcode</g:annotatedLabel></dt> 

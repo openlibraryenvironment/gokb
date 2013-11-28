@@ -17,10 +17,12 @@
       <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
     </div>
 
+    <!--
     <div class="control-group">
       <dt><g:annotatedLabel owner="${d}" property="internalId">Internal ID</g:annotatedLabel></dt>
       <dd>${d.id}</dd>
     </div>
+    -->
 
     <div class="control-group">
       <dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>
