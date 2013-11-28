@@ -29,7 +29,8 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
-                  <g:each in="${session.userPereferences.mainMenuSections}" var="sec">
+                  <g:each in="${session.userPereferences.mainMenuSections}" var="secname,sec">
+                    <!--${secname} -->
                     <g:each in="${sec}" var="srch">
                       <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
                     </g:each>
