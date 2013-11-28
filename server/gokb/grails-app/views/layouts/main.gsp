@@ -100,9 +100,7 @@
 
     <div class="navbar-push"></div>
 
-    <div id="main-content">
-      <g:layoutBody/>
-    </div>
+    <g:layoutBody/>
 
   <div id="Footer">
       <div class="navbar navbar-footer">
