@@ -66,7 +66,7 @@
       </div>
 
       <g:if test="${displayobj != null}">
-        <div id="mainarea" class="span6">
+        <div id="resultsarea" class="span6">
           <div class="well">
 
             <div class="navbar">
