@@ -36,12 +36,9 @@
                 <td>
                   ${v.variantName}
                 </td>
-                <td><g:xEditableRefData owner="${v}" field="status"
-                    config='KBComponentVariantName.Status' /></td>
-                <td><g:xEditableRefData owner="${v}" field="variantType"
-                    config='KBComponentVariantName.VariantType' /></td>
-                <td><g:xEditableRefData owner="${v}" field="locale"
-                    config='KBComponentVariantName.Locale' /></td>
+                <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
+                <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
+                <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
               </tr>
             </g:each>
           </tbody>
