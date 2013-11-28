@@ -32,6 +32,11 @@
       <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
     </div>
 
+    <div class="control-group">
+      <dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
+      <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"/></dd>
+    </div>
+
   </dl>
 
   <ul id="tabs" class="nav nav-tabs">

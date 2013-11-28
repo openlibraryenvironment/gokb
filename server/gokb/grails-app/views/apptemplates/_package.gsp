@@ -17,6 +17,12 @@
     </div>
 
     <div class="control-group">
+      <dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
+      <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"/></dd>
+    </div>
+
+
+    <div class="control-group">
       <dt>
         <g:annotatedLabel owner="${d}" property="alternateNames">Alternate Names</g:annotatedLabel>
       </dt>
