@@ -24,7 +24,7 @@
         <td>
           <g:link controller='ajaxSupport' 
                   action='unlinkManyToMany' 
-                  params="${[__context:ctxoid,__property:property,__itemToRemove:rowoid]}">Unlink</g:link>
+                  params="${[__context:ctxoid,__property:property,__itemToRemove:rowoid]}">Delete</g:link>
         </td>
       </tr>
     </g:each>
