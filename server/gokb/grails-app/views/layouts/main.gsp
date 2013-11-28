@@ -30,9 +30,9 @@
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
                   <g:each in="${session.userPereferences.mainMenuSections}" var="secname,sec">
-                    <!-- ${secname} -->
+                    <!-- ${secname.toLowerCase()} -->
                     <g:each in="${sec}" var="srch">
-                      <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
+                      <li class="menu-${secname.toLowerCase()}"><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
                     </g:each>
                     <li class="divider"></li>
                   </g:each>
