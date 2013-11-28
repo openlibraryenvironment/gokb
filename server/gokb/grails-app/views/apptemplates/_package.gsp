@@ -62,8 +62,6 @@
 
     <div class="tab-pane" id="titledetails">
       <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link>
-      <div id="embtitles">
-      </div>
     </div>
 
     <div class="tab-pane" id="altnames">
@@ -138,6 +136,5 @@
   $(document).ready(function() {
     $.fn.editable.defaults.mode = 'inline';
     $('.ipe').editable();
-    $('#embtitles').load('<g:createLink controller='search' action='embeddedSearch' params="${[qbe:'g:tipps', qp_pkg_id:d.id]}"/>');
   });
 </script>
