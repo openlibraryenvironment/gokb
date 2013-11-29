@@ -443,4 +443,9 @@ class AjaxSupportController {
     }
     redirect(url: request.getHeader('referer'))
   }
+
+  def revoke() {
+    log.debug("Revoke: ${params}");
+    redirect(url: request.getHeader('referer'))
+  }
 }

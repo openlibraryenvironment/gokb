@@ -25,7 +25,14 @@
       <td>${ent.permission.pattern}</td>
       -->
       <td>${grailsApplication.config.permNames[ent.permission.mask]?.name}</td>
-      <td><g:link controller="ajaxSupport" action="revoke" params="${[:]}">Revoke</g:link>
+      <td>
+        <g:if test="${ent.sid instanceof org.springframework.security.acls.domain.PrincipalSid}">
+          <g:link controller="ajaxSupport" action="revoke" params="${[__context:'',user:ent.sid.principal,perm:ent.permission.mask]}">Revoke</g:link>
+        </g:if>
+        <g:else>
+          <g:link controller="ajaxSupport" action="revoke" params="${[__context:'',group:ent.sid.grantedAuthority,perm:ent.permission.mask]}">Revoke</g:link>
+        </g:else>
+      </td>
     </tr>
   </g:each>
 </table>
