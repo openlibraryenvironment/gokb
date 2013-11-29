@@ -1,15 +1,15 @@
 package org.gokb
 
 import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
-import com.k_int.ClassUtils
 import org.codehaus.groovy.grails.web.pages.GroovyPage
 import org.gokb.cred.Role
 import org.gokb.cred.User
-import org.hibernate.proxy.HibernateProxy
+
+import com.k_int.ClassUtils
 
 class AnnotationTagLib {
   static defaultEncodeAs = 'raw'
-  
+
   def springSecurityService
 
   private String getGspFilePath(GroovyPage page) {
@@ -24,6 +24,15 @@ class AnnotationTagLib {
     name
   }
 
+  /**
+   * Wraps the body in a container element and outputs an adjacent annotation if one should be output.
+   * 
+   * Any attributes supplied to the tag will also appear on the wrapper, apart from the ones below.
+   *
+   * @attr owner REQUIRED the owning object of the annotation
+   * @attr property REQUIRED the property name that we are to use for this annotation
+   * @attr element determines which HTML element should be used to wrap the body (Defaults to span)
+   */
   def annotatedLabel = { attributes, body ->
 
     // Set default attributes.
@@ -49,16 +58,16 @@ class AnnotationTagLib {
       // Get the label for the object property for this view.
       annotation = Annotation.getFor(owner, property, view)
     }
-    
+
     // Annotation required?
     User user = springSecurityService.currentUser
-    boolean isAdmin = user.getAuthorities().find { Role role -> 
+    boolean isAdmin = user.getAuthorities().find { Role role ->
       "ROLE_ADMIN".equalsIgnoreCase(role.authority)
     }
-    
+
     // Should the annotation be shown?
     boolean show_annotation = session.userPereferences.showInfoIcon && (isAdmin || annotation?.value != null)
-    
+
     // Add the necessary class if we need it.
     if ( show_annotation ) {
       attr['class'] = attr['class'] ? "${attr['class']} annotated" : "annotated"
@@ -73,29 +82,29 @@ class AnnotationTagLib {
 
     // Output the annotation if we should.
     if (show_annotation) {
-      
+
       // Map of lists of values.
       def ann_props = [:].withDefault {
         []
       }
-      
+
       // Add our props.
       ann_props['data-url'] << createLink(controller:'ajaxSupport', action: 'editableSetValue')
       ann_props['data-pk'] << "${ClassUtils.deproxy(annotation).class.name}:${annotation.id}"
       ann_props['data-name'] << "value"
       ann_props['class'] << 'annotation'
-      
+
       if (isAdmin) {
         // Add a title to direct admins to double click.
         ann_props['title'] << "Double-click to edit this annotation."
         ann_props['class'] << 'annotation-editable'
       }
-      
+
       if (attr['id']) {
         // Add an extra classes.
         ann_props['class'] << ["annotation-${attr['id']}", "annotation-${attr['id']}-editable"]
       }
-      
+
       if (!annotation.value) {
         ann_props['class'] << "annotation-empty"
       }
