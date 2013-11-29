@@ -1,8 +1,11 @@
 import org.gokb.cred.*
+import org.springframework.security.core.context.SecurityContextHolder as SCH
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 
 class UserDetailsFilters {
 
   def springSecurityService
+  def aclUtilService
 
   // grailsApplication.config.appDefaultPrefs
 
@@ -56,12 +59,18 @@ class UserDetailsFilters {
                 session.userPereferences.mainMenuSections.put(d.type.value, current_list)
                 //log.debug("Added new menu section for ${d.type.value}");
               }
-              
+
+              // Test permissions(Admin sees all anyway)
+              // boolean hasPermission(Authentication authentication, domainObject, Permission… permissions)
+              if ( ( aclUtilService.hasPermission(SCH.context.authentication, d, org.springframework.security.acls.domain.BasePermission.READ ) ) ||
+                   ( SpringSecurityUtils.ifAnyGranted('ROLE_ADMIN') ) ) {
+ 
               // Find any searches for that domain that the user has access to and add them to the menu section
-              def searches_for_this_domain = grailsApplication.config.globalSearchTemplates.findAll{it.value.baseclass==d.dcName}
-              searches_for_this_domain.each {
-                //log.debug("Adding search for ${it.key} - ${it.value.baseclass}");
-                current_list[it.key] = it.value
+                def searches_for_this_domain = grailsApplication.config.globalSearchTemplates.findAll{it.value.baseclass==d.dcName}
+                searches_for_this_domain.each {
+                  //log.debug("Adding search for ${it.key} - ${it.value.baseclass}");
+                  current_list[it.key] = it.value
+                }
               }
             }
           }

@@ -54,7 +54,7 @@ class User {
   }
 
   protected void encodePassword() {
-    log.debug("Encoding password: ${password} (This should be plaintext at this stage)")
+    // log.debug("Encoding password: ${password} (This should be plaintext at this stage)")
     password = springSecurityService.encodePassword(password)
   }
 
