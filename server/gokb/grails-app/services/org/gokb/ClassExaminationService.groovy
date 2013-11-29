@@ -19,7 +19,7 @@ class ClassExaminationService {
 	
 	// Let's append a list of refdata properties.
 	GrailsDomainClass the_class = grailsApplication.getArtefact('Domain', className)
-	log.debug("Examining ${className} for refdata properties.")
+	// log.debug("Examining ${className} for refdata properties.")
 	
 	// The surent class pointer.
 	Class currentClass = the_class.getClazz()
@@ -35,7 +35,7 @@ class ClassExaminationService {
 		  String title = GrailsNameUtils.getNaturalName(prop.getName())
 		  String key = "${prop.getDeclaringClass().getSimpleName()}.${GrailsNameUtils.getClassName(prop.getName())}"
 		  refdata_props[key] = [title:(title), name: prop.getName()]
-		  log.debug ("\tFound ${key} = ${refdata_props[key]}.")
+		  // log.debug ("\tFound ${key} = ${refdata_props[key]}.")
 		}
 	  }
 	  

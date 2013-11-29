@@ -19,7 +19,6 @@ class SearchController {
   def index() {
     User user = springSecurityService.currentUser
 
-    log.debug("enter SearchController::index...");
     def result = [:]
 
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
