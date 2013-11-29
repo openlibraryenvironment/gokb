@@ -38,7 +38,11 @@
     <dt>Perm</dt>
     <dd>
       <select name="perm">
-        <option value="VIEW">View</option>
+        <option value="READ">READ</option>
+        <option value="WRITE">WRITE</option>
+        <option value="ADMINISTRATION">ADMINISTRATION</option>
+        <option value="DELETE">DELETE</option>
+        <option value="CREATE">CREATE</option>
       </select>
     </dd>
     <dt>To</dt><dd><g:simpleReferenceTypedown name="grantee" baseClass="org.gokb.cred.User" /></dd>
@@ -49,7 +53,11 @@
     <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
     <dd>
       <select name="perm">
-        <option value="VIEW">View</option>
+        <option value="READ">READ</option>
+        <option value="WRITE">WRITE</option>
+        <option value="ADMINISTRATION">ADMINISTRATION</option>
+        <option value="DELETE">DELETE</option>
+        <option value="CREATE">CREATE</option>
       </select>
     </dd>
     <dt>To</dt><dd><g:simpleReferenceTypedown name="grantee" baseClass="org.gokb.cred.Role" /></dd>
