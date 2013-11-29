@@ -18,8 +18,11 @@
 
 .dl-horizontal dt {
 	width:200px;
+	clear:both;
+  margin-bottom: 10px;
 }
 
 .dl-horizontal dd {
   margin-left: 220px;
+  margin-bottom: 10px;
 }
