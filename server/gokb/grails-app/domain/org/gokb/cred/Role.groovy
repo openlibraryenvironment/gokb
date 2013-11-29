@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import org.springframework.aop.aspectj.RuntimeTestWalker.ThisInstanceOfResidueTestVisitor;
+
 class Role {
 
 	String authority
@@ -31,6 +33,16 @@ class Role {
     }
 
     result
+  }
+  
+  @Override
+  public boolean equals (Object obj) {
+    return obj?.id?.equals(id)
+  }
+  
+  @Override
+  public String toString () {
+    return authority;
   }
 
 }
