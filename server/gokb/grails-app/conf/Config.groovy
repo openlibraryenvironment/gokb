@@ -592,7 +592,8 @@ globalSearchTemplates = [
 					prompt:'Content Provider',
 					qparam:'qp_cp',
 					placeholder:'Content Provider',
-					contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider']
+					contextTree:['ctxtp':'nested', 'ctxnm':'pkg',
+                                                     children:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'provider']]
 				],
 				//          [
 				//            prompt:'Content Provider',

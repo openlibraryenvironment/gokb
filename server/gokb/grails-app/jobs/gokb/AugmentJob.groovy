@@ -12,7 +12,6 @@ class AugmentJob {
   }
 
   def execute() {
-    log.debug("Not doing augment for now");
   }
 
   def aug() {

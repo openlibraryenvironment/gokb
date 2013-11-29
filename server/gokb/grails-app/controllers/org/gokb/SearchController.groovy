@@ -174,6 +174,13 @@ class SearchController {
       tree.each { contextTree ->
   
           switch ( contextTree.ctxtp ) {
+
+            case 'nested':
+              qry."${contextTree.ctxnm}" {
+                processContextTree(qry,contextTree.children, value, paramdef, the_class);
+              }
+              break;
+
             case 'filter':
     
               // Filters work in the same way as queries,
@@ -197,6 +204,8 @@ class SearchController {
                  qry.add(contextTree.prop, contextTree.comparator, the_value)
               }
               
+              break;
+            default:
               break;
           }
       }
