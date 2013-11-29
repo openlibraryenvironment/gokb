@@ -7,11 +7,20 @@ import org.gokb.cred.User
 
 import com.k_int.ClassUtils
 
+/**
+ * @author Steve Osguthorpe
+ * 
+ * Adds an annotation to some HTML in a bootstrap popover.
+ */
+
 class AnnotationTagLib {
   static defaultEncodeAs = 'raw'
-
   def springSecurityService
 
+  /**
+   * @param page The GSP page to use
+   * @return the path minus the path to the views folder if present.
+   */
   private String getGspFilePath(GroovyPage page) {
     String name = page.getGroovyPageFileName()
     int index = name.lastIndexOf(GrailsResourceUtils.VIEWS_DIR_PATH)
@@ -31,7 +40,7 @@ class AnnotationTagLib {
    *
    * @attr owner REQUIRED the owning object of the annotation
    * @attr property REQUIRED the property name that we are to use for this annotation
-   * @attr element determines which HTML element should be used to wrap the body (Defaults to span)
+   * @attr element [optional] determines which HTML element should be used to wrap the body (Defaults to span)
    */
   def annotatedLabel = { attributes, body ->
 
