@@ -20,11 +20,14 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning">${d.variantNames?.size()}</span></a></li>
+    <li><a href="#ids" data-toggle="tab">IDs <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
     <li><a href="#lists" data-toggle="tab">Lists</a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
-    <li><a href="#status" data-toggle="tab">Status</a></li>
+    <li><a href="#offices" data-toggle="tab">Offices <span class="badge badge-warning">${d.offices?.size()}</span></a></li>
   </ul>
+
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="orgdetails">
       <g:if test="${d.id != null}">
@@ -71,6 +74,12 @@
                 </tbody>
               </table>
             </dd>
+        </dl>
+      </g:if>
+    </div>
+    <div class="tab-pane" id="altnames">
+      <g:if test="${d.id != null}">
+        <dl class="dl-horizontal">
             <dt><g:annotatedLabel owner="${d}" property="alternateNames">Alternate Names</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
@@ -110,6 +119,12 @@
               </dl>
 
             </dd>
+        </dl>
+      </g:if>
+    </div>
+    <div class="tab-pane" id="ids">
+      <g:if test="${d.id != null}">
+        <dl>
             <dt><g:annotatedLabel owner="${d}" property="ids">IDs</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
@@ -152,7 +167,7 @@
       <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
     </div>
 
-    <div class="tab-pane" id="lists">
+    <div class="tab-pane" id="offices">
         <dl class="dl-horizontal">
             <dt><g:annotatedLabel owner="${d}" property="offices">Offices</g:annotatedLabel></dt>
             <dd class="well">
@@ -160,6 +175,11 @@
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
             </dd>
+        </dl>
+    </div>
+
+    <div class="tab-pane" id="lists">
+        <dl class="dl-horizontal">
             <dt><g:annotatedLabel owner="${d}" property="licenses">Licenses</g:annotatedLabel></dt>
             <dd class="well">
               <g:render template="comboList" 
@@ -186,25 +206,13 @@
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']],targetClass:'org.gokb.cred.Package']}" />
             </dd>
-            <dt><g:annotatedLabel owner="${d}" property="identifiers">Identifiers</g:annotatedLabel></dt>
-            <dd>
-              <g:render template="combosByType" 
-                        contextPath="../apptemplates" 
-                        model="${[d:d, property:'ids', cols:[[expr:'toComponent.namespace.value',
-                                                                   colhead:'Namespace'],
-                                                             [expr:'toComponent.value',
-                                                                   colhead:'ID',
-                                                                   action:'link']], direction:'in']}" />
-            </dd>
 
         </dl>
     </div>
 
-    <div class="tab-pane" id="status">
-      <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
-    </div>
 
   </div>
+  <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 <script type="text/javascript">
   $(document).ready(function() {
