@@ -2,22 +2,14 @@
 <r:require modules="editable"/>
 
 <dl class="dl-horizontal">
+  <dt><g:annotatedLabel owner="${d}" property="domainClassName">Domain Class Name</g:annotatedLabel></dt>
+  <dd><g:xEditable class="ipe" owner="${d}" field="dcName"/></dd>
 
-  <div class="control-group">
-    <dt><g:annotatedLabel owner="${d}" property="domainClassName">Domain Class Name</g:annotatedLabel></dt>
-    <dd><g:xEditable class="ipe" owner="${d}" field="dcName"/></dd>
-  </div>
+  <dt><g:annotatedLabel owner="${d}" property="displayName">Display Name</g:annotatedLabel></dt>
+  <dd><g:xEditable class="ipe" owner="${d}" field="displayName"/></dd>
 
-  <div class="control-group">
-    <dt><g:annotatedLabel owner="${d}" property="displayName">Display Name</g:annotatedLabel></dt>
-    <dd><g:xEditable class="ipe" owner="${d}" field="displayName"/></dd>
-  </div>
-
-  <div class="control-group">
-    <dt><g:annotatedLabel owner="${d}" property="type">Type/Category</g:annotatedLabel></dt>
-    <dd><g:xEditableRefData owner="${d}" field="type" config='DCType' /></dd>
-  </div>
-
+  <dt><g:annotatedLabel owner="${d}" property="type">Type/Category</g:annotatedLabel></dt>
+  <dd><g:xEditableRefData owner="${d}" field="type" config='DCType' /></dd>
 </dl>
 
 <div id="content">
