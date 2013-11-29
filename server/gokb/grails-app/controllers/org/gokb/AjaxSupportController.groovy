@@ -446,6 +446,33 @@ class AjaxSupportController {
 
   def revoke() {
     log.debug("Revoke: ${params}");
+
+    def dc = genericOIDService.resolveOID(params.__context)
+    def perm_to_revoke = null
+    switch ( params.perm?.toUpperCase() ) {
+      case 'READ':
+        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.READ;
+        break;
+      case 'WRITE':
+        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.WRITE;
+        break;
+      case 'ADMINISTRATION':
+        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.ADMINISTRATION;
+        break;
+      case 'DELETE':
+        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.DELETE;
+        break;
+      case 'CREATE':
+        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.CREATE;
+        break;
+    }
+
+    if ( ( dc != null ) && ( perm_to_revoke != null ) ) {
+      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
+      log.debug("Revoking ${perm_to_revoke} from ${dc} for ${params.grantee}");
+      aclUtilService.deletePermission(dc, params.grantee, perm_to_revoke);
+    }
+
     redirect(url: request.getHeader('referer'))
   }
 }
