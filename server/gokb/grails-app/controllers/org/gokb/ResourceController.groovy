@@ -1,11 +1,8 @@
 package org.gokb
 
 import grails.plugins.springsecurity.Secured
-import grails.util.GrailsNameUtils;
 
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.gokb.cred.*
-import org.springframework.security.acls.model.NotFoundException
 
 class ResourceController {
 
