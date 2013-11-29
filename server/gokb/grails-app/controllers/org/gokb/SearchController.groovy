@@ -176,9 +176,11 @@ class SearchController {
           switch ( contextTree.ctxtp ) {
 
             case 'nested':
-              qry."${contextTree.ctxnm}" {
+              def newclos = {
                 processContextTree(qry,contextTree.children, value, paramdef, the_class);
               }
+              newclos.delegate = qry
+              qry."${contextTree.ctxnm}" newclos
               break;
 
             case 'filter':
