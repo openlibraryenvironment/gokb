@@ -6,39 +6,16 @@
 <div id="content">
 
   <dl class="dl-horizontal">
-
-    <div class="control-group">
       <dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
-    </div>
-
-    <div class="control-group">
       <dt><g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel></dt>
       <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
-    </div>
-
-    <!--
-    <div class="control-group">
-      <dt><g:annotatedLabel owner="${d}" property="internalId">Internal ID</g:annotatedLabel></dt>
-      <dd>${d.id}</dd>
-    </div>
-    -->
-
-    <div class="control-group">
       <dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="reference"/></dd>
-    </div>
-
-    <div class="control-group">
       <dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
-    </div>
-
-    <div class="control-group">
       <dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
       <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"/></dd>
-    </div>
-
   </dl>
 
   <ul id="tabs" class="nav nav-tabs">
@@ -52,14 +29,8 @@
     <div class="tab-pane active" id="orgdetails">
       <g:if test="${d.id != null}">
         <dl class="dl-horizontal">
-      
-          <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="mission">Mission</g:annotatedLabel></dt>
             <dd><g:xEditableRefData owner="${d}" field="mission" config='Org.Mission' /></dd>
-          </div>
-      
-      
-          <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="roles">Roles</g:annotatedLabel></dt>
             <dd>
               <g:if test="${d.id != null}">
@@ -81,9 +52,6 @@
                 Record must be saved before roles can be edited.
               </g:else>
             </dd>
-          </div>
-
-          <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="tags">Tags</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
@@ -103,9 +71,6 @@
                 </tbody>
               </table>
             </dd>
-          </div>
-
-          <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="alternateNames">Alternate Names</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
@@ -145,20 +110,14 @@
               </dl>
 
             </dd>
-          </div>
-
-      
-          <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="ids">IDs</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'ids', cols:[[expr:'namespace.value',colhead:'Namespace'],[expr:'value',colhead:'Identifier']]]}" />
             </dd>
-          </div>
 
           <g:if test="${d.parent != null}">
-            <div class="control-group">
               <dt><g:annotatedLabel owner="${d}" property="parent">Parent</g:annotatedLabel></dt>
               <dd>
                 <g:link controller="resource" action="show"
@@ -166,7 +125,6 @@
                   ${d.parent.name}
                 </g:link>
               </dd>
-            </div>
           </g:if>
       
           <g:if test="${d.children?.size() > 0}">
@@ -196,35 +154,24 @@
 
     <div class="tab-pane" id="lists">
         <dl class="dl-horizontal">
-
-          <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="offices">Offices</g:annotatedLabel></dt>
             <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
             </dd>
-          </div>
-
-         <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="licenses">Licenses</g:annotatedLabel></dt>
             <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
             </dd>
-          </div>
-
-         <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="platforms">Platforms</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform']]]}" />
             </dd>
-          </div>
-
-         <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="titles">Titles</g:annotatedLabel></dt>
             <dd>
               <g:render template="combosByType" 
@@ -233,18 +180,12 @@
                                                                           colhead:'Title Name',
                                                                           action:'link']], direction:'in']}" />
             </dd>
-          </div>
-
-         <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']],targetClass:'org.gokb.cred.Package']}" />
             </dd>
-          </div>
-
-         <div class="control-group">
             <dt><g:annotatedLabel owner="${d}" property="identifiers">Identifiers</g:annotatedLabel></dt>
             <dd>
               <g:render template="combosByType" 
@@ -255,7 +196,6 @@
                                                                    colhead:'ID',
                                                                    action:'link']], direction:'in']}" />
             </dd>
-          </div>
 
         </dl>
     </div>
@@ -266,7 +206,7 @@
 
   </div>
 </div>
-<script language="JavaScript">
+<script type="text/javascript">
   $(document).ready(function() {
 
     $.fn.editable.defaults.mode = 'inline';

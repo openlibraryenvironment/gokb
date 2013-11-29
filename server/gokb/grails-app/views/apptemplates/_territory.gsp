@@ -7,15 +7,11 @@
 
 <g:if test="${d.id != null}">
   <dl class="dl-horizontal">
-
-    <div class="control-group">
-      <dt><g:annotatedLabel owner="${d}" property="name">Territory Name</g:annotatedLabel></dt>
-      <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
-    </div>
-
+	  <dt><g:annotatedLabel owner="${d}" property="name">Territory Name</g:annotatedLabel></dt>
+	  <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
   </dl>
 </g:if>
-<script language="JavaScript">
+<script type="text/javascript">
   $(document).ready(function() {
 
     $.fn.editable.defaults.mode = 'inline';
