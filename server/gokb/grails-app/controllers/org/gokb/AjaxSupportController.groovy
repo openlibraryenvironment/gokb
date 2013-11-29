@@ -150,6 +150,14 @@ class AjaxSupportController {
 
 
 
+  /**
+   *  addToCollection : Used to create a form which will add a new object to a named collection within the target object.
+   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") Of the context object
+   * @param __newObjectClass : The fully qualified class name of the instance to create
+   * @param __recip : Optional - If set, then new_object.recip will point to __context
+   * @param __addToColl : The name of the local set to which the new object should be added
+   * @param All other parameters are taken to be property names on newObjectClass and used to init the new instance.
+   */ 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
@@ -213,6 +221,16 @@ class AjaxSupportController {
         else if ( params.__addToColl ) {
           contextObj[params.__addToColl].add(new_obj)
           log.debug("Saving ${new_obj}");
+
+          if ( new_obj.save() ) {
+            log.debug("Saved OK");
+          }
+          else {
+            new_obj.errors.each { e ->
+              log.debug("Problem ${e}");
+            }
+          }
+
           if ( contextObj.save() ) {
             log.debug("Saved OK");
           }

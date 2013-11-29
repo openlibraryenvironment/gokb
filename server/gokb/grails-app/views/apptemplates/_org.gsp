@@ -173,9 +173,28 @@
             <dd class="well">
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
+                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
+
+                  <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddOffice" >Add new <i class="icon-plus"></i></button>
+                  <dl id="collapseableAddOffice" class="dl-horizontal collapse">
+                    <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+                      <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
+                      <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Office"/>
+                      <input type="hidden" name="__addToColl" value="offices"/>
+                      <dt>Office Name</dt><dd><input type="text" name="name"/></dd>
+                      <dt>Website</dt><dd><input type="text" name="website"/></dd>
+                      <dt>Email</dt><dd><input type="text" name="email"/></dd>
+                      <dt>Number</dt><dd><input type="text" name="phoneNumber"/></dd>
+                      <dt>Address 1</dt><dd><input type="text" name="addressLine1"/></dd>
+                      <dt>Address 2</dt><dd><input type="text" name="addressLine2"/></dd>
+                      <dt>City</dt><dd><input type="text" name="city"/></dd>
+                      <dt>Region</dt><dd><input type="text" name="region"/></dd>
+                      <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+                    </g:form>
+                  </dl>
             </dd>
         </dl>
+
     </div>
 
     <div class="tab-pane" id="lists">
