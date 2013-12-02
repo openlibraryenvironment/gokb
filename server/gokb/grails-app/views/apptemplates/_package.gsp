@@ -1,3 +1,6 @@
+<r:require modules="gokbstyle"/>
+<r:require modules="editable"/>
+
 <h1>
   ${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}
 </h1>
@@ -45,6 +48,24 @@
 
     <div class="tab-pane" id="titledetails">
       <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link>
+
+      <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+        <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
+        <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform"/>
+        <input type="hidden" name="__addToColl" value="tipps"/>
+        <dl class="dl-horizontal">
+          <dt>Title</td>
+          <dd>
+            <g:simpleReferenceTypedown name="title" baseClass="org.gokb.cred.TitleInstance" />
+          </dd>
+          <dt>Platform</td>
+          <dd>
+            <g:simpleReferenceTypedown name="hostPlatform" baseClass="org.gokb.cred.Platform" />
+          </dd>
+          <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+        </dl>
+      </g:form>
+
     </div>
 
     <div class="tab-pane" id="altnames">
