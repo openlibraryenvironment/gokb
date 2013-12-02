@@ -891,6 +891,7 @@ class DomainClassExtender {
         DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
         DomainClassExtender.addIsComboPropertyFor (domainClass)
         DomainClassExtender.addCombineInheritedMapFor (domainClass)
+        DomainClassExtender.addGetCardinalityFor (domainClass)
         DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
 
         // Extend to handle ComboMapped Properties.
@@ -907,6 +908,7 @@ class DomainClassExtender {
         DomainClassExtender.addGetAllComboPropertyNames (domainClass)
         DomainClassExtender.addGetAllComboTypeValues (domainClass)
         DomainClassExtender.addIsComboProperty (domainClass)
+        DomainClassExtender.addGetCardinality (domainClass)
         DomainClassExtender.addCombineInheritedMap (domainClass)
       }
     } else {
@@ -914,6 +916,7 @@ class DomainClassExtender {
       // Is KBCombonent class. Just add the static helper methods.
       DomainClassExtender.extendMapConstructor(domainClass)
       DomainClassExtender.addGetComboMapFor (domainClass)
+      DomainClassExtender.addGetCardinalityFor (domainClass)
       DomainClassExtender.addLookupComboMappingFor (domainClass)
       DomainClassExtender.addGetComboTypeValueFor (domainClass)
       DomainClassExtender.addGetAllComboPropertyDefinitionsFor (domainClass)
