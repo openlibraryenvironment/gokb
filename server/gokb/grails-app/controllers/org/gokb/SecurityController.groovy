@@ -4,6 +4,8 @@ import grails.plugins.springsecurity.Secured
 import org.gokb.cred.*
 
 class SecurityController {
+  
+  def genericOIDService
 
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -18,7 +20,7 @@ class SecurityController {
       log.debug("Attempt to retrieve ${params.id} and find associated roles.");
       def obj = genericOIDService.resolveOID(params.id)
       
-      if (obj instanceof User) {
+      if (obj && obj instanceof User) {
         User user = obj as User
                 
         // Current roles the user is a member of.
@@ -28,7 +30,7 @@ class SecurityController {
         result['currentRoles'] = [:] as Map<String, Boolean>
         
         // Go through all available roles.
-        Role.list().each { Role role
+        Role.all.each { Role role ->
 
           // Add to the available roles map.
           result['currentRoles'][role.authority] = currentRoles.contains(role)

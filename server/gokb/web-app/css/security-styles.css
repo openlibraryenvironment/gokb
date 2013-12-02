@@ -1,0 +1,27 @@
+.group-status {
+	font-size: 1.3em;
+	width: 1px;
+	cursor: default;
+}
+
+.group-status a {
+	text-decoration: none !important;
+}
+
+.group-status .icon-ok-sign {
+  color: #51A351;
+}
+
+.group-status .icon-ok-sign:hover:before {
+	color: #BD362F;
+  content: "";
+}
+
+.group-status .icon-remove-sign {
+  color: #BD362F;
+}
+
+.group-status .icon-remove-sign:hover:before {
+  color: #51A351;
+  content: "";
+}
