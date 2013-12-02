@@ -6,7 +6,7 @@
 <title>GOKb</title>
 </head>
 <body class="">
-	<div class="container-fluid well">
+	<div id="mainContent" class="container-fluid well">
 		<table class="table table-bordered">
 			<tr>
         <th>Status</th>
@@ -28,6 +28,10 @@
 				</tr>
 			</g:each>
 		</table>
+		<script type="text/javascript">
+	    // Delcaring the script here as it should get pulled in by the inline content functionality.
+	    alert("Script is working here.")
+		</script>
 	</div>
 </body>
 </html>
