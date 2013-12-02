@@ -1,5 +1,8 @@
 package org.gokb.cred
 
+import groovy.util.logging.Log4j;
+
+@Log4j
 class User {
 
   transient springSecurityService
@@ -38,6 +41,18 @@ class User {
   Set<Role> getAuthorities() {
     UserRole.findAllByUser(this).collect { it.role } as Set
   }
+  
+  transient boolean isAdmin() {
+    Role adminRole = Role.findByAuthority("ROLE_ADMIN")
+    
+    if (adminRole != null) {
+      return getAuthorities().contains(adminRole)
+    } else {
+      log.error( "Error loading admin role (ROLE_ADMIN)" )
+    }
+    
+    false
+  } 
 
   def beforeInsert() {
     encodePassword()
