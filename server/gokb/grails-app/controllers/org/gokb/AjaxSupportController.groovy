@@ -202,7 +202,7 @@ class AjaxSupportController {
             }
           }
         }
-
+ 
         // Need to do the right thing depending on who owns the relationship. If new obj
         // BelongsTo other, should be added to recip collection.
         if ( params.__recip ) {
@@ -240,6 +240,20 @@ class AjaxSupportController {
             }
           }
         } 
+
+        // Special combo processing
+        if ( new_obj.hasByCombo != null ) {
+          log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
+          new_obj.hasByCombo.keySet().each { hbc ->
+            log.debug("Testing ${hbc} -> ${params[hbc]}");
+            if ( params[hbc] ) {
+              log.debug("Setting ${hbc} to ${params[hbc]}");
+              new_obj[hbc] = resolveOID2(params[hbc])
+            }
+          }
+          new_obj.save()
+        }
+
 
       }
       else {
