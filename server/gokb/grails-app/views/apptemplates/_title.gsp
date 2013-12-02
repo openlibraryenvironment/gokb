@@ -20,7 +20,6 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <li><a href="#identifiers" data-toggle="tab">Identifiers</a></li>
-    <li><a href="#titlerels" data-toggle="tab">Title Relationships</a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
   </ul>
@@ -176,9 +175,6 @@
                 model="${[d:d, property:'ids', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']], direction:'out']}" />
-    </div>
-
-    <div class="tab-pane" id="titlerels">
     </div>
 
     <div class="tab-pane" id="addprops">
