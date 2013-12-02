@@ -30,7 +30,7 @@
 		</table>
 		<script type="text/javascript">
 	    // Delcaring the script here as it should get pulled in by the inline content functionality.
-	    alert("Script is working here.")
+	    // alert("Script is working here.")
 		</script>
 	</div>
 </body>
