@@ -526,6 +526,12 @@ globalSearchTemplates = [
 					placeholder:'Name or title of item',
 					contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
 				],
+				[
+					prompt:'Content Provider',
+					qparam:'qp_prov_id',
+					placeholder:'Content Provider Id',
+					contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher.id','type' : 'java.lang.Long']
+				],
 			],
 			qbeGlobals:[
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
@@ -594,18 +600,12 @@ globalSearchTemplates = [
 					placeholder:'Content Provider',
 					contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider']
 				],
-				//          [
-				//            prompt:'Content Provider',
-				//            qparam:'qp_cp_name',
-				//            placeholder:'Content Provider Name',
-				//            contextTree:['ctxtp' : 'qry', 'comparator' : 'ilike', 'prop' : 'pkg.provider.name']
-				//          ],
-				//          [
-				//            prompt:'Content Provider ID',
-				//            qparam:'qp_cp_id',
-				//            placeholder:'Content Provider ID',
-				//            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.provider.id', 'type' : 'java.lang.Long']
-				//          ],
+				[
+					prompt:'Title Publisher ID',
+					qparam:'qp_pub_id',
+					placeholder:'Title Publisher ID',
+					contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.publisher.id', 'type' : 'java.lang.Long']
+				],
 				[
 					prompt:'Package ID',
 					qparam:'qp_pkg_id',

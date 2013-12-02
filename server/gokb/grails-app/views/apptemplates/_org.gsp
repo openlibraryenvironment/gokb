@@ -22,7 +22,11 @@
     <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
     <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning">${d.variantNames?.size()}</span></a></li>
     <li><a href="#ids" data-toggle="tab">IDs <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
-    <li><a href="#lists" data-toggle="tab">Lists</a></li>
+    <li><a href="#licenses" data-toggle="tab">Licenses</a></li>
+    <li><a href="#packages" data-toggle="tab">Packages</a></li>
+    <li><a href="#titles" data-toggle="tab">Titles</a></li>
+    <li><a href="#tipps" data-toggle="tab">Tipps</a></li>
+    <li><a href="#platforms" data-toggle="tab">Platforms</a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
     <li><a href="#offices" data-toggle="tab">Offices <span class="badge badge-warning">${d.offices?.size()}</span></a></li>
@@ -79,7 +83,7 @@
     </div>
     <div class="tab-pane" id="altnames">
       <g:if test="${d.id != null}">
-        <dl class="dl-horizontal">
+        <dl>
             <dt><g:annotatedLabel owner="${d}" property="alternateNames">Alternate Names</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
@@ -160,17 +164,27 @@
     </div>
 
     <div class="tab-pane" id="addprops">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="addprops">Additional Properties</g:annotatedLabel></dt>
+            <dd>
       <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
+            </dd>
+        </dl>
     </div>
 
     <div class="tab-pane" id="review">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="reviewrequests">Review Requests</g:annotatedLabel></dt>
+            <dd>
       <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
+            </dd>
+        </dl>
     </div>
 
     <div class="tab-pane" id="offices">
-        <dl class="dl-horizontal">
+        <dl>
             <dt><g:annotatedLabel owner="${d}" property="offices">Offices</g:annotatedLabel></dt>
-            <dd class="well">
+            <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
@@ -191,41 +205,48 @@
                       <dt>Region</dt><dd><input type="text" name="region"/></dd>
                       <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
                     </g:form>
-                  </dl>
             </dd>
         </dl>
-
     </div>
 
-    <div class="tab-pane" id="lists">
-        <dl class="dl-horizontal">
+    <div class="tab-pane" id="licenses">
+        <dl>
             <dt><g:annotatedLabel owner="${d}" property="licenses">Licenses</g:annotatedLabel></dt>
-            <dd class="well">
+            <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
             </dd>
+        </dl>
+    </div>
+
+    <div class="tab-pane" id="platforms">
+        <dl>
             <dt><g:annotatedLabel owner="${d}" property="platforms">Platforms</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform']]]}" />
             </dd>
-            <dt><g:annotatedLabel owner="${d}" property="titles">Titles</g:annotatedLabel></dt>
-            <dd>
-              <g:render template="combosByType" 
-                        contextPath="../apptemplates" 
-                        model="${[d:d, property:'publishedTitles', cols:[[expr:'fromComponent.name',
-                                                                          colhead:'Title Name',
-                                                                          action:'link']], direction:'in']}" />
-            </dd>
+        </dl>
+    </div>
+
+    <div class="tab-pane" id="titles">
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:titles', qp_prov_id:d.id]" id="">Titles for this org</g:link>
+    </div>
+
+    <div class="tab-pane" id="tipps">
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pub_id:d.id]" id="">Tipps for this org</g:link>
+    </div>
+
+    <div class="tab-pane" id="packages">
+        <dl>
             <dt><g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']],targetClass:'org.gokb.cred.Package']}" />
             </dd>
-
         </dl>
     </div>
 
