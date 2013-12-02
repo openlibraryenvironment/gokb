@@ -15,6 +15,10 @@ class Annotation {
       replaceInCache(this)
     }
 
+    static mapping = {
+      value column:'value', type:'text'
+    }
+
     static constraints = {
       componentType (nullable:false,  blank:false)
       viewType      (nullable:false,  blank:false)
