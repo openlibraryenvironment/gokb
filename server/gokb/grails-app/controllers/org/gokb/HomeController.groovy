@@ -11,6 +11,11 @@ class HomeController {
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
+    redirect(controller:'search',action:'index',params:[qbe:'g:components'])
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def dash() { 
     def result=[:]
 
     User user = springSecurityService.currentUser

@@ -1,4 +1,6 @@
 import com.k_int.kbplus.*
+import com.k_int.ClassUtils
+import org.hibernate.proxy.HibernateProxy
 
 class InplaceTagLib {
 
@@ -12,8 +14,10 @@ class InplaceTagLib {
    *   class [optional] - additional classes
    */
   def xEditable = { attrs, body ->
+    
+    def owner = ClassUtils.deproxy(attrs.owner);
 
-    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
+    def oid = owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''}\""
@@ -40,30 +44,33 @@ class InplaceTagLib {
       out << body()
     }
     else {
-      if ( attrs.owner[attrs.field] && attrs.type=='date' ) {
+      if ( owner[attrs.field] && attrs.type=='date' ) {
         def sdf = new java.text.SimpleDateFormat(attrs.format?:'yyyy-MM-dd')
-        out << sdf.format(attrs.owner[attrs.field])
+        out << sdf.format(owner[attrs.field])
       }
       else {
-        out << attrs.owner[attrs.field]
+        out << owner[attrs.field]
       }
     }
     out << "</span>"
   }
 
   def xEditableRefData = { attrs, body ->
+
+    def owner = ClassUtils.deproxy( attrs.owner )
+
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
     def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.config,format:'json'])
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
-    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
+    def oid = owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def type = attrs.type ?: "select"
-   
+
     out << "<span>"
-   
+
     // Output an editable link
     out << "<span id=\"${id}\" class=\"xEditableManyToOne\" "
-    if ( ( attrs.owner != null ) && ( attrs.owner.id != null ) ) {
+    if ( ( owner != null ) && ( owner.id != null ) ) {
       out << "data-pk=\"${oid}\" "
     }
     else {
@@ -74,7 +81,7 @@ class InplaceTagLib {
 
     // Here we can register different ways of presenting object references. The most pressing need to be
     // outputting a span containing an icon for refdata fields.
-    out << renderObjectValue(attrs.owner[attrs.field])
+    out << renderObjectValue(owner[attrs.field])
 
     out << "</span></span>"
   }
@@ -102,9 +109,12 @@ class InplaceTagLib {
   }
   
   def xEditableManyToOne = { attrs, body ->
+    
+    def owner = ClassUtils.deproxy(attrs.owner)
+    
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
     def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.config,format:'json'])
-    def oid = ( ( attrs.owner != null ) && ( attrs.owner.id != null ) ) ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
+    def oid = ( ( owner != null ) && ( owner.id != null ) ) ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     out << "<a href=\"#\" id=\"${id}\" class=\"xEditableManyToOne\" data-pk=\"${oid}\" data-type=\"select\" data-name=\"${attrs.field}\" data-source=\"${data_link}\">"
     out << body()
@@ -122,20 +132,22 @@ class InplaceTagLib {
   def relationAutocomplete = { attrs, body ->
   }
   
-   def xEditableFieldNote = { attrs, body ->
-   
+  def xEditableFieldNote = { attrs, body ->
+    
+    def owner = ClassUtils.deproxy( attrs.owner )
+
     def data_link = createLink(controller:'ajaxSupport', action: 'setFieldTableNote')
-    data_link = data_link +"/"+attrs.owner.id +"?type=License"
-    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
+    data_link = data_link +"/"+owner.id +"?type=License"
+    def oid = owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def org = ""
     if (attrs.owner.getNote("${attrs.field}")){
-       org =attrs.owner.getNote("${attrs.field}").owner.content
+      org = owner.getNote("${attrs.field}").owner.content
     }
     else{
-       org = attrs.owner.getNote("${attrs.field}")
+      org = owner.getNote("${attrs.field}")
     }
-    
+
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''}\" data-type=\"textfield\" data-pk=\"${oid}\" data-name=\"${attrs.field}\" data-url=\"${data_link}\"  data-original-title=\"${org}\">"
     if ( body ) {
       out << body()
@@ -152,6 +164,7 @@ class InplaceTagLib {
    * user typing into the box. Takes advantage of refdataFind and refdataCreate methods on the domain class.
    */ 
   def simpleReferenceTypedown = { attrs, body ->
+    
     out << "<input type=\"hidden\" value=\"${attrs.value?:''}\" name=\"${attrs.name}\" data-domain=\"${attrs.baseClass}\" "
     if ( attrs.id ) {
       out << "id=\"${attrs.id}\" "
@@ -174,7 +187,10 @@ class InplaceTagLib {
   }
 
   def manyToOneReferenceTypedown = { attrs, body ->
-    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
+    
+    def owner = ClassUtils.deproxy(attrs.owner)
+    
+    def oid = attrs.owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
     out << "<a href=\"#\" data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "
@@ -183,7 +199,7 @@ class InplaceTagLib {
       out << "data-filter1=\"${attrs.filter1}\" "
     }
 
-    if ( attrs.owner?.id != null )
+    if ( owner?.id != null )
       out << "data-pk=\"${oid}\" "
 
     out << "data-type=\"select2\" data-name=\"${attrs.field}\" data-url=\"${update_link}\" >"
@@ -192,7 +208,10 @@ class InplaceTagLib {
   }
 
   def manyToOneReferenceTypedownOld = { attrs, body ->
-    def oid = attrs.owner.id != null ? "${attrs.owner.class.name}:${attrs.owner.id}" : ''
+    
+    def owner = ClassUtils.deproxy(attrs.owner)
+    
+    def oid = attrs.owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
     out << "<span data-domain=\"org.gokb.cred.Org\" id=\"${id}\" class=\"xEditableManyToOneS2\" data-pk=\"${oid}\" data-type=\"select2\" data-name=\"${attrs.field}\" data-value=\"\" data-url=\"${update_link}\" >"
@@ -211,7 +230,8 @@ class InplaceTagLib {
 
   def componentLink = { attrs, body ->
     if ( attrs.object != null ) {
-      def object_link = createLink(controller:'resource', action: 'show', id:"${attrs.object.class.name}:${attrs.object.id}")
+      def object = ClassUtils.deproxy(attrs.object)
+      def object_link = createLink(controller:'resource', action: 'show', id:"${object.class.name}:${object.id}")
       out << "<a href=\"${object_link}\">"
       out << body()
       out << "</a>"

@@ -6,54 +6,39 @@
 <div id="content">
 
   <dl class="dl-horizontal">
-
-    <div class="control-group">
-      <dt>Name</dt>
+      <dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="name"/></dd>
-    </div>
-
-    <div class="control-group">
-      <dt>Status</dt>
+      <dt><g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel></dt>
       <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
-    </div>
-
-    <div class="control-group">
-      <dt>Internal ID</dt>
-      <dd>${d.id}</dd>
-    </div>
-
-    <div class="control-group">
-      <dt>Reference</dt>
+      <dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="reference"/></dd>
-    </div>
-
-    <div class="control-group">
-      <dt>Short Code</dt>
+      <dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
-    </div>
-
+      <dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
+      <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"/></dd>
   </dl>
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
-    <li><a href="#lists" data-toggle="tab">Lists</a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning">${d.variantNames?.size()}</span></a></li>
+    <li><a href="#ids" data-toggle="tab">IDs <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
+    <li><a href="#licenses" data-toggle="tab">Licenses</a></li>
+    <li><a href="#packages" data-toggle="tab">Packages</a></li>
+    <li><a href="#titles" data-toggle="tab">Titles</a></li>
+    <li><a href="#tipps" data-toggle="tab">Tipps</a></li>
+    <li><a href="#platforms" data-toggle="tab">Platforms</a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
-    <li><a href="#status" data-toggle="tab">Status</a></li>
+    <li><a href="#offices" data-toggle="tab">Offices <span class="badge badge-warning">${d.offices?.size()}</span></a></li>
   </ul>
+
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="orgdetails">
       <g:if test="${d.id != null}">
         <dl class="dl-horizontal">
-      
-          <div class="control-group">
-            <dt>Mission</dt>
+            <dt><g:annotatedLabel owner="${d}" property="mission">Mission</g:annotatedLabel></dt>
             <dd><g:xEditableRefData owner="${d}" field="mission" config='Org.Mission' /></dd>
-          </div>
-      
-      
-          <div class="control-group">
-            <dt>Roles</dt>
+            <dt><g:annotatedLabel owner="${d}" property="roles">Roles</g:annotatedLabel></dt>
             <dd>
               <g:if test="${d.id != null}">
                 <ul>
@@ -74,10 +59,7 @@
                 Record must be saved before roles can be edited.
               </g:else>
             </dd>
-          </div>
-
-          <div class="control-group">
-            <dt>Tags</dt>
+            <dt><g:annotatedLabel owner="${d}" property="tags">Tags</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
                 <thead>
@@ -96,10 +78,13 @@
                 </tbody>
               </table>
             </dd>
-          </div>
-
-          <div class="control-group">
-            <dt>Alternate Names</dt>
+        </dl>
+      </g:if>
+    </div>
+    <div class="tab-pane" id="altnames">
+      <g:if test="${d.id != null}">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="alternateNames">Alternate Names</g:annotatedLabel></dt>
             <dd>
               <table class="table table-striped table-bordered">
                 <thead>
@@ -124,7 +109,7 @@
                 </tbody>
               </table>
 
-              <h4>Add Variant Name</h4>
+              <h4><g:annotatedLabel owner="${d}" property="addVariantName">Add Variant Name</g:annotatedLabel></h4>
               <dl class="dl-horizontal">
                 <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
                   <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
@@ -138,32 +123,31 @@
               </dl>
 
             </dd>
-          </div>
-
-      
-          <div class="control-group">
-            <dt>IDs</dt>
+        </dl>
+      </g:if>
+    </div>
+    <div class="tab-pane" id="ids">
+      <g:if test="${d.id != null}">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="ids">IDs</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'ids', cols:[[expr:'namespace.value',colhead:'Namespace'],[expr:'value',colhead:'Identifier']]]}" />
             </dd>
-          </div>
 
           <g:if test="${d.parent != null}">
-            <div class="control-group">
-              <dt>Parent</dt>
+              <dt><g:annotatedLabel owner="${d}" property="parent">Parent</g:annotatedLabel></dt>
               <dd>
                 <g:link controller="resource" action="show"
                   id="${d.parent.getClassName()+':'+d.parent.id}">
                   ${d.parent.name}
                 </g:link>
               </dd>
-            </div>
           </g:if>
       
           <g:if test="${d.children?.size() > 0}">
-            <dt>Children</dt>
+            <dt><g:annotatedLabel owner="${d}" property="children">Children</g:annotatedLabel></dt>
             <dd>
               <ul>
                 <g:each in="${d.children}" var="c">
@@ -180,89 +164,97 @@
     </div>
 
     <div class="tab-pane" id="addprops">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="addprops">Additional Properties</g:annotatedLabel></dt>
+            <dd>
       <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
+            </dd>
+        </dl>
     </div>
 
     <div class="tab-pane" id="review">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="reviewrequests">Review Requests</g:annotatedLabel></dt>
+            <dd>
       <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
+            </dd>
+        </dl>
     </div>
 
-    <div class="tab-pane" id="lists">
-        <dl class="dl-horizontal">
-
-          <div class="control-group">
-            <dt>Offices</dt>
-            <dd class="well">
+    <div class="tab-pane" id="offices">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="offices">Offices</g:annotatedLabel></dt>
+            <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
-            </dd>
-          </div>
+                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
 
-         <div class="control-group">
-            <dt>Licenses</dt>
-            <dd class="well">
+                  <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddOffice" >Add new <i class="icon-plus"></i></button>
+                  <dl id="collapseableAddOffice" class="dl-horizontal collapse">
+                    <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+                      <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
+                      <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Office"/>
+                      <input type="hidden" name="__addToColl" value="offices"/>
+                      <dt>Office Name</dt><dd><input type="text" name="name"/></dd>
+                      <dt>Website</dt><dd><input type="text" name="website"/></dd>
+                      <dt>Email</dt><dd><input type="text" name="email"/></dd>
+                      <dt>Number</dt><dd><input type="text" name="phoneNumber"/></dd>
+                      <dt>Address 1</dt><dd><input type="text" name="addressLine1"/></dd>
+                      <dt>Address 2</dt><dd><input type="text" name="addressLine2"/></dd>
+                      <dt>City</dt><dd><input type="text" name="city"/></dd>
+                      <dt>Region</dt><dd><input type="text" name="region"/></dd>
+                      <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+                    </g:form>
+            </dd>
+        </dl>
+    </div>
+
+    <div class="tab-pane" id="licenses">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="licenses">Licenses</g:annotatedLabel></dt>
+            <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
             </dd>
-          </div>
+        </dl>
+    </div>
 
-         <div class="control-group">
-            <dt>Platforms</dt>
+    <div class="tab-pane" id="platforms">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="platforms">Platforms</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform']]]}" />
             </dd>
-          </div>
+        </dl>
+    </div>
 
-         <div class="control-group">
-            <dt>Titles</dt>
-            <dd>
-              <g:render template="combosByType" 
-                        contextPath="../apptemplates" 
-                        model="${[d:d, property:'publishedTitles', cols:[[expr:'fromComponent.name',
-                                                                          colhead:'Title Name',
-                                                                          action:'link']], direction:'in']}" />
-            </dd>
-          </div>
+    <div class="tab-pane" id="titles">
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:titles', qp_prov_id:d.id]" id="">Titles for this org</g:link>
+    </div>
 
-         <div class="control-group">
-            <dt>Packages</dt>
+    <div class="tab-pane" id="tipps">
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pub_id:d.id]" id="">Tipps for this org</g:link>
+    </div>
+
+    <div class="tab-pane" id="packages">
+        <dl>
+            <dt><g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel></dt>
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
                         model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']],targetClass:'org.gokb.cred.Package']}" />
             </dd>
-          </div>
-
-         <div class="control-group">
-            <dt>Identifiers</dt>
-            <dd>
-              <g:render template="combosByType" 
-                        contextPath="../apptemplates" 
-                        model="${[d:d, property:'ids', cols:[[expr:'toComponent.namespace.value',
-                                                                   colhead:'Namespace'],
-                                                             [expr:'toComponent.value',
-                                                                   colhead:'ID',
-                                                                   action:'link']], direction:'in']}" />
-            </dd>
-          </div>
-
         </dl>
     </div>
 
-    <div class="tab-pane" id="status">
-      <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
-    </div>
 
   </div>
+  <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
-
-
-
-<script language="JavaScript">
+<script type="text/javascript">
   $(document).ready(function() {
 
     $.fn.editable.defaults.mode = 'inline';

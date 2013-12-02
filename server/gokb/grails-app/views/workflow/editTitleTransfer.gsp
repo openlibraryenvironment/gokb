@@ -48,7 +48,7 @@
               <tbody>
                 <g:each in="${tipps}" var="tipp">
                   <tr style="background-color: ${tipp.type=='NEW'?'#4DFF4D':'#FF4D4D'};">
-                    <td><g:if test="${tipp.type=='CURRENT'}"><input name="addto-${tipp.id}" type="checkbox" checked="true"/></g:if></td>
+                    <td><g:if test="${tipp.type=='CURRENT'}"><input name="addto-${tipp.id}" type="checkbox" checked="checked"/></g:if></td>
                     <td>${tipp.type}</td>
                     <td>${tipp.title.name}</td>
                     <td>${tipp.pkg.name}</td>
@@ -59,8 +59,8 @@
                     <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${tipp.endDate}"/></td>
                     <td>${tipp.endVolume}</td>
                     <td>${tipp.endIssue}</td>
-                    <td><g:if test="${tipp.type=='CURRENT'}"><input name="close-${tipp.id}" type="checkbox" checked="true"/></g:if></td>
-                    <td><input name="review-${tipp.id}" type="checkbox" checked="true"/></td>
+                    <td><g:if test="${tipp.type=='CURRENT'}"><input name="close-${tipp.id}" type="checkbox" checked="checked"/></g:if></td>
+                    <td><input name="review-${tipp.id}" type="checkbox" checked="checked"/></td>
                   </tr>
                 </g:each>
               </tbody>
@@ -70,23 +70,14 @@
               Use the following form to indicate the package and platform for new TIPPs. Select/Deselect TIPPS above to indicate
 
               <dl class="dl-horizontal">
-                <div class="control-group">
-                  <dt>New Package</dt>
-                  <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Package" baseClass="org.gokb.cred.Package"/></dd>
-                </div>
-  
-                <div class="control-group">
-                  <dt>New Platform</dt>
-                  <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Platform" baseClass="org.gokb.cred.Platform"/></dd>
-                </div>
-                <div class="control-group">
-                  <dt></dt>
-                  <dd><button type="submit" class="btn btn-primary" name="addTransferTipps" value="AddTipps">Add transfer tipps</button></dd>
-                </div>
+	              <dt>New Package</dt>
+	              <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Package" baseClass="org.gokb.cred.Package"/></dd>
+	              <dt>New Platform</dt>
+	              <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Platform" baseClass="org.gokb.cred.Platform"/></dd>
+	              <dt></dt>
+	              <dd><button type="submit" class="btn btn-primary" name="addTransferTipps" value="AddTipps">Add transfer tipps</button></dd>
               </dl>
- 
               <br/>
-
               <button type="submit" class="btn btn-primary" name="process" value="process">Process Transfer</button>
               <button type="submit" class="btn btn-danger" name="abandon" value="abandon">Abandon Transfer</button>
             </g:if>

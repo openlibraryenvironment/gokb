@@ -1,16 +1,16 @@
 <h1>Rule: [${d.scope}] : ${d.fingerprint}</h1>
 
 <dl>
-  <dt>Internal ID</dt>
+  <dt><g:annotatedLabel owner="${d}" property="id">Internal ID</g:annotatedLabel></dt>
   <dd>${d.id}</dd>
-  <dt>Description</dt>
+  <dt><g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel></dt>
   <dd>${d.description}</dd>
   <hr/>
-  <dt>Scope</dt>
+  <dt><g:annotatedLabel owner="${d}" property="scope">Scope</g:annotatedLabel></dt>
   <dd>${d.scope}</dd>
-  <dt>Rule Fingerprint</dt>
+  <dt><g:annotatedLabel owner="${d}" property="fingerprint">Rule Fingerprint</g:annotatedLabel></dt>
   <dd>${d.fingerprint}</dd>
-  <dt>Rule Text</dt>
+  <dt><g:annotatedLabel owner="${d}" property="rules">Rule Text</g:annotatedLabel></dt>
   <dd>${d.ruleJson}</dd>
 </dl>
 

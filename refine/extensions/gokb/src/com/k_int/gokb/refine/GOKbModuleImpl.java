@@ -3,6 +3,8 @@ package com.k_int.gokb.refine;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletConfig;
@@ -12,12 +14,12 @@ import org.apache.commons.collections.ExtendedProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.k_int.gokb.refine.commands.GerericProxiedCommand;
-import com.k_int.gokb.refine.functions.GenericMatchRegex;
-
 import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
+import com.google.refine.io.FileProjectManager;
+import com.k_int.gokb.refine.commands.GerericProxiedCommand;
+import com.k_int.gokb.refine.functions.GenericMatchRegex;
 
 import edu.mit.simile.butterfly.ButterflyModule;
 import edu.mit.simile.butterfly.ButterflyModuleImpl;
@@ -28,6 +30,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
 
     public static GOKbModuleImpl singleton;
     public static ExtendedProperties properties;
+    
+    private RefineWorkspace[] workspaces;
 
     public static final String VERSION = "1.7";
 
@@ -51,9 +55,6 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         extendModuleProperties();
         swapImportControllers();
 
-        // Output the url currently in use.
-        _logger.info("Using URL '" + getProperties().getString("api.url") + "'");
-
         // Add our proxied Commands from the config file.
         addProxiedCommands();
 
@@ -65,6 +66,83 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
 
         // Set the properties
         properties = singleton.getProperties();
+        
+        // Add the workspaces detailed in the properties file.
+        addWorkspaces();
+    }
+    
+    private void addWorkspaces () throws IOException {
+      
+      // Get the file-based project manager.
+      File current_ws = ((FileProjectManager)FileProjectManager.singleton).getWorkspaceDir();
+      
+      // Load the list from the properties file.
+      @SuppressWarnings("unchecked")
+      List<String> apis = properties.getList("api.entry");
+      
+      // Include local?
+      if (properties.getBoolean("localapi")) {
+        apis.addAll(0,
+          Arrays.asList(new String[]{
+            "Local", "local", "http://localhost:8080/gokb/api/"
+        }));
+      }
+      
+      // Check that the list length is even as each should be in pairs.
+      if (apis.size() % 3 != 0) {
+        _logger.error("APIs must be defined as name/folder_suffix/url tuples.");
+      } else {
+        
+        // The workspaces.
+        workspaces = new RefineWorkspace[apis.size() / 3];
+        
+        // Go through each group and add the file and URL.
+        for (int i=0; i<apis.size(); i+=3) {
+          
+          RefineWorkspace ws = new RefineWorkspace (
+            apis.get(i),
+            apis.get(i+2),
+            new File(current_ws.getCanonicalPath() + "_" + apis.get(i+1))
+          );
+          
+          // Add to the array.
+          workspaces[i/3] = ws;
+        }
+        
+        // Set active workspace.
+        if (workspaces.length > 0) setActiveWorkspace(0);
+      }
+    }
+    
+    private int currentWorkspaceId;
+    public void setActiveWorkspace(int workspace_id) {
+      
+      // Set the id. 
+      currentWorkspaceId = workspace_id;
+      
+      // Get the current WS.
+      RefineWorkspace currentWorkspace = workspaces[currentWorkspaceId];
+      
+      // First we need to save the current workspace.
+      FileProjectManager.singleton.save(true);
+      
+      // Now we re-init the project manager, with our new directory.
+      FileProjectManager.initialize(currentWorkspace.getWsFolder());
+      
+      _logger.info("Now using workspace '" + currentWorkspace.getName() + "' at URL '" +
+        currentWorkspace.getURL() + "'");
+    }
+    
+    public RefineWorkspace[] getWorkspaces() {
+      return workspaces;
+    }
+    
+    public String getCurrentWorkspaceURL() {
+      return workspaces[currentWorkspaceId].getURL();
+    }
+
+    public int getCurrentWorkspaceId () {
+      return currentWorkspaceId;
     }
 
     private void addProxiedCommands() {

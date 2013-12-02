@@ -526,6 +526,12 @@ globalSearchTemplates = [
 					placeholder:'Name or title of item',
 					contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
 				],
+				[
+					prompt:'Content Provider',
+					qparam:'qp_prov_id',
+					placeholder:'Content Provider Id',
+					contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher.id','type' : 'java.lang.Long']
+				],
 			],
 			qbeGlobals:[
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
@@ -592,20 +598,14 @@ globalSearchTemplates = [
 					prompt:'Content Provider',
 					qparam:'qp_cp',
 					placeholder:'Content Provider',
-					contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider']
+					contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider']
 				],
-				//          [
-				//            prompt:'Content Provider',
-				//            qparam:'qp_cp_name',
-				//            placeholder:'Content Provider Name',
-				//            contextTree:['ctxtp' : 'qry', 'comparator' : 'ilike', 'prop' : 'pkg.provider.name']
-				//          ],
-				//          [
-				//            prompt:'Content Provider ID',
-				//            qparam:'qp_cp_id',
-				//            placeholder:'Content Provider ID',
-				//            contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.provider.id', 'type' : 'java.lang.Long']
-				//          ],
+				[
+					prompt:'Title Publisher ID',
+					qparam:'qp_pub_id',
+					placeholder:'Title Publisher ID',
+					contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.publisher.id', 'type' : 'java.lang.Long']
+				],
 				[
 					prompt:'Package ID',
 					qparam:'qp_pkg_id',
@@ -633,9 +633,11 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				[heading:'TIPP', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+				[heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.title.class.name+\':\'+x.r.title.id'] ],
 				[heading:'Status', property:'status.value'],
-				[heading:'Package', property:'pkg.name']
+				[heading:'Package', property:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg.class.name+\':\'+x.r.pkg.id'] ],
+				[heading:'Platform', property:'hostPlatform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform.class.name+\':\'+x.r.hostPlatform.id'] ]
 			]
 		]
 	],
@@ -886,6 +888,14 @@ globalDisplayTemplates = [
 	'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
         'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
         'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
+]
+
+permNames = [
+    1 : [name:'Read', inst:org.springframework.security.acls.domain.BasePermission.READ],
+    2 : [name:'Write', inst:org.springframework.security.acls.domain.BasePermission.WRITE],
+    4 : [name:'Create', inst:org.springframework.security.acls.domain.BasePermission.CREATE],
+    8 : [name:'Delete', inst:org.springframework.security.acls.domain.BasePermission.DELETE],
+   16 : [name:'Administration', inst:org.springframework.security.acls.domain.BasePermission.ADMINISTRATION],
 ]
 
 grails.plugins.springsecurity.ui.password.minLength = 6

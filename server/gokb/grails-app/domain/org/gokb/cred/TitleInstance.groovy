@@ -79,7 +79,7 @@ class TitleInstance extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'object::statusDeleted', label:'Set Status: Deleted'],
+    [ [code:'method::deleteSoft', label:'Delete'],
       [code:'title::transfer', label:'Title Transfer'] ]
   }
 
@@ -158,4 +158,23 @@ class TitleInstance extends KBComponent {
       'oai_dc':[:]
     ]
   ]
+
+  /**
+   *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
+   *  objects implementing this method can be easily located and listed / selected
+   */
+  static def refdataFind(params) {
+    def result = [];
+    def ql = null;
+    ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
+
+    if ( ql ) {
+      ql.each { t ->
+        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+      }
+    }
+
+    result
+  }
+
 }

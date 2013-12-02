@@ -542,7 +542,7 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
     
   // The customised lookup object.
   GOKb.lookup = {
-    _lookup : GOKb.lookupCont.data("ui-lookup") ?
+    _lookup : GOKb.lookupCont.data("ui-lookup") ?  
       GOKb.lookupCont.data("ui-lookup") :
       GOKb.lookupCont.data("lookup"),
     _original_renderer : null,
@@ -583,8 +583,9 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
 	      	  		      "onDone" : function (data) {
 	      	  		        // Run the callback and then close the dialog.
 	      	  		        callback({"label": data.result, "value": data.result}, _self._el);
-	      	  		        GOKb.lookup._lookup.destroy();
-	      	  		        GOKb.lookup = null;
+	      	  		        
+	      	  		        // Close the lookup.
+	      	  		        GOKb.lookup.close();
 	      	  		      }
 	      	  		    }
 	      	  		  );
@@ -611,8 +612,10 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
       	}
       } else {
       	// False. Remove the button.
-      	this._quickCreate.remove()
-      	this._quickCreate = null;
+        if (this._quickCreate) {
+        	this._quickCreate.remove()
+        	this._quickCreate = null;
+        }
       }
       
       // Bind a search event listener here to clear the list.
@@ -628,12 +631,12 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
       // Get the data for the autocomplete box.
       var auto_complete_data = this._lookup._autocomplete.data('ui-autocomplete');
       
-      if (!auto_complete_data) auto_complete_data = this._lookup._autocomplete.data('autocomplete')
+      if (!auto_complete_data) auto_complete_data = this._lookup._autocomplete.data('autocomplete');
       
       if (this._original_renderer == null) {
         
         // Save the original renderer the first time we call this method.
-        this._original_renderer = auto_complete_data._renderItem
+        this._original_renderer = auto_complete_data._renderItem;
       }
       
       // If the renderer is blank then just set to the original.
@@ -649,14 +652,14 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
       }
     },
     close : function () {
-      this._lookup._close();
+      // Destroy the lookup and set to null for recreation.
+      GOKb.lookup._lookup.destroy();
+      GOKb.lookup._lookup = null;
     },
     setCallback : function (cb) {
       _self = this;
       _self._lookup.options.select = function (item) {
         cb(item, _self._el);
-        GOKb.lookup._lookup.destroy();
-        GOKb.lookup = null;
       };
     },
     setSource : function (source) {
@@ -675,6 +678,13 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
       return this._lookup.options.value;
     }
   };
+  
+  // Listen for the close event.
+  GOKb.lookup._lookup._dialog.on("dialogclose", function( event, ui ) {
+   
+    // Close the whole widget when the dialog is closed.
+    GOKb.lookup.close();
+  });
   
   // Set the Z-Index here.
   GOKb.lookup._lookup._dialog.dialog('option', { stack: false, zIndex:100000 });

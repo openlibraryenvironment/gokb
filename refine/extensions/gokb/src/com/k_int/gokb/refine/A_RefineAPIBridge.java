@@ -291,7 +291,7 @@ public abstract class A_RefineAPIBridge extends Command {
         InputStream inputStream = null;
 
         // Construct the URL String
-        String urlString = GOKbModuleImpl.properties.getString("api.url") + apiMethod;
+        String urlString = GOKbModuleImpl.singleton.getCurrentWorkspaceURL() + apiMethod;
 
         // If get then append the param string here.
         if (type == METHOD_TYPE.GET) {

@@ -1,4 +1,5 @@
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
+import javax.servlet.http.HttpServletRequest
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
 import org.gokb.cred.*
@@ -10,6 +11,11 @@ class BootStrap {
   def grailsApplication
 
   def init = { servletContext ->
+    
+    // Add a custom check to see if this is an ajax request.
+    HttpServletRequest.metaClass.isAjax = {
+      'XMLHttpRequest' == delegate.getHeader('X-Requested-With')
+    }
 
     // Global System Roles
     def userRole = Role.findByAuthority('ROLE_USER') ?: new Role(authority: 'ROLE_USER', roleType:'global').save(failOnError: true)
@@ -519,8 +525,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('YN', 'Yes').save()
     RefdataCategory.lookupOrCreate('YN', 'No').save()
 
-    RefdataCategory.lookupOrCreate('DCType', 'Admin').save()
-    RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
-    RefdataCategory.lookupOrCreate('DCType', 'Support').save()
+    RefdataCategory.lookupOrCreate('DCType', 'Admin', "100").save()
+    RefdataCategory.lookupOrCreate('DCType', 'Standard', "200").save()
+    RefdataCategory.lookupOrCreate('DCType', 'Support', "300").save()
   }
 }

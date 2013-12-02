@@ -693,6 +693,20 @@ class ApiController {
         }
       }
       
+      switch (c) {
+        
+        case Package : 
+        
+          // We also need to create a review request against Packages created here.
+          ReviewRequest.raise (
+            comp,
+            "Review and set provider of this package.",
+            "Package created in refine without a provider.",
+            springSecurityService.currentUser
+          )
+          break;
+      }
+      
       // Save.
       comp.save(failOnError: true)
       

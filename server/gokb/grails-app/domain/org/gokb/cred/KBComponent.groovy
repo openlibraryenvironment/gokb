@@ -1,7 +1,7 @@
 package org.gokb.cred
 
 import grails.util.GrailsNameUtils
-
+import com.k_int.ClassUtils
 import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
@@ -184,6 +184,10 @@ abstract class KBComponent {
    */
   User lastUpdatedBy
 
+  /**
+   * The source for the record (Whatever it is)
+   */
+  Source source
 
 
   Set tags = []
@@ -454,14 +458,16 @@ abstract class KBComponent {
     combs
   }
 
-  public Date deleteSoft (Date endDate = new Date()) {
+  public void deleteSoft () {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+    save(failOnError:true)
   }
 
   public void retire () {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+    save(failOnError:true)
   }
 
   @Transient
@@ -483,9 +489,6 @@ abstract class KBComponent {
   public String getClassName () {
     getMetaClass().getTheClass().getName()
   }
-
-  //  @Transient
-  //  abstract getPermissableCombos()
 
 
   /**
@@ -525,10 +528,7 @@ abstract class KBComponent {
   }
 
   public static <T> T deproxy(def element) {
-    if (element instanceof HibernateProxy) {
-      return (T) ((HibernateProxy) element).getHibernateLazyInitializer().getImplementation();
-    }
-    return (T) element;
+    ClassUtils.deproxy(element)
   }
   //  return (getMetaClass().getTheClass() instanceof testCase.class)
 

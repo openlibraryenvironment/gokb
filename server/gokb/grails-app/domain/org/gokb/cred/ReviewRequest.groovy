@@ -42,19 +42,18 @@ class ReviewRequest {
   
   public static ReviewRequest raise (KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null) {
 	
-	// Create a request.
-	ReviewRequest req = new ReviewRequest (
-		status	: RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Needs Review'),
-		raisedBy : (raisedBy),
-		descriptionOfCause : (cause),
-		reviewRequest : (actionRequired)
-	)
-	
-	// Add to the list of requests for the component.
-	forComponent.addToReviewRequests( req )
-	
-	// Just return the request.
-	req
+  	// Create a request.
+  	ReviewRequest req = new ReviewRequest (
+  		status	: RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Needs Review'),
+  		raisedBy : (raisedBy),
+  		descriptionOfCause : (cause),
+  		reviewRequest : (actionRequired)
+  	)
+  	
+  	// Add to the list of requests for the component.
+  	forComponent.addToReviewRequests( req )
+  	
+  	// Just return the request.
+  	req
   }
-
 }

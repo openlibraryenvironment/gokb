@@ -73,7 +73,7 @@ ExtensionBar.addExtensionMenu({
  */
 DataTableView.extendMenu(function(dataTableView, menu) {
 	
-	// Find the row/-column menus.
+	// Find the row/column menus.
 	var col_menu = null;
 	var row_menu = null;
 	for (var i=0; i<menu.length && !(col_menu && row_menu); i++) {
@@ -119,4 +119,13 @@ DataTableView.extendMenu(function(dataTableView, menu) {
 	    }
 	  }
 	);
+	
+	// Append to main menu.
+	menu.push({
+	  "id" : "gokb-trim",
+	  "label" : "Trim all data",
+	  "click" : function() {
+	    GOKb.handlers.trimData();
+	  }
+  });
 });

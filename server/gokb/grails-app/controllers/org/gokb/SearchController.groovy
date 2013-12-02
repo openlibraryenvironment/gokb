@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.converters.*
+import org.springframework.security.acls.model.NotFoundException
 import grails.plugins.springsecurity.Secured
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
@@ -11,12 +12,13 @@ class SearchController {
   def genericOIDService
   def springSecurityService
   def classExaminationService
+  def gokbAclService
+
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     User user = springSecurityService.currentUser
 
-    log.debug("enter SearchController::index...");
     def result = [:]
 
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
@@ -29,23 +31,23 @@ class SearchController {
       if ( params.qbe.startsWith('g:') ) {
         // Global template, look in config
         def global_qbe_template_shortcode = params.qbe.substring(2,params.qbe.length());
-        log.debug("Looking up global template ${global_qbe_template_shortcode}");
+        // log.debug("Looking up global template ${global_qbe_template_shortcode}");
         result.qbetemplate = grailsApplication.config.globalSearchTemplates[global_qbe_template_shortcode]
-        log.debug("Using template: ${result.qbetemplate}");
+        // log.debug("Using template: ${result.qbetemplate}");
       }
 
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate ) {
-        log.debug("Execute query");
+        // log.debug("Execute query");
         doQuery(result.qbetemplate, params, result)
         result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
       }
       else {
-        log.debug("no template");
+        log.error("no template ${result?.qbetemplate}");
       }
 
       if ( result.det && result.recset ) {
-        log.debug("Trying to display record - config is ${grailsApplication.config.globalDisplayTemplates}");
+        // log.debug("Trying to display record - config is ${grailsApplication.config.globalDisplayTemplates}");
         int recno = result.det - result.offset - 1
         if ( ( recno < 0 ) || ( recno > result.max ) ) {
           recno = 0;
@@ -55,16 +57,18 @@ class SearchController {
         result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
         result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
     
-  // Add any refdata property names for this class to the result.
-  result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
-  result.displayobjclassname_short = result.displayobj.class.simpleName
-  result.isComponent = (result.displayobj instanceof KBComponent)
+        // Add any refdata property names for this class to the result.
+        result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
+        result.displayobjclassname_short = result.displayobj.class.simpleName
+        result.isComponent = (result.displayobj instanceof KBComponent)
+        
+        result.acl = gokbAclService.readAclSilently(result.displayobj)
     
         if ( result.displaytemplate == null ) {
           log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");
         }
         else {
-          log.debug("Got display template ${result.displaytemplate} for rec ${result.det} - class is ${result.displayobjclassname}");
+          // log.debug("Got display template ${result.displaytemplate} for rec ${result.det} - class is ${result.displayobjclassname}");
         }
       }
     }
@@ -86,7 +90,7 @@ class SearchController {
       }
     }
 
-    log.debug("leaving SearchController::index...");
+    // log.debug("leaving SearchController::index...");
 
     withFormat {
       html result
@@ -100,7 +104,7 @@ class SearchController {
   def doQuery(qbetemplate, params, result) {
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
 
-    log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
+    // log.debug("Iterate over form components: ${qbetemplate.qbeConfig.qbeForm}");
     def c = ComboCriteria.createFor(target_class.getClazz().createCriteria())
 
     def count_result = c.get {
@@ -122,7 +126,7 @@ class SearchController {
       }
     }
     result.reccount = count_result;
-    log.debug("criteria result: ${count_result}");
+    // log.debug("criteria result: ${count_result}");
 
     c = ComboCriteria.createFor(target_class.getClazz().createCriteria())
 
@@ -137,7 +141,7 @@ class SearchController {
     
         // Form elements.
         qbetemplate.qbeConfig.qbeForm.each { ap ->
-          log.debug("testing ${ap} : ${params[ap.qparam]}");
+          // log.debug("testing ${ap} : ${params[ap.qparam]}");
           if ( ( params[ap.qparam] != null ) && ( params[ap.qparam].length() > 0 ) ) {
             // addParamInContext(owner,ap,params[ap.qparam],ap.contextTree)
             processContextTree(c, ap.contextTree, params[ap.qparam], ap)
@@ -162,7 +166,7 @@ class SearchController {
       
       def the_value = value
       if ( paramdef.type == 'lookup' ) {
-        log.debug("Processing a lookup.. value from form was ${value}");
+        // log.debug("Processing a lookup.. value from form was ${value}");
         the_value = genericOIDService.resolveOID2(value)
       }
     
@@ -170,6 +174,15 @@ class SearchController {
       tree.each { contextTree ->
   
           switch ( contextTree.ctxtp ) {
+
+            case 'nested':
+              def newclos = {
+                processContextTree(qry,contextTree.children, value, paramdef, the_class);
+              }
+              newclos.delegate = qry
+              qry."${contextTree.ctxnm}" newclos
+              break;
+
             case 'filter':
     
               // Filters work in the same way as queries,
@@ -183,16 +196,23 @@ class SearchController {
                 the_value = the_value.asType(Class.forName("${contextTree.type}"));
               }
         
+              if ( contextTree.comparator == 'ilike' ) {
+                // Should really have an auto-wildcard flag, but for now just assume we want it
+                the_value += '%'
+              }
+
               // Check the negation.
               if (contextTree.negate) {
                 qry."not" {
                   qry.add(contextTree.prop, contextTree.comparator, the_value)
                 }
               } else {
-                 log.debug("Adding ${contextTree.prop} ${contextTree.comparator} ${the_value}");
+                 // log.debug("Adding ${contextTree.prop} ${contextTree.comparator} ${the_value}");
                  qry.add(contextTree.prop, contextTree.comparator, the_value)
               }
               
+              break;
+            default:
               break;
           }
       }

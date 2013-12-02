@@ -27,17 +27,10 @@
 
     
           <dl class="dl-horizontal">
-
-            <div class="control-group">
-              <dt>Base Class</dt>
-              <dd><input type="hidden" name="cgfClassName" class="cfgClassName input-xxlarge" onChange="javascript:updateSelClass(this.value);"/></dd>
-            </div>
-  
-            <div class="control-group">
-              <dt>Search Template Title</dt>
-              <dd><input type="text" name="Template Name"/></dd>
-            </div>
-  
+	          <dt>Base Class</dt>
+	          <dd><input type="hidden" name="cgfClassName" class="cfgClassName input-xxlarge" onChange="javascript:updateSelClass(this.value);"/></dd>
+	          <dt>Search Template Title</dt>
+	          <dd><input type="text" name="Template Name"/></dd>
           </dl>
 
           <ul id="tabs" class="nav nav-tabs">
@@ -91,7 +84,7 @@
       </div>
     </div>
   
-    <script language="JavaScript">
+    <script type="text/javascript" >
 
       $(document).ready(function() {
 

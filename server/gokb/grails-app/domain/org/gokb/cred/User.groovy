@@ -1,5 +1,8 @@
 package org.gokb.cred
 
+import groovy.util.logging.Log4j;
+
+@Log4j
 class User {
 
   transient springSecurityService
@@ -16,7 +19,8 @@ class User {
   Long defaultPageSize = new Long(10);
 
   RefdataValue showQuickView
-  
+  RefdataValue showInfoIcon
+    
   static manyByCombo = [
     territories : Territory
   ]
@@ -37,6 +41,18 @@ class User {
   Set<Role> getAuthorities() {
     UserRole.findAllByUser(this).collect { it.role } as Set
   }
+  
+  transient boolean isAdmin() {
+    Role adminRole = Role.findByAuthority("ROLE_ADMIN")
+    
+    if (adminRole != null) {
+      return getAuthorities().contains(adminRole)
+    } else {
+      log.error( "Error loading admin role (ROLE_ADMIN)" )
+    }
+    
+    false
+  } 
 
   def beforeInsert() {
     encodePassword()
@@ -53,7 +69,7 @@ class User {
   }
 
   protected void encodePassword() {
-    log.debug("Encoding password: ${password} (This should be plaintext at this stage)")
+    // log.debug("Encoding password: ${password} (This should be plaintext at this stage)")
     password = springSecurityService.encodePassword(password)
   }
 
@@ -62,6 +78,20 @@ class User {
     def userOptions = [:]
     userOptions.availableSearches = grailsApplication.config.globalSearchTemplates.sort{ it.value.title }
     userOptions
+  }
+  
+  transient def getUserPreferences() {
+    def userPrefs = [:]
+    if (showInfoIcon?.value) {
+      userPrefs["showInfoIcon"] = showInfoIcon.value?.equalsIgnoreCase("Yes") ? true : false
+    }
+    
+    if (showQuickView?.value) {
+      userPrefs["showQuickView"] = showQuickView?.value?.equalsIgnoreCase("Yes") ? true : false
+    }
+    
+    // Return the prefs.
+    userPrefs
   }
 
   static def refdataFind(params) {
