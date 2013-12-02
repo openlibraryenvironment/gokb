@@ -635,7 +635,8 @@ globalSearchTemplates = [
 			qbeResults:[
 				[heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
 				[heading:'Status', property:'status.value'],
-				[heading:'Package', property:'pkg.name']
+				[heading:'Package', property:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg.class.name+\':\'+x.r.pkg.id'] ],
+				[heading:'Platform', property:'hostPlatform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform.class.name+\':\'+x.r.hostPlatform.id'] ]
 			]
 		]
 	],
