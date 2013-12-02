@@ -37,7 +37,7 @@ class Role {
   
   @Override
   public boolean equals (Object obj) {
-    return obj?.id?.equals(id)
+    return obj instanceof Role && obj?.id?.equals(id)
   }
   
   @Override
