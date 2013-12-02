@@ -20,7 +20,20 @@ class SecurityController {
       
       if (obj instanceof User) {
         User user = obj as User
-        def roles = user.getAuthorities()
+                
+        // Current roles the user is a member of.
+        def currentRoles = user.getAuthorities()
+        
+        // Build a list of roles and set current boolean to whether this user is a member or not. 
+        result['currentRoles'] = [:] as Map<String, Boolean>
+        
+        // Go through all available roles.
+        Role.list().each { Role role
+
+          // Add to the available roles map.
+          result['currentRoles'][role.authority] = currentRoles.contains(role)
+        }
+        
       } else {
         log.error ("Roles can only be viewed altered for a User.")
       }
