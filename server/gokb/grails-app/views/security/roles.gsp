@@ -6,32 +6,42 @@
 <title>GOKb</title>
 </head>
 <body class="">
-	<div id="mainContent" class="container-fluid well">
+	<div id="mainarea" class="container-fluid well">
 		<table class="table table-bordered">
 			<tr>
         <th>Status</th>
 				<th>Role</th>
 			</tr>
-			<g:each in="${ currentRoles }" var="roleName, status">
+			<g:each in="${ currentRoles }" var="role, status">
 				<tr>
           <td class="group-status" >
             <g:if test="${ status }" >
-              <a href="#" title="remove role"><i class="group-member icon-ok-sign" ></i></a>
+              <g:if test="${editable}" >
+	              <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : false ]}" title="remove role" >
+	                <i class="group-member icon-ok-sign" ></i>
+	              </g:link>
+	            </g:if>
+	            <g:else>
+	              <i class="group-member icon-ok-sign" ></i>
+	            </g:else>
             </g:if>
             <g:else>
-              <a href="#" title="add role"><i class="group-none-member icon-remove-sign" ></i></a>
+              <g:if test="${editable}" >
+	              <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : true]}" title="Add to role" >
+	                <i class="group-member icon-remove-sign" ></i>
+	              </g:link>
+              </g:if>
+              <g:else>
+                <i class="group-member icon-remove-sign" ></i>
+              </g:else>
             </g:else>
           </td>
 					<td>
-						${ roleName }
+						${ role.authority }
 					</td>
 				</tr>
 			</g:each>
 		</table>
-		<script type="text/javascript">
-	    // Delcaring the script here as it should get pulled in by the inline content functionality.
-	    // alert("Script is working here.")
-		</script>
 	</div>
 </body>
 </html>

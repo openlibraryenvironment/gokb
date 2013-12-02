@@ -12,7 +12,7 @@
   color: #51A351;
 }
 
-.group-status .icon-ok-sign:hover:before {
+.group-status .editable .icon-ok-sign:hover:before {
 	color: #BD362F;
   content: "";
 }
@@ -21,7 +21,7 @@
   color: #BD362F;
 }
 
-.group-status .icon-remove-sign:hover:before {
+.group-status .editable .icon-remove-sign:hover:before {
   color: #51A351;
   content: "";
 }
