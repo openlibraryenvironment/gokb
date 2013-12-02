@@ -196,6 +196,11 @@ class SearchController {
                 the_value = the_value.asType(Class.forName("${contextTree.type}"));
               }
         
+              if ( contextTree.comparator == 'ilike' ) {
+                // Should really have an auto-wildcard flag, but for now just assume we want it
+                the_value += '%'
+              }
+
               // Check the negation.
               if (contextTree.negate) {
                 qry."not" {
