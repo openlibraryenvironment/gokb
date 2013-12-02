@@ -190,12 +190,12 @@ class WorkflowController {
                                         title_id:old_tipp.title.id, 
                                         package_id:new_tipp_package.id, 
                                         platform_id:new_tipp_platform.id,
-                                        start_date:'',
-                                        start_volume:'',
-                                        start_issue:'',
-                                        end_date:'',
-                                        end_volume:'',
-                                        end_issue:''])
+                                        start_date:old_tipp.start_date,
+                                        start_volume:old_tipp.start_volume,
+                                        start_issue:old_tipp.start_issue,
+                                        end_date:old_tipp.end_date,
+                                        end_volume:old_tipp.end_volume,
+                                        end_issue:old_tipp.end_issue])
               }
               else {
                 log.error("Unable to find key (${tipp_id}) In map: ${activity_data.tipps}");
