@@ -1,18 +1,67 @@
 package org.gokb
 
-import org.gokb.cred.UserRole;
-
-
 import grails.plugins.springsecurity.Secured
+
 import org.gokb.cred.*
+import org.springframework.security.acls.domain.GrantedAuthoritySid
+import org.springframework.security.acls.domain.PrincipalSid
+import org.springframework.security.acls.model.AccessControlEntry
 
 class SecurityController {
   
   def genericOIDService
   def springSecurityService
-
+  def gokbAclService
+  
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def index() {
+  }
+  
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def rolePermissions() {
+    
+    // The result.
+    def result = [:]
+    
+    if ( params.id ) {
+      
+      log.debug("Attempt to retrieve the Role permissions for user ${params.id}.");
+      def obj = genericOIDService.resolveOID(params.id)
+      
+      // Should be an ACL object.
+      if (obj && obj instanceof KBDomainInfo) {
+        
+        // The domain object.
+        KBDomainInfo domain = obj as KBDomainInfo
+        
+        // Add some necessary data for the render.
+        result.perms = gokbAclService.definedPerms
+        
+        // Groups, ensure none present perms map to boolean false.
+        result.groupPerms = [:].withDefault {
+          [:]
+        }
+        
+        // Now construct a map to hold a role and permission
+        gokbAclService.readAclSilently(domain)?.entries.each { ent ->
+          def sid = ent.sid
+          switch (sid) {
+            case PrincipalSid :
+            
+              // User.
+              
+            break
+            case GrantedAuthoritySid :
+              
+              result.groupPerms[sid.grantedAuthority][ent.permission.mask] = ent.granting
+            break
+            default :
+              // Ignore.
+              log.debug ("Unknown SID type for ${ent.sid}")
+          }
+        }
+      }
+    }
   }
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
@@ -23,7 +72,7 @@ class SecurityController {
     
     if ( params.id ) {
       
-      log.debug("Attempt to update Roles ${params.roles} for user ${params.id}.");
+      log.debug("Attempt to update Roles for user ${params.id}.");
       def obj = genericOIDService.resolveOID(params.id)
       
       // User is sent.
@@ -88,8 +137,13 @@ class SecurityController {
             }
           }
           
-          // Redirect to the user screen.
-          redirect(controller: "security", action: "roles", 'params' : [ 'id': "${user.class.name}:${user.id}" ])
+          if (request.isAjax()) {
+            // Send back to the roles action.
+            redirect(controller: "security", action: "roles", 'params' : [ 'id': "${user.class.name}:${user.id}" ])
+          } else {
+            // Send back to referer.
+            redirect(url: request.getHeader('referer'))
+          }
         } else {
           log.error ("User ${user.id} attempted to mdoify their own roles.")
         }
