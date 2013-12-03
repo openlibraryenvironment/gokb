@@ -1,6 +1,8 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 
+<h3>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h3>
+
 <dl class="dl-horizontal">
 
   <dt><g:annotatedLabel owner="${d}" property="name">Title</g:annotatedLabel></dt>
