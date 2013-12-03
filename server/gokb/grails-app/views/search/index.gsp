@@ -3,7 +3,7 @@
 <head>
 <meta name="layout" content="main" />
 <r:require modules="gokbstyle,bootstrap-popover" />
-<title>GOKb</title>
+<title>GOKb Search</title>
 <style>
 #modal {
   width: 900px; /* SET THE WIDTH OF THE MODAL */
