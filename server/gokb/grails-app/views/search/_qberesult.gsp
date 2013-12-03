@@ -5,7 +5,7 @@
 <g:if test="${ request.isAjax() }">
   <table class="table table-striped table-condensed table-bordered">
     <thead>
-      <tr>
+      <tr class="nav">
         <g:each in="${qbeConfig.qbeResults}" var="c">
           <th>
             <g:if test="${c.sort}">
