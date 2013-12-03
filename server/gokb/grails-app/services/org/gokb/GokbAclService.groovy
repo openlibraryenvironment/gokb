@@ -1,9 +1,15 @@
 package org.gokb
 
-import grails.transaction.Transactional
+import grails.util.GrailsNameUtils
+
+import java.beans.PropertyDescriptor
+
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.grails.plugins.springsecurity.service.acl.AclUtilService
+import org.springframework.security.acls.domain.BasePermission
 import org.springframework.security.acls.model.Acl
 import org.springframework.security.acls.model.ObjectIdentity
+import org.springframework.security.acls.model.Permission
 
 
 class GokbAclService extends AclUtilService {
@@ -27,5 +33,28 @@ class GokbAclService extends AclUtilService {
     // Just return the object from the map. This will be null if not found.
     // Preferable to throwing a NotFoundException.
     return result[object_identity];
+  }
+  
+  private Map<Integer, Permission> definedPerms
+  List<Permission> getDefinedPerms () {
+    if (!definedPerms) {
+      
+      definedPerms = [:]
+      
+      // Retrieve all the defined permissions on the base class.
+      def propDefs = GrailsClassUtils.getPropertiesAssignableToType(BasePermission.class, Permission.class)
+      
+      // Each definition.
+      propDefs.each {PropertyDescriptor d ->
+        
+        Permission p = BasePermission."${d.baseName}"
+        
+        // Base permission.
+        definedPerms[p.mask] = [name: GrailsNameUtils.getNaturalName(d.baseName), inst:p]
+      }
+    }
+    
+    // Return the define permission.
+    definedPerms
   }
 }
