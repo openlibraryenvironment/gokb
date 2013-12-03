@@ -5,12 +5,12 @@
   <head>
     <meta name="layout" content="main"/>
     <r:require modules="gokbstyle"/>
-    <title>GOKbo : About</title>
+    <title>User Profile</title>
   </head>
   <body>
 	<div class="container-fluid">
 		<div class="row-fluid">
-			<h1>Application Info</h1>
+			<h3>User Preferences</h3>
 			<dl class="dl-horizontal">
 				<dt>Show Info Icon :</dt>
 				<dd>

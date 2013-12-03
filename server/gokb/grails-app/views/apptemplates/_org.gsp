@@ -245,7 +245,7 @@
             <dd>
               <g:render template="comboList" 
                         contextPath="../apptemplates" 
-                        model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name']],targetClass:'org.gokb.cred.Package']}" />
+                        model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name', action:'link']],targetClass:'org.gokb.cred.Package']}" />
             </dd>
         </dl>
     </div>

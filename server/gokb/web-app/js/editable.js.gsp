@@ -16,6 +16,7 @@ $(document).ready(function() {
 
   $(".simpleReferenceTypedown").select2({
     placeholder: "Search for...",
+    allowClear: true,
     width:'resolve',
     minimumInputLength: 0,
     ajax: { // instead of writing the function to execute the request we use Select2's convenient helper

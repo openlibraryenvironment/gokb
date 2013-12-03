@@ -5,15 +5,20 @@
 <g:if test="${ request.isAjax() }">
   <table class="table table-striped table-condensed table-bordered">
     <thead>
-      <tr>
+      <tr class="nav">
         <g:each in="${qbeConfig.qbeResults}" var="c">
           <th>
             <g:if test="${c.sort}">
               <g:if test="${params.sort==c.sort && params.order=='asc'}">
-                <g:link params="${params+['sort':c.sort,order:'desc']}">${c.heading}</g:link>
+                <g:link params="${params+['sort':c.sort,order:'desc']}"> ${c.heading} <i class="icon-sort-up"></i></g:link>
               </g:if>
               <g:else>
-                <g:link params="${params+['sort':c.sort,order:'asc']}">${c.heading}</g:link>
+                <g:if test="${params.sort==c.sort && params.order=='desc'}">
+                  <g:link params="${params+['sort':c.sort,order:'asc']}"> ${c.heading} <i class="icon-sort-down"></i></g:link>
+                </g:if>
+                <g:else>
+                  <g:link params="${params+['sort':c.sort,order:'desc']}"> ${c.heading} <i class="icon-sort"></i></g:link>
+                </g:else>
               </g:else>
             </g:if>
             <g:else>
@@ -56,10 +61,15 @@
 	          <th>
 	            <g:if test="${c.sort}">
 	              <g:if test="${params.sort==c.sort && params.order=='asc'}">
-	                <g:link params="${params+['sort':c.sort,order:'desc']}">${c.heading}</g:link>
+	                <g:link params="${params+['sort':c.sort,order:'desc']}"> ${c.heading} <i class="icon-sort-up"></i></g:link>
 	              </g:if>
 	              <g:else>
-	                <g:link params="${params+['sort':c.sort,order:'asc']}">${c.heading}</g:link>
+                        <g:if test="${params.sort==c.sort && params.order=='desc'}">
+	                  <g:link params="${params+['sort':c.sort,order:'asc']}"> ${c.heading} <i class="icon-sort-down"></i></g:link>
+                        </g:if>
+                        <g:else>
+	                  <g:link params="${params+['sort':c.sort,order:'desc']}"> ${c.heading} <i class="icon-sort"></i></g:link>
+                        </g:else>
 	              </g:else>
 	            </g:if>
 	            <g:else>
