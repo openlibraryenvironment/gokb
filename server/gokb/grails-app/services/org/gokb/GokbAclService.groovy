@@ -36,10 +36,10 @@ class GokbAclService extends AclUtilService {
   }
   
   private Map<Integer, Permission> definedPerms
-  List<Permission> getDefinedPerms () {
+  Map<Integer, Permission> getDefinedPerms () {
     if (!definedPerms) {
       
-      definedPerms = [:]
+      definedPerms = [:] as TreeMap
       
       // Retrieve all the defined permissions on the base class.
       def propDefs = GrailsClassUtils.getPropertiesAssignableToType(BasePermission.class, Permission.class)
