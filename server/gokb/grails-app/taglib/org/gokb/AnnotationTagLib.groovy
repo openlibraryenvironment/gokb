@@ -75,7 +75,7 @@ class AnnotationTagLib {
     }
 
     // Should the annotation be shown?
-    boolean show_annotation = session.userPereferences.showInfoIcon && (isAdmin || annotation?.value != null)
+    boolean show_annotation = session?.userPereferences?.showInfoIcon && (isAdmin || annotation?.value != null)
 
     // Add the necessary class if we need it.
     if ( show_annotation ) {
@@ -87,7 +87,7 @@ class AnnotationTagLib {
     attr.each { att, val ->
       out << " ${att}=\"${val}\" "
     }
-    out << ">" + body() + " <i class='icon-info-sign'></i></${element}>"
+    out << ">" + body() + " ${show_annotation ? '<i class=\'icon-info-sign\'></i>' : ''}</${element}>"
 
     // Output the annotation if we should.
     if (show_annotation) {

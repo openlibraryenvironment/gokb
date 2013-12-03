@@ -19,9 +19,9 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
-    <li><a href="#identifiers" data-toggle="tab">Identifiers</a></li>
-    <li><a href="#publishers" data-toggle="tab">Publishers</a></li>
-    <li><a href="#availability" data-toggle="tab">Availability</a></li>
+    <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
+    <li><a href="#publishers" data-toggle="tab">Publishers <span class="badge badge-warning">${d.getCombosByPropertyName('publisher')?.size()}</span></a></li>
+    <li><a href="#availability" data-toggle="tab">Availability <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
   </ul>

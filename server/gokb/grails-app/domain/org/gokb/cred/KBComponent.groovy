@@ -38,6 +38,9 @@ abstract class KBComponent {
   private static final Map fullDefaultsForClass = [:]
 
   @Transient
+  def springSecurityService
+
+  @Transient
   private ensureDefaults () {
 
     // Metaclass
@@ -383,6 +386,9 @@ abstract class KBComponent {
         shortcode = generateShortcode(name);
       }
       generateNormname();
+    }
+    if ( springSecurityService?.currentUser != null ) {
+      this.lastUpdatedBy = springSecurityService?.currentUser
     }
   }
 

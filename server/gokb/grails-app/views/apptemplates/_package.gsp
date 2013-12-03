@@ -27,6 +27,9 @@
     <dd><g:xEditable class="ipe" owner="${d}" field="listVerifier" /></dd>
     <dt><g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel></dt>
     <dd><g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /></dd>
+    <dt><g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel></dt>
+    <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
+
   </g:if>
 </dl>
 
