@@ -12,11 +12,16 @@
   color: #51A351;
 }
 
-.security-table .editable .icon-ok-sign {
+.security-table a {
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+.security-table a .icon-ok-sign {
 	color: #AAA;
 }
 
-.security-table .editable .icon-ok-sign:hover:before {
+.security-table a .icon-ok-sign:hover:before {
   color: #51A351;
   content: "";
 }
@@ -25,19 +30,15 @@
   color: #BD362F;
 }
 
-.security-table .editable .icon-remove-sign {
+.security-table a .icon-remove-sign {
 	color:#AAA;
 }
 
-.security-table .editable .icon-remove-sign:hover:before {
+.security-table a .icon-remove-sign:hover:before {
   color: #BD362F;
   content: "";
 }
 
 .group-status {
 	width: 1px;
-}
-
-.group-status a {
-	text-decoration: none !important;
 }
