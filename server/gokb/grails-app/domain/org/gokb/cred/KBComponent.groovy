@@ -1,21 +1,22 @@
 package org.gokb.cred
 
 import grails.util.GrailsNameUtils
-import com.k_int.ClassUtils
+import groovy.util.logging.*
+
 import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
-import org.hibernate.proxy.HibernateProxy
-import groovy.util.logging.*
+
+import com.k_int.ClassUtils
 
 /**
  * Abstract base class for GoKB Components.
  */
 
 @Log4j
-abstract class KBComponent {
+abstract class KBComponent {  
 
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
