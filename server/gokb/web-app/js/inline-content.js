@@ -19,12 +19,14 @@
         
         // Load in the content to a new div.
         $.get(url, {}, function(data, textStatus, jqXHR) {
-          target.html($.parseHTML(data));
-        
-          // Get just the desired area.
-          var desired_content = target.find(desired_selector);
+          
+          // The returned data.
+          var dataDom = $("<div>" + data + "</div>");
+          var desired_content = dataDom.find(desired_selector);
           if (desired_content.length == 1) {
             target.html(desired_content.html());
+          } else {
+            target.html(dataDom.html())
           }
         });
         // Return the target.
