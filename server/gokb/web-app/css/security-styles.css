@@ -1,27 +1,43 @@
+.security-table td, .security-table th {
+  text-align:center;
+  vertical-align: middle;
+}
+
+.security-table [class^="icon-"]:before, [class*=" icon-"]:before {
+  font-size:1.7em;
+  cursor: default;
+}
+
+.security-table .icon-ok-sign {
+  color: #51A351;
+}
+
+.security-table .editable .icon-ok-sign {
+	color: #AAA;
+}
+
+.security-table .editable .icon-ok-sign:hover:before {
+  color: #51A351;
+  content: "";
+}
+
+.security-table .icon-remove-sign {
+  color: #BD362F;
+}
+
+.security-table .editable .icon-remove-sign {
+	color:#AAA;
+}
+
+.security-table .editable .icon-remove-sign:hover:before {
+  color: #BD362F;
+  content: "";
+}
+
 .group-status {
-	font-size: 1.3em;
 	width: 1px;
-	cursor: default;
 }
 
 .group-status a {
 	text-decoration: none !important;
-}
-
-.group-status .icon-ok-sign {
-  color: #51A351;
-}
-
-.group-status .editable .icon-ok-sign:hover:before {
-	color: #BD362F;
-  content: "";
-}
-
-.group-status .icon-remove-sign {
-  color: #BD362F;
-}
-
-.group-status .editable .icon-remove-sign:hover:before {
-  color: #51A351;
-  content: "";
 }

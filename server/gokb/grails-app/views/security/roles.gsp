@@ -7,7 +7,7 @@
 </head>
 <body class="">
 	<div id="mainarea" class="container-fluid well">
-		<table class="table table-bordered">
+		<table class="table table-bordered security-table">
 			<tr>
         <th>Status</th>
 				<th>Role</th>
@@ -16,24 +16,20 @@
 				<tr>
           <td class="group-status" >
             <g:if test="${ status }" >
+	            <i class="group-member icon-ok-sign" ></i>
               <g:if test="${editable}" >
-	              <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : false ]}" title="remove role" >
-	                <i class="group-member icon-ok-sign" ></i>
-	              </g:link>
-	            </g:if>
-	            <g:else>
-	              <i class="group-member icon-ok-sign" ></i>
-	            </g:else>
+                <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : false ]}" title="Remove from role" >
+                  <i class="group-member icon-remove-sign" ></i>
+                </g:link>
+              </g:if>
             </g:if>
             <g:else>
               <g:if test="${editable}" >
-	              <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : true]}" title="Add to role" >
-	                <i class="group-member icon-remove-sign" ></i>
-	              </g:link>
+                <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : true ]}" title="Add to role" >
+                  <i class="group-member icon-ok-sign" ></i>
+                </g:link>
               </g:if>
-              <g:else>
-                <i class="group-member icon-remove-sign" ></i>
-              </g:else>
+              <i class="group-member icon-remove-sign" ></i>
             </g:else>
           </td>
 					<td>
