@@ -444,67 +444,66 @@ class AjaxSupportController {
     result;
   }
 
-
-  def grant() {
-    log.debug("Grant: ${params}");
-    def grantee_obj = genericOIDService.resolveOID(params.grantee)
-    def dc = genericOIDService.resolveOID(params.__context)
-    def perm_to_grant = null;
-    switch ( params.perm ) {
-      case 'READ':
-        perm_to_grant = org.springframework.security.acls.domain.BasePermission.READ;
-        break;
-      case 'WRITE':
-        perm_to_grant = org.springframework.security.acls.domain.BasePermission.WRITE;
-        break;
-      case 'ADMINISTRATION':
-        perm_to_grant = org.springframework.security.acls.domain.BasePermission.ADMINISTRATION;
-        break;
-      case 'DELETE':
-        perm_to_grant = org.springframework.security.acls.domain.BasePermission.DELETE;
-        break;
-      case 'CREATE':
-        perm_to_grant = org.springframework.security.acls.domain.BasePermission.CREATE;
-        break;
-    }
-
-    if ( ( grantee_obj != null ) && ( dc != null ) && ( perm_to_grant != null ) ) {
-      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
-      def grantee = grantee_obj instanceof User ? grantee_obj.username : grantee_obj.authority
-      aclUtilService.addPermission(dc, grantee, perm_to_grant);
-    }
-    redirect(url: request.getHeader('referer'))
-  }
-
-  def revoke() {
-    log.debug("Revoke: ${params}");
-
-    def dc = genericOIDService.resolveOID(params.__context)
-    def perm_to_revoke = null
-    switch ( params.perm?.toUpperCase() ) {
-      case 'READ':
-        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.READ;
-        break;
-      case 'WRITE':
-        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.WRITE;
-        break;
-      case 'ADMINISTRATION':
-        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.ADMINISTRATION;
-        break;
-      case 'DELETE':
-        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.DELETE;
-        break;
-      case 'CREATE':
-        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.CREATE;
-        break;
-    }
-
-    if ( ( dc != null ) && ( perm_to_revoke != null ) ) {
-      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
-      log.debug("Revoking ${perm_to_revoke} from ${dc} for ${params.grantee}");
-      aclUtilService.deletePermission(dc, params.grantee, perm_to_revoke);
-    }
-
-    redirect(url: request.getHeader('referer'))
-  }
+//  def grant() {
+//    log.debug("Grant: ${params}");
+//    def grantee_obj = genericOIDService.resolveOID(params.grantee)
+//    def dc = genericOIDService.resolveOID(params.__context)
+//    def perm_to_grant = null;
+//    switch ( params.perm ) {
+//      case 'READ':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.READ;
+//        break;
+//      case 'WRITE':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.WRITE;
+//        break;
+//      case 'ADMINISTRATION':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.ADMINISTRATION;
+//        break;
+//      case 'DELETE':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.DELETE;
+//        break;
+//      case 'CREATE':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.CREATE;
+//        break;
+//    }
+//
+//    if ( ( grantee_obj != null ) && ( dc != null ) && ( perm_to_grant != null ) ) {
+//      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
+//      def grantee = grantee_obj instanceof User ? grantee_obj.username : grantee_obj.authority
+//      aclUtilService.addPermission(dc, grantee, perm_to_grant);
+//    }
+//    redirect(url: request.getHeader('referer'))
+//  }
+//
+//  def revoke() {
+//    log.debug("Revoke: ${params}");
+//
+//    def dc = genericOIDService.resolveOID(params.__context)
+//    def perm_to_revoke = null
+//    switch ( params.perm?.toUpperCase() ) {
+//      case 'READ':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.READ;
+//        break;
+//      case 'WRITE':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.WRITE;
+//        break;
+//      case 'ADMINISTRATION':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.ADMINISTRATION;
+//        break;
+//      case 'DELETE':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.DELETE;
+//        break;
+//      case 'CREATE':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.CREATE;
+//        break;
+//    }
+//
+//    if ( ( dc != null ) && ( perm_to_revoke != null ) ) {
+//      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
+//      log.debug("Revoking ${perm_to_revoke} from ${dc} for ${params.grantee}");
+//      aclUtilService.deletePermission(dc, params.grantee, perm_to_revoke);
+//    }
+//
+//    redirect(url: request.getHeader('referer'))
+//  }
 }
