@@ -2,17 +2,14 @@ package org.gokb
 
 import grails.util.GrailsNameUtils
 
-import java.beans.PropertyDescriptor
 import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.grails.plugins.springsecurity.service.acl.AclUtilService
 import org.springframework.security.acls.domain.BasePermission
 import org.springframework.security.acls.model.Acl
 import org.springframework.security.acls.model.ObjectIdentity
 import org.springframework.security.acls.model.Permission
-
-import java.lang.reflect.Modifier
 
 
 class GokbAclService extends AclUtilService {
