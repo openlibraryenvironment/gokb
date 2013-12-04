@@ -1,4 +1,3 @@
-<g:set var="roles" value="${ Role.all }" />
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,16 +7,17 @@
 </head>
 <body class="">
 	<div id="mainarea" class="container-fluid well">
-		<table class="table table-bordered">
+		<table class="table table-bordered security-table">
 			<tr>
+			  <th></th>
 			  <g:each in="${perms}" var="mask,pMap">
 			    <th>${ pMap.name }</th>
 			  </g:each>
 			</tr>
 			<g:each in="${ roles }" var="role" >
 			  <tr>
-			    <td>${ pMap.name }</td>
-				  <g:each in="${perms}" var="mask,pMap">
+			    <td>${ role }</td>
+				  <g:each in="${ perms }" var="mask, pMap">
 						<td>
 						  <g:if test="${ groupPerms.get(role.authority)?.get(pMap.inst.mask) }" >
 						    <i class="icon-ok-sign" ></i>

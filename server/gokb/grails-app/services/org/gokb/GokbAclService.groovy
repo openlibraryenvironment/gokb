@@ -3,6 +3,7 @@ package org.gokb
 import grails.util.GrailsNameUtils
 
 import java.beans.PropertyDescriptor
+import java.lang.reflect.Field
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.grails.plugins.springsecurity.service.acl.AclUtilService
@@ -10,6 +11,8 @@ import org.springframework.security.acls.domain.BasePermission
 import org.springframework.security.acls.model.Acl
 import org.springframework.security.acls.model.ObjectIdentity
 import org.springframework.security.acls.model.Permission
+
+import java.lang.reflect.Modifier
 
 
 class GokbAclService extends AclUtilService {
@@ -35,26 +38,28 @@ class GokbAclService extends AclUtilService {
     return result[object_identity];
   }
   
-  private Map<Integer, Permission> definedPerms
+  private static Map<Integer, Permission> definedPerms = null
   Map<Integer, Permission> getDefinedPerms () {
-    if (!definedPerms) {
+    if (!GokbAclService.definedPerms) {
       
-      definedPerms = [:] as TreeMap
+      // Set to a tree map.
+      GokbAclService.definedPerms = [:] as TreeMap
       
-      // Retrieve all the defined permissions on the base class.
-      def propDefs = GrailsClassUtils.getPropertiesAssignableToType(BasePermission.class, Permission.class)
-      
-      // Each definition.
-      propDefs.each {PropertyDescriptor d ->
+      // Get all static fields that are of the type Permission
+      BasePermission.class.declaredFields.each { Field f ->
         
-        Permission p = BasePermission."${d.baseName}"
-        
-        // Base permission.
-        definedPerms[p.mask] = [name: GrailsNameUtils.getNaturalName(d.baseName), inst:p]
+        if (Modifier.isStatic(f.getModifiers()) && Permission.class.isAssignableFrom(f.getType())) {
+          
+          // Get the static Permission.
+          Permission p = BasePermission."${f.getName()}"
+          
+          // Base permission.
+          GokbAclService.definedPerms[p.mask] = [name: GrailsNameUtils.getNaturalName(f.getName()), inst:p]
+        }
       }
     }
     
     // Return the define permission.
-    definedPerms
+    GokbAclService.definedPerms
   }
 }

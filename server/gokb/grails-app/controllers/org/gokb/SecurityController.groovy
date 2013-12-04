@@ -37,13 +37,16 @@ class SecurityController {
         // Add some necessary data for the render.
         result.perms = gokbAclService.definedPerms
         
+        // Add the roles.
+        result.roles = Role.all
+        
         // Groups, ensure none present perms map to boolean false.
         result.groupPerms = [:].withDefault {
           [:]
         }
         
         // Now construct a map to hold a role and permission
-        gokbAclService.readAclSilently(domain)?.entries.each { ent ->
+        gokbAclService.readAclSilently(domain)?.entries?.each { ent ->
           def sid = ent.sid
           switch (sid) {
             case PrincipalSid :
@@ -62,6 +65,8 @@ class SecurityController {
         }
       }
     }
+    
+    result
   }
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
