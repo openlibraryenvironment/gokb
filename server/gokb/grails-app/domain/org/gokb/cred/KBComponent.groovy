@@ -393,7 +393,7 @@ abstract class KBComponent {
       }
       generateNormname();
     }
-    def user = sss?.currentUser
+    def user = springSecurityService?.currentUser
     if ( user != null ) {
       this.lastUpdatedBy = user
     }
