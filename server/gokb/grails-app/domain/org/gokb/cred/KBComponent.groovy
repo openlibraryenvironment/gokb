@@ -39,7 +39,12 @@ abstract class KBComponent {
   private static final Map fullDefaultsForClass = [:]
 
   @Transient
-  def springSecurityService
+  private def springSecurityService
+  
+  @Transient
+  public setSpringSecurityService(sss) {
+    this.springSecurityService = sss
+  }
 
   @Transient
   private ensureDefaults () {
@@ -388,8 +393,9 @@ abstract class KBComponent {
       }
       generateNormname();
     }
-    if ( springSecurityService?.currentUser != null ) {
-      this.lastUpdatedBy = springSecurityService?.currentUser
+    def user = sss?.currentUser
+    if ( user != null ) {
+      this.lastUpdatedBy = user
     }
   }
 
