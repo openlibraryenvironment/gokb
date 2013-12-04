@@ -14,13 +14,11 @@
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
-    <li class="active"><a href="#permissions" data-toggle="tab">Permissions</a></li>
+    <li class="active"><a href="#role-permissions" data-toggle="tab">Role Permissions</a></li>
   </ul>
   <div id="my-tab-content" class="tab-content">
-    <div class="tab-pane active" id="permissions">
-      <g:render template="perms" 
-                contextPath="../apptemplates" 
-                model="${[d:d, acl:acl]}"/>
+    <div class="tab-pane active" id="role-permissions">
+      <g:link class="display-inline" controller="security" action="rolePermissions" params="${['id': (d.class.name + ':' + d.id) ]}"></g:link>
     </div>
   </div>
 </div>

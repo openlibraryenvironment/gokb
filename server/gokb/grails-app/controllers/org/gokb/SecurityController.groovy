@@ -29,16 +29,24 @@ class SecurityController {
       KBDomainInfo domain = genericOIDService.resolveOID(params.id)
       Permission perm = gokbAclService.definedPerms[params.int("perm")]?.inst
       
-      // The recipient name.
+      // The recipient object.
       def recipient_obj = genericOIDService.resolveOID(params.recipient)
-      def recipient = recipient_obj instanceof User ? recipient_obj.username : recipient_obj.authority
-      
+      def recipient
+      def action
+      if (recipient_obj instanceof User) {
+        recipient = recipient_obj.username
+        action = "userPermissions"
+      } else {
+        recipient = recipient_obj.authority
+        action = "rolePermissions"
+      }
+            
       // Revoke the permission.
       gokbAclService.deletePermission(domain, recipient, perm)
       
       if (request.isAjax()) {
         // Send back to the roles action.
-        redirect(controller: "security", action: "rolePermissions", 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
+        redirect(controller: "security", "action": (action), 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
       } else {
         // Send back to referer.
         redirect(url: request.getHeader('referer'))
@@ -56,17 +64,28 @@ class SecurityController {
       KBDomainInfo domain = genericOIDService.resolveOID(params.id)
       Permission perm = gokbAclService.definedPerms[params.int("perm")]?.inst
       
-      // The recipient name.
+      // The recipient object.
       def recipient_obj = genericOIDService.resolveOID(params.recipient)
-      def recipient = recipient_obj instanceof User ? recipient_obj.username : recipient_obj.authority
+      def recipient
+      def action
+      if (recipient_obj instanceof User) {
+        recipient = recipient_obj.username
+        action = "userPermissions"
+      } else {
+        recipient = recipient_obj.authority
+        action = "rolePermissions"
+      }
       
       // Grant the permission.
       gokbAclService.addPermission(domain, recipient, perm)
       
       if (request.isAjax()) {
+        
         // Send back to the roles action.
-        redirect(controller: "security", action: "rolePermissions", 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
+        redirect(controller: "security", "action": (action), 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
+        
       } else {
+      
         // Send back to referer.
         redirect(url: request.getHeader('referer'))
       }
