@@ -20,11 +20,17 @@
 				  <g:each in="${ perms }" var="mask, pMap">
 						<td>
 						  <g:if test="${ groupPerms.get(role.authority)?.get(pMap.inst.mask) }" >
-						    <i class="icon-ok-sign" ></i>
-						  </g:if>
-						  <g:else>
-                <i class="icon-remove-sign" ></i>
-						  </g:else>
+	              <i class="icon-ok-sign" ></i>
+                <g:link class="editable open-inline" controller="security" action="revokePerm" params="${ ['id' : (d.class.name + ':' + d.id) , 'perm' : (pMap.inst.mask) ]}" title="Revoke permission" >
+                  <i class="icon-remove-sign" ></i>
+                </g:link>
+	            </g:if>
+	            <g:else>
+                <g:link class="editable open-inline" controller="security" action="grantPerm" params="${ ['id' : (d.class.name + ':' + d.id) , 'perm' : (pMap.inst.mask) ]}" title="Grant permission" >
+                  <i class="icon-ok-sign" ></i>
+                </g:link>
+	              <i class="icon-remove-sign" ></i>
+	            </g:else>
 						</td>
 				  </g:each>
 				</tr>

@@ -33,6 +33,7 @@ class SecurityController {
         
         // The domain object.
         KBDomainInfo domain = obj as KBDomainInfo
+        result.d = domain
         
         // Add some necessary data for the render.
         result.perms = gokbAclService.definedPerms
