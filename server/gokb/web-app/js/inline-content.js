@@ -8,6 +8,7 @@
       // The link.
       var link = $(this);
       
+      // The actual url.
       var href = link.attr("href");
       
       // Selector of the sub=part of the page to pull in.
