@@ -16,20 +16,6 @@ class BootStrap {
 
   def init = { servletContext ->
 
-    def jsonExclude = []      
-      
-    grailsApplication."serviceClasses".each {
-
-      // Add to the exclude list.
-      jsonExclude << GrailsNameUtils.getPropertyName(it.clazz.name)
-    }
-
-    grails.converters.JSON.registerObjectMarshaller(KBComponent.class) {
-      it.properties.findAll { k,v ->
-        return !jsonExclude.contains(k)
-      }
-    }
-
     // Add a custom check to see if this is an ajax request.
     HttpServletRequest.metaClass.isAjax = {
       'XMLHttpRequest' == delegate.getHeader('X-Requested-With')
