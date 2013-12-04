@@ -3,7 +3,7 @@
   vertical-align: middle;
 }
 
-.security-table [class^="icon-"]:before, [class*=" icon-"]:before {
+.security-table [class^="icon-"]:before, .security-table [class*=" icon-"]:before {
   font-size:1.7em;
   cursor: default;
 }
