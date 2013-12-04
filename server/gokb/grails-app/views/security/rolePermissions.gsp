@@ -16,7 +16,7 @@
 			</tr>
 			<g:each in="${ roles }" var="role" >
 			  <tr>
-			    <td>${ role }</td>
+			    <th>${ role }</th>
 				  <g:each in="${ perms }" var="mask, pMap">
 						<td>
 						  <g:if test="${ groupPerms.get(role.authority)?.get(pMap.inst.mask) }" >
