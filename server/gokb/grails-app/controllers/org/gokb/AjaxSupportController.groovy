@@ -242,7 +242,7 @@ class AjaxSupportController {
         } 
 
         // Special combo processing
-        if ( new_obj.hasByCombo != null ) {
+        if ( ( new_obj != null ) && ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
           log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
           new_obj.hasByCombo.keySet().each { hbc ->
             log.debug("Testing ${hbc} -> ${params[hbc]}");
