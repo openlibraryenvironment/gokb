@@ -11,12 +11,12 @@ class Source extends KBComponent {
   }
 
   static constraints = {
-	url(nullable:true, blank:true)
+    url(nullable:true, blank:true)
   }
 
   @Override
   public String getNiceName() {
-	return "Source";
+    return "Source";
   }
 
   static def refdataFind(params) {

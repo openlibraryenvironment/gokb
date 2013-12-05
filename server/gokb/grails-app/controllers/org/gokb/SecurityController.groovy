@@ -1,29 +1,156 @@
 package org.gokb
 
-import org.gokb.cred.UserRole;
-
-
 import grails.plugins.springsecurity.Secured
+
 import org.gokb.cred.*
+import org.springframework.security.acls.domain.GrantedAuthoritySid
+import org.springframework.security.acls.domain.PrincipalSid
+import org.springframework.security.acls.model.AccessControlEntry
+import org.springframework.security.acls.model.Permission
 
 class SecurityController {
   
   def genericOIDService
   def springSecurityService
-
+  def gokbAclService
+  def aclService
+  
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def index() {
   }
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
-  def updateRole() {
+  def revokePerm() {
+    if ( params.id && params.perm && params.recipient) {
+      
+      log.debug("Attempt to revoke permission ${params.perm} for role ${params.recipient} on ${params.id}.")
+      
+      // Read in all the objects identified by our parameters.
+      KBDomainInfo domain = genericOIDService.resolveOID(params.id)
+      Permission perm = gokbAclService.definedPerms[params.int("perm")]?.inst
+      
+      // The recipient object.
+      def recipient_obj = genericOIDService.resolveOID(params.recipient)
+      def recipient
+      def action
+      if (recipient_obj instanceof User) {
+        recipient = recipient_obj.username
+        action = "userPermissions"
+      } else {
+        recipient = recipient_obj.authority
+        action = "rolePermissions"
+      }
+            
+      // Revoke the permission.
+      gokbAclService.deletePermission(domain, recipient, perm)
+      
+      if (request.isAjax()) {
+        // Send back to the roles action.
+        redirect(controller: "security", "action": (action), 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
+      } else {
+        // Send back to referer.
+        redirect(url: request.getHeader('referer'))
+      }
+    }
+  }
+  
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def grantPerm() {
+    if ( params.id && params.perm && params.recipient) {
+      
+      log.debug("Attempt to revoke permission ${params.perm} for role ${params.recipient} on ${params.id}.")
+      
+      // Read in all the objects identified by our parameters.
+      KBDomainInfo domain = genericOIDService.resolveOID(params.id)
+      Permission perm = gokbAclService.definedPerms[params.int("perm")]?.inst
+      
+      // The recipient object.
+      def recipient_obj = genericOIDService.resolveOID(params.recipient)
+      def recipient
+      def action
+      if (recipient_obj instanceof User) {
+        recipient = recipient_obj.username
+        action = "userPermissions"
+      } else {
+        recipient = recipient_obj.authority
+        action = "rolePermissions"
+      }
+      
+      // Grant the permission.
+      gokbAclService.addPermission(domain, recipient, perm)
+      
+      if (request.isAjax()) {
+        
+        // Send back to the roles action.
+        redirect(controller: "security", "action": (action), 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
+        
+      } else {
+      
+        // Send back to referer.
+        redirect(url: request.getHeader('referer'))
+      }
+    }
+  }
+  
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def rolePermissions() {
     
     // The result.
     def result = [:]
     
     if ( params.id ) {
       
-      log.debug("Attempt to update Roles ${params.roles} for user ${params.id}.");
+      log.debug("Attempt to retrieve the Role permissions for user ${params.id}.");
+      def obj = genericOIDService.resolveOID(params.id)
+      
+      // Should be an ACL object.
+      if (obj && obj instanceof KBDomainInfo) {
+        
+        // The domain object.
+        KBDomainInfo domain = obj as KBDomainInfo
+        result.d = domain
+        
+        // Add some necessary data for the render.
+        result.perms = gokbAclService.definedPerms
+        
+        // Add the roles.
+        result.roles = Role.all
+        
+        // Groups, ensure none present perms map to boolean false.
+        result.groupPerms = [:].withDefault {
+          [:]
+        }
+        
+        // Now construct a map to hold a role and permission
+        gokbAclService.readAclSilently(domain)?.entries?.each { ent ->
+          def sid = ent.sid
+          switch (sid) {
+            case PrincipalSid :
+            
+              // User.
+              
+            break
+            case GrantedAuthoritySid :
+              
+              result.groupPerms[sid.grantedAuthority][ent.permission.mask] = ent.granting
+            break
+            default :
+              // Ignore.
+              log.debug ("Unknown SID type for ${ent.sid}")
+          }
+        }
+      }
+    }
+    
+    result
+  }
+  
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def updateRole() {
+    
+    if ( params.id ) {
+      
+      log.debug("Attempt to update Roles for user ${params.id}.");
       def obj = genericOIDService.resolveOID(params.id)
       
       // User is sent.
@@ -88,8 +215,13 @@ class SecurityController {
             }
           }
           
-          // Redirect to the user screen.
-          redirect(controller: "security", action: "roles", 'params' : [ 'id': "${user.class.name}:${user.id}" ])
+          if (request.isAjax()) {
+            // Send back to the roles action.
+            redirect(controller: "security", action: "roles", 'params' : [ 'id': "${user.class.name}:${user.id}" ])
+          } else {
+            // Send back to referer.
+            redirect(url: request.getHeader('referer'))
+          }
         } else {
           log.error ("User ${user.id} attempted to mdoify their own roles.")
         }
