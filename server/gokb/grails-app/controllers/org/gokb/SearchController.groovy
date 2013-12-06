@@ -38,7 +38,8 @@ class SearchController {
 
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate ) {
-        // log.debug("Execute query");
+        log.debug("Execute query");
+        doQuery2(result.qbetemplate, params, result)
         doQuery(result.qbetemplate, params, result)
         result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
       }
@@ -98,6 +99,11 @@ class SearchController {
       xml { render apiresponse as XML }
     }
 
+  }
+
+  def doQuery2(qbetemplate, params, result) {
+    log.debug("doQuery2");
+    com.k_int.HQLBuilder.build(qbetemplate, params, result);
   }
 
 

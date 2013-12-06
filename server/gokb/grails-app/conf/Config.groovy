@@ -109,13 +109,14 @@ log4j = {
 			'net.sf.ehcache.hibernate'
 
 	debug  'grails.app.controllers',
-			'grails.app.service',
-			'grails.app.services',
-			'grails.app.domain',
-			'grails.app.tagLib',
-			'grails.app.filters',
-			// 'grails.app.conf',
-			'grails.app.jobs' // ,
+		'grails.app.service',
+		'grails.app.services',
+		'grails.app.domain',
+		'grails.app.tagLib',
+		'grails.app.filters',
+		'grails.app.conf',
+		'grails.app.jobs',
+		'com.k_int'
 
 	//   debug  'org.gokb.DomainClassExtender'
 
