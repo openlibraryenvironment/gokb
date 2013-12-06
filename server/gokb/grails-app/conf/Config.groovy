@@ -659,7 +659,7 @@ globalSearchTemplates = [
 				['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
 			],
 			qbeResults:[
-				[heading:'Description', property:'desc']
+				[heading:'Description', property:'desc',  link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']]
 			]
 		]
 	],
@@ -690,7 +690,7 @@ globalSearchTemplates = [
 			qbeGlobals:[
 			],
 			qbeResults:[
-				[heading:'Cause', property:'descriptionOfCause'],
+				[heading:'Cause', property:'descriptionOfCause', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']],
 				[heading:'Request', property:'reviewRequest'],
 				[heading:'Status', property:'status?.value'],
 				[heading:'Raised By', property:'raisedBy?.username'],
