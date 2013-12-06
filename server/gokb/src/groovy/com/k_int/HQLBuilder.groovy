@@ -1,6 +1,7 @@
 package com.k_int
 
 import groovy.util.logging.*
+import org.gokb.cred.*;
 
 @Log4j
 public class HQLBuilder {
@@ -42,7 +43,7 @@ public class HQLBuilder {
    *
    *
    */
-  public static def build(qbetemplate, params, result) {
+  public static def build(grailsApplication, qbetemplate, params, result, target_class) {
     // select o from Clazz as o where 
 
     log.debug("build ${params}");
@@ -60,40 +61,59 @@ public class HQLBuilder {
     def hql_builder_context = [:]
     hql_builder_context.declared_scopes = [:]
 
+    def baseclass = target_class.getClazz()
     criteria.each { crit ->
-      processProperty(hql_builder_context,crit)
+      processProperty(hql_builder_context,crit,baseclass)
       // List props = crit.def..split("\\.")
     }
 
     log.debug("At end of build, ${hql_builder_context}");
   }
 
-  static def processProperty(hql_builder_context,crit) {
+  static def processProperty(hql_builder_context,crit,baseclass) {
     log.debug("processProperty ${hql_builder_context}, ${crit}");
     switch ( crit.defn.contextTree.ctxtp ) {
       case 'qry':
-        processQryContextType(hql_builder_context,crit)
+        processQryContextType(hql_builder_context,crit,baseclass)
         break;
     }
   }
 
-  static def processQryContextType(hql_builder_context,crit) {
+  static def processQryContextType(hql_builder_context,crit, baseclass) {
+    processQryContextType(hql_builder_context, crit, 'o', baseclass)
+  }
+
+  static def processQryContextType(hql_builder_context,crit, parent_scope, the_class) {
     List proppath = crit.defn.contextTree.prop.split("\\.")
-    def scope = 'o'                      // default scope is 'o'
-    def prop = proppath.remove(proppath.size() - 1) // The actual property is the last thing in a dotted list
+
+    // Get all the combo properties defined on the class.
+    def allProps = KBComponent.getAllComboPropertyDefinitionsFor(the_class)
+
     if ( proppath.size() > 1 ) {
-      scope = proppath.join(".")
-      if ( hql_builder_context.declared_scopes.containsKey(scope) ) {
+      def head = proppath.remove(0)
+      def newscope = parent_scope+'.'+head
+      if ( hql_builder_context.declared_scopes.containsKey(newscope) ) {
         // Already established scope for this context
       }
       else {
-        establishScope(hql_builder_context, proppath)
+        establishScope(hql_builder_context, newscope, parent_scope, head)
       }
     }
-    log.debug("Prop: ${scope} :: ${prop}");
+    else {
+      // If this is an ordinary property, add the operation. If it's a special, the make the extra joins
+      Class target_class = allProps[proppath[0]]
+      if ( target_class ) {
+        // Combo property...
+        boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, proppath[0])
+        log.debug("combo property, incoming=${incoming}");
+      }
+    }
   }
 
-  static def establishScope(hql_builder_context, proppath) {
+  static def establishScope(hql_builder_context, proppath, parent_scope, property_to_join) {
     log.debug("establishScope ${hql_builder_context} ${proppath}");
+    def newscope_name = parent_scope+'.'+property_to_join
+    hql_builder_context.declared_scopes[newscope_name] = "join ${parent_scope}.${property_to_join} as ${newscope_name}" 
   }
+
 }
