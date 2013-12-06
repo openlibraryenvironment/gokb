@@ -1,11 +1,15 @@
 package org.gokb
 import groovy.lang.Closure
+import grails.gorm.DetachedCriteria
 import grails.orm.HibernateCriteriaBuilder
 import org.gokb.cred.*
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.hibernate.criterion.CriteriaSpecification
 
 class ComboCriteria {
+  
+  //TODO: All the detached criteria queries need to be able to exit the method if they return no results. This
+  // is because all the conditions must be met and an empty set in any of them means the result will be empty.
 
   private HibernateCriteriaBuilder crit
   private static ComboCriteria comboCrit
@@ -60,40 +64,59 @@ class ComboCriteria {
 
         // Combo property... Let's add the association.
         if (incoming) {
-          // Use incoming combos.
-          "incomingCombos" {
-            and {
-              eq (
-                "type",
-                RefdataCategory.lookupOrCreate (
-                  "Combo.Type",
-                  the_class.getComboTypeValueFor (the_class, prop)
-                )
-              )
-              fromComponent {
-                //				processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-                add (newPropName, operator, args, target_class)
+
+          // Use detached criteria to add a IN clause.
+          def subquery = new DetachedCriteria(the_class).build {
+            "incomingCombos" {
+              and {
+                eq (
+                    "type",
+                    RefdataCategory.lookupOrCreate (
+                    "Combo.Type",
+                    the_class.getComboTypeValueFor (the_class, prop)
+                    )
+                    )
+                fromComponent {
+                  add (newPropName, operator, args, target_class)
+                }
               }
             }
-          }
+
+            projections {
+              property ("id")
+            }
+          }.list()
+
+          // Make sure the ID is in the list.
+          "in" ("id", subquery ? subquery : [-1])
 
         } else {
-          // Outgoing
-          "outgoingCombos" {
-            and {
-              eq (
-                "type",
-                RefdataCategory.lookupOrCreate (
-                  "Combo.Type",
-                  the_class.getComboTypeValueFor (the_class, prop)
-                )
-              )
-              toComponent {
-                //				processContextTree(delegate, newCtxtTree, value, paramdef, target_class)
-                add (newPropName, operator, args, target_class)
+
+          // Detached criteria.
+          def subquery = new DetachedCriteria(the_class).build {
+            "outgoingCombos" {
+              and {
+                eq (
+                    "type",
+                    RefdataCategory.lookupOrCreate (
+                    "Combo.Type",
+                    the_class.getComboTypeValueFor (the_class, prop)
+                    )
+
+                    )
+                fromComponent {
+                  add (newPropName, operator, args, target_class)
+                }
               }
             }
-          }
+
+            projections {
+              property ("id")
+            }
+          }.list()
+
+          // Make sure the ID is in the list.
+          "in" ("id", subquery ? subquery : [-1])
         }
       } else {
         // Normal groovy/grails property.
@@ -118,38 +141,58 @@ class ComboCriteria {
         boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, propertyName)
 
         if (incoming) {
-          // Use incoming combos.
-          "incomingCombos" {
-            and {
-              eq (
-                "type",
-                RefdataCategory.lookupOrCreate (
-                "Combo.Type",
-                the_class.getComboTypeValueFor (the_class, propertyName)
-                )
-              )
-              def methodProps = ["fromComponent"]
-              methodProps.addAll(args)
-              invokeMethod(operator, methodProps.toArray())
+
+          // Detached criteria.
+          def subquery = new DetachedCriteria(the_class).build {
+            "incomingCombos" {
+              and {
+                eq (
+                    "type",
+                    RefdataCategory.lookupOrCreate (
+                    "Combo.Type",
+                    the_class.getComboTypeValueFor (the_class, propertyName)
+                    )
+                    )
+                def methodProps = ["fromComponent"]
+                methodProps.addAll(args)
+                invokeMethod(operator, methodProps.toArray())
+              }
             }
-          }
+
+            projections {
+              property ("id")
+            }
+          }.list()
+
+          // Make sure the ID is in the list.
+          "in" ("id", subquery ? subquery : [-1])
 
         } else {
-          // Outgoing
-          "outgoingCombos" {
-            and {
-              eq (
-                "type",
-                RefdataCategory.lookupOrCreate (
-                  "Combo.Type",
-                  the_class.getComboTypeValueFor (the_class, propertyName)
-                )
-              )
-              def methodProps = ["toComponent"]
-              methodProps.addAll(args)
-              invokeMethod(operator, methodProps.toArray())
+
+          // Detached criteria.
+          def subquery = new DetachedCriteria(the_class).build {
+            "outgoingCombos" {
+              and {
+                eq (
+                    "type",
+                    RefdataCategory.lookupOrCreate (
+                    "Combo.Type",
+                    the_class.getComboTypeValueFor (the_class, propertyName)
+                    )
+                    )
+                def methodProps = ["toComponent"]
+                methodProps.addAll(args)
+                invokeMethod(operator, methodProps.toArray())
+              }
             }
-          }
+
+            projections {
+              property ("id")
+            }
+          }.list()
+
+          // Make sure the ID is in the list.
+          "in" ("id", subquery ? subquery : [-1])
         }
       } else {
         // Normal grails property.
