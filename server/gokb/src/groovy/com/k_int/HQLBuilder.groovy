@@ -56,10 +56,9 @@ public class HQLBuilder {
       }
     }
 
-    StringWriter sw = new StringWriter()
-    sw.write("select o from ${qbetemplate.baseclass} as o")
     def hql_builder_context = [:]
     hql_builder_context.declared_scopes = [:]
+    hql_builder_context.query_clauses = []
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
@@ -68,6 +67,16 @@ public class HQLBuilder {
     }
 
     log.debug("At end of build, ${hql_builder_context}");
+    hql_builder_context.declared_scopes.each { ds ->
+      log.debug("Scope: ${ds}");
+    }
+
+    hql_builder_context.query_clauses.each { qc ->
+      log.debug("QueryClause: ${qc}");
+    }
+
+    def hql = outputHql(hql_builder_context, qbetemplate)
+    log.debug("HQL: ${hql}");
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
@@ -91,29 +100,85 @@ public class HQLBuilder {
 
     if ( proppath.size() > 1 ) {
       def head = proppath.remove(0)
-      def newscope = parent_scope+'.'+head
+      def newscope = parent_scope+'_'+head
       if ( hql_builder_context.declared_scopes.containsKey(newscope) ) {
         // Already established scope for this context
       }
       else {
-        establishScope(hql_builder_context, newscope, parent_scope, head)
+        log.debug("Intermediate establish scope");
+        establishScope(hql_builder_context, parent_scope, head, newscope)
       }
     }
     else {
       // If this is an ordinary property, add the operation. If it's a special, the make the extra joins
       Class target_class = allProps[proppath[0]]
       if ( target_class ) {
-        // Combo property...
+        // Combo property... We need to establish the target scope, and then add whatever the comparison is
         boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, proppath[0])
         log.debug("combo property, incoming=${incoming}");
+
+        // Firstly, establish a scope called proppath[0]_combo. This will be the combo link to the desired target
+        def combo_scope_name = proppath[0]+"_combos"
+        if ( ! hql_builder_context.declared_scopes.containsKey(combo_scope_name) ) {
+          log.debug("Adding scope ${combo_scope_name}");
+          establishScope(hql_builder_context, parent_scope, 'incomingCombos', combo_scope_name);
+          hql_builder_context.query_clauses.add("${combo_scope_name}.type = :refdata_value_for_combo_type");
+        }
+        def component_scope_name = proppath[0]
+        if ( ! hql_builder_context.declared_scopes.containsKey(component_scope_name) ) {
+          log.debug("Adding scope ${component_scope_name}");
+          establishScope(hql_builder_context, combo_scope_name, 'fromComponent', component_scope_name);
+        }
+
+        // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an 
+        // object.
+        addQueryClauseFor(crit,hql_builder_context,component_scope_name)
       }
     }
   }
 
-  static def establishScope(hql_builder_context, proppath, parent_scope, property_to_join) {
-    log.debug("establishScope ${hql_builder_context} ${proppath}");
-    def newscope_name = parent_scope+'.'+property_to_join
-    hql_builder_context.declared_scopes[newscope_name] = "join ${parent_scope}.${property_to_join} as ${newscope_name}" 
+  static def establishScope(hql_builder_context, parent_scope, property_to_join, newscope_name) {
+    log.debug("Establish scope ${newscope_name} as a child of ${parent_scope} property ${property_to_join}");
+    hql_builder_context.declared_scopes[newscope_name] = "${parent_scope}.${property_to_join} as ${newscope_name}" 
+  }
+
+  static def addQueryClauseFor(crit, hql_builder_context, scoped_property) {
+    switch ( crit.defn.contextTree.comparator ) {
+      case 'eq':
+        hql_builder_context.query_clauses.add("${scoped_property} = :${crit.defn.qparam}");
+        break;
+      default:
+        log.error("Unhandled comparator. crit: ${crit}");
+    }
+  }
+
+  static def outputHql(hql_builder_context, qbetemplate) {
+    StringWriter sw = new StringWriter()
+    sw.write("select o from ${qbetemplate.baseclass} as o\n")
+
+    hql_builder_context.declared_scopes.each { scope_name,ds ->
+      sw.write(" join ${ds}\n");
+    }
+    
+    if ( hql_builder_context.query_clauses.size() > 0 ) {
+      sw.write(" where");
+      boolean conjunction=false
+      hql_builder_context.query_clauses.each { qc ->
+        if ( conjunction ) {
+          // output and on second and subsequent clauses
+          sw.write(" AND");
+        }
+        else {  
+          conjunction=true
+        }
+        sw.write(" ");
+        sw.write(qc);
+        sw.write("\n");
+      }
+    }
+
+    // Return the toString of the writer
+    sw.toString();
   }
 
 }
