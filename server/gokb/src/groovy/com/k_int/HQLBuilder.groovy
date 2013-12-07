@@ -192,7 +192,14 @@ public class HQLBuilder {
           hql_builder_context.bindvars[crit.defn.qparam] = hql_builder_context.genericOIDService.resolveOID2(crit.value)
         }
         else {
-          hql_builder_context.bindvars[crit.defn.qparam] = crit.value
+          switch ( crit.defn.contextTree.type ) {
+            case 'java.lang.Long':
+              hql_builder_context.bindvars[crit.defn.qparam] = Long.parseLong(crit.value)
+              break;
+            default:
+              hql_builder_context.bindvars[crit.defn.qparam] = crit.value
+              break;
+          }
         }
         break;
       case 'ilike':
