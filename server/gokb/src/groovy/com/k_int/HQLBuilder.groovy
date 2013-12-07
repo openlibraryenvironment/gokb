@@ -52,13 +52,14 @@ public class HQLBuilder {
     def criteria = []
     qbetemplate.qbeConfig.qbeForm.each { query_prop_def ->
       if ( ( params[query_prop_def.qparam] != null ) && ( params[query_prop_def.qparam].length() > 0 ) ) {
-        criteria.add([defn:query_prop_def, value:params[query_prop_def]]);
+        criteria.add([defn:query_prop_def, value:params[query_prop_def.qparam]]);
       }
     }
 
     def hql_builder_context = [:]
     hql_builder_context.declared_scopes = [:]
     hql_builder_context.query_clauses = []
+    hql_builder_context.bindvars = [:]
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
@@ -77,6 +78,7 @@ public class HQLBuilder {
 
     def hql = outputHql(hql_builder_context, qbetemplate)
     log.debug("HQL: ${hql}");
+    log.debug("BindVars: ${hql_builder_context.bindvars}");
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
@@ -116,18 +118,23 @@ public class HQLBuilder {
         // Combo property... We need to establish the target scope, and then add whatever the comparison is
         boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, proppath[0])
         log.debug("combo property, incoming=${incoming}");
+        def combo_set_name = incoming ? 'incomingCombos' : 'outgoingCombos'
+        def combo_prop_name = incoming ? 'fromComponent' : 'toComponent'
 
         // Firstly, establish a scope called proppath[0]_combo. This will be the combo link to the desired target
         def combo_scope_name = proppath[0]+"_combos"
         if ( ! hql_builder_context.declared_scopes.containsKey(combo_scope_name) ) {
           log.debug("Adding scope ${combo_scope_name}");
-          establishScope(hql_builder_context, parent_scope, 'incomingCombos', combo_scope_name);
-          hql_builder_context.query_clauses.add("${combo_scope_name}.type = :refdata_value_for_combo_type");
+          establishScope(hql_builder_context, parent_scope, combo_set_name, combo_scope_name);
+          def combo_type_bindvar = combo_scope_name+"_type"
+          hql_builder_context.query_clauses.add("${combo_scope_name}.type = :${combo_type_bindvar}");
+          hql_builder_context.bindvars[combo_type_bindvar] = RefdataCategory.lookupOrCreate ( "Combo.Type", the_class.getComboTypeValueFor (the_class, proppath[0]))
         }
+
         def component_scope_name = proppath[0]
         if ( ! hql_builder_context.declared_scopes.containsKey(component_scope_name) ) {
           log.debug("Adding scope ${component_scope_name}");
-          establishScope(hql_builder_context, combo_scope_name, 'fromComponent', component_scope_name);
+          establishScope(hql_builder_context, combo_scope_name, combo_prop_name, component_scope_name);
         }
 
         // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an 
@@ -146,6 +153,7 @@ public class HQLBuilder {
     switch ( crit.defn.contextTree.comparator ) {
       case 'eq':
         hql_builder_context.query_clauses.add("${scoped_property} = :${crit.defn.qparam}");
+        hql_builder_context.bindvars[crit.defn.qparam] = crit.value
         break;
       default:
         log.error("Unhandled comparator. crit: ${crit}");
