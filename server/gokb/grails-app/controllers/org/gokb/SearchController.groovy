@@ -40,7 +40,7 @@ class SearchController {
       if ( result.qbetemplate ) {
         log.debug("Execute query");
         doQuery2(result.qbetemplate, params, result)
-        doQuery(result.qbetemplate, params, result)
+        // doQuery(result.qbetemplate, params, result)
         result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
       }
       else {
@@ -104,6 +104,8 @@ class SearchController {
   def doQuery2(qbetemplate, params, result) {
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
     com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
+
+    // Arrange for result.recset and result.reccount to be set
   }
 
   def doQuery(qbetemplate, params, result) {

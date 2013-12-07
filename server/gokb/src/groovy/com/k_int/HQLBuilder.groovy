@@ -85,8 +85,8 @@ public class HQLBuilder {
     def fetch_hql = "select o ${hql}"
 
     log.debug("Attempt count qry");
-    def count_result = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)
-    log.debug(count_result);
+    result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
+    result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,[max: result.max, offset: result.offset])
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
