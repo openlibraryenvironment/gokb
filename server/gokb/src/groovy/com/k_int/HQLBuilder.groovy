@@ -79,6 +79,13 @@ public class HQLBuilder {
     def hql = outputHql(hql_builder_context, qbetemplate)
     log.debug("HQL: ${hql}");
     log.debug("BindVars: ${hql_builder_context.bindvars}");
+
+    def count_hql = "select count (o) ${hql}"
+    def fetch_hql = "select o ${hql}"
+
+    log.debug("Attempt count qry");
+    def count_result = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)
+    log.debug(count_result);
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
@@ -183,8 +190,8 @@ public class HQLBuilder {
         hql_builder_context.bindvars[crit.defn.qparam] = crit.value
         break;
       case 'ilike':
-        hql_builder_context.query_clauses.add("${scoped_property} ilike :${crit.defn.qparam}");
-        hql_builder_context.bindvars[crit.defn.qparam] = crit.value
+        hql_builder_context.query_clauses.add("lower(${scoped_property}) like :${crit.defn.qparam}");
+        hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toLowerCase()
       default:
         log.error("Unhandled comparator. crit: ${crit}");
     }
@@ -192,7 +199,7 @@ public class HQLBuilder {
 
   static def outputHql(hql_builder_context, qbetemplate) {
     StringWriter sw = new StringWriter()
-    sw.write("select o from ${qbetemplate.baseclass} as o\n")
+    sw.write(" from ${qbetemplate.baseclass} as o\n")
 
     hql_builder_context.declared_scopes.each { scope_name,ds ->
       sw.write(" join ${ds}\n");
