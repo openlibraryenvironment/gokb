@@ -61,6 +61,8 @@ public class HQLBuilder {
     hql_builder_context.query_clauses = []
     hql_builder_context.bindvars = [:]
     hql_builder_context.genericOIDService = genericOIDService;
+    hql_builder_context.sort = params.sort
+    hql_builder_context.order = params.order
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
@@ -231,8 +233,11 @@ public class HQLBuilder {
         }
         sw.write(" ");
         sw.write(qc);
-        sw.write("\n");
       }
+    }
+
+    if ( ( hql_builder_context.sort != null ) && ( hql_builder_context.sort.length() > 0 ) ) {
+      sw.write(" order by ${hql_builder_context.sort} ${hql_builder_context.order}");
     }
 
     // Return the toString of the writer
