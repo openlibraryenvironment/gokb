@@ -119,12 +119,13 @@ public class HQLBuilder {
           // Combo... Process
           def intermediate_scope = createComboScope(the_class, head, hql_builder_context, parent_scope)
           // Recurs into this function with the new proppath
-          processQryContextType(hql_builder_context,crit, proppath, parent_scope, the_class)
+          processQryContextType(hql_builder_context,crit, proppath, intermediate_scope, the_class)
           // Now process
         }
         else {
           // Standard association, just make a bind variable..
           establishScope(hql_builder_context, parent_scope, head, newscope)
+          processQryContextType(hql_builder_context,crit, proppath, newscope, the_class)
         }
       }
     }
@@ -136,6 +137,10 @@ public class HQLBuilder {
         // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an 
         // object.
         addQueryClauseFor(crit,hql_builder_context,component_scope_name)
+      }
+      else {
+        // The property is a standard property
+        addQueryClauseFor(crit,hql_builder_context,parent_scope+'.'+proppath[0])
       }
     }
   }
@@ -177,6 +182,9 @@ public class HQLBuilder {
         hql_builder_context.query_clauses.add("${scoped_property} = :${crit.defn.qparam}");
         hql_builder_context.bindvars[crit.defn.qparam] = crit.value
         break;
+      case 'ilike':
+        hql_builder_context.query_clauses.add("${scoped_property} ilike :${crit.defn.qparam}");
+        hql_builder_context.bindvars[crit.defn.qparam] = crit.value
       default:
         log.error("Unhandled comparator. crit: ${crit}");
     }
