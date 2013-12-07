@@ -43,7 +43,7 @@ public class HQLBuilder {
    *
    *
    */
-  public static def build(grailsApplication, qbetemplate, params, result, target_class) {
+  public static def build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService) {
     // select o from Clazz as o where 
 
     log.debug("build ${params}");
@@ -60,6 +60,7 @@ public class HQLBuilder {
     hql_builder_context.declared_scopes = [:]
     hql_builder_context.query_clauses = []
     hql_builder_context.bindvars = [:]
+    hql_builder_context.genericOIDService = genericOIDService;
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
@@ -187,7 +188,12 @@ public class HQLBuilder {
     switch ( crit.defn.contextTree.comparator ) {
       case 'eq':
         hql_builder_context.query_clauses.add("${scoped_property} = :${crit.defn.qparam}");
-        hql_builder_context.bindvars[crit.defn.qparam] = crit.value
+        if ( crit.defn.type=='lookup' ) {
+          hql_builder_context.bindvars[crit.defn.qparam] = hql_builder_context.genericOIDService.resolveOID2(crit.value)
+        }
+        else {
+          hql_builder_context.bindvars[crit.defn.qparam] = crit.value
+        }
         break;
       case 'ilike':
         hql_builder_context.query_clauses.add("lower(${scoped_property}) like :${crit.defn.qparam}");

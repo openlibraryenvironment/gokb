@@ -103,7 +103,7 @@ class SearchController {
 
   def doQuery2(qbetemplate, params, result) {
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
-    com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class)
+    com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
   }
 
   def doQuery(qbetemplate, params, result) {
