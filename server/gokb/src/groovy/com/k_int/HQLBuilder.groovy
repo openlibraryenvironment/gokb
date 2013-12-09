@@ -2,6 +2,7 @@ package com.k_int
 
 import groovy.util.logging.*
 import org.gokb.cred.*;
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
 
 @Log4j
 public class HQLBuilder {
@@ -148,11 +149,13 @@ public class HQLBuilder {
           // Now process
         }
         else {
+          
+          // Target class can be looked up in standard way.
+          target_class = GrailsClassUtils.getPropertyType(the_class, head)
+          
           // Standard association, just make a bind variable..
           establishScope(hql_builder_context, parent_scope, head, newscope)
-
-          // ToDo: This isn't right - It should not be the_class but the class of the head property
-          processQryContextType(hql_builder_context,crit, proppath, newscope, the_class)
+          processQryContextType(hql_builder_context,crit, proppath, newscope, target_class)
         }
       }
     }
