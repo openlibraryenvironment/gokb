@@ -127,29 +127,6 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		// Add the element based on the def.
 		var	elem, opts;
 		switch (def.type) {
-			case 'refdata' :
-				
-				// Create the select element.
-				elem = $("<select />");
-				
-				// Bind the refdata to the dropdown.
-				GOKb.getRefData ("cp", {
-					onDone : function (data) {
-						if ("result" in data && "datalist" in data.result) {
-							$.each(data.result.datalist, function () {
-								var opt = $('<option />', {"value" : this.value})
-									.text(this.name)
-								;
-								
-								// Append the arguments...
-								elem.append(
-								  opt
-								);
-							});
-						}
-					}
-				}, {async : false});
-				break;
 			case 'select' :
 				elem = $("<select />");
 				break;
@@ -159,7 +136,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 			case 'option' 	:
 				add_to = parent;
 			case 'textarea' :
-				elem = $("<" + def.type + " />");
+				elem = $("<" + def.type + "/>");
 				break;
 		
 			case 'hidden' :
@@ -172,14 +149,22 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 				break;
 		}
 		
+		// Default to add to new div.
 		if (add_to == null) {
-			// Create div container for the form element.
-			add_to = $('<div />')
-				.attr({
-					'class' : 'form-row'
-				})
-			;
-			
+      // Create div container for the form element.
+      add_to = $('<div />')
+        .attr({
+          'class' : 'form-row'
+        })
+      ;
+    }
+    
+    // Append the element.
+    add_to.append(elem);
+		
+		// Check if we have a source to which we should lookup values from.
+		if ("source" in def) {
+		  GOKb.forms.bindDataLookup(elem, def);
 		}
 		
 		if (def.text) elem.text(def.text);
@@ -202,9 +187,6 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		}
 		elem.attr(attr);
 		
-		// Append the element.
-		add_to.append(elem);
-		
 		// If add_to different to parent then add that to the parent.
 		if (add_to != parent) parent.append(add_to);
 		
@@ -223,10 +205,75 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 };
 
 /**
+ * Bind the data lookup.
+ */
+GOKb.forms.bindDataLookup = function (elem, def) {
+  
+  // Source needs splitting
+  var source = def.source.split(":");
+  
+  
+  var format = function (result) {
+//    {id: query.term + i, text: s}
+    var x = result;
+  };
+  
+  // Make this element a Select2.
+  var conf = {
+    placeholder: "Search for " + def.label,
+    minimumInputLength: 1,
+    formatResult: format,
+    formatSelection: format,
+    escapeMarkup: function (m) { return m; }
+  };
+  
+  // If not a select then add a query lookup, else we need to fetch all the results first and add them all.
+  var type = elem.prop('tagName');
+  if (type != "SELECT") {
+    
+    // Add as a query.
+    conf.query = function (query) {
+      
+      switch (source[0]) {
+        case "refdata" :
+          // Bind the refdata to the select.
+          break;
+          
+        case "oid" :
+          break;
+      }
+    };
+    
+    // Add the select2.
+    elem.select2(conf);
+  } else {
+    
+    // Get the list of options.
+    GOKb['get' + source[0]] (source[1], {
+      onDone : function (data) {
+        if ("result" in data && "datalist" in data.result) {
+          
+          // Add each element.
+          $.each(data.result.datalist, function () {
+            var op = this;
+            elem.append($("<option />", {
+              value : (op.value),
+              text  : (op.name)
+            }));
+          });
+          
+          // Add the select2 once we have finished.
+          elem.select2();
+        }
+      }
+    });
+  }
+};
+
+/**
  * Get the location where form data is to be stored within this project metadata
  */
 GOKb.forms.ds = null;
-
 GOKb.forms.getDataStore = function() {
 	if (GOKb.forms.ds == null) {
 		if ('gokb-data' in theProject.metadata.customMetadata) {
