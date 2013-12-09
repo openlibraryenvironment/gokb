@@ -519,9 +519,16 @@ class ApiController {
             text : 'Properties'
           ],
           [
+            label:'Source',
+            type:'textarea',
+//            source:'oid:org.gokb.cred.Source',
+            name:'source',
+//            create:true,
+          ],
+          [
             label:'Provider',
-            type:'refdata',
-            refdataType:'cp',
+            type:'select',
+            source:'RefData:cp',
             name:'provider',
           ],
           [
