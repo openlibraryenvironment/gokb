@@ -56,6 +56,12 @@ public class HQLBuilder {
       }
     }
 
+    qbetemplate.qbeConfig.qbeGlobals.each { global_prop_def ->
+      log.debug("Adding query global: ${global_prop_def}");
+      // creat a contextTree so we can process the filter just like something added to the query tree
+      criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('.','_'),contextTree:global_prop_def],value:global_prop_def.value])
+    }
+
     def hql_builder_context = [:]
     hql_builder_context.declared_scopes = [:]
     hql_builder_context.query_clauses = []
@@ -66,6 +72,7 @@ public class HQLBuilder {
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
+      log.debug("Processing crit: ${crit}");
       processProperty(hql_builder_context,crit,baseclass)
       // List props = crit.def..split("\\.")
     }
@@ -96,6 +103,12 @@ public class HQLBuilder {
     switch ( crit.defn.contextTree.ctxtp ) {
       case 'qry':
         processQryContextType(hql_builder_context,crit,baseclass)
+        break;
+      case 'filter':
+        processQryContextType(hql_builder_context,crit,baseclass)
+        break;
+      default:
+        log.error("Unhandled property context type ${crit}");
         break;
     }
   }
@@ -196,9 +209,10 @@ public class HQLBuilder {
   }
 
   static def addQueryClauseFor(crit, hql_builder_context, scoped_property) {
+
     switch ( crit.defn.contextTree.comparator ) {
       case 'eq':
-        hql_builder_context.query_clauses.add("${scoped_property} = :${crit.defn.qparam}");
+        hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}${scoped_property} = :${crit.defn.qparam}");
         if ( crit.defn.type=='lookup' ) {
           hql_builder_context.bindvars[crit.defn.qparam] = hql_builder_context.genericOIDService.resolveOID2(crit.value)
         }
@@ -214,7 +228,7 @@ public class HQLBuilder {
         }
         break;
       case 'ilike':
-        hql_builder_context.query_clauses.add("lower(${scoped_property}) like :${crit.defn.qparam}");
+        hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}lower(${scoped_property}) like :${crit.defn.qparam}");
         hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toLowerCase()
       default:
         log.error("Unhandled comparator. crit: ${crit}");
