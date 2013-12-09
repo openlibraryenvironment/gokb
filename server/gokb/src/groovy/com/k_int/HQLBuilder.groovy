@@ -113,10 +113,12 @@ public class HQLBuilder {
     def allProps = KBComponent.getAllComboPropertyDefinitionsFor(the_class)
 
     if ( proppath.size() > 1 ) {
+      
       def head = proppath.remove(0)
       def newscope = parent_scope+'_'+head
       if ( hql_builder_context.declared_scopes.containsKey(newscope) ) {
         // Already established scope for this context
+        log.debug("${newscope} already a declared contest");
       }
       else {
         log.debug("Intermediate establish scope - ${head} :: ${proppath}");
@@ -129,26 +131,31 @@ public class HQLBuilder {
           // Combo... Process
           def intermediate_scope = createComboScope(the_class, head, hql_builder_context, parent_scope)
           // Recurs into this function with the new proppath
-          processQryContextType(hql_builder_context,crit, proppath, intermediate_scope, the_class)
+          processQryContextType(hql_builder_context,crit, proppath, intermediate_scope, target_class)
           // Now process
         }
         else {
           // Standard association, just make a bind variable..
           establishScope(hql_builder_context, parent_scope, head, newscope)
+
+          // ToDo: This isn't right - It should not be the_class but the class of the head property
           processQryContextType(hql_builder_context,crit, proppath, newscope, the_class)
         }
       }
     }
     else {
+      log.debug("head prop...");
       // If this is an ordinary property, add the operation. If it's a special, the make the extra joins
       Class target_class = allProps[proppath[0]]
       if ( target_class ) {
+        log.debug("Combo property.....");
         def component_scope_name = createComboScope(the_class, proppath[0], hql_builder_context, parent_scope)
         // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an 
         // object.
         addQueryClauseFor(crit,hql_builder_context,component_scope_name)
       }
       else {
+        log.debug("Standard property...");
         // The property is a standard property
         addQueryClauseFor(crit,hql_builder_context,parent_scope+'.'+proppath[0])
       }
@@ -177,6 +184,8 @@ public class HQLBuilder {
       log.debug("Adding scope ${component_scope_name}");
       establishScope(hql_builder_context, combo_scope_name, combo_prop_name, component_scope_name);
     }
+
+    // Work out what class we are at in the tree and returnt that as the current class
 
     component_scope_name
   }
