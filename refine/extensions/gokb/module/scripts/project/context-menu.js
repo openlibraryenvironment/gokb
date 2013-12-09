@@ -5,31 +5,31 @@ GOKb.contextMenu = {
     });
   },
   disableMenu : function () {
-    var currentTag = $(document.activeElement)[0].tagName;
-    switch (currentTag) {
-      case "INPUT" :
-      case "TEXTAREA" :
-        
-        return true;
-        
-      default :
-        // Disable the menu by default.
-        return false;
+    var currentEl = $(document.activeElement);
+    if (!currentEl.is('.select2-input')) {
+      switch (currentEl.prop("tagName")) {
+        case "INPUT" :
+        case "TEXTAREA" :
+          
+          return true;
+      }
     }
+    // Disable the menu by default.
+    return false;
   },
   disableOptions : function (menu) {
-    var currentTag = $(document.activeElement)[0].tagName;
-    switch (currentTag) {
-      case "INPUT" :
-      case "TEXTAREA" :
-        GOKb.contextMenu.applyRules(menu, 'enable-lookup');
-        break;
-        
-      default :
-        // We are in an element that allows text entry.
-        GOKb.contextMenu.applyRules(menu, 'disable-lookup');
-        break;
+    var currentEl = $(document.activeElement);
+    if (!currentEl.is('.select2-input')) {
+      switch (currentEl.prop("tagName")) {
+        case "INPUT" :
+        case "TEXTAREA" :
+          GOKb.contextMenu.applyRules(menu, 'enable-lookup');
+          break;
+      }
     }
+
+    // We are not in an element that allows text entry.
+    GOKb.contextMenu.applyRules(menu, 'disable-lookup');
   },
 };
 
