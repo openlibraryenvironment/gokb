@@ -165,6 +165,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		// Check if we have a source to which we should lookup values from.
 		if ("source" in def) {
 		  GOKb.forms.bindDataLookup(elem, def);
+		  elem.addClass("none-uniform");
 		}
 		
 		if (def.text) elem.text(def.text);
@@ -234,14 +235,14 @@ GOKb.forms.bindDataLookup = function (elem, def) {
     // Add as a query.
     conf.query = function (query) {
       
-      switch (source[0]) {
-        case "refdata" :
-          // Bind the refdata to the select.
-          break;
-          
-        case "oid" :
-          break;
-      }
+      // Get the list of options.
+      GOKb['get' + source[0]] (source[1], {
+        onDone : function (data) {
+          if ("result" in data && "datalist" in data.result) {
+            query.callback(data.result.datalist);
+          }
+        }
+      });
     };
     
     // Add the select2.
