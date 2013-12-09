@@ -33,8 +33,13 @@ div.button:active {
   }
 }
 
+.dialog-container {
+  max-height: 50%;
+}
+
 #gokb-dialog {
   width : 70%;
+  max-height: 20%;
   
   table {
     th {
@@ -48,6 +53,11 @@ div.button:active {
   }
   
   form {
+  
+    .select2-container {
+      width: 51.4%;
+    }
+    
     input, textarea {
       width : 50%;
     }
@@ -81,7 +91,7 @@ div.button:active {
     }
     
     textarea.uniform {
-      height : 200px;
+      height : 3em;
     }
   }
 }
@@ -242,4 +252,14 @@ div.selector {
   .item-sub-value {
     font-size:0.8em;
   }
+}
+
+/* Project properties form */
+#project-properties textarea{
+  height: 3.3em;
+}
+
+/* Select2 Properties */
+.select2-results {
+  font-size : 1.3em !important;
 }
