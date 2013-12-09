@@ -122,6 +122,7 @@ function init() {
      "scripts/plugins/jquery.insert-at-caret.js",
      "scripts/plugins/jquery.contextmenu.js",
      "scripts/plugins/jquery.ui-lookup.js",
+     "scripts/plugins/select2.min.js",
      "scripts/common.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
@@ -142,6 +143,7 @@ function init() {
       "styles/jqui/jquery-ui.css",
       "styles/uniform.aristo.min.css",
       "styles/contextmenu.css",
+      "styles/select2.css",
       "styles/common.less",
     ]
   );
