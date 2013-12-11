@@ -12,7 +12,7 @@
     <dd>${d.provider?.name?:'Provider Not Set'}</dd>
     
     <dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
-    <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"/></dd>
+    <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown></dd>
 
     <g:if test="${d.lastProject}">
 	    <dt><g:annotatedLabel owner="${d}" property="lastProject" >Last Project</g:annotatedLabel></dt>
