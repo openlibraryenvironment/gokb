@@ -213,18 +213,10 @@ GOKb.forms.bindDataLookup = function (elem, def) {
   // Source needs splitting
   var source = def.source.split(":");
   
-  
-  var format = function (result) {
-//    {id: query.term + i, text: s}
-    var x = result;
-  };
-  
   // Make this element a Select2.
   var conf = {
-    placeholder: "Search for " + def.label,
+    placeholder: (def.create ? "Add/" : "") + "Select a " + def.label,
     minimumInputLength: 1,
-    formatResult: format,
-    formatSelection: format,
     escapeMarkup: function (m) { return m; }
   };
   
@@ -232,17 +224,103 @@ GOKb.forms.bindDataLookup = function (elem, def) {
   var type = elem.prop('tagName');
   if (type != "SELECT") {
     
+    // Result formatter.
+    var formatResult = function(result, label, query) {
+      
+      // The text.
+      var text;
+      
+      if (query.term && "value" in result && result.value != "add:new:entry") {
+        
+        // Highlight within the label the matched area.
+        var highlight = new RegExp('(' + RegExp.escape(query.term) + ')', "i");
+        text = result.label.replace(highlight, "<span class='select2-match' >$1</span>");
+        
+      } else {
+        
+        // Either a group or the current typed text. Just return the label.
+        text = result.label;
+      }
+      
+      return text;
+    };
+    
+    // Set the formatters.
+    conf.formatResult = formatResult;
+    conf.formatSelection = formatResult;
+    
+    // Variable to hold the timeout method, to wait for
+    // a timeout after the user stops typing.
+    var toMethod = null;
+    
     // Add as a query.
     conf.query = function (query) {
       
-      // Get the list of options.
-      GOKb['get' + source[0]] (source[1], {
-        onDone : function (data) {
-          if ("result" in data && "datalist" in data.result) {
-            query.callback(data.result.datalist);
+      // Cancel if we have a waiting query.
+      if (toMethod != null) {
+        clearTimeout(toMethod);
+      }
+      
+      toMethod = setTimeout(function () {
+        GOKb['get' + source[0]] (
+          query.term,
+          {
+            "type" : source[1],
+            "page" : query.page
+          },
+          {
+            onDone : function (data) {
+              
+              // We also add the current value to the top of the list to allow for the,
+              // current value to be added.
+              var res = {
+                results: []
+              };
+              
+              if (def.create && query.page == 1) {
+                res.results.push({
+                  label: "Add new",
+                  children: [
+                    {id:"add:new:entry", label: (query.term)}
+                  ]
+                });
+              }
+              
+              if (data && "list" in data && data.list.length > 0) {
+                
+                // Add more if we have more results that we can fetch.
+                res.more = ((query.page * 10) < data.total);
+                
+                // Populate the results.
+                var results = [];
+                
+                // Alias the "value" element to an id for the select2 library. Otherwise
+                // the element will not be selectable.
+                $.each(data.list, function() {
+                  
+                  this.id = this.value;
+                  results.push(this);
+                });
+                
+                // Add a root element if we are allowing creation.
+                if (def.create) {
+                  results = [{
+                    "label": "Select existing" + (res.more || query.page > 1 ? " (page " + query.page + ")" : ""),
+                    "children": results
+                  }];
+                }
+                
+                // Push the results list to the response.
+                res.results = $.merge(res.results, results);
+              }
+              
+              // Do the callback.
+              query.callback( res );
+            }
           }
-        }
-      });
+        );
+        toMethod = null;
+      }, 1000);
     };
     
     // Add the select2.

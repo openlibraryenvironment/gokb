@@ -78,13 +78,13 @@ class ApiController {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.serverUrl ?: 'http://gokb.kuali.org'
 
-      if (gokbVersion != grailsApplication.config.refine_min_version) {
-        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
-        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
-        "error")
-        return false
-      }
+//      if (gokbVersion != grailsApplication.config.refine_min_version) {
+//        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
+//        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
+//        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
+//        "error")
+//        return false
+//      }
     }
   }
 
@@ -521,9 +521,9 @@ class ApiController {
           [
             label:'Source',
             type:'textarea',
-//            source:'oid:org.gokb.cred.Source',
+            source:'ComponentLookup:TitleInstance',
             name:'source',
-//            create:true,
+            create:true,
           ],
           [
             label:'Provider',
@@ -609,6 +609,9 @@ class ApiController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
+    
+    // Results per page.
+    def perPage = 10;
 
     // Get the "term" parameter for performing a search.
     def term = params.term
@@ -620,6 +623,8 @@ class ApiController {
     // Attributes to return.
     def attr = ["label"]
     attr += params.list("attr")
+    
+    def page = params.int("page")
 
     // Should take a type parameter and do the right thing.
     try {
@@ -627,18 +632,42 @@ class ApiController {
         "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
       )
       
+      // If we have a page then we should add a max and offset.
       def criteria = ComboCriteria.createFor(c.createCriteria())
-      apiReturn ( criteria.listDistinct {
-        if (term) {
-          // Add a condition for each parameter we wish to search.
-          or {
-            match_in.each { String param_name ->
-              criteria.add ("${param_name}", "ilike", "%${term}%")
+      def results
+      if (page) {
+        
+        // Offset.
+        def offset = (page - 1) * perPage
+        results = criteria.list ("max": (perPage), "offset": (offset)) {
+          if (term) {
+            // Add a condition for each parameter we wish to search.
+            or {
+              match_in.each { String param_name ->
+                criteria.add ("${param_name}", "ilike", "%${term}%")
+              }
             }
           }
+          order ("name", "asc")
         }
-      }.collect { KBComponent comp ->
+        
+      } else {
+        results = criteria.list {
+          if (term) {
+            // Add a condition for each parameter we wish to search.
+            or {
+              match_in.each { String param_name ->
+                criteria.add ("${param_name}", "ilike", "%${term}%")
+              }
+            }
+          }
+          
+          order ("name", "asc")
+        } 
+      }
       
+      def formattedResults = results.collect { KBComponent comp ->
+            
         // Add each requested parameter to the return map. Label is a special case as we return "name"
         // for this. This is to keep backwards compatibility with the JQuery autocomplete default behaviour.
         def item = [ "value" : "${comp.name}::{${c.getSimpleName()}:${comp.id}}"]
@@ -666,7 +695,23 @@ class ApiController {
         
         // Return the map entry.
         item
-      })
+      }
+      
+      // Add the total if we have a page.
+      def resp
+      if (page) {
+        // Return the page of results with a total.
+        resp = [
+          "total" : results.totalCount,
+          "list"  : formattedResults
+        ]
+      } else {
+        // Just return the formatted results.
+        resp = formattedResults
+      }
+      
+      // Return the response.
+      apiReturn (resp)
 
     } catch (Throwable t) {
       log.error(t);

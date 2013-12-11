@@ -467,10 +467,15 @@ GOKb.getRefData = function (type, callbacks, ajaxOpts) {
 };
 
 /**
- * Get OID
+ * Get Lookup
  */
-GOKb.getOID = function (value, callbacks, ajaxOpts) {
-  GOKb.doCommand ("oid", {"value" : value }, null, callbacks, ajaxOpts);
+GOKb.getComponentLookup = function (term, extraParams, callbacks, ajaxOpts) {
+  
+  // Extra params.
+  var params = $.extend({}, extraParams, {"term" : term });
+  
+  // Fire the method.
+  GOKb.doCommand ("lookup", params, null, callbacks, ajaxOpts);
 };
 
 /**
