@@ -318,11 +318,12 @@ class ApiController {
           // Replace the component regex to just leave the string, and set as the name.
           src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
           
-          // Save the object.
-          src.save(failOnError:true)
+          // Save the src.
+          src.save(failOnError:true, flush:true)
           
           // Set the source of this project.
-          project.setSource(src)
+          project.source = src
+          project.save(flush:true, failOnError:true)
         }
 
         // Generate a filename...
