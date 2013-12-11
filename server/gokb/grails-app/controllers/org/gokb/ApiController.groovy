@@ -318,12 +318,11 @@ class ApiController {
           // Replace the component regex to just leave the string, and set as the name.
           src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
           
-          // Save the src.
-          src.save(failOnError:true, flush:true)
-          
           // Set the source of this project.
-          project.source = src
-          project.save(flush:true, failOnError:true)
+          project.setSource(src)
+          
+          // Save the object.
+          src.save (failOnError:true)
         }
 
         // Generate a filename...
@@ -410,7 +409,7 @@ class ApiController {
 
       if ( validationResult.status == true ) {
         ingestService.extractRules(parsed_data, project)
-        doIngest(parsed_data, project, incremental, user);
+        doIngest(parsed_data, project, incremental, user)
       }
       else {
         log.debug("validation failed, not ingesting");
