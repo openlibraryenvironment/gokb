@@ -215,9 +215,15 @@ GOKb.forms.bindDataLookup = function (elem, def) {
   
   // Make this element a Select2.
   var conf = {
-    placeholder: (def.create ? "Add/" : "") + "Select a " + def.label,
-    minimumInputLength: 1,
-    escapeMarkup: function (m) { return m; }
+    placeholder         : (def.create ? "Add/" : "") + "Select a " + def.label,
+    minimumInputLength  : 1,
+    selectOnBlur        : true,
+    escapeMarkup        : function (m) { return m; },
+    id                  : function (object) { return object.value; },
+    initSelection       : function (element, callback) {
+      var data = {id: element.val(), text: element.val()};
+      callback(data);
+    }
   };
   
   // If not a select then add a query lookup, else we need to fetch all the results first and add them all.
@@ -229,8 +235,8 @@ GOKb.forms.bindDataLookup = function (elem, def) {
       
       // The text.
       var text;
-      
-      if (query.term && "value" in result && result.value != "add:new:entry") {
+      var suffix = "0000}"
+      if (query.term && "value" in result && result.value.indexOf(suffix, this.length - suffix.length) === -1) {
         
         // Highlight within the label the matched area.
         var highlight = new RegExp('(' + RegExp.escape(query.term) + ')', "i");
@@ -278,12 +284,7 @@ GOKb.forms.bindDataLookup = function (elem, def) {
               };
               
               if (def.create && query.page == 1) {
-                res.results.push({
-                  label: "Add new",
-                  children: [
-                    {id:"add:new:entry", label: (query.term)}
-                  ]
-                });
+                res.results.push({value: (query.term + "::{" + source[1] + ":0000}"), label: (query.term)});
               }
               
               if (data && "list" in data && data.list.length > 0) {
@@ -291,27 +292,8 @@ GOKb.forms.bindDataLookup = function (elem, def) {
                 // Add more if we have more results that we can fetch.
                 res.more = ((query.page * 10) < data.total);
                 
-                // Populate the results.
-                var results = [];
-                
-                // Alias the "value" element to an id for the select2 library. Otherwise
-                // the element will not be selectable.
-                $.each(data.list, function() {
-                  
-                  this.id = this.value;
-                  results.push(this);
-                });
-                
-                // Add a root element if we are allowing creation.
-                if (def.create) {
-                  results = [{
-                    "label": "Select existing" + (res.more || query.page > 1 ? " (page " + query.page + ")" : ""),
-                    "children": results
-                  }];
-                }
-                
                 // Push the results list to the response.
-                res.results = $.merge(res.results, results);
+                res.results = $.merge(res.results, data.list);
               }
               
               // Do the callback.

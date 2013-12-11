@@ -62,6 +62,7 @@ class ApiController {
   def ingestService
   def grailsApplication
   def springSecurityService
+  def componentLookupService
 
   /**
    * Before interceptor to check the current version of the refine
@@ -309,6 +310,20 @@ class ApiController {
             project.provider = org
           }
         }
+        
+        if (params.source) {
+          // Need to set the source here.
+          Source src = componentLookupService.lookupComponent(params.source)
+          
+          // Replace the component regex to just leave the string, and set as the name.
+          src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
+          
+          // Save the object.
+          src.save(failOnError:true)
+          
+          // Set the source of this project.
+          project.setSource(src)
+        }
 
         // Generate a filename...
         def fileName = "project-${randomUUID()}.tar.gz"
@@ -521,7 +536,7 @@ class ApiController {
           [
             label:'Source',
             type:'textarea',
-            source:'ComponentLookup:TitleInstance',
+            source:'ComponentLookup:Source',
             name:'source',
             create:true,
           ],
