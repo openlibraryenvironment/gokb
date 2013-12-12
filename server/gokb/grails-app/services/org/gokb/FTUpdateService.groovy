@@ -11,6 +11,8 @@ import java.util.GregorianCalendar
 class FTUpdateService {
 
   def executorService
+  def ESWrapperService
+
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
   def updateFTIndexes() {
@@ -119,4 +121,26 @@ class FTUpdateService {
     propertyInstanceMap.get().clear()
   }
 
+  def clearDownAndInitES() {
+    log.debug("Clear down and init ES");
+    org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
+    org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
+
+    // Get hold of an index admin client
+    org.elasticsearch.groovy.client.GIndicesAdminClient index_admin_client = new org.elasticsearch.groovy.client.GIndicesAdminClient(esclient);
+
+    try {
+      // Drop any existing kbplus index
+      log.debug("Dropping old ES index....");
+      def future = index_admin_client.delete {
+        indices 'gokb'
+      }
+      future.get()
+      log.debug("Drop old ES index completed OK");
+    }
+    catch ( Exception e ) {
+      log.warn("Problem deleting index...",e);
+    }
+
+  }
 }
