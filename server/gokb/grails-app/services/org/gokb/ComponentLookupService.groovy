@@ -28,14 +28,21 @@ class ComponentLookupService {
           Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
               "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(component_match[0][1])}"
           )
+          
 
           // Parse the long.
           long the_id = Long.parseLong( component_match[0][2] )
-
-          // Try and get the component.
-          comp = c.get(the_id)
-
-          if (!c) log.debug ("No component with that ID. Return null.")
+          
+          if (the_id > 0) {
+  
+            // Try and get the component.
+            comp = c.get(the_id)
+  
+            if (!c) log.debug ("No component with that ID. Return null.")
+          } else {
+            log.debug ("Attempting to create a new component.")
+            comp = c.newInstance()
+          }
 
         } catch (Throwable t) {
           // Suppress errors here. Just return null.

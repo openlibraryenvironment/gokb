@@ -225,7 +225,9 @@ GOKb.showDialog = function(dialog) {
   
   // Run uniform on any form elements
   if (dialog.bindings.form) {
-    $("select, input, button, textarea", dialog.bindings.form).uniform();
+    $("select,input,button,textarea",	dialog.bindings.form)
+      .not(".none-uniform")
+      .uniform();
   }
   
   // Open the dialog and record the level (Z-Axis) at which it is displayed.
@@ -462,6 +464,18 @@ GOKb.projectDataAsParams = function (project) {
  */
 GOKb.getRefData = function (type, callbacks, ajaxOpts) {
   GOKb.doCommand ("refdata", {"type" : type }, null, callbacks, ajaxOpts);
+};
+
+/**
+ * Get Lookup
+ */
+GOKb.getComponentLookup = function (term, extraParams, callbacks, ajaxOpts) {
+  
+  // Extra params.
+  var params = $.extend({}, extraParams, {"term" : term });
+  
+  // Fire the method.
+  GOKb.doCommand ("lookup", params, null, callbacks, ajaxOpts);
 };
 
 /**
