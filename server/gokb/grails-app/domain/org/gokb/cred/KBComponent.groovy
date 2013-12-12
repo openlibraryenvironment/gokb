@@ -246,6 +246,7 @@ abstract class KBComponent {
     version column:'kbc_version'
     name column:'kbc_name'
     normname column:'kbc_normname'
+    source column:'kbc_source_fk'
     status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
     tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
@@ -259,6 +260,7 @@ abstract class KBComponent {
     normname  (nullable:true, blank:false, maxSize:2048)
     status    (nullable:true, blank:false)
     editStatus  (nullable:true, blank:false)
+    source (nullable:true, blank:false)
   }
 
   /**
