@@ -142,5 +142,27 @@ class FTUpdateService {
       log.warn("Problem deleting index...",e);
     }
 
+    // Create an index if none exists
+    log.debug("Create new ES index....");
+    def future = index_admin_client.create {
+      index 'gokb'
+    }
+    future.get()
+
+    log.debug("Add title mappings....");
+    future = index_admin_client.putMapping {
+      indices 'gokb'
+      type 'org.gokb.cred.KBComponent'
+      source  {
+        'name' {
+          properties {
+            name = [ type : "string" ]
+          }
+        }
+      }
+    }
+    future.get()
+
+
   }
 }

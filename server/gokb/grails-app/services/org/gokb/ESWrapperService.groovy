@@ -1,4 +1,4 @@
-package com.k_int.kbplus
+package org.gokb
 
 import org.elasticsearch.groovy.node.GNode
 import org.elasticsearch.groovy.node.GNodeBuilder
