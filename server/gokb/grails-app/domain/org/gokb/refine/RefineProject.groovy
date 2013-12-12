@@ -1,5 +1,6 @@
 package org.gokb.refine
 
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Org
 import org.gokb.cred.User
@@ -8,31 +9,31 @@ import javax.persistence.Transient
 class RefineProject extends KBComponent {
   
   public enum Status {
-	CHECKED_IN			("Checked In"),
-	CHECKED_OUT			("Checked Out"),
-	INGESTING			("Ingesting"),
-	INGESTED			("Ingested"),
-	INGEST_FAILED		("Ingest Failed"),
-	PARTIALLY_INGESTED	("Partialy Ingested")
-	
-	private name
-	
-	private Status (String name) {
-	  this.name = name
-	}
-	
-	public String getName () {
-	  name
-	}
+  CHECKED_IN      ("Checked In"),
+  CHECKED_OUT      ("Checked Out"),
+  INGESTING      ("Ingesting"),
+  INGESTED      ("Ingested"),
+  INGEST_FAILED    ("Ingest Failed"),
+  PARTIALLY_INGESTED  ("Partialy Ingested")
+  
+  private name
+  
+  private Status (String name) {
+    this.name = name
+  }
+  
+  public String getName () {
+    name
+  }
   }
 
    String description
      Date modified
    String file
 //  Boolean checkedIn
-   	 User lastCheckedOutBy
-   	 User modifiedBy
-   	 User createdBy
+      User lastCheckedOutBy
+      User modifiedBy
+      User createdBy
      Long localProjectID
    String hash
       Org provider
@@ -40,12 +41,18 @@ class RefineProject extends KBComponent {
      Long progress
    String possibleRulesString
    String notes
+   RefdataValue defaultSupplyMethod
+   RefdataValue defaultDataFormat
+   String accessUrl
+   String dataUrl
+
+   // UpdateStatus - Full/Partial
    
    // The rows skipped in the ingest process.
    Set<String> skippedTitles = []
    
    static hasMany = [
-	 skippedTitles: String,
+   skippedTitles: String,
    ]
    
    Status projectStatus = Status.CHECKED_OUT
@@ -61,16 +68,16 @@ class RefineProject extends KBComponent {
                     file column: 'rp_file'
 //               checkedIn column: 'rp_checked_in'
         lastCheckedOutBy column: 'rp_last_checked_out_by'
-        	   createdBy column: 'rp_created_by'
-			  modifiedBy column: 'rp_modified_by'
+             createdBy column: 'rp_created_by'
+        modifiedBy column: 'rp_modified_by'
           localProjectID column: 'rp_local_project_id'
                     hash column: 'rp_hash'
                 provider column: 'rp_prov_fk'
     lastValidationResult column: 'rp_last_validation_result', type: 'text'
                 progress column: 'rp_progress'
      possibleRulesString column: 'rp_matching_rules', type: 'text'
-     			   notes column: 'rp_notes'
-		   projectStatus column: 'rp_project_status'
+          notes column: 'rp_notes'
+       projectStatus column: 'rp_project_status'
   }
 
   
@@ -83,8 +90,13 @@ class RefineProject extends KBComponent {
                 provider nullable: true
                 progress nullable: true
      possibleRulesString nullable: true
-     			   notes nullable: true
-		   projectStatus nullable: false
+              notes nullable: true
+       projectStatus nullable: false
+    defaultSupplyMethod(nullable:true, blank:true)
+    defaultDataFormat(nullable:true, blank:true)
+    accessUrl(nullable:true, blank:true)
+    dataUrl(nullable:true, blank:true)
+
   }
 
   @Transient

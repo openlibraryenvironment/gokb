@@ -22,6 +22,7 @@ class BootStrap {
     }
 
     // Global System Roles
+    def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR') ?: new Role(authority: 'ROLE_CONTRIBUTOR', roleType:'global').save(failOnError: true)
     def userRole = Role.findByAuthority('ROLE_USER') ?: new Role(authority: 'ROLE_USER', roleType:'global').save(failOnError: true)
     def editorRole = Role.findByAuthority('ROLE_EDITOR') ?: new Role(authority: 'ROLE_EDITOR', roleType:'global').save(failOnError: true)
     def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType:'global').save(failOnError: true)
@@ -532,5 +533,17 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('DCType', 'Admin', "100").save()
     RefdataCategory.lookupOrCreate('DCType', 'Standard', "200").save()
     RefdataCategory.lookupOrCreate('DCType', 'Support', "300").save()
+
+    RefdataCategory.lookupOrCreate('License.Category', 'Content').save()
+    RefdataCategory.lookupOrCreate('License.Category', 'Software').save()
+
+    RefdataCategory.lookupOrCreate('Source.DataSupplyMethod', 'eMail').save()
+    RefdataCategory.lookupOrCreate('Source.DataSupplyMethod', 'HTTP Url').save()
+    RefdataCategory.lookupOrCreate('Source.DataSupplyMethod', 'FTP').save()
+    RefdataCategory.lookupOrCreate('Source.DataSupplyMethod', 'Other').save()
+
+    RefdataCategory.lookupOrCreate('Source.DataFormat', 'KBART').save()
+    RefdataCategory.lookupOrCreate('Source.DataFormat', 'Proprietary').save()
+
   }
 }
