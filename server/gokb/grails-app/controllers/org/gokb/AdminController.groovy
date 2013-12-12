@@ -5,6 +5,7 @@ import org.gokb.cred.*;
 class AdminController {
 
   def uploadAnalysisService
+  def FTUpdateService
 
   def tidyOrgData() {
 
@@ -90,6 +91,12 @@ class AdminController {
         }
       }
     }
+    redirect(url: request.getHeader('referer'))
+  }
+
+  def updateTextIndexes() {
+    log.debug("Call to update indexe");
+    FTUpdateService.updateFTIndexes();
     redirect(url: request.getHeader('referer'))
   }
 }
