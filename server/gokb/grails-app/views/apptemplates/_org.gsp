@@ -15,7 +15,7 @@
       <dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
       <dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
-      <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"/></dd>
+      <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown></dd>
   </dl>
 
   <ul id="tabs" class="nav nav-tabs">
