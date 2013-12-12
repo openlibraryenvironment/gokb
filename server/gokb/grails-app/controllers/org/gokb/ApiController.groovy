@@ -322,7 +322,7 @@ class ApiController {
           project.setSource(src)
           
           // Save the object.
-          src.save (failOnError:true, flush:true)
+          src.save (failOnError:true)
         }
 
         // Generate a filename...
