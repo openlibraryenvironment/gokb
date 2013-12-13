@@ -1,3 +1,6 @@
+<r:require modules="gokbstyle"/>
+<r:require modules="editable"/>
+
 <!DOCTYPE html>
 <html>
   <head>
