@@ -12,6 +12,7 @@ class FTUpdateService {
 
   def executorService
   def ESWrapperService
+  def sessionFactory
 
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
@@ -29,19 +30,21 @@ class FTUpdateService {
     log.debug("Execute IndexUpdateJob starting at ${new Date()}");
     def start_time = System.currentTimeMillis();
 
-    // org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
-    // org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
+    org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
+    org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
 
-    // updateES(esclient, com.k_int.kbplus.Org.class) { org ->
-    //   def result = [:]
-    //   result._id = org.impId
-    //   result.name = org.name
-    //   result.sector = org.sector
-    //   result.dbId = org.id
-    //   result.visible = ['Public']
-    //   result.rectype = 'Organisation'
-    //   result
-    // }
+    updateES(esclient, org.gokb.cred.KBComponent.class) { kbc ->
+      def result = [:]
+      result._id = "${kbc.class.name}:${kbc.id}"
+      result.name = kbc.name
+      result.altname = []
+      kbc.variantNames.each { vn ->
+        result.altname.add(vn.variantName)
+      }
+      result.componentType=kbc.class.simpleName
+
+      result
+    }
   }
 
   def updateES(esclient, domain, recgen_closure) {
@@ -152,17 +155,22 @@ class FTUpdateService {
     log.debug("Add title mappings....");
     future = index_admin_client.putMapping {
       indices 'gokb'
-      type 'org.gokb.cred.KBComponent'
+      type 'component'
       source  {
-        'name' {
+        'component' {
           properties {
-            name = [ type : "string" ]
+            name {
+              type = 'multi_field'
+              fields {
+                name : [ type : 'string', analyzer : 'snowball' ]
+                altname : [ type : 'string', analyzer : 'snowball']
+              }
+            }
+            componentType : [ type:"string", analyzer:'not_analyzed' ]
           }
         }
       }
     }
     future.get()
-
-
   }
 }

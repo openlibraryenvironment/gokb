@@ -99,4 +99,10 @@ class AdminController {
     FTUpdateService.updateFTIndexes();
     redirect(url: request.getHeader('referer'))
   }
+
+  def resetTextIndexes() {
+    log.debug("Call to update indexe");
+    FTUpdateService.clearDownAndInitES()
+    redirect(url: request.getHeader('referer'))
+  }
 }

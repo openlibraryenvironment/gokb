@@ -75,6 +75,7 @@
                     <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
                     <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
                     <li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
                     <li><g:link controller="user" action="search">User Management Console</g:link></li>
                     <li><g:link controller="home" action="about">About</g:link></li>
                   </ul>
