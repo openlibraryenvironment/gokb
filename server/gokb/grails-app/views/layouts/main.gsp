@@ -29,6 +29,7 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
+                  <li><g:link controller="globalSearch" action="index">Global Search</g:link></li>
                   <g:each in="${session.userPereferences?.mainMenuSections}" var="secname,sec">
                     <!-- ${secname.toLowerCase()} -->
                     <g:each in="${sec}" var="srch">

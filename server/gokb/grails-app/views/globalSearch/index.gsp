@@ -9,18 +9,19 @@
 
    <div class="container-fluid">
      <div class="row-fluid">
+       <div class="span12 well" style="text-align:center;">
 
-       <g:form action="index">
-       <input id="q" name="q" type="text" class="large" value="${params.q}"/><input type="submit"/>
-       </g:form>
+         <g:form action="index" method="get">
+           <input id="q" name="q" type="text" class="large" value="${params.q}"/><button name="submit" class="btn">Search</button>
+         </g:form>
 
-       <g:if test="${resultsTotal != null}">
-       Search returned ${resultsTotal}
-       </g:if>
-       <g:else> 
-         Not returned
-       </g:else>
-
+         <g:if test="${resultsTotal != null}">
+           Search returned ${resultsTotal}
+         </g:if>
+         <g:else>
+           Please enter criteria above (* to search all)
+         </g:else>
+       </div>
      </div>
      <div class="row-fluid">
        <div class="span2">
@@ -39,13 +40,24 @@
        </div>
        <div class="span10">
          <div id="resultsarea">
-           <ul>
-             <g:each in="${hits}" var="hit">
-               <li>
-                 ${hit.source.name} ${hit.source.componentType} ${hit.source._id}
-               </li>
-             </g:each>
-           </ul>
+           <table class="table table-striped table-bordered">
+             <thead>
+               <tr>
+                 <th>Component Type</th>
+                 <th>Component ID</th>
+                 <th>Component Name</th>
+               </tr>
+             </thead>
+             <tbody>
+               <g:each in="${hits}" var="hit">
+                 <tr>
+                   <td> ${hit.source.componentType} </td>
+                   <td> <g:link controller="resource" action="show" id="${hit.source._id}">${hit.source._id}</g:link> </td>
+                   <td> ${hit.source.name} </td>
+                 </tr>
+               </g:each>
+             </tbody>
+           </table>
          </div>
        </div>
      </div>
