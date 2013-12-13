@@ -29,6 +29,7 @@
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
+                  <li><g:link controller="globalSearch" action="index">Global Search</g:link></li>
                   <g:each in="${session.userPereferences?.mainMenuSections}" var="secname,sec">
                     <!-- ${secname.toLowerCase()} -->
                     <g:each in="${sec}" var="srch">
@@ -74,6 +75,8 @@
                   <ul class="dropdown-menu">
                     <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
                     <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
+                    <li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
                     <li><g:link controller="user" action="search">User Management Console</g:link></li>
                     <li><g:link controller="home" action="about">About</g:link></li>
                   </ul>

@@ -5,6 +5,17 @@ import javax.persistence.Transient
 class Source extends KBComponent {
 
   String url
+  String defaultAccessURL
+  String explanationAtSource
+  String contextualNotes
+  // Org combo -- What organisation - aggregator -- responsibleParty
+  String frequency
+  // Default method refdata - email web ftp other
+  // Default data Format KBART,Prop
+  RefdataValue defaultSupplyMethod
+  RefdataValue defaultDataFormat
+  Org responsibleParty
+
 
   static mapping = {
     url column:'source_url'
@@ -12,6 +23,9 @@ class Source extends KBComponent {
 
   static constraints = {
     url(nullable:true, blank:true)
+    defaultSupplyMethod(nullable:true, blank:true)
+    defaultDataFormat(nullable:true, blank:true)
+    responsibleParty(nullable:true, blank:true)
   }
 
   @Override

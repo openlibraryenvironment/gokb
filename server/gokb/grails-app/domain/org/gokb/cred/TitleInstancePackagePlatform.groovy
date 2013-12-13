@@ -52,7 +52,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   ]
 
   public getPersistentId() {
-    "gokb:TIPP:${title?.id}:${pkg?.id}:${hostPlatform?.id}"
+    "gokb:TIPP:${title?.id}:${pkg?.id}"
   }
 
   static mapping = {

@@ -81,7 +81,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       List<String> apis = properties.getList("api.entry");
       
       // Include local?
-      if (properties.getBoolean("localapi")) {
+      if (properties.containsKey("localapi") && properties.getBoolean("localapi")) {
         apis.addAll(0,
           Arrays.asList(new String[]{
             "Local", "local", "http://localhost:8080/gokb/api/"
@@ -131,6 +131,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       
       _logger.info("Now using workspace '" + currentWorkspace.getName() + "' at URL '" +
         currentWorkspace.getURL() + "'");
+      
+      // Need to clear loggin information too.
+      userDetails = null;
+      _logger.info("User login details reset to force login on workspace change.");
     }
     
     public RefineWorkspace[] getWorkspaces() {
