@@ -85,7 +85,7 @@ class FTUpdateService {
 
         def future = esclient.index {
           index "gokb"
-          type domain.name
+          type "component"
           id idx_record['_id']
           source idx_record
         }

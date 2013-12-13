@@ -9,110 +9,44 @@
 
    <div class="container-fluid">
      <div class="row-fluid">
-       <div id="openActivities" class="span6 well">
-         <g:if test="${(openActivities != null ) && ( openActivities.size() > 0 )}">
-           <h3>Currently open activities</h3>
-           <table class="table table-striped table-bordered">
-             <thead>
-               <tr>
-                 <td>Activity</td>
-                 <td>Type</td>
-                 <td>Created</td>
-                 <td>Last Updated</td>
-               </tr>
-             </thead>
-             <tbody>
-               <g:each in="${openActivities}" var="activity">
-                 <tr>
-                   <td><g:link controller="workflow" action="${activity.activityAction}" id="${activity.id}">${activity.activityName?:'No name'}</g:link></td>
-                   <td>${activity.type}</td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.dateCreated}"/></td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.lastUpdated}"/></td>
-                 </tr>
-               </g:each>
-             </tbody>
-           </table>
-         </g:if>
-         <g:else>
-           <h3>No open activities</h3>
-         </g:else>
 
-         <g:if test="${(recentReviewRequests != null ) && ( recentReviewRequests.size() > 0 )}">
-           <h3>Your most recent review requests</h3>
-           <table class="table table-striped table-bordered">
-             <thead>
-               <tr>
-                 <td>Object</td>
-                 <td>Cause</td>
-                 <td>Request</td>
-                 <td>Date</td>
-               </tr>
-             </thead>
-             <tbody>
-               <g:each in="${recentReviewRequests}" var="rr">
-                 <tr>
-                   <td><g:link controller="resource" action="show" id="${rr.componentToReview.class.name}:${rr.componentToReview.id}">${rr.componentToReview.toString()}</g:link></td>
-                   <td>${rr.descriptionOfCause}</td>
-                   <td>${rr.reviewRequest}</td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${rr.dateCreated}"/></td>
-                 </tr>
-               </g:each>
-             </tbody>
-           </table>
-         </g:if>
-         <g:else>
-           <h3>There are no outstanding review requests allocated to you</h3>
-         </g:else>
+       <g:form action="index">
+       <input id="q" name="q" type="text" class="large" value="${params.q}"/><input type="submit"/>
+       </g:form>
 
+       <g:if test="${resultsTotal != null}">
+       Search returned ${resultsTotal}
+       </g:if>
+       <g:else> 
+         Not returned
+       </g:else>
 
-         <g:if test="${(recentlyClosedActivities != null ) && ( recentlyClosedActivities.size() > 0 )}">
-           <h3>Recently Closed activities</h3>
-           <table class="table table-striped table-bordered">
-             <thead>
-               <tr>
-                 <td>Activity</td>
-                 <td>Type</td>
-                 <td>Status</td>
-                 <td>Created</td>
-                 <td>Last Updated</td>
-               </tr>
-             </thead>
-             <tbody>
-               <g:each in="${recentlyClosedActivities}" var="activity">
-                 <tr>
-                   <td><g:link controller="workflow" action="${activity.activityAction}" id="${activity.id}">${activity.activityName?:'No name'}</g:link></td>
-                   <td>${activity.type.value}</td>
-                   <td>${activity.status.value}</td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.dateCreated}"/></td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.lastUpdated}"/></td>
-                 </tr>
-               </g:each>
-             </tbody>
-           </table>
-         </g:if>
-         <g:else>
-           <h3>No recently closed activities</h3>
-         </g:else>
-
+     </div>
+     <div class="row-fluid">
+       <div class="span2">
+         <div class="facetFilter">
+           <g:each in="${facets}" var="facet">
+             <div>
+               <h3 class="open"><a href="">${facet.key}</a></h3>
+               <ul>
+                 <g:each in="${facet.value}" var="fe">
+                   <li>${fe.display}:${fe.count}</li>
+                 </g:each>
+               </ul>
+             </div>
+           </g:each>
+         </div>
        </div>
-       <div id="recentActivity" class="span6 well">
-         <h3>History</h3>
-         <table class="table table-striped table-bordered">
-           <thead>
-             <tr>
-               <td>Activity</td>
-               <td>Date</td>
-             </tr>
-           </thead>
-           <tbody>
-             <g:each in="${recentlyViewed}" var="activity">
-               <tr>
-                 <td><g:link controller="${activity.controller}" action="${activity.action}" id="${activity.actionid}">${activity.title}</g:link></td>
-                 <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.activityDate}"/></td>
-               </tr>
+       <div class="span10">
+         <div id="resultsarea">
+           <ul>
+             <g:each in="${hits}" var="hit">
+               <li>
+                 ${hit.source.name} ${hit.source.componentType} ${hit.source._id}
+               </li>
              </g:each>
-           </tbody>
-         </table>
+           </ul>
+         </div>
        </div>
      </div>
    </div>
