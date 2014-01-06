@@ -16,6 +16,9 @@
   
   <dt><g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel></dt>
   <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
+  
+  <dt><g:annotatedLabel owner="${d}" property="currentPubisher">Current Publisher</g:annotatedLabel></dt>
+  <dd>${d.currentPublisher}</dd>
 </dl>
 
 <div id="content">
@@ -43,9 +46,6 @@
           <dt><g:annotatedLabel owner="${d}" property="continuingSeries">Continuing Series</g:annotatedLabel></dt>
           <dd><g:xEditableRefData owner="${d}" field="continuingSeries" config='TitleInstance.ContinuingSeries' /></dd>
           
-          <dt><g:annotatedLabel owner="${d}" property="imprint">Imprint</g:annotatedLabel></dt>
-          <dd><g:xEditable owner="${d}" field="imprint"/></dd>
-  
           <dt><g:annotatedLabel owner="${d}" property="alternateTitles">Alternate Titles</g:annotatedLabel></dt>
           <dd>
             <table class="table table-striped table-bordered">
@@ -154,7 +154,7 @@
               <thead>
                 <tr>
                   <th>Publisher Name</th>
-                  <th>Relationship Status</th>
+                  <th>Combo Status</th>
                   <th>Publisher From</th>
                   <th>Publisher To</th>
                 </tr>

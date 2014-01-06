@@ -73,10 +73,6 @@
       <g:xEditable class="ipe" owner="${d}" field="reference" />
     </dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
-    <dd>
-      <g:xEditable class="ipe" owner="${d}" field="shortcode" />
-    </dd>
   <dt><g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel></dt>
   <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
 
@@ -93,10 +89,7 @@
           ${d.additionalProperties?.size()}
       </span>
     </a></li>
-    <li><a href="#review" data-toggle="tab">Review Tasks <span
-        class="badge badge-warning">
-          ${d.reviewRequests?.size()}
-      </span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
   </ul>
 
 
