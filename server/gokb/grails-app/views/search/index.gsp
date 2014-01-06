@@ -58,7 +58,7 @@
             </g:if>
             <g:if test="${!request.isAjax()}" >
 	            <g:render template="qbeform" contextPath="."
-	              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}" />
+	              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
 	          </g:if>
             <g:if test="${recset != null}">
               <g:render template="qberesult" contextPath="."
