@@ -27,18 +27,17 @@
             </g:if>
           <g:else>
 
-            <div class="navbar navbar-default" role="navigation">
-                
-                <ul class="nav navbar-nav navbar-left">
-                 <li>
-                  <a>${qbetemplate.title?:'Search'}</a>
-                  <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}</g:if>
-                 </li>
-                </ul>
+            <div class="navbar">
+              <div class="navbar-inner">
+                <div class="brand">
+                  ${qbetemplate.title?:'Search'}
+                  <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}
+                  </g:if>
+-                </div>
 
                 <g:if test="${recset != null}">
-                  <ul class="nav navbar-nav navbar-right">
-                    <li>ttt<g:link title="Previous Page" controller="search"
+                  <ul class="nav pull-right">
+                    <li><g:link title="Previous Page" controller="search"
                         action="index"
                         params="${params+[offset:(offset-max),det:null]}">
                         <i class="icon-chevron-left"></i>
@@ -51,6 +50,7 @@
                       </g:link></li>
                   </ul>
                 </g:if>
+              </div>
             </div>
 
             <g:if test="${(qbetemplate.message != null)}">
