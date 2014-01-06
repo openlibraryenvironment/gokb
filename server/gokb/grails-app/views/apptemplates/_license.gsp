@@ -33,12 +33,6 @@
       <g:xEditable class="ipe" owner="${d}" field="url" />
     </dd>
     <dt>
-      <g:annotatedLabel owner="${d}" property="licenseDoc">License Doc</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:xEditable class="ipe" owner="${d}" field="file" />
-    </dd>
-    <dt>
       <g:annotatedLabel owner="${d}" property="licenseType">License Type</g:annotatedLabel>
     </dt>
     <dd>

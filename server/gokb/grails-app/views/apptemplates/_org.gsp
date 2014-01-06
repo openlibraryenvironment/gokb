@@ -12,8 +12,6 @@
       <dd><g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /></dd>
       <dt><g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel></dt>
       <dd><g:xEditable class="ipe" owner="${d}" field="reference"/></dd>
-      <dt><g:annotatedLabel owner="${d}" property="shortCode">Short Code</g:annotatedLabel></dt>
-      <dd><g:xEditable class="ipe" owner="${d}" field="shortcode"/></dd>
       <dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
       <dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown></dd>
   </dl>
@@ -58,25 +56,6 @@
               <g:else>
                 Record must be saved before roles can be edited.
               </g:else>
-            </dd>
-            <dt><g:annotatedLabel owner="${d}" property="tags">Tags</g:annotatedLabel></dt>
-            <dd>
-              <table class="table table-striped table-bordered">
-                <thead>
-                  <tr>
-                    <th>Tag Category</th>
-                    <th>Tag Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <g:each in="${d.tags}" var="t">
-                    <tr>
-                      <td>${t.owner.desc}</td>
-                      <td>${t.value}</td>
-                    </tr>
-                  </g:each>
-                </tbody>
-              </table>
             </dd>
         </dl>
       </g:if>
