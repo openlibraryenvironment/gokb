@@ -82,12 +82,6 @@ class Package extends KBComponent {
     lastProject    (nullable:true, blank:false)
   }
 
-//  @Transient
-//  def getPermissableCombos() {
-//    [
-//    ]
-//  }
-
   static def refdataFind(params) {
     def result = [];
     def ql = null;
@@ -101,6 +95,28 @@ class Package extends KBComponent {
 
     result
   }
-
-
+  
+  public void deleteSoft () {
+    // Call the delete method on the superClass.
+    super.deleteSoft()
+    
+    // Delete the tipps too as a TIPP should not exist without the associated,
+    // package.
+    def tipps = getTipps()
+     
+    tipps.each { def tipp ->
+      
+      // Ensure they aren't the javassist type classes here, as we will get a NoSuchMethod exception
+      // thrown below if we don't.
+      tipp = deproxy(tipp)
+      
+      tipp.deleteSoft()
+    }
+  }
+  
+  def availableActions() {
+    [
+      [code:'method::deleteSoft', label:'Delete (with associated TIPPs)']
+    ]
+  }
 }

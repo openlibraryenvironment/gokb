@@ -7,6 +7,7 @@ grails.project.source.level = 1.6
 
 //grails.project.war.file = "target/${appName}-${appVersion}.war"
 //grails.project.dependency.resolver = "maven"
+// grails.project.dependency.resolver = "maven"
 
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
@@ -40,13 +41,14 @@ grails.project.dependency.resolution = {
         runtime 'org.apache.commons:commons-compress:1.4.1'
         runtime 'org.apache.tika:tika-core:1.4'
         runtime 'xalan:xalan:2.7.1'
+        runtime 'org.elasticsearch:elasticsearch-lang-groovy:1.4.0'
     }
 
     plugins {
         runtime ':hibernate:3.6.10.2'
         runtime ":jquery:1.8.3"
         runtime ":resources:1.2"
-        runtime ':gsp-resources:latest.integration'
+        runtime ':gsp-resources:0.4.4'
 
         // Uncomment these (or add new ones) to enable additional resources capabilities
         //runtime ":zipped-resources:1.0"
@@ -59,11 +61,18 @@ grails.project.dependency.resolution = {
 
         compile ':cache:1.0.1'
 		
-	// Joda time to handle the ISO dates.
-	compile ":joda-time:1.4"
+      	// Joda time to handle the ISO dates.
+      	compile ":joda-time:1.4"
+
+        compile ":spring-security-core:1.2.7.3"
+        compile ":spring-security-ui:0.2"
+        compile ":spring-security-acl:1.1.1"
 
         compile ':mail:1.0.1', {
            excludes 'spring-test'
         }
+        
+        // Font awesome for font based icons.
+        compile ":font-awesome-resources:3.2.1"
     }
 }

@@ -30,7 +30,7 @@
         <td>
           <g:link controller='ajaxSupport' 
                   action='delete' 
-                  params="${[__context:combooid]}">Unlink</g:link>
+                  params="${[__context:combooid]}">Delete</g:link>
         </td>
       </tr>
     </g:each>

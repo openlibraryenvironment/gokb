@@ -25,6 +25,10 @@ class RefdataCategory {
   }
 
   static RefdataValue lookupOrCreate(category_name, value) {
+    return lookupOrCreate(category_name,value,null);
+  }
+
+  static RefdataValue lookupOrCreate(category_name, value, sortkey) {
 	
     if ( value == null )
       throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");
@@ -47,8 +51,8 @@ class RefdataCategory {
     if ( !result ) {
 	  
 	  // Create and save a new refdata value.
-      result = new RefdataValue(owner:cat, value:value)
-	  result.save(failOnError:true, flush:true)
+      result = new RefdataValue(owner:cat, value:value, sortKey:sortkey)
+      result.save(failOnError:true, flush:true)
     }
 
 	// return the refdata value.

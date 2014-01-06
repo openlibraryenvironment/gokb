@@ -1,9 +1,30 @@
 /**
  *  Local gokb overrides for bootstrap
  */
-
 .navbar-push {
   clear: both;
   padding-top: 45px;
 }
 
+.editable-inline textarea {
+  line-height: 1.2em;
+  height: 1.2em;
+  width: 400px;
+  white-space: nowrap;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.dl-horizontal dt {
+  width: 200px;
+  margin-bottom: 10px;
+}
+
+.dl-horizontal dd {
+  margin-left: 220px;
+  margin-bottom: 10px;
+}
+
+.tab-content dl {
+  padding: 0 20px 0 20px;
+}

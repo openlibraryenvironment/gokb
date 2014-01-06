@@ -3,6 +3,8 @@ package org.gokb.cred
 class License extends KBComponent {
   String     url
   String    file
+
+  // Known as license_type in docs
   RefdataValue  type
   String    summaryStatement
   

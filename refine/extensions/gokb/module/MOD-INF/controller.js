@@ -1,6 +1,7 @@
 var html = "text/html";
 var encoding = "UTF-8";
 var ClientSideResourceManager = Packages.com.k_int.gokb.refine.ExtendedResourceManager;
+var coreMod = module.getModule("core");
 
 /*
  * Register our custom commands.
@@ -8,12 +9,15 @@ var ClientSideResourceManager = Packages.com.k_int.gokb.refine.ExtendedResourceM
 function registerCommands() {
   Packages.java.lang.System.out.print("\tRegistering commands...");
   var RS = Packages.com.google.refine.RefineServlet;
+  RS.registerCommand(module, "get-workspaces", new Packages.com.k_int.gokb.refine.commands.GetWorkspaces());
+  RS.registerCommand(module, "set-active-workspace", new Packages.com.k_int.gokb.refine.commands.SetWorkspace());
   RS.registerCommand(module, "project-checkout", new Packages.com.k_int.gokb.refine.commands.CheckOutProject());
   RS.registerCommand(module, "project-checkin", new Packages.com.k_int.gokb.refine.commands.CheckInProject());
   RS.registerCommand(module, "project-validate", new Packages.com.k_int.gokb.refine.commands.ValidateData());
   RS.registerCommand(module, "project-estimate-changes", new Packages.com.k_int.gokb.refine.commands.EstimateDataChanges());
   RS.registerCommand(module, "rules-suggest", new Packages.com.k_int.gokb.refine.commands.SuggestRules());
   RS.registerCommand(module, "data-addrows", new Packages.com.k_int.gokb.refine.commands.AddRowsCommand());
+  RS.registerCommand(module, "data-trimws", new Packages.com.k_int.gokb.refine.commands.TrimWhitespaceCommand());
   RS.registerCommand(module, "datastore-save", new Packages.com.k_int.gokb.refine.commands.SaveDatastore());
   RS.registerCommand(module, "login", new Packages.com.k_int.gokb.refine.commands.Login());
   RS.registerCommand(module, "lookup", new Packages.com.k_int.gokb.refine.commands.Lookup());
@@ -40,7 +44,7 @@ function registerFunction (name, clazz) {
 
 
 /*
- * Function invoked to initialize the extension.
+ * Function invoked to initialise the extension.
  */
 function init() {
   Packages.java.lang.System.out.println("Initializing GOKb...");
@@ -48,6 +52,42 @@ function init() {
   registerCommands();
   registerFunctions();
   
+  // Remove jQuery version 1.4.x - 1.7.x and replace with jQuery 1.8.
+  // Latest OpenRefine code now uses jQuery 1.9. To keep compatibility with older,
+  // refine versions we only replace pre-1.8 versions with 1.8. If no match is found
+  // then the 1.8 library should not be added.
+  ClientSideResourceManager.replacePath(
+    "index/scripts",
+    coreMod,
+    'externals/\\Qjquery-\\E(1\\.[4-7]).*\\.js',
+    'scripts/jquery/jquery.js',
+    module
+  );
+  ClientSideResourceManager.replacePath(
+    "project/scripts",
+    coreMod,
+    'externals/\\Qjquery-\\E(1\\.[4-7]).*\\.js',
+    'scripts/jquery/jquery.js',
+    module
+  );
+  
+  // Replace jQuery UI version 1.8.x and lower with 1.8.24
+  ClientSideResourceManager.replacePath(
+    "index/scripts",
+    coreMod,
+    'externals/jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8])[^\\d].*\\.js',
+    'scripts/jquery/jquery-ui.min.js',
+    module
+  );
+  ClientSideResourceManager.replacePath(
+    "project/scripts",
+    coreMod,
+    'externals/jquery-ui/\\Qjquery-ui-\\E(1\\.[1-8])[^\\d]+.*\\.js',
+    'scripts/jquery/jquery-ui.min.js',
+    module
+  );
+  
+  // Index paths.
   ClientSideResourceManager.addPaths(
 		 "index/scripts",
 		 module,
@@ -67,22 +107,12 @@ function init() {
     module,
     [
      "styles/jqui/jquery-ui.css",
-     "styles/uniform.default.css",
-     "styles/uniform.aristo.css",
+     "styles/uniform.aristo.min.css",
      "styles/common.less",
      "styles/index.less",
     ]
   );
 
-  // Script files to inject into /project page
-  ClientSideResourceManager.prependPaths(
-    "project/scripts",
-  	module,
-  	[
-  	 "scripts/jquery/jquery.js",
-  	 "scripts/jquery/jquery-ui.min.js"
-  	]
-  );
   ClientSideResourceManager.addPaths(
     "project/scripts",
     module,
@@ -92,6 +122,7 @@ function init() {
      "scripts/plugins/jquery.insert-at-caret.js",
      "scripts/plugins/jquery.contextmenu.js",
      "scripts/plugins/jquery.ui-lookup.js",
+     "scripts/plugins/select2.min.js",
      "scripts/common.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
@@ -110,9 +141,9 @@ function init() {
     module,
     [
       "styles/jqui/jquery-ui.css",
-      "styles/uniform.default.css",
-      "styles/uniform.aristo.css",
+      "styles/uniform.aristo.min.css",
       "styles/contextmenu.css",
+      "styles/select2.css",
       "styles/common.less",
     ]
   );

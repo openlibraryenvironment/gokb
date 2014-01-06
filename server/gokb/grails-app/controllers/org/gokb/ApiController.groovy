@@ -62,6 +62,7 @@ class ApiController {
   def ingestService
   def grailsApplication
   def springSecurityService
+  def componentLookupService
 
   /**
    * Before interceptor to check the current version of the refine
@@ -78,13 +79,13 @@ class ApiController {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.serverUrl ?: 'http://gokb.kuali.org'
 
-      if (gokbVersion != grailsApplication.config.refine_min_version) {
-        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
-        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
-        "error")
-        return false
-      }
+//      if (gokbVersion != grailsApplication.config.refine_min_version) {
+//        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
+//        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
+//        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
+//        "error")
+//        return false
+//      }
     }
   }
 
@@ -309,6 +310,20 @@ class ApiController {
             project.provider = org
           }
         }
+        
+        if (params.source) {
+          // Need to set the source here.
+          Source src = componentLookupService.lookupComponent(params.source)
+          
+          // Replace the component regex to just leave the string, and set as the name.
+          src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
+          
+          // Set the source of this project.
+          project.setSource(src)
+          
+          // Save the object.
+          src.save (failOnError:true)
+        }
 
         // Generate a filename...
         def fileName = "project-${randomUUID()}.tar.gz"
@@ -394,7 +409,7 @@ class ApiController {
 
       if ( validationResult.status == true ) {
         ingestService.extractRules(parsed_data, project)
-        doIngest(parsed_data, project, incremental, user);
+        doIngest(parsed_data, project, incremental, user)
       }
       else {
         log.debug("validation failed, not ingesting");
@@ -519,9 +534,16 @@ class ApiController {
             text : 'Properties'
           ],
           [
+            label:'Source',
+            type:'textarea',
+            source:'ComponentLookup:Source',
+            name:'source',
+            create:true,
+          ],
+          [
             label:'Provider',
-            type:'refdata',
-            refdataType:'cp',
+            type:'select',
+            source:'RefData:cp',
             name:'provider',
           ],
           [
@@ -602,6 +624,9 @@ class ApiController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
+    
+    // Results per page.
+    def perPage = 10;
 
     // Get the "term" parameter for performing a search.
     def term = params.term
@@ -613,6 +638,8 @@ class ApiController {
     // Attributes to return.
     def attr = ["label"]
     attr += params.list("attr")
+    
+    def page = params.int("page")
 
     // Should take a type parameter and do the right thing.
     try {
@@ -620,18 +647,42 @@ class ApiController {
         "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
       )
       
+      // If we have a page then we should add a max and offset.
       def criteria = ComboCriteria.createFor(c.createCriteria())
-      apiReturn ( criteria.listDistinct {
-        if (term) {
-          // Add a condition for each parameter we wish to search.
-          or {
-            match_in.each { String param_name ->
-              criteria.add ("${param_name}", "ilike", "%${term}%")
+      def results
+      if (page) {
+        
+        // Offset.
+        def offset = (page - 1) * perPage
+        results = criteria.list ("max": (perPage), "offset": (offset)) {
+          if (term) {
+            // Add a condition for each parameter we wish to search.
+            or {
+              match_in.each { String param_name ->
+                criteria.add ("${param_name}", "ilike", "%${term}%")
+              }
             }
           }
+          order ("name", "asc")
         }
-      }.collect { KBComponent comp ->
+        
+      } else {
+        results = criteria.list {
+          if (term) {
+            // Add a condition for each parameter we wish to search.
+            or {
+              match_in.each { String param_name ->
+                criteria.add ("${param_name}", "ilike", "%${term}%")
+              }
+            }
+          }
+          
+          order ("name", "asc")
+        } 
+      }
       
+      def formattedResults = results.collect { KBComponent comp ->
+            
         // Add each requested parameter to the return map. Label is a special case as we return "name"
         // for this. This is to keep backwards compatibility with the JQuery autocomplete default behaviour.
         def item = [ "value" : "${comp.name}::{${c.getSimpleName()}:${comp.id}}"]
@@ -659,12 +710,80 @@ class ApiController {
         
         // Return the map entry.
         item
-      })
+      }
+      
+      // Add the total if we have a page.
+      def resp
+      if (page) {
+        // Return the page of results with a total.
+        resp = [
+          "total" : results.totalCount,
+          "list"  : formattedResults
+        ]
+      } else {
+        // Just return the formatted results.
+        resp = formattedResults
+      }
+      
+      // Return the response.
+      apiReturn (resp)
 
     } catch (Throwable t) {
       log.error(t);
       /* Just return an empty list. */
       apiReturn ([])
+    }
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def quickCreate() {
+    // Get the type of component we are going to attempt to create.
+    def type = params.qq_type
+    
+    try {
+      Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
+        "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(type)}"
+      )
+      
+      // Try and create a new instance passing in the supplied parameters.
+      def comp = c.newInstance(params)
+      
+      // Set all the parameters passed in.
+      params.each { prop, value ->
+        // Only set the property if we have a value.
+        if (value != null && value != "") {
+          try {
+            comp."${prop}" = value
+          } catch (Throwable t) {
+            /* Suppress the error */
+          }
+        }
+      }
+      
+      switch (c) {
+        
+        case Package : 
+        
+          // We also need to create a review request against Packages created here.
+          ReviewRequest.raise (
+            comp,
+            "Review and set provider of this package.",
+            "Package created in refine without a provider.",
+            springSecurityService.currentUser
+          )
+          break;
+      }
+      
+      // Save.
+      comp.save(failOnError: true)
+      
+      // Now that the object has been saved we need to return the string.
+      apiReturn("${comp.name}::{${c.getSimpleName()}:${comp.id}}")
+      
+    } catch (Throwable t) {
+      /* Just return an empty list. */
+      log.error(t)
+      apiReturn (null, "There was an error creating a new Component of ${type}")
     }
   }
 }

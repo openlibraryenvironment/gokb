@@ -11,7 +11,7 @@ class WorkflowController {
   def springSecurityService
 
   def actionConfig = [
-    'object::statusDeleted':[actionType:'simple'],
+    'method::deleteSoft':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement']
   ];
@@ -35,7 +35,45 @@ class WorkflowController {
       }
 
       switch ( action_config.actionType ) {
-        case 'simple': 
+        case 'simple':
+          
+          def method_config = params.selectedBulkAction.split(/\:\:/) as List
+          
+          switch (method_config[0]) {
+            
+            case "method" : 
+          
+              // Everything after the first 2 "parts" are args for the method.
+              def method_params = []
+              if (method_config.size() > 2) {
+                method_params.addAll(method_config.subList(2, method_config.size()))
+              }
+              
+              // We should just call the method on the targets.
+              result.objects_to_action.each {def target ->
+                
+                log.debug ("Attempting to fire method ${method_config[1]} (${method_params})")
+                
+                // Wrap in a transaction.
+                KBComponent.withNewTransaction {def trans_status ->
+                  try {
+                    
+                    // Just try and fire the method.
+                    target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
+                    
+                    // Save the object.
+                    target.save(failOnError:true)
+                  } catch (Throwable t) {
+                  
+                    // Rollback and log error.
+                    trans_status.setRollbackOnly()
+                    t.printStackTrace()
+                    log.error(t)
+                  }
+                }
+              }
+              break
+          }
           // Do stuff
           redirect(url: result.ref)
           break;
@@ -152,12 +190,12 @@ class WorkflowController {
                                         title_id:old_tipp.title.id, 
                                         package_id:new_tipp_package.id, 
                                         platform_id:new_tipp_platform.id,
-                                        start_date:'',
-                                        start_volume:'',
-                                        start_issue:'',
-                                        end_date:'',
-                                        end_volume:'',
-                                        end_issue:''])
+                                        start_date:old_tipp.start_date,
+                                        start_volume:old_tipp.start_volume,
+                                        start_issue:old_tipp.start_issue,
+                                        end_date:old_tipp.end_date,
+                                        end_volume:old_tipp.end_volume,
+                                        end_issue:old_tipp.end_issue])
               }
               else {
                 log.error("Unable to find key (${tipp_id}) In map: ${activity_data.tipps}");
@@ -329,5 +367,37 @@ class WorkflowController {
       outs.flush()
       outs.close()
     }
+  }
+
+  def authorizeVariant() {
+    log.debug(params);
+    def result = [:]
+    result.ref=request.getHeader('referer')
+    def variant = KBComponentVariantName.get(params.id)
+
+    if ( variant != null ) {
+      // Does the current owner.name exist in a variant? If not, we should create one so we don't loose the info
+      def current_name_as_variant = variant.owner.variantNames.find { it.variantName == variant.owner.name }
+
+      if ( current_name_as_variant == null ) {
+        def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant.owner.name).save(flush:true);
+      }
+
+      variant.owner.name = variant.variantName
+      variant.owner.save(flush:true);
+    }
+
+    redirect(url: result.ref)
+  }
+
+  def deleteVariant() {
+    log.debug(params);
+    def result = [:]
+    result.ref=request.getHeader('referer')
+    def variant = KBComponentVariantName.get(params.id)
+    if (variant != null ) {
+      variant.delete()
+    }
+    redirect(url: result.ref)
   }
 }

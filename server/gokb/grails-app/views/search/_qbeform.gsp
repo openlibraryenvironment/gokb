@@ -16,7 +16,8 @@
                                      name="${fld.qparam}" 
                                      baseClass="${fld.baseClass}"
                                      filter1="${fld.filter1?:''}"
-                                     value="${params[fld.qparam]}"/>
+                                     value="${params[fld.qparam]}"
+                                     addBlankValue="yes" />
         </g:if>
         <g:else>
           <input type="text" name="${fld.qparam}" id="${fld.qparam}" placeholder="${fld.placeholder}" value="${params[fld.qparam]}">

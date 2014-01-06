@@ -135,7 +135,12 @@
 						})
 						.focus();
 					
-					var self = $this._autocomplete.data('autocomplete');
+					var self = $this._autocomplete.data('ui-autocomplete');
+					
+					if (!self || self == undefined) {
+					  self = $this._autocomplete.data('autocomplete');
+					}
+					
 					self.close = function () {};
 
 					if (compareUiVersion('1.8.20') == 1) {

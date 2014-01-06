@@ -3,7 +3,7 @@
 <head>
 <meta name="layout" content="main" />
 <r:require modules="gokbstyle,bootstrap-popover" />
-<title>GOKb</title>
+<title>GOKb Search</title>
 <style>
 #modal {
   width: 900px; /* SET THE WIDTH OF THE MODAL */
@@ -26,16 +26,19 @@
               Please select a template from the navigation menu
             </g:if>
           <g:else>
-            <div class="navbar">
-              <div class="navbar-inner">
-                <div class="brand">
-                  ${qbetemplate.title?:'Search'}
-                  <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}
-                  </g:if>
-                </div>
+
+            <div class="navbar navbar-default" role="navigation">
+                
+                <ul class="nav navbar-nav navbar-left">
+                 <li>
+                  <a>${qbetemplate.title?:'Search'}</a>
+                  <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}</g:if>
+                 </li>
+                </ul>
+
                 <g:if test="${recset != null}">
-                  <ul class="nav pull-right">
-                    <li><g:link title="Previous Page" controller="search"
+                  <ul class="nav navbar-nav navbar-right">
+                    <li>ttt<g:link title="Previous Page" controller="search"
                         action="index"
                         params="${params+[offset:(offset-max),det:null]}">
                         <i class="icon-chevron-left"></i>
@@ -48,15 +51,15 @@
                       </g:link></li>
                   </ul>
                 </g:if>
-              </div>
             </div>
 
             <g:if test="${(qbetemplate.message != null)}">
               <p style="text-align:center"><bootstrap:alert class="alert-info">${qbetemplate.message}</bootstrap:alert></p>
             </g:if>
-
-            <g:render template="qbeform" contextPath="."
-              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}" />
+            <g:if test="${!request.isAjax()}" >
+	            <g:render template="qbeform" contextPath="."
+	              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}" />
+	          </g:if>
             <g:if test="${recset != null}">
               <g:render template="qberesult" contextPath="."
                 model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det]}" />
@@ -66,7 +69,7 @@
       </div>
 
       <g:if test="${displayobj != null}">
-        <div id="mainarea" class="span6">
+        <div id="resultsarea" class="span6">
           <div class="well">
 
             <div class="navbar">

@@ -5,6 +5,7 @@ class RefdataValue {
   String value
   String icon
   String description
+  String sortKey
   RefdataValue useInstead
 
   static belongsTo = [
@@ -12,37 +13,39 @@ class RefdataValue {
   ]
 
   static mapping = {
-             id column:'rdv_id'
-        version column:'rdv_version'
-          owner column:'rdv_owner', index:'rdv_entry_idx'
-          value column:'rdv_value', index:'rdv_entry_idx'
+    id column:'rdv_id'
+    version column:'rdv_version'
+    owner column:'rdv_owner', index:'rdv_entry_idx'
+    value column:'rdv_value', index:'rdv_entry_idx'
     description column:'rdv_desc'
-     useInstead column:'rdv_use_instead'
-           icon column:'rdv_icon'
+    sortKey column:'rdv_sortkey'
+    useInstead column:'rdv_use_instead'
+    icon column:'rdv_icon'
   }
 
   static constraints = {
-           icon(nullable:true, blank:true)
+    icon(nullable:true, blank:true)
     description(nullable:true, blank:true, maxSize:64)
-     useInstead(nullable:true, blank:false)
+    useInstead(nullable:true, blank:false)
+    sortKey(nullable:true, blank:false)
   }
-  
+
   @Override
   public String toString() {
-	return "${value}"
+    return "${value}"
   }
-  
+
   @Override
   public boolean equals (Object obj) {
-	
-	if (obj != null) {
-	  Object dep_obj = KBComponent.deproxy (obj)
-	  if (dep_obj instanceof RefdataValue) {
-		return dep_obj.id == id
-	  }
-	}
-	
-	return false
+
+    if (obj != null) {
+      Object dep_obj = KBComponent.deproxy (obj)
+      if (dep_obj instanceof RefdataValue) {
+        return dep_obj.id == id
+      }
+    }
+
+    return false
   }
 
   static def refdataFind(params) {
@@ -55,7 +58,7 @@ class RefdataValue {
     def query_params = ["%${params.q.toLowerCase()}%"]
 
     if ( ( params.filter1 != null ) && ( params.filter1.length() > 0 ) ) {
-      query += " and rv.owner.desc = ?"
+      query += " and rv.owner.desc = ? order by rv.sortKey, rv.description"
       query_params.add(params.filter1);
     }
 
@@ -70,7 +73,7 @@ class RefdataValue {
     result
   }
 
-//  def availableActions() {
-//    [ [ code:'object::delete' , label: 'Delete' ] ]
-//  }
+  //  def availableActions() {
+  //    [ [ code:'object::delete' , label: 'Delete' ] ]
+  //  }
 }

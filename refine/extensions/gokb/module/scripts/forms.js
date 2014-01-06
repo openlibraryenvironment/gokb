@@ -127,29 +127,6 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		// Add the element based on the def.
 		var	elem, opts;
 		switch (def.type) {
-			case 'refdata' :
-				
-				// Create the select element.
-				elem = $("<select />");
-				
-				// Bind the refdata to the dropdown.
-				GOKb.getRefData ("cp", {
-					onDone : function (data) {
-						if ("result" in data && "datalist" in data.result) {
-							$.each(data.result.datalist, function () {
-								var opt = $('<option />', {"value" : this.value})
-									.text(this.name)
-								;
-								
-								// Append the arguments...
-								elem.append(
-								  opt
-								);
-							});
-						}
-					}
-				}, {async : false});
-				break;
 			case 'select' :
 				elem = $("<select />");
 				break;
@@ -159,7 +136,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 			case 'option' 	:
 				add_to = parent;
 			case 'textarea' :
-				elem = $("<" + def.type + " />");
+				elem = $("<" + def.type + "/>");
 				break;
 		
 			case 'hidden' :
@@ -172,14 +149,23 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 				break;
 		}
 		
+		// Default to add to new div.
 		if (add_to == null) {
-			// Create div container for the form element.
-			add_to = $('<div />')
-				.attr({
-					'class' : 'form-row'
-				})
-			;
-			
+      // Create div container for the form element.
+      add_to = $('<div />')
+        .attr({
+          'class' : 'form-row'
+        })
+      ;
+    }
+    
+    // Append the element.
+    add_to.append(elem);
+		
+		// Check if we have a source to which we should lookup values from.
+		if ("source" in def) {
+		  GOKb.forms.bindDataLookup(elem, def);
+		  elem.addClass("none-uniform");
 		}
 		
 		if (def.text) elem.text(def.text);
@@ -202,9 +188,6 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		}
 		elem.attr(attr);
 		
-		// Append the element.
-		add_to.append(elem);
-		
 		// If add_to different to parent then add that to the parent.
 		if (add_to != parent) parent.append(add_to);
 		
@@ -223,10 +206,135 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 };
 
 /**
+ * Bind the data lookup.
+ */
+GOKb.forms.bindDataLookup = function (elem, def) {
+  
+  // Source needs splitting
+  var source = def.source.split(":");
+  
+  // Make this element a Select2.
+  var conf = {
+    placeholder         : (def.create ? "Add/" : "") + "Select a " + def.label,
+    minimumInputLength  : 1,
+    selectOnBlur        : true,
+    escapeMarkup        : function (m) { return m; },
+    id                  : function (object) { return object.value; },
+    initSelection       : function (element, callback) {
+      var data = {id: element.val(), text: element.val()};
+      callback(data);
+    }
+  };
+  
+  // If not a select then add a query lookup, else we need to fetch all the results first and add them all.
+  var type = elem.prop('tagName');
+  if (type != "SELECT") {
+    
+    // Result formatter.
+    var formatResult = function(result, label, query) {
+      
+      // The text.
+      var text;
+      var suffix = "0000}"
+      if (query.term && "value" in result && result.value.indexOf(suffix, this.length - suffix.length) === -1) {
+        
+        // Highlight within the label the matched area.
+        var highlight = new RegExp('(' + RegExp.escape(query.term) + ')', "i");
+        text = result.label.replace(highlight, "<span class='select2-match' >$1</span>");
+        
+      } else {
+        
+        // Either a group or the current typed text. Just return the label.
+        text = result.label;
+      }
+      
+      return text;
+    };
+    
+    // Set the formatters.
+    conf.formatResult = formatResult;
+    conf.formatSelection = formatResult;
+    
+    // Variable to hold the timeout method, to wait for
+    // a timeout after the user stops typing.
+    var toMethod = null;
+    
+    // Add as a query.
+    conf.query = function (query) {
+      
+      // Cancel if we have a waiting query.
+      if (toMethod != null) {
+        clearTimeout(toMethod);
+      }
+      
+      toMethod = setTimeout(function () {
+        GOKb['get' + source[0]] (
+          query.term,
+          {
+            "type" : source[1],
+            "page" : query.page
+          },
+          {
+            onDone : function (data) {
+              
+              // We also add the current value to the top of the list to allow for the,
+              // current value to be added.
+              var res = {
+                results: []
+              };
+              
+              if (def.create && query.page == 1) {
+                res.results.push({value: (query.term + "::{" + source[1] + ":0000}"), label: (query.term)});
+              }
+              
+              if (data && "list" in data && data.list.length > 0) {
+                
+                // Add more if we have more results that we can fetch.
+                res.more = ((query.page * 10) < data.total);
+                
+                // Push the results list to the response.
+                res.results = $.merge(res.results, data.list);
+              }
+              
+              // Do the callback.
+              query.callback( res );
+            }
+          }
+        );
+        toMethod = null;
+      }, 1000);
+    };
+    
+    // Add the select2.
+    elem.select2(conf);
+  } else {
+    
+    // Get the list of options.
+    GOKb['get' + source[0]] (source[1], {
+      onDone : function (data) {
+        if ("result" in data && "datalist" in data.result) {
+          
+          // Add each element.
+          $.each(data.result.datalist, function () {
+            var op = this;
+            elem.append($("<option />", {
+              value : (op.value),
+              text  : (op.name)
+            }));
+          });
+          
+          // Add the select2 once we have finished.
+          elem.select2();
+        }
+      }
+    });
+  }
+};
+
+/**
  * Get the location where form data is to be stored within this project metadata
  */
 GOKb.forms.ds = null;
-
 GOKb.forms.getDataStore = function() {
 	if (GOKb.forms.ds == null) {
 		if ('gokb-data' in theProject.metadata.customMetadata) {

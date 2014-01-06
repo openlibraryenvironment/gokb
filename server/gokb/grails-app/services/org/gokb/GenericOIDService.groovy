@@ -45,5 +45,9 @@ class GenericOIDService {
     result
   }
 
+  // def hasAcl(oid) {
+    // select count(*) from AclEntry ae, AclObjectIdentity aoi, AclClass ac where ae.aclObjectIdentity = aoi
+    // and aoi.aclClass = ac and ac.className = ? and aoi....
+  // }
 }
 

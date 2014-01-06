@@ -1,13 +1,15 @@
 package org.gokb
 
 import grails.converters.JSON
+import com.k_int.ClassUtils
 import org.gokb.cred.*
-
 import grails.plugins.springsecurity.Secured
 
 class AjaxSupportController {
 
   def genericOIDService
+  def aclUtilService
+
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def edit() { 
@@ -82,7 +84,8 @@ class AjaxSupportController {
                                 [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0]);
 
       rq.each { it ->
-        result["${it.class.name}:${it.id}"] = it[config.cols[0]];
+        def o = ClassUtils.deproxy(it)
+        result["${o.class.name}:${o.id}"] = o[config.cols[0]];
       }
     }
 
@@ -147,6 +150,14 @@ class AjaxSupportController {
 
 
 
+  /**
+   *  addToCollection : Used to create a form which will add a new object to a named collection within the target object.
+   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") Of the context object
+   * @param __newObjectClass : The fully qualified class name of the instance to create
+   * @param __recip : Optional - If set, then new_object.recip will point to __context
+   * @param __addToColl : The name of the local set to which the new object should be added
+   * @param All other parameters are taken to be property names on newObjectClass and used to init the new instance.
+   */ 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
@@ -191,7 +202,7 @@ class AjaxSupportController {
             }
           }
         }
-
+ 
         // Need to do the right thing depending on who owns the relationship. If new obj
         // BelongsTo other, should be added to recip collection.
         if ( params.__recip ) {
@@ -210,6 +221,16 @@ class AjaxSupportController {
         else if ( params.__addToColl ) {
           contextObj[params.__addToColl].add(new_obj)
           log.debug("Saving ${new_obj}");
+
+          if ( new_obj.save() ) {
+            log.debug("Saved OK");
+          }
+          else {
+            new_obj.errors.each { e ->
+              log.debug("Problem ${e}");
+            }
+          }
+
           if ( contextObj.save() ) {
             log.debug("Saved OK");
           }
@@ -219,6 +240,20 @@ class AjaxSupportController {
             }
           }
         } 
+
+        // Special combo processing
+        if ( ( new_obj != null ) && ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
+          log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
+          new_obj.hasByCombo.keySet().each { hbc ->
+            log.debug("Testing ${hbc} -> ${params[hbc]}");
+            if ( params[hbc] ) {
+              log.debug("Setting ${hbc} to ${params[hbc]}");
+              new_obj[hbc] = resolveOID2(params[hbc])
+            }
+          }
+          new_obj.save()
+        }
+
 
       }
       else {
@@ -329,7 +364,9 @@ class AjaxSupportController {
         target_object."${params.name}" = params.date('value','yyyy-MM-dd')
       }
       else {
-        target_object."${params.name}" = params.value
+        def binding_properties = [:]
+        binding_properties[ params.name ] = params.value
+        bindData(target_object, binding_properties)
       }
       target_object.save(flush:true);
     }
@@ -353,14 +390,20 @@ class AjaxSupportController {
 
     if ( ( target != null ) && ( value != null ) ) {
       // def binding_properties = [ "${params.name}":value ]
-      // log.debug("Binding: ${binding_properties} into ${target} - a ${target.class.name}");
+      log.debug("Binding: ${params.name} into ${target} - a ${target.class.name}");
       // bindData(target, binding_properties)
       target[params.name] = value
-      log.debug("Saving...");
+      log.debug("Saving... after assignment ${params.name} = ${target[params.name]}");
       if ( target.save(flush:true) ) {
         if ( params.resultProp ) {
           result = value[params.resultProp]
         }
+        
+        // We should clear the session values for a user if this is a user to force reload of the,
+        // parameters.
+        if (target instanceof User) {
+          session.userPereferences = null
+        } 
         else {
           if ( value ) {
             result = renderObjectValue(value);
@@ -374,7 +417,7 @@ class AjaxSupportController {
       }
     }
     else {
-      log.error("no type (target=${target_components}, value=${value_components}");
+      log.error("no type (target=${params.pk}, value=${params.value}");
     }
 
     def resp = [ newValue: result ]
@@ -401,5 +444,66 @@ class AjaxSupportController {
     result;
   }
 
-
+//  def grant() {
+//    log.debug("Grant: ${params}");
+//    def grantee_obj = genericOIDService.resolveOID(params.grantee)
+//    def dc = genericOIDService.resolveOID(params.__context)
+//    def perm_to_grant = null;
+//    switch ( params.perm ) {
+//      case 'READ':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.READ;
+//        break;
+//      case 'WRITE':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.WRITE;
+//        break;
+//      case 'ADMINISTRATION':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.ADMINISTRATION;
+//        break;
+//      case 'DELETE':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.DELETE;
+//        break;
+//      case 'CREATE':
+//        perm_to_grant = org.springframework.security.acls.domain.BasePermission.CREATE;
+//        break;
+//    }
+//
+//    if ( ( grantee_obj != null ) && ( dc != null ) && ( perm_to_grant != null ) ) {
+//      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
+//      def grantee = grantee_obj instanceof User ? grantee_obj.username : grantee_obj.authority
+//      aclUtilService.addPermission(dc, grantee, perm_to_grant);
+//    }
+//    redirect(url: request.getHeader('referer'))
+//  }
+//
+//  def revoke() {
+//    log.debug("Revoke: ${params}");
+//
+//    def dc = genericOIDService.resolveOID(params.__context)
+//    def perm_to_revoke = null
+//    switch ( params.perm?.toUpperCase() ) {
+//      case 'READ':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.READ;
+//        break;
+//      case 'WRITE':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.WRITE;
+//        break;
+//      case 'ADMINISTRATION':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.ADMINISTRATION;
+//        break;
+//      case 'DELETE':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.DELETE;
+//        break;
+//      case 'CREATE':
+//        perm_to_revoke = org.springframework.security.acls.domain.BasePermission.CREATE;
+//        break;
+//    }
+//
+//    if ( ( dc != null ) && ( perm_to_revoke != null ) ) {
+//      // http://docs.spring.io/autorepo/docs/spring-security/3.0.x/apidocs/org/springframework/security/acls/model/Acl.html
+//      log.debug("Revoking ${perm_to_revoke} from ${dc} for ${params.grantee}");
+//      aclUtilService.deletePermission(dc, params.grantee, perm_to_revoke);
+//    }
+//
+//    redirect(url: request.getHeader('referer'))
+//  }
 }

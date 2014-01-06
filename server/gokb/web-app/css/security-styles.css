@@ -1,0 +1,44 @@
+.security-table td, .security-table th {
+  text-align:center;
+  vertical-align: middle;
+}
+
+.security-table [class^="icon-"]:before, .security-table [class*=" icon-"]:before {
+  font-size:1.7em;
+  cursor: default;
+}
+
+.security-table .icon-ok-sign {
+  color: #51A351;
+}
+
+.security-table a {
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+.security-table a .icon-ok-sign {
+	color: #AAA;
+}
+
+.security-table a .icon-ok-sign:hover:before {
+  color: #51A351;
+  content: "";
+}
+
+.security-table .icon-remove-sign {
+  color: #BD362F;
+}
+
+.security-table a .icon-remove-sign {
+	color:#AAA;
+}
+
+.security-table a .icon-remove-sign:hover:before {
+  color: #BD362F;
+  content: "";
+}
+
+.group-status {
+	width: 1px;
+}

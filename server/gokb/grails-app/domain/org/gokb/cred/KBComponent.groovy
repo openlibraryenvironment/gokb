@@ -1,21 +1,22 @@
 package org.gokb.cred
 
 import grails.util.GrailsNameUtils
+import groovy.util.logging.*
 
 import javax.persistence.Transient
 
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
-import org.hibernate.proxy.HibernateProxy
-import groovy.util.logging.*
+
+import com.k_int.ClassUtils
 
 /**
  * Abstract base class for GoKB Components.
  */
 
 @Log4j
-abstract class KBComponent {
+abstract class KBComponent {  
 
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
@@ -36,6 +37,14 @@ abstract class KBComponent {
   ]
 
   private static final Map fullDefaultsForClass = [:]
+
+  @Transient
+  private def springSecurityService
+  
+  @Transient
+  public setSpringSecurityService(sss) {
+    this.springSecurityService = sss
+  }
 
   @Transient
   private ensureDefaults () {
@@ -184,6 +193,10 @@ abstract class KBComponent {
    */
   User lastUpdatedBy
 
+  /**
+   * The source for the record (Whatever it is)
+   */
+  Source source
 
 
   Set tags = []
@@ -233,6 +246,7 @@ abstract class KBComponent {
     version column:'kbc_version'
     name column:'kbc_name'
     normname column:'kbc_normname'
+    source column:'kbc_source_fk'
     status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
     tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
@@ -246,6 +260,7 @@ abstract class KBComponent {
     normname  (nullable:true, blank:false, maxSize:2048)
     status    (nullable:true, blank:false)
     editStatus  (nullable:true, blank:false)
+    source (nullable:true, blank:false)
   }
 
   /**
@@ -380,6 +395,10 @@ abstract class KBComponent {
       }
       generateNormname();
     }
+    def user = springSecurityService?.currentUser
+    if ( user != null ) {
+      this.lastUpdatedBy = user
+    }
   }
 
   @Transient
@@ -454,14 +473,16 @@ abstract class KBComponent {
     combs
   }
 
-  public Date deleteSoft (Date endDate = new Date()) {
+  public void deleteSoft () {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
+    save(failOnError:true)
   }
 
   public void retire () {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+    save(failOnError:true)
   }
 
   @Transient
@@ -483,9 +504,6 @@ abstract class KBComponent {
   public String getClassName () {
     getMetaClass().getTheClass().getName()
   }
-
-  //  @Transient
-  //  abstract getPermissableCombos()
 
 
   /**
@@ -525,10 +543,7 @@ abstract class KBComponent {
   }
 
   public static <T> T deproxy(def element) {
-    if (element instanceof HibernateProxy) {
-      return (T) ((HibernateProxy) element).getHibernateLazyInitializer().getImplementation();
-    }
-    return (T) element;
+    ClassUtils.deproxy(element)
   }
   //  return (getMetaClass().getTheClass() instanceof testCase.class)
 

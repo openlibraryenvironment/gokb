@@ -25,14 +25,21 @@
           <g:link controller="home" action="index" class="brand">GOKb</g:link>
           <div class="nav-collapse">
             <ul class="nav">
+
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Search</a>
                 <ul class="dropdown-menu">
-                  <g:each in="${request?.userOptions?.availableSearches}" var="srch">
-                    <li><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
+                  <li><g:link controller="globalSearch" action="index">Global Search</g:link></li>
+                  <g:each in="${session.userPereferences?.mainMenuSections}" var="secname,sec">
+                    <!-- ${secname.toLowerCase()} -->
+                    <g:each in="${sec}" var="srch">
+                      <li class="menu-${secname.toLowerCase()}"><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}">${srch.value.title}</g:link></li>
+                    </g:each>
+                    <li class="divider"></li>
                   </g:each>
                 </ul>
               </li>
+
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
                 <ul class="dropdown-menu">
@@ -68,6 +75,9 @@
                   <ul class="dropdown-menu">
                     <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
                     <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
+                    <li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
+                    <li><g:link controller="user" action="search">User Management Console</g:link></li>
                     <li><g:link controller="home" action="about">About</g:link></li>
                   </ul>
                 </li>
