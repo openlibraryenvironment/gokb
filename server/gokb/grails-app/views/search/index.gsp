@@ -33,7 +33,7 @@
                   ${qbetemplate.title?:'Search'}
                   <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}
                   </g:if>
--                </div>
+                </div>
 
                 <g:if test="${recset != null}">
                   <ul class="nav pull-right">
