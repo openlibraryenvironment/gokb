@@ -52,7 +52,7 @@
     </div>
 
     <div class="tab-pane" id="titledetails">
-      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link>
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id, hide:'qp_pkg_id']" id="">Titles in this package</g:link>
 
       <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
         <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>

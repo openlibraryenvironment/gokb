@@ -36,7 +36,7 @@
                 </div>
 
                 <g:if test="${recset != null}">
-                  <ul class="nav pull-right">
+                  <ul class="nav navbar-nav navbar-right">
                     <li><g:link title="Previous Page" controller="search"
                         action="index"
                         params="${params+[offset:(offset-max),det:null]}">
@@ -122,7 +122,7 @@
               </g:if>
             </g:if>
             <g:else>
-                No template currenly available for instances of ${displayobjclassname}
+                No template currently available for instances of ${displayobjclassname}
               ${displayobj as grails.converters.JSON}
             </g:else>
           </div>
@@ -144,7 +144,7 @@
     </div>
   </div>
 
-  <script language="javascript">
+  <script type="text/javascript">
       $('#modal').on('hidden', function() {
         $(this).data('modal').$element.removeData();
       })
