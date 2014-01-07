@@ -52,18 +52,18 @@
     </div>
 
     <div class="tab-pane" id="titledetails">
-      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id, hide:'qp_pkg_id']" id="">Titles in this package</g:link>
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat']]" id="">Titles in this package</g:link>
 
       <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
         <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
         <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform"/>
         <input type="hidden" name="__addToColl" value="tipps"/>
         <dl class="dl-horizontal">
-          <dt>Title</td>
+          <dt>Title</dt>
           <dd>
             <g:simpleReferenceTypedown name="title" baseClass="org.gokb.cred.TitleInstance" />
           </dd>
-          <dt>Platform</td>
+          <dt>Platform</dt>
           <dd>
             <g:simpleReferenceTypedown name="hostPlatform" baseClass="org.gokb.cred.Platform" />
           </dd>

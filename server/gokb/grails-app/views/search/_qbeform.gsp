@@ -2,7 +2,7 @@
 <r:require modules="editable"/>
 
 
-<form class="form-horizontal">
+<g:form class="form-horizontal open-inline" method="get" controller="search" >
 
   <input type="hidden" name="qbe" value="${params.qbe}"/>
   <g:each in="${hide}" var="hidden_var">
@@ -40,4 +40,4 @@
     </div>
   </div>
 
-</form>
+</g:form>
