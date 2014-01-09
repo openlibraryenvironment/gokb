@@ -23,6 +23,8 @@ class SearchController {
 
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+    
+    result.hide = params.list("hide") ?: []
 
     if ( params.det )
       result.det = Integer.parseInt(params.det)

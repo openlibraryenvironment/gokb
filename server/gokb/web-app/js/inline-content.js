@@ -16,20 +16,43 @@
       if (!desired_selector) desired_selector = "#mainarea";
       
       // The function to refresh content of the target element from the url.
-      var refreshContent = function (target, url) {
+      var refreshContent = function (target, url, type, the_data) {
         
-        // Load in the content to a new div.
-        $.get(url, {}, function(data, textStatus, jqXHR) {
+        // Default data.
+        if (the_data == undefined) the_data = {};
+        
+        // Default type
+        if (type == undefined) type = "get";
+        
+        if (type == "get") {
           
-          // The returned data.
-          var dataDom = $("<div>" + data + "</div>");
-          var desired_content = dataDom.find(desired_selector);
-          if (desired_content.length == 1) {
-            target.html(desired_content.html());
-          } else {
-            target.html(dataDom.html())
-          }
-        });
+          // Do the get.
+          $.get(url, the_data, function(data, textStatus, jqXHR) {
+            
+            // The returned data.
+            var dataDom = $("<div>" + data + "</div>");
+            var desired_content = dataDom.find(desired_selector);
+            if (desired_content.length == 1) {
+              target.html(desired_content.html());
+            } else {
+              target.html(dataDom.html())
+            }
+          });
+        } else {
+          // Assume post.
+          $.post(url, the_data, function(data, textStatus, jqXHR) {
+            
+            // The returned data.
+            var dataDom = $("<div>" + data + "</div>");
+            var desired_content = dataDom.find(desired_selector);
+            if (desired_content.length == 1) {
+              target.html(desired_content.html());
+            } else {
+              target.html(dataDom.html())
+            }
+          });
+        }
+        
         // Return the target.
         return target;
       };
@@ -55,6 +78,25 @@
         }
         
         // Else just allow the event to propagate. 
+      });
+      
+      // Add the new submit listener for forms here too.
+      // We should catch the form submit and then simply serialise the form and do
+      // the get or post n the background using ajax.
+      content.on ('submit', function(event) {
+        // The clicks should bubble up here before being actioned.
+        
+        // The clicked item. Get the closest matching a tag.
+        var form = $(event.target).closest('form.open-inline'); 
+        
+        if (form.length > 0) {
+          
+          // Is a inline form. First thing to do is to stop the event default.
+          event.preventDefault();
+          
+          // Now let's refresh this object.
+          refreshContent( $(this), form.attr('action'), form.attr('method'), form.serialize());
+        }
       });
       
       // Then swap out the link for the new content.
