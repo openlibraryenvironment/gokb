@@ -415,6 +415,7 @@ class WorkflowController {
       def webook_endpoint = null
       if ( ( params.existingHook != null ) && ( params.existingHook.length() > 0 ) ) {
         log.debug("From existing hook");
+        webook_endpoint = genericOIDService.resolveOID2(params.existingHook)
       }
       else {
         webook_endpoint = new WebHookEndpoint(name:params.newHookName, 

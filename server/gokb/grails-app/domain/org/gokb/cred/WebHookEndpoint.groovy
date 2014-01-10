@@ -1,5 +1,9 @@
 package org.gokb.cred
 
+import groovy.util.logging.*
+
+
+@Log4j
 class WebHookEndpoint {
   String name
   String url
@@ -24,6 +28,9 @@ class WebHookEndpoint {
   }
 
   static def refdataFind(params) {
+
+    log.debug("refdataFind(${params})");
+
     def result = [];
     def ql = null;
     def qp = [ "%${params.q}%" ]
