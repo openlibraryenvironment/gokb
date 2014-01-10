@@ -410,16 +410,41 @@ class WorkflowController {
 
     result.ref=params.from
 
-    if ( ( params.existingHook != null ) && ( params.existingHook.length() > 0 ) ) {
-      log.debug("From existing hook");
-    }
+    try {
 
-
-    params.each { p ->
-      if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
-        def tt = p.key.substring(3);
-        log.debug("Lookup ${tt}");
+      def webook_endpoint = null
+      if ( ( params.existingHook != null ) && ( params.existingHook.length() > 0 ) ) {
+        log.debug("From existing hook");
       }
+      else {
+        webook_endpoint = new WebHookEndpoint(name:params.newHookName, 
+                                              url:params.newHookUrl,
+                                              authmethod:Long.parseLong(params.newHookAuth),
+                                              principal:params.newHookPrin,
+                                              credentials:params.newHookCred,
+                                              owner:request.user)
+        if ( webook_endpoint.save(flush:true) ) {
+        }
+        else {
+          log.error("Problem saving new webhook endpoint : ${webook_endpoint.errors}");
+        }
+      }
+
+
+      params.each { p ->
+        if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+          def tt = p.key.substring(3);
+          def wh = new WebHook( oid:tt, endpoint:webook_endpoint)
+          if ( wh.save(flush:true) ) {
+          }
+          else {
+            log.error(wh.errors);
+          }
+        }
+      }
+    }
+    catch ( Exception e ) {
+      log.error("Problem",e);
     }
 
     redirect(url: result.ref)

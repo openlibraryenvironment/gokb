@@ -120,4 +120,12 @@ class Package extends KBComponent {
       [code:'general::registerWebhook', label:'Register Web Hook']
     ]
   }
+
+  def getWebHooks() {
+    def result=[]
+
+    result.hooks = WebHook.findAllByOid("org.gokb.cred.Package:${this.id}");
+
+    result
+  }
 }
