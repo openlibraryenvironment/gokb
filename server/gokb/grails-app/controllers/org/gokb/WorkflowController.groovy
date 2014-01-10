@@ -401,4 +401,27 @@ class WorkflowController {
     }
     redirect(url: result.ref)
   }
+
+  def processCreateWebHook() {
+
+    log.debug("processCreateWebHook ${params}");
+
+    def result = [:]
+
+    result.ref=params.from
+
+    if ( ( params.existingHook != null ) && ( params.existingHook.length() > 0 ) ) {
+      log.debug("From existing hook");
+    }
+
+
+    params.each { p ->
+      if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+        def tt = p.key.substring(3);
+        log.debug("Lookup ${tt}");
+      }
+    }
+
+    redirect(url: result.ref)
+  }
 }
