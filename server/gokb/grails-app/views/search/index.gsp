@@ -36,7 +36,7 @@
                 </div>
 
                 <g:if test="${recset != null}">
-                  <ul class="nav pull-right">
+                  <ul class="nav navbar-nav navbar-right">
                     <li><g:link title="Previous Page" controller="search"
                         action="index"
                         params="${params+[offset:(offset-max),det:null]}">
@@ -56,10 +56,10 @@
             <g:if test="${(qbetemplate.message != null)}">
               <p style="text-align:center"><bootstrap:alert class="alert-info">${qbetemplate.message}</bootstrap:alert></p>
             </g:if>
-            <g:if test="${!request.isAjax()}" >
+            <!-- g:if test="${!request.isAjax()}" -->
 	            <g:render template="qbeform" contextPath="."
-	              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm]}" />
-	          </g:if>
+	              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
+	          <!-- /g:if -->
             <g:if test="${recset != null}">
               <g:render template="qberesult" contextPath="."
                 model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det]}" />
@@ -122,7 +122,7 @@
               </g:if>
             </g:if>
             <g:else>
-                No template currenly available for instances of ${displayobjclassname}
+                No template currently available for instances of ${displayobjclassname}
               ${displayobj as grails.converters.JSON}
             </g:else>
           </div>
@@ -144,7 +144,7 @@
     </div>
   </div>
 
-  <script language="javascript">
+  <script type="text/javascript">
       $('#modal').on('hidden', function() {
         $(this).data('modal').$element.removeData();
       })
