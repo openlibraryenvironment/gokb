@@ -87,7 +87,7 @@ class OaiController {
                       'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
                       'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
         'oai:responseDate'('value')
-        'oai:request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, 'The Original URL')
+        'oai:request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
         'oai:GetRecord'() {
           'oai:record'() {
             'oai:header'() {
