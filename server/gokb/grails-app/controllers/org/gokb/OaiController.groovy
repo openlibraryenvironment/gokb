@@ -117,6 +117,27 @@ class OaiController {
   def listIdentifiers(result) {
   }
 
+  def listMetadataFormats(result) {
+    def writer = new StringWriter()
+    def xml = new StreamingMarkupBuilder()
+
+    def resp =  { mkp ->
+      'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:oai':'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+        'oai:responseDate'('value')
+        'oai:request'('verb':'ListMetadataFormats', request.forwardURI+'?'+request.queryString)
+        'oai:ListMetadataFormats'() {
+        }
+      }
+    }
+
+    writer << xml.bind(resp)
+
+    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
+  }
+
+
   def listRecords(result) {
     def writer = new StringWriter()
     def xml = new StreamingMarkupBuilder()
@@ -191,10 +212,28 @@ class OaiController {
       writer << xml.bind(resp)
     }
 
-
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
 
   def listSets(result) {
+
+    def writer = new StringWriter()
+    def xml = new StreamingMarkupBuilder()
+
+    def resp =  { mkp ->
+      'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
+                      'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
+                      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+        'oai:responseDate'('value')
+        'oai:request'('verb':'ListSets', request.forwardURI+'?'+request.queryString)
+        'oai:ListSet'() {
+        }
+      }
+    }
+
+    writer << xml.bind(resp)
+
+    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
+
 }
