@@ -128,4 +128,14 @@ class Package extends KBComponent {
 
     result
   }
+
+  @Transient
+  static def oaiConfig = [
+    id:'packages',
+    lastModified:'lastUpdated',
+    schemas:[
+      'oai_dc':[:]
+    ]
+  ]
+
 }

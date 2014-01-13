@@ -12,11 +12,26 @@ class OaiController {
   def index() { 
     def result = [:]
 
-    grailsApplication.getArtefacts("Domain").each { dc ->
-      def cfg = dc.clazz.declaredFields.find { it.name == 'oaiConfig' }
-      if ( cfg != null ) {
-        log.debug("....");
-        result[dc.clazz.simpleName] = dc.clazz.oaiConfig
+    log.debug("index (${params})");
+
+    if ( params.id ) {
+      grailsApplication.getArtefacts("Domain").find { dc ->
+        def r = false
+        def cfg = dc.clazz.declaredFields.find { it.name == 'oaiConfig' }
+        if ( cfg ) {
+          log.debug("has config");
+         
+          def o = dc.clazz.oaiConfig
+          if ( o.id == params.id ) {
+            result.oaiConfig = o
+            r = true
+          }
+        }
+        r
+      }
+  
+      if ( result.oaiConfig ) {
+        log.debug("Got config : ${result.oaiConfig}");
       }
     }
 

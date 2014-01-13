@@ -152,12 +152,13 @@ class TitleInstance extends KBComponent {
 
   @Transient
   static def oaiConfig = [
-    lastModified:{it.lastUpdated},
-    isDeleted:{false},
+    id:'titles',
+    lastModified:'lastUpdated',
     schemas:[
       'oai_dc':[:]
     ]
   ]
+
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
