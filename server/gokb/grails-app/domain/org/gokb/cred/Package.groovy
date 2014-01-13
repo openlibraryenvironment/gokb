@@ -186,9 +186,9 @@ class Package extends KBComponent {
                 }
               }
               'gokb.tipIdentifiers' {
-                tipp.ids.each { tid ->
-                  'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
-                }
+                // tipp.ids.each { tid ->
+                //   'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
+                // }
               }
               'gokb.additional' {
                 tipp.additionalProperties.each { ap ->

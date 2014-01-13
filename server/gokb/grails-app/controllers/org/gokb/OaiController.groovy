@@ -117,6 +117,51 @@ class OaiController {
   }
 
   def listRecords(result) {
+    def writer = new StringWriter()
+    def xml = new MarkupBuilder(writer)
+
+    def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
+
+    def query_params = []
+    def query = "select p from Package as p where p.status.value != 'Deleted'"
+
+    if ((params.from != null)&&(params.from.length()>0)) {
+      query += ' and p.lastUpdated > ?'
+      query_params.add(sdf.parse(params.from))
+    }
+    if ((params.until != null)&&(params.until.length()>0)) {
+      query += ' and p.lastUpdated < ?'
+      query_params.add(sdf.parse(params.until))
+    }
+    query += ' order by p.lastUpdated'
+
+    log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
+    def records = Package.executeQuery(query,query_params,[max:10])
+
+    if ( prefixHandler ) {
+      xml.'oai:OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:oai' : 'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
+                      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+        'oai:responseDate'('value')
+        'oai:request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+        'oai:ListRecords'() {
+          records.each { rec ->
+            'oai:record'() {
+              'oai:header'() {
+                identifier("${rec.class.name}:${rec.id}")
+                datestamp(sdf.format(rec.lastUpdated))
+              }
+              'oai:metadata'() {
+                rec."${prefixHandler.methodName}"(xml)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
 
   def listSets(result) {
