@@ -160,48 +160,50 @@ class Package extends KBComponent {
   @Transient
   def toGoKBXml(builder) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    builder.'GoKB'( 'xmlns:gokb':'http://www.gokb.org/schemas/package/') {
-      'gokb:package' {
-        'gokb:packageName'(name)
-        'gokb:packageId'(id)
-        'gokb:packageTitles' {
-          tipps.each { tipp ->
-            'gokb:TIP' {
-              'gokb:title'(tipp.title.name)
-              'gokb:titleId'(tipp.title.id)
-              'gokb.platform'(tipp.hostPlatform.name)
-              'gokb.platformId'(tipp.hostPlatform.id)
-              'gokb.startDate'(tipp.startDate?sdf.format(tipp.startDate):null)
-              'gokb.startVolume'(tipp.startVolume)
-              'gokb.startIssue'(tipp.startIssue)
-              'gokb.endDate'(tipp.endDate?sdf.format(tipp.endDate):null)
-              'gokb.endVolume'(tipp.endVolume)
-              'gokb.endIssue'(tipp.endIssue)
-              'gokb.coverageDepth'(tipp.coverageDepth?.value)
-              'gokb.coverageNote'(tipp.coverageNote)
-              'gokb.url'(tipp.url)
-              'gokb.titleIdentifiers' {
-                tipp.title.ids.each { tid ->
-                  'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
-                }
-              }
-              'gokb.tipIdentifiers' {
-                // tipp.ids.each { tid ->
-                //   'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
-                // }
-              }
-              'gokb.additional' {
-                tipp.additionalProperties.each { ap ->
-                  'gokb.property'(name:ap.propertyDefn.propertyName,value:ap.apValue)
-                }
+
+    // Get the tipps manually rather than iterating over the collection - For better management
+    def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
+
+    builder.'gokb:package'( 'xmlns:gokb':'http://www.gokb.org/schemas/package/') {
+      'gokb:packageName'(name)
+      'gokb:packageId'(id)
+      'gokb:packageTitles' {
+        tipp_ids.each { tipp_id ->
+          def tipp = TitleInstancePackagePlatform.get(tipp_id)
+          'gokb:TIP' {
+            'gokb:title'(tipp.title.name)
+            'gokb:titleId'(tipp.title.id)
+            'gokb.platform'(tipp.hostPlatform.name)
+            'gokb.platformId'(tipp.hostPlatform.id)
+            'gokb.startDate'(tipp.startDate?sdf.format(tipp.startDate):null)
+            'gokb.startVolume'(tipp.startVolume)
+            'gokb.startIssue'(tipp.startIssue)
+            'gokb.endDate'(tipp.endDate?sdf.format(tipp.endDate):null)
+            'gokb.endVolume'(tipp.endVolume)
+            'gokb.endIssue'(tipp.endIssue)
+            'gokb.coverageDepth'(tipp.coverageDepth?.value)
+            'gokb.coverageNote'(tipp.coverageNote)
+            'gokb.url'(tipp.url)
+            'gokb.titleIdentifiers' {
+              tipp.title.ids.each { tid ->
+                'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
               }
             }
+            // 'gokb.tipIdentifiers' {
+            //   tipp.ids.each { tid ->
+            //     'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
+            //   }
+            // }
+            // 'gokb.additional' {
+            //   tipp.additionalProperties.each { ap ->
+            //     'gokb.property'(name:ap?.propertyDefn?.propertyName,value:ap?.apValue)
+            //   }
+            // }
           }
+          tipp.discard()
         }
       }
     }
   }
-
-
 
 }
