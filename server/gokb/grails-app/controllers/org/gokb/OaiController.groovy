@@ -15,6 +15,8 @@ class OaiController {
   //     return it?.toString("yyyy-MM-dd'T'HH:mm:ss'Z'")
   // }
 
+  def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
   def index() { 
     def result = [:]
 
@@ -85,12 +87,12 @@ class OaiController {
                       'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
                       'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
         'oai:responseDate'('value')
-        'oai:request'('verb':'GetRecord', 'identifier':'theid', 'metadataPrefix':'mdp', 'The Original URL')
+        'oai:request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, 'The Original URL')
         'oai:GetRecord'() {
           'oai:record'() {
             'oai:header'() {
               identifier(oid)
-              datestamp(record.lastUpdated)
+              datestamp(sdf.format(record.lastUpdated))
             }
             'oai:metadata'() {
               record."${prefixHandler.methodName}"(xml)
