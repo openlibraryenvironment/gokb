@@ -114,6 +114,7 @@ class Package extends KBComponent {
     }
   }
   
+  @Transient
   def availableActions() {
     [
       [code:'method::deleteSoft', label:'Delete (with associated TIPPs)'],
@@ -121,6 +122,7 @@ class Package extends KBComponent {
     ]
   }
 
+  @Transient
   def getWebHooks() {
     def result=[]
 
@@ -134,8 +136,31 @@ class Package extends KBComponent {
     id:'packages',
     lastModified:'lastUpdated',
     schemas:[
-      'oai_dc':[:]
+      'oai_dc':[type:'method',methodName:'toOaiDcXml'],
+      'gokb':[type:'method',methodName:'toGoKBXml'],
     ]
   ]
+
+  /**
+   *  Render this package as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder) {
+    builder.'OAIDC' {
+      'SubElement'('SubValue')
+    }
+  }
+
+  /**
+   *  Render this package as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder) {
+    builder.'GoKB' {
+      'SubElement'('SubValue')
+    }
+  }
+
+
 
 }
