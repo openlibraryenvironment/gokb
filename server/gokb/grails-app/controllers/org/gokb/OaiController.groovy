@@ -40,24 +40,26 @@ class OaiController {
       }
   
       if ( result.oaiConfig ) {
-        switch ( params.verb ) {
-          case 'GetRecord':
+        switch ( params.verb?.toLowerCase() ) {
+          case 'getrecord':
             getRecord(result);
             break;
-          case 'Identify':
+          case 'identify':
             identify(result);
             break;
-          case 'ListIdentifiers':
+          case 'listidentifiers':
             listIdentifiers(result);
             break;
-          case 'ListMetadataFormats':
+          case 'listmetadataformats':
             listMetadataFormats(result);
             break;
-          case 'ListRecords':
+          case 'listrecords':
             listRecords(result);
             break;
-          case 'ListSets':
+          case 'listsets':
             listSets(result);
+            break;
+          defaut:
             break;
         }
         log.debug("done");
@@ -112,6 +114,35 @@ class OaiController {
   }
 
   def identify(result) {
+    def writer = new StringWriter()
+    def xml = new MarkupBuilder(writer)
+
+    xml.'oai:OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:oai' : 'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
+                      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+        'oai:responseDate'('value')
+        'oai:request'('verb':'Identify', request.forwardURI+'?'+request.queryString)
+        'oai:Identify'() {
+          'oai:repositoryName'('GoKB')
+          'oai:baseURL'('http://localhost/')
+          'oai:protocolVersion'('2.0')
+          'oai:adminEmail'('admin@gokb.org')
+          'oai:earliestDatestamp'('0')
+          'oai:deletedRecord'('transient')
+          'oai:granularity'('YYYY-MM-DDThh:mm:ssZ')
+          'oai:compression'('deflate')
+          'oai:description'() {
+            'oai:identifier'() {
+              'oai:scheme'('oai')
+              'oai:repositoryIdentifier'('oai')
+              'oai:delimiter'('oai')
+              'oai:sampleIdentifier'('oai')
+            }
+          }
+        }
+    }
+    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
 
   def listIdentifiers(result) {
@@ -189,7 +220,7 @@ class OaiController {
                       'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
                       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
           'oai:responseDate'('value')
-          'oai:request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+          'oai:request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
           'oai:ListRecords'() {
             records.each { rec ->
               'oai:record'() {
