@@ -36,7 +36,26 @@
                 </div>
 
                 <g:if test="${recset != null}">
-                  <ul class="nav navbar-nav navbar-right">
+                  <ul class="nav navbar-nav navbar-right pull-right">
+
+                    <g:if test="${qbetemplate.qbeConfig.actions != null}">
+                      <li class="pull-right dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Actions <b class="caret"></b> </a>
+
+                        <ul class="dropdown-menu">
+                          <g:each in="${qbetemplate.qbeConfig.actions}" var="a">
+                            <li>
+                              <i class="${a.iconClass}"></i>
+                              <g:link controller="workflow" 
+                                      action="action" 
+                                      params="${[selectedBulkAction:a.code,('bulk:'+qbetemplate.baseclass):'true']}">${a.name}</g:link>
+                            </li>
+                          </g:each>
+                        </ul>
+                      </li>
+                      <li class="divider-vertical"></li>
+                    </g:if>
+
                     <li><g:link title="Previous Page" controller="search"
                         action="index"
                         params="${params+[offset:(offset-max),det:null]}">
@@ -48,6 +67,7 @@
                         params="${params+[offset:(offset+max),det:null]}">
                         <i class="icon-chevron-right"></i>
                       </g:link></li>
+
                   </ul>
                 </g:if>
               </div>

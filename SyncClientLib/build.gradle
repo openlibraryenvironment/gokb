@@ -1,0 +1,25 @@
+apply plugin: 'groovy'
+apply plugin:'application'
+
+mainClassName = 'org.gokb.client.Sync'
+defaultTasks 'clean', 'build', 'uberjar'
+
+ 
+repositories {
+  mavenCentral()
+}
+ 
+dependencies {
+  groovy group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.1.5'
+  testCompile group: 'junit', name: 'junit', version: '4.8.2'
+  compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.5.0-RC2' 
+}
+
+task uberjar(type: Jar) {
+    from files(sourceSets.main.output.classesDir)
+    from configurations.runtime.asFileTree.files.collect { zipTree(it) }
+
+    manifest {
+        attributes 'Main-Class': 'org.gokb.client.Sync'
+    }
+}

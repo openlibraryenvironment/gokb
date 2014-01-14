@@ -9,6 +9,7 @@
   <body>
     <div class="container-fluid">
       <g:form controller="workflow" action="processTitleChange" method="get">
+        <input type="hidden" name="from" value="${request.getHeader('referer')}"/>
         <div class="row-fluid">
           <div class="span12 hero well">
             Title Transfer (1/2)

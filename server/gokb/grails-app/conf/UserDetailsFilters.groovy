@@ -20,7 +20,7 @@ class UserDetailsFilters {
        }
     }
     
-    setUsetFilter(controller:'*', action:'*') {
+    setUserFilter(controller:'*', action:'*') {
       before = {
         // if ( session.sessionPreferences == null ) {
         //   session.sessionPreferences = grailsApplication.config.appDefaultPrefs
