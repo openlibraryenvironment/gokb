@@ -7,23 +7,32 @@ import static groovyx.net.http.Method.*
 public class Sync {
 
   public static void main(String[] args) {
-    println("Sync");
+    Sync sc = new Sync()
+    sc.doSync('http://localhost:8080')
+  }
 
-    def http = new HTTPBuilder( 'http://localhost:8080' )
+  public doSync(host) {
+    println("Get latest changes");
+
+    def http = new HTTPBuilder( host )
 
     println("Attempt get...");
     // perform a GET request, expecting JSON response data
     http.request( GET, XML ) {
       uri.path = '/gokb/oai/packages'
-      uri.query = [ verb:'ListRecords', metadataPrefix: 'oai' ]
+      uri.query = [ verb:'ListRecords', metadataPrefix: 'gokb' ]
 
       // response handler for a success response code:
-      response.success = { resp, json ->
+      response.success = { resp, xml ->
         println resp.statusLine
 
-        // parse the JSON response object:
-        json.responseData.results.each {
-          println "  ${it.titleNoFormatting} : ${it.visibleUrl}"
+        xml.'ListRecords'.'record'.each { r ->
+          println("Record id...${r.'header'.'identifier'}");
+          println("Package Name: ${r.metadata.package.packageName}");
+          println("Package Id: ${r.metadata.package.packageId}");
+          r.metadata.package.packageTitles.TIP.each { pt ->
+            println("Title: ${pt.title}");
+          }
         }
       }
 
@@ -35,4 +44,5 @@ public class Sync {
 
     println("All done");
   }
+
 }
