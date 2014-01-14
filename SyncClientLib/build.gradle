@@ -1,4 +1,7 @@
 apply plugin: 'groovy'
+apply plugin:'application'
+
+mainClassName = 'org.gokb.client.Sync'
  
 repositories {
   mavenCentral()
@@ -9,6 +12,11 @@ dependencies {
   testCompile group: 'junit', name: 'junit', version: '4.8.2'
 }
 
-task gokbClient(type: OneJar) {
-    mainClass = 'org.gokb.client.Sync'
+task uberjar(type: Jar) {
+    from files(sourceSets.main.output.classesDir)
+    from configurations.runtime.asFileTree.files.collect { zipTree(it) }
+
+    manifest {
+        attributes 'Main-Class': 'org.gokb.client.Sync'
+    }
 }
