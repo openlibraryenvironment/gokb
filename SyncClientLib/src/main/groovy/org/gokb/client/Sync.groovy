@@ -25,13 +25,15 @@ public class Sync {
 
     // perform a GET request, expecting JSON response data
     while ( more ) {
+      println("Make http request..");
+
       http.request( GET, XML ) {
         uri.path = '/gokb/oai/packages'
         if ( resumption ) {
-          uri.query = [ verb:'ListRecords', metadataPrefix: 'gokb' ]
+          uri.query = [ verb:'ListRecords', resumptionToken: resumption ]
         }
         else {
-          uri.query = [ verb:'ListRecords', resumptionToken: resumption ]
+          uri.query = [ verb:'ListRecords', metadataPrefix: 'gokb' ]
         }
   
         // response handler for a success response code:
@@ -47,9 +49,9 @@ public class Sync {
             }
           }
 
-          if ( xml.'ListRecords'.'resumptionToken' ) {
+          if ( xml.'ListRecords'.'resumptionToken'.size() == 1 ) {
             resumption=xml.'ListRecords'.'resumptionToken'.text()
-            log.debug("Iterate with resumption : ${resumption}");
+            println("Iterate with resumption : ${resumption}");
           }
           else {
             more = false
@@ -61,6 +63,7 @@ public class Sync {
           println "Unexpected error: ${resp.statusLine.statusCode} : ${resp.statusLine.reasonPhrase}"
         }
       }
+      println("Endloop");
     }
 
     println("All done");

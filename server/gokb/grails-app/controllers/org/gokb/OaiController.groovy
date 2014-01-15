@@ -170,86 +170,102 @@ class OaiController {
 
 
   def listRecords(result) {
-    def writer = new StringWriter()
-    def xml = new StreamingMarkupBuilder()
-    def offset = 0;
-    def resumption = null
-    def metadataPrefix = null
 
-    if ( params.resumptionToken != null ) {
-      def rtc = params.resumptionToken.split('\\|');
-      log.debug("Got resumption: ${rtc}")
-      if ( rtc[0].length() > 0 ) {
+    def out = response.outputStream
+    response.contentType = "application/xml"
+    response.setCharacterEncoding("UTF-8");
+
+    out.withWriter { writer ->
+
+      // def writer = new StringWriter()
+      def xml = new StreamingMarkupBuilder()
+      def offset = 0;
+      def resumption = null
+      def metadataPrefix = null
+
+      if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
+        def rtc = params.resumptionToken.split('\\|');
+        log.debug("Got resumption: ${rtc}")
+        if ( rtc.length == 4 ) {
+          if ( rtc[0].length() > 0 ) {
+          }
+          if ( rtc[1].length() > 0 ) {
+          }
+          if ( rtc[2].length() > 0 ) {
+            offset=Long.parseLong(rtc[2]);
+          }
+          if ( rtc[3].length() > 0 ) {
+            metadataPrefix=rtc[3];
+          }
+          log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
+        }
+        else {
+          log.error("Unexpected number of components in resumption token: ${rtc}");
+        }
       }
-      if ( rtc[1].length() > 0 ) {
+      else {
+        metadataPrefix = params.metadataPrefix
       }
-      if ( rtc[2].length() > 0 ) {
-        offset=Long.parseLong(rtc[2]);
+
+      def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
+
+      def query_params = []
+      def query = " from Package as p where p.status.value != 'Deleted'"
+
+      if ((params.from != null)&&(params.from.length()>0)) {
+        query += ' and p.lastUpdated > ?'
+        query_params.add(sdf.parse(params.from))
       }
-      if ( rtc[3].length() > 0 ) {
-        metadataPrefix=rtc[3];
+      if ((params.until != null)&&(params.until.length()>0)) {
+        query += ' and p.lastUpdated < ?'
+        query_params.add(sdf.parse(params.until))
       }
-    }
-    else {
-      metadataPrefix = params.metadataPrefix
-    }
+      query += ' order by p.lastUpdated'
 
-    def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
+      log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
+      def rec_count = Package.executeQuery("select count(p) ${query}",query_params)[0];
+      def records = Package.executeQuery("select p ${query}",query_params,[offset:offset,max:5])
 
-    def query_params = []
-    def query = " from Package as p where p.status.value != 'Deleted'"
+      log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
 
-    if ((params.from != null)&&(params.from.length()>0)) {
-      query += ' and p.lastUpdated > ?'
-      query_params.add(sdf.parse(params.from))
-    }
-    if ((params.until != null)&&(params.until.length()>0)) {
-      query += ' and p.lastUpdated < ?'
-      query_params.add(sdf.parse(params.until))
-    }
-    query += ' order by p.lastUpdated'
+      if ( offset + records.size() < rec_count ) {
+        // Query returns more records than sent, we will need a resumption token
+        resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}|${metadataPrefix}"
+      }
 
-    log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
-    def rec_count = Package.executeQuery("select count(p) ${query}",query_params)[0];
-    def records = Package.executeQuery("select p ${query}",query_params,[offset:offset,max:5])
-
-    log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
-
-    if ( offset + records.size() < rec_count ) {
-      // Query returns more records than sent, we will need a resumption token
-      resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}|${metadataPrefix}"
-    }
-
-    if ( prefixHandler ) {
-      def resp =  { mkp ->
-        'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
-                      'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
-                      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-          'oai:responseDate'('value')
-          'oai:request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
-          'oai:ListRecords'() {
-            records.each { rec ->
-              'oai:record'() {
-                'oai:header'() {
-                  identifier("${rec.class.name}:${rec.id}")
-                  datestamp(sdf.format(rec.lastUpdated))
+      if ( prefixHandler ) {
+        log.debug("Calling prefix handler...");
+        def resp =  { mkp ->
+          'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
+                        'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
+                        'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+            'oai:responseDate'('value')
+            'oai:request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+            'oai:ListRecords'() {
+              records.each { rec ->
+                'oai:record'() {
+                  'oai:header'() {
+                    identifier("${rec.class.name}:${rec.id}")
+                    datestamp(sdf.format(rec.lastUpdated))
+                  }
+                  'oai:metadata'() {
+                     rec."${prefixHandler.methodName}"(mkp)
+                   }
                 }
-                'oai:metadata'() {
-                   rec."${prefixHandler.methodName}"(mkp)
-                 }
               }
-            }
-            if ( resumption != null ) {
-              'oai:resumptionToken'(completeListSize:rec_count, cursor:offset, resumption);
+              if ( resumption != null ) {
+                'oai:resumptionToken'(completeListSize:rec_count, cursor:offset, resumption);
+              }
             }
           }
         }
+        log.debug("prefix handler complete..... write");
+  
+        writer << xml.bind(resp)
       }
 
-      writer << xml.bind(resp)
+      log.debug("Render");
     }
-
-    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
 
   def listSets(result) {
