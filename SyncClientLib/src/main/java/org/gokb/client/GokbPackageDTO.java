@@ -1,7 +1,12 @@
 package org.gokb.client;
 
+import com.sleepycat.persist.model.Entity;
+import com.sleepycat.persist.model.PrimaryKey;
+
+@Entity
 public class GokbPackageDTO {
 
+  @PrimaryKey
   String packageId;
   String packageName;
   java.util.List<GokbTippDTO> tipps = new java.util.ArrayList();
@@ -17,6 +22,7 @@ public class GokbPackageDTO {
     for ( GokbTippDTO tipp : tipps ) {
       sw.write("    title: "+tipp.title+"\n");
     }
+
     return sw.toString();
   }
 }
