@@ -6,15 +6,7 @@ import static groovyx.net.http.Method.*
 
 public class Sync {
 
-  public static void main(String[] args) {
-    Sync sc = new Sync()
-    if ( args.length > 0 )
-      sc.doSync(args[0])
-    else
-      sc.doSync('http://localhost:8080')
-  }
-
-  public doSync(host) {
+  public doSync(host, notificationTarget) {
     println("Get latest changes");
 
     def http = new HTTPBuilder( host )
@@ -47,6 +39,9 @@ public class Sync {
             r.metadata.package.packageTitles.TIP.each { pt ->
               println("Title: ${pt.title}");
             }
+
+            GokbPackageDTO dto = new GokbPackageDTO()
+            notificationTarget.notifyChange(dto)
           }
 
           if ( xml.'ListRecords'.'resumptionToken'.size() == 1 ) {

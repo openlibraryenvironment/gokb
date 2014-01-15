@@ -5,4 +5,4 @@ test with..
 
 
 gradle build
-java -jar ./build/libs/SyncClientLib.jar "http://gokb.k-int.com"
+java -jar ./build/libs/SyncClientLib.jar org.gokb.client.RecordDumpNotifier "http://gokb.k-int.com"

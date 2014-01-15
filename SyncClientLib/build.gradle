@@ -1,7 +1,7 @@
 apply plugin: 'groovy'
 apply plugin:'application'
 
-mainClassName = 'org.gokb.client.Sync'
+mainClassName = 'org.gokb.client.RecordDumpNotifier'
 defaultTasks 'clean', 'build', 'uberjar'
 
  
@@ -20,6 +20,6 @@ task uberjar(type: Jar) {
     from configurations.runtime.asFileTree.files.collect { zipTree(it) }
 
     manifest {
-        attributes 'Main-Class': 'org.gokb.client.Sync'
+        attributes 'Main-Class': 'org.gokb.client.RecordDumpNotifier'
     }
 }
