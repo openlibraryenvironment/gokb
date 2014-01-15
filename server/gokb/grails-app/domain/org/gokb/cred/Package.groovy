@@ -163,10 +163,10 @@ class Package extends KBComponent {
 
     // Get the tipps manually rather than iterating over the collection - For better management
     // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
-    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.toComponent.name, titleCombo.toComponent.id, hostPlatformCombo.toComponent.name, hostPlatformCombo.toComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo 
-where hostPlatformCombo.fromComponent=tipp 
+    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo 
+where hostPlatformCombo.toComponent=tipp 
   and hostPlatformCombo.type.value='Platform.HostedTipps' 
-  and titleCombo.fromComponent=tipp 
+  and titleCombo.toComponent=tipp 
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
   and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) 
@@ -193,9 +193,9 @@ order by tipp.id""",this);
             'gokb.coverageNote'(tipp[12])
             'gokb.url'(tipp[13])
             'gokb.titleIdentifiers' {
-              // tipp.title.ids.each { tid ->
-              //   'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
-              // }
+              getTitleIds(tipp[2]).each { tid ->
+                'gokb:identifier'('gokb:namespace':tid[0], 'gokb:value':tid[1])
+              }
             }
             // 'gokb.tipIdentifiers' {
             //   tipp.ids.each { tid ->
@@ -208,10 +208,15 @@ order by tipp.id""",this);
             //   }
             // }
           }
-          tipp.discard()
         }
       }
     }
+  }
+
+  @Transient
+  private static getTitleIds(Long title_id) {
+    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type.value = 'KBComponent.Ids' and c.fromComponent.id=?)",title_id)
+    result
   }
 
 }
