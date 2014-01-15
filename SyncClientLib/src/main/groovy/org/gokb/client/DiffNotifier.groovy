@@ -7,7 +7,8 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import java.io.File;
 import com.sleepycat.je.DatabaseEntry;
-
+import com.sleepycat.je.LockMode;
+import com.sleepycat.je.OperationStatus;
 
 public class DiffNotifier implements GokbUpdateTarget {
 
@@ -65,9 +66,19 @@ public class DiffNotifier implements GokbUpdateTarget {
     byte[] data = [ 01, 02, 03 ]
 
     DatabaseEntry theKey = new DatabaseEntry(dto.packageId.getBytes("UTF-8"));
-    DatabaseEntry theData = new DatabaseEntry(data);
+    DatabaseEntry theData = new DatabaseEntry(); // new DatabaseEntry(dto.packageId.getBytes("UTF-8"));
 
-    db.put(null, theKey, theData);
+    // See if the key is already present
+    if (db.get(null, theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+      println("Got existing entry for ${dto.packageId}.. this is an update");
+      theData = new DatabaseEntry(data);
+      db.put(null, theKey, theData);
+    }
+    else {
+      println("Store...");
+      theData = new DatabaseEntry(data);
+      db.put(null, theKey, theData);
+    }
   }
 
 }
