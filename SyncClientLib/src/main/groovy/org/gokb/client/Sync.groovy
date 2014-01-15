@@ -8,7 +8,10 @@ public class Sync {
 
   public static void main(String[] args) {
     Sync sc = new Sync()
-    sc.doSync('http://localhost:8080')
+    if ( args.length > 0 )
+      sc.doSync(args[0])
+    else
+      sc.doSync('http://localhost:8080')
   }
 
   public doSync(host) {

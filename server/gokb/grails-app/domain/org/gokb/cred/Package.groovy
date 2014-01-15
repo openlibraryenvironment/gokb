@@ -162,32 +162,40 @@ class Package extends KBComponent {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     // Get the tipps manually rather than iterating over the collection - For better management
-    def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
+    // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
+    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.toComponent.name, titleCombo.toComponent.id, hostPlatformCombo.toComponent.name, hostPlatformCombo.toComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo 
+where hostPlatformCombo.fromComponent=tipp 
+  and hostPlatformCombo.type.value='Platform.HostedTipps' 
+  and titleCombo.fromComponent=tipp 
+  and titleCombo.type.value='TitleInstance.Tipps' 
+  and tipp.status.value != 'Deleted' 
+  and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) 
+order by tipp.id""",this);
 
     builder.'gokb:package'( 'xmlns:gokb':'http://www.gokb.org/schemas/package/') {
       'gokb:packageName'(name)
       'gokb:packageId'(id)
       'gokb:packageTitles' {
-        tipp_ids.each { tipp_id ->
-          def tipp = TitleInstancePackagePlatform.get(tipp_id)
+        tipps.each { tipp ->
+          // def tipp = TitleInstancePackagePlatform.get(tipp_id)
           'gokb:TIP' {
-            'gokb:title'(tipp.title.name)
-            'gokb:titleId'(tipp.title.id)
-            'gokb.platform'(tipp.hostPlatform.name)
-            'gokb.platformId'(tipp.hostPlatform.id)
-            'gokb.startDate'(tipp.startDate?sdf.format(tipp.startDate):null)
-            'gokb.startVolume'(tipp.startVolume)
-            'gokb.startIssue'(tipp.startIssue)
-            'gokb.endDate'(tipp.endDate?sdf.format(tipp.endDate):null)
-            'gokb.endVolume'(tipp.endVolume)
-            'gokb.endIssue'(tipp.endIssue)
-            'gokb.coverageDepth'(tipp.coverageDepth?.value)
-            'gokb.coverageNote'(tipp.coverageNote)
-            'gokb.url'(tipp.url)
+            'gokb:title'(tipp[1])
+            'gokb:titleId'(tipp[2])
+            'gokb.platform'(tipp[3])
+            'gokb.platformId'(tipp[4])
+            'gokb.startDate'(tipp[5]?sdf.format(tipp[5]):null)
+            'gokb.startVolume'(tipp[6])
+            'gokb.startIssue'(tipp[7])
+            'gokb.endDate'(tipp[8]?sdf.format(tipp[8]):null)
+            'gokb.endVolume'(tipp[9])
+            'gokb.endIssue'(tipp[10])
+            'gokb.coverageDepth'(tipp[11]?.value)
+            'gokb.coverageNote'(tipp[12])
+            'gokb.url'(tipp[13])
             'gokb.titleIdentifiers' {
-              tipp.title.ids.each { tid ->
-                'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
-              }
+              // tipp.title.ids.each { tid ->
+              //   'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
+              // }
             }
             // 'gokb.tipIdentifiers' {
             //   tipp.ids.each { tid ->
