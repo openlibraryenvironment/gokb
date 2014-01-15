@@ -1,8 +1,8 @@
 package org.gokb.client;
 
-public class GokbPackage {
+public class GokbPackageDTO {
 
-  String packageId
-  String packageName
-  List tipps
+  String packageId;
+  String packageName;
+  java.util.List<GokbTippDTO> tipps;
 }
