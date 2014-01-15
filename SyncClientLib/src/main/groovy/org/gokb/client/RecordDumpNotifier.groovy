@@ -14,7 +14,7 @@ public class RecordDumpNotifier implements GokbUpdateTarget {
   }
 
   public void notifyChange(GokbPackageDTO dto) {
-    println("dump record... ${dto}");
+    println(dto.dump());
   }
 
 }

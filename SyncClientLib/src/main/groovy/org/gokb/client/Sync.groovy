@@ -33,14 +33,35 @@ public class Sync {
           println resp.statusLine
   
           xml.'ListRecords'.'record'.each { r ->
-            println("Record id...${r.'header'.'identifier'}");
-            println("Package Name: ${r.metadata.package.packageName}");
-            println("Package Id: ${r.metadata.package.packageId}");
-            r.metadata.package.packageTitles.TIP.each { pt ->
-              println("Title: ${pt.title}");
-            }
+            // println("Record id...${r.'header'.'identifier'}");
+            // println("Package Name: ${r.metadata.package.packageName}");
+            // println("Package Id: ${r.metadata.package.packageId}");
 
             GokbPackageDTO dto = new GokbPackageDTO()
+            dto.packageId=r.metadata.package.packageId.text();
+            dto.packageName=r.metadata.package.packageName.text();
+
+            r.metadata.package.packageTitles.TIP.each { pt ->
+              println("Title: ${pt.title}");
+              def new_tipp_dto = new GokbTippDTO();
+              new_tipp_dto.tippId='';
+              new_tipp_dto.pkgId='';
+              new_tipp_dto.pkgName='';
+              new_tipp_dto.platId='';
+              new_tipp_dto.platName='';
+              new_tipp_dto.title=pt.title.text();
+              new_tipp_dto.titleId='';
+              new_tipp_dto.startVolume='';
+              new_tipp_dto.startIssue='';
+              new_tipp_dto.startDate='';
+              new_tipp_dto.endVolume='';
+              new_tipp_dto.endIssue='';
+              new_tipp_dto.endDate='';
+              new_tipp_dto.coverageDepth='';
+              new_tipp_dto.coverageNote='';
+              dto.tipps.add(new_tipp_dto);
+            }
+
             notificationTarget.notifyChange(dto)
           }
 
