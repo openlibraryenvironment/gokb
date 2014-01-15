@@ -42,7 +42,7 @@ public class Sync {
             dto.packageName=r.metadata.package.packageName.text();
 
             r.metadata.package.packageTitles.TIP.each { pt ->
-              println("Title: ${pt.title}");
+              // println("Title: ${pt.title}");
               def new_tipp_dto = new GokbTippDTO();
               new_tipp_dto.tippId='';
               new_tipp_dto.pkgId='';
