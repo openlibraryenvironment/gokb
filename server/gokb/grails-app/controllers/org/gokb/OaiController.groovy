@@ -174,6 +174,7 @@ class OaiController {
     def xml = new StreamingMarkupBuilder()
     def offset = 0;
     def resumption = null
+    def metadataPrefix = null
 
     if ( params.resumptionToken != null ) {
       def rtc = params.resumptionToken.split('\\|');
@@ -185,10 +186,15 @@ class OaiController {
       if ( rtc[2].length() > 0 ) {
         offset=Long.parseLong(rtc[2]);
       }
-      
+      if ( rtc[3].length() > 0 ) {
+        metadataPrefix=rtc[3];
+      }
+    }
+    else {
+      metadataPrefix = params.metadataPrefix
     }
 
-    def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
+    def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
 
     def query_params = []
     def query = " from Package as p where p.status.value != 'Deleted'"
@@ -211,7 +217,7 @@ class OaiController {
 
     if ( offset + records.size() < rec_count ) {
       // Query returns more records than sent, we will need a resumption token
-      resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}"
+      resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}|${metadataPrefix}"
     }
 
     if ( prefixHandler ) {

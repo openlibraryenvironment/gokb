@@ -19,29 +19,47 @@ public class Sync {
 
     def http = new HTTPBuilder( host )
 
+    def more = true
     println("Attempt get...");
+    def resumption=null
+
     // perform a GET request, expecting JSON response data
-    http.request( GET, XML ) {
-      uri.path = '/gokb/oai/packages'
-      uri.query = [ verb:'ListRecords', metadataPrefix: 'gokb' ]
+    while ( more ) {
+      http.request( GET, XML ) {
+        uri.path = '/gokb/oai/packages'
+        if ( resumption ) {
+          uri.query = [ verb:'ListRecords', metadataPrefix: 'gokb' ]
+        }
+        else {
+          uri.query = [ verb:'ListRecords', resumptionToken: resumption ]
+        }
+  
+        // response handler for a success response code:
+        response.success = { resp, xml ->
+          println resp.statusLine
+  
+          xml.'ListRecords'.'record'.each { r ->
+            println("Record id...${r.'header'.'identifier'}");
+            println("Package Name: ${r.metadata.package.packageName}");
+            println("Package Id: ${r.metadata.package.packageId}");
+            r.metadata.package.packageTitles.TIP.each { pt ->
+              println("Title: ${pt.title}");
+            }
+          }
 
-      // response handler for a success response code:
-      response.success = { resp, xml ->
-        println resp.statusLine
-
-        xml.'ListRecords'.'record'.each { r ->
-          println("Record id...${r.'header'.'identifier'}");
-          println("Package Name: ${r.metadata.package.packageName}");
-          println("Package Id: ${r.metadata.package.packageId}");
-          r.metadata.package.packageTitles.TIP.each { pt ->
-            println("Title: ${pt.title}");
+          if ( xml.'ListRecords'.'resumptionToken' ) {
+            resumption=xml.'ListRecords'.'resumptionToken'.text()
+            log.debug("Iterate with resumption : ${resumption}");
+          }
+          else {
+            more = false
           }
         }
-      }
 
-      // handler for any failure status code:
-      response.failure = { resp ->
-        println "Unexpected error: ${resp.statusLine.statusCode} : ${resp.statusLine.reasonPhrase}"
+        // handler for any failure status code:
+        response.failure = { resp ->
+          println "Unexpected error: ${resp.statusLine.statusCode} : ${resp.statusLine.reasonPhrase}"
+        }
       }
     }
 
