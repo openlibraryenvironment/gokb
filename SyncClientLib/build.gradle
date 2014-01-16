@@ -1,7 +1,7 @@
 apply plugin: 'groovy'
 apply plugin:'application'
 
-mainClassName = 'org.gokb.client.Sync'
+mainClassName = 'org.gokb.client.DiffNotifier'
 defaultTasks 'clean', 'build', 'uberjar'
 
  
@@ -13,6 +13,7 @@ dependencies {
   groovy group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.1.5'
   testCompile group: 'junit', name: 'junit', version: '4.8.2'
   compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.5.0-RC2' 
+  compile group: 'berkeleydb', name: 'je', version: '3.2.76'
 }
 
 task uberjar(type: Jar) {
@@ -20,6 +21,6 @@ task uberjar(type: Jar) {
     from configurations.runtime.asFileTree.files.collect { zipTree(it) }
 
     manifest {
-        attributes 'Main-Class': 'org.gokb.client.Sync'
+        attributes 'Main-Class': 'org.gokb.client.DiffNotifier'
     }
 }
