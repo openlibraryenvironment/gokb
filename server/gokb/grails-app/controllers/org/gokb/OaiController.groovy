@@ -209,6 +209,7 @@ class OaiController {
 
       def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
 
+      // This bit of the query needs to come from the oai config in the domain class
       def query_params = []
       def query = " from Package as p where p.status.value != 'Deleted'"
 
