@@ -138,7 +138,8 @@ class Package extends KBComponent {
     schemas:[
       'oai_dc':[type:'method',methodName:'toOaiDcXml'],
       'gokb':[type:'method',methodName:'toGoKBXml'],
-    ]
+    ],
+    query:" from Package as o where o.status.value != 'Deleted'"
   ]
 
   /**
@@ -161,8 +162,6 @@ class Package extends KBComponent {
   def toGoKBXml(builder) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    // Get the tipps manually rather than iterating over the collection - For better management
-    // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
     def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo 
 where hostPlatformCombo.toComponent=tipp 
   and hostPlatformCombo.type.value='Platform.HostedTipps' 
@@ -175,9 +174,8 @@ order by tipp.id""",this);
     builder.'gokb:package'( 'xmlns:gokb':'http://www.gokb.org/schemas/package/') {
       'gokb:packageName'(name)
       'gokb:packageId'(id)
-      'gokb:packageTitles' {
+      'gokb:packageTitles'(count:tipps?.size()) {
         tipps.each { tipp ->
-          // def tipp = TitleInstancePackagePlatform.get(tipp_id)
           'gokb:TIP' {
             'gokb:title'(tipp[1])
             'gokb:titleId'(tipp[2])
