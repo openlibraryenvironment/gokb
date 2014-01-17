@@ -50,7 +50,7 @@ public class Sync {
               new_tipp_dto.platId='';
               new_tipp_dto.platName='';
               new_tipp_dto.title=pt.title.text();
-              new_tipp_dto.titleId='';
+              new_tipp_dto.titleId=pt.titleId.text();
               new_tipp_dto.startVolume='';
               new_tipp_dto.startIssue='';
               new_tipp_dto.startDate='';

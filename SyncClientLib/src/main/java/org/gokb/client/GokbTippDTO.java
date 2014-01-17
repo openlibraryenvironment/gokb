@@ -1,6 +1,6 @@
 package org.gokb.client;
 
-public class GokbTippDTO implements java.io.Serializable {
+public class GokbTippDTO implements java.io.Serializable, java.lang.Comparable {
 
   String tippId;
   String pkgId;
@@ -18,4 +18,7 @@ public class GokbTippDTO implements java.io.Serializable {
   String coverageDepth;
   String coverageNote;
 
+  public int compareTo(Object tipp) {
+    return this.titleId.compareTo(((GokbTippDTO)tipp).titleId);
+  }
 }
