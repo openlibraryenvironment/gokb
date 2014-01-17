@@ -25,7 +25,6 @@ public class GokbPackageDTO implements java.io.Serializable {
   }
 
   public void compareWithPackage(GokbPackageDTO dto) {
-    System.out.println("compare "+this.toString()+" with "+dto.toString());
     java.util.Collections.sort(tipps);
     java.util.Collections.sort(dto.tipps);
 
@@ -39,6 +38,8 @@ public class GokbPackageDTO implements java.io.Serializable {
     tippb = (GokbTippDTO) ( bi.hasNext() ? bi.next() : null );
     
     while ( tippa != null || tippb != null ) {
+
+      System.out.println("Compare "+tippa+" and "+tippb);
       if ( tippa != null && 
            tippb != null && 
            tippa.compareTo(tippb) == 0 ) {
@@ -46,12 +47,14 @@ public class GokbPackageDTO implements java.io.Serializable {
         tippa = (GokbTippDTO) ( ai.hasNext() ? ai.next() : null );
         tippb = (GokbTippDTO) ( bi.hasNext() ? bi.next() : null );
       }
-      else if ( ( tippa.compareTo(tippb) > 0 ) || ( !ai.hasNext() ) ) {
-        System.out.println("  "+tippa.titleId+"   = ");
+      else if ( ( tippb != null ) && 
+                  ( ( tippa == null ) || 
+                    ( tippa.compareTo(tippb) > 0 ) ) ) {
+        System.out.println("Title "+tippb.titleId+" Was added to the package");
         tippb = (GokbTippDTO) ( bi.hasNext() ? bi.next() : null );
       }
       else {
-        System.out.println("             =    "+tippb.titleId);
+        System.out.println("Title "+tippa.titleId+" Was removed from the package");
         tippa = (GokbTippDTO) ( ai.hasNext() ? ai.next() : null );
       }
     }

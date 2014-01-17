@@ -21,4 +21,8 @@ public class GokbTippDTO implements java.io.Serializable, java.lang.Comparable {
   public int compareTo(Object tipp) {
     return this.titleId.compareTo(((GokbTippDTO)tipp).titleId);
   }
+
+  public String toString() {
+    return titleId+":"+title;
+  }
 }
