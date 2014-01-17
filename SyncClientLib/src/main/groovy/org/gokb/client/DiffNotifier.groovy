@@ -63,15 +63,17 @@ public class DiffNotifier implements GokbUpdateTarget {
   public void notifyChange(GokbPackageDTO dto) {
 
     println("DiffNotifier::notifyChange on ${dto.packageName} (${dto.packageId})")
-    byte[] data = [ 01, 02, 03 ]
 
     DatabaseEntry theKey = new DatabaseEntry(dto.packageId.getBytes("UTF-8"));
     DatabaseEntry theData = new DatabaseEntry(); // new DatabaseEntry(dto.packageId.getBytes("UTF-8"));
 
     // See if the key is already present
     if (db.get(null, theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-      println("Got existing entry for ${dto.packageId}.. this is an update");
-      def existing_package = bytesToPackage(theData.getData());
+      byte[] data_bytes = theData.getData();
+
+      println("Got existing entry for ${dto.packageId}.. this is an update (bytes.length=${data_bytes.length})");
+
+      def existing_package = bytesToPackage(data_bytes);
 
       if ( existing_package != null ) {
         println("Compare existing package and new package...");
@@ -86,7 +88,7 @@ public class DiffNotifier implements GokbUpdateTarget {
     }
     else {
       println("New record for ${dto.packageId}");
-      theData = new DatabaseEntry(data);
+      theData = new DatabaseEntry(getBytesForPackage(dto));
       db.put(null, theKey, theData);
     }
   }
@@ -99,7 +101,7 @@ public class DiffNotifier implements GokbUpdateTarget {
       out.writeObject(dto);
       out.close();
       baos.close();
-      result = baos.getBytes();
+      result = baos.toByteArray();
     }catch(IOException i) {
       i.printStackTrace();
     }
