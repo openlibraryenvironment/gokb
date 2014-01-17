@@ -138,7 +138,8 @@ class Package extends KBComponent {
     schemas:[
       'oai_dc':[type:'method',methodName:'toOaiDcXml'],
       'gokb':[type:'method',methodName:'toGoKBXml'],
-    ]
+    ],
+    query:" from Package as o where o.status.value != 'Deleted'"
   ]
 
   /**
@@ -177,7 +178,7 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:10]);
     builder.'gokb:package'( 'xmlns:gokb':'http://www.gokb.org/schemas/package/') {
       'gokb:packageName'(name)
       'gokb:packageId'(id)
-      'gokb:packageTitles' {
+      'gokb:packageTitles'(count:tipps?.size()) {
         tipps.each { tipp ->
           'gokb:TIP' {
             if ( tipp[1] != null ) { 'gokb:title'(tipp[1]) }

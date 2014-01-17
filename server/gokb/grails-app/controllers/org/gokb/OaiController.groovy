@@ -209,22 +209,24 @@ class OaiController {
 
       def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
 
+      // This bit of the query needs to come from the oai config in the domain class
       def query_params = []
-      def query = " from Package as p where p.status.value != 'Deleted'"
+      // def query = " from Package as p where p.status.value != 'Deleted'"
+      def query = result.oaiConfig.query
 
       if ((params.from != null)&&(params.from.length()>0)) {
-        query += ' and p.lastUpdated > ?'
+        query += ' and o.lastUpdated > ?'
         query_params.add(sdf.parse(params.from))
       }
       if ((params.until != null)&&(params.until.length()>0)) {
-        query += ' and p.lastUpdated < ?'
+        query += ' and o.lastUpdated < ?'
         query_params.add(sdf.parse(params.until))
       }
-      query += ' order by p.lastUpdated'
+      query += ' order by o.lastUpdated'
 
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
-      def rec_count = Package.executeQuery("select count(p) ${query}",query_params)[0];
-      def records = Package.executeQuery("select p ${query}",query_params,[offset:offset,max:5])
+      def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
+      def records = Package.executeQuery("select o ${query}",query_params,[offset:offset,max:5])
 
       log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
 
