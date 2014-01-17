@@ -181,22 +181,21 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:10]);
       'gokb:packageTitles'(count:tipps?.size()) {
         tipps.each { tipp ->
           'gokb:TIP' {
-            if ( tipp[1] != null ) { 'gokb:title'(tipp[1]) }
-            if ( tipp[2] != null ) { 'gokb:titleId'(tipp[2]) }
-            if ( tipp[3] != null ) { 'gokb.platform'(tipp[3]) }
-            if ( tipp[4] != null ) { 'gokb.platformId'(tipp[4]) }
-            coverage() {
-              if ( tipp[5] != null ) { 'gokb.startDate'(tipp[5]?sdf.format(tipp[5]):null) }
-              if ( tipp[6] != null ) { 'gokb.startVolume'(tipp[6]) }
-              if ( tipp[7] != null ) { 'gokb.startIssue'(tipp[7]) }
-              if ( tipp[8] != null ) { 'gokb.endDate'(tipp[8]?sdf.format(tipp[8]):null) }
-              if ( tipp[9] != null ) { 'gokb.endVolume'(tipp[9]) }
-              if ( tipp[10] != null ) { 'gokb.endIssue'(tipp[10]) }
-              if ( tipp[11] != null ) { 'gokb.coverageDepth'(tipp[11]?.value) }
-              if ( tipp[12] != null ) { 'gokb.coverageNote'(tipp[12]) }
-            }
+            'gokb:title'(tipp[1])
+            'gokb:titleId'(tipp[2])
+            'gokb.platform'(tipp[3])
+            'gokb.platformId'(tipp[4])
+            'gokb:coverage'(
+                     startDate:(tipp[5]?sdf.format(tipp[5]):null),
+                     startVolume:tipp[6],
+                     startIssue:tipp[7],
+                     endDate:(tipp[8]?sdf.format(tipp[8]):null),
+                     endVolume:tipp[9],
+                     endIssue:tipp[10],
+                     coverageDepth:tipp[11]?.value,
+                     coverageNote:tipp[12])
             if ( tipp[13] != null ) { 'gokb.url'(tipp[13]) }
-            'gokb.titleIdentifiers' {
+            'gokb:titleIdentifiers' {
               getTitleIds(tipp[2]).each { tid ->
                 'gokb:identifier'('gokb:namespace':tid[0], 'gokb:value':tid[1])
               }

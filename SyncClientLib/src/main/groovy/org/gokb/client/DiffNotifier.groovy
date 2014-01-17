@@ -71,10 +71,15 @@ public class DiffNotifier implements GokbUpdateTarget {
     // See if the key is already present
     if (db.get(null, theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
       println("Got existing entry for ${dto.packageId}.. this is an update");
-      def existing_package = bytesToPackage(theData.getBytes());
+      def existing_package = bytesToPackage(theData.getData());
 
-      println("Compare existing package and new package...");
-      existing_package.compareWithPackage(dto);
+      if ( existing_package != null ) {
+        println("Compare existing package and new package...");
+        existing_package.compareWithPackage(dto);
+      }
+      else {
+        println("Unable to retrieve package info from local store");
+      }
 
       theData = new DatabaseEntry(getBytesForPackage(dto));
       db.put(null, theKey, theData);

@@ -226,7 +226,7 @@ class OaiController {
 
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
       def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
-      def records = Package.executeQuery("select o ${query}",query_params,[offset:offset,max:5])
+      def records = Package.executeQuery("select o ${query}",query_params,[offset:offset,max:3])
 
       log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
 
