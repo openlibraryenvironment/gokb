@@ -63,23 +63,65 @@ public class DiffNotifier implements GokbUpdateTarget {
   public void notifyChange(GokbPackageDTO dto) {
 
     println("DiffNotifier::notifyChange on ${dto.packageName} (${dto.packageId})")
-    byte[] data = [ 01, 02, 03 ]
 
     DatabaseEntry theKey = new DatabaseEntry(dto.packageId.getBytes("UTF-8"));
     DatabaseEntry theData = new DatabaseEntry(); // new DatabaseEntry(dto.packageId.getBytes("UTF-8"));
 
     // See if the key is already present
     if (db.get(null, theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-      println("Got existing entry for ${dto.packageId}.. this is an update");
-      theData = new DatabaseEntry(data);
+      byte[] data_bytes = theData.getData();
+
+      println("Got existing entry for ${dto.packageId}.. this is an update (bytes.length=${data_bytes.length})");
+
+      def existing_package = bytesToPackage(data_bytes);
+
+      if ( existing_package != null ) {
+        println("Compare existing package and new package...");
+        existing_package.compareWithPackage(dto);
+      }
+      else {
+        println("Unable to retrieve package info from local store");
+      }
+
+      theData = new DatabaseEntry(getBytesForPackage(dto));
       db.put(null, theKey, theData);
     }
     else {
-      println("Store...");
-      theData = new DatabaseEntry(data);
+      println("New record for ${dto.packageId}");
+      theData = new DatabaseEntry(getBytesForPackage(dto));
       db.put(null, theKey, theData);
     }
   }
 
+  private byte[] getBytesForPackage(GokbPackageDTO dto) {
+    byte[] result = null;
+    try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream()
+      ObjectOutputStream out = new ObjectOutputStream(baos);
+      out.writeObject(dto);
+      out.close();
+      baos.close();
+      result = baos.toByteArray();
+    }catch(IOException i) {
+      i.printStackTrace();
+    }
+    return result;
+  }
+
+  private GokbPackageDTO bytesToPackage(byte[] bytes) {
+    GokbPackageDTO result = null;
+    try {
+      ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+      ObjectInputStream is = new ObjectInputStream(bais);
+      result = (GokbPackageDTO) is.readObject();
+      is.close();
+      bais.close();
+    }catch(IOException i) {
+      i.printStackTrace();
+    }catch(ClassNotFoundException c) {
+      c.printStackTrace();
+    }
+    return result;
+  }
 }
 

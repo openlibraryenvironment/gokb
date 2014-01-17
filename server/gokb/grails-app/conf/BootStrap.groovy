@@ -16,6 +16,8 @@ class BootStrap {
 
   def init = { servletContext ->
 
+    log.debug("Init");
+
     // Add a custom check to see if this is an ajax request.
     HttpServletRequest.metaClass.isAjax = {
       'XMLHttpRequest' == delegate.getHeader('X-Requested-With')

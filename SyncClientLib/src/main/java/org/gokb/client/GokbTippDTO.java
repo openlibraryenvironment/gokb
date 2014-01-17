@@ -1,14 +1,8 @@
 package org.gokb.client;
 
-import com.sleepycat.persist.model.Entity;
-import com.sleepycat.persist.model.PrimaryKey;
+public class GokbTippDTO implements java.io.Serializable, java.lang.Comparable {
 
-@Entity
-public class GokbTippDTO {
-
-  @PrimaryKey
   String tippId;
-
   String pkgId;
   String pkgName;
   String platId;
@@ -24,4 +18,11 @@ public class GokbTippDTO {
   String coverageDepth;
   String coverageNote;
 
+  public int compareTo(Object tipp) {
+    return this.titleId.compareTo(((GokbTippDTO)tipp).titleId);
+  }
+
+  public String toString() {
+    return titleId+":"+title;
+  }
 }
