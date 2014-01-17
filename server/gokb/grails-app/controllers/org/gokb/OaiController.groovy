@@ -72,6 +72,25 @@ class OaiController {
       }
     }
   }
+  
+  private def buildMetadata (subject, builder, result, prefix, config) {
+    
+    // Add the metadata element and populate it depending on the config.
+    builder.'oai:metadata'() {
+      "${prefix}" (
+        "xmlns:${prefix}" : "${config.metadataNamespace}",
+        "xsi:schemaLocation" : "${config.metadataNamespace}") {
+          subject."${config.methodName}" (builder)
+      }
+      
+      'oai_dc:dc'(
+        'xmlns:oai_dc' : "http://www.openarchives.org/OAI/2.0/oai_dc/",
+        'xmlns:dc' : "http://purl.org/dc/elements/1.1/",
+        'xsi:schemaLocation' : "http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd") {
+          'dc:description' (result.oaiConfig.textDescription)
+      }
+    }
+  } 
 
   def getRecord(result) {
 
@@ -100,9 +119,7 @@ class OaiController {
               identifier(oid)
               datestamp(sdf.format(record.lastUpdated))
             }
-            'oai:metadata'() {
-              record."${prefixHandler.methodName}"(xml)
-            }
+            buildMetadata(record, xml, result, params.metadataPrefix, prefixHandler)
           }
         }
       }
@@ -126,7 +143,6 @@ class OaiController {
 
     xml.'oai:OAI-PMH'('xmlns'                 : 'http://www.openarchives.org/OAI/2.0/',
                       'xmlns:oai'             : 'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:dc'              : 'http://www.openarchives.org/OAI/dc',
                       'xmlns:xsi'             : 'http://www.w3.org/2001/XMLSchema-instance',
                       'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
         'oai:responseDate'( sdf.format(new Date()) )
@@ -146,15 +162,20 @@ class OaiController {
           'oai:granularity'('YYYY-MM-DDThh:mm:ssZ')
           'oai:compression'('deflate')
           'oai:description'() {
-            'identifier'(
-                 'xmlns'  : "http://www.openarchives.org/OAI/2.0/oai-identifier",
-                 'xsi:chemaLocation' : "http://www.openarchives.org/OAI/2.0/oai-identifier http://www.openarchives.org/OAI/2.0/oai-identifier.xsd") {
-              'scheme'('oai')
-              'repositoryIdentifier'("${result.className}")
-              'delimiter'(':')
-              'sampleIdentifier'("${result.className}:${obj.id}")
+            'oai_dc:dc'(
+                  'xmlns:oai_dc' : "http://www.openarchives.org/OAI/2.0/oai_dc/",
+                  'xmlns:dc' : "http://purl.org/dc/elements/1.1/",
+                  'xsi:schemaLocation' : "http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd") {
+                'dc:description' (result.oaiConfig.textDescription)
             }
-            'dc:description'(result.oaiConfig.textDescription)
+//            'oai-id:identifier'(
+//                 'xmlns:oai-id'  : "http://www.openarchives.org/OAI/2.0/oai-identifier",
+//                 'xsi:schemaLocation' : "http://www.openarchives.org/OAI/2.0/oai-identifier http://www.openarchives.org/OAI/2.0/oai-identifier.xsd") {
+//              'oai-id:scheme'('oai')
+//              'oai-id:repositoryIdentifier'("${result.className}")
+//              'oai-id:delimiter'(':')
+//              'oai-id:sampleIdentifier'("${result.className}:${obj.id}")
+//            }
           }
         }
         
@@ -176,6 +197,32 @@ class OaiController {
   }
 
   def listIdentifiers(result) {
+    def writer = new StringWriter()
+    def xml = new StreamingMarkupBuilder()
+
+    def resp =  { mkp ->
+      'oai:OAI-PMH'(
+          'xmlns':'http://www.openarchives.org/OAI/2.0/',
+          'xmlns:oai':'http://www.openarchives.org/OAI/2.0/',
+          'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+        'oai:responseDate'( sdf.format(new Date()) )
+        'oai:request'('verb':'ListIdentifiers', request.forwardURI+'?'+request.queryString)
+        'oai:ListIdentifiers'() {
+          
+          result.oaiConfig.schemas.each { prefix, conf ->
+            'oai:metadataFormat' () {
+              'metadataPrefix' ("${prefix}")
+              'schema' ("${conf.schema}")
+              'metadataNamespace' ("${conf.metadataNamespace}")
+            }
+          }
+        }
+      }
+    }
+
+    writer << xml.bind(resp)
+
+    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
 
   def listMetadataFormats(result) {
@@ -190,6 +237,14 @@ class OaiController {
         'oai:responseDate'( sdf.format(new Date()) )
         'oai:request'('verb':'ListMetadataFormats', request.forwardURI+'?'+request.queryString)
         'oai:ListMetadataFormats'() {
+          
+          result.oaiConfig.schemas.each { prefix, conf ->
+            'oai:metadataFormat' () {
+              'metadataPrefix' ("${prefix}")
+              'schema' ("${conf.schema}")
+              'metadataNamespace' ("${conf.metadataNamespace}")
+            }
+          }
         }
       }
     }
@@ -201,10 +256,9 @@ class OaiController {
 
 
   def listRecords(result) {
-
-    def out = response.outputStream
     response.contentType = "application/xml"
     response.setCharacterEncoding("UTF-8");
+    def out = response.outputStream
 
     out.withWriter { writer ->
 
@@ -281,9 +335,7 @@ class OaiController {
                     identifier("${rec.class.name}:${rec.id}")
                     datestamp(sdf.format(rec.lastUpdated))
                   }
-                  'oai:metadata'() {
-                     rec."${prefixHandler.methodName}"(mkp)
-                   }
+                  buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
                 }
               }
               if ( resumption != null ) {
@@ -305,15 +357,15 @@ class OaiController {
 
     def writer = new StringWriter()
     def xml = new StreamingMarkupBuilder()
-
     def resp =  { mkp ->
       'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
                       'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
                       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
         'oai:responseDate'( sdf.format(new Date()) )
         'oai:request'('verb':'ListSets', request.forwardURI+'?'+request.queryString)
-        'oai:ListSet'() {
-        }
+        
+        // For now we are not supporting sets...
+        'oai:error'('code' : "noSetHierarchy", "This repository does not support sets" )
       }
     }
 
