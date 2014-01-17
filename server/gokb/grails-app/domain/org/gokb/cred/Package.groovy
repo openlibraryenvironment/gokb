@@ -135,6 +135,7 @@ class Package extends KBComponent {
   static def oaiConfig = [
     id:'packages',
     lastModified:'lastUpdated',
+    textDescription:'Package repository on GOKb',
     schemas:[
       'oai_dc':[type:'method',methodName:'toOaiDcXml'],
       'gokb':[type:'method',methodName:'toGoKBXml'],

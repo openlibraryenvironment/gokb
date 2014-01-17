@@ -33,6 +33,9 @@ class OaiController {
           def o = dc.clazz.oaiConfig
           if ( o.id == params.id ) {
             result.oaiConfig = o
+            
+            // Also add the class name.
+            result.className = dc.clazz.name
             r = true
           }
         }
@@ -89,7 +92,7 @@ class OaiController {
                       'xmlns:oai' : 'http://www.openarchives.org/OAI/2.0/',
                       'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
                       'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-        'oai:responseDate'('value')
+        'oai:responseDate'( sdf.format(new Date()) )
         'oai:request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
         'oai:GetRecord'() {
           'oai:record'() {
@@ -114,33 +117,60 @@ class OaiController {
   }
 
   def identify(result) {
+    
+    // Get the information needed to describe this entry point.
+    def obj = KBComponent.executeQuery("from ${result.className} as o ORDER BY ${result.oaiConfig.lastModified} ASC", [], [max:1, readOnly:true])[0];
+    
     def writer = new StringWriter()
     def xml = new MarkupBuilder(writer)
 
-    xml.'oai:OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:oai' : 'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
-                      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-        'oai:responseDate'('value')
+    xml.'oai:OAI-PMH'('xmlns'                 : 'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:oai'             : 'http://www.openarchives.org/OAI/2.0/',
+                      'xmlns:dc'              : 'http://www.openarchives.org/OAI/dc',
+                      'xmlns:xsi'             : 'http://www.w3.org/2001/XMLSchema-instance',
+                      'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+        'oai:responseDate'( sdf.format(new Date()) )
         'oai:request'('verb':'Identify', request.forwardURI+'?'+request.queryString)
         'oai:Identify'() {
-          'oai:repositoryName'('GoKB')
-          'oai:baseURL'('http://localhost/')
+          'oai:repositoryName'("GOKb ${result.oaiConfig.id}")
+          'oai:baseURL'(new URL(
+            request.scheme, 
+            request.serverName, 
+            request.serverPort,
+            request.forwardURI
+          ))
           'oai:protocolVersion'('2.0')
           'oai:adminEmail'('admin@gokb.org')
-          'oai:earliestDatestamp'('0')
+          'oai:earliestDatestamp'(sdf.format(obj."${result.oaiConfig.lastModified}"))
           'oai:deletedRecord'('transient')
           'oai:granularity'('YYYY-MM-DDThh:mm:ssZ')
           'oai:compression'('deflate')
           'oai:description'() {
-            'oai:identifier'() {
-              'oai:scheme'('oai')
-              'oai:repositoryIdentifier'('oai')
-              'oai:delimiter'('oai')
-              'oai:sampleIdentifier'('oai')
+            'identifier'(
+                 'xmlns'  : "http://www.openarchives.org/OAI/2.0/oai-identifier",
+                 'xsi:chemaLocation' : "http://www.openarchives.org/OAI/2.0/oai-identifier http://www.openarchives.org/OAI/2.0/oai-identifier.xsd") {
+              'scheme'('oai')
+              'repositoryIdentifier'("${result.className}")
+              'delimiter'(':')
+              'sampleIdentifier'("${result.className}:${obj.id}")
             }
+            'dc:description'(result.oaiConfig.textDescription)
           }
         }
+        
+//        <description>
+//        <oai-identifier
+//          xmlns="http://www.openarchives.org/OAI/2.0/oai-identifier";
+//          xmlnssi="http://www.w3.org/2001/XMLSchema-instance";
+//          xsichemaLocation=
+//              "http://www.openarchives.org/OAI/2.0/oai-identifier
+//          http://www.openarchives.org/OAI/2.0/oai-identifier.xsd">;
+//          <scheme>oai</scheme>
+//          <repositoryIdentifier>lcoa1.loc.gov</repositoryIdentifier>
+//          <delimiter>:</delimiter>
+//          <sampleIdentifier>oai:lcoa1.loc.gov:loc.music/musdi.002</sampleIdentifier>
+//        </oai-identifier>
+//      </description>
     }
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
@@ -153,10 +183,11 @@ class OaiController {
     def xml = new StreamingMarkupBuilder()
 
     def resp =  { mkp ->
-      'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:oai':'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-        'oai:responseDate'('value')
+      'oai:OAI-PMH'(
+          'xmlns':'http://www.openarchives.org/OAI/2.0/',
+          'xmlns:oai':'http://www.openarchives.org/OAI/2.0/',
+          'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+        'oai:responseDate'( sdf.format(new Date()) )
         'oai:request'('verb':'ListMetadataFormats', request.forwardURI+'?'+request.queryString)
         'oai:ListMetadataFormats'() {
         }
@@ -241,7 +272,7 @@ class OaiController {
           'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
                         'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
                         'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-            'oai:responseDate'('value')
+            'oai:responseDate'( sdf.format(new Date()) )
             'oai:request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
             'oai:ListRecords'() {
               records.each { rec ->
@@ -279,7 +310,7 @@ class OaiController {
       'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
                       'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
                       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-        'oai:responseDate'('value')
+        'oai:responseDate'( sdf.format(new Date()) )
         'oai:request'('verb':'ListSets', request.forwardURI+'?'+request.queryString)
         'oai:ListSet'() {
         }
