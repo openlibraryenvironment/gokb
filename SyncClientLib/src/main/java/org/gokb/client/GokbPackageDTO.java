@@ -1,12 +1,7 @@
 package org.gokb.client;
 
-import com.sleepycat.persist.model.Entity;
-import com.sleepycat.persist.model.PrimaryKey;
+public class GokbPackageDTO implements java.io.Serializable {
 
-@Entity
-public class GokbPackageDTO {
-
-  @PrimaryKey
   String packageId;
   String packageName;
   java.util.List<GokbTippDTO> tipps = new java.util.ArrayList();
@@ -25,4 +20,9 @@ public class GokbPackageDTO {
 
     return sw.toString();
   }
+
+  public void compareWithPackage(GokbPackageDTO dto) {
+    System.out.println("compare "+this.toString()+" with "+dto.toString());
+  }
+
 }

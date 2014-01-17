@@ -163,35 +163,38 @@ class Package extends KBComponent {
 
     // Get the tipps manually rather than iterating over the collection - For better management
     // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
-    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo 
-where hostPlatformCombo.toComponent=tipp 
+    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
+where pkgCombo.toComponent=tipp
+  and pkgCombo.fromComponent=?
+  and pkgCombo.type.value='Package.Tipps'
+  and hostPlatformCombo.toComponent=tipp 
   and hostPlatformCombo.type.value='Platform.HostedTipps' 
   and titleCombo.toComponent=tipp 
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
-  and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) 
-order by tipp.id""",this);
+order by tipp.id""",[this],[readOnly: true, fetchSize:10]);
 
     builder.'gokb:package'( 'xmlns:gokb':'http://www.gokb.org/schemas/package/') {
       'gokb:packageName'(name)
       'gokb:packageId'(id)
       'gokb:packageTitles' {
         tipps.each { tipp ->
-          // def tipp = TitleInstancePackagePlatform.get(tipp_id)
           'gokb:TIP' {
-            'gokb:title'(tipp[1])
-            'gokb:titleId'(tipp[2])
-            'gokb.platform'(tipp[3])
-            'gokb.platformId'(tipp[4])
-            'gokb.startDate'(tipp[5]?sdf.format(tipp[5]):null)
-            'gokb.startVolume'(tipp[6])
-            'gokb.startIssue'(tipp[7])
-            'gokb.endDate'(tipp[8]?sdf.format(tipp[8]):null)
-            'gokb.endVolume'(tipp[9])
-            'gokb.endIssue'(tipp[10])
-            'gokb.coverageDepth'(tipp[11]?.value)
-            'gokb.coverageNote'(tipp[12])
-            'gokb.url'(tipp[13])
+            if ( tipp[1] != null ) { 'gokb:title'(tipp[1]) }
+            if ( tipp[2] != null ) { 'gokb:titleId'(tipp[2]) }
+            if ( tipp[3] != null ) { 'gokb.platform'(tipp[3]) }
+            if ( tipp[4] != null ) { 'gokb.platformId'(tipp[4]) }
+            coverage() {
+              if ( tipp[5] != null ) { 'gokb.startDate'(tipp[5]?sdf.format(tipp[5]):null) }
+              if ( tipp[6] != null ) { 'gokb.startVolume'(tipp[6]) }
+              if ( tipp[7] != null ) { 'gokb.startIssue'(tipp[7]) }
+              if ( tipp[8] != null ) { 'gokb.endDate'(tipp[8]?sdf.format(tipp[8]):null) }
+              if ( tipp[9] != null ) { 'gokb.endVolume'(tipp[9]) }
+              if ( tipp[10] != null ) { 'gokb.endIssue'(tipp[10]) }
+              if ( tipp[11] != null ) { 'gokb.coverageDepth'(tipp[11]?.value) }
+              if ( tipp[12] != null ) { 'gokb.coverageNote'(tipp[12]) }
+            }
+            if ( tipp[13] != null ) { 'gokb.url'(tipp[13]) }
             'gokb.titleIdentifiers' {
               getTitleIds(tipp[2]).each { tid ->
                 'gokb:identifier'('gokb:namespace':tid[0], 'gokb:value':tid[1])
@@ -215,7 +218,7 @@ order by tipp.id""",this);
 
   @Transient
   private static getTitleIds(Long title_id) {
-    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type.value = 'KBComponent.Ids' and c.fromComponent.id=?)",title_id)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type.value = 'KBComponent.Ids' and c.fromComponent.id=?)",[title_id],[readOnly: true])
     result
   }
 

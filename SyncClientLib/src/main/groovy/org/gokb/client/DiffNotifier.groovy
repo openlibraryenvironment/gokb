@@ -71,15 +71,50 @@ public class DiffNotifier implements GokbUpdateTarget {
     // See if the key is already present
     if (db.get(null, theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
       println("Got existing entry for ${dto.packageId}.. this is an update");
-      theData = new DatabaseEntry(data);
+      def existing_package = bytesToPackage(theData.getBytes());
+
+      println("Compare existing package and new package...");
+      existing_package.compareWithPackage(dto);
+
+      theData = new DatabaseEntry(getBytesForPackage(dto));
       db.put(null, theKey, theData);
     }
     else {
-      println("Store...");
+      println("New record for ${dto.packageId}");
       theData = new DatabaseEntry(data);
       db.put(null, theKey, theData);
     }
   }
 
+  private byte[] getBytesForPackage(GokbPackageDTO dto) {
+    byte[] result = null;
+    try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream()
+      ObjectOutputStream out = new ObjectOutputStream(baos);
+      out.writeObject(dto);
+      out.close();
+      baos.close();
+      result = baos.getBytes();
+    }catch(IOException i) {
+      i.printStackTrace();
+    }
+    return result;
+  }
+
+  private GokbPackageDTO bytesToPackage(byte[] bytes) {
+    GokbPackageDTO result = null;
+    try {
+      ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+      ObjectInputStream is = new ObjectInputStream(bais);
+      result = (GokbPackageDTO) is.readObject();
+      is.close();
+      bais.close();
+    }catch(IOException i) {
+      i.printStackTrace();
+    }catch(ClassNotFoundException c) {
+      c.printStackTrace();
+    }
+    return result;
+  }
 }
 
