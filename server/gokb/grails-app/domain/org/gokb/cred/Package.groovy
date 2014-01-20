@@ -173,27 +173,29 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:3]);
       'name' (name)
       builder.'titles'(count:tipps?.size()) {
         tipps.each { tipp ->
-          'title' ([id:tipp[2]]) {
-            'name' (tipp[1])
-            'identifiers' {
-              getTitleIds(tipp[2]).each { tid ->
-                'identifier'('namespace':tid[0], 'value':tid[1])
+          'title-platform' ([id:tipp[0]]) {
+            'title' ([id:tipp[2]]) {
+              'name' (tipp[1])
+              'identifiers' {
+                getTitleIds(tipp[2]).each { tid ->
+                  'identifier'('namespace':tid[0], 'value':tid[1])
+                }
               }
             }
+            'platform'([id:tipp[4]]) {
+              'name' (tipp[3])
+            }
+            'coverage'(
+              startDate:(tipp[5]?sdf.format(tipp[5]):null),
+              startVolume:tipp[6],
+              startIssue:tipp[7],
+              endDate:(tipp[8]?sdf.format(tipp[8]):null),
+              endVolume:tipp[9],
+              endIssue:tipp[10],
+              coverageDepth:tipp[11]?.value,
+              coverageNote:tipp[12])
+            if ( tipp[13] != null ) { 'url'(tipp[13]) }
           }
-          'platform'([id:tipp[4]]) {
-            'name' (tipp[3])
-          }
-          'coverage'(
-                   startDate:(tipp[5]?sdf.format(tipp[5]):null),
-                   startVolume:tipp[6],
-                   startIssue:tipp[7],
-                   endDate:(tipp[8]?sdf.format(tipp[8]):null),
-                   endVolume:tipp[9],
-                   endIssue:tipp[10],
-                   coverageDepth:tipp[11]?.value,
-                   coverageNote:tipp[12])
-          if ( tipp[13] != null ) { 'url'(tipp[13]) }
         }
       }
     }
