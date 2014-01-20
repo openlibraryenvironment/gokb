@@ -33,6 +33,7 @@ class OaiController {
           def o = dc.clazz.oaiConfig
           if ( o.id == params.id ) {
             
+            // Combine the default props with the locally set ones.
             result.oaiConfig = grailsApplication.config.defaultOaiConfig + o
 
             // Also add the class name.
@@ -233,7 +234,7 @@ class OaiController {
         'request'('verb':'ListIdentifiers', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
         'ListIdentifiers'() {
           records.each { rec ->
-            'record'() {
+            mkp.'record'() {
               'header'() {
                 identifier("${rec.class.name}:${rec.id}")
                 datestamp(sdf.format(rec.lastUpdated))
@@ -259,7 +260,7 @@ class OaiController {
     def xml = new StreamingMarkupBuilder()
 
     def resp =  { mkp ->
-      'OAI-PMH'(
+      xml.'OAI-PMH'(
           'xmlns':'http://www.openarchives.org/OAI/2.0/',
           'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
             'responseDate'( sdf.format(new Date()) )
@@ -267,7 +268,7 @@ class OaiController {
             'ListMetadataFormats'() {
 
               result.oaiConfig.schemas.each { prefix, conf ->
-                'metadataFormat' () {
+                mkp.'metadataFormat' () {
                   'metadataPrefix' ("${prefix}")
                   'schema' ("${conf.schema}")
                   'metadataNamespace' ("${conf.metadataNamespaces['_default_']}")
@@ -358,7 +359,7 @@ class OaiController {
             'request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
             'ListRecords'() {
               records.each { rec ->
-                'record'() {
+                mkp.'record'() {
                   'header'() {
                     identifier("${rec.class.name}:${rec.id}")
                     datestamp(sdf.format(rec.lastUpdated))
