@@ -135,20 +135,7 @@ class Package extends KBComponent {
   @Transient
   static def oaiConfig = [
     id:'packages',
-    lastModified:'lastUpdated',
-    textDescription:'Package repository on GOKb',
-    schemas:[
-      'oai_dc':[
-        type:'method',
-        methodName:'toOaiDcXml',
-        schema:'http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
-        metadataNamespace: 'http://www.openarchives.org/OAI/2.0/oai_dc/'],
-      'gokb':[
-        type:'method',
-        methodName:'toGoKBXml',
-        schema:'http://www.gokb.org/schemas/package/',
-        metadataNamespace: 'http://www.gokb.org/schemas/package/'],
-    ],
+    textDescription:'Package repository for GOKb',
     query:" from Package as o where o.status.value != 'Deleted'"
   ]
 
@@ -157,7 +144,9 @@ class Package extends KBComponent {
    */
   @Transient
   def toOaiDcXml(builder) {
-    builder.'oai_dc:title' (name)
+    builder.'dc'() {
+      'dc:title' (name)
+    }
   }
 
   /**
@@ -180,40 +169,33 @@ where pkgCombo.toComponent=tipp
   and tipp.status.value != 'Deleted' 
 order by tipp.id""",[this],[readOnly: true, fetchSize:10]);
 
-    builder.'gokb:packageName'(name)
-    builder.'gokb:packageId'(id)
-    builder.'gokb:packageTitles'(count:tipps?.size()) {
-      tipps.each { tipp ->
-        'gokb:TIP' {
-          'gokb:title'(tipp[1])
-          'gokb:titleId'(tipp[2])
-          'gokb:platform'(tipp[3])
-          'gokb:platformId'(tipp[4])
-          'gokb:coverage'(
-                   startDate:(tipp[5]?sdf.format(tipp[5]):null),
-                   startVolume:tipp[6],
-                   startIssue:tipp[7],
-                   endDate:(tipp[8]?sdf.format(tipp[8]):null),
-                   endVolume:tipp[9],
-                   endIssue:tipp[10],
-                   coverageDepth:tipp[11]?.value,
-                   coverageNote:tipp[12])
-          if ( tipp[13] != null ) { 'gokb:url'(tipp[13]) }
-          'gokb:titleIdentifiers' {
-            getTitleIds(tipp[2]).each { tid ->
-              'gokb:identifier'('gokb:namespace':tid[0], 'gokb:value':tid[1])
+    builder.'package' () {
+
+      builder.'name'(name)
+      builder.'id'(id)
+      builder.'packageTitles'(count:tipps?.size()) {
+        tipps.each { tipp ->
+          'TIP' {
+            'title'(tipp[1])
+            'titleId'(tipp[2])
+            'platform'(tipp[3])
+            'platformId'(tipp[4])
+            'coverage'(
+                     startDate:(tipp[5]?sdf.format(tipp[5]):null),
+                     startVolume:tipp[6],
+                     startIssue:tipp[7],
+                     endDate:(tipp[8]?sdf.format(tipp[8]):null),
+                     endVolume:tipp[9],
+                     endIssue:tipp[10],
+                     coverageDepth:tipp[11]?.value,
+                     coverageNote:tipp[12])
+            if ( tipp[13] != null ) { 'url'(tipp[13]) }
+            'titleIdentifiers' {
+              getTitleIds(tipp[2]).each { tid ->
+                'identifier'('namespace':tid[0], 'value':tid[1])
+              }
             }
           }
-          // 'tipIdentifiers' {
-          //   tipp.ids.each { tid ->
-          //     'identifier'('namespace':tid.namespace.value, 'value':tid.value)
-          //   }
-          // }
-          // 'additional' {
-          //   tipp.additionalProperties.each { ap ->
-          //     'property'(name:ap?.propertyDefn?.propertyName,value:ap?.apValue)
-          //   }
-          // }
         }
       }
     }

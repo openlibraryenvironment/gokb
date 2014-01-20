@@ -18,7 +18,7 @@ class OaiController {
 
   def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-  def index() { 
+  def index() {
     def result = [:]
 
     log.debug("index (${params})");
@@ -29,11 +29,12 @@ class OaiController {
         def cfg = dc.clazz.declaredFields.find { it.name == 'oaiConfig' }
         if ( cfg ) {
           log.debug("has config");
-         
+
           def o = dc.clazz.oaiConfig
           if ( o.id == params.id ) {
-            result.oaiConfig = o
             
+            result.oaiConfig = grailsApplication.config.defaultOaiConfig + o
+
             // Also add the class name.
             result.className = dc.clazz.name
             r = true
@@ -41,7 +42,7 @@ class OaiController {
         }
         r
       }
-  
+
       if ( result.oaiConfig ) {
         switch ( params.verb?.toLowerCase() ) {
           case 'getrecord':
@@ -72,25 +73,21 @@ class OaiController {
       }
     }
   }
-  
+
   private def buildMetadata (subject, builder, result, prefix, config) {
     
-    // Add the metadata element and populate it depending on the config.
-    builder.'oai:metadata'() {
-      "${prefix}" (
-        "xmlns:${prefix}" : "${config.metadataNamespace}",
-        "xsi:schemaLocation" : "${config.metadataNamespace}") {
-          subject."${config.methodName}" (builder)
-      }
+    def attr = ["xsi:schemaLocation" : "${config.schema}"]
+    config.metadataNamespaces.each {ns, url ->
+      ns = (ns == '_default_' ? '' : ":${ns}")
       
-      'oai_dc:dc'(
-        'xmlns:oai_dc' : "http://www.openarchives.org/OAI/2.0/oai_dc/",
-        'xmlns:dc' : "http://purl.org/dc/elements/1.1/",
-        'xsi:schemaLocation' : "http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd") {
-          'dc:description' (result.oaiConfig.textDescription)
-      }
+      attr["xmlns${ns}"] = url 
     }
-  } 
+    
+    // Add the metadata element and populate it depending on the config.
+    builder.'metadata'(attr) {
+      subject."${config.methodName}" (builder)
+    }
+  }
 
   def getRecord(result) {
 
@@ -107,15 +104,14 @@ class OaiController {
     log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
 
     if ( record && prefixHandler ) {
-      xml.'oai:OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:oai' : 'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
-                      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-        'oai:responseDate'( sdf.format(new Date()) )
-        'oai:request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
-        'oai:GetRecord'() {
-          'oai:record'() {
-            'oai:header'() {
+      xml.'OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
+      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
+      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+        'responseDate'( sdf.format(new Date()) )
+        'request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+        'GetRecord'() {
+          'record'() {
+            'header'() {
               identifier(oid)
               datestamp(sdf.format(record.lastUpdated))
             }
@@ -134,64 +130,41 @@ class OaiController {
   }
 
   def identify(result) {
-    
+
     // Get the information needed to describe this entry point.
     def obj = KBComponent.executeQuery("from ${result.className} as o ORDER BY ${result.oaiConfig.lastModified} ASC", [], [max:1, readOnly:true])[0];
-    
+
     def writer = new StringWriter()
     def xml = new MarkupBuilder(writer)
 
-    xml.'oai:OAI-PMH'('xmlns'                 : 'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:oai'             : 'http://www.openarchives.org/OAI/2.0/',
-                      'xmlns:xsi'             : 'http://www.w3.org/2001/XMLSchema-instance',
-                      'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-        'oai:responseDate'( sdf.format(new Date()) )
-        'oai:request'('verb':'Identify', request.forwardURI+'?'+request.queryString)
-        'oai:Identify'() {
-          'oai:repositoryName'("GOKb ${result.oaiConfig.id}")
-          'oai:baseURL'(new URL(
-            request.scheme, 
-            request.serverName, 
+    xml.'OAI-PMH'('xmlns'   : 'http://www.openarchives.org/OAI/2.0/',
+    'xmlns:xsi'             : 'http://www.w3.org/2001/XMLSchema-instance',
+    'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+      'responseDate'( sdf.format(new Date()) )
+      'request'('verb':'Identify', request.forwardURI+'?'+request.queryString)
+      'Identify'() {
+        'repositoryName'("GOKb ${result.oaiConfig.id}")
+        'baseURL'(new URL(
+            request.scheme,
+            request.serverName,
             request.serverPort,
             request.forwardURI
-          ))
-          'oai:protocolVersion'('2.0')
-          'oai:adminEmail'('admin@gokb.org')
-          'oai:earliestDatestamp'(sdf.format(obj."${result.oaiConfig.lastModified}"))
-          'oai:deletedRecord'('transient')
-          'oai:granularity'('YYYY-MM-DDThh:mm:ssZ')
-          'oai:compression'('deflate')
-          'oai:description'() {
-            'oai_dc:dc'(
-                  'xmlns:oai_dc' : "http://www.openarchives.org/OAI/2.0/oai_dc/",
-                  'xmlns:dc' : "http://purl.org/dc/elements/1.1/",
-                  'xsi:schemaLocation' : "http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd") {
-                'dc:description' (result.oaiConfig.textDescription)
-            }
-//            'oai-id:identifier'(
-//                 'xmlns:oai-id'  : "http://www.openarchives.org/OAI/2.0/oai-identifier",
-//                 'xsi:schemaLocation' : "http://www.openarchives.org/OAI/2.0/oai-identifier http://www.openarchives.org/OAI/2.0/oai-identifier.xsd") {
-//              'oai-id:scheme'('oai')
-//              'oai-id:repositoryIdentifier'("${result.className}")
-//              'oai-id:delimiter'(':')
-//              'oai-id:sampleIdentifier'("${result.className}:${obj.id}")
-//            }
+            ))
+        'protocolVersion'('2.0')
+        'adminEmail'('admin@gokb.org')
+        'earliestDatestamp'(sdf.format(obj."${result.oaiConfig.lastModified}"))
+        'deletedRecord'('transient')
+        'granularity'('YYYY-MM-DDThh:mm:ssZ')
+        'compression'('deflate')
+        'description'() {
+          'dc'(
+                'xmlns' : "http://www.openarchives.org/OAI/2.0/oai_dc/",
+                'xmlns:dc' : "http://purl.org/dc/elements/1.1/",
+                'xsi:schemaLocation' : "http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd") {
+              'dc:description' (result.oaiConfig.textDescription)
           }
         }
-        
-//        <description>
-//        <oai-identifier
-//          xmlns="http://www.openarchives.org/OAI/2.0/oai-identifier";
-//          xmlnssi="http://www.w3.org/2001/XMLSchema-instance";
-//          xsichemaLocation=
-//              "http://www.openarchives.org/OAI/2.0/oai-identifier
-//          http://www.openarchives.org/OAI/2.0/oai-identifier.xsd">;
-//          <scheme>oai</scheme>
-//          <repositoryIdentifier>lcoa1.loc.gov</repositoryIdentifier>
-//          <delimiter>:</delimiter>
-//          <sampleIdentifier>oai:lcoa1.loc.gov:loc.music/musdi.002</sampleIdentifier>
-//        </oai-identifier>
-//      </description>
+      }
     }
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
@@ -200,28 +173,84 @@ class OaiController {
     def writer = new StringWriter()
     def xml = new StreamingMarkupBuilder()
 
+    def offset = 0;
+    def resumption = null
+    def metadataPrefix = null
+
+    if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
+      def rtc = params.resumptionToken.split('\\|');
+      log.debug("Got resumption: ${rtc}")
+      if ( rtc.length == 4 ) {
+        if ( rtc[0].length() > 0 ) {
+        }
+        if ( rtc[1].length() > 0 ) {
+        }
+        if ( rtc[2].length() > 0 ) {
+          offset=Long.parseLong(rtc[2]);
+        }
+        if ( rtc[3].length() > 0 ) {
+          metadataPrefix=rtc[3];
+        }
+        log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
+      }
+      else {
+        log.error("Unexpected number of components in resumption token: ${rtc}");
+      }
+    }
+    else {
+      metadataPrefix = params.metadataPrefix
+    }
+
+    // This bit of the query needs to come from the oai config in the domain class
+    def query_params = []
+    // def query = " from Package as p where p.status.value != 'Deleted'"
+    def query = result.oaiConfig.query
+
+    if ((params.from != null)&&(params.from.length()>0)) {
+      query += ' and o.lastUpdated > ?'
+      query_params.add(sdf.parse(params.from))
+    }
+    if ((params.until != null)&&(params.until.length()>0)) {
+      query += ' and o.lastUpdated < ?'
+      query_params.add(sdf.parse(params.until))
+    }
+    query += ' order by o.lastUpdated'
+
+    def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
+    def records = Package.executeQuery("select o ${query}",query_params,[offset:offset,max:3])
+
+    log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
+
+    if ( offset + records.size() < rec_count ) {
+      // Query returns more records than sent, we will need a resumption token
+      resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}|${metadataPrefix}"
+    }
+
     def resp =  { mkp ->
-      'oai:OAI-PMH'(
-          'xmlns':'http://www.openarchives.org/OAI/2.0/',
-          'xmlns:oai':'http://www.openarchives.org/OAI/2.0/',
-          'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-        'oai:responseDate'( sdf.format(new Date()) )
-        'oai:request'('verb':'ListIdentifiers', request.forwardURI+'?'+request.queryString)
-        'oai:ListIdentifiers'() {
-          
-          result.oaiConfig.schemas.each { prefix, conf ->
-            'oai:metadataFormat' () {
-              'metadataPrefix' ("${prefix}")
-              'schema' ("${conf.schema}")
-              'metadataNamespace' ("${conf.metadataNamespace}")
+      'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+        'responseDate'( sdf.format(new Date()) )
+        'request'('verb':'ListIdentifiers', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+        'ListIdentifiers'() {
+          records.each { rec ->
+            'record'() {
+              'header'() {
+                identifier("${rec.class.name}:${rec.id}")
+                datestamp(sdf.format(rec.lastUpdated))
+              }
             }
+          }
+          if ( resumption != null ) {
+            'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption);
           }
         }
       }
     }
+    log.debug("prefix handler complete..... write");
 
     writer << xml.bind(resp)
 
+    log.debug("Render");
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
 
@@ -230,23 +259,22 @@ class OaiController {
     def xml = new StreamingMarkupBuilder()
 
     def resp =  { mkp ->
-      'oai:OAI-PMH'(
+      'OAI-PMH'(
           'xmlns':'http://www.openarchives.org/OAI/2.0/',
-          'xmlns:oai':'http://www.openarchives.org/OAI/2.0/',
           'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-        'oai:responseDate'( sdf.format(new Date()) )
-        'oai:request'('verb':'ListMetadataFormats', request.forwardURI+'?'+request.queryString)
-        'oai:ListMetadataFormats'() {
-          
-          result.oaiConfig.schemas.each { prefix, conf ->
-            'oai:metadataFormat' () {
-              'metadataPrefix' ("${prefix}")
-              'schema' ("${conf.schema}")
-              'metadataNamespace' ("${conf.metadataNamespace}")
+            'responseDate'( sdf.format(new Date()) )
+            'request'('verb':'ListMetadataFormats', request.forwardURI+'?'+request.queryString)
+            'ListMetadataFormats'() {
+
+              result.oaiConfig.schemas.each { prefix, conf ->
+                'metadataFormat' () {
+                  'metadataPrefix' ("${prefix}")
+                  'schema' ("${conf.schema}")
+                  'metadataNamespace' ("${conf.metadataNamespaces['_default_']}")
+                }
+              }
             }
           }
-        }
-      }
     }
 
     writer << xml.bind(resp)
@@ -256,7 +284,7 @@ class OaiController {
 
 
   def listRecords(result) {
-    response.contentType = "application/xml"
+    response.contentType = "text/xml"
     response.setCharacterEncoding("UTF-8");
     def out = response.outputStream
 
@@ -323,15 +351,15 @@ class OaiController {
       if ( prefixHandler ) {
         log.debug("Calling prefix handler...");
         def resp =  { mkp ->
-          'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
-                        'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
-                        'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-            'oai:responseDate'( sdf.format(new Date()) )
-            'oai:request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
-            'oai:ListRecords'() {
+          'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+          'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+          'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+            'responseDate'( sdf.format(new Date()) )
+            'request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+            'ListRecords'() {
               records.each { rec ->
-                'oai:record'() {
-                  'oai:header'() {
+                'record'() {
+                  'header'() {
                     identifier("${rec.class.name}:${rec.id}")
                     datestamp(sdf.format(rec.lastUpdated))
                   }
@@ -339,13 +367,13 @@ class OaiController {
                 }
               }
               if ( resumption != null ) {
-                'oai:resumptionToken'(completeListSize:rec_count, cursor:offset, resumption);
+                'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption);
               }
             }
           }
         }
         log.debug("prefix handler complete..... write");
-  
+
         writer << xml.bind(resp)
       }
 
@@ -358,14 +386,13 @@ class OaiController {
     def writer = new StringWriter()
     def xml = new StreamingMarkupBuilder()
     def resp =  { mkp ->
-      'oai:OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/', 
-                      'xmlns:oai':'http://www.openarchives.org/OAI/2.0/', 
-                      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-        'oai:responseDate'( sdf.format(new Date()) )
-        'oai:request'('verb':'ListSets', request.forwardURI+'?'+request.queryString)
-        
+      'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+        'responseDate'( sdf.format(new Date()) )
+        'request'('verb':'ListSets', request.forwardURI+'?'+request.queryString)
+
         // For now we are not supporting sets...
-        'oai:error'('code' : "noSetHierarchy", "This repository does not support sets" )
+        'error'('code' : "noSetHierarchy", "This repository does not support sets" )
       }
     }
 
