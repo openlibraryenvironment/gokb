@@ -167,35 +167,33 @@ where pkgCombo.toComponent=tipp
   and titleCombo.toComponent=tipp 
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
-order by tipp.id""",[this],[readOnly: true, fetchSize:10]);
+order by tipp.id""",[this],[readOnly: true, fetchSize:3]);
 
-    builder.'package' () {
-
-      builder.'name'(name)
-      builder.'id'(id)
-      builder.'packageTitles'(count:tipps?.size()) {
+    builder.'package' (['id':(id)]) {
+      'name' (name)
+      builder.'titles'(count:tipps?.size()) {
         tipps.each { tipp ->
-          'TIP' {
-            'title'(tipp[1])
-            'titleId'(tipp[2])
-            'platform'(tipp[3])
-            'platformId'(tipp[4])
-            'coverage'(
-                     startDate:(tipp[5]?sdf.format(tipp[5]):null),
-                     startVolume:tipp[6],
-                     startIssue:tipp[7],
-                     endDate:(tipp[8]?sdf.format(tipp[8]):null),
-                     endVolume:tipp[9],
-                     endIssue:tipp[10],
-                     coverageDepth:tipp[11]?.value,
-                     coverageNote:tipp[12])
-            if ( tipp[13] != null ) { 'url'(tipp[13]) }
-            'titleIdentifiers' {
+          'title' ([id:tipp[2]]) {
+            'name' (tipp[1])
+            'identifiers' {
               getTitleIds(tipp[2]).each { tid ->
                 'identifier'('namespace':tid[0], 'value':tid[1])
               }
             }
           }
+          'platform'([id:tipp[4]]) {
+            'name' (tipp[3])
+          }
+          'coverage'(
+                   startDate:(tipp[5]?sdf.format(tipp[5]):null),
+                   startVolume:tipp[6],
+                   startIssue:tipp[7],
+                   endDate:(tipp[8]?sdf.format(tipp[8]):null),
+                   endVolume:tipp[9],
+                   endIssue:tipp[10],
+                   coverageDepth:tipp[11]?.value,
+                   coverageNote:tipp[12])
+          if ( tipp[13] != null ) { 'url'(tipp[13]) }
         }
       }
     }
