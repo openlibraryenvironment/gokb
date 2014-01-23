@@ -85,8 +85,8 @@ class OaiController {
     }
     
     // Add the metadata element and populate it depending on the config.
-    builder.'metadata'(attr) {
-      subject."${config.methodName}" (builder)
+    builder.'metadata'() {
+      subject."${config.methodName}" (builder, attr)
     }
   }
 
@@ -109,10 +109,10 @@ class OaiController {
       'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
       'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
         'responseDate'( sdf.format(new Date()) )
-        'request'('verb':'GetRecord', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+        'request'('verb':'GetRecord', 'identifier':params.identifier, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
         'GetRecord'() {
-          'record'() {
-            'header'() {
+          xml.'record'() {
+            xml.'header'() {
               identifier(oid)
               datestamp(sdf.format(record.lastUpdated))
             }
@@ -181,7 +181,7 @@ class OaiController {
     if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
       def rtc = params.resumptionToken.split('\\|');
       log.debug("Got resumption: ${rtc}")
-      if ( rtc.length == 4 ) {
+      if ( rtc.length == 3 ) {
         if ( rtc[0].length() > 0 ) {
         }
         if ( rtc[1].length() > 0 ) {
@@ -189,17 +189,11 @@ class OaiController {
         if ( rtc[2].length() > 0 ) {
           offset=Long.parseLong(rtc[2]);
         }
-        if ( rtc[3].length() > 0 ) {
-          metadataPrefix=rtc[3];
-        }
         log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
       }
       else {
         log.error("Unexpected number of components in resumption token: ${rtc}");
       }
-    }
-    else {
-      metadataPrefix = params.metadataPrefix
     }
 
     // This bit of the query needs to come from the oai config in the domain class
@@ -224,21 +218,20 @@ class OaiController {
 
     if ( offset + records.size() < rec_count ) {
       // Query returns more records than sent, we will need a resumption token
-      resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}|${metadataPrefix}"
+      resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}"
     }
 
     def resp =  { mkp ->
       'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
-      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+      'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
         'responseDate'( sdf.format(new Date()) )
-        'request'('verb':'ListIdentifiers', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+        'request'('verb':'ListIdentifiers', 'identifier':params.id, request.forwardURI+'?'+request.queryString)
         'ListIdentifiers'() {
           records.each { rec ->
-            mkp.'record'() {
-              'header'() {
-                identifier("${rec.class.name}:${rec.id}")
-                datestamp(sdf.format(rec.lastUpdated))
-              }
+            mkp.'header'() {
+              identifier("${rec.class.name}:${rec.id}")
+              datestamp(sdf.format(rec.lastUpdated))
             }
           }
           if ( resumption != null ) {
@@ -260,7 +253,7 @@ class OaiController {
     def xml = new StreamingMarkupBuilder()
 
     def resp =  { mkp ->
-      xml.'OAI-PMH'(
+      mkp.'OAI-PMH'(
           'xmlns':'http://www.openarchives.org/OAI/2.0/',
           'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
             'responseDate'( sdf.format(new Date()) )
@@ -360,7 +353,7 @@ class OaiController {
             'ListRecords'() {
               records.each { rec ->
                 mkp.'record'() {
-                  'header'() {
+                  mkp.'header' () {
                     identifier("${rec.class.name}:${rec.id}")
                     datestamp(sdf.format(rec.lastUpdated))
                   }

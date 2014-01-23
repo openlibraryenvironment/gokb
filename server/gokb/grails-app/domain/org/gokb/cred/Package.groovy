@@ -143,8 +143,8 @@ class Package extends KBComponent {
    *  Render this package as OAI_dc
    */
   @Transient
-  def toOaiDcXml(builder) {
-    builder.'dc'() {
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
       'dc:title' (name)
     }
   }
@@ -153,7 +153,7 @@ class Package extends KBComponent {
    *  Render this package as GoKBXML
    */
   @Transient
-  def toGoKBXml(builder) {
+  def toGoKBXml(builder, attr) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     // Get the tipps manually rather than iterating over the collection - For better management
@@ -167,34 +167,36 @@ where pkgCombo.toComponent=tipp
   and titleCombo.toComponent=tipp 
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
-order by tipp.id""",[this],[readOnly: true, fetchSize:3]);
-
-    builder.'package' (['id':(id)]) {
-      'name' (name)
-      builder.'titles'(count:tipps?.size()) {
-        tipps.each { tipp ->
-          'title-platform' ([id:tipp[0]]) {
-            'title' ([id:tipp[2]]) {
-              'name' (tipp[1])
-              'identifiers' {
-                getTitleIds(tipp[2]).each { tid ->
-                  'identifier'('namespace':tid[0], 'value':tid[1])
+order by tipp.id""",[this],[readOnly: true, fetchSize:1]);
+    
+    builder.'gokb' (attr) {
+      builder.'package' (['id':(id)]) {
+        'name' (name)
+        builder.'TIPPs'(count:tipps?.size()) {
+          tipps.each { tipp ->
+            builder.'TIPP' (['id':tipp[0]]) {
+              builder.'title' (['id':tipp[2]]) {
+                builder.'name' (tipp[1])
+                builder.'identifiers' {
+                  getTitleIds(tipp[2]).each { tid ->
+                    builder.'identifier'('namespace':tid[0], 'value':tid[1])
+                  }
                 }
               }
+              'platform'([id:tipp[4]]) {
+                'name' (tipp[3])
+              }
+              'coverage'(
+                startDate:(tipp[5]?sdf.format(tipp[5]):null),
+                startVolume:tipp[6],
+                startIssue:tipp[7],
+                endDate:(tipp[8]?sdf.format(tipp[8]):null),
+                endVolume:tipp[9],
+                endIssue:tipp[10],
+                coverageDepth:tipp[11]?.value,
+                coverageNote:tipp[12])
+              if ( tipp[13] != null ) { 'url'(tipp[13]) }
             }
-            'platform'([id:tipp[4]]) {
-              'name' (tipp[3])
-            }
-            'coverage'(
-              startDate:(tipp[5]?sdf.format(tipp[5]):null),
-              startVolume:tipp[6],
-              startIssue:tipp[7],
-              endDate:(tipp[8]?sdf.format(tipp[8]):null),
-              endVolume:tipp[9],
-              endIssue:tipp[10],
-              coverageDepth:tipp[11]?.value,
-              coverageNote:tipp[12])
-            if ( tipp[13] != null ) { 'url'(tipp[13]) }
           }
         }
       }

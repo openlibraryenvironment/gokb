@@ -944,7 +944,7 @@ defaultOaiConfig = [
     'oai_dc':[
       type:'method',
       methodName:'toOaiDcXml',
-      schema:'http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
+      schema:'http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
       metadataNamespaces: [
         '_default_' : 'http://www.openarchives.org/OAI/2.0/oai_dc/',
         'dc'        : "http://purl.org/dc/elements/1.1/"
@@ -952,7 +952,7 @@ defaultOaiConfig = [
     'gokb':[
       type:'method',
       methodName:'toGoKBXml',
-      schema:'http://www.gokb.org/oai_metadata/ http://www.gokb.org/schemas/oai_metadata.xsd',
+      schema:'http://www.gokb.org/schemas/oai_metadata.xsd',
       metadataNamespaces: [
         '_default_': 'http://www.gokb.org/oai_metadata/'
       ]],
