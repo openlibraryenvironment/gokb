@@ -30,6 +30,10 @@ class TitleInstancePackagePlatform extends KBComponent {
     "paymentType"   : "Paid",
     "coverageDepth" : "Fulltext"
   ]
+  
+  static touchOnUpdate = [
+    "pkg"
+  ]
 
   static hasByCombo = [
     pkg                 : Package,
