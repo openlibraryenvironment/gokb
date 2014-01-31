@@ -41,11 +41,17 @@ abstract class KBComponent {
   @Transient
   private def springSecurityService
   
-  transient def grailsApplication
+  @Transient
+  private def grailsApplication
   
   @Transient
   public setSpringSecurityService(sss) {
     this.springSecurityService = sss
+  }
+  
+  @Transient
+  public setGrailsApplication(ga) {
+    this.grailsApplication = ga
   }
   
   @Transient
