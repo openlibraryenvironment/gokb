@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+
 import org.gokb.refine.*
 
 class Package extends KBComponent {
@@ -134,12 +135,7 @@ class Package extends KBComponent {
   @Transient
   static def oaiConfig = [
     id:'packages',
-    lastModified:'lastUpdated',
-    textDescription:'Package repository on GOKb',
-    schemas:[
-      'oai_dc':[type:'method',methodName:'toOaiDcXml'],
-      'gokb':[type:'method',methodName:'toGoKBXml'],
-    ],
+    textDescription:'Package repository for GOKb',
     query:" from Package as o where o.status.value != 'Deleted'"
   ]
 
@@ -147,12 +143,9 @@ class Package extends KBComponent {
    *  Render this package as OAI_dc
    */
   @Transient
-  def toOaiDcXml(builder) {
-    builder.'oai_dc:dc'('xmlns:oai_dc':'http://www.openarchives.org/OAI/2.0/oai_dc/',
-                    'xmlns:dc':'http://purl.org/dc/elements/1.1/',
-                    'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd')
-    {
-      'dc:title'(name)
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (name)
     }
   }
 
@@ -160,7 +153,7 @@ class Package extends KBComponent {
    *  Render this package as GoKBXML
    */
   @Transient
-  def toGoKBXml(builder) {
+  def toGoKBXml(builder, attr) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     // Get the tipps manually rather than iterating over the collection - For better management
@@ -174,43 +167,36 @@ where pkgCombo.toComponent=tipp
   and titleCombo.toComponent=tipp 
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
-order by tipp.id""",[this],[readOnly: true, fetchSize:10]);
-
-    builder.'gokb:package'( 'xmlns:gokb':'http://www.gokb.org/schemas/package/') {
-      'gokb:packageName'(name)
-      'gokb:packageId'(id)
-      'gokb:packageTitles'(count:tipps?.size()) {
-        tipps.each { tipp ->
-          'gokb:TIP' {
-            'gokb:title'(tipp[1])
-            'gokb:titleId'(tipp[2])
-            'gokb.platform'(tipp[3])
-            'gokb.platformId'(tipp[4])
-            'gokb:coverage'(
-                     startDate:(tipp[5]?sdf.format(tipp[5]):null),
-                     startVolume:tipp[6],
-                     startIssue:tipp[7],
-                     endDate:(tipp[8]?sdf.format(tipp[8]):null),
-                     endVolume:tipp[9],
-                     endIssue:tipp[10],
-                     coverageDepth:tipp[11]?.value,
-                     coverageNote:tipp[12])
-            if ( tipp[13] != null ) { 'gokb.url'(tipp[13]) }
-            'gokb:titleIdentifiers' {
-              getTitleIds(tipp[2]).each { tid ->
-                'gokb:identifier'('gokb:namespace':tid[0], 'gokb:value':tid[1])
+order by tipp.id""",[this],[readOnly: true, fetchSize:1]);
+    
+    builder.'gokb' (attr) {
+      builder.'package' (['id':(id)]) {
+        'name' (name)
+        builder.'TIPPs'(count:tipps?.size()) {
+          tipps.each { tipp ->
+            builder.'TIPP' (['id':tipp[0]]) {
+              builder.'title' (['id':tipp[2]]) {
+                builder.'name' (tipp[1])
+                builder.'identifiers' {
+                  getTitleIds(tipp[2]).each { tid ->
+                    builder.'identifier'('namespace':tid[0], 'value':tid[1])
+                  }
+                }
               }
+              'platform'([id:tipp[4]]) {
+                'name' (tipp[3])
+              }
+              'coverage'(
+                startDate:(tipp[5]?sdf.format(tipp[5]):null),
+                startVolume:tipp[6],
+                startIssue:tipp[7],
+                endDate:(tipp[8]?sdf.format(tipp[8]):null),
+                endVolume:tipp[9],
+                endIssue:tipp[10],
+                coverageDepth:tipp[11]?.value,
+                coverageNote:tipp[12])
+              if ( tipp[13] != null ) { 'url'(tipp[13]) }
             }
-            // 'gokb.tipIdentifiers' {
-            //   tipp.ids.each { tid ->
-            //     'gokb:identifier'('gokb:namespace':tid.namespace.value, 'gokb:value':tid.value)
-            //   }
-            // }
-            // 'gokb.additional' {
-            //   tipp.additionalProperties.each { ap ->
-            //     'gokb.property'(name:ap?.propertyDefn?.propertyName,value:ap?.apValue)
-            //   }
-            // }
           }
         }
       }

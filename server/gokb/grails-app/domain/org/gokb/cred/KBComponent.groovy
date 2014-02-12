@@ -42,8 +42,63 @@ abstract class KBComponent {
   private def springSecurityService
   
   @Transient
+  private def grailsApplication
+  
+  @Transient
   public setSpringSecurityService(sss) {
     this.springSecurityService = sss
+  }
+  
+  @Transient
+  public setGrailsApplication(ga) {
+    this.grailsApplication = ga
+  }
+  
+  @Transient
+  protected touchAllDependants () {
+    
+    // The update closure.
+    def doUpdate = { obj, Date stamp ->
+      
+      try {
+        
+        obj.lastUpdated = stamp
+        obj.save(failOnError:true)
+        
+      } catch (Throwable t) {
+      
+        // Suppress but log.
+        log.error(t)
+      }
+    }
+    
+    if (hasProperty("touchOnUpdate")) {
+      
+      // We should also update the object(s).
+      this.touchOnUpdate.each { dep_name ->
+        
+        // Get the dependant.
+        def deps = this."${dep_name}"
+      
+        if (deps) {
+          if (deps instanceof Map) {
+            
+            deps.each { k,obj ->
+              doUpdate(obj, lastUpdated)
+            }
+            
+          } else if (deps instanceof Iterable) {
+            
+            deps.each { obj ->
+              doUpdate(obj, lastUpdated)
+            }
+            
+          } else if (grailsApplication.isDomainClass(deps.class)) {
+            doUpdate(deps, lastUpdated)
+          }
+        }
+      }
+    }
   }
 
   @Transient
@@ -388,6 +443,24 @@ abstract class KBComponent {
 
   }
 
+  def afterInsert() {
+    
+    // Alter the timestamps of any dependants.
+    touchAllDependants()
+  }
+  
+  def afterUpdate() {
+    
+    // Alter the timestamps of any dependants.
+    touchAllDependants()
+  }
+  
+  def afterDelete() {
+    
+    // Alter the timestamps of any dependants.
+    touchAllDependants()
+  }
+  
   def beforeUpdate() {
     if ( name ) {
       if ( !shortcode ) {

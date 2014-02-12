@@ -473,6 +473,9 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
         ]
       ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+      ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name']
@@ -937,6 +940,27 @@ grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
  * We need to disable springs password encoding as we handle this in our domain model.
  */
 grails.plugins.springsecurity.ui.encodePassword = false
+
+defaultOaiConfig = [
+  lastModified:'lastUpdated',
+  schemas:[
+    'oai_dc':[
+      type:'method',
+      methodName:'toOaiDcXml',
+      schema:'http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
+      metadataNamespaces: [
+        '_default_' : 'http://www.openarchives.org/OAI/2.0/oai_dc/',
+        'dc'        : "http://purl.org/dc/elements/1.1/"
+      ]],
+    'gokb':[
+      type:'method',
+      methodName:'toGoKBXml',
+      schema:'http://www.gokb.org/schemas/oai_metadata.xsd',
+      metadataNamespaces: [
+        '_default_': 'http://www.gokb.org/oai_metadata/'
+      ]],
+  ]
+]
 
 // Uncomment and edit the following lines to start using Grails encoding & escaping improvements
 
