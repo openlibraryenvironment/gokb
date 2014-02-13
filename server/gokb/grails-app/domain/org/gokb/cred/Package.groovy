@@ -167,7 +167,7 @@ where pkgCombo.toComponent=tipp
   and titleCombo.toComponent=tipp 
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
-order by tipp.id""",[this],[readOnly: true, fetchSize:1]);
+order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
     
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
