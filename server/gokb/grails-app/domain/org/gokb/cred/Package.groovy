@@ -176,7 +176,7 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
               builder.'title' (['id':tipp[2]]) {
-                builder.'name' (tipp[1])
+                builder.'name' (tipp[1]?.trim())
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
                     builder.'identifier'('namespace':tid[0], 'value':tid[1])
@@ -184,7 +184,7 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
                 }
               }
               'platform'([id:tipp[4]]) {
-                'name' (tipp[3])
+                'name' (tipp[3]?.trim())
               }
               'coverage'(
                 startDate:(tipp[5]?sdf.format(tipp[5]):null),
