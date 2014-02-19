@@ -171,8 +171,15 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
     
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
+        'scope' ( scope?.value )
+        'listStatus' ( listStatus?.value )
+        'breakable' ( breakable?.value )
+        'consistent' ( consistent?.value )
+        'fixed' ( fixed?.value )
+        'paymentType' ( paymentType?.value )
+        'global' ( global?.value )
         'name' (name)
-        builder.'TIPPs'(count:tipps?.size()) {
+        'TIPPs'(count:tipps?.size()) {
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
               builder.'status' (tipp[14]?.value)
