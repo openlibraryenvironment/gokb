@@ -171,6 +171,7 @@ class FTUpdateService {
         }
       }
     }
+    log.debug("Join with future");
     future.get()
   }
 }

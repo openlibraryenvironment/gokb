@@ -40,9 +40,9 @@ abstract class KBComponent {
 
   @Transient
   private def springSecurityService
-  
-  @Transient
-  private def grailsApplication
+
+  @Transient  
+  transient def grailsApplication
   
   @Transient
   public setSpringSecurityService(sss) {

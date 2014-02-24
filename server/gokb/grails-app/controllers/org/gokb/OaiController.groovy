@@ -76,6 +76,7 @@ class OaiController {
   }
 
   private def buildMetadata (subject, builder, result, prefix, config) {
+    log.debug("buildMetadata....");
     
     def attr = ["xsi:schemaLocation" : "${config.schema}"]
     config.metadataNamespaces.each {ns, url ->
@@ -88,6 +89,7 @@ class OaiController {
     builder.'metadata'() {
       subject."${config.methodName}" (builder, attr)
     }
+    log.debug("buildMetadata.... done");
   }
 
   def getRecord(result) {
