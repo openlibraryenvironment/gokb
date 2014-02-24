@@ -50,6 +50,11 @@ abstract class KBComponent {
   }
   
   @Transient
+  public setGrailsApplication(ga) {
+    this.grailsApplication = ga
+  }
+  
+  @Transient
   protected touchAllDependants () {
     
     // The update closure.
