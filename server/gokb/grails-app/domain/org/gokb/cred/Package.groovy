@@ -156,6 +156,8 @@ class Package extends KBComponent {
   def toGoKBXml(builder, attr) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+    def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
+
     // Get the tipps manually rather than iterating over the collection - For better management
     // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
     def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
@@ -183,7 +185,7 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
               builder.'status' (tipp[14]?.value)
-              builder.'title' (['id':tipp[2]]) {
+              builder.'title' (['id':identifier_prefix+tipp[2]]) {
                 builder.'name' (tipp[1]?.trim())
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
