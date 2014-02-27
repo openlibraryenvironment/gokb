@@ -89,7 +89,7 @@
           ${d.additionalProperties?.size()}
       </span>
     </a></li>
-    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Requests <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
   </ul>
 
 

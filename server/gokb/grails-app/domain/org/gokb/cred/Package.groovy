@@ -191,7 +191,6 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
                   getTitleIds(tipp[2]).each { tid ->
                     builder.'identifier'('namespace':tid[0], 'value':tid[1])
                   }
-                  builder.'identifier'('namespace':'gokbTitleId', 'value':tipp[2])
                 }
               }
               'platform'([id:tipp[4]]) {
