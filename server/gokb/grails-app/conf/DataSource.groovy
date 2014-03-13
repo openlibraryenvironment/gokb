@@ -16,18 +16,19 @@ environments {
         dataSource {
 
             dbCreate = "update"
-            url = "jdbc:postgresql://localhost:5432/gokb"
-            username = "knowint"
-            password = "knowint"
-            driverClassName = "org.postgresql.Driver"
-            dialect = org.hibernate.dialect.PostgreSQLDialect
 
-            // dbCreate = "update"
-            // driverClassName = "com.mysql.jdbc.Driver"
-            // dialect=org.hibernate.dialect.MySQL5Dialect
-            // username = "k-int"
-            // password = "k-int"
-            // url = "jdbc:mysql://localhost/GoKB?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
+
+            // url = "jdbc:postgresql://localhost:5432/gokb"
+            // username = "knowint"
+            // password = "knowint"
+            // driverClassName = "org.postgresql.Driver"
+            // dialect = org.hibernate.dialect.PostgreSQLDialect
+
+            driverClassName = "com.mysql.jdbc.Driver"
+            dialect=org.hibernate.dialect.MySQL5Dialect
+            username = "k-int"
+            password = "k-int"
+            url = "jdbc:mysql://localhost/GoKB?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
             // logSql = true
             // formatSql = true
