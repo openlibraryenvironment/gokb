@@ -14,7 +14,16 @@ environments {
 
     development {
         dataSource {
+
             dbCreate = "update"
+
+
+            // url = "jdbc:postgresql://localhost:5432/gokb"
+            // username = "knowint"
+            // password = "knowint"
+            // driverClassName = "org.postgresql.Driver"
+            // dialect = org.hibernate.dialect.PostgreSQLDialect
+
             driverClassName = "com.mysql.jdbc.Driver"
             dialect=org.hibernate.dialect.MySQL5Dialect
             username = "k-int"
