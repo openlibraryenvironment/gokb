@@ -663,6 +663,7 @@ abstract class KBComponent {
     }
   }
 
+  @Transient
   public String getNiceName () {
     GrailsNameUtils.getNaturalName(getClassName())
   }
