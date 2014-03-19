@@ -24,6 +24,7 @@ GOKb.contextMenu = {
         case "INPUT" :
         case "TEXTAREA" :
           GOKb.contextMenu.applyRules(menu, 'enable-lookup');
+          return;
           break;
       }
     }
