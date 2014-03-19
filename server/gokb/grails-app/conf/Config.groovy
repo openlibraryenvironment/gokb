@@ -217,7 +217,7 @@ validation.rules = [
 
   "${IngestService.PACKAGE_NAME}" : [
     [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
     //		[
     //			type: IsSimilar,
     //			severity: A_ValidationRule.SEVERITY_WARNING,
