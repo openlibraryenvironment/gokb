@@ -11,7 +11,7 @@ class PackageService {
    * Incremental will edit an existing package. If it's false the package and it's
    * TIPPs will have their status set to retired as well and a new package returned.
    */
-  def findCorrectPackage (Map<String, Boolean> retired_package, String package_name, boolean incremental) {
+  def findCorrectPackage (Map<String, Boolean> retired_packages, String package_name, boolean incremental) {
 
     log.debug("Trying to find a package for ${!incremental ? 'none-incremental' : 'incremental'} update using ${package_name}.")
 
@@ -41,7 +41,7 @@ class PackageService {
       // If this is a new package then we should retire the current one.
       if (!incremental) {
 
-        if (!retired_package.get(package_name)) {
+        if (!retired_packages.get(package_name)) {
 
           // Retire each TIPP
           pkg.getTipps().each { def tipp ->
@@ -76,7 +76,7 @@ class PackageService {
           pkg.ids.addAll(pkIds)
 
           // Add to the map.
-          retired_package.put(package_name, true)
+          retired_packages.put(package_name, true)
         }
       }
     }
