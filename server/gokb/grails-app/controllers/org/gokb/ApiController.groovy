@@ -655,6 +655,16 @@ class ApiController {
         // Offset.
         def offset = (page - 1) * perPage
         results = criteria.list ("max": (perPage), "offset": (offset)) {
+          not {
+            or {
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+              )
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+              )
+            }
+          }
           if (term) {
             // Add a condition for each parameter we wish to search.
             or {
@@ -668,6 +678,16 @@ class ApiController {
         
       } else {
         results = criteria.list {
+          not {
+            or {
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+              )
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+              )
+            }
+          }
           if (term) {
             // Add a condition for each parameter we wish to search.
             or {
