@@ -22,6 +22,19 @@ class ComponentLookupService {
     results
   }
   
+  public <T extends KBComponent> Map<String, T> lookupComponents(Collection<String> comp_name_strings) {
+    Map<String, T> results = [:]
+    for (String comp_name_string : comp_name_strings) {
+      T comp = lookupComponent (comp_name_string)
+      if (comp) {
+        // Add the result.
+        results["${comp_name_string}"] = comp
+      }
+    }
+    
+    results
+  }
+  
   public <T extends KBComponent> T lookupComponent(String comp_name_string) {
 
     // The Component
