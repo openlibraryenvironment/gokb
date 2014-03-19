@@ -149,7 +149,7 @@ ValidationPanel.messages.quickRes.transform = function (message) {
 	Refine.postCoreProcess(
 	  "text-transform",
 	  {
-	  	columnName: message.col,
+	  	columnName: GOKb.caseInsensitiveColumnName(message.col),
 	  	expression: message.transformation,
 	  	onError: 'keep-original',
 	  	repeat: false,
