@@ -47,8 +47,9 @@ class CellAndOtherNotEmpty extends A_ValidationRule implements I_RowValidationRu
       if (this_pos != null && other_pos != null) {
 
         // Get the value.
-        String value = getRowValue(datarow, col_positions, columnName) ?: "" +
-            getRowValue(datarow, col_positions, otherColumn) ?: ""
+        String val1 = getRowValue(datarow, col_positions, columnName)
+        String val2 = getRowValue(datarow, col_positions, otherColumn)
+        String value = "${(val1 ?: '')}${val2 ?: ''}"
 
         // If blank we need to add a message.
         value = value.trim()
