@@ -71,7 +71,7 @@ abstract class A_ValidationRule {
     
     // Thoroughly check for nulls.
     if (v && !(v.equals(null) || JSONObject.NULL.equals(v) ) ) {
-      if (v.v && !JSONObject.NULL.equals(v.v)) {
+      if (v.v != null && !JSONObject.NULL.equals(v.v)) {
         result = "${v.v}"
       }
     }
