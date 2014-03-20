@@ -78,10 +78,10 @@ class TitleLookupService {
 
     switch (matches.size()) {
       case 0 :
-      // No match behaviour.
+        // No match behaviour.
         log.debug ("Title class one identifier lookup yielded no matches.")
 
-      // Check for presence of class one ID
+        // Check for presence of class one ID
         if (results['class_one']) {
           log.debug ("One or more class 1 IDs supplied so must be a new TI.")
 
