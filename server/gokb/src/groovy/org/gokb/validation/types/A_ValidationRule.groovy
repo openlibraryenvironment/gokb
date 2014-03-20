@@ -1,5 +1,7 @@
 package org.gokb.validation.types
 
+import org.codehaus.groovy.grails.web.json.JSONObject
+
 abstract class A_ValidationRule {
 
   public static final String SEVERITY_ERROR = "error"
@@ -66,8 +68,10 @@ abstract class A_ValidationRule {
 
   protected def jsonv(v) {
     def result = null
-    if ( v ) {
-      if ( !v.equals(null) ) {
+    
+    // Thoroughly check for nulls.
+    if (v && !(v.equals(null) || JSONObject.NULL.equals(v) ) ) {
+      if (v.v && !JSONObject.NULL.equals(v.v)) {
         result = "${v.v}"
       }
     }

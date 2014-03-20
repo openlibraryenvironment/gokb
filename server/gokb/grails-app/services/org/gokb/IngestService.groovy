@@ -14,6 +14,7 @@ import org.gokb.validation.Validation
 import org.gokb.validation.types.A_ValidationRule
 import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 class IngestService {
 
@@ -748,8 +749,10 @@ class IngestService {
 
   def jsonv(v) {
     def result = null
-    if ( v ) {
-      if ( !v.equals(null) ) {
+    
+    // Thoroughly check for nulls.
+    if (v && !(v.equals(null) || JSONObject.NULL.equals(v) ) ) {
+      if (v.v && !JSONObject.NULL.equals(v.v)) {
         result = "${v.v}"
       }
     }
