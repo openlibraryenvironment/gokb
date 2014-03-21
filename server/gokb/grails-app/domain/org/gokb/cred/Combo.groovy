@@ -33,12 +33,12 @@ class Combo {
   KBComponent toComponent
 
   static mapping = {
-                id column:'combo_id'            , index:'combo_id_idx'
+                id column:'combo_id'
            version column:'combo_version'
      fromComponent column:'combo_from_fk'       , index:'combo_from_idx'
        toComponent column:'combo_to_fk'         , index:'combo_to_idx'
-            status column:'combo_status_rv_fk'  , index:'combo_from_idx','combo_to_idx'
-              type column:'combo_type_rv_fk'    , index:'combo_from_idx','combo_to_idx'
+            status column:'combo_status_rv_fk'  , index:'combo_from_idx,combo_to_idx'
+              type column:'combo_type_rv_fk'    , index:'combo_from_idx,combo_to_idx'
            endDate column:'combo_end_date'
          startDate column:'combo_start_date'
   }
