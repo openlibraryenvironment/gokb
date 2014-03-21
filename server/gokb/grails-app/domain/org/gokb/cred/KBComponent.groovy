@@ -42,7 +42,7 @@ abstract class KBComponent {
   private def springSecurityService
 
   @Transient  
-  transient def grailsApplication
+  private def grailsApplication
   
   @Transient
   public setSpringSecurityService(sss) {
@@ -55,7 +55,7 @@ abstract class KBComponent {
   }
   
   @Transient
-  protected touchAllDependants () {
+  protected void touchAllDependants () {
     
     // The update closure.
     def doUpdate = { obj, Date stamp ->

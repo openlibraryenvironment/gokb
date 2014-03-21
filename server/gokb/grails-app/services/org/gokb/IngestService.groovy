@@ -1,9 +1,7 @@
 package org.gokb
 
 import grails.converters.JSON
-import grails.gorm.DetachedCriteria
 
-import java.security.MessageDigest
 import java.text.SimpleDateFormat
 
 import org.apache.commons.collections.map.CaseInsensitiveMap
@@ -14,18 +12,16 @@ import org.gokb.cred.*
 import org.gokb.refine.*
 import org.gokb.validation.Validation
 import org.gokb.validation.types.A_ValidationRule
-import org.joda.time.DateTime
 import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
-
-
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 class IngestService {
 
   // Automatically injected services from grails-app/services
   def grailsApplication
   def titleLookupService
-  def componentLookupService
+  ComponentLookupService componentLookupService
   def packageService
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
@@ -63,7 +59,6 @@ class IngestService {
 
   public static final String PACKAGE_NAME = 'package.name'
   public static final String PUBLISHER_NAME = 'org.publisher.name'
-
 
   /** Missing fields **/
   public static final String DELAYED_OA = "delayedOA"
@@ -177,8 +172,8 @@ class IngestService {
     long existingTitles  = 0
     long newPkgs         = 0
     long existingPlats   = 0
-    long newPubs		 = 0
-    long existingPubs	 = 0
+    long newPubs		     = 0
+    long existingPubs	   = 0
 
     // Read in the column positions, and supplied Identifiers
     CaseInsensitiveMap col_positions = [:]
@@ -292,20 +287,22 @@ class IngestService {
         countDistinct("id")
       }
     }
-
+    
     // Try and find a package for the provider with the name entered.
-    def q = ComboCriteria.createFor(Package.createCriteria())
-    def existingPkgs = q.get {
-      and {
-        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-        q.add ("ids.value", "in", [packageIdentifiers])
-        eq ("status", current)
-      }
-
-      projections {
-        countDistinct ("id")
-      }
-    }
+    def existingPkgs = componentLookupService.lookupComponents(packageIdentifiers).size()
+    
+//    def q = ComboCriteria.createFor(Package.createCriteria())
+//    def existingPkgs = q.get {
+//      and {
+//        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+//        q.add ("ids.value", "in", [packageIdentifiers])
+//        eq ("status", current)
+//      }
+//
+//      projections {
+//        countDistinct ("id")
+//      }
+//    }
 
     // New packages.
     newPkgs = packageIdentifiers.size() - existingPkgs
@@ -565,7 +562,6 @@ class IngestService {
 
                   // Get the tipps from the title.
 
-
                   tipp = title_info.getTipps().find { def the_tipp ->
                     // Filter tipps for matching pkg and platform.
                     boolean matched = the_tipp.pkg == pkg
@@ -753,14 +749,15 @@ class IngestService {
 
   def jsonv(v) {
     def result = null
-    if ( v ) {
-      if ( !v.equals(null) ) {
+    
+    // Thoroughly check for nulls.
+    if (v && !(v.equals(null) || JSONObject.NULL.equals(v) ) ) {
+      if (v.v && !JSONObject.NULL.equals(v.v)) {
         result = "${v.v}"
       }
     }
     result
   }
-
 
   /**
    *  Read an uploaded refine .tar.gz file, uncompress and create a map containing all the data. This is in memory,
@@ -1058,7 +1055,6 @@ class IngestService {
       log.error("Provider or parsed data not set, cannot establish rules!");
     }
   }
-
 
   /**
    *  Look at the project header, extract fingerprints, try to find matching rules that could be applied

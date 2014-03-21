@@ -218,7 +218,7 @@ ValidationPanel.prototype._render = function() {
 						.text("GOKb Validation Status"))
 					.append($("<p />")
 						.text("There are warnings against your project currently but these will not stop you from continuing to ingest."))
-					.append("<h1>Incremental update</h1><p>To update any existing packages in GOKb with data in this file you " +
+					.append("<p>To update any existing packages in GOKb with data in this file you " +
   			      " can choose to 'Update packages'</p>")
 	  			.append(
 	  			  $("<div>").attr("id", "gokb-ingest-button").append(
@@ -230,18 +230,18 @@ ValidationPanel.prototype._render = function() {
 				  			})
 				  	)
 			  	)
-			  	.append("<h1>Replacement update</h1><p>If you would like to retire existing packages "+
-			  	        "and create new ones based on this data then choose 'Replace packages'</p>")
-	  			.append(
-	  			  $("<div>").attr("id", "gokb-ingest-button").append(
-				  		$('<button />')
-				  			.addClass("button")
-				  			.text("Replace packages")
-				  			.click(function() {
-				  				GOKb.handlers.estimateChanges(false);
-				  			})
-				  	)
-			  	)
+//			  	.append("<h1>Replacement update</h1><p>If you would like to retire existing packages "+
+//			  	        "and create new ones based on this data then choose 'Replace packages'</p>")
+//	  			.append(
+//	  			  $("<div>").attr("id", "gokb-ingest-button").append(
+//				  		$('<button />')
+//				  			.addClass("button")
+//				  			.text("Replace packages")
+//				  			.click(function() {
+//				  				GOKb.handlers.estimateChanges(false);
+//				  			})
+//				  	)
+//			  	)
 				;
   		}
   	} else {

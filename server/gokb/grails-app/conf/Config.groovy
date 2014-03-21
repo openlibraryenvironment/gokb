@@ -16,7 +16,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 identifiers.class_ones = [
   "issn",
   "eissn",
-  "doi"
+  "doi",
+  "isbn"
 ] as Set
 
 // if (System.properties["${appName}.config.location"]) {
@@ -25,7 +26,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "1.7"
+refine_min_version = "2.5"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -217,7 +218,7 @@ validation.rules = [
 
   "${IngestService.PACKAGE_NAME}" : [
     [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
     //		[
     //			type: IsSimilar,
     //			severity: A_ValidationRule.SEVERITY_WARNING,
