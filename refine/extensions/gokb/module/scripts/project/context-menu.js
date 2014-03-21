@@ -63,7 +63,13 @@ GOKb.contextMenu.options = {
 //          icon: "",
           alias: "gokb-lookup-org",
           action: function () {
-            GOKb.handlers.lookup ($(document.activeElement), "org", ["variantNames.variantName"], ["variantNames.variantName"]);
+            GOKb.handlers.lookup (
+              $(document.activeElement),
+              "org",
+              ["variantNames.variantName"],
+              ["variantNames.variantName"],
+              "Lookup Organisation"
+            );
           }
         },
         {
@@ -71,7 +77,14 @@ GOKb.contextMenu.options = {
 //          icon: "",
           alias: "gokb-lookup-package",
           action: function () {
-            GOKb.handlers.lookup ($(document.activeElement), "package", ["variantNames.variantName"], ["variantNames.variantName"], true);
+            GOKb.handlers.lookup (
+              $(document.activeElement),
+              "package",
+              ["variantNames.variantName"],
+              ["variantNames.variantName"],
+              "Lookup Package",
+              true
+            );
           }
         },
         {
@@ -79,7 +92,13 @@ GOKb.contextMenu.options = {
 //          icon: "",
           alias: "gokb-lookup-platform",
           action: function () {
-            GOKb.handlers.lookup ($(document.activeElement), "platform", ["variantNames.variantName"], ["variantNames.variantName"]);
+            GOKb.handlers.lookup (
+              $(document.activeElement),
+              "platform",
+              ["variantNames.variantName"],
+              ["variantNames.variantName"],
+              "Lookup Platform"
+            );
           }
         },
       ]

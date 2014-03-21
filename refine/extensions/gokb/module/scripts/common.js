@@ -539,7 +539,7 @@ GOKb.multiAutoComplete = function (elements, data, separator) {
 GOKb.lookupCont = null;
 GOKb.lookup = null;
 GOKb.lookupEventBound = false;
-GOKb.getLookup = function (el, location, callback, quickCreate) {
+GOKb.getLookup = function (el, location, callback, quickCreate, title) {
   
   // Try and get the container.
   if (GOKb.lookupCont == null) {
@@ -702,6 +702,11 @@ GOKb.getLookup = function (el, location, callback, quickCreate) {
   
   // Set the Z-Index here.
   GOKb.lookup._lookup._dialog.dialog('option', { stack: false, zIndex:100000 });
+  
+  // If there is a title here then we should change the title.
+  if (title) {
+    GOKb.lookup._lookup._dialog.dialog('option', 'title', title );
+  }
 
   // We should now have a lookup box.
   GOKb.lookup.setSource(location);
