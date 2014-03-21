@@ -169,7 +169,7 @@ where pkgCombo.toComponent=tipp
   and titleCombo.toComponent=tipp 
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
-order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
+order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
     
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
@@ -215,7 +215,7 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:30]);
 
   @Transient
   private static getTitleIds(Long title_id) {
-    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type.value = 'KBComponent.Ids' and c.fromComponent.id=?)",[title_id],[readOnly: true])
+    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type.value = 'KBComponent.Ids' and c.fromComponent.id=?)",[title_id],[readOnly: true, fetchSize:10])
     result
   }
 
