@@ -17,7 +17,6 @@ environments {
 
             dbCreate = "update"
 
-
             // url = "jdbc:postgresql://localhost:5432/gokb"
             // username = "knowint"
             // password = "knowint"
