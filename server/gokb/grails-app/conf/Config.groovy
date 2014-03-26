@@ -688,10 +688,18 @@ globalSearchTemplates = [
         [
           type:'lookup',
           baseClass:'org.gokb.cred.User',
-          prompt:'User',
-          qparam:'qp_user',
-          placeholder:'Allocated To',
+          prompt:'Raised By',
+          qparam:'qp_raisedby',
+          placeholder:'Raised By',
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'raisedBy']
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.User',
+          prompt:'Allocated To',
+          qparam:'qp_allocatedto',
+          placeholder:'Allocated To',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'allocatedTo']
         ],
       ],
       qbeGlobals:[
@@ -701,6 +709,7 @@ globalSearchTemplates = [
         [heading:'Request', property:'reviewRequest'],
         [heading:'Status', property:'status?.value'],
         [heading:'Raised By', property:'raisedBy?.username'],
+        [heading:'Allocated To', property:'allocatedTo?.username'],
         [heading:'Timestamp', property:'dateCreated'],
       ]
     ]

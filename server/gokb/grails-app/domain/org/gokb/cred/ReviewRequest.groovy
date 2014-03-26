@@ -29,6 +29,8 @@ class ReviewRequest {
     if ( ctx.user != null ) {
       if ( raisedBy == null )
         raisedBy = ctx.user;
+      if ( allocatedTo == null )
+        allocatedTo = ctx.user;
     }
   }
 
@@ -52,6 +54,7 @@ class ReviewRequest {
   	ReviewRequest req = new ReviewRequest (
   		status	: RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Needs Review'),
   		raisedBy : (raisedBy),
+  		allocatedTo : (raisedBy),
   		descriptionOfCause : (cause),
   		reviewRequest : (actionRequired)
   	)
