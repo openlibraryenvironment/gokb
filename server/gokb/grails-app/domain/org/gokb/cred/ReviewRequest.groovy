@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+
 class ReviewRequest {
   
   static auditable = true
@@ -65,4 +67,14 @@ class ReviewRequest {
   	// Just return the request.
   	req
   }
+
+  @Transient
+  def availableActions() {
+    [
+      [code:'method::RRTransfer', label:'Transfer To...'],
+      [code:'method::RRClose', label:'Close']
+    ]
+  }
+
+
 }
