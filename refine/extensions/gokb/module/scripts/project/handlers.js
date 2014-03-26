@@ -251,7 +251,7 @@ GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 /**
  * Display a box to allow a user to search for an id in the given namespace.
  */
-GOKb.handlers.lookup = function(element, namespace, match, attr, quickCreate) {
+GOKb.handlers.lookup = function(element, namespace, match, attr, title, quickCreate) {
 
   // URL for the lookup.
   var url = "/command/gokb/lookup?type=" + namespace;
@@ -277,7 +277,8 @@ GOKb.handlers.lookup = function(element, namespace, match, attr, quickCreate) {
       // Insert the selected value at the location.
       actEl.insertAtCaret(item.value);
     },
-    quickCreate ? namespace : false
+    quickCreate ? namespace : false,
+    title ? title : "Lookup"
   );
 
   // Now we have our lookup object we can now open it with a custom renderer set.  
