@@ -520,8 +520,12 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_RETIRED).save()
 
     // Review Request
-    RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Needs Review').save()
-    RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Reviewed').save()
+    RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open').save()
+    RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed').save()
+    RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted').save()
+
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'RR Standard Desc 1').save()
+    
 
     RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     RefdataCategory.lookupOrCreate('Activity.Status', 'Complete').save()

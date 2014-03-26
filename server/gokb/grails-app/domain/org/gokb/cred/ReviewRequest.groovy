@@ -8,8 +8,11 @@ class ReviewRequest {
   String descriptionOfCause
   String reviewRequest
   RefdataValue status
-  User reviewedBy
+  RefdataValue stdDesc
   User raisedBy
+  User allocatedTo
+  User closedBy
+  User reviewedBy
 
   // Timestamps
   Date dateCreated
@@ -34,8 +37,11 @@ class ReviewRequest {
     descriptionOfCause(nullable:true, blank:true)
     reviewRequest(nullable:false, blank:false)
     status(nullable:false, blank:false)
+    stdDesc(nullable:true, blank:false)
     raisedBy(nullable:true, blank:false)
     reviewedBy(nullable:true, blank:false)
+    allocatedTo(nullable:true, blank:false)
+    closedBy(nullable:true, blank:false)
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
   }
