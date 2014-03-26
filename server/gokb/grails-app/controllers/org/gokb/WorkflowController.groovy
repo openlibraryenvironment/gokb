@@ -14,7 +14,9 @@ class WorkflowController {
     'method::deleteSoft':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement'],
-    'method::registerWebhook':[actionType:'workflow', view:'registerWebhook']
+    'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
+    'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
+    'method::RRClose':[actionType:'simple']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

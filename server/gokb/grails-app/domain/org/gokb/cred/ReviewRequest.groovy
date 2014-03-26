@@ -77,4 +77,7 @@ class ReviewRequest {
   }
 
 
+  def RRClose() {
+    log.debug("Close review request ${id}");
+  }
 }
