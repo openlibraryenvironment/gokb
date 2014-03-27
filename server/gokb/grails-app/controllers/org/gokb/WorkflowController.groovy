@@ -16,7 +16,7 @@ class WorkflowController {
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement'],
     'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
-    'method::RRClose':[actionType:'simple']
+    'method::RRClose':[actionType:'simple' ]
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -45,13 +45,18 @@ class WorkflowController {
           switch (method_config[0]) {
             
             case "method" : 
+
+              def context = [ user:request.user, params:params ]
           
               // Everything after the first 2 "parts" are args for the method.
               def method_params = []
+
+              method_params.add(context)
+
               if (method_config.size() > 2) {
                 method_params.addAll(method_config.subList(2, method_config.size()))
               }
-              
+
               // We should just call the method on the targets.
               result.objects_to_action.each {def target ->
                 

@@ -97,9 +97,9 @@ class Package extends KBComponent {
     result
   }
   
-  public void deleteSoft () {
+  public void deleteSoft (context) {
     // Call the delete method on the superClass.
-    super.deleteSoft()
+    super.deleteSoft(context)
     
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.

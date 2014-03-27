@@ -546,7 +546,7 @@ abstract class KBComponent {
     combs
   }
 
-  public void deleteSoft () {
+  public void deleteSoft (context) {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
     save(failOnError:true)
