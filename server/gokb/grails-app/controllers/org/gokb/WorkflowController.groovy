@@ -467,6 +467,7 @@ class WorkflowController {
         def tt = p.key.substring(3);
         log.debug("Process tt");
       }
+    }
 
     result.ref=params.from
     redirect(url: result.ref)
