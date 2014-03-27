@@ -457,4 +457,18 @@ class WorkflowController {
 
     redirect(url: result.ref)
   }
+
+  def processRRTransfer() {
+    def result = [:]
+    log.debug("processRRTransfer");
+
+    params.each { p ->
+      if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+        def tt = p.key.substring(3);
+        log.debug("Process tt");
+      }
+
+    result.ref=params.from
+    redirect(url: result.ref)
+  }
 }

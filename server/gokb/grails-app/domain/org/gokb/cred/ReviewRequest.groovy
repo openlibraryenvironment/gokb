@@ -79,7 +79,7 @@ class ReviewRequest {
 
   def RRClose(rrcontext) {
     log.debug("Close review request ${id} - user=${rrcontext.user}");
-    this.status=RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Closed'),
+    this.status=RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Closed')
     this.closedBy = rrcontext.user
   }
 }
