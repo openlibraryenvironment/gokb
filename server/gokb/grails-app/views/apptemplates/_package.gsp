@@ -7,6 +7,8 @@
 
 <dl class="dl-horizontal">
   <g:if test="${d.id != null}">
+    <dt><g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel></dt>
+    <dd>${d.name} (Modify name through variants below)</dd>
   
     <dt><g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel></dt>
     <dd>${d.provider?.name?:'Provider Not Set'}</dd>
@@ -85,6 +87,7 @@
 	                <th>Status</th>
 	                <th>Variant Type</th>
 	                <th>Locale</th>
+                  <th>Actions</th>
 	              </tr>
 	            </thead>
 	            <tbody>
@@ -96,6 +99,8 @@
 	                  <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
 	                  <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
 	                  <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
+	                  <td><g:link controller="workflow" action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
+                        <g:link controller="workflow" action="DeleteVariant" id="${v.id}">Delete</g:link></td>
 	                </tr>
 	              </g:each>
 	            </tbody>
