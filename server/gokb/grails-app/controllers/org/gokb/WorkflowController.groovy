@@ -460,12 +460,19 @@ class WorkflowController {
 
   def processRRTransfer() {
     def result = [:]
-    log.debug("processRRTransfer");
+    log.debug("processRRTransfer ${params}");
+
+    def new_user_alloc = genericOIDService.resolveOID2(params.allocToUser)
 
     params.each { p ->
       if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
         def tt = p.key.substring(3);
-        log.debug("Process tt");
+        def ReviewRequest rr = ReviewRequest.get(tt);
+        log.debug("Process ${tt} - ${rr}");
+        rr.needsNotify = true
+        rr.allocatedTo = new_user_alloc
+        rr.save()
+        def rra = new ReviewRequestAllocationLog(note:params.note,allocatedTo:new_user_alloc,rr:rr).save();
       }
     }
 

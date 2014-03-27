@@ -26,7 +26,8 @@
           </div>
 
           <div class="span6">
-            To User: <g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="title" baseClass="org.gokb.cred.User"/><br/>
+            To User: <g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="allocToUser" baseClass="org.gokb.cred.User"/><br/>
+            Note: <textarea rows="5" cols="40" name="note"></textarea>
             &nbsp;<br/>
             <input type="submit" value="Transfer ->" class="btn btn-primary btn-small"/>
           </div>

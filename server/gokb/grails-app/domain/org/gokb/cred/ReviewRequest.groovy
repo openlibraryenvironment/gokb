@@ -15,6 +15,7 @@ class ReviewRequest {
   User allocatedTo
   User closedBy
   User reviewedBy
+  Boolean needsNotify
 
   // Timestamps
   Date dateCreated
@@ -48,6 +49,7 @@ class ReviewRequest {
     closedBy(nullable:true, blank:false)
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
+    needsNotify(nullable:true, blank:true)
   }
   
   public static ReviewRequest raise (KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null) {
