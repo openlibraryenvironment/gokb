@@ -60,7 +60,7 @@
         toggleLink("all");
         
         // Div to contain link and information on current selection.
-        var info = $('<div class="batch-all-info" />')
+        var info = $('<span class="batch-all-info" />')
           .appendTo(first_header_cell)
           .append(info_text)
           .append(" ")
