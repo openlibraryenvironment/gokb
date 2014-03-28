@@ -225,7 +225,7 @@ public class HQLBuilder {
               hql_builder_context.bindvars[crit.defn.qparam] = Long.parseLong(crit.value)
               break;
             default:
-              hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toString('UTF-8');
+              hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toString();
               break;
           }
         }
