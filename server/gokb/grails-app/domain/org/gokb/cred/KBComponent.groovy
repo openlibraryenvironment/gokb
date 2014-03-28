@@ -272,6 +272,9 @@ abstract class KBComponent {
   // Timestamps
   Date dateCreated
   Date lastUpdated
+  
+  // Read only flag should be honoured in the UI
+  boolean readOnly 
 
   // ids moved to combos.
   static manyByCombo = [
