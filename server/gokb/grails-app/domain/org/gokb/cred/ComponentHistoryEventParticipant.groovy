@@ -1,0 +1,9 @@
+package org.gokb.cred
+
+class ComponentHistoryEventParticipant {
+
+  def ComponentHistoryEvent event
+  def KBComponent participant
+  def String participantRole // in/out
+  
+}
