@@ -24,6 +24,7 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
+    <li><a href="#history" data-toggle="tab">Title History</a></li>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span class="badge badge-warning">${d.getCombosByPropertyName('publisher')?.size()}</span></a></li>
     <li><a href="#availability" data-toggle="tab">Availability <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
@@ -83,6 +84,47 @@
                 <dt>Locale</dt><dd><g:simpleReferenceTypedown name="locale" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.Locale" /></dd>
                 <dt>Variant Type</dt><dd><g:simpleReferenceTypedown name="variantType" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.VariantType" /></dd>
                 <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+              </g:form>
+            </dl>
+          </dd>
+        </dl>
+      </g:if>
+    </div>
+    <div class="tab-pane" id="history">
+      <g:if test="${d.id != null}">
+        <dl class="dl-horizontal">
+
+          <dt><g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel></dt>
+          <dd>
+            <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddHistory" >Add new <i class="icon-plus"></i></button>
+            <dl id="collapseableAddHistory" class="dl-horizontal collapse">
+              <g:form>
+                <table>
+                  <tr>
+                    <th>Before</th>
+                    <th></th>
+                    <th>After</th>
+                  </tr>
+                  <tr>
+                    <td>
+                      <select name="beforeTitles" size="5" multiple/><br/>
+                    </td>
+                    <td>
+                      <button>&gt;</button><br/>
+                      <button>&lt;</button>
+                    </td>
+                    <td>
+                      <select name="beforeTitles" size="5" multiple/><br/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
+                         <button>Add</button</td>
+                    <td> </td>
+                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
+                         <button>Add</button</td>
+                  </tr>
+                </table>
               </g:form>
             </dl>
           </dd>
