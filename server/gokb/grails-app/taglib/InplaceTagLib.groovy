@@ -5,6 +5,16 @@ import org.hibernate.proxy.HibernateProxy
 class InplaceTagLib {
 
   def genericOIDService
+  
+  private boolean checkEditable (attrs, body, out) {
+    boolean editable = !(attrs?."readonly" == true)
+    if (!editable) {
+      def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
+      def content = body() + (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : "" )
+      out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${owner?.niceName ? owner.niceName : 'component' } is read only.' >${content ?: 'Empty'}</span>"
+    }
+    editable
+  }
 
   /**
    * Attributes:
@@ -14,6 +24,10 @@ class InplaceTagLib {
    *   class [optional] - additional classes
    */
   def xEditable = { attrs, body ->
+    
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
     
     def owner = ClassUtils.deproxy(attrs.owner);
 
@@ -56,6 +70,10 @@ class InplaceTagLib {
   }
 
   def xEditableRefData = { attrs, body ->
+    
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
 
     def owner = ClassUtils.deproxy( attrs.owner )
 
@@ -110,6 +128,10 @@ class InplaceTagLib {
   
   def xEditableManyToOne = { attrs, body ->
     
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
+    
     def owner = ClassUtils.deproxy(attrs.owner)
     
     // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
@@ -133,6 +155,10 @@ class InplaceTagLib {
   }
   
   def xEditableFieldNote = { attrs, body ->
+    
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
     
     def owner = ClassUtils.deproxy( attrs.owner )
 
@@ -165,6 +191,10 @@ class InplaceTagLib {
    */ 
   def simpleReferenceTypedown = { attrs, body ->
     
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
+    
     out << "<input type=\"hidden\" value=\"${attrs.value?:''}\" name=\"${attrs.name}\" data-domain=\"${attrs.baseClass}\" "
     if ( attrs.id ) {
       out << "id=\"${attrs.id}\" "
@@ -188,6 +218,10 @@ class InplaceTagLib {
 
   def manyToOneReferenceTypedown = { attrs, body ->
     
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
+    
     def owner = ClassUtils.deproxy(attrs.owner)
     
     def oid = attrs.owner.id != null ? "${owner.class.name}:${owner.id}" : ''
@@ -209,6 +243,10 @@ class InplaceTagLib {
 
   def manyToOneReferenceTypedownOld = { attrs, body ->
     
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
+    
     def owner = ClassUtils.deproxy(attrs.owner)
     
     def oid = attrs.owner.id != null ? "${owner.class.name}:${owner.id}" : ''
@@ -221,6 +259,7 @@ class InplaceTagLib {
 
 
   def simpleHiddenRefdata = { attrs, body ->
+    
     def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:attrs.refdataCategory,format:'json'])
     out << "<input type=\"hidden\" name=\"${attrs.name}\"/>"
     out << "<a href=\"#\" class=\"simpleHiddenRefdata\" data-type=\"select\" data-source=\"${data_link}\" data-hidden-id=\"${attrs.name}\">"
