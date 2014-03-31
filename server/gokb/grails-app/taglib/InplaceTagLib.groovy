@@ -7,9 +7,18 @@ class InplaceTagLib {
   def genericOIDService
   
   private boolean checkEditable (attrs, body, out) {
+    
+    // See if there is an owner attribute.
+    def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
+    
+    // Check the attribute.
     boolean editable = !(attrs?."readonly" == true)
+    
+    // Also check the special flag on the entire component. 
+    editable = editable && !owner?.systemComponent
+    
+    // If not editable then we should output as value only and return the value.
     if (!editable) {
-      def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
       def content = body() + (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : "" )
       out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${owner?.niceName ? owner.niceName : 'component' } is read only.' >${content ?: 'Empty'}</span>"
     }
