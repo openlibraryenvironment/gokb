@@ -573,7 +573,8 @@ class IngestService {
                 // Create or update the tipp.
                 if ( !tipp ) {
                   log.debug("Create new tipp")
-                  tipp = new TitleInstancePackagePlatform(tipp_values)
+                  // tipp = new TitleInstancePackagePlatform(tipp_values)
+                  tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
                 }
                 else {
                   // We have a TIPP (only incremental would result in this).
