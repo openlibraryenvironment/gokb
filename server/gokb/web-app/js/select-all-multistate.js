@@ -1,5 +1,10 @@
 (function ($) {
   
+  var TEXT_CURRENT_PAGE_SELECTED = "<strong>Current page</strong> selected";
+  var LINK_CURRENT_PAGE_SELECTED = "Select all pages";
+  var TEXT_ALL_PAGES_SELECTED = "<strong>All pages</strong> selected";
+  var LINK_ALL_PAGES_SELECTED = "Select this page only";
+  
   $(document).ready(function(){
     
     // Each table that has checkboxes in the first cell of a row.
@@ -22,7 +27,7 @@
           .appendTo(first_header_cell);
         
         // Create the link to flag we would like to select across all pages.
-        var link = $('<a class="batch-all-toggle" />');
+        var link = $('<a href="" class="batch-all-toggle" />');
         var info_text = $('<span class="info-text" />');
         
         var toggleLink = function (val) {
@@ -33,10 +38,10 @@
             all_cb.val("all");
             
             // Change the link text.
-            link.text("Select this page only");
+            link.html (LINK_ALL_PAGES_SELECTED);
             
             // Set the guidance text.
-            info_text.text ("All results selected");
+            info_text.html (TEXT_ALL_PAGES_SELECTED);
             
           } else if (val == "all") {
             
@@ -44,15 +49,17 @@
             all_cb.val("none");
             
             // Change the link text.
-            link.text("Select results accross all pages");
+            link.html (LINK_CURRENT_PAGE_SELECTED);
             
             // Set the guidance text.
-            info_text.text ("Current page of results selected");
+            info_text.html(TEXT_CURRENT_PAGE_SELECTED);
           }
         }
         
         // On click toggle.
         link.click (function(e){
+          e.preventDefault();
+          e.stopImmediatePropagation();
           toggleLink(all_cb.val());
         });
         
@@ -60,41 +67,45 @@
         toggleLink("all");
         
         // Div to contain link and information on current selection.
-        var info = $('<span class="batch-all-info" />')
-          .appendTo(first_header_cell)
+        var info = $('<div class="batch-all-info" />')
           .append(info_text)
-          .append(" ")
+          .append(" (")
           .append(link)
+          .append(")")
           .hide()
         ;
+        
+        info.insertBefore(table);
         
         // Add an on-change listener to our checkobox.
         all_cb.change(function(){
             
-            // The checkbox.
-            var me = $(this);
+          // The checkbox.
+          var me = $(this);
+          
+          // When the checkbox state changes we need to decide how to proceed.
+          if (me.is(':checked')) {
             
-            // When the checkbox state changes we need to decide how to proceed.
-            if (me.is(':checked')) {
-              
-              // Checked.
-              cbs.prop("checked", true);
-              
-              // Display the info.
-              info.show();
-            } else {
-              
-              // Not checked.
-              cbs.prop("checked", false);
-              
-              // Hide the info area.
-              info.hide();
-              
-              // Ensure the correct values are set for when the link is next displayed.
-              toggleLink("all");
-            }
-          })
-        ;
+            // Checked.
+            cbs.prop("checked", true);
+            
+            // Display the info.
+            info.show();
+          } else {
+            
+            // Not checked.
+            cbs.prop("checked", false);
+            
+            // Hide the info area.
+            info.hide();
+            
+            // Ensure the correct values are set for when the link is next displayed.
+            toggleLink("all");
+          }
+        });
+        
+        // Add a class to the header cell.
+        first_header_cell.addClass("header-select-all");
       }
     });
   });
