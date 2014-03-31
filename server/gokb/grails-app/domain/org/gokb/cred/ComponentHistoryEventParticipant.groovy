@@ -6,4 +6,5 @@ class ComponentHistoryEventParticipant {
   def KBComponent participant
   def String participantRole // in/out
   
+  static belongsTo = [ event:ComponentHistoryEvent ]
 }

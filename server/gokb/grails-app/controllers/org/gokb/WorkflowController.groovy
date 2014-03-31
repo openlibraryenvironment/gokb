@@ -495,12 +495,20 @@ class WorkflowController {
       params.beforeTitles = [ params.beforeTitles ]
     }
 
+    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:params.date('EventDate', 'yyyy-MM-dd')).save()
+
     params.afterTitles?.each { at ->
-      log.debug("Add after title: ${at}");
+      def component = genericOIDService.resolveOID2(at)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'out').save()
     }
 
     params.beforeTitles?.each { bt ->
-      log.debug("Add before title: ${bt}");
+      def component = genericOIDService.resolveOID2(bt)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'in').save()
     }
 
     result.ref=request.getHeader('referer')
