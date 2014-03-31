@@ -479,4 +479,12 @@ class WorkflowController {
     result.ref=params.from
     redirect(url: result.ref)
   }
+
+  def createTitleHistoryEvent() {
+
+    log.debug(params)
+    def result=[:]
+    result.ref=request.getHeader('referer')
+    redirect(url: result.ref)
+  }
 }

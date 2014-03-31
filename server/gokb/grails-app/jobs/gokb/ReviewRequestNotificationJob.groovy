@@ -14,7 +14,7 @@ class ReviewRequestNotificationJob {
   }
 
   def sendEmails() {
-    def pendingRequests = ReviewRequest.findAllByNeedsNotify()
+    def pendingRequests = ReviewRequest.findAllByNeedsNotify(true)
 
     def usermap = [:]
 

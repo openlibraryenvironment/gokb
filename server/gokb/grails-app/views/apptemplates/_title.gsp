@@ -19,6 +19,12 @@
   
   <dt><g:annotatedLabel owner="${d}" property="currentPubisher">Current Publisher</g:annotatedLabel></dt>
   <dd>${d.currentPublisher}</dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel></dt>
+  <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom" /></dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="publishedTo">Published To</g:annotatedLabel></dt>
+  <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" /></dd>
 </dl>
 
 <div id="content">
@@ -98,7 +104,9 @@
           <dd>
             <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddHistory" >Add new <i class="icon-plus"></i></button>
             <dl id="collapseableAddHistory" class="dl-horizontal collapse">
-              <g:form name="AddHistoryForm">
+              <g:form name="AddHistoryForm" controller="workflow" action="createTitleHistoryEvent">
+                <dt>Titles</td>
+                <dd>
                 <table>
                   <tr>
                     <th>Before</th>
@@ -127,6 +135,13 @@
                          <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button</td>
                   </tr>
                 </table>
+                </dd>
+                <dt>Event Date</dt>
+                <dd><input type="date" name="EventDate"/></dd>
+                <dt></dt>
+                <dd>
+                <button onClick="submitTitleHistoryEvent(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">Add Title History Event -&gt;</button>
+                </dd>
               </g:form>
             </dl>
           </dd>
@@ -257,10 +272,8 @@
     var SelID='';
     var SelText='';
     // Move rows from SS1 to SS2 from bottom to top
-    for (i=SS1.options.length - 1; i>=0; i--)
-    {
-        if (SS1.options[i].selected == true)
-        {
+    for (i=SS1.options.length - 1; i>=0; i--) {
+        if (SS1.options[i].selected == true) {
             SelID=SS1.options[i].value;
             SelText=SS1.options[i].text;
             var newRow = new Option(SelText,SelID);
@@ -295,5 +308,16 @@
                           titleIdHidden.value);
     ss.options[ss.length] = newRow;
     SelectSort[ss];
+  }
+
+  function submitTitleHistoryEvent(ss1,ss2) {
+    selectAll(ss1);
+    selectAll(ss2);
+  }
+
+  function selectAll(ss) {
+    for (i=ss.options.length - 1; i>=0; i--) {
+      ss.options[i].selected = true;
+    }
   }
 </g:javascript>
