@@ -108,4 +108,9 @@ class TitleInstancePackagePlatform extends KBComponent {
 	return "TIPP";
   }
 
+  /**
+   * Create a new TIPP being mindful of the need to create TIPLs
+   */
+  public static tiplAwareCreate(tipp_fields) {
+  }
 }
