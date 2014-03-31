@@ -86,12 +86,12 @@
 	        <tr class="${++counter==det ? 'success':''}">
 	          <!-- Row ${counter} -->
 	          <td>
-	            <g:if test="${r.respondsTo('availableActions')}">
+	            <g:if test="${!r.systemComponent && r.respondsTo('availableActions')}">
 	              <g:set var="al" value="${new JSON(r.availableActions()).toString().encodeAsHTML()}"/> 
 	              <input type="checkbox" name="bulk:${r.class.name}:${r.id}" data-actns="${al}" class="obj-action-ck-box" />
 	            </g:if>
 	            <g:else>
-	              <input type="checkbox" title="No actions available" disabled="disabled"/>
+	              <input type="checkbox" title="${ r.systemComponent ? 'Component is read only' : 'No actions available' }" disabled="disabled" readonly="readonly" />
 	            </g:else>
 	          </td>
 	          <g:each in="${qbeConfig.qbeResults}" var="c">
