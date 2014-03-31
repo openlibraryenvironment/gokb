@@ -274,7 +274,7 @@ abstract class KBComponent {
   Date lastUpdated
   
   // Read only flag should be honoured in the UI
-  boolean readOnly 
+  boolean systemComponent = false 
 
   // ids moved to combos.
   static manyByCombo = [
