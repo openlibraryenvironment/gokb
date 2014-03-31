@@ -25,11 +25,12 @@ package org.gokb
  */
 
 import grails.util.GrailsNameUtils
-import com.k_int.ClassUtils
 import groovy.util.logging.*
 
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 import org.gokb.cred.*
+
+import com.k_int.ClassUtils
 
 @Log4j
 class DomainClassExtender {
@@ -893,6 +894,7 @@ class DomainClassExtender {
         DomainClassExtender.addCombineInheritedMapFor (domainClass)
         DomainClassExtender.addGetCardinalityFor (domainClass)
         DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
+        DomainClassExtender.overrideGORMMethods(domainClass)
 
         // Extend to handle ComboMapped Properties.
         DomainClassExtender.extendMapConstructor(domainClass)
@@ -924,6 +926,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)
       DomainClassExtender.addCombineInheritedMapFor (domainClass)
+      DomainClassExtender.overrideGORMMethods (domainClass)
     }
   }
 
@@ -987,6 +990,63 @@ class DomainClassExtender {
         log.debug("set${propName} called for ${delegate} using args ${[value]}")
         delegate.setComboProperty(prop, value)
       }
+    }
+  }
+  
+  private static overrideGORMMethods = { DefaultGrailsDomainClass domainClass ->
+    
+    def target = domainClass.getClazz()
+    
+    // The GORM methods are lazily wired up to the metaclass. So until,
+    // a GORM method is called the methods will not exist.
+    // To force the methods to be wired up we must call a lightweight GORM method here.
+    target.exists(-1)
+    
+    // Get the metaclass.
+    ExpandoMetaClass mc = domainClass.getMetaClass()
+    
+    // New save method closure.
+    def save_method = { Map p ->
+      
+      // Cast the delegate.
+      KBComponent d = delegate as KBComponent
+      
+      // Check to see if this is a system component.
+      if (d.isSystemComponent()) {
+       
+        // Found method.
+        log.debug("System component, check parameters.")
+        
+        // Check to see if we were supplied a map and whether 'system_save' was set
+        if (!p?."system_save") {
+          
+          d.errors.reject("systemonly",
+            "Component ${d.id} is marked as \"system only\"."
+          )
+          
+          log.error ("Attempting to save component ${d.id} failed as component is marked as \"system only\".")
+          
+          // Return null here.
+          return null
+        }
+      }
+      
+      // Execute the original from GORM.
+      return delegate."old_replaced_save" (p)
+    }
+
+    // Find the old save method.
+    MetaMethod gorm_save = mc.getMetaMethod("save", [Map.class] as Object[])
+    
+    // If we've found the method then move it.
+    if (gorm_save) {
+      mc."old_replaced_save" = {Map m ->
+        // Invoke the method on the delegate with the supplied args.
+        gorm_save.invoke(delegate, [m] as Object[])
+      }
+      
+      // Then set the save to use our new version.
+      mc."save" = save_method
     }
   }
 }
