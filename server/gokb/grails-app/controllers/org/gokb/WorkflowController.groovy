@@ -483,7 +483,26 @@ class WorkflowController {
   def createTitleHistoryEvent() {
 
     log.debug(params)
+
+    log.debug("Processing ${params.afterTitles.class.name} ${params.beforeTitles.class.name}");
     def result=[:]
+
+    if ( params.afterTitles instanceof java.lang.String ) {
+      params.afterTitles = [ params.afterTitles ]
+    }
+
+    if ( params.beforeTitles instanceof java.lang.String ) {
+      params.beforeTitles = [ params.beforeTitles ]
+    }
+
+    params.afterTitles?.each { at ->
+      log.debug("Add after title: ${at}");
+    }
+
+    params.beforeTitles?.each { bt ->
+      log.debug("Add before title: ${bt}");
+    }
+
     result.ref=request.getHeader('referer')
     redirect(url: result.ref)
   }
