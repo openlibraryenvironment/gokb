@@ -942,7 +942,7 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 
 cosine.good_threshold = 0.75
 
-serverUrl = 'http://gokb.k-int.com'
+serverUrl = 'https://github.com/k-int/gokb-phase1/wiki/GOKb-Refine-Extensions'
 
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
 
