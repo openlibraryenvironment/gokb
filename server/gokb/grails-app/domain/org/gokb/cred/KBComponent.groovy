@@ -674,5 +674,43 @@ abstract class KBComponent {
   public String toString() {
     "${name?:''} (${getNiceName()} ${id})".toString()
   }
+  
+  /**
+   * Creates a new component of the type of this class
+   * and populates all the properties with the values of this one
+   * with the exception of the id as this will be set on save.
+   */
+  @Transient
+  public <T extends KBComponent> T clone () {
+    
+    // Me.
+    T me = this
+    
+    // The list of property names that we are to ignore.
+    def ignore_list = ["id", "metaClass", "class"]
+    
+    // The map of current property names and values to be passed to the
+    // new constructor.
+    def props = [:]
+    
+    // Go through each normal property and add the name and value to the map.
+    me.properties.each { prop, val ->
+      
+      // Ignore the ones in the list.
+      if (prop in ignore_list) return
+      
+      props["${prop}"] = val
+    }
+    
+    // Repeat for the combo properties.
+    me.allComboPropertyNames.each { prop ->
+      if (prop in ignore_list) return
+      
+      props["${prop}"] = me."${prop}"
+    }
+    
+    // Now we have a map of all properties and values we should create our new instance.
+    me.class.newInstance([props] as Object[])
+  }
 
 }
