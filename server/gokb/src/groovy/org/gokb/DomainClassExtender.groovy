@@ -1028,6 +1028,9 @@ class DomainClassExtender {
           
           // Return null here.
           return null
+        } else {
+          // Ensure the system flag is set to true.
+          d.setSystemComponent(true)
         }
       }
       
