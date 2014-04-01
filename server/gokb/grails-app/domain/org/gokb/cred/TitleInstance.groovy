@@ -15,7 +15,7 @@ class TitleInstance extends KBComponent {
   RefdataValue	reasonRetired
   Date publishedFrom
   Date publishedTo
-  String imprint
+//  String imprint
 
   private static refdataDefaults = [
     "medium"		: "Journal",
@@ -78,7 +78,7 @@ class TitleInstance extends KBComponent {
     medium (nullable:true, blank:false)
     pureOA (nullable:true, blank:false)
     reasonRetired (nullable:true, blank:false)
-    imprint (nullable:true, blank:false)
+//    imprint (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo (nullable:true, blank:false)
   }
