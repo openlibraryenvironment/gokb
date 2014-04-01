@@ -18,7 +18,10 @@
   <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
   
   <dt><g:annotatedLabel owner="${d}" property="currentPubisher">Current Publisher</g:annotatedLabel></dt>
-  <dd>${d.currentPublisher}</dd>
+  <dd>${d.currentPublisher}&nbsp;</dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="imprint">Imprint</g:annotatedLabel></dt>
+  <dd><g:manyToOneReferenceTypedown owner="${d}" field="imprint" baseClass="org.gokb.cred.Imprint">${d.imprint?.name}</g:manyToOneReferenceTypedown>&nbsp;</dd>
 
   <dt><g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel></dt>
   <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom" /></dd>
@@ -26,6 +29,7 @@
   <dt><g:annotatedLabel owner="${d}" property="publishedTo">Published To</g:annotatedLabel></dt>
   <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" /></dd>
 
+  <g:if test="${d.id != null}">
   <dt><g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel></dt>
   <dd>
     <table class="table table-striped table-bordered"> 
@@ -57,6 +61,7 @@
       </tbody>
     </table>
   </dd>
+  </g:if>
 </dl>
 
 <div id="content">
