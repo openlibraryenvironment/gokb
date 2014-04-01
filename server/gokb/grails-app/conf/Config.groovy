@@ -884,20 +884,20 @@ globalSearchTemplates = [
   ],
   'imprints':[
     baseclass:'org.gokb.cred.Imprint',
-    title:'Domains',
+    title:'Imprints',
     qbeConfig:[
       qbeForm:[
         [
           prompt:'Name',
           qparam:'qp_name',
           placeholder:'Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
         ],
       ],
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name', property:'dcName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
       ]
     ]
   ],
