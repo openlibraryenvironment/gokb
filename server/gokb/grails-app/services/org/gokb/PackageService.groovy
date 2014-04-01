@@ -22,18 +22,6 @@ class PackageService {
     // becomes irrelevant.
     if (!pkg) {
 
-      //    log.debug("No current package found. Just create a new one.")
-      //
-      //    // Just create a new package.
-      //    pkg = new Package(name:package_name)
-      //
-      //    // Ensure we add and create a new ID
-      //    pkg.getIds().add(
-      //    Identifier.lookupOrCreateCanonicalIdentifier('gokb-pkgid', package_name)
-      //    )
-      //
-      //    log.debug("Created package with id ${pkg.id}")
-
       log.error ("No package found for package string supplied via refine. This should not happen as all packages should be looked up.")
 
     } else {
@@ -85,5 +73,170 @@ class PackageService {
     pkg.save(failOnError:true)
 
     pkg
+  }
+  
+  /**
+   * Method to update all Master list type packages.
+   */
+  def updateAllMasters() {
+    
+    // Create the criteria.
+    getAllProviders().each { Org pr ->
+      Package.withNewTransaction {
+        updateMasterFor (pr)
+      }
+    }
+  }
+  
+  
+  /**
+   * Method to create or update a Package containing a list of all titles
+   * provided by the supplied Org.
+   */
+  def updateMasterFor(Org provider) {
+    
+    // The delta.
+    Date delta = null
+    
+    log.debug ("Update or create master list for ${provider.name}")
+    
+    // The Scope.
+    RefdataValue scope = RefdataCategory.lookupOrCreate("Package.Scope", "Master File")
+    
+    // Get the current master Package for this provider.
+    ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
+    Package master = c.get {
+      and {
+        c.add(
+          "scope",
+          "eq",
+          scope)
+        c.add(
+          "provider",
+          "eq",
+          provider)
+      }
+    }
+    
+    // Update or create?
+    if (master) {
+      
+      // Update...
+      log.debug ("Found package ${master.id} for ${provider.id}")
+      
+      delta = master.lastUpdated
+    } else {
+      // Create new...
+      log.debug ("No current Master for ${provider.id}. Creating one.")
+      
+      master = new Package([
+        "name"            : "${provider.name}: Master List",
+        "scope"           : scope,      // Set the scope.
+        "provider"        : provider,   // Set the provider.
+      ])
+      
+      // Need to pass the system_save parameter to flag as systemComponent.
+      if (!master.save("system_save" : true)) {
+        // Error.
+        log.error("Failed to save new master package.")
+      }
+    }
+    
+    // Get all the current list of tipps related to this one..
+    Set<Long> currentMasterTippIds = []
+    currentMasterTippIds.addAll (master.getTipps().collect {
+      it.id
+    })
+    
+    // Now query for all packages for this provider modified since the delta.
+    c = ComboCriteria.createFor( Package.createCriteria() )
+    Set<Long> pkg_ids = c.list {
+      and {
+        c.add(
+          "id",
+          "neq",
+          master.id)
+        
+        c.add(
+          "provider",
+          "eq",
+          provider)
+        
+        if (delta) {
+          c.add(
+            "lastUpdated",
+            "gt",
+            delta)
+        }
+      }
+      
+      c.projections {
+        property 'id'
+      }
+    } as Set
+    
+    // Now we have a list of packages we need to get the tipps for those packages.
+    c = ComboCriteria.createFor( TitleInstancePackagePlatform.createCriteria() )
+    Set<TitleInstancePackagePlatform> tipps = c.list {
+      and {
+        c.add(
+          "id",
+          "in",
+          [pkg_ids] as Object[])
+        
+        if (delta) {
+          c.add(
+            "lastUpdated",
+            "gt",
+            delta)
+        }
+      }
+    }
+    
+    // We should now have a definitive list of tipps that have been changed since the last update.
+    for (TitleInstancePackagePlatform tipp in tipps) {
+      TitleInstancePackagePlatform mt = tipp.masterTipp
+      if (mt) {
+        // No Master tipp so we should add one.
+        
+      } else {
+        // No Master tipp so we should add one.
+        log.debug ("No master tipp for tipp ${tipp.id} so we need to add one.")
+        mt = tipp.clone()
+        tipp.masterTipp = mt
+        
+        // The master tipp must be saved with the system flag.
+        mt.save("system_save" : true)
+        tipp.save()
+      }
+    }
+  }
+  
+  /**
+   * Get the Set of Orgs currently acting as a provider.
+   */
+  public Set<Org> getAllProviders () {
+    
+    log.debug ("Looking for all providers.")
+    
+    // Create the criteria.
+    ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
+    
+    // Query for a list of packages and return the providers.
+    def results = c.list {
+      and {
+        c.add(
+          "status",
+          "eq",
+          RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
+        
+        c.projections {
+          property 'provider'
+        }
+      }
+    } as Set
+  
+    log.debug("Found ${results.size()} providers.")
+    results
   }
 }

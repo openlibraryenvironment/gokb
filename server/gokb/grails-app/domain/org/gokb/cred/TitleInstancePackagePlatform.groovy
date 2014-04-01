@@ -40,6 +40,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     hostPlatform        : Platform,
     title               : TitleInstance,
     derivedFrom         : TitleInstancePackagePlatform,
+    masterTipp          : TitleInstancePackagePlatform,
   ]
 
   static mappedByCombo = [
@@ -48,11 +49,13 @@ class TitleInstancePackagePlatform extends KBComponent {
     additionalPlatforms : 'linkedTipps',
     title               : 'tipps',
     derivatives         : 'derivedFrom',
+    noneMaster          : 'masterTipp'
   ]
 
   static manyByCombo = [
     derivatives           : TitleInstancePackagePlatform,
     additionalPlatforms   : Platform,
+    noneMaster            : TitleInstancePackagePlatform
   ]
 
   public getPersistentId() {
