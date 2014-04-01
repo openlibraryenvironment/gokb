@@ -922,7 +922,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
   'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
-  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
+  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
   'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ]
 ]
 
