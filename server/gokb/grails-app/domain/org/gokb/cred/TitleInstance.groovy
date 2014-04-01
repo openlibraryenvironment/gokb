@@ -63,7 +63,8 @@ class TitleInstance extends KBComponent {
     absorbedBy		: TitleInstance,
     mergedWith		: TitleInstance,
     renamedTo		: TitleInstance,
-    splitFrom		: TitleInstance
+    splitFrom		: TitleInstance,
+    imprint		: Imprint
   ]
 
   static manyByCombo = [

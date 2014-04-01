@@ -5,11 +5,10 @@ import javax.persistence.Transient
 class Imprint extends KBComponent {
 
   static hasByCombo = [
-    tiplTitle               : TitleInstance
+    org               : Org
   ]
 
   static mappedByCombo = [
-    tiplTitle               : 'tipps',
   ]
 
   public getPersistentId() {
