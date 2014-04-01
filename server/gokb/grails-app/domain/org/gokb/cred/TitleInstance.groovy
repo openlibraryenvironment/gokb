@@ -58,7 +58,7 @@ class TitleInstance extends KBComponent {
   }
 
   static hasByCombo = [
-    issuer			: Org,
+    issuer		: Org,
     translatedFrom	: TitleInstance,
     absorbedBy		: TitleInstance,
     mergedWith		: TitleInstance,
