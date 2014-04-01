@@ -882,7 +882,25 @@ globalSearchTemplates = [
       ]
     ]
   ],
-
+  'imprints':[
+    baseclass:'org.gokb.cred.Imprint',
+    title:'Domains',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Name',
+          qparam:'qp_name',
+          placeholder:'Name',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'dcName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+      ]
+    ]
+  ],
 ]
 
 
@@ -905,6 +923,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
   'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
   'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
+  'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ]
 ]
 
 permNames = [
