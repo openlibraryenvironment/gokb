@@ -307,7 +307,8 @@ class WorkflowController {
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
  
-        def new_tipp = new TitleInstancePackagePlatform(
+        // def new_tipp = new TitleInstancePackagePlatform(
+        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
                                    pkg:new_package,
                                    hostPlatform:new_platform,
                                    title:current_tipp.title,
@@ -316,7 +317,7 @@ class WorkflowController {
                                    startIssue:current_tipp.startIssue,
                                    endDate:current_tipp.endDate,
                                    endVolume:current_tipp.endVolume,
-                                   endIssue:current_tipp.endIssue).save()
+                                   endIssue:current_tipp.endIssue]).save()
       }
 
       current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
