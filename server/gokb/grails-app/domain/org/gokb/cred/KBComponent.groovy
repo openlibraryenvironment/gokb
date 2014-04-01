@@ -207,14 +207,14 @@ abstract class KBComponent {
   // Canonical name field - title for a title instance, name for an org, etc, etc, etc
 
   /**
-   * Generic name for the compoent. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
+   * Generic name for the component. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
    * conventions when trying to decide what to map to this property in a subclass. The name should be a string that reasonably identifies this
    * object when placed in a list of other components.
    */ 
   String name
 
   /**
-   * The normalised name of this component. Lowecase, strip diacritics
+   * The normalised name of this component. Lower-case, strip diacritics
    */
   String normname
 
@@ -354,6 +354,16 @@ abstract class KBComponent {
     }
 
     result;
+  }
+  
+  /**
+   * Ensure suffix the name with "(system maintained)" for system components.
+   */
+  public def getName() {
+    def n = this.name
+    if (isSystemComponent()) {
+      n += " (System Maintained)"
+    }
   }
 
   @Transient
