@@ -7,6 +7,8 @@
 
 <dl class="dl-horizontal">
   <g:if test="${d.id != null}">
+    <dt><g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel></dt>
+    <dd>${d.name} (Modify name through variants below)</dd>
   
     <dt><g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel></dt>
     <dd>${d.provider?.name?:'Provider Not Set'}</dd>
@@ -52,18 +54,18 @@
     </div>
 
     <div class="tab-pane" id="titledetails">
-      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id]" id="">Titles in this package</g:link>
+      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat']]" id="">Titles in this package</g:link>
 
       <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
         <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
         <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform"/>
         <input type="hidden" name="__addToColl" value="tipps"/>
         <dl class="dl-horizontal">
-          <dt>Title</td>
+          <dt>Title</dt>
           <dd>
             <g:simpleReferenceTypedown name="title" baseClass="org.gokb.cred.TitleInstance" />
           </dd>
-          <dt>Platform</td>
+          <dt>Platform</dt>
           <dd>
             <g:simpleReferenceTypedown name="hostPlatform" baseClass="org.gokb.cred.Platform" />
           </dd>
@@ -85,6 +87,7 @@
 	                <th>Status</th>
 	                <th>Variant Type</th>
 	                <th>Locale</th>
+                  <th>Actions</th>
 	              </tr>
 	            </thead>
 	            <tbody>
@@ -96,6 +99,8 @@
 	                  <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
 	                  <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
 	                  <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
+	                  <td><g:link controller="workflow" action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
+                        <g:link controller="workflow" action="DeleteVariant" id="${v.id}">Delete</g:link></td>
 	                </tr>
 	              </g:each>
 	            </tbody>

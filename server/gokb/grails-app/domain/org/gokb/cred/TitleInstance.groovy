@@ -13,6 +13,8 @@ class TitleInstance extends KBComponent {
   RefdataValue	pureOA
   RefdataValue	continuingSeries
   RefdataValue	reasonRetired
+  Date publishedFrom
+  Date publishedTo
   String imprint
 
   private static refdataDefaults = [
@@ -76,6 +78,8 @@ class TitleInstance extends KBComponent {
     pureOA (nullable:true, blank:false)
     reasonRetired (nullable:true, blank:false)
     imprint (nullable:true, blank:false)
+    publishedFrom (nullable:true, blank:false)
+    publishedTo (nullable:true, blank:false)
   }
 
   def availableActions() {
@@ -150,14 +154,6 @@ class TitleInstance extends KBComponent {
     return false
   }
 
-  @Transient
-  static def oaiConfig = [
-    lastModified:{it.lastUpdated},
-    isDeleted:{false},
-    schemas:[
-      'oai_dc':[:]
-    ]
-  ]
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
@@ -176,5 +172,96 @@ class TitleInstance extends KBComponent {
 
     result
   }
+  
+  @Transient
+  static def oaiConfig = [
+    id:'titles',
+    textDescription:'Title repository for GOKb',
+    query:" from TitleInstance as o where o.status.value != 'Deleted'"
+  ]
 
+  /**
+   *  Render this package as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (name)
+    }
+  }
+
+  /**
+   *  Render this package as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder, attr) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    def tipps = getTipps()
+    def tids = getIds() ?: []
+    def theIssuer = getIssuer()
+    def thePublisher = getPublisher()
+    
+    builder.'gokb' (attr) {
+      builder.'title' (['id':(id)]) {
+        builder.'name' (name)
+        builder.'identifiers' {
+          tids?.each { tid ->
+            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+          }
+        }
+        
+        if (thePublisher) {
+          builder."publisher" (['id': thePublisher.id]) {
+            "name" (thePublisher.name)
+          }
+        }
+        
+        if (theIssuer) {
+          builder."issuer" (['id': theIssuer.id]) {
+            "name" (theIssuer.name)
+          }
+        }
+        
+        builder.'TIPPs' (count:tipps?.size()) {
+          tipps?.each { tipp ->
+            builder.'TIPP' (['id':tipp.id]) {
+              
+              def pkg = tipp.pkg
+              builder.'package' (['id':pkg.id]) {
+                builder.'name' (pkg.name)
+              }
+              
+              def platform = tipp.hostPlatform
+              builder.'platform'(['id':platform.id]) {
+                builder.'name' (platform.name)
+              }
+              
+              builder.'coverage'(
+                startDate:(tipp.startDate ?sdf.format(tipp.startDate):null),
+                startVolume:tipp.startVolume,
+                startIssue:tipp.startIssue,
+                endDate:(tipp.endDate?sdf.format(tipp.endDate):null),
+                endVolume:tipp.endVolume,
+                endIssue:tipp.endIssue,
+                coverageDepth:tipp.coverageDepth?.value,
+                coverageNote:tipp.coverageNote)
+              if ( tipp.url != null ) { 'url'(tipp.url) }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @Transient
+  def getTitleHistory() {
+    def result = []
+    def all_related_history_events = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = ? and ehp.event = eh ) order by eh.eventDate',this)
+    all_related_history_events.each { he ->
+      def from_titles = he.participants.findAll { it.participantRole == 'in' };
+      def to_titles = he.participants.findAll { it.participantRole == 'out' };
+      result.add( [ date:he.eventDate, from:from_titles.collect{it.participant}, to:to_titles.collect{it.participant} ] );
+    }
+    return result;
+  }
 }

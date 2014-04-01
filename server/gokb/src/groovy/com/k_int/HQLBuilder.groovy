@@ -47,7 +47,7 @@ public class HQLBuilder {
   public static def build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService) {
     // select o from Clazz as o where 
 
-    log.debug("build ${params}");
+    // log.debug("build ${params}");
 
     // Step 1 : Walk through all the properties defined in the template and build a list of criteria
     def criteria = []
@@ -58,7 +58,7 @@ public class HQLBuilder {
     }
 
     qbetemplate.qbeConfig.qbeGlobals.each { global_prop_def ->
-      log.debug("Adding query global: ${global_prop_def}");
+      // log.debug("Adding query global: ${global_prop_def}");
       // creat a contextTree so we can process the filter just like something added to the query tree
       criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('.','_'),contextTree:global_prop_def],value:global_prop_def.value])
     }
@@ -73,34 +73,34 @@ public class HQLBuilder {
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
-      log.debug("Processing crit: ${crit}");
+      // log.debug("Processing crit: ${crit}");
       processProperty(hql_builder_context,crit,baseclass)
       // List props = crit.def..split("\\.")
     }
 
-    log.debug("At end of build, ${hql_builder_context}");
+    // log.debug("At end of build, ${hql_builder_context}");
     hql_builder_context.declared_scopes.each { ds ->
-      log.debug("Scope: ${ds}");
+      // log.debug("Scope: ${ds}");
     }
 
     hql_builder_context.query_clauses.each { qc ->
-      log.debug("QueryClause: ${qc}");
+      // log.debug("QueryClause: ${qc}");
     }
 
     def hql = outputHql(hql_builder_context, qbetemplate)
-    log.debug("HQL: ${hql}");
-    log.debug("BindVars: ${hql_builder_context.bindvars}");
+    // log.debug("HQL: ${hql}");
+    // log.debug("BindVars: ${hql_builder_context.bindvars}");
 
     def count_hql = "select count (o) ${hql}"
     def fetch_hql = "select o ${hql}"
 
-    log.debug("Attempt count qry");
+    // log.debug("Attempt count qry");
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
     result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,[max: result.max, offset: result.offset])
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
-    log.debug("processProperty ${hql_builder_context}, ${crit}");
+    // log.debug("processProperty ${hql_builder_context}, ${crit}");
     switch ( crit.defn.contextTree.ctxtp ) {
       case 'qry':
         processQryContextType(hql_builder_context,crit,baseclass)
@@ -121,7 +121,7 @@ public class HQLBuilder {
 
   static def processQryContextType(hql_builder_context,crit, proppath, parent_scope, the_class) {
 
-    log.debug("processQryContextType.... ${proppath}");
+    // log.debug("processQryContextType.... ${proppath}");
 
     // Get all the combo properties defined on the class.
     def allProps = KBComponent.getAllComboPropertyDefinitionsFor(the_class)
@@ -132,10 +132,10 @@ public class HQLBuilder {
       def newscope = parent_scope+'_'+head
       if ( hql_builder_context.declared_scopes.containsKey(newscope) ) {
         // Already established scope for this context
-        log.debug("${newscope} already a declared contest");
+        // log.debug("${newscope} already a declared contest");
       }
       else {
-        log.debug("Intermediate establish scope - ${head} :: ${proppath}");
+        // log.debug("Intermediate establish scope - ${head} :: ${proppath}");
         // We're looking at an intermediate property which needs to add some bind scopes. The property can be a simple 
         // standard association, or it could be a virtual (Combo) property which will need multiple joins.
 
@@ -160,18 +160,18 @@ public class HQLBuilder {
       }
     }
     else {
-      log.debug("head prop...");
+      // log.debug("head prop...");
       // If this is an ordinary property, add the operation. If it's a special, the make the extra joins
       Class target_class = allProps[proppath[0]]
       if ( target_class ) {
-        log.debug("Combo property.....");
+        // log.debug("Combo property.....");
         def component_scope_name = createComboScope(the_class, proppath[0], hql_builder_context, parent_scope)
         // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an 
         // object.
         addQueryClauseFor(crit,hql_builder_context,component_scope_name)
       }
       else {
-        log.debug("Standard property...");
+        // log.debug("Standard property...");
         // The property is a standard property
         addQueryClauseFor(crit,hql_builder_context,parent_scope+'.'+proppath[0])
       }
@@ -181,14 +181,14 @@ public class HQLBuilder {
   static def createComboScope(the_class, propname, hql_builder_context, parent_scope) {
     // Combo property... We need to establish the target scope, and then add whatever the comparison is
     boolean incoming = KBComponent.lookupComboMappingFor (the_class, Combo.MAPPED_BY, propname)
-    log.debug("combo property, incoming=${incoming}");
+    // log.debug("combo property, incoming=${incoming}");
     def combo_set_name = incoming ? 'incomingCombos' : 'outgoingCombos'
     def combo_prop_name = incoming ? 'fromComponent' : 'toComponent'
 
     // Firstly, establish a scope called proppath[0]_combo. This will be the combo link to the desired target
     def combo_scope_name = propname+"_combos"
     if ( ! hql_builder_context.declared_scopes.containsKey(combo_scope_name) ) {
-      log.debug("Adding scope ${combo_scope_name}");
+      // log.debug("Adding scope ${combo_scope_name}");
       establishScope(hql_builder_context, parent_scope, combo_set_name, combo_scope_name);
       def combo_type_bindvar = combo_scope_name+"_type"
       hql_builder_context.query_clauses.add("${combo_scope_name}.type = :${combo_type_bindvar}");
@@ -197,7 +197,7 @@ public class HQLBuilder {
 
     def component_scope_name = propname
     if ( ! hql_builder_context.declared_scopes.containsKey(component_scope_name) ) {
-      log.debug("Adding scope ${component_scope_name}");
+      // log.debug("Adding scope ${component_scope_name}");
       establishScope(hql_builder_context, combo_scope_name, combo_prop_name, component_scope_name);
     }
 
@@ -207,7 +207,7 @@ public class HQLBuilder {
   }
 
   static def establishScope(hql_builder_context, parent_scope, property_to_join, newscope_name) {
-    log.debug("Establish scope ${newscope_name} as a child of ${parent_scope} property ${property_to_join}");
+    // log.debug("Establish scope ${newscope_name} as a child of ${parent_scope} property ${property_to_join}");
     hql_builder_context.declared_scopes[newscope_name] = "${parent_scope}.${property_to_join} as ${newscope_name}" 
   }
 
@@ -225,14 +225,16 @@ public class HQLBuilder {
               hql_builder_context.bindvars[crit.defn.qparam] = Long.parseLong(crit.value)
               break;
             default:
-              hql_builder_context.bindvars[crit.defn.qparam] = crit.value
+              hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toString();
               break;
           }
         }
         break;
       case 'ilike':
         hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}lower(${scoped_property}) like :${crit.defn.qparam}");
-        hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toLowerCase()
+        hql_builder_context.bindvars[crit.defn.qparam] = ( ( crit.defn.contextTree.wildcard=='L' || crit.defn.contextTree.wildcard=='B') ? '%' : '') +
+                                                         crit.value.toLowerCase() +
+                                                         ( ( crit.defn.contextTree.wildcard=='R' || crit.defn.contextTree.wildcard=='B') ? '%' : '')
       default:
         log.error("Unhandled comparator. crit: ${crit}");
     }

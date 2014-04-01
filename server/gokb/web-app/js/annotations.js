@@ -26,7 +26,7 @@
       
       // Add buttons as a sibling of the editor.
       var wrapper = $('<div />').addClass('editor-buttons').append(
-        $('<button class="btn btn-small btn-success" />').text("Save").click(function() {
+        $('<button class="btn btn-small btn-success" />').text("Save").click(function(e) {
 
           // The popover
           var popover = editor_el.closest('.popover');
@@ -60,12 +60,16 @@
             // Refresh the position.
             refreshAnnotationPos (popover.prev('.annotated'), popover);
           });
+          
+          // Stop event bubbling and cancel the default action (submit).
+          e.stopPropagation();
+          e.preventDefault();
         })
       );
       
       // Append the cancel button.
       wrapper.append(
-        $('<button class="btn btn-small btn-danger" />').text("Cancel").click(function() {
+        $('<button class="btn btn-small btn-danger" />').text("Cancel").click(function(e) {
           editor_el.destroy();
           showHideEditorButtons(editor_el, false);
 
@@ -78,6 +82,10 @@
           
           // Refresh the position.
           refreshAnnotationPos (annotated, popover);
+          
+          // Stop event bubbling and cancel the default action (submit).
+          e.stopPropagation();
+          e.preventDefault();
         })
       );
       
@@ -89,107 +97,110 @@
       $('.editor-buttons', editor_el.parent()).remove();
     }
   }
-  
-  // Quick generate an ID if one isn't present.
-  $('.annotation-editable').each(function(){
-    var el = $(this);
-    
-    if (!el.attr('id')) {
-      // Add one.
-      el.attr('id', quickUID());
-    }
-  });
-  
-  // Add the double click listener to the HTML. All double clicks will bubble up to here so we need
-  // to be selective on how we respond.
-  $('html').dblclick(function(e) {
-    
-    // Get the element that was double-clicked.
-    var me = $(e.target);
-    
-    // Editable annotation.
-    if (me.hasClass('annotation-editable')) {
-      
-      // Add an editor inline.
-      me.summernote({
-        focus: true,
-        toolbar: [
-          ['style', ['bold', 'italic', 'underline', 'clear']],
-          ['para', ['ul', 'ol']],
-          ['web',['link']]
-        ],
-        oninit: function() {
-          showHideEditorButtons(me, true);
-          original_html[me.attr("id")] = me.html();
-        }
-      });
-      
-      // Move the popover to keep it inline with it's caller.
-      var the_popover = me.closest('.popover')
-      if (the_popover.length == 1) {
-        
-        // Shift the element.
-        refreshAnnotationPos (the_popover.prev('.annotated'), the_popover);
-      }
-    }
-  });
-  
-  // Need to add the annotations in pop-overs.
-  $(".annotated").each(function(){
-    
-    // The target.
-    var target = $(this);
-    
-    // Get the next sibling if it's an annotation.
-    var annotation = target.next(".annotation");
-    
-    if (annotation.length == 1) {
-      
-      // Add a pop-over to the target, using manual triggering so we can close on click away.
-      target.popover({
-        
-        "html"    : true,
-        "trigger" : "manual",
-        "title"   : target.text(),
-        "content" : annotation.detach().show()
-        
-      }).on("hidden", function(e) {
-        
-        // Listen to the hidden even and destroy any editor that might exist here.
-        annotation.destroy();
 
-        // Also need to ensure we remove the buttons.
-        showHideEditorButtons(annotation, false);
+  // Document load.
+  $(document).ready(function(){
+    // Quick generate an ID if one isn't present.
+    $('.annotation-editable').each(function(){
+      var el = $(this);
+      
+      if (!el.attr('id')) {
+        // Add one.
+        el.attr('id', quickUID());
+      }
+    });
+  
+    // Add the double click listener to the HTML. All double clicks will bubble up to here so we need
+    // to be selective on how we respond.
+    $('html').dblclick(function(e) {
+      
+      // Get the element that was double-clicked.
+      var me = $(e.target);
+      
+      // Editable annotation.
+      if (me.hasClass('annotation-editable')) {
         
-      }).on("shown", function(e) {
-        
-        // Bind the tooltip to the content every time the annotation is shown as it's lost.
-        // after first show.
-        var editableEl = $('.annotation-editable', $(this).next());
-        if (editableEl.length > 0) {
-          
-          editableEl.tooltip({
-            "title" : editableEl.attr("data-original-title")
-          });
-        }
-        
-      }).click(function(e) {
-        
-        // Toggle this element.
-        var current = $(this);
-        current.popover('toggle');
-        
-        // Close the other pop-overs.
-        $('.annotated').each(function(){
-          if ($(this).object != current.object) {
-            $(this).popover('hide');
+        // Add an editor inline.
+        me.summernote({
+          focus: true,
+          toolbar: [
+            ['style', ['bold', 'italic', 'underline', 'clear']],
+            ['para', ['ul', 'ol']],
+            ['web',['link']]
+          ],
+          oninit: function() {
+            showHideEditorButtons(me, true);
+            original_html[me.attr("id")] = me.html();
           }
         });
         
-        // Ensure we stop this even bubbling here so it doesn't trigger the on click,
-        // event registered on the HTML.
-        e.stopPropagation();
-      });
-    }
+        // Move the popover to keep it inline with it's caller.
+        var the_popover = me.closest('.popover')
+        if (the_popover.length == 1) {
+          
+          // Shift the element.
+          refreshAnnotationPos (the_popover.prev('.annotated'), the_popover);
+        }
+      }
+    });
+    
+    // Need to add the annotations in pop-overs.
+    $(".annotated").each(function(){
+      
+      // The target.
+      var target = $(this);
+      
+      // Get the next sibling if it's an annotation.
+      var annotation = target.next(".annotation");
+      
+      if (annotation.length == 1) {
+        
+        // Add a pop-over to the target, using manual triggering so we can close on click away.
+        target.popover({
+          
+          "html"    : true,
+          "trigger" : "manual",
+          "title"   : target.text(),
+          "content" : annotation.detach().show()
+          
+        }).on("hidden", function(e) {
+          
+          // Listen to the hidden even and destroy any editor that might exist here.
+          annotation.destroy();
+  
+          // Also need to ensure we remove the buttons.
+          showHideEditorButtons(annotation, false);
+          
+        }).on("shown", function(e) {
+          
+          // Bind the tooltip to the content every time the annotation is shown as it's lost.
+          // after first show.
+          var editableEl = $('.annotation-editable', $(this).next());
+          if (editableEl.length > 0) {
+            
+            editableEl.tooltip({
+              "title" : editableEl.attr("data-original-title")
+            });
+          }
+          
+        }).click(function(e) {
+          
+          // Toggle this element.
+          var current = $(this);
+          current.popover('toggle');
+          
+          // Close the other pop-overs.
+          $('.annotated').each(function(){
+            if ($(this).object != current.object) {
+              $(this).popover('hide');
+            }
+          });
+          
+          // Ensure we stop this even bubbling here so it doesn't trigger the on click,
+          // event registered on the HTML.
+          e.stopPropagation();
+        });
+      }
+    });
   });
 })(jQuery);

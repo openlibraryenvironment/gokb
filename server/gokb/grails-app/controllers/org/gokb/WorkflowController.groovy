@@ -13,7 +13,10 @@ class WorkflowController {
   def actionConfig = [
     'method::deleteSoft':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
-    'platform::replacewith':[actionType:'workflow', view:'platformReplacement']
+    'platform::replacewith':[actionType:'workflow', view:'platformReplacement'],
+    'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
+    'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
+    'method::RRClose':[actionType:'simple' ]
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -42,13 +45,18 @@ class WorkflowController {
           switch (method_config[0]) {
             
             case "method" : 
+
+              def context = [ user:request.user, params:params ]
           
               // Everything after the first 2 "parts" are args for the method.
               def method_params = []
+
+              method_params.add(context)
+
               if (method_config.size() > 2) {
                 method_params.addAll(method_config.subList(2, method_config.size()))
               }
-              
+
               // We should just call the method on the targets.
               result.objects_to_action.each {def target ->
                 
@@ -299,7 +307,8 @@ class WorkflowController {
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
  
-        def new_tipp = new TitleInstancePackagePlatform(
+        // def new_tipp = new TitleInstancePackagePlatform(
+        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
                                    pkg:new_package,
                                    hostPlatform:new_platform,
                                    title:current_tipp.title,
@@ -308,7 +317,7 @@ class WorkflowController {
                                    startIssue:current_tipp.startIssue,
                                    endDate:current_tipp.endDate,
                                    endVolume:current_tipp.endVolume,
-                                   endIssue:current_tipp.endIssue).save()
+                                   endIssue:current_tipp.endIssue]).save()
       }
 
       current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
@@ -398,6 +407,112 @@ class WorkflowController {
     if (variant != null ) {
       variant.delete()
     }
+    redirect(url: result.ref)
+  }
+
+  def processCreateWebHook() {
+
+    log.debug("processCreateWebHook ${params}");
+
+    def result = [:]
+
+    result.ref=params.from
+
+    try {
+
+      def webook_endpoint = null
+      if ( ( params.existingHook != null ) && ( params.existingHook.length() > 0 ) ) {
+        log.debug("From existing hook");
+        webook_endpoint = genericOIDService.resolveOID2(params.existingHook)
+      }
+      else {
+        webook_endpoint = new WebHookEndpoint(name:params.newHookName, 
+                                              url:params.newHookUrl,
+                                              authmethod:Long.parseLong(params.newHookAuth),
+                                              principal:params.newHookPrin,
+                                              credentials:params.newHookCred,
+                                              owner:request.user)
+        if ( webook_endpoint.save(flush:true) ) {
+        }
+        else {
+          log.error("Problem saving new webhook endpoint : ${webook_endpoint.errors}");
+        }
+      }
+
+
+      params.each { p ->
+        if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+          def tt = p.key.substring(3);
+          def wh = new WebHook( oid:tt, endpoint:webook_endpoint)
+          if ( wh.save(flush:true) ) {
+          }
+          else {
+            log.error(wh.errors);
+          }
+        }
+      }
+    }
+    catch ( Exception e ) {
+      log.error("Problem",e);
+    }
+
+    redirect(url: result.ref)
+  }
+
+  def processRRTransfer() {
+    def result = [:]
+    log.debug("processRRTransfer ${params}");
+
+    def new_user_alloc = genericOIDService.resolveOID2(params.allocToUser)
+
+    params.each { p ->
+      if ( ( p.key.startsWith('tt:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+        def tt = p.key.substring(3);
+        def ReviewRequest rr = ReviewRequest.get(tt);
+        log.debug("Process ${tt} - ${rr}");
+        rr.needsNotify = true
+        rr.allocatedTo = new_user_alloc
+        rr.save()
+        def rra = new ReviewRequestAllocationLog(note:params.note,allocatedTo:new_user_alloc,rr:rr).save();
+      }
+    }
+
+    result.ref=params.from
+    redirect(url: result.ref)
+  }
+
+  def createTitleHistoryEvent() {
+
+    log.debug(params)
+
+    log.debug("Processing ${params.afterTitles.class.name} ${params.beforeTitles.class.name}");
+    def result=[:]
+
+    if ( params.afterTitles instanceof java.lang.String ) {
+      params.afterTitles = [ params.afterTitles ]
+    }
+
+    if ( params.beforeTitles instanceof java.lang.String ) {
+      params.beforeTitles = [ params.beforeTitles ]
+    }
+
+    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:params.date('EventDate', 'yyyy-MM-dd')).save()
+
+    params.afterTitles?.each { at ->
+      def component = genericOIDService.resolveOID2(at)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'out').save()
+    }
+
+    params.beforeTitles?.each { bt ->
+      def component = genericOIDService.resolveOID2(bt)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'in').save()
+    }
+
+    result.ref=request.getHeader('referer')
     redirect(url: result.ref)
   }
 }

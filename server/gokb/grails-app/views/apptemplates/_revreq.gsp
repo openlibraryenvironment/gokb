@@ -18,7 +18,7 @@
 	      <dd><g:xEditable class="ipe" owner="${d}" field="reviewRequest"/></dd>
 	      <dt><g:annotatedLabel owner="${d}" property="status">Request Status</g:annotatedLabel></dt>
 	      <dd><g:xEditableRefData owner="${d}" field="status" config='ReviewRequest.Status' /></dd>
-	      <dt><g:annotatedLabel owner="${d}" property="target">Target</g:annotatedLabel></dt>
+	      <dt><g:annotatedLabel owner="${d}" property="target">Component</g:annotatedLabel></dt>
 	      <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.KBComponent">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown> <g:componentLink object="${d?.componentToReview}">Link</g:componentLink></dd>
 
         <g:if test="${d.id != null}">

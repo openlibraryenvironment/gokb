@@ -16,7 +16,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 identifiers.class_ones = [
   "issn",
   "eissn",
-  "doi"
+  "doi",
+  "isbn"
 ] as Set
 
 // if (System.properties["${appName}.config.location"]) {
@@ -25,7 +26,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "1.7"
+refine_min_version = "3.0"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -217,7 +218,7 @@ validation.rules = [
 
   "${IngestService.PACKAGE_NAME}" : [
     [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
     //		[
     //			type: IsSimilar,
     //			severity: A_ValidationRule.SEVERITY_WARNING,
@@ -470,12 +471,18 @@ globalSearchTemplates = [
           prompt:'Name of Package',
           qparam:'qp_name',
           placeholder:'Package Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
         ]
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
       ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name']
+      ],
+      actions:[
+        [name:'Register Web Hook for all Packages', code:'general::registerWebhook', iconClass:'glyphicon glyphicon-link']
       ]
     ]
   ],
@@ -681,10 +688,18 @@ globalSearchTemplates = [
         [
           type:'lookup',
           baseClass:'org.gokb.cred.User',
-          prompt:'User',
-          qparam:'qp_user',
-          placeholder:'Allocated To',
+          prompt:'Raised By',
+          qparam:'qp_raisedby',
+          placeholder:'Raised By',
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'raisedBy']
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.User',
+          prompt:'Allocated To',
+          qparam:'qp_allocatedto',
+          placeholder:'Allocated To',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'allocatedTo']
         ],
       ],
       qbeGlobals:[
@@ -694,6 +709,7 @@ globalSearchTemplates = [
         [heading:'Request', property:'reviewRequest'],
         [heading:'Status', property:'status?.value'],
         [heading:'Raised By', property:'raisedBy?.username'],
+        [heading:'Allocated To', property:'allocatedTo?.username'],
         [heading:'Timestamp', property:'dateCreated'],
       ]
     ]
@@ -934,6 +950,27 @@ grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
  * We need to disable springs password encoding as we handle this in our domain model.
  */
 grails.plugins.springsecurity.ui.encodePassword = false
+
+defaultOaiConfig = [
+  lastModified:'lastUpdated',
+  schemas:[
+    'oai_dc':[
+      type:'method',
+      methodName:'toOaiDcXml',
+      schema:'http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
+      metadataNamespaces: [
+        '_default_' : 'http://www.openarchives.org/OAI/2.0/oai_dc/',
+        'dc'        : "http://purl.org/dc/elements/1.1/"
+      ]],
+    'gokb':[
+      type:'method',
+      methodName:'toGoKBXml',
+      schema:'http://www.gokb.org/schemas/oai_metadata.xsd',
+      metadataNamespaces: [
+        '_default_': 'http://www.gokb.org/oai_metadata/'
+      ]],
+  ]
+]
 
 // Uncomment and edit the following lines to start using Grails encoding & escaping improvements
 

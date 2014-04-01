@@ -19,11 +19,50 @@
   
   <dt><g:annotatedLabel owner="${d}" property="currentPubisher">Current Publisher</g:annotatedLabel></dt>
   <dd>${d.currentPublisher}</dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel></dt>
+  <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom" /></dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="publishedTo">Published To</g:annotatedLabel></dt>
+  <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" /></dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel></dt>
+  <dd>
+    <table class="table table-striped table-bordered"> 
+      <thead>
+      <tr>
+        <th>Date</th><th>Before</th><th>After</th>
+      <tr>
+      </thead>
+      <tbody>
+      <g:each in="${d.titleHistory}" var="he">
+        <tr>
+          <td>${he.date}</td>
+          <td>
+            <ul>
+              <g:each in="${he.from}" var="ft">
+                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+              </g:each>
+            </ul>
+          </td>
+          <td>
+            <ul>
+              <g:each in="${he.to}" var="ft">
+                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+              </g:each>
+            </ul>
+          </td>
+        </tr>
+      </g:each>
+      </tbody>
+    </table>
+  </dd>
 </dl>
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
+    <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span class="badge badge-warning">${d.getCombosByPropertyName('publisher')?.size()}</span></a></li>
     <li><a href="#availability" data-toggle="tab">Availability <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
@@ -86,6 +125,51 @@
               </g:form>
             </dl>
           </dd>
+        </dl>
+      </g:if>
+    </div>
+    <div class="tab-pane" id="history">
+      <g:if test="${d.id != null}">
+        <dl class="dl-horizontal">
+              <g:form name="AddHistoryForm" controller="workflow" action="createTitleHistoryEvent">
+                <dt>Titles</td>
+                <dd>
+                <table>
+                  <tr>
+                    <th>Before</th>
+                    <th></th>
+                    <th>After</th>
+                  </tr>
+                  <tr>
+                    <td>
+                      <select name="beforeTitles" size="5" multiple>
+                        <option value="org.gokb.cred.TitleInstance:${d.id}">${d.name}</option>
+                      </select><br/>
+                    </td>
+                    <td>
+                      <button type="button" onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">&gt;</button><br/>
+                      <button type="button" onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button><br/>
+                    </td>
+                    <td>
+                      <select name="afterTitles" size="5" multiple/><br/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
+                         <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button</td>
+                    <td> </td>
+                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
+                         <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button</td>
+                  </tr>
+                </table>
+                </dd>
+                <dt>Event Date</dt>
+                <dd><input type="date" name="EventDate"/></dd>
+                <dt></dt>
+                <dd>
+                <button onClick="submitTitleHistoryEvent(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">Add Title History Event -&gt;</button>
+                </dd>
+              </g:form>
         </dl>
       </g:if>
     </div>
@@ -202,10 +286,63 @@
 </div>
 
 
-<script type="text/javascript">
+<g:javascript>
   $(document).ready(function() {
 
     $.fn.editable.defaults.mode = 'inline';
     $('.ipe').editable();
   });
-</script>
+
+  function SelectMoveRows(SS1,SS2) {
+    var SelID='';
+    var SelText='';
+    // Move rows from SS1 to SS2 from bottom to top
+    for (i=SS1.options.length - 1; i>=0; i--) {
+        if (SS1.options[i].selected == true) {
+            SelID=SS1.options[i].value;
+            SelText=SS1.options[i].text;
+            var newRow = new Option(SelText,SelID);
+            SS2.options[SS2.length]=newRow;
+            SS1.options[i]=null;
+        }
+    }
+    SelectSort(SS2);
+  }
+
+  function SelectSort(SelList) {
+    var ID='';
+    var Text='';
+    for (x=0; x < SelList.length - 1; x++) {
+        for (y=x + 1; y < SelList.length; y++) {
+            if (SelList[x].text > SelList[y].text) {
+                ID=SelList[x].value;
+                Text=SelList[x].text;
+                SelList[x].value=SelList[y].value;
+                SelList[x].text=SelList[y].text;
+                SelList[y].value=ID;
+                SelList[y].text=Text;
+            }
+        }
+    }
+  }
+
+  function AddTitle(titleIdHidden,ss) {
+    // alert(titleIdHidden.value);
+    // alert(titleIdHidden.parentNode.getElementsByTagName('div')[0].getElementsByTagName('span')[0].innerHTML);
+    var newRow=new Option(titleIdHidden.parentNode.getElementsByTagName('div')[0].getElementsByTagName('span')[0].innerHTML,
+                          titleIdHidden.value);
+    ss.options[ss.length] = newRow;
+    SelectSort[ss];
+  }
+
+  function submitTitleHistoryEvent(ss1,ss2) {
+    selectAll(ss1);
+    selectAll(ss2);
+  }
+
+  function selectAll(ss) {
+    for (i=ss.options.length - 1; i>=0; i--) {
+      ss.options[i].selected = true;
+    }
+  }
+</g:javascript>

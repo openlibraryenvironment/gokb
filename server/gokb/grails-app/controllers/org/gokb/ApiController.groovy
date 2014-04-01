@@ -79,13 +79,13 @@ class ApiController {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.serverUrl ?: 'http://gokb.kuali.org'
 
-//      if (gokbVersion != grailsApplication.config.refine_min_version) {
-//        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-//        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
-//        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
-//        "error")
-//        return false
-//      }
+      if (gokbVersion != grailsApplication.config.refine_min_version) {
+        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
+        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
+        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
+        "error")
+        return false
+      }
     }
   }
 
@@ -655,6 +655,16 @@ class ApiController {
         // Offset.
         def offset = (page - 1) * perPage
         results = criteria.list ("max": (perPage), "offset": (offset)) {
+          not {
+            or {
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+              )
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+              )
+            }
+          }
           if (term) {
             // Add a condition for each parameter we wish to search.
             or {
@@ -668,6 +678,16 @@ class ApiController {
         
       } else {
         results = criteria.list {
+          not {
+            or {
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+              )
+              criteria.add (
+                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+              )
+            }
+          }
           if (term) {
             // Add a condition for each parameter we wish to search.
             or {

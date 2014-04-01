@@ -19,7 +19,7 @@
             attempt to create the corresponding system objects and link them to the uploaded file.
           </p>
           <p>
-            Please note - The system only maintains a unique copy of each file. repeat uploads will not be processed as new files.
+            Please note - The system only maintains a unique copy of each file. Repeat uploads will not be processed as new files.
           </p>
           <g:form action="processSubmission" method="post" enctype="multipart/form-data" params="${params}">
             <dl>

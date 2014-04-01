@@ -7,6 +7,8 @@ class UrlMappings {
 			}
 		}
 
+                "/oai/$id"(controller:'oai',action:'index')
+
 		"/"(controller:'home',action:'index')
 		"/rules"(controller:'home',action:'showRules')
 		"500"(view:'/error')

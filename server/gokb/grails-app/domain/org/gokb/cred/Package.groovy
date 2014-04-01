@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+
 import org.gokb.refine.*
 
 class Package extends KBComponent {
@@ -96,9 +97,9 @@ class Package extends KBComponent {
     result
   }
   
-  public void deleteSoft () {
+  public void deleteSoft (context) {
     // Call the delete method on the superClass.
-    super.deleteSoft()
+    super.deleteSoft(context)
     
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
@@ -114,9 +115,108 @@ class Package extends KBComponent {
     }
   }
   
+  @Transient
   def availableActions() {
     [
-      [code:'method::deleteSoft', label:'Delete (with associated TIPPs)']
+      [code:'method::deleteSoft', label:'Delete (with associated TIPPs)'],
+      [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }
+
+  @Transient
+  def getWebHooks() {
+    def result=[]
+
+    result.hooks = WebHook.findAllByOid("org.gokb.cred.Package:${this.id}");
+
+    result
+  }
+
+  @Transient
+  static def oaiConfig = [
+    id:'packages',
+    textDescription:'Package repository for GOKb',
+    query:" from Package as o where o.status.value != 'Deleted'"
+  ]
+
+  /**
+   *  Render this package as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (name)
+    }
+  }
+
+  /**
+   *  Render this package as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder, attr) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+    def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
+
+    // Get the tipps manually rather than iterating over the collection - For better management
+    // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
+    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
+where pkgCombo.toComponent=tipp
+  and pkgCombo.fromComponent=?
+  and pkgCombo.type.value='Package.Tipps'
+  and hostPlatformCombo.toComponent=tipp 
+  and hostPlatformCombo.type.value='Platform.HostedTipps' 
+  and titleCombo.toComponent=tipp 
+  and titleCombo.type.value='TitleInstance.Tipps' 
+  and tipp.status.value != 'Deleted' 
+order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
+    
+    builder.'gokb' (attr) {
+      builder.'package' (['id':(id)]) {
+        'scope' ( scope?.value )
+        'listStatus' ( listStatus?.value )
+        'breakable' ( breakable?.value )
+        'consistent' ( consistent?.value )
+        'fixed' ( fixed?.value )
+        'paymentType' ( paymentType?.value )
+        'global' ( global?.value )
+        'name' (name)
+        'TIPPs'(count:tipps?.size()) {
+          tipps.each { tipp ->
+            builder.'TIPP' (['id':tipp[0]]) {
+              builder.'status' (tipp[14]?.value)
+              builder.'title' (['id':identifier_prefix+tipp[2]]) {
+                builder.'name' (tipp[1]?.trim())
+                builder.'identifiers' {
+                  getTitleIds(tipp[2]).each { tid ->
+                    builder.'identifier'('namespace':tid[0], 'value':tid[1])
+                  }
+                }
+              }
+              'platform'([id:tipp[4]]) {
+                'name' (tipp[3]?.trim())
+              }
+              'coverage'(
+                startDate:(tipp[5]?sdf.format(tipp[5]):null),
+                startVolume:tipp[6],
+                startIssue:tipp[7],
+                endDate:(tipp[8]?sdf.format(tipp[8]):null),
+                endVolume:tipp[9],
+                endIssue:tipp[10],
+                coverageDepth:tipp[11]?.value,
+                coverageNote:tipp[12])
+              if ( tipp[13] != null ) { 'url'(tipp[13]) }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @Transient
+  private static getTitleIds(Long title_id) {
+    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type.value = 'KBComponent.Ids' and c.fromComponent.id=?)",[title_id],[readOnly: true, fetchSize:10])
+    result
+  }
+
 }
