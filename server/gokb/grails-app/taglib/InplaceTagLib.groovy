@@ -15,7 +15,9 @@ class InplaceTagLib {
     boolean editable = !(attrs?."readonly" == true)
     
     // Also check the special flag on the entire component. 
-    editable = editable && !owner?.systemComponent
+    if (owner?.respondsTo("isSystemComponent")) {
+      editable = editable && !owner?.systemComponent
+    }
     
     // If not editable then we should output as value only and return the value.
     if (!editable) {
