@@ -41,18 +41,22 @@
       <tbody>
       <g:each in="${d.titleHistory}" var="he">
         <tr>
-          <td>${he.date}</td>
+          <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${he.date}" /></td>
           <td>
             <ul>
               <g:each in="${he.from}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
               </g:each>
             </ul>
           </td>
           <td>
             <ul>
               <g:each in="${he.to}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
               </g:each>
             </ul>
           </td>
