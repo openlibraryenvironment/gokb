@@ -81,7 +81,7 @@ class ApiController {
 
       if (gokbVersion != grailsApplication.config.refine_min_version) {
         apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-        "Please download and install the latest version from <a href='${serv_url}/extension/latest.zip' >${serv_url}/extension/latest.zip</a>." +
+        "Please download and install the latest version from <a href='${serv_url}' >${serv_url}</a>." +
         "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
         "error")
         return false

@@ -13,7 +13,9 @@ class TitleInstance extends KBComponent {
   RefdataValue	pureOA
   RefdataValue	continuingSeries
   RefdataValue	reasonRetired
-  String imprint
+  Date publishedFrom
+  Date publishedTo
+//  String imprint
 
   private static refdataDefaults = [
     "medium"		: "Journal",
@@ -56,12 +58,13 @@ class TitleInstance extends KBComponent {
   }
 
   static hasByCombo = [
-    issuer			: Org,
+    issuer		: Org,
     translatedFrom	: TitleInstance,
     absorbedBy		: TitleInstance,
     mergedWith		: TitleInstance,
     renamedTo		: TitleInstance,
-    splitFrom		: TitleInstance
+    splitFrom		: TitleInstance,
+    imprint		: Imprint
   ]
 
   static manyByCombo = [
@@ -75,7 +78,9 @@ class TitleInstance extends KBComponent {
     medium (nullable:true, blank:false)
     pureOA (nullable:true, blank:false)
     reasonRetired (nullable:true, blank:false)
-    imprint (nullable:true, blank:false)
+//    imprint (nullable:true, blank:false)
+    publishedFrom (nullable:true, blank:false)
+    publishedTo (nullable:true, blank:false)
   }
 
   def availableActions() {
@@ -247,5 +252,17 @@ class TitleInstance extends KBComponent {
         }
       }
     }
+  }
+
+  @Transient
+  def getTitleHistory() {
+    def result = []
+    def all_related_history_events = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = ? and ehp.event = eh ) order by eh.eventDate',this)
+    all_related_history_events.each { he ->
+      def from_titles = he.participants.findAll { it.participantRole == 'in' };
+      def to_titles = he.participants.findAll { it.participantRole == 'out' };
+      result.add( [ date:he.eventDate, from:from_titles.collect{it.participant}, to:to_titles.collect{it.participant} ] );
+    }
+    return result;
   }
 }

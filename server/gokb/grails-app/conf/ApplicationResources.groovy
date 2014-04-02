@@ -14,6 +14,7 @@ modules = {
     resource url:'css/annotations.css'
     resource url:'js/bootstrap-editable.min.js'
     resource url:'css/security-styles.css'
+    resource url:'js/select-all-multistate.js'
   }
   editable {
     resource url:'css/select2.css'

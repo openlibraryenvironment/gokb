@@ -307,7 +307,8 @@ class WorkflowController {
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
  
-        def new_tipp = new TitleInstancePackagePlatform(
+        // def new_tipp = new TitleInstancePackagePlatform(
+        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
                                    pkg:new_package,
                                    hostPlatform:new_platform,
                                    title:current_tipp.title,
@@ -316,7 +317,7 @@ class WorkflowController {
                                    startIssue:current_tipp.startIssue,
                                    endDate:current_tipp.endDate,
                                    endVolume:current_tipp.endVolume,
-                                   endIssue:current_tipp.endIssue).save()
+                                   endIssue:current_tipp.endIssue]).save()
       }
 
       current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
@@ -477,6 +478,41 @@ class WorkflowController {
     }
 
     result.ref=params.from
+    redirect(url: result.ref)
+  }
+
+  def createTitleHistoryEvent() {
+
+    log.debug(params)
+
+    log.debug("Processing ${params.afterTitles.class.name} ${params.beforeTitles.class.name}");
+    def result=[:]
+
+    if ( params.afterTitles instanceof java.lang.String ) {
+      params.afterTitles = [ params.afterTitles ]
+    }
+
+    if ( params.beforeTitles instanceof java.lang.String ) {
+      params.beforeTitles = [ params.beforeTitles ]
+    }
+
+    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:params.date('EventDate', 'yyyy-MM-dd')).save()
+
+    params.afterTitles?.each { at ->
+      def component = genericOIDService.resolveOID2(at)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'out').save()
+    }
+
+    params.beforeTitles?.each { bt ->
+      def component = genericOIDService.resolveOID2(bt)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'in').save()
+    }
+
+    result.ref=request.getHeader('referer')
     redirect(url: result.ref)
   }
 }

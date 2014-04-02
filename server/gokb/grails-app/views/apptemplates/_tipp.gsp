@@ -119,10 +119,8 @@
                     field="startVolume" /></td>
                 <td><g:xEditable class="ipe" owner="${d}"
                     field="startIssue" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" type="date"
-                    field="endDate" /></td>
-                <td><g:xEditable class="ipe" owner="${d}"
-                    field="endVolume" /></td>
+                <td><g:xEditable class="ipe" owner="${d}" type="date" field="endDate" /></td>
+                <td><g:xEditable class="ipe" owner="${d}" field="endVolume" /></td>
                 <td><g:xEditable class="ipe" owner="${d}" field="endIssue" /></td>
                 <td><g:xEditable class="ipe" owner="${d}" field="embargo" /></td>
               </tr>
