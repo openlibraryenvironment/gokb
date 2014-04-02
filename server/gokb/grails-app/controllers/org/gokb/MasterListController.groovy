@@ -12,6 +12,13 @@ class MasterListController {
 
   def genericOIDService
   def classExaminationService
+  def packageService
+  
+  def generate() {
+    packageService.updateMasterFor (
+      packageService.allProviders[0]
+    )
+  }
 
   def index() { 
     def result = [:]

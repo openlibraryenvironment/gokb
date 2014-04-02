@@ -692,26 +692,32 @@ abstract class KBComponent {
   public Map getAllPropertiesAndVals() {
     
     // The list of property names that we are to ignore.
-    def ignore_list = ["id", "metaClass", "class"]
+    def ignore_list = ['id', 'outgoingCombos', 'incomingCombos', 'reviewRequests']
+    
+    // Get the domain class.
+    def domainClass = grailsApplication.getDomainClass(this."class".name)
     
     // The map of current property names and values to be passed to the
     // new constructor.
     def props = [:]
     
     // Go through each normal property and add the name and value to the map.
-    this.properties.each { prop, val ->
+    def localProps = domainClass?.persistentProperties
+    localProps.each { prop ->
+      
+      def name = prop.name
       
       // Ignore the ones in the list.
-      if (prop in ignore_list) return
+      if (name in ignore_list) return
       
-      props["${prop}"] = val
+      props["${name}"] = this."${name}"
     }
     
     // Repeat for the combo properties.
-    this.allComboPropertyNames.each { prop ->
+    allComboPropertyNames.each { prop ->
       if (prop in ignore_list) return
       
-      props["${prop}"] = me."${prop}"
+      props["${prop}"] = this."${prop}"
     }
     
     props
@@ -726,7 +732,25 @@ abstract class KBComponent {
   public <T extends KBComponent> T clone () {
     
     // Now we have a map of all properties and values we should create our new instance.
-    this.class.newInstance([getAllProperties()] as Object[])
+    this."class".newInstance([allPropertiesAndVals] as Object[])
   }
-
+  
+  /**
+   * This method copies the values from this component to the supplied.
+   */
+  @Transient
+  public <T extends KBComponent> T sync (T to) {
+    if (to) {
+      // Update Master tipp.
+      Map propVals = allPropertiesAndVals
+      propVals.each { p, v ->
+        if (to.respondsTo("${p}")) {
+          to."${p}" = v
+        }
+      }
+    }
+    
+    // Return the supplied element.
+    to
+  }
 }

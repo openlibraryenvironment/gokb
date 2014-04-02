@@ -93,7 +93,7 @@ class PackageService {
    * Method to create or update a Package containing a list of all titles
    * provided by the supplied Org.
    */
-  def updateMasterFor(Org provider) {
+  def updateMasterFor (Org provider) {
     
     // The delta.
     Date delta = null
@@ -129,11 +129,7 @@ class PackageService {
       // Create new...
       log.debug ("No current Master for ${provider.id}. Creating one.")
       
-      master = new Package([
-        "name"            : "${provider.name}: Master List",
-        "scope"           : scope,      // Set the scope.
-        "provider"        : provider,   // Set the provider.
-      ])
+      master = new Package()
       
       // Need to pass the system_save parameter to flag as systemComponent.
       if (!master.save("system_save" : true)) {
@@ -142,19 +138,19 @@ class PackageService {
       }
     }
     
-    // Get all the current list of tipps related to this one..
-    Set<Long> currentMasterTippIds = []
-    currentMasterTippIds.addAll (master.getTipps().collect {
-      it.id
-    })
+    master.with {
+      name      = "${provider.name}: Master List"   // Set the title.
+      scope     = scope                             // Set the scope.
+      provider  = provider                          // Set the provider.
+    }
     
     // Now query for all packages for this provider modified since the delta.
     c = ComboCriteria.createFor( Package.createCriteria() )
-    Set<Long> pkg_ids = c.list {
-      and {
+    Set<Package> pkgs = c.list {
+      c.and {
         c.add(
           "id",
-          "neq",
+          "ne",
           master.id)
         
         c.add(
@@ -169,47 +165,40 @@ class PackageService {
             delta)
         }
       }
-      
-      c.projections {
-        property 'id'
-      }
     } as Set
+  
+    for (Package pkg in pkgs) {
     
-    // Now we have a list of packages we need to get the tipps for those packages.
-    c = ComboCriteria.createFor( TitleInstancePackagePlatform.createCriteria() )
-    Set<TitleInstancePackagePlatform> tipps = c.list {
-      and {
-        c.add(
-          "id",
-          "in",
-          [pkg_ids] as Object[])
-        
-        if (delta) {
-          c.add(
-            "lastUpdated",
-            "gt",
-            delta)
+      // We should now have a definitive list of tipps that have been changed since the last update.
+      for (def t in pkg.tipps) {
+        TitleInstancePackagePlatform tipp = KBComponent.deproxy(t)
+        TitleInstancePackagePlatform mt = tipp.masterTipp
+        if (!mt) {
+          // No Master tipp so we should add one.
+          log.debug ("No master tipp for tipp ${tipp.id} so we need to add one.")
+          mt = new TitleInstancePackagePlatform().save("system_save" : true, errorOnSave:true)
+          tipp.masterTipp = mt
+          tipp.save(failOnError:true, flush:true)
+          log.debug("Added master tipp ${mt.id} to tipp ${tipp.id}")
         }
-      }
-    }
-    
-    // We should now have a definitive list of tipps that have been changed since the last update.
-    for (TitleInstancePackagePlatform tipp in tipps) {
-      TitleInstancePackagePlatform mt = tipp.masterTipp
-      if (mt) {
-        // No Master tipp so we should add one.
         
-      } else {
-        // No Master tipp so we should add one.
-        log.debug ("No master tipp for tipp ${tipp.id} so we need to add one.")
-        mt = tipp.clone()
-        tipp.masterTipp = mt
+        // Add all the property vals from this tipp.
+        mt = tipp.sync (mt)
+        
+        // Set the package to the master.
+        mt.pkg = master
         
         // The master tipp must be saved with the system flag.
-        mt.save("system_save" : true)
-        tipp.save()
+        mt.save("system_save" : true, failOnError:true)
+        
+        log.debug ("Changes ")
+        tipp.save(failOnError:true, flush:true)
+        log.debug("Changes saved.")
       }
     }
+    
+    // Save the master package again.
+    master.save("system_save" : true, failOnError:true, flush:true)
   }
   
   /**
@@ -229,12 +218,8 @@ class PackageService {
           "status",
           "eq",
           RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
-        
-        c.projections {
-          property 'provider'
-        }
       }
-    } as Set
+    }.collect { it.provider } as LinkedHashSet
   
     log.debug("Found ${results.size()} providers.")
     results
