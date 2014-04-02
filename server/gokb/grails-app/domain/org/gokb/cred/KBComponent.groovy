@@ -359,11 +359,12 @@ abstract class KBComponent {
   /**
    * Ensure suffix the name with "(system maintained)" for system components.
    */
-  public def getName() {
+  public String getName() {
     def n = this.name
     if (isSystemComponent()) {
       n += " (System Maintained)"
     }
+    n
   }
 
   @Transient
