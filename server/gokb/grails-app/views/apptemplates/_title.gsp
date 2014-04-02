@@ -45,14 +45,14 @@
           <td>
             <ul>
               <g:each in="${he.from}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link>(${ft.publishedFrom?:'No From Date'} <em>to</em> ${ft.publishedTo?:'No to Date'})</li>
               </g:each>
             </ul>
           </td>
           <td>
             <ul>
               <g:each in="${he.to}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link>(${ft.publishedFrom?:'No From Date'} <em>to</em> ${ft.publishedTo?:'No to Date'})</li>
               </g:each>
             </ul>
           </td>
