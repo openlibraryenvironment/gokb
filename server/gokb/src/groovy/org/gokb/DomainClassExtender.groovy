@@ -1012,7 +1012,7 @@ class DomainClassExtender {
       KBComponent d = delegate as KBComponent
       
       // Check to see if this is a system component.
-      if (d.isSystemComponent()) {
+      if (d.isSystemComponent() || p?."system_save") {
        
         // Found method.
         log.debug("System component, check parameters.")

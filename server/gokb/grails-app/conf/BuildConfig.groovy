@@ -77,6 +77,6 @@ grails.project.dependency.resolution = {
         compile ":font-awesome-resources:3.2.1"
         
         // Job scheduler plugin.
-        compile ":quartz:1.0.1"
+//        compile ":quartz:1.0.1"
     }
 }

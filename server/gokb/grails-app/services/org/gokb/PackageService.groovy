@@ -1,6 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.*
+import org.springframework.transaction.TransactionStatus
 
 class PackageService {
 
@@ -51,14 +52,14 @@ class PackageService {
           if ( pkg.save(failOnError:true) ) {
             log.debug ("Retired and saved package ${pkg.id}.")
           }
-          
+
           // Get the original name of the package so we can preserve it when recreating.
           String original_name = pkg.name
 
           // New package.
           pkg = new Package(
-            name: original_name
-          )
+              name: original_name
+              )
 
           // Add all the ids.
           pkg.ids.addAll(pkIds)
@@ -74,12 +75,12 @@ class PackageService {
 
     pkg
   }
-  
+
   /**
    * Method to update all Master list type packages.
    */
   def updateAllMasters() {
-    
+
     // Create the criteria.
     getAllProviders().each { Org pr ->
       Package.withNewTransaction {
@@ -87,140 +88,143 @@ class PackageService {
       }
     }
   }
-  
-  
+
+
   /**
    * Method to create or update a Package containing a list of all titles
    * provided by the supplied Org.
    */
-  def updateMasterFor (Org provider) {
-    
-    // The delta.
-    Date delta = null
-    
+  def updateMasterFor (Org provider, delta = true) {
     log.debug ("Update or create master list for ${provider.name}")
-    
+
     // The Scope.
     RefdataValue scope = RefdataCategory.lookupOrCreate("Package.Scope", "Master File")
-    
+
     // Get the current master Package for this provider.
     ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
     Package master = c.get {
       and {
         c.add(
-          "scope",
-          "eq",
-          scope)
+            "scope",
+            "eq",
+            scope)
         c.add(
-          "provider",
-          "eq",
-          provider)
+            "provider",
+            "eq",
+            provider)
       }
     }
-    
+
     // Update or create?
     if (master) {
-      
+
       // Update...
       log.debug ("Found package ${master.id} for ${provider.id}")
-      
-      delta = master.lastUpdated
+
+      delta = delta ? master.lastUpdated : false
     } else {
       // Create new...
       log.debug ("No current Master for ${provider.id}. Creating one.")
-      
+
       master = new Package()
-      
+
       // Need to pass the system_save parameter to flag as systemComponent.
       if (!master.save("system_save" : true)) {
         // Error.
         log.error("Failed to save new master package.")
       }
     }
-    
+
     master.with {
       name      = "${provider.name}: Master List"   // Set the title.
       scope     = scope                             // Set the scope.
       provider  = provider                          // Set the provider.
     }
-    
+
     // Now query for all packages for this provider modified since the delta.
     c = ComboCriteria.createFor( Package.createCriteria() )
     Set<Package> pkgs = c.list {
       c.and {
         c.add(
-          "id",
-          "ne",
-          master.id)
-        
+            "id",
+            "ne",
+            master.id)
+
         c.add(
-          "provider",
-          "eq",
-          provider)
-        
+            "provider",
+            "eq",
+            provider)
+
         if (delta) {
           c.add(
-            "lastUpdated",
-            "gt",
-            delta)
+              "lastUpdated",
+              "gt",
+              delta)
         }
       }
     } as Set
-  
+
+    log.debug ("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
+
     for (Package pkg in pkgs) {
-    
+
       // We should now have a definitive list of tipps that have been changed since the last update.
       for (def t in pkg.tipps) {
-        TitleInstancePackagePlatform tipp = KBComponent.deproxy(t)
+        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.deproxy(t)
         TitleInstancePackagePlatform mt = tipp.masterTipp
         if (!mt) {
           // No Master tipp so we should add one.
           log.debug ("No master tipp for tipp ${tipp.id} so we need to add one.")
-          mt = new TitleInstancePackagePlatform().save("system_save" : true, errorOnSave:true)
+          mt = tipp.clone().save(failOnError:true)
           tipp.masterTipp = mt
-          tipp.save(failOnError:true, flush:true)
+
+          if (!mt.save("system_save" : true, errorOnSave:true)) {
+            log.error("Error saving master TIPP.")
+          }
+          if (!tipp.save(failOnError:true)) {
+            log.error("Error saving normal TIPP.")
+          }
           log.debug("Added master tipp ${mt.id} to tipp ${tipp.id}")
+        } else {
+          // Add all the property vals from this tipp.
+          mt = tipp.sync (mt)
         }
-        
-        // Add all the property vals from this tipp.
-        mt = tipp.sync (mt)
-        
+
         // Set the package to the master.
         mt.pkg = master
-        
+
         // The master tipp must be saved with the system flag.
         mt.save("system_save" : true, failOnError:true)
-        
-        log.debug ("Changes ")
         tipp.save(failOnError:true, flush:true)
         log.debug("Changes saved.")
       }
     }
-    
+
     // Save the master package again.
+    log.debug("Finished updating master package ${master.id}")
     master.save("system_save" : true, failOnError:true, flush:true)
   }
-  
+
   /**
    * Get the Set of Orgs currently acting as a provider.
    */
   public Set<Org> getAllProviders () {
-    
+
     log.debug ("Looking for all providers.")
-    
+
     // Create the criteria.
     ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
-    
+
     // Query for a list of packages and return the providers.
     def results = c.list {
       and {
         c.add(
-          "status",
-          "eq",
-          RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
+            "status",
+            "eq",
+            RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
       }
     }.collect { it.provider } as LinkedHashSet
-  
+
     log.debug("Found ${results.size()} providers.")
     results
   }

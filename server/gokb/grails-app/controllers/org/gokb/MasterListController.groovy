@@ -16,7 +16,8 @@ class MasterListController {
   
   def generate() {
     packageService.updateMasterFor (
-      packageService.allProviders[0]
+      packageService.allProviders[0],
+      false
     )
   }
 

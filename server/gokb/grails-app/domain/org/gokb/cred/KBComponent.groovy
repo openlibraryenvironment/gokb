@@ -62,8 +62,10 @@ abstract class KBComponent {
       
       try {
         
+        def saveParams = [failOnError:true, "system_save" : (systemComponent)]
+        
         obj.lastUpdated = stamp
-        obj.save(failOnError:true)
+        obj.save(saveParams)
         
       } catch (Throwable t) {
       
@@ -354,17 +356,6 @@ abstract class KBComponent {
     }
 
     result;
-  }
-  
-  /**
-   * Ensure suffix the name with "(system maintained)" for system components.
-   */
-  public String getName() {
-    def n = this.name
-    if (isSystemComponent()) {
-      n += " (System Maintained)"
-    }
-    n
   }
 
   @Transient
@@ -702,20 +693,13 @@ abstract class KBComponent {
     // new constructor.
     def props = [:]
     
-    // Go through each normal property and add the name and value to the map.
-    def localProps = domainClass?.persistentProperties
+    // Add combo and persisted properties to the list.
+    def localProps = (domainClass?.persistentProperties?.collect { it.name }) ?: [] 
+    localProps += allComboPropertyNames
+    
     localProps.each { prop ->
       
-      def name = prop.name
-      
       // Ignore the ones in the list.
-      if (name in ignore_list) return
-      
-      props["${name}"] = this."${name}"
-    }
-    
-    // Repeat for the combo properties.
-    allComboPropertyNames.each { prop ->
       if (prop in ignore_list) return
       
       props["${prop}"] = this."${prop}"
@@ -733,7 +717,8 @@ abstract class KBComponent {
   public <T extends KBComponent> T clone () {
     
     // Now we have a map of all properties and values we should create our new instance.
-    this."class".newInstance([allPropertiesAndVals] as Object[])
+    T comp = this."class".newInstance()
+    sync (comp)
   }
   
   /**
@@ -745,13 +730,35 @@ abstract class KBComponent {
       // Update Master tipp.
       Map propVals = allPropertiesAndVals
       propVals.each { p, v ->
-        if (to.respondsTo("${p}")) {
-          to."${p}" = v
+        
+        def toHas = has(to, "${p}")
+        
+        if (toHas) {
+          to[p] = v
         }
       }
     }
     
     // Return the supplied element.
     to
+  }
+  
+  /**
+   * Similar to the respondsTo method but checks for methods properties and combos.
+   */
+  @Transient
+  public static boolean has (Object ob, String op) {
+    
+    // The flag value.
+    boolean hasOp = false
+    
+    if (ob) {
+      // Check properties.
+      hasOp = ob.hasProperty(op) ||
+        (ob.respondsTo(op)?.size() > 0) ||
+        (ob instanceof KBComponent && ob.allComboPropertyNames.contains(op))
+    }
+    
+    hasOp
   }
 }
