@@ -178,7 +178,7 @@ class PackageService {
           mt = tipp.clone().save(failOnError:true)
           tipp.masterTipp = mt
 
-          if (!mt.save("system_save" : true, errorOnSave:true)) {
+          if (!mt.save(errorOnSave:true)) {
             log.error("Error saving master TIPP.")
           }
           if (!tipp.save(failOnError:true)) {
@@ -190,12 +190,19 @@ class PackageService {
           mt = tipp.sync (mt)
         }
 
-        // Set the package to the master.
-        mt.pkg = master
+        // Set the package to the master, and flag as system component.
+        mt.with {
+          name = null
+          pkg = master
+          systemComponent = true
+        }
 
-        // The master tipp must be saved with the system flag.
-        mt.save("system_save" : true, failOnError:true)
-        tipp.save(failOnError:true, flush:true)
+        // Save the original tipp.
+        tipp.save(failOnError:true)
+        
+        // Ensure package is systemComponent.
+        mt.systemComponent = true
+        mt.save(failOnError:true, flush:true)
         log.debug("Changes saved.")
       }
     }
