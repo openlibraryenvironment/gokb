@@ -82,12 +82,24 @@ class PackageService {
   def updateAllMasters(delta = true) {
 
     // Create the criteria.
-    getAllProviders().each { Org pr ->
+    getAllProviders().eachWithIndex { Org pr, index ->
       long prid = pr.id
       Package.withNewTransaction {
         updateMasterFor (prid, delta)
       }
+      
+      if (index % 25 == 0) cleanUpGorm()
     }
+  }
+  
+  def sessionFactory
+  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+  
+  private def cleanUpGorm() {
+      def session = sessionFactory.currentSession
+      session.flush()
+      session.clear()
+      propertyInstanceMap.get().clear()
   }
 
 
@@ -127,6 +139,10 @@ class PackageService {
   
         delta = delta ? master.lastUpdated : false
       } else {
+        
+        // Set delta to false...
+        delta = false
+        
         // Create new...
         log.debug ("No current Master for ${provider.id}. Creating one.")
   
