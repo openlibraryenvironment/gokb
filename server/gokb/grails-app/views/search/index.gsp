@@ -76,10 +76,9 @@
             <g:if test="${(qbetemplate.message != null)}">
               <p style="text-align:center"><bootstrap:alert class="alert-info">${qbetemplate.message}</bootstrap:alert></p>
             </g:if>
-            <!-- g:if test="${!request.isAjax()}" -->
-	            <g:render template="qbeform" contextPath="."
-	              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
-	          <!-- /g:if -->
+
+	    <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
+
             <g:if test="${recset != null}">
               <g:render template="qberesult" contextPath="."
                 model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det]}" />
