@@ -2,71 +2,92 @@
 
 <!--+
     |
-    |  Google Refine Extension Sample Extension Build File    
+    |  GOKb extension build file for (open/goolge)refine.
+    | This Ant file will build the gokb extension from within a pre-built version of refine.   
     |                
     +-->
     
 <project name="refine-gokb-extension" default="build" basedir=".">
 
-    <property environment="env"/>
+	<tstamp/>
+	    <property name="name" value="gokb"/>
+	    <property name="version" value="3.0"/>
+	    <property name="revision" value="${DSTAMP}${TSTAMP}"/>
+	    <property name="ext.dir" value="${dist.dir}/${name}"/>
+	    <property name="fullname" value="${name}-${version}-${revision}" />
+	    
+	    <property name="refine.dir" value="${basedir}/../../../" />
+    	<property name="dist.dir" value="${refine.dir}/dist"/>
+	    <property name="server.lib.dir" value="${refine.dir}/server/lib" />
 
-    <condition property="version" value="trunk">
-        <not><isset property="version"/></not>
-    </condition>
+	    <property name="refine.webinf.dir" value="${refine.dir}/webapp/WEB-INF" />
+	    <property name="refine.modinf.dir" value="${refine.dir}/webapp/modules/core/MOD-INF" />
+	    <property name="refine.classes.dir" value="${refine.webinf.dir}/classes" />
+	    <property name="refine.lib.dir" value="${refine.webinf.dir}/lib" />
+	    
+	    <property name="src.dir" value="${basedir}/src" />
+	    <property name="module.dir" value="${basedir}/module" />
+	    <property name="modinf.dir" value="${module.dir}/MOD-INF" />
+	    <property name="lib.dir" value="${modinf.dir}/lib" />
+	    <property name="classes.dir" value="${modinf.dir}/classes" />
 
-    <condition property="revision" value="rXXXX">
-        <not><isset property="revision"/></not>
-    </condition>
+	    <path id="class.path">
+	        <fileset dir="${lib.dir}">
+	            <include name="**/*.jar" />
+	        </fileset>
+	        <fileset dir="${refine.lib.dir}">
+	            <include name="**/*.jar" />
+	        </fileset>
+	        <fileset dir="${server.lib.dir}">
+	            <include name="**/*.jar" />
+	        </fileset>
+	        <pathelement path="${refine.classes.dir}"/>
+	    </path>
+	            
+	    <target name="build_java">
+	        <mkdir dir="${classes.dir}" />
+	        <mkdir dir="${lib.dir}" />
+	        <javac source="${java.specification.version}" target="${java.specification.version}" encoding="utf-8" destdir="${classes.dir}" debug="true" includeAntRuntime="no">
+	            <src path="${src.dir}"/>
+	            <classpath refid="class.path" />
+	        </javac>
+	    </target>
 
-    <condition property="full_version" value="0.0.0.0">
-        <not><isset property="full_version"/></not>
-    </condition>
+	    <target name="build" depends="build_java"/>
 
-    <condition property="dist.dir" value="dist">
-        <not><isset property="dist.dir"/></not>
-    </condition>
+	    <target name="dist" depends="build">
+	        <mkdir dir="${ext.dir}"/>
+	     
+	         <copy todir="${ext.dir}/module">
+	             <fileset dir="module">
+	                 <include name="**/*"/>
+	                 <exclude name="**/lib-src/*"/>
+	                 <exclude name="**/src/*"/>
+	             </fileset>
+	         </copy>
 
-    <property name="fullname" value="${name}-${version}-${revision}" />
-    
-    <property name="refine.dir" value="${basedir}/../../main"/>
-    <property name="refine.webinf.dir" value="${refine.dir}/webapp/WEB-INF" />
-    <property name="refine.modinf.dir" value="${refine.dir}/webapp/modules/core/MOD-INF" />
-    <property name="refine.classes.dir" value="${refine.webinf.dir}/classes" />
-    <property name="refine.lib.dir" value="${refine.webinf.dir}/lib" />
-    <property name="server.dir" value="${basedir}/../../server"/>
-    <property name="server.lib.dir" value="${server.dir}/lib" />
-    
-    <property name="src.dir" value="${basedir}/src" />
-    <property name="module.dir" value="${basedir}/module" />
-    <property name="modinf.dir" value="${module.dir}/MOD-INF" />
-    <property name="lib.dir" value="${modinf.dir}/lib" />
-    <property name="classes.dir" value="${modinf.dir}/classes" />
+	         <!-- <copy todir="${ext.dir}/licenses">
+	             <fileset dir="${basedir}/licenses">
+	                 <include name="**"/>
+	             </fileset>
+	         </copy> -->
+	         <!-- <copy file="${basedir}/LICENSE.txt" tofile="${ext.dir}/LICENSE.txt"/>
+	         <copy file="${basedir}/README.txt" tofile="${ext.dir}/README.txt"/> -->
+	         
+	         <zip destfile="${dist.dir}/${fullname}.zip">
+	            <zipfileset dir="${ext.dir}/..">
+	                <include name="**/**"/>
+	            </zipfileset>
+	         </zip>
+	        
+	        <delete dir="${ext.dir}"/>
+	    </target>
 
-    <path id="class.path">
-        <fileset dir="${lib.dir}">
-            <include name="**/*.jar" />
-        </fileset>
-        <fileset dir="${refine.lib.dir}">
-            <include name="**/*.jar" />
-        </fileset>
-        <fileset dir="${server.lib.dir}">
-            <include name="**/*.jar" />
-        </fileset>
-        <pathelement path="${refine.classes.dir}"/>
-    </path>
-            
-    <target name="build_java">
-        <mkdir dir="${classes.dir}" />
-        <mkdir dir="${lib.dir}" />
-        <javac encoding="utf-8" destdir="${classes.dir}" debug="true" includeAntRuntime="no">
-            <src path="${src.dir}"/>
-            <classpath refid="class.path" />
-        </javac>
-    </target>
+	    <target name="clean">
+	        <delete dir="${classes.dir}" />
+	    </target>
 
-    <target name="build" depends="build_java"/>
-
-    <target name="clean">
-        <delete dir="${classes.dir}" />
-    </target>
+	    <target name="distclean">
+	        <delete dir="${dist.dir}" />
+	    </target>
 </project>
