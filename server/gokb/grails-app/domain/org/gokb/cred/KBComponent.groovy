@@ -451,19 +451,19 @@ abstract class KBComponent {
   def afterInsert() {
 
     // Alter the timestamps of any dependants.
-//    touchAllDependants()
+    touchAllDependants()
   }
 
   def afterUpdate() {
 
     // Alter the timestamps of any dependants.
-//    touchAllDependants()
+    touchAllDependants()
   }
 
   def afterDelete() {
 
     // Alter the timestamps of any dependants.
-//    touchAllDependants()
+    touchAllDependants()
   }
 
   def beforeUpdate() {
@@ -684,7 +684,15 @@ abstract class KBComponent {
   public Map getAllPropertiesAndVals() {
 
     // The list of property names that we are to ignore.
-    def ignore_list = ['id', 'outgoingCombos', 'incomingCombos', 'reviewRequests', 'tags','additionalProperties']
+    def ignore_list = [
+      'id',
+      'outgoingCombos',
+      'incomingCombos',
+      'reviewRequests',
+      'tags',
+      'systemOnly',
+      'additionalProperties'
+    ]
 
     // Get the domain class.
     def domainClass = grailsApplication.getDomainClass(this."class".name)
