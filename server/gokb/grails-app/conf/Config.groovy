@@ -26,7 +26,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "2.5"
+refine_min_version = "3.0"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -882,7 +882,25 @@ globalSearchTemplates = [
       ]
     ]
   ],
-
+  'imprints':[
+    baseclass:'org.gokb.cred.Imprint',
+    title:'Imprints',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Name',
+          qparam:'qp_name',
+          placeholder:'Name',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+      ]
+    ]
+  ],
 ]
 
 
@@ -904,7 +922,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
   'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
-  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
+  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
+  'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ]
 ]
 
 permNames = [
@@ -942,7 +961,7 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 
 cosine.good_threshold = 0.75
 
-serverUrl = 'http://gokb.k-int.com'
+serverUrl = 'https://github.com/k-int/gokb-phase1/wiki/GOKb-Refine-Extensions'
 
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
 
