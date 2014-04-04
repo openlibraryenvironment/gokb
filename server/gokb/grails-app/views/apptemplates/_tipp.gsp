@@ -1,7 +1,6 @@
 <r:require modules="gokbstyle" />
 <r:require modules="editable" />
-
-
+<g:set var="readonly" value="${ d.respondsTo('isSystemComponent') && d.isSystemComponent() }" />
 <h3>
   <g:if test="${d.id != null}">
     ${d.getNiceName()} : ${d.name ?: d.id} -
@@ -79,22 +78,45 @@
   </dl>
 
   <ul id="tabs" class="nav nav-tabs">
-    <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP
-        Details</a></li>
+    <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP Details</a></li>
     <li><a href="#tippcoverage" data-toggle="tab">Coverage</a></li>
     <li><a href="#tippopenaccess" data-toggle="tab">Open Access</a></li>
     <li><a href="#tipplists" data-toggle="tab">Lists</a></li>
-    <li><a href="#addprops" data-toggle="tab">Additional
-        Properties <span class="badge badge-warning">
-          ${d.additionalProperties?.size()}
-      </span>
-    </a></li>
-    <li><a href="#review" data-toggle="tab">Review Requests <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
+    <g:if test="${ !readonly }" >
+	    <li><a href="#addprops" data-toggle="tab">Additional
+	        Properties <span class="badge badge-warning">
+	          ${d.additionalProperties?.size()}
+	      </span>
+	    </a></li>
+	    <li><a href="#review" data-toggle="tab">Review Requests <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
+	  </g:if>
   </ul>
 
 
   <div id="my-tab-content" class="tab-content">
+    <div class="tab-pane active" id="tippdetails">
 
+      <g:if test="${d.id != null}">
+
+        <dl class="dl-horizontal">
+          <dt><g:annotatedLabel owner="${d}" property="url">Host Platform URL</g:annotatedLabel></dt>
+          <dd>
+            <g:xEditable class="ipe" owner="${d}" field="url" />
+          </dd>
+          <dt><g:annotatedLabel owner="${d}" property="format">Format</g:annotatedLabel></dt>
+          <dd>
+            <g:xEditableRefData owner="${d}" field="format"
+              config="TitleInstancePackagePlatform.Format" />
+          </dd>
+          <dt><g:annotatedLabel owner="${d}" property="paymentType">Payment Type</g:annotatedLabel></dt>
+          <dd>
+            <g:xEditableRefData owner="${d}" field="paymentType"
+              config="TitleInstancePackagePlatform.PaymentType" />
+          </dd>
+        </dl>
+      </g:if>
+    </div>
+    
     <div class="tab-pane" id="tippcoverage">
       <dl class="dl-horizontal">
         <dt><g:annotatedLabel owner="${d}" property="coverage">Coverage</g:annotatedLabel></dt>
@@ -162,39 +184,17 @@
 
     <div class="tab-pane" id="tipplists"></div>
 
-    <div class="tab-pane" id="addprops">
-      <g:render template="addprops" contextPath="../apptemplates"
-        model="${[d:d]}" />
-    </div>
-
-
-    <div class="tab-pane active" id="tippdetails">
-
-      <g:if test="${d.id != null}">
-
-        <dl class="dl-horizontal">
-          <dt><g:annotatedLabel owner="${d}" property="url">Host Platform URL</g:annotatedLabel></dt>
-          <dd>
-            <g:xEditable class="ipe" owner="${d}" field="url" />
-          </dd>
-          <dt><g:annotatedLabel owner="${d}" property="format">Format</g:annotatedLabel></dt>
-          <dd>
-            <g:xEditableRefData owner="${d}" field="format"
-              config="TitleInstancePackagePlatform.Format" />
-          </dd>
-          <dt><g:annotatedLabel owner="${d}" property="paymentType">Payment Type</g:annotatedLabel></dt>
-          <dd>
-            <g:xEditableRefData owner="${d}" field="paymentType"
-              config="TitleInstancePackagePlatform.PaymentType" />
-          </dd>
-        </dl>
-      </g:if>
-    </div>
-
-    <div class="tab-pane" id="review">
-      <g:render template="revreqtab" contextPath="../apptemplates"
-        model="${[d:d]}" />
-    </div>
+    <g:if env="${ !readonly }" >
+	    <div class="tab-pane" id="addprops">
+	      <g:render template="addprops" contextPath="../apptemplates"
+	        model="${[d:d]}" />
+	    </div>
+	
+	    <div class="tab-pane" id="review">
+	      <g:render template="revreqtab" contextPath="../apptemplates"
+	        model="${[d:d]}" />
+	    </div>
+	  </g:if>
   </div>
   <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
