@@ -79,12 +79,12 @@ class PackageService {
   /**
    * Method to update all Master list type packages.
    */
-  def updateAllMasters() {
+  def updateAllMasters(delta = true) {
 
     // Create the criteria.
     getAllProviders().each { Org pr ->
       Package.withNewTransaction {
-        updateMasterFor (pr)
+        updateMasterFor (pr, delta)
       }
     }
   }
@@ -135,11 +135,11 @@ class PackageService {
       }
     }
 
-    master.with {
-      name      = "${provider.name}: Master List"   // Set the title.
-      scope     = scope                             // Set the scope.
-      provider  = provider                          // Set the provider.
-    }
+    master.setName("${provider.name}: Master List")
+    master.setScope(scope)
+    master.setProvider(provider)
+    master.setSystemComponent(true)
+    master.save(failOnError:true, flush:true)
 
     // Now query for all packages for this provider modified since the delta.
     c = ComboCriteria.createFor( Package.createCriteria() )
@@ -187,29 +187,29 @@ class PackageService {
           log.debug("Added master tipp ${mt.id} to tipp ${tipp.id}")
         } else {
           // Add all the property vals from this tipp.
+          log.debug("Found master tipp ${mt.id} to tipp ${tipp.id}")
           mt = tipp.sync (mt)
-        }
-
-        // Set the package to the master, and flag as system component.
-        mt.with {
-          name = null
-          pkg = master
-          systemComponent = true
+          mt.save(failOnError:true)
         }
 
         // Save the original tipp.
         tipp.save(failOnError:true)
         
+        // Set the package to the master, and flag as system component.
+        mt.setName (null)
+        mt.setPkg (master)
+        mt.setSystemComponent(true)
+        
         // Ensure package is systemComponent.
-        mt.systemComponent = true
         mt.save(failOnError:true, flush:true)
         log.debug("Changes saved.")
       }
     }
 
     // Save the master package again.
+    master.save(failOnError:true)
+    provider.save(failOnError:true, flush:true)
     log.debug("Finished updating master package ${master.id}")
-    master.save("system_save" : true, failOnError:true, flush:true)
   }
 
   /**

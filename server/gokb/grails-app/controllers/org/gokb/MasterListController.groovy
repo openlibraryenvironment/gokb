@@ -14,11 +14,8 @@ class MasterListController {
   def classExaminationService
   def packageService
   
-  def generate() {
-    packageService.updateMasterFor (
-      packageService.allProviders[0],
-      false
-    )
+  def refreshAll() {
+    packageService.updateAllMasters((params."incremental" == true))
   }
 
   def index() { 
