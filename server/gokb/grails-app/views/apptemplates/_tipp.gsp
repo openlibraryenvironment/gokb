@@ -7,19 +7,19 @@
     ${d.getNiceName()} : ${d.name ?: d.id} -
     <g:if test="${d.title != null}">
       <g:link controller="resource" action="show"
-        id="${d.title.class.name+':'+d.title.id}">
+        id="${d.title?.class.name+':'+d.title.id}">
         ${d.title.name}
       </g:link> in
     </g:if>
     <g:if test="${d.pkg != null}">
       <g:link controller="resource" action="show"
-        id="${d.pkg.class.name+':'+d.pkg.id}">
+        id="${d.pkg?.class.name+':'+d.pkg.id}">
         ${d.pkg.name}
       </g:link> via
     </g:if>
     <g:if test="${d.hostPlatform != null}">
       <g:link controller="resource" action="show"
-        id="${d.hostPlatform.class.name+':'+d.hostPlatform.id}">
+        id="${d.hostPlatform?.class.name+':'+d.hostPlatform.id}">
         ${d.hostPlatform.name}
       </g:link>
     </g:if>
@@ -36,7 +36,7 @@
       <dt><g:annotatedLabel owner="${d}" property="title">Title</g:annotatedLabel></dt>
       <dd>
         <g:link controller="resource" action="show"
-          id="${d.title.class.name+':'+d.title?.id}">
+          id="${d.title?.class.name+':'+d.title?.id}">
           ${d.title.name}
         </g:link>
       </dd>
