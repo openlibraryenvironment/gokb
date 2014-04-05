@@ -16,7 +16,8 @@ class WorkflowController {
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement'],
     'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
-    'method::RRClose':[actionType:'simple' ]
+    'method::RRClose':[actionType:'simple' ],
+    'title::reconcile':[actionType:'workflow', view:'titleReconcile' ]
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

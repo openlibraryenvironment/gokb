@@ -75,5 +75,7 @@ grails.project.dependency.resolution = {
         
         // Font awesome for font based icons.
         compile ":font-awesome-resources:3.2.1"
+
+        // runtime ":cors:1.1.4"
     }
 }
