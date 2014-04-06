@@ -1,6 +1,5 @@
 package org.gokb
 
-import org.apache.commons.logging.Log;
 
 class MasterListUpdateJob {
   
@@ -15,8 +14,13 @@ class MasterListUpdateJob {
   PackageService packageService
 
   def execute() {
-    log.debug ("Beginning scheduled Master Package update job.") 
-    packageService.updateAllMasters(true)
+    log.debug ("Beginning scheduled Master Package update job.")
+    packageService.updateMasterFor(
+      (packageService.getAllProviders()[6]).id,
+      true
+    )
+    
+//    packageService.updateAllMasters(true)
     log.debug ("Master Package update job completed.")
   }
 }
