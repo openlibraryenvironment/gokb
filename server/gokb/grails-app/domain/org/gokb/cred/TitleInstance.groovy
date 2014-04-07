@@ -85,7 +85,9 @@ class TitleInstance extends KBComponent {
 
   def availableActions() {
     [ [code:'method::deleteSoft', label:'Delete'],
-      [code:'title::transfer', label:'Title Transfer'] ]
+      [code:'title::transfer', label:'Title Transfer'],
+      // [code:'title::reconcile', label:'Title Reconcile'] 
+    ]
   }
 
   @Override
