@@ -91,13 +91,19 @@ class PackageService {
 
     // Create the criteria.
     getAllProviders().each { Org pr ->
-      long prid = pr?.id
-      if (prid) {
-        Package.withNewTransaction {
-          updateMasterFor (prid, delta)
-        }
-      }
+      updateMasterFor (pr.id, delta)
     }
+  }
+  
+  def sessionFactory
+  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+
+  private def cleanUpGorm() {
+    log.debug ("Cleaning up GORM")
+    def session = sessionFactory.currentSession
+    session.flush()
+    session.clear()
+    propertyInstanceMap.get().clear()
   }
 
   /**
@@ -108,139 +114,138 @@ class PackageService {
     
     // Master Package ID to be passed accoss sessions.
     long master_package_id
-
-    // Fire up a session to create the master package.
-    Org.withNewSession { ses ->
       
-      // Read in a provider.
-      Org provider = Org.get(provider_id)
-  
-      if (provider) {
-        log.debug ("Update or create master list for ${provider.name}")
-  
-        // Get the current master Package for this provider.
-        ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
-        Package master = c.get {
-          and {
-            c.add(
-              "scope",
-              "eq",
-              getMasterScope())
-            c.add(
-              "provider",
-              "eq",
-              provider)
-          }
-        }
-    
-        // Update or create?
-        if (master) {
-    
-          // Update...
-          log.debug ("Found package ${master.id} for ${provider.name}")
-    
-          delta = delta ? master.lastUpdated : false
-        } else {
-    
-          // Set delta to false...
-          delta = false
-    
-          master = new Package()
-    
-          // Need to pass the system_save parameter to flag as systemComponent.
-          master.save(failOnError:true)
-    
-          // Create new...
-          log.debug ("Created Master Package ${master.id} for ${provider.name}.")
-        }
-    
-        master.setName("${provider.name}: Master List")
-        master.setScope(getMasterScope())
-        master.setProvider(provider)
-        master.setSystemComponent(true)
-  
-        // Save.
-        master.save(failOnError:true)
-        provider.save(failOnError:true, flush:true)
-        
-        // Set the master id.
-        master_package_id = master.id
-      }
+    // Read in a provider.
+    Org provider = Org.get(provider_id)
 
-      // Now query for all packages for the modified since the delta.
+    if (provider) {
+      log.debug ("Update or create master list for ${provider.name}")
+
+      // Get the current master Package for this provider.
       ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
-      Set<Package> pkgs = c.list {
-        c.and {
+      Package master = c.get {
+        and {
           c.add(
-            "id",
-            "ne",
-            master_package_id)
-
-          c.add(
-            "provider.id",
+            "scope",
             "eq",
-            provider_id)
-
-          if (delta) {
-            c.add(
-              "lastUpdated",
-              "gt",
-              delta)
-          }
-        }
-      } as Set
-
-      log.debug ("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
-
-      
-      for (Package pkg in pkgs) {
-
-        // We should now have a definitive list of tipps that have been changed since the last update.
-        
-        // Go through the tipps in chunks.
-        def tipps = pkg.tipps.collect { it.id }
-        int chunk_size = 100
-        
-        int end = tipps.size() - 1
-        int iterations = (tipps.size() / chunk_size) + ((tipps.size() % chunk_size) == 0 ? -1 : 0)
-        int counter = 1
-        for (i in 0..iterations ) {
-
-          Package.withNewSession { Session sess ->
-            
-            // Load the master package in this session.
-            Package master = Package.get(master_package_id)
-          
-            // Sublist of the list.
-            def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
-            for (def t in subtipps) {
-              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
-              
-              // Do we need to update this tipp.
-              if (!delta || (delta && tipp.lastUpdated > delta)) {
-                TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, master)
-                mt.save(failOnError:true)
-                tipp.save(failOnError:true)
-              } else {
-                log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
-              }
-              log.debug ("TIPP ${counter} of ${end} examined.")
-              counter++
-            }
-            
-            master.save(failOnError:true)
-            sess.flush()
-            sess.clear()
-            propertyInstanceMap.get().clear()
-            log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
-          }
+            getMasterScope())
+          c.add(
+            "provider",
+            "eq",
+            provider)
         }
       }
-      log.debug("Finished updating master package ${master_package_id}")
-    }
-  }
   
-  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+      // Update or create?
+      if (master) {
+  
+        // Update...
+        log.debug ("Found package ${master.id} for ${provider.name}")
+  
+        delta = delta ? master.lastUpdated : false
+      } else {
+  
+        // Set delta to false...
+        delta = false
+  
+        master = new Package()
+  
+        // Need to pass the system_save parameter to flag as systemComponent.
+        master.save(failOnError:true)
+  
+        // Create new...
+        log.debug ("Created Master Package ${master.id} for ${provider.name}.")
+      }
+  
+      master.setName("${provider.name}: Master List")
+      master.setScope(getMasterScope())
+      master.setProvider(provider)
+      master.setSystemComponent(true)
+
+      // Save.
+      master.save(failOnError:true)
+      provider.save(failOnError:true, flush:true)
+      
+      // Set the master id.
+      master_package_id = master.id
+      
+      log.debug("Saved Master package ${master_package_id}")
+    }
+
+    // Now query for all packages for the modified since the delta.
+    ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
+    Set<Package> pkgs = c.list {
+      c.and {
+        c.add(
+          "id",
+          "ne",
+          master_package_id)
+
+        c.add(
+          "provider.id",
+          "eq",
+          provider_id)
+
+        if (delta) {
+          c.add(
+            "lastUpdated",
+            "gt",
+            delta)
+        }
+      }
+    } as Set
+
+    log.debug ("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
+
+    
+    for (Package pkg in pkgs) {
+
+      // We should now have a definitive list of tipps that have been changed since the last update.
+      
+      // Go through the tipps in chunks.
+      def tipps = pkg.tipps.collect { it.id }
+      int chunk_size = 100
+      
+      int end = tipps.size() - 1
+      int iterations = (tipps.size() / chunk_size) + ((tipps.size() % chunk_size) == 0 ? -1 : 0)
+      int counter = 1
+      
+      cleanUpGorm()
+      for (i in 0..iterations ) {
+          
+        // Load the master package in this session.
+        Package mp = Package.get(master_package_id)
+      
+        // Sublist of the list.
+        def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
+        for (def t in subtipps) {
+          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
+          
+          // Do we need to update this tipp.
+          if (!delta || (delta && tipp.lastUpdated > delta)) {
+            TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, mp)
+    
+            // Save everything.
+            tipp.save(failOnError:true)
+            mt.save(failOnError:true)
+            mp.save(failOnError:true, flush:true)
+          } else {
+            log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
+          }
+          log.debug ("TIPP ${counter} of ${end} examined.")
+          counter++
+        }
+        
+        // Save.
+        mp.save(failOnError:true, flush:true)
+        log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
+        
+        // Flush and clear up the session.
+        cleanUpGorm()
+      }
+    }
+    log.debug("Finished updating master package ${master_package_id}")
+  }
   
   /**
    * @param tipp the tipp to base the master tipp on.
@@ -289,10 +294,6 @@ class PackageService {
     
     // Set as master for faster lookup.
     tipp.setMasterTipp(master_tipp)
-    
-    // Save everything.
-    tipp.save(failOnError:true)
-    master_tipp.save(failOnError:true, flush:true)
     
     // Return the TIPP.
     master_tipp
