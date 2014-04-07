@@ -91,7 +91,9 @@ class PackageService {
 
     // Create the criteria.
     getAllProviders().each { Org pr ->
-      updateMasterFor (pr.id, delta)
+      Org.withNewSession { Session sess ->
+        updateMasterFor (pr.id, delta)
+      }
     }
   }
   
@@ -111,9 +113,6 @@ class PackageService {
    * provided by the supplied Org.
    */
   def updateMasterFor (long provider_id, delta = true) {
-    
-    // Master Package ID to be passed accoss sessions.
-    long master_package_id
       
     // Read in a provider.
     Org provider = Org.get(provider_id)
@@ -166,85 +165,76 @@ class PackageService {
       master.save(failOnError:true)
       provider.save(failOnError:true, flush:true)
       
-      // Set the master id.
-      master_package_id = master.id
-      
-      log.debug("Saved Master package ${master_package_id}")
-    }
+      log.debug("Saved Master package ${master.id}")
 
-    // Now query for all packages for the modified since the delta.
-    ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
-    Set<Package> pkgs = c.list {
-      c.and {
-        c.add(
-          "id",
-          "ne",
-          master_package_id)
-
-        c.add(
-          "provider.id",
-          "eq",
-          provider_id)
-
-        if (delta) {
+      // Now query for all packages for the modified since the delta.
+      c = ComboCriteria.createFor( Package.createCriteria() )
+      Set<Package> pkgs = c.list {
+        c.and {
           c.add(
-            "lastUpdated",
-            "gt",
-            delta)
-        }
-      }
-    } as Set
-
-    log.debug ("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
-
-    
-    for (Package pkg in pkgs) {
-
-      // We should now have a definitive list of tipps that have been changed since the last update.
-      
-      // Go through the tipps in chunks.
-      def tipps = pkg.tipps.collect { it.id }
-      int chunk_size = 100
-      
-      int end = tipps.size() - 1
-      int iterations = (tipps.size() / chunk_size) + ((tipps.size() % chunk_size) == 0 ? -1 : 0)
-      int counter = 1
-      
-      cleanUpGorm()
-      for (i in 0..iterations ) {
-          
-        // Load the master package in this session.
-        Package mp = Package.get(master_package_id)
-      
-        // Sublist of the list.
-        def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
-        for (def t in subtipps) {
-          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
-          
-          // Do we need to update this tipp.
-          if (!delta || (delta && tipp.lastUpdated > delta)) {
-            TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, mp)
-    
-            // Save everything.
-            tipp.save(failOnError:true)
-            mt.save(failOnError:true)
-            mp.save(failOnError:true, flush:true)
-          } else {
-            log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
+            "id",
+            "ne",
+            master.id)
+  
+          c.add(
+            "provider.id",
+            "eq",
+            provider_id)
+  
+          if (delta) {
+            c.add(
+              "lastUpdated",
+              "gt",
+              delta)
           }
-          log.debug ("TIPP ${counter} of ${end} examined.")
-          counter++
         }
+      } as Set
+  
+      log.debug ("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
+  
+      
+      for (Package pkg in pkgs) {
+  
+        // We should now have a definitive list of tipps that have been changed since the last update.
         
-        // Save.
-        mp.save(failOnError:true, flush:true)
-        log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
+        // Go through the tipps in chunks.
+        def tipps = pkg.tipps.collect { it.id }
+        int chunk_size = 100
         
-        // Flush and clear up the session.
+        int end = tipps.size() - 1
+        int iterations = (tipps.size() / chunk_size) + ((tipps.size() % chunk_size) == 0 ? -1 : 0)
+        int counter = 1
+        
         cleanUpGorm()
+        for (i in 0..iterations ) {
+          
+          // Sublist of the list.
+          def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
+          for (def t in subtipps) {
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
+            
+            // Do we need to update this tipp.
+            if (!delta || (delta && tipp.lastUpdated > delta)) {
+              TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, master)
+      
+              // Save everything.
+              tipp.save(failOnError:true)
+              mt.save(failOnError:true)
+              master.save(failOnError:true)
+            } else {
+              log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
+            }
+            log.debug ("TIPP ${counter} of ${end} examined.")
+            counter++
+          }
+          log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
+          
+          // Flush and clear up the session.
+          cleanUpGorm()
+        }
       }
+      log.debug("Finished updating master package ${master.id}")
     }
-    log.debug("Finished updating master package ${master_package_id}")
   }
   
   /**
@@ -281,6 +271,7 @@ class PackageService {
       master_tipp = tipp.clone().save(failOnError:true)
       log.debug("Added master tipp ${master_tipp.id} to tipp ${tipp.id}")
     } else {
+      
       log.debug("Found master tipp ${master_tipp.id} to tipp ${tipp.id}")
       master_tipp = tipp.sync(master_tipp)
     }
@@ -292,8 +283,15 @@ class PackageService {
       setSystemComponent(true)
     }
     
+    
+    // Save the master tipp.
+    master_tipp.save(failOnError:true)
+    master.save(failOnError:true)
+    tipp.save(failOnError:true, flush:true)
+    
     // Set as master for faster lookup.
     tipp.setMasterTipp(master_tipp)
+    tipp.save(failOnError:true, flush:true)
     
     // Return the TIPP.
     master_tipp
