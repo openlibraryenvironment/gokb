@@ -185,41 +185,30 @@ class PackageService {
         
         int end = tipps.size() - 1
         int iterations = (tipps.size() / chunk_size) + ((tipps.size() % chunk_size) == 0 ? -1 : 0)
-        
+        int counter = 1
         for (i in 0..iterations ) {
-          
-          // Wrap each iteration in a transaction.
-          Package.withNewSession { ses ->
-            
-            log.debug ("Opening new session")
-            
-            // Read objects into this session.
-            master = master.refresh()
-            pkg = pkg.refresh()
-                      
-            def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
-            for (def t in subtipps) {
-              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
+                    
+          def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
+          for (def t in subtipps) {
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
 
-              if (!delta || (delta && tipp.lastUpdated > delta)) {
-                TitleInstancePackagePlatform mt = getUpdateMasterTippFor (tipp, master)
-
-                // Save everything.
-                master.save(failOnError:true, flush:true)
-              } else {
-                log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
-              }
+            if (!delta || (delta && tipp.lastUpdated > delta)) {
+              TitleInstancePackagePlatform mt = getUpdateMasterTippFor (tipp, master)
+            } else {
+              log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
             }
-            log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
+            log.debug ("TIPP ${counter} of ${end} examined.")
+            counter++
           }
-          propertyInstanceMap.get().clear()
+          log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
         }
       }
       log.debug("Finished updating master package ${master.id}")
+      
+      // Save everything.
+      provider.save(failOnError:true)
+      master.save(failOnError:true, flush:true)
     }
-    
-    // Clean Gorm.
-    cleanUpGorm()
   }
   
   def sessionFactory

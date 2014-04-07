@@ -16,7 +16,7 @@ class MasterListUpdateJob {
   def execute() {
     log.debug ("Beginning scheduled Master Package update job.")
     packageService.updateMasterFor(
-      (packageService.getAllProviders()[6]).id,
+      (packageService.getAllProviders()[5]).id,
       true
     )
     

@@ -8,7 +8,10 @@
 <dl class="dl-horizontal">
   <g:if test="${d.id != null}">
     <dt><g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel></dt>
-    <dd>${d.name} (Modify name through variants below)</dd>
+    <dd>
+      ${d.name}
+      <g:if test="${ !readonly }">(Modify name through variants below)</g:if>
+    </dd>
   
     <dt><g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel></dt>
     <dd>${d.provider?.name?:'Provider Not Set'}</dd>
