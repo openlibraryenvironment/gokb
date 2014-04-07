@@ -1,11 +1,15 @@
 package org.gokb
 
 import org.gokb.cred.*
+import org.hibernate.Session
 
 class PackageService {
 
   ComponentLookupService componentLookupService
   
+  /**
+   * @return The scope value to be used by "Master Packages"
+   */
   private RefdataValue getMasterScope() {
     // The Scope.
     RefdataCategory.lookupOrCreate("Package.Scope", "GOKb Master")
@@ -87,9 +91,11 @@ class PackageService {
 
     // Create the criteria.
     getAllProviders().each { Org pr ->
-      long prid = pr.id
-      Package.withNewTransaction {
-        updateMasterFor (prid, delta)
+      long prid = pr?.id
+      if (prid) {
+        Package.withNewTransaction {
+          updateMasterFor (prid, delta)
+        }
       }
     }
   }
@@ -99,70 +105,81 @@ class PackageService {
    * provided by the supplied Org.
    */
   def updateMasterFor (long provider_id, delta = true) {
+    
+    // Master Package ID to be passed accoss sessions.
+    long master_package_id
 
-    Org provider = Org.get(provider_id)
-
-    if (provider) {
-      log.debug ("Update or create master list for ${provider.name}")
-
-      // Get the current master Package for this provider.
-      ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
-      Package master = c.get {
-        and {
-          c.add(
+    // Fire up a session to create the master package.
+    Org.withNewSession { ses ->
+      
+      // Read in a provider.
+      Org provider = Org.get(provider_id)
+  
+      if (provider) {
+        log.debug ("Update or create master list for ${provider.name}")
+  
+        // Get the current master Package for this provider.
+        ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
+        Package master = c.get {
+          and {
+            c.add(
               "scope",
               "eq",
               getMasterScope())
-          c.add(
+            c.add(
               "provider",
               "eq",
               provider)
+          }
         }
-      }
+    
+        // Update or create?
+        if (master) {
+    
+          // Update...
+          log.debug ("Found package ${master.id} for ${provider.name}")
+    
+          delta = delta ? master.lastUpdated : false
+        } else {
+    
+          // Set delta to false...
+          delta = false
+    
+          master = new Package()
+    
+          // Need to pass the system_save parameter to flag as systemComponent.
+          master.save(failOnError:true)
+    
+          // Create new...
+          log.debug ("Created Master Package ${master.id} for ${provider.name}.")
+        }
+    
+        master.setName("${provider.name}: Master List")
+        master.setScope(getMasterScope())
+        master.setProvider(provider)
+        master.setSystemComponent(true)
   
-      // Update or create?
-      if (master) {
-  
-        // Update...
-        log.debug ("Found package ${master.id} for ${provider.name}")
-  
-        delta = delta ? master.lastUpdated : false
-      } else {
-  
-        // Set delta to false...
-        delta = false
-  
-        // Create new...
-        log.debug ("No current Master for ${provider.name}. Creating one.")
-  
-        master = new Package()
-  
-        // Need to pass the system_save parameter to flag as systemComponent.
+        // Save.
         master.save(failOnError:true)
+        provider.save(failOnError:true, flush:true)
+        
+        // Set the master id.
+        master_package_id = master.id
       }
-  
-      master.setName("${provider.name}: Master List")
-      master.setScope(getMasterScope())
-      master.setProvider(provider)
-      master.setSystemComponent(true)
 
-      // Save.
-      master.save(failOnError:true)
-      provider.save(failOnError:true, flush:true)
-
-      // Now query for all packages for this provider modified since the delta.
-      c = ComboCriteria.createFor( Package.createCriteria() )
+      // Now query for all packages for the modified since the delta.
+      ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
       Set<Package> pkgs = c.list {
         c.and {
           c.add(
             "id",
             "ne",
-            master.id)
+            master_package_id)
 
           c.add(
-            "provider",
+            "provider.id",
             "eq",
-            provider)
+            provider_id)
 
           if (delta) {
             c.add(
@@ -175,54 +192,62 @@ class PackageService {
 
       log.debug ("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
 
+      
       for (Package pkg in pkgs) {
 
         // We should now have a definitive list of tipps that have been changed since the last update.
         
         // Go through the tipps in chunks.
         def tipps = pkg.tipps.collect { it.id }
-        int chunk_size = 50
+        int chunk_size = 100
         
         int end = tipps.size() - 1
         int iterations = (tipps.size() / chunk_size) + ((tipps.size() % chunk_size) == 0 ? -1 : 0)
         int counter = 1
         for (i in 0..iterations ) {
-                    
-          def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
-          for (def t in subtipps) {
-            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
 
-            if (!delta || (delta && tipp.lastUpdated > delta)) {
-              TitleInstancePackagePlatform mt = getUpdateMasterTippFor (tipp, master)
-            } else {
-              log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
+          Package.withNewSession { Session sess ->
+            
+            // Load the master package in this session.
+            Package master = Package.get(master_package_id)
+          
+            // Sublist of the list.
+            def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
+            for (def t in subtipps) {
+              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
+              
+              // Do we need to update this tipp.
+              if (!delta || (delta && tipp.lastUpdated > delta)) {
+                TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, master)
+                mt.save(failOnError:true)
+                tipp.save(failOnError:true)
+              } else {
+                log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
+              }
+              log.debug ("TIPP ${counter} of ${end} examined.")
+              counter++
             }
-            log.debug ("TIPP ${counter} of ${end} examined.")
-            counter++
+            
+            master.save(failOnError:true)
+            sess.flush()
+            sess.clear()
+            propertyInstanceMap.get().clear()
+            log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
           }
-          log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
         }
       }
-      log.debug("Finished updating master package ${master.id}")
-      
-      // Save everything.
-      provider.save(failOnError:true)
-      master.save(failOnError:true, flush:true)
+      log.debug("Finished updating master package ${master_package_id}")
     }
   }
   
-  def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
-
-  private def cleanUpGorm() {
-    log.debug ("Cleaning up GORM")
-    def session = sessionFactory.currentSession
-    session.flush()
-    session.clear()
-    propertyInstanceMap.get().clear()
-  }
   
-  public TitleInstancePackagePlatform getUpdateMasterTippFor (TitleInstancePackagePlatform tipp, Package master) {
+  /**
+   * @param tipp the tipp to base the master tipp on.
+   * @param master the master package
+   * @return the master tipp
+   */
+  public TitleInstancePackagePlatform setOrUpdateMasterTippFor (TitleInstancePackagePlatform tipp, Package master) {
     
     // Check the tipp isn't already a master.
     Package pkg = tipp.pkg
@@ -280,18 +305,27 @@ class PackageService {
 
     log.debug ("Looking for all providers.")
 
+    // The results set.
+    LinkedHashSet results = []
+    
     // Create the criteria.
     ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
 
     // Query for a list of packages and return the providers.
-    def results = c.list {
+    def providers = c.list {
       and {
         c.add(
-            "status",
-            "eq",
-            RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
+          "status",
+          "eq",
+          RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
       }
-    }.collect { it.provider } as LinkedHashSet
+    }.each {
+    
+      // Add any provider that is set.
+      if (it?.provider) {
+        results << (it.provider)
+      }
+    } 
 
     log.debug("Found ${results.size()} providers.")
     results
