@@ -16,7 +16,7 @@ import com.k_int.ClassUtils
  */
 
 @Log4j
-abstract class KBComponent {  
+abstract class KBComponent {
 
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
@@ -41,58 +41,60 @@ abstract class KBComponent {
   @Transient
   private def springSecurityService
 
-  @Transient  
+  @Transient
   private def grailsApplication
-  
+
   @Transient
   public setSpringSecurityService(sss) {
     this.springSecurityService = sss
   }
-  
+
   @Transient
   public setGrailsApplication(ga) {
     this.grailsApplication = ga
   }
-  
+
   @Transient
   protected void touchAllDependants () {
-    
+
     // The update closure.
     def doUpdate = { obj, Date stamp ->
-      
+
       try {
-        
+
+        def saveParams = [failOnError:true, "system_save" : (systemComponent)]
+
         obj.lastUpdated = stamp
-        obj.save(failOnError:true)
-        
+        obj.save(saveParams)
+
       } catch (Throwable t) {
-      
+
         // Suppress but log.
         log.error(t)
       }
     }
-    
+
     if (hasProperty("touchOnUpdate")) {
-      
+
       // We should also update the object(s).
       this.touchOnUpdate.each { dep_name ->
-        
+
         // Get the dependant.
         def deps = this."${dep_name}"
-      
+
         if (deps) {
           if (deps instanceof Map) {
-            
+
             deps.each { k,obj ->
               doUpdate(obj, lastUpdated)
             }
-            
+
           } else if (deps instanceof Iterable) {
-            
+
             deps.each { obj ->
               doUpdate(obj, lastUpdated)
             }
-            
+
           } else if (grailsApplication.isDomainClass(deps.class)) {
             doUpdate(deps, lastUpdated)
           }
@@ -207,14 +209,14 @@ abstract class KBComponent {
   // Canonical name field - title for a title instance, name for an org, etc, etc, etc
 
   /**
-   * Generic name for the compoent. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
+   * Generic name for the component. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
    * conventions when trying to decide what to map to this property in a subclass. The name should be a string that reasonably identifies this
    * object when placed in a list of other components.
    */ 
   String name
 
   /**
-   * The normalised name of this component. Lowecase, strip diacritics
+   * The normalised name of this component. Lower-case, strip diacritics
    */
   String normname
 
@@ -272,6 +274,9 @@ abstract class KBComponent {
   // Timestamps
   Date dateCreated
   Date lastUpdated
+
+  // Read only flag should be honoured in the UI
+  boolean systemComponent = false
 
   // ids moved to combos.
   static manyByCombo = [
@@ -444,23 +449,23 @@ abstract class KBComponent {
   }
 
   def afterInsert() {
-    
+
     // Alter the timestamps of any dependants.
     touchAllDependants()
   }
-  
+
   def afterUpdate() {
-    
+
     // Alter the timestamps of any dependants.
     touchAllDependants()
   }
-  
+
   def afterDelete() {
-    
+
     // Alter the timestamps of any dependants.
     touchAllDependants()
   }
-  
+
   def beforeUpdate() {
     if ( name ) {
       if ( !shortcode ) {
@@ -643,7 +648,7 @@ abstract class KBComponent {
       // Find the KBComponentAdditionalProperty
       KBComponentAdditionalProperty prop = additionalProperties.find { KBComponentAdditionalProperty prop ->
         prop.getPropertyDefn().getPropertyName() == prop_name &&
-        prop.getApValue()?.equalsIgnoreCase(val)
+            prop.getApValue()?.equalsIgnoreCase(val)
       }
 
       // Only add a prop if we haven't already got one matching the value and definition.
@@ -654,11 +659,11 @@ abstract class KBComponent {
 
         // Add to the additional properties.
         addToAdditionalProperties(
-          new KBComponentAdditionalProperty (
+            new KBComponentAdditionalProperty (
             propertyDefn : prop_defn,
             apValue : val
-          )
-        )
+            )
+            )
       }
     }
   }
@@ -672,4 +677,136 @@ abstract class KBComponent {
     "${name?:''} (${getNiceName()} ${id})".toString()
   }
 
+  /**
+   * Get the list of all properties and there values.
+   */
+  @Transient
+  public Map getAllPropertiesAndVals() {
+
+    // The list of property names that we are to ignore.
+    def ignore_list = [
+      'id',
+      'outgoingCombos',
+      'incomingCombos',
+      'reviewRequests',
+      'tags',
+      'systemOnly',
+      'additionalProperties'
+    ]
+
+    // Get the domain class.
+    def domainClass = grailsApplication.getDomainClass(this."class".name)
+
+    // The map of current property names and values to be passed to the
+    // new constructor.
+    def props = [:]
+
+    // Add combo and persisted properties to the list.
+    def localProps = (domainClass?.persistentProperties?.collect { it.name }) ?: []
+    localProps += allComboPropertyNames
+
+    localProps.each { prop ->
+      
+      // Ignore the ones in the list.
+      if (prop in ignore_list) {
+        return
+      }
+
+      def val = deproxy(this."${prop}")
+
+      switch (val) {
+
+        case {it instanceof Collection} :
+          def newVals = []
+          for (el in val) {
+
+            // Deproxy the item in the list and then add.
+            def newVal = deproxy(val)
+            if (grailsApplication.isDomainClass(newVal."class")) {
+              // Domain class.
+              newVal = newVal.merge()
+            }
+
+            // Add to the list.
+            newVals << newVal
+          }
+
+          props["${prop}"] = newVals
+          break
+        default :
+          props["${prop}"] = val
+      }
+    }
+
+    props
+  }
+
+  /**
+   * Creates a new component of the type of this class
+   * and populates all the properties with the values of this one
+   * with the exception of the id as this will be set on save.
+   */
+  @Transient
+  public <T extends KBComponent> T clone () {
+
+    // Now we have a map of all properties and values we should create our new instance.
+    T comp = this."class".newInstance()
+    sync (comp)
+  }
+
+  /**
+   * This method copies the values from this component to the supplied.
+   */
+  @Transient
+  public <T extends KBComponent> T sync (T to) {
+    if (to) {
+      
+      T me = this
+      
+      // Update Master tipp.
+      Map propVals = allPropertiesAndVals
+      log.debug("Found ${propVals.size()} properties to synchronize.")
+      int count = 1
+      propVals.each { p, v ->
+        log.debug("(${count}) Attempting to copy '${p}' from component ${me.id} to ${to.id}...")
+        if (v != null) {
+          def toHas = has(to, "${p}")
+          
+          if (toHas) {
+            log.debug ("\t...sending value ${v.toString()}")
+            to."${p}" = v
+          } else {
+            log.debug ("\t...target doesn't support '${p}'")
+          }
+          
+          
+        } else {
+          log.debug("\t...value is null")
+        }
+        count ++
+      }
+    }
+
+    // Return the supplied element.
+    to
+  }
+
+  /**
+   * Similar to the respondsTo method but checks for methods properties and combos.
+   */
+  @Transient
+  public static boolean has (Object ob, String op) {
+
+    // The flag value.
+    boolean hasOp = false
+
+    if (ob) {
+      // Check properties.
+      hasOp = ob.hasProperty(op) ||
+          (ob.respondsTo(op)?.size() > 0) ||
+          (ob instanceof KBComponent && ob.allComboPropertyNames.contains(op))
+    }
+
+    hasOp
+  }
 }
