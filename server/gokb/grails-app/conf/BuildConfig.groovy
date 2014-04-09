@@ -46,36 +46,46 @@ grails.project.dependency.resolution = {
     }
 
     plugins {
-        runtime ':hibernate:3.6.10.2'
-        runtime ":jquery:1.8.3"
-        runtime ":resources:1.2"
-        runtime ':gsp-resources:0.4.4'
+      
+      runtime ':hibernate:3.6.10.2'
+      runtime ":jquery:1.8.3"
+      runtime ":resources:1.2"
+      runtime ':gsp-resources:0.4.4'
 
-        // Uncomment these (or add new ones) to enable additional resources capabilities
-        //runtime ":zipped-resources:1.0"
-        //runtime ":cached-resources:1.0"
-        //runtime ":yui-minify-resources:0.1.4"
+      // Uncomment these (or add new ones) to enable additional resources capabilities
+      //runtime ":zipped-resources:1.0"
+      //runtime ":cached-resources:1.0"
+      //runtime ":yui-minify-resources:0.1.4"
 
-        build ':tomcat:7.0.40.1'
+      build ':tomcat:7.0.40.1'
 
-        runtime ":database-migration:1.3.3"
+      runtime ":database-migration:1.3.3"
 
-        compile ':cache:1.0.1'
-		
-      	// Joda time to handle the ISO dates.
-      	compile ":joda-time:1.4"
+      compile ':cache:1.0.1'
+	
+    	// Joda time to handle the ISO dates.
+    	compile ":joda-time:1.4"
 
-        compile ":spring-security-core:1.2.7.3"
-        compile ":spring-security-ui:0.2"
-        compile ":spring-security-acl:1.1.1"
+      compile ":spring-security-core:1.2.7.3"
+      compile ":spring-security-ui:0.2"
+      compile ":spring-security-acl:1.1.1"
 
-        compile ':mail:1.0.1', {
-           excludes 'spring-test'
-        }
-        
-        // Font awesome for font based icons.
-        compile ":font-awesome-resources:3.2.1"
-
-        // runtime ":cors:1.1.4"
+      compile ':mail:1.0.1', {
+         excludes 'spring-test'
+      }
+      
+      // Font awesome for font based icons.
+      compile ":font-awesome-resources:3.2.1"
+      
+      // Job scheduler plugin.
+      compile ":quartz:1.0.1"
+      
+      /** Moved plugins from the properties file to here **/
+      compile ':audit-logging:0.5.4' // SO: Tried upgrading to 0.5.5.3, but this caused a null pointer to be thrown.
+      compile ':executor:0.3'
+      compile ':famfamfam:1.0.1'
+      compile ':jquery-ui:1.8.24'
+      compile ':rest:0.7'
+      compile ':twitter-bootstrap:2.3.2'
     }
 }

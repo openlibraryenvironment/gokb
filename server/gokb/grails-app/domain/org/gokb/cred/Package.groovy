@@ -28,13 +28,13 @@ class Package extends KBComponent {
   Date listVerifiedDate
   
   private static refdataDefaults = [
-    "scope"   : "Front File",
+    "scope"       : "Front File",
     "listStatus"  : "Checked",
-    "breakable"  : "Unknown",
+    "breakable"   : "Unknown",
     "consistent"  : "Unknown",
-    "fixed"    : "Unknown",
-    "paymentType"  : "Unknown",
-    "global"  : "Global"
+    "fixed"       : "Unknown",
+    "paymentType" : "Unknown",
+    "global"      : "Global"
   ]
   
   static manyByCombo = [

@@ -269,7 +269,7 @@ public class HQLBuilder {
     }
 
     if ( ( hql_builder_context.sort != null ) && ( hql_builder_context.sort.length() > 0 ) ) {
-      sw.write(" order by ${hql_builder_context.sort} ${hql_builder_context.order}");
+      sw.write(" order by o.${hql_builder_context.sort} ${hql_builder_context.order}");
     }
 
     // Return the toString of the writer
