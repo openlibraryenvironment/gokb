@@ -870,7 +870,7 @@ globalSearchTemplates = [
           prompt:'Name',
           qparam:'qp_name',
           placeholder:'Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName', 'wildcard':'B']
         ],
       ],
       qbeGlobals:[
@@ -882,7 +882,25 @@ globalSearchTemplates = [
       ]
     ]
   ],
-
+  'imprints':[
+    baseclass:'org.gokb.cred.Imprint',
+    title:'Imprints',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Name',
+          qparam:'qp_name',
+          placeholder:'Name',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+      ]
+    ]
+  ],
 ]
 
 
@@ -904,7 +922,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
   'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
-  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
+  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
+  'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ]
 ]
 
 permNames = [
@@ -971,6 +990,10 @@ defaultOaiConfig = [
       ]],
   ]
 ]
+
+// cors.headers = ['Access-Control-Allow-Origin': '*']
+// 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'
+//     'My-Custom-Header': 'some value'
 
 // Uncomment and edit the following lines to start using Grails encoding & escaping improvements
 

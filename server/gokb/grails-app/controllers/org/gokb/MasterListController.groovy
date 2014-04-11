@@ -12,6 +12,11 @@ class MasterListController {
 
   def genericOIDService
   def classExaminationService
+  def packageService
+  
+  def refreshAll() {
+    packageService.updateAllMasters((params."incremental" == true))
+  }
 
   def index() { 
     def result = [:]
