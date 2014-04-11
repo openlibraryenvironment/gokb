@@ -17,7 +17,7 @@ switch ("${System.getProperty('grails.env')}") {
     break;
   default:
     if (new File("/${basedir}/src/templates/war/web.xml").exists()) {
-        grails.config.base.webXml = "file:${basedir}/src/templates/war/web_prod.xml"
+        grails.config.base.webXml = "file:${basedir}/src/templates/war/web.xml"
     }
     break;
 }
