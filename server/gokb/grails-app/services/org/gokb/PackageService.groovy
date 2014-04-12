@@ -198,40 +198,37 @@ class PackageService {
         // We should now have a definitive list of tipps that have been changed since the last update.
         
         // Go through the tipps in chunks.
-        def tipps = pkg.tipps.collect { it.id }
-        int chunk_size = 100
+        //def tipps = pkg.tipps.collect { it.id }
+
+        def tipps = TitleInstancePackagePlatform.executeQuery('select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp',[pkg]);
         
-        int end = tipps.size() - 1
-        int iterations = (tipps.size() / chunk_size) + ((tipps.size() % chunk_size) == 0 ? -1 : 0)
+        log.debug("Query returns ${tipps.size()} tipps");
+
         int counter = 1
-        
-        cleanUpGorm()
-        for (i in 0..iterations ) {
-          
-          // Sublist of the list.
-          def subtipps = tipps.subList((i * chunk_size), Math.min((i + 1) * chunk_size, end))
-          for (def t in subtipps) {
-            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
+
+        for (def t in tipps) {
+          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
             
-            // Do we need to update this tipp.
-            if (!delta || (delta && tipp.lastUpdated > delta)) {
-              TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, master)
-      
-              // Save everything.
-              tipp.save(failOnError:true)
-              mt.save(failOnError:true)
-              master.save(failOnError:true)
-            } else {
-              log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
-            }
-            log.debug ("TIPP ${counter} of ${end} examined.")
-            counter++
+          // Do we need to update this tipp.
+          if (!delta || (delta && tipp.lastUpdated > delta)) {
+            TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, master)
+    
+            // Save everything.
+            tipp.save(failOnError:true)
+            mt.save(failOnError:true)
+            master.save(failOnError:true, flush:true)
+
+            mt.discard();
+          } else {
+            log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
           }
-          log.debug ("Completed chunk of ${subtipps.size()} TIPPS")
-          
-          // Flush and clear up the session.
-          cleanUpGorm()
+          log.debug ("TIPP ${counter} of ${tipps.size()} examined.")
+          counter++
+          tipp.discard();
         }
+        
+        // Flush and clear up the session.
+        cleanUpGorm()
       }
       log.debug("Finished updating master package ${master.id}")
     }

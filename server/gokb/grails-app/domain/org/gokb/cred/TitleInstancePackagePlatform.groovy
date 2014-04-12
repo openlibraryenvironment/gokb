@@ -21,6 +21,8 @@ class TitleInstancePackagePlatform extends KBComponent {
   String endVolume
   String endIssue
   String url
+  Date accessStartDate
+  Date accessEndDate
 
   private static refdataDefaults = [
     "format"        : "Electronic",
@@ -77,6 +79,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     hybridOAUrl column:'tipp_hybrid_oa_url'
     primary column:'tipp_primary'
     paymentType column:'tipp_payment_type'
+    accessStartDate column: 'tipp_access_start_date'
+    accessEndDate column: 'tipp_access_end_date'
   }
 
   static constraints = {

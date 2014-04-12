@@ -6,6 +6,7 @@ class AdminController {
 
   def uploadAnalysisService
   def FTUpdateService
+  def packageService
 
   def tidyOrgData() {
 
@@ -106,6 +107,12 @@ class AdminController {
   def resetTextIndexes() {
     log.debug("Call to update indexe");
     FTUpdateService.clearDownAndInitES()
+    redirect(url: request.getHeader('referer'))
+  }
+
+  def masterListUpdate() {
+    log.debug("Force master list update");
+    packageService.updateAllMasters(true)
     redirect(url: request.getHeader('referer'))
   }
 }
