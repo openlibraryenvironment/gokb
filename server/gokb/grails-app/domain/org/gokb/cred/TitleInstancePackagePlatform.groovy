@@ -100,6 +100,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     hybridOAUrl (nullable:true, blank:true)
     primary (nullable:true, blank:true)
     paymentType (nullable:true, blank:true)
+    accessStartDate (nullable:true, blank:false)
+    accessEndDate (nullable:true, blank:false)
   }
 
   @Transient
