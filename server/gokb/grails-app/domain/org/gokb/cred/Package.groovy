@@ -196,6 +196,7 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
               'platform'([id:tipp[4]]) {
                 'name' (tipp[3]?.trim())
               }
+              'access'(start:tipp.accessStartDate?sdf.format(accessStartDate):null,end:tipp.accessEndDate?sdf.format(accessEndDate):null)
               'coverage'(
                 startDate:(tipp[5]?sdf.format(tipp[5]):null),
                 startVolume:tipp[6],
