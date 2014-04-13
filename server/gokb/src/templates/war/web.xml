@@ -88,6 +88,7 @@
         <welcome-file>index.gsp</welcome-file>
     </welcome-file-list>
 
+    <!--
     <security-constraint>
       <web-resource-collection>
          <web-resource-name>GoKB</web-resource-name>
@@ -97,5 +98,6 @@
          <transport-guarantee>CONFIDENTIAL</transport-guarantee>
       </user-data-constraint>
     </security-constraint> 
+    -->
 
 </web-app>
