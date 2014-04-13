@@ -72,9 +72,13 @@
       <g:xEditable class="ipe" owner="${d}" field="reference" />
     </dd>
 
-  <dt><g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel></dt>
-  <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
+    <dt><g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel></dt>
+    <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
 
+    <dt><g:annotatedLabel owner="${d}" property="accessStartDate">Access Start Date</g:annotatedLabel></dt>
+    <dd><g:xEditable class="ipe" owner="${d}" type="date" field="accessStartDate" /></dd>
+    <dt><g:annotatedLabel owner="${d}" property="accessStartDate">Access End Date</g:annotatedLabel></dt>
+    <dd><g:xEditable class="ipe" owner="${d}" type="date" field="accessEndDate" /></dd>
   </dl>
 
   <ul id="tabs" class="nav nav-tabs">
@@ -138,12 +142,9 @@
 	            </thead>
 	            <tbody>
 	              <tr>
-	                <td><g:xEditable class="ipe" owner="${d}" type="date"
-	                    field="startDate" /></td>
-	                <td><g:xEditable class="ipe" owner="${d}"
-	                    field="startVolume" /></td>
-	                <td><g:xEditable class="ipe" owner="${d}"
-	                    field="startIssue" /></td>
+	                <td><g:xEditable class="ipe" owner="${d}" type="date" field="startDate" /></td>
+	                <td><g:xEditable class="ipe" owner="${d}" field="startVolume" /></td>
+	                <td><g:xEditable class="ipe" owner="${d}" field="startIssue" /></td>
 	                <td><g:xEditable class="ipe" owner="${d}" type="date" field="endDate" /></td>
 	                <td><g:xEditable class="ipe" owner="${d}" field="endVolume" /></td>
 	                <td><g:xEditable class="ipe" owner="${d}" field="endIssue" /></td>
