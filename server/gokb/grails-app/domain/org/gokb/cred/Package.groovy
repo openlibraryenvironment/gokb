@@ -161,18 +161,24 @@ class Package extends KBComponent {
 
     def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
+    def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps');
+    def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTipps');
+    def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps');
+    def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
+
     // Get the tipps manually rather than iterating over the collection - For better management
     // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
     def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status, tipp.accessStartDate, tipp.accessEndDate from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
 where pkgCombo.toComponent=tipp
-  and pkgCombo.fromComponent=?
-  and pkgCombo.type.value='Package.Tipps'
+  and pkgCombo.fromComponent= ?
+  and pkgCombo.type= ?
   and hostPlatformCombo.toComponent=tipp 
-  and hostPlatformCombo.type.value='Platform.HostedTipps' 
+  and hostPlatformCombo.type = ?
   and titleCombo.toComponent=tipp 
-  and titleCombo.type.value='TitleInstance.Tipps' 
-  and tipp.status.value != 'Deleted' 
-order by tipp.id""",[this],[readOnly: true, fetchSize:25]);
+  and titleCombo.type.value= ?
+  and tipp.status.value != ?
+order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true, fetchSize:25]);
+
     log.debug("Query complete...");
     
     builder.'gokb' (attr) {
