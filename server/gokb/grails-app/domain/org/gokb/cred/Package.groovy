@@ -175,8 +175,8 @@ where pkgCombo.toComponent=tipp
   and hostPlatformCombo.toComponent=tipp 
   and hostPlatformCombo.type = ?
   and titleCombo.toComponent=tipp 
-  and titleCombo.type.value= ?
-  and tipp.status.value != ?
+  and titleCombo.type = ?
+  and tipp.status != ?
 order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true, fetchSize:25]);
 
     log.debug("Query complete...");
