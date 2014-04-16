@@ -228,7 +228,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
 
   @Transient
   private static getTitleIds(Long title_id) {
-    refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+    def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
     def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type = ? and c.fromComponent.id=?)",[refdata_package_tipps, title_id],[readOnly: true, fetchSize:10])
     result
   }
