@@ -177,7 +177,7 @@ where pkgCombo.toComponent=tipp
   and titleCombo.toComponent=tipp 
   and titleCombo.type = ?
   and tipp.status != ?
-order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true, fetchSize:25]);
+order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true, fetchSize:250]);
 
     log.debug("Query complete...");
     
