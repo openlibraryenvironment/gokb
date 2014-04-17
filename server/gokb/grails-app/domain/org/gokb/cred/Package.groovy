@@ -154,6 +154,9 @@ class Package extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
+
+    log.debug("toGoKBXml...");
+
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
@@ -170,6 +173,7 @@ where pkgCombo.toComponent=tipp
   and titleCombo.type.value='TitleInstance.Tipps' 
   and tipp.status.value != 'Deleted' 
 order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
+    log.debug("Query complete...");
     
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
@@ -212,6 +216,8 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
         }
       }
     }
+
+    log.debug("toGoKBXml complete...");
   }
 
   @Transient
