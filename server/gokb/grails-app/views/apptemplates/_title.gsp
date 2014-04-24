@@ -45,7 +45,7 @@
           <td>
             <ul>
               <g:each in="${he.from}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
               </g:each>
@@ -54,7 +54,7 @@
           <td>
             <ul>
               <g:each in="${he.to}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
               </g:each>

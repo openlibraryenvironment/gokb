@@ -16,6 +16,9 @@ def testcases = [
                  [ txt:'One Word Title', reason:'Add spaces' ],
                  [ txt:'WILEY OneWordTitle', reason:'Spurious prefix'],
                  [ txt:'OneWordTitle With Some Text', reason:'Spurious Trailing Text' ] ]
+  ],
+  [ original : null,
+    variants : [ [ txt:'ACM Proceedings / Association for Computing Machinery', reason: 'Should not match' ] ]
   ]
 ]
 
@@ -32,7 +35,10 @@ static List<String> mostSimilar(String pattern, candidates, double threshold = 0
 }
 
 private static double stringSimilarity(String s1, String s2, int degree = 2) {
-  similarity s1.toLowerCase().toCharArray(), s2.toLowerCase().toCharArray(), degree
+  if ( ( s1 != null ) && ( s2 != null ) ) {
+    return similarity(s1.toLowerCase().toCharArray(), s2.toLowerCase().toCharArray(), degree)
+  }
+  return 0
 }
 
 private static double similarity(sequence1, sequence2, int degree = 2) {
@@ -59,17 +65,22 @@ private static double dotProduct(Map<List, Integer> m1, Map<List, Integer> m2) {
 }
 
 def distance(str1, str2) {
-    def str1_len = str1.length()
-    def str2_len = str2.length()
-    int[][] distance = new int[str1_len + 1][str2_len + 1]
-    (str1_len + 1).times { distance[it][0] = it }
-    (str2_len + 1).times { distance[0][it] = it }
-    (1..str1_len).each { i ->
-       (1..str2_len).each { j ->
-          distance[i][j] = [distance[i-1][j]+1, distance[i][j-1]+1, str1[i-1]==str2[j-1]?distance[i-1][j-1]:distance[i-1][j-1]+1].min()
-       }
+    if ( ( str1 != null ) && ( str2 != null ) ) {
+      def str1_len = str1.length()
+      def str2_len = str2.length()
+      int[][] distance = new int[str1_len + 1][str2_len + 1]
+      (str1_len + 1).times { distance[it][0] = it }
+      (str2_len + 1).times { distance[0][it] = it }
+      (1..str1_len).each { i ->
+         (1..str2_len).each { j ->
+            distance[i][j] = [distance[i-1][j]+1, distance[i][j-1]+1, str1[i-1]==str2[j-1]?distance[i-1][j-1]:distance[i-1][j-1]+1].min()
+         }
+      }
+      return distance[str1_len][str2_len]
     }
-    distance[str1_len][str2_len]
+    else {
+      return 0
+    }
 }
 
 testcases.each { tc ->
