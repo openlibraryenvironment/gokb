@@ -241,17 +241,27 @@ class IntegrationController {
 
     if ( title ) {
       log.debug("Looked up title...${title}");
+      request.JSON.identifiers.each { id ->
+        log.debug("Identifier entry: ${id}");
+        def existing_id = title.identifiers.find { it -> it.namespace.value==id.type && it.value==id.value}
+        if ( existing_id ) {
+          log.debug("Found identifier for ${id.type} : ${id.value}");
+        }
+        else {
+          log.debug("No identifier for ${id.type} : ${id.value}");
+          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(id.type,id.value);
+          title.addToIds(canonical_identifier);
+          title.save(flush:true);
+        }
+      }
+      log.debug("Done iterating through identifiers");
     }
     else {
       log.debug("Unable to locate title");
     }
 
-    // if ( matched && suncat_identifier ) {
-    //           log.debug("set suncat identifier to ${suncat_identifier}");
-    //           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier('SUNCAT',suncat_identifier);
-    //           titleInstance.addToIds(canonical_identifier);
-    //           titleInstance.save(flush:true);
-    //         }
+    
+
     render result as JSON
   }
 }

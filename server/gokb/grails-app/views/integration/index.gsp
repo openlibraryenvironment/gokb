@@ -35,7 +35,7 @@ Example:
 
 The following CURL command will tell GoKB about the JUSP title for "3 Biotech"
 <code><pre>
-curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title":"3 Biotech",identifiers:[{"eissn":"2190-5738","jusp":"6416"}]}' <g:createLink controller="integration" action="crossReferenceTitle"/>
+curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title":"3 Biotech",identifiers:[{"type":"eissn","value":"2190-5738"},{"type":"jusp","value":"6416"}]}' <g:createLink controller="integration" action="crossReferenceTitle"/>
 </pre></code>
            </p>
            <p>Response:
