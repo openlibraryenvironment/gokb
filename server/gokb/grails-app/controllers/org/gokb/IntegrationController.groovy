@@ -11,6 +11,7 @@ class IntegrationController {
 
   def grailsApplication
   def springSecurityService
+  def titleLookupService
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -231,5 +232,26 @@ class IntegrationController {
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferenceTitle() {
+    def result = [ 'result' : 'OK' ]
+
+    log.debug("crossReferenceTitle()");
+
+    User user = springSecurityService.currentUser
+    def title = titleLookupService.find(request.JSON.title, request.JSON.publisher, request.JSON.identifiers, user)
+
+    if ( title ) {
+      log.debug("Looked up title...${title}");
+    }
+    else {
+      log.debug("Unable to locate title");
+    }
+
+    // if ( matched && suncat_identifier ) {
+    //           log.debug("set suncat identifier to ${suncat_identifier}");
+    //           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier('SUNCAT',suncat_identifier);
+    //           titleInstance.addToIds(canonical_identifier);
+    //           titleInstance.save(flush:true);
+    //         }
+    render result as JSON
   }
 }

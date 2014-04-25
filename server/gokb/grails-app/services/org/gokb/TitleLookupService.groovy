@@ -216,7 +216,7 @@ class TitleLookupService {
         best_distance = distance
       }
 
-      ti.variantNames?.each { vn ->
+      t.variantNames?.each { vn ->
         distance = GOKbTextUtils.cosineSimilarity(norm_title, vn.normVariantName)
         if (distance >= best_distance) {
           ti = t
