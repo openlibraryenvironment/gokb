@@ -50,6 +50,11 @@ class InplaceTagLib {
     if ( oid && ( oid != '' ) ) 
       out << " data-pk=\"${oid}\""
     out << " data-name=\"${attrs.field}\""
+    
+    // SO: fix for FF not honouring no-wrap css.
+    if ((attrs.type ?: 'textarea') == 'textarea') {
+      out << " data-tpl=\"${'<textarea wrap=\'off\'></textarea>'.encodeAsHTML()}\""
+    } 
 
     def data_link = null
     switch ( attrs.type ) {
