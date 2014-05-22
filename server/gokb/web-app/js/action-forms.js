@@ -5,15 +5,29 @@ var gokb = {};
 
 if (typeof jQuery !== 'undefined') {
   (function($) {
+	  
+	gokb.dialog = function (opts) {
+	  var message = opts.message;
+	  var buttons = [];
+      if ("buttons" in opts) {    	
+	    for (var button in opts.buttons) {
+		  // Go through each of the buttons.
+	      buttons.push(
+	        opts.buttons[button]
+	      );
+		}
+      }
+      
+      // Create the dialog.
+      return bootbox.dialog(message, buttons);
+	};
     
     gokb.confirm = function (opts) {
+      var options = opts || {title : "Confirm"};
       
       // Default to empty object.      
-      $.confirm(opts || {});
-      
-      // Add btn-danger class to keep inline with the rest of the site..
-      $('.confirmation-modal .cancel').addClass('btn-danger');
-    }
+      return gokb.dialog (options);
+    };
     
     /**
      * Method that disables the form for actions.
@@ -107,16 +121,24 @@ if (typeof jQuery !== 'undefined') {
         
         // Confirm.
         gokb.confirm ({
-          text: "Are you sure you with to perform the action " + opt.text() +
+          message: "Are you sure you with to perform the action " + opt.text() +
             " for the selected resource(s)?",
-          confirmButton: "Yes I am",
-          cancelButton: "No",
-          confirm: function() {
-            
-            // Submit the form that is attached to the dropdown.
-            button.closest("form").submit();
-          },
-          cancel: function() { /* Just close */ }
+          buttons: {
+  			success: {
+  			  "label": "Yes I am",
+  			  "class": "btn-success",
+  			  "callback": function() {
+  	            
+  	            // Submit the form that is attached to the dropdown.
+  	            button.closest("form").submit();
+  	          }
+  			},
+  			danger: {
+  			  "label": "No",
+  			  "class": "btn-danger",
+  			  "callback": function() { /* Just close */ }
+  			},
+  		  }
         });
         
         // Return false.
