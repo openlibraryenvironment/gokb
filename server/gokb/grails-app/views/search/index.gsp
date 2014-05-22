@@ -80,9 +80,12 @@
 
 	    <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
 
-            <g:if test="${recset != null}">
+            <g:if test="${recset}">
               <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det]}" />
             </g:if>
+            <g:else>
+              <g:render template="qbeempty" contextPath="." />
+            </g:else>
           </g:else>
         </div>
       </div>
