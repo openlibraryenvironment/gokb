@@ -53,8 +53,13 @@
     <div class="tab-pane active" id="packagedetails">
       <dl class="dl-horizontal">
         <g:render template="refdataprops" contextPath="../apptemplates" model="${[d:(d), rd:(rd), dtype:(dtype)]}" />
-        <dt><g:annotatedLabel owner="${d}" property="nominalPlatform">Nominal Platform</g:annotatedLabel></td>
-        <dd>${d.nominalPlatform?.name}</dd>
+        <dt><g:annotatedLabel owner="${d}" property="nominalPlatform">Nominal Platform</g:annotatedLabel></dt>
+        <dd>
+          <g:manyToOneReferenceTypedown owner="${d}" field="nominalPlatform"
+			      name="${comboprop}" baseClass="org.gokb.cred.Platform">
+			      ${d.nominalPlatform?.name ?: ''}
+          </g:manyToOneReferenceTypedown>
+        </dd>
       </dl>
     </div>
 
