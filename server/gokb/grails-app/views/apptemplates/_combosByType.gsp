@@ -28,9 +28,12 @@
           </td>
         </g:each>
         <td>
-          <g:link controller='ajaxSupport' 
-                  action='delete' 
-                  params="${[__context:combooid]}">Delete</g:link>
+          <g:link 
+            controller='ajaxSupport' 
+            action='delete' 
+            params="${[__context:combooid]}"
+            class="confirm-click"
+            data-confirm-message="Are you sure you wish to delete this ${row.toComponent.getNiceName()}?" >Delete</g:link>
         </td>
       </tr>
     </g:each>
