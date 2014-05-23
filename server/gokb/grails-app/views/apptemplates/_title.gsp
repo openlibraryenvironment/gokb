@@ -279,7 +279,7 @@
                 contextPath="../apptemplates" 
                 model="${[d:d, property:'ids', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']], direction:'out']}" />
+                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
     </div>
 
     <div class="tab-pane" id="addprops">

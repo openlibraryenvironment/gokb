@@ -12,7 +12,7 @@
   <tbody>
     <g:each in="${d.getCombosByPropertyName(property)}" var="row">
       <g:set var="combooid" value="${org.gokb.cred.KBComponent.deproxy(row).class.name}:${row.id}"/>
-      <g:if test="${direction=='in'}">
+      <g:if test="${d.isComboReverse(property)}">
         <g:set var="linkedoid" value="${org.gokb.cred.KBComponent.deproxy(row.fromComponent).class.name}:${row.fromComponent.id}"/>
       </g:if>
       <g:else>
