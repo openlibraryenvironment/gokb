@@ -457,7 +457,8 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Type', property:'class.simpleName'],
-        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -479,7 +480,8 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Nominal Platform', property:'nominalPlatform?.name']
+        [heading:'Nominal Platform', property:'nominalPlatform?.name'],
+        [heading:'Status', property:'status.value'],
       ],
       actions:[
         [name:'Register Web Hook for all Packages', code:'general::registerWebhook', iconClass:'glyphicon glyphicon-link']
@@ -500,7 +502,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeResults:[
-        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -518,7 +521,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeResults:[
-        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -546,7 +550,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
-        [heading:'Status', property:'status.value']
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -584,7 +588,8 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Provider', property:'provider?.name']
+        [heading:'Provider', property:'provider?.name'],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -645,7 +650,7 @@ globalSearchTemplates = [
         [heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.title.class.name+\':\'+x.r.title.id'] ],
         [heading:'Status', property:'status.value'],
         [heading:'Package', property:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg.class.name+\':\'+x.r.pkg.id'] ],
-        [heading:'Platform', property:'hostPlatform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform.class.name+\':\'+x.r.hostPlatform.id'] ]
+        [heading:'Platform', property:'hostPlatform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform.class.name+\':\'+x.r.hostPlatform.id'] ],
       ]
     ]
   ],
@@ -666,7 +671,7 @@ globalSearchTemplates = [
         ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
       ],
       qbeResults:[
-        [heading:'Description', property:'desc',  link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']]
+        [heading:'Description', property:'desc',  link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']],
       ]
     ]
   ],
@@ -731,6 +736,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -751,6 +757,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -772,6 +779,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -815,6 +823,7 @@ globalSearchTemplates = [
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         // [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
         [heading:'Url', property:'url'],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -858,6 +867,7 @@ globalSearchTemplates = [
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Created On', property:'dateCreated'],
         [heading:'Mime Type', property:'uploadMimeType'],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -878,7 +888,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name', property:'dcName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Display Name', property:'displayName'],
-        [heading:'Type', property:'type?.value']
+        [heading:'Type', property:'type?.value'],
       ]
     ]
   ],
@@ -897,7 +907,8 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],

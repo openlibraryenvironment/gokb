@@ -165,10 +165,10 @@
                   </tr>
                   <tr>
                     <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
-                         <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button</td>
+                         <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
                     <td> </td>
                     <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
-                         <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button</td>
+                         <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
                   </tr>
                 </table>
                 </dd>
@@ -216,7 +216,7 @@
                         id="${tipp.hostPlatform.getClassName()+':'+tipp.hostPlatform.id}">
                         ${tipp.hostPlatform.name}
                       </g:link></td>
-                    <td> Date: <g:formatDate
+                    <td>Date: <g:formatDate
                         format="${session.sessionPreferences?.globalDateFormat}"
                         date="${tipp.startDate}" /><br />
                       Volume: ${tipp.startVolume}<br />
@@ -279,7 +279,7 @@
                 contextPath="../apptemplates" 
                 model="${[d:d, property:'ids', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']], direction:'out']}" />
+                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
     </div>
 
     <div class="tab-pane" id="addprops">
