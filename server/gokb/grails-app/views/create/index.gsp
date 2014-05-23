@@ -1,30 +1,34 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="layout" content="main"/>
-    <r:require modules="gokbstyle,bootstrap-popover"/>
-    <title>GOKb</title>
-  </head>
-  <body>
-
-    <div class="container-fluid">
-      <div class="row-fluid">
-
-        <div id="mainarea" class="span12">
-          <div id="msg"></div>
-          <div class="well">
-            <g:if test="${displaytemplate != null}">
-              <g:if test="${displaytemplate.type=='staticgsp'}">
-		<g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
-                <button id="save-btn" class="btn btn-primary pull-right">Create and Edit >></button><br/>&nbsp;
+<head>
+<meta name="layout" content="main" />
+<r:require modules="gokbstyle,bootstrap-popover" />
+<title>GOKb</title>
+</head>
+<body>
+	<div class="container-fluid">
+		<div class="row-fluid">
+			<div id="mainarea" class="span12">
+				<div class="well">
+					<g:if test="${displaytemplate != null}">
+						<g:if test="${displaytemplate.type=='staticgsp'}">
+							<g:render contextPath="../apptemplates"
+							  template="messages"
+								model="${ ["preMessage" : "There were errors when attempting to create the new component. Please correct them and retry." ]}" />
+							<g:render template="${displaytemplate.rendername}"
+								contextPath="../apptemplates"
+								model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
+							<button id="save-btn" class="btn btn-primary pull-right">Create
+								and Edit &gt;&gt;</button>
+							<br />&nbsp;
               </g:if>
-            </g:if>
-          </div>
-        </div>
-      </div>
-    </div>
+					</g:if>
+				</div>
+			</div>
+		</div>
+	</div>
 
-    <script type="text/javascript">
+	<script type="text/javascript">
 
       $('#save-btn').click(function() {
           $('.editable').editable('submit', {   //call submit
@@ -50,5 +54,5 @@
           }); 
       });
     </script>
-  </body>
+</body>
 </html>
