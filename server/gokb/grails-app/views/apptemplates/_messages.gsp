@@ -1,4 +1,4 @@
-<div id="msg">
+<div id="msg" style="display:none;">
   <g:set var="errors" value="${ flash.error }" />
   <g:if test="${ errors }" >
     <div class="text-error" >

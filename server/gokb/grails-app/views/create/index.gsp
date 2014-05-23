@@ -14,7 +14,7 @@
 						<g:if test="${displaytemplate.type=='staticgsp'}">
 							<g:render contextPath="../apptemplates"
 							  template="messages"
-								model="${ ["preMessage" : "There were errors when attempting to create the new component. Please correct them and retry." ]}" />
+								model="${ ["preMessage" : "There were errors when attempting to create the new component." ]}" />
 							<g:render template="${displaytemplate.rendername}"
 								contextPath="../apptemplates"
 								model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />

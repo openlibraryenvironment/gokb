@@ -106,5 +106,11 @@ if (typeof jQuery !== 'undefined') {
           
       }
     });
+    
+    // If we have error messages then let's display them in a modal.
+    var messages = $('#msg');
+    if (messages.children().length > 0) {
+      bootbox.alert("<h2 class='text-error' >Error</h2>" + messages.html());
+    }
   })(jQuery);
 }
