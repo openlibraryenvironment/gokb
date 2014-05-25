@@ -1,114 +1,86 @@
 GOKb.contextMenu = {
-  applyRules : function (menu, name) {
-    $.each(GOKb.contextMenu.rules[name], function(){
-      menu.applyrule(this);
-    });
-  },
-  disableMenu : function () {
+  disabledCallback : function (elements) {
+    
+    // Current element.
     var currentEl = $(document.activeElement);
+    var name = currentEl.prop("tagName");
+    
     if (!currentEl.is('.select2-input')) {
-      switch (currentEl.prop("tagName")) {
-        case "INPUT" :
-        case "TEXTAREA" :
-          
-          return true;
-      }
+      // If the current element is one of the supplied then return true.
+      return jQuery.inArray( name, elements ) < 0;
     }
-    // Disable the menu by default.
-    return false;
-  },
-  disableOptions : function (menu) {
-    var currentEl = $(document.activeElement);
-    if (!currentEl.is('.select2-input')) {
-      switch (currentEl.prop("tagName")) {
-        case "INPUT" :
-        case "TEXTAREA" :
-          GOKb.contextMenu.applyRules(menu, 'enable-lookup');
-          return;
-          break;
-      }
-    }
-
-    // We are not in an element that allows text entry.
-    GOKb.contextMenu.applyRules(menu, 'disable-lookup');
+    
+    return true;
   },
 };
 
-GOKb.contextMenu.rules = {
-  "disable-lookup" : [
-    { disable: true, items: ["gokb-lookup"] }
-  ],
-  "enable-lookup" : [
-    { disable: false, items: [
-      "gokb-lookup",
-      "gokb-lookup-org",
-      "gokb-lookup-package",
-      "gokb-lookup-platform"]
-    }
-  ]
-};
-
-GOKb.contextMenu.options = {
-  width: 150,
-  items: [
-    {
-      text: "GOKb Lookup",
-//      icon: "",
-      alias: "gokb-lookup",
-      type:"group",
-      width: 150,
-      items:[
-        {
-          text: "Organisation",
-//          icon: "",
-          alias: "gokb-lookup-org",
-          action: function () {
-            GOKb.handlers.lookup (
-              $(document.activeElement),
-              "org",
-              ["variantNames.variantName"],
-              ["variantNames.variantName"],
-              "Lookup Organisation"
-            );
-          }
+GOKb.contextMenu.options = function () {
+  
+  return {
+    items: {
+      "gokb-lookup": {
+        name  : "GOKb Lookup", 
+        disabled: function() {
+          return GOKb.contextMenu.disabledCallback([
+            "INPUT",
+            "TEXTAREA"
+          ]);
         },
-        {
-          text: "Package",
-//          icon: "",
-          alias: "gokb-lookup-package",
-          action: function () {
-            GOKb.handlers.lookup (
-              $(document.activeElement),
-              "package",
-              ["variantNames.variantName"],
-              ["variantNames.variantName"],
-              "Lookup Package",
-              true
-            );
-          }
+        items : {
+          "gokb-lookup-org" : {
+            name: "Organisation",
+            callback: function () {
+              GOKb.handlers.lookup (
+                $(document.activeElement),
+                "org",
+                ["variantNames.variantName"],
+                ["variantNames.variantName"],
+                "Lookup Organisation"
+              );
+            }
+          },
+          "gokb-lookup-package" : {
+            name: "Package",
+            callback: function () {
+              GOKb.handlers.lookup (
+                $(document.activeElement),
+                "package",
+                ["variantNames.variantName"],
+                ["variantNames.variantName"],
+                "Lookup Package",
+                true
+              );
+            }
+          },
+          "gokb-lookup-platform" : {
+            name: "Platform",
+            callback: function () {
+              GOKb.handlers.lookup (
+                $(document.activeElement),
+                "platform",
+                ["variantNames.variantName"],
+                ["variantNames.variantName"],
+                "Lookup Platform"
+              );
+            },
+          },
         },
-        {
-          text: "Platform",
-//          icon: "",
-          alias: "gokb-lookup-platform",
-          action: function () {
-            GOKb.handlers.lookup (
-              $(document.activeElement),
-              "platform",
-              ["variantNames.variantName"],
-              ["variantNames.variantName"],
-              "Lookup Platform"
-            );
-          }
-        },
-      ]
+      },
+  //  "cut": {name: "Cut", icon: "cut"},
+  //  "copy": {name: "Copy", icon: "copy"},
+  //  "paste": {name: "Paste", icon: "paste"},
+  //  "delete": {name: "Delete", icon: "delete"},
+  //  "sep1": "---------",
+  //  "quit": {name: "Quit", icon: "quit"}
     },
-  ],
-  onShow: GOKb.contextMenu.disableOptions,
-  onContextMenu: GOKb.contextMenu.disableMenu,
+  };
 };
 
 // Add the context menu here.
 $(document).ready(function(){
-  $("body").contextmenu(GOKb.contextMenu.options);
+  $.contextMenu({
+    selector : "body",
+    zIndex: 100001,
+    build: GOKb.contextMenu.options
+  });
 });

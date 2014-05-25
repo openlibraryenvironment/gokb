@@ -120,7 +120,8 @@ function init() {
      "scripts/plugins/jquery.plugin.selectablerows.js",
      "scripts/plugins/jquery.uniform.min.js",
      "scripts/plugins/jquery.insert-at-caret.js",
-     "scripts/plugins/jquery.contextmenu.js",
+     "scripts/plugins/jquery.ui.position.js",
+     "scripts/plugins/jquery.contextMenu.js",
      "scripts/plugins/jquery.ui-lookup.js",
      "scripts/plugins/select2.min.js",
      "scripts/common.js",
@@ -131,7 +132,6 @@ function init() {
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
      "scripts/project/context-menu.js",
-//     "scripts/project/title-complete.js",
     ]
   );
 
@@ -142,7 +142,7 @@ function init() {
     [
       "styles/jqui/jquery-ui.css",
       "styles/uniform.aristo.min.css",
-      "styles/contextmenu.css",
+      "styles/jquery.contextMenu.css",
       "styles/select2.css",
       "styles/common.less",
     ]
