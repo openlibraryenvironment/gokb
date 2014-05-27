@@ -130,7 +130,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       FileProjectManager.initialize(currentWorkspace.getWsFolder());
       
       _logger.info("Now using workspace '" + currentWorkspace.getName() + "' at URL '" +
-        currentWorkspace.getURL() + "'");
+        currentWorkspace.getService().getURL() + "'");
       
       // Need to clear loggin information too.
       userDetails = null;
@@ -142,7 +142,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     }
     
     public String getCurrentWorkspaceURL() {
-      return workspaces[currentWorkspaceId].getURL();
+      return workspaces[currentWorkspaceId].getService().getURL();
     }
 
     public int getCurrentWorkspaceId () {

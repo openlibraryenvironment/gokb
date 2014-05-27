@@ -1,5 +1,8 @@
 var GOKb = {
   messageBusy : "Contacting GOKb",
+  workspace : {},
+  workspaces : [],
+  current_ws : 0,
   timeout : 60000, // 1 min timeout.
   handlers: {},
   globals: {},
@@ -57,7 +60,7 @@ GOKb.defaultError = function (data) {
   if (!GOKb.versionError && "result" in data && "errorType" in data.result && data.result.errorType == "authError") {
     
     // Authentication error, do not show the error but instead show the login box.
-    var login = GOKb.createDialog("Login to GOKb", "form_login");
+    var login = GOKb.createDialog("Login to " + GOKb.workspace.name, "form_login");
     
     // Add the message if there is one.
     if ("message" in data && data.message && data.message != "") {
@@ -737,3 +740,28 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
 RegExp.escape = function(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
+
+//Load the available workspaces from refine.
+GOKb.populateWorkspaces = function () {
+  
+  // Get the workspaces.
+  GOKb.doCommand(
+    "get-workspaces",
+    {},
+    {},
+    {
+      onDone : function (data) {
+        if ("workspaces" in data && "current" in data) {
+          
+          // Add the current workspace pointer.
+          GOKb.current_ws = data.current;
+          GOKb.workspaces = data.workspaces;
+          GOKb.workspace=data.workspaces[data.current];
+        }
+      }
+    }
+  );
+};
+
+// Initialise the workspaces.
+GOKb.populateWorkspaces();
