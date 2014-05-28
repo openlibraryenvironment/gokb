@@ -30,15 +30,39 @@ var GOKb = {
  */
 GOKb.hijackFunction = function(functionName, replacement) {
   
+  // Regex for code stripping.
+  var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+  var ARGUMENT_NAMES = /([^\s,]+)/g;
+  
+  // Method that we use to extract the list of parameters expected by the original method.
+  var getArgs = function (func) {
+    var fnStr = func.toString().replace(STRIP_COMMENTS, '')
+    var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES)
+    if(result === null)
+       result = []
+    return result
+  };
+  
+  // Get the function.
+  var func = eval(functionName);
+  
+  // Get the expected parameters list.
+  var orig_args = getArgs (func);
+  
   // Save the old function so we can still use it in our new function.
-  GOKb.hijacked[functionName] = eval(functionName);
+  GOKb.hijacked[functionName] = func;
   
   // New method...
   var repMeth = function() {
     // All arguments passed to this method will be passed to replacement.
     var args = [];
-    for (i=0; i<arguments.length; i++){
+    for (var i=0; i<arguments.length; i++){
       args[i] = arguments[i];
+    }
+    
+    // Ensure we pad out the arg list with nulls to match the original list.
+    for (var i=(args.length); i<orig_args.length; i++){
+      args[i] = null;
     }
     
     // Also pass the old method too.
