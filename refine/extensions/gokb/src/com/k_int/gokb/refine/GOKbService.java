@@ -15,6 +15,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class GOKbService {
+  public static final String SERVICE_DIR = "_gokb";
+  
   private class ServiceSettings {
     
     private Map<String,JSONObject> cache = new HashMap<String,JSONObject> ();
@@ -23,7 +25,7 @@ public class GOKbService {
     private ServiceSettings(File parentDir) {
       
       // Set the settings directory within the supplied directory.
-      directory = new File(parentDir, "_settings" + File.separatorChar);
+      directory = new File(parentDir, SERVICE_DIR + File.separatorChar);
       directory.mkdir();
     }
     
@@ -58,8 +60,9 @@ public class GOKbService {
           );
         } else {
           
-          // We create a new JSONObject with null data.
+          // We create a new JSONObject with null data and save.
           settings = new JSONObject("{\"date\" : 0,\"data\" : {\"core\" : true}}");
+          FileUtils.writeStringToFile(jsonFile, settings.toString());
         }
         
         // Store in the cache.

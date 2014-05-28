@@ -502,7 +502,7 @@ class ApiController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def projectIngestProgress() {
+  def projectStatus() {
     if (params.projectID) {
 
       // Get the project.
