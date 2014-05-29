@@ -118,24 +118,21 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     private int currentWorkspaceId;
     public void setActiveWorkspace(int workspace_id) {
       
+      // We should now set the new workspace.
+      ProjectManager.singleton.dispose();
+      ProjectManager.singleton = null;
+      
       // Set the id. 
       currentWorkspaceId = workspace_id;
       
       // Get the current WS.
-      RefineWorkspace currentWorkspace = workspaces[currentWorkspaceId];
-      
-      // First we need to save the current workspace.
-      FileProjectManager.singleton.save(true);
-      
-      // Dispose of the workspace
-      ProjectManager.singleton.dispose();
-      ProjectManager.singleton = null;
+      RefineWorkspace newWorkspace = workspaces[currentWorkspaceId];
       
       // Now we re-init the project manager, with our new directory.
-      FileProjectManager.initialize(currentWorkspace.getWsFolder());
+      FileProjectManager.initialize(newWorkspace.getWsFolder());
       
-      _logger.info("Now using workspace '" + currentWorkspace.getName() + "' at URL '" +
-        currentWorkspace.getService().getURL() + "'");
+      _logger.info("Now using workspace '" + newWorkspace.getName() + "' at URL '" +
+        newWorkspace.getService().getURL() + "'");
       
       // Need to clear loggin information too.
       userDetails = null;

@@ -22,10 +22,6 @@ public class SetWorkspace extends Command {
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-      
-        // Get the project manager and flag that it is busy.
-        final ProjectManager pm = ProjectManager.singleton;
-        pm.setBusy(true);
         try {
             
             // Get the workspace ID.
@@ -42,9 +38,6 @@ public class SetWorkspace extends Command {
             
         }  catch (JSONException e) {
           respondException(response, e);
-        } finally {
-            // Make sure we clear the busy flag.
-            pm.setBusy(false);
         }
     }
 }
