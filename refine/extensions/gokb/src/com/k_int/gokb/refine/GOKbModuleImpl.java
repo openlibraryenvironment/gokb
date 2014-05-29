@@ -14,6 +14,7 @@ import org.apache.commons.collections.ExtendedProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.refine.ProjectManager;
 import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
@@ -125,6 +126,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       
       // First we need to save the current workspace.
       FileProjectManager.singleton.save(true);
+      
+      // Dispose of the workspace
+      ProjectManager.singleton.dispose();
+      ProjectManager.singleton = null;
       
       // Now we re-init the project manager, with our new directory.
       FileProjectManager.initialize(currentWorkspace.getWsFolder());

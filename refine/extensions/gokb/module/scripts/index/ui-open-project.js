@@ -48,13 +48,17 @@ GOKb.ui.projects = function (elmt) {
 	  			  					}
     			  				}
     			  				
-	  			  				// Get the project name
-    			  				var name = self.getProjectName(this);
+    			  				var name = this.name;
+    			  				if (self.isLocalProject(this)) {
+    			  					// Name need to link to current local project.
+    			  					name = $('<a />')
+    			  					  .attr('href', '/project?project=' + this.localProjectID)
+    			  					  .text(name)
+    			  					  .attr('title', 'Open project to make changes.')
+    			  					;
+    			  				}
     			  				
-    			  				var status = $('<span />')
-    			  				  .attr("id", "projectStatus" + this.id)
-    			  				  .addClass("projectStatus")
-    			  				  .attr("ref", this.id);
+    			  				var status = $('<span />').attr("id", "projectStatus" + this.id).attr("ref", this.id);
     			  				
     			  				// Set the status.
     			  				self.setStatus (status, this);
@@ -100,20 +104,6 @@ GOKb.ui.projects = function (elmt) {
   
   // Fire the populate methods.
   this.populateWorkspaces(this._elmts);
-};
-
-GOKb.ui.projects.prototype.getProjectName = function (project) {
-  var name = project.name;
-  if (this.isLocalProject(project)) {
-    // Name need to link to current local project.
-    name = $('<a />')
-      .attr('href', '/project?project=' + project.localProjectID)
-      .text(name)
-      .attr('title', 'Open project to make changes.')
-    ;
-  }
-  
-  return $('<span class="projectName" />').append(name);
 };
 
 // Load the available workspaces from refine.
@@ -234,22 +224,16 @@ GOKb.ui.projects.prototype.setStatus = function (statusElem, projData) {
 };
 
 // Update the status of the project.
-GOKb.ui.projects.prototype.updateRow = function (statusElem) {
+GOKb.ui.projects.prototype.updateStatus = function (statusElem) {
 	var self = this;
-	
-	// Ensure we are looking at the status span for this row.
-	var row = $(statusElem).closest('tr');
-	var status = $('td span.projectStatus', row);
-	var name = $('td span.projectName', row);
-	
+	var status = $(statusElem);
 	var id = status.attr('ref');
-	GOKb.doCommand("projectStatus", {projectID : id}, null, {
+	GOKb.doCommand("projectIngestProgress", {projectID : id}, null, {
 		onDone : function(data) {
 			if ("result" in data && data.result.length == 1) {
 				var project = data.result[0];
 				self.setStatus (status, project);
 				self.getProjectControls (project);
-				name.replaceWith(self.getProjectName(project));
 			}
 		}
 	});
@@ -318,21 +302,9 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 						"cancel",
 						"Check the current project into GOKb, but ignore any changes made."
 				  )
-				  // Update the row only without reloading the page.
-				  .click(function(e){
-				    
-				    // Halt the default action. 
-				    e.preventDefault();
-				    
-				    // Do the request in the background.
-				    var link = $( this );
-				    $.ajax({
-				      url: link.attr("href"),
-			      }).done(function() {
-			        self.updateRow("#projectStatus" + project.id);
-			      });
-				  })
 				);
+				
+				
 			}
 			break;
 		case 'INGESTING' :
@@ -349,7 +321,7 @@ GOKb.ui.projects.prototype.getProjectControls = function(project) {
 GOKb.ui.projects.prototype.regularlyUpdate = function (projArea) {
 	
 	$('.ingesting', projArea._elmts.projects).each(function() {
-		projArea.updateRow(this);
+		projArea.updateStatus(this);
   });
 	
 	// Rerun the method every 5 seconds.
