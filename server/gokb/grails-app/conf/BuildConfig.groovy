@@ -55,7 +55,9 @@ grails.project.dependency.resolution = {
         runtime 'org.apache.commons:commons-compress:1.4.1'
         runtime 'org.apache.tika:tika-core:1.4'
         runtime 'xalan:xalan:2.7.1'
-        compile 'org.elasticsearch:elasticsearch-lang-groovy:1.4.0'
+        runtime 'org.elasticsearch:elasticsearch:1.0.1'
+        runtime 'org.elasticsearch:elasticsearch-client-groovy:1.0.1'
+        // compile 'org.elasticsearch:elasticsearch-lang-groovy:1.4.0'
     }
 
     plugins {
