@@ -84,6 +84,8 @@ class OaiController {
       
       attr["xmlns${ns}"] = url 
     }
+
+    log.debug("proceed...");
     
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {

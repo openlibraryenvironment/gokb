@@ -15,7 +15,7 @@ class TitleInstance extends KBComponent {
   RefdataValue	reasonRetired
   Date publishedFrom
   Date publishedTo
-  String imprint
+//  String imprint
 
   private static refdataDefaults = [
     "medium"		: "Journal",
@@ -58,12 +58,13 @@ class TitleInstance extends KBComponent {
   }
 
   static hasByCombo = [
-    issuer			: Org,
+    issuer		: Org,
     translatedFrom	: TitleInstance,
     absorbedBy		: TitleInstance,
     mergedWith		: TitleInstance,
     renamedTo		: TitleInstance,
-    splitFrom		: TitleInstance
+    splitFrom		: TitleInstance,
+    imprint		: Imprint
   ]
 
   static manyByCombo = [
@@ -77,14 +78,16 @@ class TitleInstance extends KBComponent {
     medium (nullable:true, blank:false)
     pureOA (nullable:true, blank:false)
     reasonRetired (nullable:true, blank:false)
-    imprint (nullable:true, blank:false)
+//    imprint (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo (nullable:true, blank:false)
   }
 
   def availableActions() {
     [ [code:'method::deleteSoft', label:'Delete'],
-      [code:'title::transfer', label:'Title Transfer'] ]
+      [code:'title::transfer', label:'Title Transfer'],
+      // [code:'title::reconcile', label:'Title Reconcile'] 
+    ]
   }
 
   @Override

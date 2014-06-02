@@ -25,11 +25,12 @@ package org.gokb
  */
 
 import grails.util.GrailsNameUtils
-import com.k_int.ClassUtils
 import groovy.util.logging.*
 
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 import org.gokb.cred.*
+
+import com.k_int.ClassUtils
 
 @Log4j
 class DomainClassExtender {
@@ -607,9 +608,14 @@ class DomainClassExtender {
       // Get all..
       List<Combo> combos
       // Query DB for current combos (endDate is NULL)
+      
+      // The delegate.
+      final KBComponent thisComponent = delegate
+      
+      // We should flush to process any pending transactions.
+      thisComponent.save(flush:true, failOnError:true)
+      
       if (isComboReverse(propertyName)) {
-        // Reverse.
-        final KBComponent thisComponent = delegate
         combos = Combo.createCriteria().list {
           and {
             eq ("type", (type))
@@ -619,7 +625,6 @@ class DomainClassExtender {
           }
         }
       } else {
-        final KBComponent thisComponent = delegate
 
         combos = Combo.createCriteria().list {
           and {
@@ -893,6 +898,7 @@ class DomainClassExtender {
         DomainClassExtender.addCombineInheritedMapFor (domainClass)
         DomainClassExtender.addGetCardinalityFor (domainClass)
         DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
+//        DomainClassExtender.overrideGORMMethods(domainClass)
 
         // Extend to handle ComboMapped Properties.
         DomainClassExtender.extendMapConstructor(domainClass)
@@ -924,6 +930,7 @@ class DomainClassExtender {
       DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
       DomainClassExtender.addIsComboPropertyFor (domainClass)
       DomainClassExtender.addCombineInheritedMapFor (domainClass)
+//      DomainClassExtender.overrideGORMMethods (domainClass)
     }
   }
 
@@ -989,4 +996,75 @@ class DomainClassExtender {
       }
     }
   }
+  
+//  private static overrideGORMMethods = { DefaultGrailsDomainClass domainClass ->
+//    
+//    def target = domainClass.getClazz()
+//    
+//    // The GORM methods are lazily wired up to the metaclass. So until,
+//    // a GORM method is called the methods will not exist.
+//    // To force the methods to be wired up we must call a lightweight GORM method here.
+//    target.exists(-1)
+//    
+//    // Get the metaclass.
+//    ExpandoMetaClass mc = domainClass.getMetaClass()
+//    
+//    // New save method closure.
+//    def save_method = { Map p ->
+//      
+//      // Cast the delegate.
+//      KBComponent d = delegate as KBComponent
+//      
+//      // Just set the systemComponent flag if necessary.
+//      if (p?."system_save") {
+//        // systemComponent.
+//        d.systemComponent = true
+//      } 
+//      return delegate."old_replaced_save" (p)
+//      
+////      // Check to see if this is a system component.
+////      if (d.isSystemComponent() || p?."system_save") {
+////       
+////        // Found method.
+////        log.debug("System component, check parameters.")
+////        
+////        // Check to see if we were supplied a map and whether 'system_save' was set
+////        if (!p?."system_save") {
+////          
+////          d.errors.reject("systemonly",
+////            "Component ${d.id} is marked as \"system only\"."
+////          )
+////         
+////          def error = "Attempting to save component ${d.id} failed as component is marked as \"system only\".";
+////          log.error (error)
+////          
+////          if (p?."failOnError" == true) {
+////            throw new Exception (error)
+////          }
+////          
+////          // Return null here.
+////          return null
+////        } else {
+////          p?."systemComponent" = true
+////        }
+////      }
+////      
+////      // Execute the original from GORM.
+////      return delegate."old_replaced_save" (p)
+//    }
+//
+//    // Find the old save method.
+//    MetaMethod gorm_save = mc.getMetaMethod("save", [Map.class] as Object[])
+//    
+//    // If we've found the method then move it.
+//    if (gorm_save) {
+//      mc."old_replaced_save" = {Map m ->
+//        // Invoke the method on the delegate with the supplied args.
+//        gorm_save.invoke(delegate, [m] as Object[])
+//      }
+//      
+//      // Then set the save to use our new version.
+//      mc."save" = save_method
+//    }
+//  }
 }

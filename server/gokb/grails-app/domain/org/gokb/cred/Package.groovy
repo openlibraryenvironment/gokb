@@ -28,13 +28,13 @@ class Package extends KBComponent {
   Date listVerifiedDate
   
   private static refdataDefaults = [
-    "scope"   : "Front File",
+    "scope"       : "Front File",
     "listStatus"  : "Checked",
-    "breakable"  : "Unknown",
+    "breakable"   : "Unknown",
     "consistent"  : "Unknown",
-    "fixed"    : "Unknown",
-    "paymentType"  : "Unknown",
-    "global"  : "Global"
+    "fixed"       : "Unknown",
+    "paymentType" : "Unknown",
+    "global"      : "Global"
   ]
   
   static manyByCombo = [
@@ -154,22 +154,32 @@ class Package extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
+
+    log.debug("toGoKBXml...");
+
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
+    def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps');
+    def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTipps');
+    def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps');
+    def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
+
     // Get the tipps manually rather than iterating over the collection - For better management
     // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
-    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
+    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status, tipp.accessStartDate, tipp.accessEndDate from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
 where pkgCombo.toComponent=tipp
-  and pkgCombo.fromComponent=?
-  and pkgCombo.type.value='Package.Tipps'
+  and pkgCombo.fromComponent= ?
+  and pkgCombo.type= ?
   and hostPlatformCombo.toComponent=tipp 
-  and hostPlatformCombo.type.value='Platform.HostedTipps' 
+  and hostPlatformCombo.type = ?
   and titleCombo.toComponent=tipp 
-  and titleCombo.type.value='TitleInstance.Tipps' 
-  and tipp.status.value != 'Deleted' 
-order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
+  and titleCombo.type = ?
+  and tipp.status != ?
+order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true]); // , fetchSize:250]);
+
+    log.debug("Query complete...");
     
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
@@ -196,6 +206,7 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
               'platform'([id:tipp[4]]) {
                 'name' (tipp[3]?.trim())
               }
+              'access'(start:tipp[15]?sdf.format(tipp[15]):null,end:tipp[16]?sdf.format(tipp[16]):null)
               'coverage'(
                 startDate:(tipp[5]?sdf.format(tipp[5]):null),
                 startVolume:tipp[6],
@@ -211,11 +222,14 @@ order by tipp.id""",[this],[readOnly: true, fetchSize:100]);
         }
       }
     }
+
+    log.debug("toGoKBXml complete...");
   }
 
   @Transient
   private static getTitleIds(Long title_id) {
-    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i where exists ( select c from i.incomingCombos as c where c.type.value = 'KBComponent.Ids' and c.fromComponent.id=?)",[title_id],[readOnly: true, fetchSize:10])
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
     result
   }
 

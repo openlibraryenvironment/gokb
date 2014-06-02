@@ -12,7 +12,7 @@
   <tbody>
     <g:each in="${d.getCombosByPropertyName(property)}" var="row">
       <g:set var="combooid" value="${org.gokb.cred.KBComponent.deproxy(row).class.name}:${row.id}"/>
-      <g:if test="${direction=='in'}">
+      <g:if test="${d.isComboReverse(property)}">
         <g:set var="linkedoid" value="${org.gokb.cred.KBComponent.deproxy(row.fromComponent).class.name}:${row.fromComponent.id}"/>
       </g:if>
       <g:else>
@@ -28,9 +28,12 @@
           </td>
         </g:each>
         <td>
-          <g:link controller='ajaxSupport' 
-                  action='delete' 
-                  params="${[__context:combooid]}">Delete</g:link>
+          <g:link 
+            controller='ajaxSupport' 
+            action='delete' 
+            params="${[__context:combooid]}"
+            class="confirm-click"
+            data-confirm-message="Are you sure you wish to delete this ${row.toComponent.getNiceName()}?" >Delete</g:link>
         </td>
       </tr>
     </g:each>

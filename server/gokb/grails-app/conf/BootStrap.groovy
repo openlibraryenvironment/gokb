@@ -28,6 +28,7 @@ class BootStrap {
     def userRole = Role.findByAuthority('ROLE_USER') ?: new Role(authority: 'ROLE_USER', roleType:'global').save(failOnError: true)
     def editorRole = Role.findByAuthority('ROLE_EDITOR') ?: new Role(authority: 'ROLE_EDITOR', roleType:'global').save(failOnError: true)
     def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType:'global').save(failOnError: true)
+    def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType:'global').save(failOnError: true)
 
     log.debug("Create admin user...");
     def adminUser = User.findByUsername('admin')
@@ -41,12 +42,10 @@ class BootStrap {
           enabled: true).save(failOnError: true)
     }
 
-    if (!adminUser.authorities.contains(adminRole)) {
-      UserRole.create adminUser, adminRole
-    }
-
-    if (!adminUser.authorities.contains(userRole)) {
-      UserRole.create adminUser, userRole
+    [contributorRole,userRole,editorRole,adminRole,apiRole].each { role ->
+      if (!adminUser.authorities.contains(role)) {
+        UserRole.create adminUser, role
+      }
     }
 
     String fs = grailsApplication.config.project_dir

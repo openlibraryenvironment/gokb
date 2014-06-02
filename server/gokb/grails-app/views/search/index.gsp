@@ -20,7 +20,7 @@
   <div class="container-fluid">
     <div class="row-fluid">
 
-      <div id="mainarea" class="${displayobj != null ? 'span6' : 'span12'}">
+      <div id="mainarea" class=" panel panel-default ${displayobj != null ? 'span6' : 'span12'}">
         <div class="well">
           <g:if test="${qbetemplate==null}">
               Please select a template from the navigation menu
@@ -29,12 +29,12 @@
 
             <div class="navbar">
               <div class="navbar-inner">
-                <div class="brand">
+                <div class="brand panel-heading">
                   ${qbetemplate.title?:'Search'}
                   <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}
                   </g:if>
                 </div>
-
+                <div class="panel-body">
                 <g:if test="${recset != null}">
                   <ul class="nav navbar-nav navbar-right pull-right">
 
@@ -70,20 +70,22 @@
 
                   </ul>
                 </g:if>
+                </div>
               </div>
             </div>
 
             <g:if test="${(qbetemplate.message != null)}">
               <p style="text-align:center"><bootstrap:alert class="alert-info">${qbetemplate.message}</bootstrap:alert></p>
             </g:if>
-            <!-- g:if test="${!request.isAjax()}" -->
-	            <g:render template="qbeform" contextPath="."
-	              model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
-	          <!-- /g:if -->
-            <g:if test="${recset != null}">
-              <g:render template="qberesult" contextPath="."
-                model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det]}" />
+
+	    <g:render template="qbeform" contextPath="." model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
+
+            <g:if test="${recset}">
+              <g:render template="qberesult" contextPath="." model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det]}" />
             </g:if>
+            <g:else>
+              <g:render template="qbeempty" contextPath="." />
+            </g:else>
           </g:else>
         </div>
       </div>

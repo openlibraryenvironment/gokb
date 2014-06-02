@@ -11,17 +11,21 @@ class GOKbTextUtils {
   ];
 
   public static int levenshteinDistance(String str1, String str2) {
-    def str1_len = str1.length()
-    def str2_len = str2.length()
-    int[][] distance = new int[str1_len + 1][str2_len + 1]
-    (str1_len + 1).times { distance[it][0] = it }
-    (str2_len + 1).times { distance[0][it] = it }
-    (1..str1_len).each { i ->
-       (1..str2_len).each { j ->
-          distance[i][j] = [distance[i-1][j]+1, distance[i][j-1]+1, str1[i-1]==str2[j-1]?distance[i-1][j-1]:distance[i-1][j-1]+1].min()
-       }
+    if ( ( str1 != null ) && ( str2 != null ) ) {
+      def str1_len = str1.length()
+      def str2_len = str2.length()
+      int[][] distance = new int[str1_len + 1][str2_len + 1]
+      (str1_len + 1).times { distance[it][0] = it }
+      (str2_len + 1).times { distance[0][it] = it }
+      (1..str1_len).each { i ->
+         (1..str2_len).each { j ->
+            distance[i][j] = [distance[i-1][j]+1, distance[i][j-1]+1, str1[i-1]==str2[j-1]?distance[i-1][j-1]:distance[i-1][j-1]+1].min()
+         }
+      }
+      return distance[str1_len][str2_len]
     }
-    distance[str1_len][str2_len]
+
+    return 0
   }
   
   public static String normaliseString(String s) {
@@ -54,7 +58,11 @@ class GOKbTextUtils {
   }
   
   public static double cosineSimilarity(String s1, String s2, int degree = 2) {
-	cosineSimilarity s1?.toLowerCase()?.toCharArray(), s2?.toLowerCase()?.toCharArray(), degree
+    if ( ( s1 != null ) && ( s2 != null ) ) {
+      return cosineSimilarity(s1.toLowerCase()?.toCharArray(), s2.toLowerCase()?.toCharArray(), degree)
+    }
+
+    return 0
   }
   
   public static double cosineSimilarity(char[] sequence1, char[] sequence2, int degree = 2) {

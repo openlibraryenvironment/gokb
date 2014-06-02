@@ -457,7 +457,8 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Type', property:'class.simpleName'],
-        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -479,7 +480,8 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Nominal Platform', property:'nominalPlatform?.name']
+        [heading:'Nominal Platform', property:'nominalPlatform?.name'],
+        [heading:'Status', property:'status.value'],
       ],
       actions:[
         [name:'Register Web Hook for all Packages', code:'general::registerWebhook', iconClass:'glyphicon glyphicon-link']
@@ -500,7 +502,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeResults:[
-        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -518,7 +521,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeResults:[
-        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -546,7 +550,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
-        [heading:'Status', property:'status.value']
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -584,7 +588,8 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Provider', property:'provider?.name']
+        [heading:'Provider', property:'provider?.name'],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -645,7 +650,7 @@ globalSearchTemplates = [
         [heading:'Title', property:'title.name', link:[controller:'resource',action:'show',id:'x.r.title.class.name+\':\'+x.r.title.id'] ],
         [heading:'Status', property:'status.value'],
         [heading:'Package', property:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg.class.name+\':\'+x.r.pkg.id'] ],
-        [heading:'Platform', property:'hostPlatform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform.class.name+\':\'+x.r.hostPlatform.id'] ]
+        [heading:'Platform', property:'hostPlatform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform.class.name+\':\'+x.r.hostPlatform.id'] ],
       ]
     ]
   ],
@@ -666,7 +671,7 @@ globalSearchTemplates = [
         ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
       ],
       qbeResults:[
-        [heading:'Description', property:'desc',  link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']]
+        [heading:'Description', property:'desc',  link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']],
       ]
     ]
   ],
@@ -731,6 +736,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -751,6 +757,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -772,6 +779,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -815,6 +823,7 @@ globalSearchTemplates = [
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         // [heading:'Name/Title', property:'name', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']],
         [heading:'Url', property:'url'],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -858,6 +867,7 @@ globalSearchTemplates = [
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Created On', property:'dateCreated'],
         [heading:'Mime Type', property:'uploadMimeType'],
+        [heading:'Status', property:'status.value'],
       ]
     ]
   ],
@@ -870,7 +880,7 @@ globalSearchTemplates = [
           prompt:'Name',
           qparam:'qp_name',
           placeholder:'Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'dcName', 'wildcard':'B']
         ],
       ],
       qbeGlobals:[
@@ -878,11 +888,30 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name', property:'dcName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Display Name', property:'displayName'],
-        [heading:'Type', property:'type?.value']
+        [heading:'Type', property:'type?.value'],
       ]
     ]
   ],
-
+  'imprints':[
+    baseclass:'org.gokb.cred.Imprint',
+    title:'Imprints',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Name',
+          qparam:'qp_name',
+          placeholder:'Name',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value'],
+      ]
+    ]
+  ],
 ]
 
 
@@ -904,7 +933,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
   'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
-  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ]
+  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
+  'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ]
 ]
 
 permNames = [
@@ -932,6 +962,7 @@ grails.plugins.springsecurity.basic.realmName = "gokb"
 // This stanza then says everything should use form apart from /api
 // More info: http://stackoverflow.com/questions/7065089/how-to-configure-grails-spring-authentication-scheme-per-url
 grails.plugins.springsecurity.filterChain.chainMap = [
+  '/integration/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
   // '/soap/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
@@ -971,6 +1002,10 @@ defaultOaiConfig = [
       ]],
   ]
 ]
+
+// cors.headers = ['Access-Control-Allow-Origin': '*']
+// 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'
+//     'My-Custom-Header': 'some value'
 
 // Uncomment and edit the following lines to start using Grails encoding & escaping improvements
 

@@ -52,6 +52,7 @@
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
                   <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstancePackagePlatform']}">TIPP</g:link></li>
+                  <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Imprint']}">Imprint</g:link></li>
                   <sec:ifAnyGranted roles="ROLE_ADMIN">
                     <li class="divider"></li>
                     <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}">Additional Property Definition</g:link></li>
@@ -78,6 +79,7 @@
                     <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
                     <li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
                     <li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="masterListUpdate">Force Master List Update</g:link></li>
                     <li><g:link controller="user" action="search">User Management Console</g:link></li>
                     <li><g:link controller="home" action="about">About</g:link></li>
                   </ul>

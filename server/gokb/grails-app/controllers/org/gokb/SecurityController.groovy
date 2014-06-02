@@ -80,13 +80,14 @@ class SecurityController {
       gokbAclService.addPermission(domain, recipient, perm)
       
       if (request.isAjax()) {
-        
         // Send back to the roles action.
+        log.debug("Send back refirect - is ajax");
         redirect(controller: "security", "action": (action), 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
         
       } else {
       
         // Send back to referer.
+        log.debug("Send back to referer ${request.getHeader('referer')}");
         redirect(url: request.getHeader('referer'))
       }
     }

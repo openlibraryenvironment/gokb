@@ -2,8 +2,21 @@ package org.gokb
 
 import grails.converters.JSON
 import org.gokb.cred.*
+import grails.plugins.springsecurity.Secured
+import org.gokb.cred.*
+
+
 
 class IntegrationController {
+
+  def grailsApplication
+  def springSecurityService
+  def titleLookupService
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def index() {
+  }
+  
 
   /**
    *  assertOrg()
@@ -20,6 +33,7 @@ class IntegrationController {
    *      ]
    *
    */
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertOrg() { 
     log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[:]
@@ -57,17 +71,6 @@ class IntegrationController {
           if (located_component) {
             located_or_new_org.parent = located_component
           }
-          
-          
-          // def reloaded_from = KBComponent.get(located_or_new_org.id)
-//          def reloaded_from = located_or_new_org.refresh();
-//          if ( ( located_component != null ) && ( reloaded_from != null ) ) {
-//            def combo_type = RefdataCategory.lookupOrCreate('ComboType',c.linkType);
-//            def combo = new Combo(fromComponent:reloaded_from,toComponent:located_component,type:combo_type).save(flush:true, failOnError : true);
-//          }
-//          else {
-//            log.error("Problem resolving from(${reloaded_from}) or to(${located_component}) org for combo");
-//          }
         }
   
         def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','Org.Ids');
@@ -76,15 +79,7 @@ class IntegrationController {
         request.JSON.customIdentifers.each { ci ->
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
-//          def id_combo = new Combo( 
-//                                    fromComponent:located_or_new_org, 
-//                                    toComponent:canonical_identifier, 
-//                                    type:identifier_combo_type, 
-//                                    startDate:new Date())
-//          log.debug("About to call save on id combo, from=${id_combo.fromComponent}, to=${id_combo.toComponent}");
-//          id_combo.save(failOnError:true, flush:true)
-		  
-		  located_or_new_org.ids.add(canonical_identifier)
+      located_or_new_org.ids.add(canonical_identifier)
         }
     
         // roles
@@ -93,7 +88,7 @@ class IntegrationController {
           log.debug("Adding role ${r}");
           def role = RefdataCategory.lookupOrCreate("Org.Role", r)
           located_or_new_org.addToRoles(
-			role
+      role
           )
         }
 
@@ -114,7 +109,7 @@ class IntegrationController {
           log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
           def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
       
-		  // Located a component.
+      // Located a component.
           if ( ( located_component != null ) ) {
             def combo = new Combo(
               type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
@@ -159,6 +154,7 @@ class IntegrationController {
   }
 
 
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   private resolveOrgUsingPrivateIdentifiers(idlist) {
     def located_or_new_org = null;
 
@@ -195,6 +191,7 @@ class IntegrationController {
     located_or_new_org
   }
 
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def registerVariantName() {
     def result=[:]
     log.debug("registerVariantName ${params} ${request.JSON}");
@@ -229,6 +226,41 @@ class IntegrationController {
 
     // Delete any remaining variant org combox
     // Delete the variant org
+
+    render result as JSON
+  }
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def crossReferenceTitle() {
+    def result = [ 'result' : 'OK' ]
+
+    log.debug("crossReferenceTitle()");
+
+    User user = springSecurityService.currentUser
+    def title = titleLookupService.find(request.JSON.title, request.JSON.publisher, request.JSON.identifiers, user)
+
+    if ( title ) {
+      log.debug("Looked up title...${title}");
+      request.JSON.identifiers.each { id ->
+        log.debug("Identifier entry: ${id}");
+        def existing_id = title.identifiers.find { it -> it.namespace.value==id.type && it.value==id.value}
+        if ( existing_id ) {
+          log.debug("Found identifier for ${id.type} : ${id.value}");
+        }
+        else {
+          log.debug("No identifier for ${id.type} : ${id.value}");
+          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(id.type,id.value);
+          title.addToIds(canonical_identifier);
+          title.save(flush:true);
+        }
+      }
+      log.debug("Done iterating through identifiers");
+    }
+    else {
+      log.debug("Unable to locate title");
+    }
+
+    
 
     render result as JSON
   }

@@ -18,7 +18,10 @@
   <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
   
   <dt><g:annotatedLabel owner="${d}" property="currentPubisher">Current Publisher</g:annotatedLabel></dt>
-  <dd>${d.currentPublisher}</dd>
+  <dd>${d.currentPublisher}&nbsp;</dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="imprint">Imprint</g:annotatedLabel></dt>
+  <dd><g:manyToOneReferenceTypedown owner="${d}" field="imprint" baseClass="org.gokb.cred.Imprint">${d.imprint?.name}</g:manyToOneReferenceTypedown>&nbsp;</dd>
 
   <dt><g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel></dt>
   <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom" /></dd>
@@ -26,6 +29,7 @@
   <dt><g:annotatedLabel owner="${d}" property="publishedTo">Published To</g:annotatedLabel></dt>
   <dd><g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" /></dd>
 
+  <g:if test="${d.id != null}">
   <dt><g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel></dt>
   <dd>
     <table class="table table-striped table-bordered"> 
@@ -37,18 +41,22 @@
       <tbody>
       <g:each in="${d.titleHistory}" var="he">
         <tr>
-          <td>${he.date}</td>
+          <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${he.date}" /></td>
           <td>
             <ul>
               <g:each in="${he.from}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
               </g:each>
             </ul>
           </td>
           <td>
             <ul>
               <g:each in="${he.to}" var="ft">
-                <li><g:link controller="resource" action="view" id="${ft.class.name}:${ft.id}">${ft.name}</g:link></li>
+                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
+                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
               </g:each>
             </ul>
           </td>
@@ -57,6 +65,7 @@
       </tbody>
     </table>
   </dd>
+  </g:if>
 </dl>
 
 <div id="content">
@@ -156,10 +165,10 @@
                   </tr>
                   <tr>
                     <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
-                         <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button</td>
+                         <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
                     <td> </td>
                     <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
-                         <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button</td>
+                         <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
                   </tr>
                 </table>
                 </dd>
@@ -207,7 +216,7 @@
                         id="${tipp.hostPlatform.getClassName()+':'+tipp.hostPlatform.id}">
                         ${tipp.hostPlatform.name}
                       </g:link></td>
-                    <td> Date: <g:formatDate
+                    <td>Date: <g:formatDate
                         format="${session.sessionPreferences?.globalDateFormat}"
                         date="${tipp.startDate}" /><br />
                       Volume: ${tipp.startVolume}<br />
@@ -270,7 +279,7 @@
                 contextPath="../apptemplates" 
                 model="${[d:d, property:'ids', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']], direction:'out']}" />
+                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
     </div>
 
     <div class="tab-pane" id="addprops">

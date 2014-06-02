@@ -21,6 +21,8 @@ class TitleInstancePackagePlatform extends KBComponent {
   String endVolume
   String endIssue
   String url
+  Date accessStartDate
+  Date accessEndDate
 
   private static refdataDefaults = [
     "format"        : "Electronic",
@@ -40,6 +42,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     hostPlatform        : Platform,
     title               : TitleInstance,
     derivedFrom         : TitleInstancePackagePlatform,
+    masterTipp          : TitleInstancePackagePlatform,
   ]
 
   static mappedByCombo = [
@@ -47,7 +50,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     hostPlatform        : 'hostedTipps',
     additionalPlatforms : 'linkedTipps',
     title               : 'tipps',
-    derivatives         : 'derivedFrom',
+    derivatives         : 'derivedFrom'
   ]
 
   static manyByCombo = [
@@ -76,6 +79,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     hybridOAUrl column:'tipp_hybrid_oa_url'
     primary column:'tipp_primary'
     paymentType column:'tipp_payment_type'
+    accessStartDate column: 'tipp_access_start_date'
+    accessEndDate column: 'tipp_access_end_date'
   }
 
   static constraints = {
@@ -95,6 +100,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     hybridOAUrl (nullable:true, blank:true)
     primary (nullable:true, blank:true)
     paymentType (nullable:true, blank:true)
+    accessStartDate (nullable:true, blank:false)
+    accessEndDate (nullable:true, blank:false)
   }
 
   @Transient
@@ -111,7 +118,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   /**
    * Create a new TIPP being mindful of the need to create TIPLs
    */
-  public static tiplAwareCreate(tipp_fields) {
+  public static tiplAwareCreate(tipp_fields = [:]) {
     def result = new TitleInstancePackagePlatform(tipp_fields)
     // See if there is a TIPL
     TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
