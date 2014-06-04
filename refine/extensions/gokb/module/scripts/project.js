@@ -130,6 +130,18 @@ GOKb.hijackFunction (
   }
 );
 
+GOKb.hijackFunction (
+  'Refine.setTitle',
+  function(status, oldFunction) {
+
+    // Run the original setTitle.
+    oldFunction.apply(this, arguments);
+    
+    // We now need to add the current workspace title too.
+    document.title = document.title + " using " + GOKb.workspace.name;
+  }
+);
+
 GOKb.caseInsensitiveColumnName = function (name) {
   var columns = theProject.columnModel.columns;
   for (var i = 0; i < columns.length; i++) {

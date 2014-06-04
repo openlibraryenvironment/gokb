@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.refine.commands.Command;
-import com.k_int.gokb.refine.GOKbModuleImpl;
+import com.k_int.gokb.module.GOKbModuleImpl;
 import com.k_int.gokb.refine.RefineWorkspace;
 
 
@@ -26,25 +26,23 @@ public class GetWorkspaces extends Command {
     try {
       response.setCharacterEncoding("UTF-8");
       response.setHeader("Content-Type", "application/json");
-
+      
       // The writer.
       JSONWriter writer = new JSONWriter(response.getWriter());
       
       // Get the list of workspaces.
       RefineWorkspace[] wspaces = GOKbModuleImpl.singleton.getWorkspaces();
       
-      // Open an object.
+   // Open an object.
       writer.object();
       writer.key("workspaces");
       
       // Open the array.
       writer.array();
       
-      // Write each workspace as an object. Only need the name.
+      // Write each workspace as an object.
       for (RefineWorkspace ws : wspaces) {
-        writer.object();
-        writer.key("name"); writer.value(ws.getName());
-        writer.endObject();
+        ws.write(writer, null);
       }
       
       // Close the array.
@@ -53,6 +51,7 @@ public class GetWorkspaces extends Command {
       // Add the selected id.
       writer.key("current"); writer.value(GOKbModuleImpl.singleton.getCurrentWorkspaceId());
       writer.endObject();
+      
     } catch (JSONException e) {
       respondException(response, e);
     }

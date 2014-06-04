@@ -20,6 +20,7 @@ import com.google.refine.io.ProjectUtilities;
 import com.google.refine.model.Cell;
 import com.google.refine.model.Project;
 import com.google.refine.model.Row;
+import com.k_int.gokb.module.GOKbModuleImpl;
 
 public class RefineUtil extends ProjectUtilities {
     

@@ -8,13 +8,14 @@ import org.apache.commons.collections.map.CaseInsensitiveMap
 import org.apache.commons.compress.archivers.*
 import org.apache.commons.compress.archivers.tar.*
 import org.apache.commons.compress.compressors.gzip.*
+import org.codehaus.groovy.grails.web.json.JSONObject
 import org.gokb.cred.*
 import org.gokb.refine.*
 import org.gokb.validation.Validation
 import org.gokb.validation.types.A_ValidationRule
+import org.hibernate.Session
 import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
-import org.codehaus.groovy.grails.web.json.JSONObject
 
 class IngestService {
 
@@ -287,22 +288,22 @@ class IngestService {
         countDistinct("id")
       }
     }
-    
+
     // Try and find a package for the provider with the name entered.
     def existingPkgs = componentLookupService.lookupComponents(packageIdentifiers).size()
-    
-//    def q = ComboCriteria.createFor(Package.createCriteria())
-//    def existingPkgs = q.get {
-//      and {
-//        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-//        q.add ("ids.value", "in", [packageIdentifiers])
-//        eq ("status", current)
-//      }
-//
-//      projections {
-//        countDistinct ("id")
-//      }
-//    }
+
+    //    def q = ComboCriteria.createFor(Package.createCriteria())
+    //    def existingPkgs = q.get {
+    //      and {
+    //        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
+    //        q.add ("ids.value", "in", [packageIdentifiers])
+    //        eq ("status", current)
+    //      }
+    //
+    //      projections {
+    //        countDistinct ("id")
+    //      }
+    //    }
 
     // New packages.
     newPkgs = packageIdentifiers.size() - existingPkgs
@@ -352,92 +353,309 @@ class IngestService {
   }
 
   /**
-   *  Ingest a parsed project. 
-   *  @param project_data Parsed map of project data
+   * Update the project with the supplied values. Do this in a session of it own.
+   * @param project_id
+   * @param progress
+   * @param status
    */
-  def ingest(project_data, project_id, boolean incremental = true, user = null) {
-    // Return result.
-    def result = [:]
-    Set<String> skipped_titles = []
-    try {
-      log.debug("Ingest");
-
-      def project
-
-      // Update the project record.
-      RefineProject.withNewTransaction { TransactionStatus status ->
-
+  private void updateProjectStatus (long project_id, int progress, RefineProject.Status status = null) {
+    RefineProject.withNewSession { Session s ->
+      s.beginTransaction()
         log.debug ("Trying to update the refine project in a new transaction.")
-        project = RefineProject.get(project_id)
+        RefineProject project = RefineProject.get(project_id)
 
         log.debug ("Project ${project}")
-        result.status = project_data ? true : false
-        result.messages = []
 
-        project.progress = 0
-        project.setProjectStatus(RefineProject.Status.INGESTING)
+        project.progress = progress
 
-        // Clear the skipped_titles
-        project.getSkippedTitles().clear()
+        if (status) {
+          project.projectStatus = status
+        }
 
         project.save(failOnError:true, flush:true)
 
         log.debug ("Updated the project.")
+      s.getTransaction().commit()
+    }
+  }
 
-        // Flush the status.
-        status.flush()
+  private handleNonePresentTipps(old_tipps, user) {
 
-        log.debug ("Forcibly flushed the session.")
+    // Soft delete the TIPPs not updated here.
+    RefineProject.withTransaction { t ->
+
+      for (Set<Long> tipps : old_tipps.values()) {
+        for (Long tipp_id : tipps) {
+
+          // Ensure the tipp is in this transaction.
+          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+
+          if (tipp.isCurrent()) {
+            ReviewRequest.raise(
+                tipp,
+                "TIPP Not present when performing package update",
+                "This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
+                user
+                )
+
+            // Save.
+            tipp.save(failOnError:true, flush:true)
+            log.debug ("Raised review request for TIPP ${tipp_id}.")
+
+          } else {
+
+            // Ignoring this title as it's not a current TIPP.
+            log.debug ("Ignoring TIPP ${tipp_id} as it's not marked as a Current.")
+          }
+        }
       }
+    }
+  }
+
+  private boolean addDatatRow(result, long project_id, boolean incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, old_tipps, retire_packages, skipped_titles, user) {
+
+    // Transaction for each row.
+    RefineProject.withNewTransaction { TransactionStatus status ->
+
+      RefineProject project = RefineProject.get(project_id)
+      if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+        try {
+          def ids = []
+          for (ai in identifiers) {
+            // The value.
+            def val = jsonv(datarow.cells[ai.colno])
+            if (val) {
+              ids.add([type:ai.type, value:(val)])
+            }
+          }
+
+          // Title Instance
+          log.debug("Looking up title...(ids: ${ids})")
+
+          // Lookup the title.
+          TitleInstance title_info = titleLookupService.find(
+              jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+              getRowValue(datarow,col_positions,PUBLISHER_NAME),
+              ids,
+              user
+              );
+
+          // If we match a title then ingest...
+          if (title_info != null) {
+
+            // Additional TI properties.
+            for (apd in gokb_additional_ti_props) {
+              title_info.appendToAdditionalProperty(
+                  apd.name.toLowerCase(), jsonv(datarow.cells[apd.col])
+                  )
+            }
+
+            // Save any changes to the title here.
+            title_info.save(failOnError:true, flush:true)
+
+            // Platforms must already exist in GOKb, so just to the lookup.
+            Platform platform_info = componentLookupService.lookupComponent(
+                getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
+                )
+            if (platform_info == null) {
+              throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
+            }
+
+            // The package.
+            String pkg_name = getRowValue(datarow,col_positions,PACKAGE_NAME)
+            Package pkg = packageService.findCorrectPackage(
+                retire_packages,
+                pkg_name,
+                incremental
+                );
+
+            // Set the propvider of the package to that on the project.
+            Org provider = project.provider
+            pkg.setProvider (provider)
+
+            // Set the latest project.
+            pkg.setLastProject(project)
+
+            // Save the Package changes.
+            pkg.save(failOnError:true, flush:true)
+
+            // Populate the tipp attribute map.
+            def tipp_values = [
+              title:title_info,
+              pkg:pkg,
+              hostPlatform:platform_info,
+              startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
+              startVolume:getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
+              startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
+              endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
+              endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
+              endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
+              embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+              coverageDepth:getRowRefdataValue("TitleInstancePackagePlatform.CoverageDepth", datarow, col_positions, COVERAGE_DEPTH),
+              coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+              url:getRowValue(datarow,col_positions,HOST_PLATFORM_URL),
+              delayedOA:getRowRefdataValue("TitleInstancePackagePlatform.DelayedOA", datarow, col_positions, DELAYED_OA),
+              delayedOAEmbargo:getRowValue(datarow, col_positions, DELAYED_OA_EMBARGO),
+              hybridOA:getRowRefdataValue("TitleInstancePackagePlatform.hybridOA", datarow, col_positions, HYBRID_OA),
+              hybridOAUrl:getRowValue(datarow, col_positions, HYBRID_OA_URL),
+              primary:getRowRefdataValue("TitleInstancePackagePlatform.Primary", datarow, col_positions, PRIMARY_TIPP),
+              paymentType:getRowRefdataValue("TitleInstancePackagePlatform.PaymentType", datarow, col_positions, TIPP_PAYMENT),
+              status:getRowRefdataValue(KBComponent.RD_STATUS, datarow, col_positions, TIPP_STATUS)
+            ]
+
+            def tipp = null
+
+            // Check incrmental.
+            if (incremental) {
+              // TODO: THIS DOES NOT WORK!!!!
+              // Incremental... Lookup the TIPP
+              //          def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
+              //          tipp = crit.get {
+              //          and {
+              //            crit.add ("title.id", "eq", title_info.id)
+              //            crit.add ("pkg.id", "eq", pkg.id)
+              //            crit.add ("hostPlatform.id", "eq", platform_info.id)
+              //          }
+              //          }
+
+              // Get the tipps from the title.
+
+              tipp = title_info.getTipps().find { def the_tipp ->
+                // Filter tipps for matching pkg and platform.
+                boolean matched = the_tipp.pkg == pkg
+                matched = matched && the_tipp.hostPlatform == platform_info
+                matched
+              }
+            }
+
+            // Create or update the tipp.
+            if ( !tipp ) {
+              log.debug("Create new tipp")
+              // tipp = new TitleInstancePackagePlatform(tipp_values)
+              tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
+            }
+            else {
+              // We have a TIPP (only incremental would result in this).
+              log.debug("TIPP already present, attempting update");
+
+              // Remove from the list.
+              def pkg_tipps = getPackageTipps(old_tipps, pkg_name, pkg)
+              pkg_tipps.remove(tipp.id)
+
+              // Set all properties on the object.
+              tipp_values.each { prop, value ->
+                // Only set the property if we have a value.
+                if (value != null && value != "") {
+                  tipp."${prop}" = value
+                }
+              }
+            }
+
+            // Add each TIPP custom property in turn.
+            gokb_additional_tipp_props.each { apd ->
+              tipp.appendToAdditionalProperty(
+                  apd.name.toLowerCase(), jsonv(datarow.cells[apd.col])
+                  )
+            }
+
+            // Need to ensure everything is saved.
+            tipp.save(failOnError:true, flush:true)
+
+          } else {
+
+            // Skip this row. Need to log this and save against the project.
+            log.debug("Row has been skipped as the data needs to be rectified in the system before it can be ingested.")
+
+            // We store a hash of title joined with package. This isn't ideal.
+            // TODO:Review this.
+
+            def val = (
+                (getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "") +
+                (getRowValue(datarow, col_positions, PACKAGE_NAME) ?: "")
+                )
+
+            skipped_titles << val.toString()
+          }
+        }
+        catch ( Exception e ) {
+          log.error("Row level exception",e)
+          result.messages.add([text:"Problem processing row ${e}"])
+
+          // Rollback the transaction.
+          status.setRollbackOnly()
+          return false
+        }
+      }
+    }
+    true
+  }
+
+  /**
+   *  Ingest a parsed project. 
+   *  @param project_data Parsed map of project data
+   */
+  def ingest(project_data, project_id, boolean incremental = true, user = null) {
+
+    // Return result.
+    def result = [
+      "status"    : (project_data ? true : false),
+      "messages"  : []
+    ]
+
+    // Skipped titles.
+    Set<String> skipped_titles = []
+    try {
+      log.debug("Ingest")
+
+      // Set the status of this project.
+      updateProjectStatus(project_id, 0, RefineProject.Status.INGESTING)
 
       // Track the old tipps here.
-      Map<String, Set<Long>> old_tipps = [:]
+      final Map<String, Set<Long>> old_tipps = [:]
 
       // Track the packages in need of retiring here.
-      Map<String, Long> retire_packages = [:]
+      final Map<String, Long> retire_packages = [:]
 
       // Ignore the case of the map key that is used to store the field positions.
-      CaseInsensitiveMap col_positions = [:]
-      def identifiers = []
-      def gokb_additional_tipp_props = []
-      def gokb_additional_ti_props = []
+      final CaseInsensitiveMap col_positions = [:]
+      final def identifiers = []
+      final def gokb_additional_tipp_props = []
+      final def gokb_additional_ti_props = []
 
       // Create a new transaction for data examination.
-      RefineProject.withNewTransaction { TransactionStatus status ->
-        project_data.columnDefinitions.each { cd ->
+      for (cd in project_data.columnDefinitions) {
 
-          // Column name.
-          def cn = cd.name
+        // Column name.
+        def cn = cd.name
 
-          if (cn) {
-            // Add to column positions
-            col_positions[cn] = cd.cellIndex;
+        if (cn) {
+          // Add to column positions
+          col_positions[cn] = cd.cellIndex;
 
-            switch (cn.toLowerCase()) {
-              case {it.startsWith(IDENTIFIER_PREFIX.toLowerCase())} :
+          switch (cn.toLowerCase()) {
+            case {it.startsWith(IDENTIFIER_PREFIX.toLowerCase())} :
 
-              // Identifier.
-                def idparts = cn.split(/\./)
-                if ( idparts.length == 3 ) {
-                  // Add to the IDs.
-                  identifiers.add([type:idparts[2],colno:cd.cellIndex])
-                }
-                break
+            // Identifier.
+              def idparts = cn.split(/\./)
+              if ( idparts.length == 3 ) {
+                // Add to the IDs.
+                identifiers.add([type:idparts[2],colno:cd.cellIndex])
+              }
+              break
 
-              case {it.startsWith(TI_FIELD_PREFIX.toLowerCase())} :
+            case {it.startsWith(TI_FIELD_PREFIX.toLowerCase())} :
 
-              // Additional property on TI
-                def prop_name = cn.substring(TI_FIELD_PREFIX.length())
-                gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex])
-                break
+            // Additional property on TI
+              def prop_name = cn.substring(TI_FIELD_PREFIX.length())
+              gokb_additional_ti_props.add([name:prop_name, col:cd.cellIndex])
+              break
 
-              case {it.startsWith(TIPP_FIELD_PREFIX.toLowerCase())} :
+            case {it.startsWith(TIPP_FIELD_PREFIX.toLowerCase())} :
 
-              // Additional property on TIPP
-                def prop_name = cn.substring(TIPP_FIELD_PREFIX.length())
-                gokb_additional_tipp_props.add([name:prop_name, col:cd.cellIndex])
-                break
-            }
+            // Additional property on TIPP
+              def prop_name = cn.substring(TIPP_FIELD_PREFIX.length())
+              gokb_additional_tipp_props.add([name:prop_name, col:cd.cellIndex])
+              break
           }
         }
       }
@@ -445,249 +663,45 @@ class IngestService {
       log.debug("Addition TI props: ${gokb_additional_ti_props}");
       log.debug("Addition TIPP props: ${gokb_additional_tipp_props}");
 
-      int ctr = 0
-      boolean row_level_problems = false
-
       // Go through each row.
-      project_data.rowData.each { datarow ->
-
-        // Transaction for each row.
-        RefineProject.withNewTransaction { TransactionStatus status ->
-
-          log.debug("Row ${ctr} ${datarow}");
-          if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
-
-            try {
-
-              def ids = []
-              identifiers.each { ai ->
-                // The value.
-                def val = jsonv(datarow.cells[ai.colno])
-                if (val) {
-                  ids.add([type:ai.type, value:(val)])
-                }
-              }
-
-              // Title Instance
-              log.debug("Looking up title...(ids: ${ids})")
-
-              // Lookup the title.
-              TitleInstance title_info = titleLookupService.find(
-                  jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
-                  getRowValue(datarow,col_positions,PUBLISHER_NAME),
-                  ids,
-                  user
-                  );
-
-              // Load the project.
-              project = project.merge(failOnError:true)
-
-              // If we match a title then ingest...
-              if (title_info != null) {
-
-                // Additional TI properties.
-                gokb_additional_ti_props.each { apd ->
-                  title_info.appendToAdditionalProperty(
-                      apd.name.toLowerCase(), jsonv(datarow.cells[apd.col])
-                      )
-                }
-
-                // Save any changes to the title here.
-                title_info.save(failOnError:true, flush:true)
-
-                // Platforms must already exist in GOKb, so just to the lookup.
-                Platform platform_info = componentLookupService.lookupComponent(
-                    getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
-                    )
-                if (platform_info == null) {
-                  throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
-                }
-
-                // The package.
-                String pkg_name = getRowValue(datarow,col_positions,PACKAGE_NAME)
-                Package pkg = packageService.findCorrectPackage(
-                    retire_packages,
-                    pkg_name,
-                    incremental
-                    );
-
-                // Set the propvider of the package to that on the project.
-                Org provider = project.provider
-                pkg.setProvider (provider)
-
-                // Set the latest project.
-                pkg.setLastProject(project)
-
-                // Save the Package changes.
-                pkg.save(failOnError:true, flush:true)
-
-                // Populate the tipp attribute map.
-                def tipp_values = [
-                  title:title_info,
-                  pkg:pkg,
-                  hostPlatform:platform_info,
-                  startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-                  startVolume:getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-                  startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-                  endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-                  endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-                  endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-                  embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
-                  coverageDepth:getRowRefdataValue("TitleInstancePackagePlatform.CoverageDepth", datarow, col_positions, COVERAGE_DEPTH),
-                  coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
-                  url:getRowValue(datarow,col_positions,HOST_PLATFORM_URL),
-                  delayedOA:getRowRefdataValue("TitleInstancePackagePlatform.DelayedOA", datarow, col_positions, DELAYED_OA),
-                  delayedOAEmbargo:getRowValue(datarow, col_positions, DELAYED_OA_EMBARGO),
-                  hybridOA:getRowRefdataValue("TitleInstancePackagePlatform.hybridOA", datarow, col_positions, HYBRID_OA),
-                  hybridOAUrl:getRowValue(datarow, col_positions, HYBRID_OA_URL),
-                  primary:getRowRefdataValue("TitleInstancePackagePlatform.Primary", datarow, col_positions, PRIMARY_TIPP),
-                  paymentType:getRowRefdataValue("TitleInstancePackagePlatform.PaymentType", datarow, col_positions, TIPP_PAYMENT),
-                  status:getRowRefdataValue(KBComponent.RD_STATUS, datarow, col_positions, TIPP_STATUS)
-                ]
-
-                def tipp = null
-
-                // Check incrmental.
-                if (incremental) {
-                  // TODO: THIS DOES NOT WORK!!!!
-                  // Incremental... Lookup the TIPP
-                  //				  def crit = ComboCriteria.createFor(TitleInstancePackagePlatform.createCriteria())
-                  //				  tipp = crit.get {
-                  //					and {
-                  //					  crit.add ("title.id", "eq", title_info.id)
-                  //					  crit.add ("pkg.id", "eq", pkg.id)
-                  //					  crit.add ("hostPlatform.id", "eq", platform_info.id)
-                  //					}
-                  //				  }
-
-                  // Get the tipps from the title.
-
-                  tipp = title_info.getTipps().find { def the_tipp ->
-                    // Filter tipps for matching pkg and platform.
-                    boolean matched = the_tipp.pkg == pkg
-                    matched = matched && the_tipp.hostPlatform == platform_info
-                    matched
-                  }
-                }
-
-                // Create or update the tipp.
-                if ( !tipp ) {
-                  log.debug("Create new tipp")
-                  // tipp = new TitleInstancePackagePlatform(tipp_values)
-                  tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
-                }
-                else {
-                  // We have a TIPP (only incremental would result in this).
-                  log.debug("TIPP already present, attempting update");
-
-                  // Remove from the list.
-                  def pkg_tipps = getPackageTipps(old_tipps, pkg_name, pkg)
-                  pkg_tipps.remove(tipp.id)
-
-                  // Set all properties on the object.
-                  tipp_values.each { prop, value ->
-                    // Only set the property if we have a value.
-                    if (value != null && value != "") {
-                      tipp."${prop}" = value
-                    }
-                  }
-                }
-
-                // Add each TIPP custom property in turn.
-                gokb_additional_tipp_props.each { apd ->
-                  tipp.appendToAdditionalProperty(
-                      apd.name.toLowerCase(), jsonv(datarow.cells[apd.col])
-                      )
-                }
-
-                // Need to ensure everything is saved.
-                tipp.save(failOnError:true, flush:true)
-
-              } else {
-
-                // Skip this row. Need to log this and save against the project.
-                log.debug("Row ${ctr} has been skipped as the data needs to be rectified in the system before it can be ingested.")
-
-                // We store a hash of title joined with package. This isn't ideal.
-                // TODO:Review this.
-
-                def val = (
-                    (getRowValue(datarow, col_positions, PUBLICATION_TITLE) ?: "") +
-                    (getRowValue(datarow, col_positions, PACKAGE_NAME) ?: "")
-                    )
-
-                skipped_titles << val.toString()
-              }
-
-              // Every 25 records we clear up the gorm object cache - Pretty nasty performance hack, but it stops the VM from filling with
-              // instances we've just looked up.
-              if ( ctr % 25 == 0 ) {
-
-                // Clean up the GORM.
-                cleanUpGorm()
-                project.progress = ( ctr / project_data.rowData.size() * 100 )
-                project.save(failOnError:true, flush:true)
-              }
-            }
-            catch ( Exception e ) {
-              log.error("Row level exception",e)
-              result.messages.add([text:"Problem processing row ${e}"])
-              row_level_problems = true
-
-              // Rollback the transaction.
-              status.setRollbackOnly()
+      int ctr = 0
+      long total = project_data.rowData.size()
+      
+      // We want to handle a chunk of rows at a time.
+      int chunk_size = 100
+      int chunk_count = (total / chunk_size) + (total % 25 == 0 ? -1 : 0)
+      
+      for (chunk_ctr in (0..chunk_count)) {
+        int end = ((chunk_ctr + 1) * chunk_size)
+        end = (end > total ? total : end) - 1
+        
+        // Get a sub list of the data.
+        def chunked_rows = project_data.rowData[(chunk_ctr * chunk_size)..end]
+        
+        for (datarow in chunked_rows) {
+          
+          RefineProject.withNewSession { ses ->
+            // Add each row to the database.
+            log.debug("Row ${ctr} ${datarow}")
+            if ( !addDatatRow(result, project_id, incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, old_tipps, retire_packages, skipped_titles, user) ) {
+              log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
             }
           }
-          else {
-            log.debug("Row ${ctr} seems to be a null row. Skipping");
-            result.messages.add([text:"Row ${ctr} seems to be a null row. Skipping"]);
-          }
-          ctr++
-
-          // Forcibly flush the session.
-          status.flush()
+  
+          ctr ++
+          
+          if (ctr % 25 == 0) {
+            // Every chunk of records we update the progress.
+            updateProjectStatus(project_id, (ctr / total * 100) as int, RefineProject.Status.INGESTING)
+          } 
         }
       }
 
-      if ( row_level_problems ) {
-        log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
-      }
+      // Handle none-present TIPPs
+      handleNonePresentTipps(old_tipps, user)
 
-      // Soft delete the TIPPs not updated here.
-      RefineProject.withNewTransaction { TransactionStatus status ->
-        for (Set<Long> tipps : old_tipps.values()) {
-          for (Long tipp_id : tipps) {
-
-            // Ensure the tipp is in this transaction.
-            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-
-            // Soft delete.
-            // II: Trial not deleting old tipps...
-            // tipp.deleteSoft()
-
-            if (tipp.isCurrent()) {
-              ReviewRequest.raise(
-                  tipp,
-                  "TIPP Not present when performing package update",
-                  "This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
-                  user
-                  )
-
-              // Save.
-              tipp.save(failOnError:true, flush:true)
-              log.debug ("Raised review request for TIPP ${tipp_id}.")
-
-            } else {
-
-              // Ignoring this title as it's not a current TIPP.
-              log.debug ("Ignoring TIPP ${tipp_id} as it's not marked as a Current.")
-            }
-          }
-        }
-      }
-
-      // Ensure the project exists in this session.
-      project = project.merge()
+      // Read in the project.
+      RefineProject project = RefineProject.get(project_id)
 
       // If any rows with data have been skipped then we need to set them against the,
       // project here, for reporting back into refine.
@@ -750,7 +764,7 @@ class IngestService {
 
   def jsonv(v) {
     def result = null
-    
+
     // Thoroughly check for nulls.
     if (v && !(v.equals(null) || JSONObject.NULL.equals(v) ) ) {
       if (v.v && !JSONObject.NULL.equals(v.v)) {
