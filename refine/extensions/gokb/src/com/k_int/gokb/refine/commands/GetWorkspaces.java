@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.refine.commands.Command;
-import com.k_int.gokb.refine.GOKbModuleImpl;
+import com.k_int.gokb.module.GOKbModuleImpl;
 import com.k_int.gokb.refine.RefineWorkspace;
 
 

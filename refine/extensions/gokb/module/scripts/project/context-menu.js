@@ -1,8 +1,27 @@
 GOKb.contextMenu = {
+  
+  /**
+   * The contextual target that should be set on show so that the menu option
+   * getting focus doesn't interfere with the current element. 
+   */
+  target : null,
+  getTarget : function () {
+    return this.target;
+  },
+  setTarget : function (el) {
+    this.target = $(el);
+    return this.getTarget();
+  },
+  
+  /**
+   * Fired on menu show. Decides whether to show options or not. We should also set the target here as this
+   * is fired on show.
+   */
   disabledCallback : function (elements) {
     
     // Current element.
-    var currentEl = $(document.activeElement);
+    var currentEl = this.setTarget( document.activeElement );
+    
     var name = currentEl.prop("tagName");
     
     if (!currentEl.is('.select2-input')) {
@@ -14,6 +33,9 @@ GOKb.contextMenu = {
   },
 };
 
+/**
+ * The options object used to populate the menu and add callback functions.
+ */
 GOKb.contextMenu.options = function () {
   
   return {
@@ -31,7 +53,7 @@ GOKb.contextMenu.options = function () {
             name: "Organisation",
             callback: function () {
               GOKb.handlers.lookup (
-                $(document.activeElement),
+                GOKb.contextMenu.getTarget(),
                 "org",
                 ["variantNames.variantName"],
                 ["variantNames.variantName"],
@@ -43,7 +65,7 @@ GOKb.contextMenu.options = function () {
             name: "Package",
             callback: function () {
               GOKb.handlers.lookup (
-                $(document.activeElement),
+                GOKb.contextMenu.getTarget(),
                 "package",
                 ["variantNames.variantName"],
                 ["variantNames.variantName"],
@@ -56,7 +78,7 @@ GOKb.contextMenu.options = function () {
             name: "Platform",
             callback: function () {
               GOKb.handlers.lookup (
-                $(document.activeElement),
+                GOKb.contextMenu.getTarget(),
                 "platform",
                 ["variantNames.variantName"],
                 ["variantNames.variantName"],

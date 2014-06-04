@@ -1,6 +1,6 @@
 var html = "text/html";
 var encoding = "UTF-8";
-var ClientSideResourceManager = Packages.com.k_int.gokb.refine.ExtendedResourceManager;
+var ClientSideResourceManager = Packages.com.k_int.gokb.module.ExtendedResourceManager;
 var coreMod = module.getModule("core");
 
 /*

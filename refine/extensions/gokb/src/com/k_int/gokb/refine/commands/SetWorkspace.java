@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.refine.ProjectManager;
 import com.google.refine.commands.Command;
-import com.k_int.gokb.refine.GOKbModuleImpl;
+import com.k_int.gokb.module.GOKbModuleImpl;
 
 
 public class SetWorkspace extends Command {

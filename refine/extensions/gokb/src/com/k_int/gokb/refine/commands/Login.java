@@ -11,8 +11,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k_int.gokb.module.GOKbModuleImpl;
 import com.k_int.gokb.refine.A_RefineAPIBridge;
-import com.k_int.gokb.refine.GOKbModuleImpl;
 import com.k_int.gokb.refine.RefineAPICallback;
 
 

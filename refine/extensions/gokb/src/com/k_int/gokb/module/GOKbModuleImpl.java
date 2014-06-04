@@ -1,4 +1,4 @@
-package com.k_int.gokb.refine;
+package com.k_int.gokb.module;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -19,6 +19,7 @@ import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 import com.google.refine.io.FileProjectManager;
+import com.k_int.gokb.refine.RefineWorkspace;
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 
@@ -44,6 +45,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
 
     public static void setCurrentUserDetails(String username, String password) {
         userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
+        
+//        // Test restart here.
+//        try {
+//          Updator.restart();
+//        } catch (IOException e) {
+//          // TODO Auto-generated catch block
+//          e.printStackTrace();
+//        }
     }
 
     @Override

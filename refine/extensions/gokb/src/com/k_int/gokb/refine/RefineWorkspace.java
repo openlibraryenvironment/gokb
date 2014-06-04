@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 
 import com.google.refine.Jsonizable;
+import com.k_int.gokb.module.GOKbService;
 
 public class RefineWorkspace implements Jsonizable {
   

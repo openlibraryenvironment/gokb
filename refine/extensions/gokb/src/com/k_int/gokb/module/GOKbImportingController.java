@@ -1,4 +1,4 @@
-package com.k_int.gokb.refine;
+package com.k_int.gokb.module;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -19,6 +19,7 @@ import com.google.refine.importing.ImportingManager;
 import com.google.refine.importing.ImportingUtilities;
 import com.google.refine.util.JSONUtilities;
 import com.google.refine.util.ParsingUtilities;
+import com.k_int.gokb.refine.RefineUtil;
 
 
 public class GOKbImportingController extends DefaultImportingController {
