@@ -234,6 +234,10 @@ class IngestService {
     Set publisher_orgs		= []
 
     log.debug("Finding existing titles...");
+    
+    Map<String, KBComponent> comps = [:].withDefault { String k ->
+      componentLookupService.lookupComponent(k)
+    }
 
     // Go through each row and build up the tipp criteria.
     def tiCrit = ComboCriteria.createFor(TitleInstance.createCriteria())
@@ -260,7 +264,7 @@ class IngestService {
             packageIdentifiers << pkg_id.toString()
 
             // Lookup a publisher ID if present.
-            def pub = componentLookupService.lookupComponent ( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
+            def pub = comps["${getRowValue(datarow,col_positions,PUBLISHER_NAME)}"]
             if (pub) publisher_orgs << pub
 
             // Each identifier type.
