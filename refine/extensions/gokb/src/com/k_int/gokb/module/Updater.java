@@ -1,6 +1,7 @@
 package com.k_int.gokb.module;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,20 +16,12 @@ import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.filefilter.FileFilterUtils;
 
-public class Updator implements Runnable {
+public class Updater implements Runnable{
 
   private URL location;
   private File destination;
-
-  public Updator (URL location, File destination) {
-    this.location = location;
-    this.destination = destination;
-  }
-  
-  public void updateAndRestart () throws IOException {
-    restart(this);
-  }
 
   /** 
    * Sun property pointing the main class and its arguments. 
@@ -37,7 +30,6 @@ public class Updator implements Runnable {
    * retrieving the command that works on more platforms.
    */
   public static final String SUN_JAVA_COMMAND = "sun.java.command";
-
 
   /**
    * Restart the current Java application
@@ -112,60 +104,88 @@ public class Updator implements Runnable {
         runBeforeRestart.run();
       }
 
-      // Exit
-      System.exit(0);
-    } catch (Exception e) {
+      // Handle the last exception if we have one and halt the restart.
+      if ( runBeforeRestart instanceof Updater ) {
+
+        // Updater instance?
+        Updater updt = (Updater)runBeforeRestart;
+
+        // Throw an exception if there was one.
+        if (updt.lastException != null) throw updt.lastException;
+
+        // Exit the VM.
+        System.exit(0);
+      }
+    } catch (Throwable e) {
 
       // Something went wrong
       throw new IOException("Error while trying to restart the application", e);
     }
   }
 
+
+  public Throwable lastException = null;
+
+  public Updater (URL location, File destination) {
+    this.location = location;
+    this.destination = destination;
+  }
+
   /**
    * Download and extract the update for the module. We May need to restart the application too.
-   * 
-   * @see java.lang.Runnable#run()
    */
-  @Override
   public void run () {
-    try {
 
-      // Get the file extension.
-      String ext = FilenameUtils.getExtension(location.getPath());
+    // Get the file extension.
+    String ext = FilenameUtils.getExtension(location.getPath());
 
-      // We only handle zips for now...
-      if ("zip".equals(ext)) {
+    // We only handle zips for now...
+    if ("zip".equals(ext)) {
+
+      // Create a temporary file for the zip file.
+      try {
+        File dl = File.createTempFile("gokb_mod_update", ext);
+        FileUtils.copyURLToFile(location, dl);
 
         // Now we have the file let's try and extract the contents.
-        unzip(FileUtils.toFile(location), destination);
+        unzip(dl, destination);
+      } catch (IOException e) {
+        lastException = e;
+        e.printStackTrace();
       }
-
-    } catch (Exception e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
     }
   }
 
   private void unzip (File from, File to_folder) throws IOException {
+
+    // Simplify the path.
+    to_folder = to_folder.getCanonicalFile();
     
+    // Create a a temporary folder to unzip to.
+    File temp_dir = File.createTempFile("unzip", File.separator);
+
     // Create zip file entry.
     ZipFile zipFile = new ZipFile(from);
-    
+
     // Each entry in the zip needs extracting.
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
     while (entries.hasMoreElements()) {
-      
+
       // Single entry.
       ZipEntry entry = entries.nextElement();
-      
+
       // Extract to the destination.
-      File entryDestination = new File(to_folder,  entry.getName());
-      
+      File entryDestination = new File(temp_dir,  entry.getName());
+
       // We May need to create the directories.
-      entryDestination.mkdirs();
-      
-      if (!entry.isDirectory()) {
-        
+      if (entry.isDirectory()) {
+        entryDestination.mkdirs();
+
+      } else {
+
+        // Create every folder needed to create this file.
+        entryDestination.getParentFile().mkdirs();
+
         // This is a none directory type file. Let's save the data.
         InputStream in = zipFile.getInputStream(entry);
         OutputStream out = new FileOutputStream(entryDestination);
@@ -174,5 +194,21 @@ public class Updator implements Runnable {
         IOUtils.closeQuietly(out);
       }
     }
+    
+    for (File dir : temp_dir.listFiles((FileFilter)FileFilterUtils.directoryFileFilter())) {
+      
+      // First create the destination.
+      File dest = new File (to_folder, dir.getName());
+      
+      // Remove the directory.
+      FileUtils.deleteDirectory(dest);
+      
+      // Now move folder to the destination.
+      FileUtils.moveDirectory(temp_dir, dest);
+    }
+  }
+
+  public void updateAndRestart () throws IOException {
+    restart(this);
   }
 }
