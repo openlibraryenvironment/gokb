@@ -204,7 +204,7 @@ public class Updater implements Runnable{
       FileUtils.deleteDirectory(dest);
       
       // Now move folder to the destination.
-      FileUtils.moveDirectory(temp_dir, dest);
+      FileUtils.moveDirectory(dir, dest);
     }
   }
 

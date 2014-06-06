@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,9 +48,12 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     public static void setCurrentUserDetails(String username, String password) {
         userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
         
-//        // Test restart here.
+        // Test restart here.
 //        try {
-//          Updator.restart();
+//          Updater updt = new Updater(
+//            new URL("http://d7.localhost/test.zip"),
+//            singleton.getPath().getParentFile().getParentFile());
+//          updt.updateAndRestart();
 //        } catch (IOException e) {
 //          // TODO Auto-generated catch block
 //          e.printStackTrace();
