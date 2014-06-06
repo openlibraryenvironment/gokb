@@ -163,6 +163,10 @@ public class Updater implements Runnable{
     
     // Create a a temporary folder to unzip to.
     File temp_dir = File.createTempFile("unzip", File.separator);
+    
+    // Need to delete here as the above method returns a file. We will
+    // create it as a directory later on.
+    temp_dir.delete();
 
     // Create zip file entry.
     ZipFile zipFile = new ZipFile(from);
