@@ -1,4 +1,4 @@
-package com.k_int.gokb.refine;
+package com.k_int.gokb.module;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -14,10 +14,12 @@ import org.apache.commons.collections.ExtendedProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.refine.ProjectManager;
 import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 import com.google.refine.io.FileProjectManager;
+import com.k_int.gokb.refine.RefineWorkspace;
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 
@@ -43,6 +45,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
 
     public static void setCurrentUserDetails(String username, String password) {
         userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
+        
+//        // Test restart here.
+//        try {
+//          Updator.restart();
+//        } catch (IOException e) {
+//          // TODO Auto-generated catch block
+//          e.printStackTrace();
+//        }
     }
 
     @Override
@@ -117,20 +127,21 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     private int currentWorkspaceId;
     public void setActiveWorkspace(int workspace_id) {
       
+      // We should now set the new workspace.
+      ProjectManager.singleton.dispose();
+      ProjectManager.singleton = null;
+      
       // Set the id. 
       currentWorkspaceId = workspace_id;
       
       // Get the current WS.
-      RefineWorkspace currentWorkspace = workspaces[currentWorkspaceId];
-      
-      // First we need to save the current workspace.
-      FileProjectManager.singleton.save(true);
+      RefineWorkspace newWorkspace = workspaces[currentWorkspaceId];
       
       // Now we re-init the project manager, with our new directory.
-      FileProjectManager.initialize(currentWorkspace.getWsFolder());
+      FileProjectManager.initialize(newWorkspace.getWsFolder());
       
-      _logger.info("Now using workspace '" + currentWorkspace.getName() + "' at URL '" +
-        currentWorkspace.getURL() + "'");
+      _logger.info("Now using workspace '" + newWorkspace.getName() + "' at URL '" +
+        newWorkspace.getService().getURL() + "'");
       
       // Need to clear loggin information too.
       userDetails = null;
@@ -142,7 +153,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     }
     
     public String getCurrentWorkspaceURL() {
-      return workspaces[currentWorkspaceId].getURL();
+      return workspaces[currentWorkspaceId].getService().getURL();
     }
 
     public int getCurrentWorkspaceId () {
