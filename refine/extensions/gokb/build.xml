@@ -69,7 +69,7 @@
 	         </copy>
 	         
 	         <zip destfile="${dist.dir}/${fullname}.zip">
-	            <zipfileset dir="${ext.dir}/..">
+	            <zipfileset dir="${ext.dir}">
 	                <include name="**/**"/>
 	            </zipfileset>
 	         </zip>
