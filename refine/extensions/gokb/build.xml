@@ -2,7 +2,7 @@
 
 <!--+
     |
-    |  GOKb extension build file for (open/goolge)refine.
+    | GOKb extension build file for (open/goolge)refine.
     | This Ant file will build the gokb extension from within a pre-built version of refine.   
     |                
     +-->
@@ -16,8 +16,8 @@
 	    <property name="ext.dir" value="${dist.dir}/${name}"/>
 	    <property name="fullname" value="${name}-${version}-${revision}" />
 	    
-	    <property name="refine.dir" value="${basedir}/../../../" />
-    	<property name="dist.dir" value="${refine.dir}/dist"/>
+	    <property name="refine.dir" value="${basedir}/../../" />
+	    <property name="dist.dir" value="${refine.dir}/dist"/>
 	    <property name="server.lib.dir" value="${refine.dir}/server/lib" />
 
 	    <property name="refine.webinf.dir" value="${refine.dir}/webapp/WEB-INF" />
@@ -65,14 +65,6 @@
 	                 <exclude name="**/src/*"/>
 	             </fileset>
 	         </copy>
-
-	         <!-- <copy todir="${ext.dir}/licenses">
-	             <fileset dir="${basedir}/licenses">
-	                 <include name="**"/>
-	             </fileset>
-	         </copy> -->
-	         <!-- <copy file="${basedir}/LICENSE.txt" tofile="${ext.dir}/LICENSE.txt"/>
-	         <copy file="${basedir}/README.txt" tofile="${ext.dir}/README.txt"/> -->
 	         
 	         <zip destfile="${dist.dir}/${fullname}.zip">
 	            <zipfileset dir="${ext.dir}/..">
