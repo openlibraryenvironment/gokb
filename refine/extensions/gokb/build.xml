@@ -57,7 +57,7 @@
 	    <target name="build" depends="build_java"/>
 
 	    <target name="dist" depends="build">
-	        <mkdir dir="${ext.dir}"/>
+	        <mkdir dir="${dist.dir}"/>
 	     
 	         <copy todir="${ext.dir}/module">
 	             <fileset dir="module">
