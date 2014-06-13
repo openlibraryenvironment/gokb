@@ -16,7 +16,7 @@
 	    <property name="ext.dir" value="${dist.dir}/${name}"/>
 	    <property name="fullname" value="${name}-${version}-${revision}" />
 	    
-	    <property name="refine.dir" value="${basedir}/../../" />
+	    <property name="refine.dir" value="${basedir}/../../main" />
 	    <property name="dist.dir" value="${refine.dir}/dist"/>
 	    <property name="server.lib.dir" value="${refine.dir}/server/lib" />
 
