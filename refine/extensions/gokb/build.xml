@@ -16,12 +16,13 @@
 	    <property name="ext.dir" value="${dist.dir}/${name}"/>
 	    <property name="fullname" value="${name}-${version}-${revision}" />
 	    
-	    <property name="refine.dir" value="${basedir}/../../main" />
+	    <property name="refine.dir" value="${basedir}/../../" />
+      <property name="main.dir" value="${refine.dir}/main" />
 	    <property name="dist.dir" value="${refine.dir}/dist"/>
 	    <property name="server.lib.dir" value="${refine.dir}/server/lib" />
 
-	    <property name="refine.webinf.dir" value="${refine.dir}/webapp/WEB-INF" />
-	    <property name="refine.modinf.dir" value="${refine.dir}/webapp/modules/core/MOD-INF" />
+	    <property name="refine.webinf.dir" value="${main.dir}/webapp/WEB-INF" />
+	    <property name="refine.modinf.dir" value="${main.dir}/webapp/modules/core/MOD-INF" />
 	    <property name="refine.classes.dir" value="${refine.webinf.dir}/classes" />
 	    <property name="refine.lib.dir" value="${refine.webinf.dir}/lib" />
 	    
