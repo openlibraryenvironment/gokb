@@ -13,12 +13,12 @@
 	    <property name="name" value="gokb"/>
 	    <property name="version" value="3.0"/>
 	    <property name="revision" value="${DSTAMP}${TSTAMP}"/>
-	    <property name="ext.dir" value="${dist.dir}/${name}"/>
 	    <property name="fullname" value="${name}-${version}-${revision}" />
 	    
 	    <property name="refine.dir" value="${basedir}/../../" />
       <property name="main.dir" value="${refine.dir}/main" />
 	    <property name="dist.dir" value="${refine.dir}/dist"/>
+	    <property name="ext.dir" value="${dist.dir}/${name}"/>
 	    <property name="server.lib.dir" value="${refine.dir}/server/lib" />
 
 	    <property name="refine.webinf.dir" value="${main.dir}/webapp/WEB-INF" />
@@ -58,6 +58,7 @@
 
 	    <target name="dist" depends="build">
 	        <mkdir dir="${dist.dir}"/>
+	        <mkdir dir="${ext.dir}"/>
 	     
 	         <copy todir="${ext.dir}/module">
 	             <fileset dir="module">
