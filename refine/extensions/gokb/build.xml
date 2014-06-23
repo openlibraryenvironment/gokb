@@ -71,6 +71,7 @@
 	         <!-- Ensure the property contains the full version string (fullname) -->
 	         <propertyfile file="${ext.dir}/module/MOD-INF/gokb.properties" comment="GOKb Module properties.">
 	         	<entry key="module.version" value="fullname" />
+	         	<entry key="test.key" value="testing value for this key." />
 	         </propertyfile>
 
 	         <zip destfile="${dist.dir}/${fullname}.zip">
