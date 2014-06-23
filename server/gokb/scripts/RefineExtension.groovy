@@ -1,15 +1,15 @@
+import org.ajoberstar.grgit.Branch
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.Tag
-import org.ajoberstar.grgit.Branch
 import org.ajoberstar.grgit.operation.*
-import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.apache.commons.io.FileUtils
 import org.apache.tools.ant.Project
 import org.apache.tools.ant.ProjectHelper
 import org.eclipse.jgit.api.errors.JGitInternalException
+import org.eclipse.jgit.errors.RepositoryNotFoundException
 
 
-//Include the inbuild compile script, as we depend on compile to have been completed first.
+// Include the inbuilt compile script, as we depend on compile to have been completed first.
 includeTargets << grailsScript("_GrailsCompile")
 
 // Include the package script, so we can access the config object here.
@@ -51,9 +51,35 @@ target(buildRefine :"Build OpenRefine") {
 }
 
 /**
+ * Package the extension up and add to the web-app/refine folder
+ */
+target(packageExtension : "Package up the extension and add to the app directory.") {
+  
+  // Ensure the extension is built.
+  depends(buildExtension)
+
+  // The location we wish to copy to.  
+  def refine_location = "${basedir}/web-app/refine"
+  
+  // Make the directory if necessary.
+  ant.mkdir (dir:"${refine_location}")
+  
+  // Clear the directory of any existant files.
+  grailsConsole.addStatus ("Clearing ${refine_location} of other zips")
+  ant.delete (includeEmptyDirs:"false") {
+    fileset (dir:"${refine_location}") {
+      include (name:"*.zip")
+    }
+  }
+  ant.copy (todir:"${refine_location}", overwrite:true, file:"${refine_package}")
+  grailsConsole.addStatus ("Added extension zip found at ${refine_package} to ${refine_location}")
+}
+
+/**
  * Build the GOKb Extension.
  */
-target(default:"Build Extension") {
+target(buildExtension:"Build Extension") {
+  
   depends (buildRefine)
   
   // Create the directory to house the OpenRefine project.
@@ -95,42 +121,45 @@ target(default:"Build Extension") {
     def now = System.currentTimeMillis()
     String zip_name = "${now}-${branch_name}".toLowerCase()
     
-    metadata.'extension.build.date' = "${now}" as String
-    metadata.'extension.build.branch' = branch_name
-    
+    // Create application config entries.
+    def entries = [
+      "extension.build.date": "${now}",
+      "extension.build.branch": "${branch_name}"
+    ]
     if (tag_name) {
-      metadata.'extension.build.tag' = tag_name
+      entries['extension.build.tag'] = tag_name
       zip_name += "-${tag_name}".toLowerCase()
     }
     
-    // Persist the metadata.
-    metadata.persist()
+    // Update the metadata.
+    updateMetadata(entries)
     
     // We can override the build properties here.
     def build_props = ["fullname" : zip_name]
     
-    antBuild(refine_extension_bxml, config.refine.extensionBuildTarget, build_props)
+    Project p = antBuild(refine_extension_bxml, config.refine.extensionBuildTarget, build_props)
+    
+    // Set the location of the built zip file that contains the extension.
+    refine_package = "${p.getProperty('dist.dir')}/${p.getProperty('fullname')}.zip"
     
   } finally {
   
     // Release any resources.
     git?.close()
   }
-  
-  // Package up the extension and move into /web-app/refine/extension.zip.
-  
-  // Need to add to application properties.
 }
 
-private boolean antBuild (File bxml, String target = null, def props = null) {
-  
+setDefaultTarget("packageExtension")
+
+private Project antBuild (File bxml, String target = null, def props = null) {
+  Project p = null
   if (bxml.exists()) {
     
     grailsConsole.addStatus("build.xml found. Creating ANT project.")
-    AntBuilder a = ant;
+    AntBuilder a = ant
     
     // Create a project in ANT
-    Project p = a.createProject()
+    p = a.createProject()
     p.init()
     p.baseDir = bxml.getParentFile()
     
@@ -146,12 +175,11 @@ private boolean antBuild (File bxml, String target = null, def props = null) {
     
     // Execute Default target.
     p.executeTarget(target ?: p.defaultTarget)
-    return true
     
   } else {
     grailsConsole.addStatus("build.xml not found")
   }
-  return false
+  return p
 }
 
 /**
