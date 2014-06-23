@@ -67,7 +67,12 @@
 	                 <exclude name="**/src/*"/>
 	             </fileset>
 	         </copy>
-	         
+	    	
+	         <!-- Ensure the property contains the full version string (fullname) -->
+	         <propertyfile file="${ext.dir}/module/MOD-INF/gokb.properties" comment="GOKb Module properties.">
+	         	<entry key="module.version" value="fullname" />
+	         </propertyfile>
+
 	         <zip destfile="${dist.dir}/${fullname}.zip">
 	            <zipfileset dir="${ext.dir}">
 	                <include name="**/**"/>
