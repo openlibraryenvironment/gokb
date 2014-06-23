@@ -194,7 +194,7 @@ private String tryGettingBranch (Grgit git, String branchName) {
   
     // Grab the branches.
     List<Branch> branches = git.branch.list {
-      mode = BranchListOp.Mode.LOCAL
+      mode = BranchListOp.Mode.REMOTE
     }
     
     // Search for a matching branch
@@ -205,9 +205,21 @@ private String tryGettingBranch (Grgit git, String branchName) {
       // Checkout the branch.
       git.checkout {
         branch = (the_branch.fullName)
+        createBranch = true
       }
       
-      grailsConsole.addStatus ("Found and checked out branch ${the_branch}")
+      // The branch isn't configured to track a remote branch.
+      if (!the_branch.trackingBranch) {
+        
+        // Add the tracking here.
+        git.branch.change {
+          name = git.branch.current.name
+          startPoint = "${the_branch.fullName)"
+          mode = BranchChangeOp.Mode.TRACK
+        }
+      }
+      
+      grailsConsole.addStatus ("Found and checked out branch ${git.branch.current}")
     }
   }
   
