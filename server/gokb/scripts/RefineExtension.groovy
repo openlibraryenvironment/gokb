@@ -201,13 +201,13 @@ private String tryGettingBranch (Grgit git, String branchName) {
     Branch the_branch = branches.find { it.getName() == branchName }
     
     if (the_branch) {
-      grailsConsole.addStatus ("Found branch ${the_branch.getName()}")
       
       // Checkout the branch.
       git.checkout {
         branch = (the_branch.fullName)
       }
-      grailsConsole.addStatus ("Checked out")
+      
+      grailsConsole.addStatus ("Found and checked out branch ${the_branch}")
     }
   }
   
@@ -287,7 +287,7 @@ private Grgit getOrCreateRepo (File loc, String uri) {
   }
   
   // Clean to remove all none-tracked changes.
-  grailsConsole.addStatus ("Cleaning repo.")
+  grailsConsole.addStatus ("Cleaning none trackable changes.")
   try {
     git.clean {
       directories = true
@@ -298,13 +298,22 @@ private Grgit getOrCreateRepo (File loc, String uri) {
     // that have come from another repository we can get an error thrown as it attempts to
     // remove the directory. Even though the error is reported the delete operation still
     // succeeds. This obviously isn't ideal, but is the only way I could see around it.
-    if (!e.getCause() instanceof IOException) {
+    if (e.getCause() instanceof IOException) {
+      // Retry.
+      git.clean {
+        directories = true
+        ignore = false
+      }
+    } else {
       throw e
     }
   }
   
   // Now pull the changes to the cleaned repo.
-  grailsConsole.addStatus ("Pulling changes to ensure we are at the head.")
+  grailsConsole.addStatus ("Reset and Pull to ensure we mirror the remote.")
+  git.reset {
+    mode = ResetOp.Mode.HARD
+  }
   git.pull ()
   
   git
