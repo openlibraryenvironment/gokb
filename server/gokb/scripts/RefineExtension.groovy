@@ -119,7 +119,7 @@ target(buildExtension:"Build Extension") {
     
     // Now lets add to the properties file.
     def now = System.currentTimeMillis()
-    String zip_name = "${now}-${branch_name}".toLowerCase()
+    String zip_name = "${branch_name}"
     
     // Create application config entries.
     def entries = [
@@ -128,8 +128,13 @@ target(buildExtension:"Build Extension") {
     ]
     if (tag_name) {
       entries['extension.build.tag'] = tag_name
-      zip_name += "-${tag_name}".toLowerCase()
+      zip_name += "-${tag_name}"
+    } else {
+      // Use the timestamp.
+      zip_name += "-${now}"
     }
+    
+    zip_name = zip_name.toLowercase()
     
     // Update the metadata.
     updateMetadata(entries)
