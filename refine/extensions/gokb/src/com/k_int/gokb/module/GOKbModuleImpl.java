@@ -38,6 +38,13 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     private RefineWorkspace[] workspaces;
 
     public static final String VERSION = "3.1";
+    public static String getVersion() {
+      if (version == null) {
+        singleton.getProperties().getString("module.version");
+      }
+      
+      return version;
+    }
 
     private static String userDetails = null;
 
@@ -49,8 +56,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
         
         // Test restart here.
+//        File module_path = singleton.getPath().getParentFile().getParentFile();
 //        try {
 //          Updater updt = new Updater(
+//            module_path,
 //            new URL("http://d7.localhost/test.zip"),
 //            singleton.getPath().getParentFile().getParentFile());
 //          updt.updateAndRestart();
@@ -98,11 +107,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       List<String> apis = properties.getList("api.entry");
       
       // Include local?
-      if (properties.containsKey("localapi") && properties.getBoolean("localapi")) {
-        apis.addAll(0,
-          Arrays.asList(new String[]{
-            "Local", "local", "http://localhost:8080/gokb/api/"
-        }));
+      if (properties.containsKey("apis")) {
+        
+        // Add any passed in via command line too. We add these as priorities.
+        apis.addAll(0, properties.getList("apis"));
       }
       
       // Check that the list length is even as each should be in pairs.
@@ -147,10 +155,11 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
       // Now we re-init the project manager, with our new directory.
       FileProjectManager.initialize(newWorkspace.getWsFolder());
       
-      _logger.info("Now using workspace '" + newWorkspace.getName() + "' at URL '" +
-        newWorkspace.getService().getURL() + "'");
+      _logger.info(
+        "Now using workspace '" + newWorkspace.getName() + "' at URL '" +
+            newWorkspace.getService().getURL() + "'");
       
-      // Need to clear loggin information too.
+      // Need to clear login information too.
       userDetails = null;
       _logger.info("User login details reset to force login on workspace change.");
     }
