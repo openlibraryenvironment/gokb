@@ -17,3 +17,16 @@ eventCompileStart = { kind ->
 
   println "**** Compile Starting on Build #${buildNumber}"
 }
+
+// Require our extension build script
+includeTargets << new File("${basedir}/scripts/RefineExtension.groovy")
+
+/**
+ * Add our extension to grails.
+ */
+eventPackagingEnd = {
+  
+  // After the app has been packaged for deployment we need to package the extension, so that
+  // it is included in our .war file.
+  packageExtension()
+}
