@@ -142,6 +142,7 @@ target(buildExtension:"Build Extension") {
     // We can override the build properties here.
     def build_props = ["fullname" : zip_name]
     
+    // Build the XML file overriding the properties in the file with our custom values.
     Project p = antBuild(refine_extension_bxml, config.refine.extensionBuildTarget, build_props)
     
     // Set the location of the built zip file that contains the extension.
