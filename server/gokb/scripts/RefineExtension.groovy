@@ -220,7 +220,7 @@ private String tryGettingBranch (Grgit git, String branchName) {
         // Add the tracking here.
         git.branch.change {
           name = git.branch.current.name
-          startPoint = "${the_branch.fullName)"
+          startPoint = "${the_branch.fullName}"
           mode = BranchChangeOp.Mode.TRACK
         }
       }
@@ -248,6 +248,11 @@ private String tryGettingTag (Grgit git, String tagPattern) {
   
     // Grab the tags.
     List<Tag> tags = git.tag.list()
+    
+    grailsConsole.addStatus ("All Tags:")
+    tags.each {
+      grailsConsole.addStatus ("\t${it.name}")
+    }
     
     // Try and find the tag for the version we want.
     Tag release = tags.find { Tag t -> t.getName() ==~ tagPattern }
@@ -316,6 +321,8 @@ private Grgit getOrCreateRepo (File loc, String uri) {
     // that have come from another repository we can get an error thrown as it attempts to
     // remove the directory. Even though the error is reported the delete operation still
     // succeeds. This obviously isn't ideal, but is the only way I could see around it.
+    // Rereunning the method after the exception doesn't seem to throw an exception the second
+    // time.
     if (e.getCause() instanceof IOException) {
       // Retry.
       git.clean {
