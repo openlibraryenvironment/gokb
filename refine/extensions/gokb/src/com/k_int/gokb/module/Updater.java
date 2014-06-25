@@ -18,10 +18,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 
-public class Updater implements Runnable{
+public class Updater implements Runnable {
 
   private URL location;
   private File destination;
+  private File tempdir;
 
   /** 
    * Sun property pointing the main class and its arguments. 
@@ -126,7 +127,8 @@ public class Updater implements Runnable{
 
   public Throwable lastException = null;
 
-  public Updater (URL location, File destination) {
+  public Updater (File tempdir, URL location, File destination) {
+    this.tempdir = tempdir;
     this.location = location;
     this.destination = destination;
   }
@@ -162,7 +164,7 @@ public class Updater implements Runnable{
     to_folder = to_folder.getCanonicalFile();
     
     // Create a a temporary folder to unzip to.
-    File temp_dir = File.createTempFile("unzip", File.separator);
+    File temp_dir = File.createTempFile("unzip", File.separator, tempdir);
     
     // Need to delete here as the above method returns a file. We will
     // create it as a directory later on.
