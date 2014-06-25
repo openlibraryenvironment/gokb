@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
 import org.gokb.cred.*
+import org.gokb.refine.RefineProject
 import org.gokb.validation.Validation
 import org.gokb.validation.types.*
 
@@ -62,9 +63,20 @@ class BootStrap {
     registerDomainClasses()
 
     addValidationRules()
+    
+    failAnyIngestingProjects()
 
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass();
+  }
+  
+  def failAnyIngestingProjects() {
+    log.debug("Failing any projects stuck on Ingesting on server start.");
+    RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
+      
+      it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
+      it.save(flush:true)
+    }
   }
 
   def registerDomainClasses() {
