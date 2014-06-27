@@ -4,8 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,6 +12,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.k_int.gokb.module.util.ConditionalDownloader;
 
 public class GOKbService {
   public static final String SERVICE_DIR = "_gokb";
@@ -109,61 +110,30 @@ public class GOKbService {
      * @throws IOException
      * @throws JSONException 
      */
-    private JSONObject getIfChanged (String url, Long since, String etag) throws IOException {
+    private JSONObject getIfChanged (String url, Long since, String etag) throws IOException, JSONException {
       
-      // Get the URL.
-      URL urlObj = new URL(url);
-      
-      HttpURLConnection connection = null;
-
-      // Configure the connection properties.
-      connection = (HttpURLConnection) urlObj.openConnection();
-      connection.setDoOutput(true);
-      connection.setConnectTimeout(GOKbModuleImpl.properties.getInt("timeout"));
-      connection.setRequestProperty("Connection", "Keep-Alive");
-      
-      // Last modified date?
-      if (since != null && since > 0) {
-        connection.setIfModifiedSince(since);
-      }
-
-      // ETag compatibility
-      if (etag != null) {
-        connection.setRequestProperty("If-None-Match", etag);
-      }
-      
-      try {
-        // Connect to the service.
-        connection.connect();
+      URLConnection connection = ConditionalDownloader.getIfChanged(url, since, etag);
+      if (connection != null) {
+        // Try and read JSONObject form the server.
+        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         
-        // Get the response code.
-        int code = connection.getResponseCode();
-        
-        // Check for '304 Not Modified' response code.
-        if (code != 304 ) {
-          
-          // Try and read JSONObject form the server.
-          BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-          
-          // The string builder.
-          StringBuilder str = new StringBuilder();
+        // The string builder.
+        StringBuilder str = new StringBuilder();
 
-          // Read into a string builder.
-          String inputStr;
-          while ((inputStr = in.readLine()) != null) {
-            str.append(inputStr);
-          }
-          
-          // Now create the JSON from the text.
-          return new JSONObject ("{\"date\":" + connection.getLastModified() + ",\"data\": " + str.toString() + "}");
+        // Read into a string builder.
+        String inputStr;
+        while ((inputStr = in.readLine()) != null) {
+          str.append(inputStr);
         }
-      } catch (Exception e) {
-        // Ignore and return null.
+        
+        // Now create the JSON from the text.
+        return new JSONObject ("{\"date\":" + connection.getLastModified() + ",\"data\": " + str.toString() + "}");
       }
       
       return null;
     }
   }
+  
   private String URL;
   
   private ServiceSettings settings;
