@@ -36,7 +36,7 @@ refine = [
   refineRepoPath      : "gokb-build/refine",
   gokbRepoURL         : "https://github.com/k-int/gokb-phase1.git",
   gokbRepoBranch      : "feature-extension_improvements",
-  gokbRepoTagPattern  : null,
+  gokbRepoTagPattern  : /\QCLIENT_\E(.*)/,
   extensionRepoPath   : "gokb-build/extension",
   gokbExtensionPath   : "refine/extensions/gokb",
   gokbExtensionTarget : "extensions/gokb/",

@@ -128,13 +128,19 @@ target(buildExtension:"Build Extension") {
     ]
     if (tag_name) {
       entries['extension.build.tag'] = tag_name
-      zip_name += "-${tag_name}"
+      
+      // Matcher
+      def matcher = tag_name =~ config.refine.gokbRepoTagPattern
+      
+      if (matcher && matcher?.getAt(0)?.getAt(1)) {
+        zip_name = "gokb-release-${matcher[0][1]}"
+      }
     } else {
       // Use the timestamp.
       zip_name += "-${now}"
     }
     
-    zip_name = zip_name.toLowercase()
+    zip_name = zip_name.toLowerCase()
     
     // Update the metadata.
     updateMetadata(entries)
