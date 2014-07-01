@@ -51,6 +51,13 @@ target(buildRefine :"Build OpenRefine") {
 }
 
 /**
+ * The default target.
+ */
+target(default: "The default target") {
+  depends(packageExtension)
+}
+
+/**
  * Package the extension up and add to the web-app/refine folder
  */
 target(packageExtension : "Package up the extension and add to the app directory.") {
@@ -161,8 +168,6 @@ target(buildExtension:"Build Extension") {
   }
 }
 
-setDefaultTarget("packageExtension")
-
 private Project antBuild (File bxml, String target = null, def props = null) {
   Project p = null
   if (bxml.exists()) {
@@ -255,13 +260,16 @@ private String tryGettingTag (Grgit git, String tagPattern) {
     // Grab the tags.
     List<Tag> tags = git.tag.list()
     
-    grailsConsole.addStatus ("All Tags:")
-    tags.each {
-      grailsConsole.addStatus ("\t${it.name}")
+    Tag release = null
+    tags.each { Tag t ->
+      
+      // Get the current tag.
+      if (t.getName() ==~ tagPattern) {
+        if (release?.commit?.time < t.commit.time ) {
+          release = t
+        }
+      }
     }
-    
-    // Try and find the tag for the version we want.
-    Tag release = tags.find { Tag t -> t.getName() ==~ tagPattern }
     
     if (release) {
       
