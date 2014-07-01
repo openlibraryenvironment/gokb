@@ -134,6 +134,7 @@ function init() {
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
      "scripts/project/context-menu.js",
+     "scripts/project/pnotify.custom.min.js",
     ]
   );
 
