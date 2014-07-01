@@ -6,10 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -18,114 +16,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 
-public class Updater implements Runnable {
+public class Updater {
 
   private URL location;
   private File destination;
   private File tempdir;
-
-  /** 
-   * Sun property pointing the main class and its arguments. 
-   * Might not be defined on none-Hotspot VM implementations.
-   * TODO: Maybe need to look at more in depth method at
-   * retrieving the command that works on more platforms.
-   */
-  public static final String SUN_JAVA_COMMAND = "sun.java.command";
-
-  /**
-   * Restart the current Java application
-   * @throws IOException
-   */
-  public static void restart () throws IOException {
-    restart (null);
-  }
-
-  /**
-   * Restart the current Java application
-   * @param runBeforeRestart some custom code to be run before restarting
-   * @throws IOException
-   */
-  public static void restart (Runnable runBeforeRestart) throws IOException {
-    try {
-
-      // Java binary
-      String java = System.getProperty("java.home") + "/bin/java";
-
-      // VM arguments
-      List<String> vmArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
-      StringBuffer vmArgsOneLine = new StringBuffer();
-      for (String arg : vmArguments) {
-
-        // If it's the agent argument : we ignore it otherwise the
-        // address of the old application and the new one will be in conflict
-        if (!arg.contains("-agentlib")) {
-          vmArgsOneLine.append(arg);
-          vmArgsOneLine.append(" ");
-        }
-      }
-
-      // Init the command to execute, add the vm args
-      final StringBuffer cmd = new StringBuffer(java + " " + vmArgsOneLine);
-
-      // Program main and program arguments
-      String[] mainCommand = System.getProperty(SUN_JAVA_COMMAND).split(" ");
-
-      // Program main is a jar
-      if (mainCommand[0].endsWith(".jar")) {
-
-        // If it's a jar, add -jar mainJar
-        cmd.append("-jar " + new File(mainCommand[0]).getPath());
-      } else {
-
-        // Else it's a .class, add the classpath and mainClass
-        cmd.append("-cp \"" + System.getProperty("java.class.path") + "\" " + mainCommand[0]);
-      }
-
-      // Finally add program arguments
-      for (int i = 1; i < mainCommand.length; i++) {
-        cmd.append(" ");
-        cmd.append(mainCommand[i]);
-      }
-
-      // Execute the command in a shutdown hook, to be sure that all the
-      // resources have been disposed of before restarting the application
-      Runtime.getRuntime().addShutdownHook(new Thread() {
-        @Override
-        public void run() {
-          try {
-            Runtime.getRuntime().exec(cmd.toString());
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-        }
-      });
-
-      // Execute some custom code before restarting
-      if (runBeforeRestart!= null) {
-        runBeforeRestart.run();
-      }
-
-      // Handle the last exception if we have one and halt the restart.
-      if ( runBeforeRestart instanceof Updater ) {
-
-        // Updater instance?
-        Updater updt = (Updater)runBeforeRestart;
-
-        // Throw an exception if there was one.
-        if (updt.lastException != null) throw updt.lastException;
-
-        // Exit the VM.
-        System.exit(0);
-      }
-    } catch (Throwable e) {
-
-      // Something went wrong
-      throw new IOException("Error while trying to restart the application", e);
-    }
-  }
-
-
-  public Throwable lastException = null;
 
   public Updater (File tempdir, URL location, File destination) {
     this.tempdir = tempdir;
@@ -135,8 +30,9 @@ public class Updater implements Runnable {
 
   /**
    * Download and extract the update for the module. We May need to restart the application too.
+   * @throws IOException 
    */
-  public void run () {
+  public void update () throws IOException {
 
     // Get the file extension.
     String ext = FilenameUtils.getExtension(location.getPath());
@@ -145,16 +41,11 @@ public class Updater implements Runnable {
     if ("zip".equals(ext)) {
 
       // Create a temporary file for the zip file.
-      try {
-        File dl = File.createTempFile("gokb_mod_update", ext);
-        FileUtils.copyURLToFile(location, dl);
+      File dl = File.createTempFile("gokb_mod_update", ext);
+      FileUtils.copyURLToFile(location, dl);
 
-        // Now we have the file let's try and extract the contents.
-        unzip(dl, destination);
-      } catch (IOException e) {
-        lastException = e;
-        e.printStackTrace();
-      }
+      // Now we have the file let's try and extract the contents.
+      unzip(dl, destination);
     }
   }
 
@@ -212,9 +103,5 @@ public class Updater implements Runnable {
       // Now move folder to the destination.
       FileUtils.moveDirectory(dir, dest);
     }
-  }
-
-  public void updateAndRestart () throws IOException {
-    restart(this);
   }
 }
