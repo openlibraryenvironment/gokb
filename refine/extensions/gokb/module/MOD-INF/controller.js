@@ -132,6 +132,7 @@ function init() {
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
      "scripts/project/context-menu.js",
+     "scripts/project/pnotify.custom.min.js",
     ]
   );
 
@@ -144,6 +145,7 @@ function init() {
       "styles/uniform.aristo.min.css",
       "styles/jquery.contextMenu.css",
       "styles/select2.css",
+      "styles/pnotify.custom.min.css",
       "styles/common.less",
     ]
   );
