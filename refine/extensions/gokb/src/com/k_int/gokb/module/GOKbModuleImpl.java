@@ -233,32 +233,50 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         // Load our custom properties.
         File modFile = new File(f,"MOD-INF");
         if (modFile.exists()) {
-            try {
-                // Get the existing module properties and overload with our extras.
-                File propFile = new File(modFile,"gokb.properties");
-                if (propFile.exists()) {
-                    ExtendedProperties p = new ExtendedProperties();
-                    _logger.info("Loading GOKb properties ({})", propFile);
-                    BufferedInputStream stream = null;
-                    try {
-                        stream = new BufferedInputStream(new FileInputStream(propFile));
-                        p.load(stream);
-                    } finally {
-                        // Close the stream.
-                        if (stream != null) stream.close();
-                    }
+          
+          // Read in the gokb properties.
+          ExtendedProperties p = loadProperties (new File(modFile,"gokb.properties"));
 
-                    // Add module properties to the GOKb properties to allow,
-                    // command-line passed params to override these values.
-                    p.combine(getProperties());
+          // Also need to add the regex properties from the regex file.
+          p.combine(
+            loadProperties (new File(modFile,"regex.properties"))
+          );
+          
+          // Add module properties to the GOKb properties to allow,
+          // command-line passed params to override these values.
+          p.combine(getProperties());
 
-                    // Set this modules properties.
-                    setProperties(p);
-                }
-            } catch (Exception e) {
-                _logger.error("Error loading GOKb properties", e);
-            }
+          // Set this modules properties.
+          setProperties(p);
         }
+    }
+    
+    private ExtendedProperties loadProperties (File propFile) {
+      ExtendedProperties p = new ExtendedProperties();
+      try {
+        if (propFile.exists()) {
+            _logger.info("Loading GOKb properties ({})", propFile);
+            BufferedInputStream stream = null;
+            try {
+                stream = new BufferedInputStream(new FileInputStream(propFile));
+                p.load(stream);
+            } finally {
+                // Close the stream.
+                if (stream != null) stream.close();
+            }
+
+            // Add module properties to the GOKb properties to allow,
+            // command-line passed params to override these values.
+            p.combine(getProperties());
+
+            // Set this modules properties.
+            setProperties(p);
+        }
+      } catch (Exception e) {
+          _logger.error("Error loading GOKb properties", e);
+      }
+      
+      return p;
     }
 
     private void swapImportControllers() {
