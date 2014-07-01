@@ -28,5 +28,5 @@ eventPackagingEnd = {
   
   // After the app has been packaged for deployment we need to package the extension, so that
   // it is included in our .war file.
-//  packageExtension()
+  packageExtension()
 }
