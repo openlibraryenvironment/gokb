@@ -1,4 +1,7 @@
 /*
 !/extensions
 !.gitignore
+<<<<<<< Upstream, based on bug_fixes
 !.classpath
+=======
+>>>>>>> 2e322e0 Simplified ignore files.
