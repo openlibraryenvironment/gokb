@@ -31,7 +31,7 @@
   </tbody>
 </table>
 
-<g:if test="${targetClass}">
+<g:if test="${targetClass && d.isEditable()}">
 
   <g:if test="${direction=='in'}">
     <g:set var="recip" value="toComponent"/>

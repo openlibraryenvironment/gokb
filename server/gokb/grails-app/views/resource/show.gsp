@@ -28,5 +28,8 @@
         </g:if>
       </g:if>
     </div>
+<!--
+  ${acl}
+-->
 </body>
 </html>

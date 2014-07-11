@@ -46,12 +46,14 @@
 	                </ul>
 	                <br/>
 	      
+                        <g:if test="${d.isEditable()}">
 	                <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
 	                  <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
 	                  <input type="hidden" name="__property" value="roles"/>
 	                  <g:simpleReferenceTypedown name="__relatedObject" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
 	                  <input type="submit" value="Add..." class="btn btn-primary btn-small"/>
 	                </g:form>
+                        </g:if>
 	              </g:if>
 	              <g:else>
 	                Record must be saved before roles can be edited.
@@ -88,6 +90,7 @@
 	                </tbody>
 	              </table>
 	
+                      <g:if test="${d.isEditable()}">
 	              <h4><g:annotatedLabel owner="${d}" property="addVariantName">Add Variant Name</g:annotatedLabel></h4>
 	              <dl class="dl-horizontal">
 	                <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
@@ -100,7 +103,7 @@
 	                  <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
 	                </g:form>
 	              </dl>
-	
+	              </g:if>
 	            </dd>
 	        </dl>
 	      </g:if>
@@ -168,6 +171,7 @@
 	                        contextPath="../apptemplates" 
 	                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
 	
+                          <g:if test="${d.isEditable()}">
 	                  <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddOffice" >Add new <i class="icon-plus"></i></button>
 	                  <dl id="collapseableAddOffice" class="dl-horizontal collapse">
 	                    <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
@@ -184,6 +188,8 @@
 	                      <dt>Region</dt><dd><input type="text" name="region"/></dd>
 	                      <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
 	                    </g:form>
+                          </dl>
+                          </g:if>
 	            </dd>
 	        </dl>
 	    </div>

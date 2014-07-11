@@ -8,23 +8,28 @@ class InplaceTagLib {
   
   private boolean checkEditable (attrs, body, out) {
     
-    // See if there is an owner attribute.
+    // See if there is an owner attribute on the request - owner will be the domain object asking to be edited.
     def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
     
     // Check the attribute.
-    boolean editable = !(attrs?."readonly" == true)
+    boolean tl_editable = !(attrs?."readonly" == true)
     
     // Also check the special flag on the entire component. 
     if (owner?.respondsTo("isSystemComponent")) {
-      editable = editable && !owner?.systemComponent
+      tl_editable = tl_editable && !owner?.systemComponent
+    }
+
+    if ( owner?.respondsTo("isEditable")) {
+      tl_editable = tl_editable && owner.isEditable
     }
     
     // If not editable then we should output as value only and return the value.
-    if (!editable) {
+    if (!tl_editable) {
       def content = body() + (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : "" )
       out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${owner?.niceName ? owner.niceName : 'component' } is read only.' >${content ?: 'Empty'}</span>"
     }
-    editable
+
+    tl_editable
   }
 
   /**

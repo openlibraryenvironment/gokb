@@ -1,8 +1,9 @@
 package org.gokb
 
 import grails.plugins.springsecurity.Secured
-
 import org.gokb.cred.*
+import org.springframework.security.core.context.SecurityContextHolder as SCH
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 
 class ResourceController {
 
@@ -10,6 +11,7 @@ class ResourceController {
   def classExaminationService
   def springSecurityService
   def gokbAclService
+  def aclUtilService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -44,12 +46,28 @@ class ResourceController {
         
         result.acl = gokbAclService.readAclSilently(result.displayobj)
 
+        // Does the user have permissionn to SEE this record?
+        // Does the user have permission to edit this record?
+        def domain_record_info = KBDomainInfo.findByDcName(result.displayobjclassname)
+        if ( aclUtilService.hasPermission(SCH.context.authentication, domain_record_info, org.springframework.security.acls.domain.BasePermission.WRITE ) ) {
+          log.debug("User has write permission to all objects of type "+result.displayobjclassname);
+          result.readonly=false
+          result.ediable=true
+          result.displayobj.metaClass.isEditable={true}
+        }
+        else {
+          log.debug("No write perm to "+result.displayobjclassname+" assume readonly");
+          result.readonly=true
+          result.ediable=false
+          result.displayobj.metaClass.isEditable={false}
+        }
+
+
       }
       else {
         log.debug("unable to resolve object");
       }
     }
-
     result
   }
 }

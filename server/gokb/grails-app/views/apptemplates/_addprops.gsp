@@ -21,6 +21,7 @@
 	      </tr>
       </g:else>
     </g:each>
+    <g:if test="${d.isEditable()}">
     <tr>
       <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
         <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
@@ -31,6 +32,7 @@
         <td><button type="submit" class="btn btn-primary btn-small">Add</button></td>
       </g:form>
     </tr>
+    </g:if>
   </tbody>
 </table>
 
