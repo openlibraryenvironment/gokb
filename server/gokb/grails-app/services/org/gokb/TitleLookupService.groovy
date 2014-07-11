@@ -246,6 +246,11 @@ class TitleLookupService {
         log.debug("Exact distance match for TI.")
         break
 
+      case ( ti.variantNames.collect{GOKbTextUtils.cosineSimilarity(it.normVariantName, norm_title)>= threshold }.size() > 0 ) :
+        // Good match on existing variant titles
+        log.debug("Good match for TI on variant.")
+        break
+
       case {it >= threshold} :
 
       // Good match. Need to add as alternate name.
@@ -254,11 +259,10 @@ class TitleLookupService {
         break
 
       default :
-
-      // Bad match...
+        // Bad match...
         ti.addVariantTitle(title)
 
-      // Raise a review request
+        // Raise a review request
         ReviewRequest.raise(
             ti,
             "'${title}' added as a variant of '${ti.name}'.",
