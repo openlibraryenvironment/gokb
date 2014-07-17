@@ -38,21 +38,21 @@ ValidationPanel.messages.quickRes.options = function (message) {
 	
 	var opts = [];
 	
-	switch (message.type) {
+	switch (message.sub_type) {
 		case 'missing_column' :
 			
 			// Suggest adding column or renaming column.
 			opts = opts.concat (
 			  [
 			    {
-			   		id 		: message.type + "add",
+			   		id 		: message.sub_type + "add",
 			   		label : "Append a blank column",
 			   		click : function() {
 			   			ValidationPanel.messages.quickRes.addBlankColumn(message);
 			   		}
 			    },
 			   	{
-			   		id 		: message.type + "rename",
+			   		id 		: message.sub_type + "rename",
 			   		label : "Rename a column",
 			   		click : function() {
 			   			ValidationPanel.messages.quickRes.renameColumn(message);
@@ -69,17 +69,17 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			opts = opts.concat (
 			  [
 			   	{
-			   		id 		: message.type + "rename",
+			   		id 		: message.sub_type + "rename",
 			   		label : "Rename this column to...",
 			   		click : function() {
-			   			ValidationPanel.messages.quickRes.renameColumnTo(message)
+			   			ValidationPanel.messages.quickRes.renameColumnTo(message);
 			   		}
 			    },
 			    {
-			   		id 		: message.type + "remove",
+			   		id 		: message.sub_type + "remove",
 			   		label : "Remove this column",
 			   		click : function() {
-			   			ValidationPanel.messages.quickRes.removeColumn(message)
+			   			ValidationPanel.messages.quickRes.removeColumn(message);
 			   		}
 			    },
 			  ]
@@ -91,10 +91,10 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			opts = opts.concat (
 			  [
 			    {
-			  	  id 		: message.type + "convert",
+			  	  id 		: message.sub_type + "convert",
 			  	  label : "Attempt automatic conversion",
 			  	  click : function() {
-			  		  ValidationPanel.messages.quickRes.transform(message)
+			  		  ValidationPanel.messages.quickRes.transform(message);
 			  	  }
 			    },
 			  ]
@@ -103,10 +103,10 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			opts = opts.concat (
 			  [
 			   	{
-			   		id 		: message.type + "facet",
+			   		id 		: message.sub_type + "facet",
 			   		label : "Create facet",
 			   		click : function() {
-			   			ValidationPanel.messages.quickRes.addFacet(message)
+			   			ValidationPanel.messages.quickRes.addFacet(message);
 			   		}
 			    },
 			  ]
@@ -158,7 +158,7 @@ ValidationPanel.messages.quickRes.transform = function (message) {
 	  null,
 	  { cellsChanged: true }
 	);
-}
+};
 
 
 /**
@@ -179,7 +179,7 @@ ValidationPanel.messages.quickRes.renameColumnTo = function (message) {
       { modelsChanged: true }
     );
   }
-}
+};
 
 /**
  * Rename a column to the required name.

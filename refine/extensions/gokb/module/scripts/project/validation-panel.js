@@ -59,7 +59,7 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
       			
       			// Add a validation message here.
       			self.data.dataCheck.messages.push(
-      			  {"facetValue":grel,"text":"One or more title was not ingested during the last ingest.","col":"publicationtitle","facetName":"Un-ingested rows","severity":"warning","type":"data_invalid"}
+      			  {"facetValue":grel,"text":"One or more title was not ingested during the last ingest.","col":"publicationtitle","facetName":"Un-ingested rows","type":"warning","sub_type":"data_invalid"}
       			);
       		}
       	}
@@ -164,7 +164,7 @@ ValidationPanel.prototype._render = function() {
 					});
 				;
 				
-				if (message.severity == "error") {
+				if (message.type == "error") {
 					// Push the data to the error table.
 					errorMess.push(["<span class='error' >" + message.text + "</span>", menuLink]);
 				} else {

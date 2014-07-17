@@ -42,7 +42,7 @@ abstract class A_ValidationRule {
   protected void addError(final result) {
 
     // Get the extras added by this rule.
-    Map message = ['severity' : getSeverity(), 'type' : getType()] + getMessageProperties()
+    Map message = ['type' : getSeverity(), 'sub_type' : getType()] + getMessageProperties()
 
     // If messages isn't set then default to empty list.
     if (result.messages == null) {
