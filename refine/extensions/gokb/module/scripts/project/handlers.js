@@ -206,7 +206,7 @@ GOKb.handlers.estimateChanges = function (incremental) {
       }
     }
   );
-}
+};
 
 GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 
