@@ -1,5 +1,26 @@
-/**
+/*
  * Default project screen include.
+ */
+
+/**
+ * Add an extra method toi the GOKb namespace to allow for case insensitive search for column.
+ */ 
+GOKb.caseInsensitiveColumnName = function (name) {
+  var columns = theProject.columnModel.columns;
+  for (var i = 0; i < columns.length; i++) {
+    var column = columns[i];
+    if (column.name.toLowerCase() == name.toLowerCase()) {
+      return column.name;
+    }
+  }
+  return name;
+};
+
+
+/*
+ * The following methods are used to replace already existing methods within refine.
+ * This allows us to extend or replace already existing functions while still having access
+ * to the original from whichever version of refine is running.
  */
 GOKb.hijackFunction (
   "initializeUI",
@@ -142,13 +163,48 @@ GOKb.hijackFunction (
   }
 );
 
-GOKb.caseInsensitiveColumnName = function (name) {
-  var columns = theProject.columnModel.columns;
-  for (var i = 0; i < columns.length; i++) {
-    var column = columns[i];
-    if (column.name.toLowerCase() == name.toLowerCase()) {
-      return column.name;
-    }
+GOKb.hijackFunction (
+  'ProcessPanel.prototype.showUndo',
+  function(historyEntry, oldFunction) {
+
+    // In this case we are not going to be running the original.
+    // Just send through our new alert method instead.
+    GOKb.notify.show({
+      title : "Data Updated",
+      text : historyEntry.description,
+      before_open : function (notice) {
+        
+        // Build the undo link.
+        var undo = $('<span />').addClass('notification-action')
+          .append($('<a />')
+            .text('undo')
+            .click(function(){
+              Refine.postCoreProcess(
+                  "undo-redo",
+                  { undoID: historyEntry.id },
+                  null,
+                  { everythingChanged: true }
+              );
+              
+              notice.remove();
+            })
+          )
+        ;
+        
+        notice.text_container.append(undo);
+      },
+    });
   }
-  return name;
-};
+);
+
+// Hijack the default alert mechanism.
+GOKb.hijackFunction(
+  'window.alert',
+  function(message, oldFunction) {
+    GOKb.notify.show({
+      text  : message,
+      title : "System Message",
+      hide  : false
+    });
+  }
+);

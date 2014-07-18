@@ -14,25 +14,21 @@
       "system" : {
         "dir1": "down",
         "dir2": "left",
+        "_notification_defaults" : {
+          "type" : "info",
+        },
       },
-      "validation" : {
-        "dir1": "down",
-        "dir2": "right",
-      },
-//      "validation-warning" : {
-//        "dir1": "down",
-//        "dir2": "down",
-//        "push": "top",
-//        "_notification_defaults" : {
-//          animation: 'fade',
-//          addclass: "stack-topleft",
-//        }
-//      },
     };
     
     this._notification_defaults = {
-      animation: 'fade',
+      animation: {
+        'effect_in' : 'fade',
+        'effect_out': 'none',
+      }
     };
+    
+    // Alert.
+    this._old_alert = null;
   };
   
   /**
@@ -90,5 +86,4 @@
   
   // And instansiate the object and add to the GOKb namespace.
   GOKb.notify = new Notification();
-  
 })(jQuery);
