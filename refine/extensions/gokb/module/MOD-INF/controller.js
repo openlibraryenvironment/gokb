@@ -124,7 +124,9 @@ function init() {
      "scripts/plugins/jquery.contextMenu.js",
      "scripts/plugins/jquery.ui-lookup.js",
      "scripts/plugins/select2.min.js",
+     "scripts/plugins/pnotify.custom.min.js",
      "scripts/common.js",
+     "scripts/common-notifications.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
      "scripts/project/validation-panel-messages.js",
@@ -132,7 +134,6 @@ function init() {
      "scripts/project/handlers.js",
      "scripts/project/menu.js",
      "scripts/project/context-menu.js",
-     "scripts/project/pnotify.custom.min.js",
     ]
   );
 
