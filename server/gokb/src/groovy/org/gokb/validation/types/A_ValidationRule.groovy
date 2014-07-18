@@ -5,7 +5,7 @@ import org.codehaus.groovy.grails.web.json.JSONObject
 abstract class A_ValidationRule {
 
   public static final String SEVERITY_ERROR = "error"
-  public static final String SEVERITY_WARNING = "warning"
+  public static final String SEVERITY_WARNING = "notice"
 
   private boolean errorTriggered = false
   String columnName
