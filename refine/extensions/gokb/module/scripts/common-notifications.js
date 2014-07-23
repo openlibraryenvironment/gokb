@@ -12,18 +12,31 @@
   Notification = function () {    
     this._stacks = {
       "system" : {
-        "dir1": "down",
-        "dir2": "left",
-        "_notification_defaults" : {
-          "type" : "info",
+        dir1  : "down",
+        dir2  : "left",
+        _notification_defaults  : {
+          type : "info",
+        },
+      },
+      "validation" : {
+        dir1      : "right",
+        dir2      : "down",
+        firstpos1 : 0,
+        firstpos2 : 0,
+        _notification_defaults : {
+          hide    : false,
+          buttons: {
+            closer   : false,
+            sticker  : false,
+          }
         },
       },
     };
     
     this._notification_defaults = {
       animation: {
-        'effect_in' : 'fade',
-        'effect_out': 'none',
+        effect_in   : 'fade',
+        effect_out  : 'none',
       }
     };
     
@@ -86,4 +99,50 @@
   
   // And instansiate the object and add to the GOKb namespace.
   GOKb.notify = new Notification();
+  
+  GOKb.hijackFunction (
+    'ProcessPanel.prototype.showUndo',
+    function(historyEntry, oldFunction) {
+
+      // In this case we are not going to be running the original.
+      // Just send through our new alert method instead.
+      GOKb.notify.show({
+        title : "Data Updated",
+        text : historyEntry.description,
+        before_open : function (notice) {
+          
+          // Build the undo link.
+          var undo = $('<span />').addClass('notification-action')
+            .append($('<a />')
+              .text('undo')
+              .click(function(){
+                Refine.postCoreProcess(
+                    "undo-redo",
+                    { undoID: historyEntry.id },
+                    null,
+                    { everythingChanged: true }
+                );
+                
+                notice.remove();
+              })
+            )
+          ;
+          
+          notice.text_container.append(undo);
+        },
+      });
+    }
+  );
+
+  // Hijack the default alert mechanism.
+  GOKb.hijackFunction(
+    'window.alert',
+    function(message, oldFunction) {
+      GOKb.notify.show({
+        text  : message,
+        title : "System Message",
+        hide  : false
+      });
+    }
+  );
 })(jQuery);

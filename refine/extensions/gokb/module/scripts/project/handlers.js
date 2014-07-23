@@ -386,4 +386,4 @@ GOKb.handlers.createBlankColumn = function (col_name) {
 	  null,
 	  { modelsChanged: true }
 	);
-}
+};

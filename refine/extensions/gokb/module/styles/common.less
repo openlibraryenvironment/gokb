@@ -135,6 +135,10 @@ div.selector {
   }
 }
 
+.menu-container {
+	z-index:999999 !important;
+}
+
 #gokb-validation-panel {
   overflow: auto;
 }
@@ -149,8 +153,25 @@ div.selector {
     color: #444444;
     margin: 1em;
     padding: 0 0 13px;
+
+		#validationContent {
+		
+			position : relative;
+			.ui-pnotify {
+				width:252px !important;
+				font-size: 0.9em;
+				position:relative;
+				top:0 !important;
+				margin-bottom:15px !important;
+				margin-left:12px !important;
+			}
+		}
   }
   
+  .gokb-message-actions {
+  	float:right;
+  	cursor: pointer;
+  }  
   h1 {
     padding: 15px;
     font-size: 1.2em;

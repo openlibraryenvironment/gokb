@@ -6,6 +6,7 @@
 	<classpathentry kind="src" path="main/tests/server/src"/>
 	<classpathentry kind="src" path="extensions/gokb/src"/>
 	<classpathentry kind="src" path="main/tests/client/src"/>
+	<classpathentry kind="src" path="extensions/gokb/module/scripts"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-6-oracle"/>
 	<classpathentry exported="true" kind="lib" path="main/webapp/WEB-INF/lib/ant-tools-1.8.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="main/webapp/WEB-INF/lib/arithcode-1.1.jar"/>
