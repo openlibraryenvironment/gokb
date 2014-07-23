@@ -16,11 +16,11 @@ class InplaceTagLib {
     
     // Also check the special flag on the entire component. 
     if (owner?.respondsTo("isSystemComponent")) {
-      tl_editable = tl_editable && !owner?.systemComponent
+      tl_editable = tl_editable && !owner?.isSystemComponent()
     }
 
     if ( owner?.respondsTo("isEditable")) {
-      tl_editable = tl_editable && owner.isEditable
+      tl_editable = tl_editable && owner.isEditable()
     }
     
     // If not editable then we should output as value only and return the value.
