@@ -701,7 +701,9 @@ class ApiController {
         } 
       }
       
-      def formattedResults = results.collect { KBComponent comp ->
+      // SO: listDistinct will not work with pagination, so we are forcing a linked HashSet here which will maintain the order from the
+      // the query but strip out the duplicates.
+      LinkedHashSet formattedResults = results.collect { KBComponent comp ->
             
         // Add each requested parameter to the return map. Label is a special case as we return "name"
         // for this. This is to keep backwards compatibility with the JQuery autocomplete default behaviour.
