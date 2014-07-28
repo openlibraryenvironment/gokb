@@ -46,23 +46,17 @@ class ResourceController {
         
         result.acl = gokbAclService.readAclSilently(result.displayobj)
 
-        // Does the user have permissionn to SEE this record?
         // Does the user have permission to edit this record?
-        def domain_record_info = KBDomainInfo.findByDcName(result.displayobjclassname)
-        if ( aclUtilService.hasPermission(SCH.context.authentication, domain_record_info, org.springframework.security.acls.domain.BasePermission.WRITE ) ) {
+        if ( result.displayobj.isEditable()) {
           log.debug("User has write permission to all objects of type "+result.displayobjclassname);
           result.readonly=false
           result.ediable=true
-          result.displayobj.metaClass.isEditable={true}
         }
         else {
           log.debug("No write perm to "+result.displayobjclassname+" assume readonly");
           result.readonly=true
           result.ediable=false
-          result.displayobj.metaClass.isEditable={false}
         }
-
-
       }
       else {
         log.debug("unable to resolve object");
