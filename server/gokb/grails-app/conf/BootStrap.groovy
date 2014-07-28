@@ -1,18 +1,21 @@
 import grails.util.GrailsNameUtils;
 
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
+import org.codehaus.groovy.grails.commons.GrailsApplication
 
+import java.lang.reflect.Method
 import javax.servlet.http.HttpServletRequest
 
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
+import org.gokb.SecurityApi
 import org.gokb.cred.*
 import org.gokb.validation.Validation
 import org.gokb.validation.types.*
 
 class BootStrap {
 
-  def grailsApplication
+  GrailsApplication grailsApplication
 
   def init = { servletContext ->
 
@@ -65,6 +68,15 @@ class BootStrap {
 
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass();
+    
+    // Add Custom APIs.
+    addCustomApis()
+  }
+  
+  private void addCustomApis() {
+    (grailsApplication.getArtefacts("Domain")*.clazz).each {Class<?> c ->
+      SecurityApi.addMethods(c)
+    }
   }
 
   def registerDomainClasses() {
