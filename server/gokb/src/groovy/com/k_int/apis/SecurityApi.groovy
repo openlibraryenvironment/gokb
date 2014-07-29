@@ -9,6 +9,7 @@ import org.gokb.cred.KBDomainInfo
 import org.grails.datastore.gorm.AbstractGormApi
 import org.grails.plugins.springsecurity.service.acl.AclUtilService
 import org.springframework.context.ApplicationContext
+import org.springframework.security.acls.model.Permission
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder as SECCH
 
@@ -17,24 +18,42 @@ import org.springframework.security.core.context.SecurityContextHolder as SECCH
  * 
  * API class to add metamethods associated with Security.
  */
-class SecurityApi <T> extends A_Api {
+class SecurityApi <T> extends A_Api<T> {
   
   private SecurityApi () {}
   
-  public boolean isEditable (T instance) {
-    def domain_record_info = KBDomainInfo.findByDcName(instance.class.name)
-    
-    Authentication auth = SECCH.context.authentication
-    if (domain_record_info && domain_record_info) {
-      boolean can_edit = aclUtilService.hasPermission(
-        auth,
+  public static boolean isEditable (Class<T> clazz) {
+    hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.WRITE)
+  }
+  
+  public static boolean isCreatable (Class<T> clazz) {
+    hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
+  }
+  
+  public static isReadable (Class<T> clazz) {
+    hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.READ)
+  }
+  
+  public boolean isDeletable (Class<T> clazz) {
+    hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.DELETE)
+  }
+  
+  public boolean isAdministerable (Class<T> clazz) {
+    hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.ADMINISTRATION)
+  }
+  
+  public static boolean hasPermission(Class<T> clazz, Permission p) {
+    def domain_record_info = KBDomainInfo.findByDcName(clazz.name)
+    if (domain_record_info) {
+      boolean can_edit = this.aclUtilService.hasPermission(
+        SECCH.context.authentication,
         domain_record_info,
-        org.springframework.security.acls.domain.BasePermission.WRITE)
+        p)
       
       return can_edit
     }
     
-    // Default to true.
+    // Default to true, as any class without an associated model should be ignored.
     true
   }
 

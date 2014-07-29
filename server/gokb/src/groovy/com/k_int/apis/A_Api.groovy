@@ -30,7 +30,7 @@ abstract class A_Api <T> {
   
   protected Class<T> targetClass
   
-  private SecurityApi () {}
+  protected A_Api () {}
   
   protected static ApplicationContext appContext
   protected static ApplicationContext getApplicationContext() {
@@ -39,18 +39,23 @@ abstract class A_Api <T> {
   }
   
   protected def propertyMissing (String name) {
-    
-    // Try and retrieve a service from the application context.
-    if (name =~ /.*Service/) {
-      try {
-        return getApplicationContext()."${name}"
-      } catch (Exception e) {
-        throw new MissingPropertyException(name, delegate, e)
+    this.class.propertyMissing(name)
+  }
+  
+  static {
+    getMetaClass()."static".propertyMissing = { name ->
+      // Try and retrieve a service from the application context.
+      if (name =~ /.*Service/) {
+        try {
+          return getApplicationContext()."${name}"
+        } catch (Exception e) {
+          throw new MissingPropertyException(name, this, e)
+        }
       }
+      
+      // We should always throw a property missing exception if we haven't returned above.
+      throw new MissingPropertyException(name, this)
     }
-    
-    // We should always throw a property missing exception if we haven't returned above.
-    throw new MissingPropertyException(name, delegate)
   }
   
   public static void addMethods(Class<T> targetClass, Class<A_Api> apiClass) {
@@ -67,12 +72,30 @@ abstract class A_Api <T> {
         
         
         
-        if (!m.isSynthetic() && !Modifier.isStatic(mods) && Modifier.isPublic(mods) && !EXCLUDES.contains(m.name)) {
-          // Add this method to the target.
-          targetClass.metaClass."${m.name}" = { Object[] args ->
-            
-            def the_args = [delegate] + (args as List)
-            api.invokeMethod("${m.name}", the_args as Object[])
+        if (!m.isSynthetic() && Modifier.isPublic(mods) && !EXCLUDES.contains(m.name)) {
+          
+          if (!Modifier.isStatic(mods)) {
+          
+            // Add this method to the target.
+            targetClass.metaClass."${m.name}" = { args ->
+              
+              def the_args = args ?: [] as List
+              
+              
+              // Prepend the new value.
+              the_args.add(0, delegate)
+              api.invokeMethod("${m.name}", the_args.toArray())
+            }
+          } else {
+            // Add to the static scope.
+            targetClass.metaClass.static."${m.name}" = { args ->
+              
+              def the_args = args ?: [] as List
+              
+              // Prepend the new value.
+              the_args.add(0, delegate.class)
+              apiClass.invokeMethod("${m.name}", the_args.toArray())
+            }
           }
         }
       }
