@@ -17,7 +17,7 @@ public class Sync {
 
     // perform a GET request, expecting JSON response data
     while ( more ) {
-      println("Make http request..");
+      println("org.gokb.client.Sync::doSync - Make http request..");
 
       http.request( GET, XML ) {
         uri.path = '/gokb/oai/packages'
@@ -77,6 +77,7 @@ public class Sync {
         // handler for any failure status code:
         response.failure = { resp ->
           println "Unexpected error: ${resp.statusLine.statusCode} : ${resp.statusLine.reasonPhrase}"
+          more = false
         }
       }
       println("Endloop");
