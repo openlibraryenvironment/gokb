@@ -86,15 +86,15 @@
           // When the checkbox state changes we need to decide how to proceed.
           if (me.is(':checked')) {
             
-            // Checked.
-            cbs.prop("checked", true);
+            // Filter for unchecked elements and call click to make 
+            cbs.not(":checked").click();
             
             // Display the info.
             info.show();
           } else {
             
-            // Not checked.
-            cbs.prop("checked", false);
+            // Filter for unchecked elements and call click to make 
+            cbs.filter(":checked").click();
             
             // Hide the info area.
             info.hide();
