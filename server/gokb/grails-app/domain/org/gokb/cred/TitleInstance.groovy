@@ -263,7 +263,7 @@ class TitleInstance extends KBComponent {
     all_related_history_events.each { he ->
       def from_titles = he.participants.findAll { it.participantRole == 'in' };
       def to_titles = he.participants.findAll { it.participantRole == 'out' };
-      result.add( [ date:he.eventDate, from:from_titles.collect{it.participant}, to:to_titles.collect{it.participant} ] );
+      result.add( [ "id":(he.id), date:he.eventDate, from:from_titles.collect{it.participant}, to:to_titles.collect{it.participant} ] );
     }
     return result;
   }
