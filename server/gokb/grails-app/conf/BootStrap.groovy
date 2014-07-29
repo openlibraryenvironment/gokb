@@ -4,14 +4,16 @@ import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsApplication
 
 import java.lang.reflect.Method
+
 import javax.servlet.http.HttpServletRequest
 
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
-import org.gokb.SecurityApi
 import org.gokb.cred.*
 import org.gokb.validation.Validation
 import org.gokb.validation.types.*
+
+import com.k_int.apis.A_Api;
 
 class BootStrap {
 
@@ -75,7 +77,12 @@ class BootStrap {
   
   private void addCustomApis() {
     (grailsApplication.getArtefacts("Domain")*.clazz).each {Class<?> c ->
-      SecurityApi.addMethods(c)
+      
+      grailsApplication.config.apiClasses.each { String className -> 
+      
+        // Add the api methods.
+        A_Api.addMethods(c, Class.forName(className))
+      }
     }
   }
 
