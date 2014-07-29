@@ -16,17 +16,17 @@ class InplaceTagLib {
     
     // Also check the special flag on the entire component. 
     if (owner?.respondsTo("isSystemComponent")) {
-      tl_editable = tl_editable && !owner?.systemComponent
+      tl_editable = tl_editable && !owner?.isSystemComponent()
     }
 
     if ( owner?.respondsTo("isEditable")) {
-      tl_editable = tl_editable && owner.isEditable
+      tl_editable = tl_editable && owner.isEditable()
     }
     
     // If not editable then we should output as value only and return the value.
     if (!tl_editable) {
       def content = body() + (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : "" )
-      out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${owner?.niceName ? owner.niceName : 'component' } is read only.' >${content ?: 'Empty'}</span>"
+      out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${owner?.respondsTo('getNiceName') ? owner.getNiceName() : 'component' } is read only.' >${content ?: 'Empty'}</span>"
     }
 
     tl_editable
