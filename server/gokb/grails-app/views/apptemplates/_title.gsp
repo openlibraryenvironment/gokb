@@ -35,7 +35,7 @@
     <table class="table table-striped table-bordered"> 
       <thead>
       <tr>
-        <th>Date</th><th>Before</th><th>After</th>
+        <th>Date</th><th>Before</th><th>After</th><th>Actions</th>
       <tr>
       </thead>
       <tbody>
@@ -60,6 +60,7 @@
               </g:each>
             </ul>
           </td>
+          <td><g:link controller="workflow" action="DeleteTitleHistoryEvent" id="${he.id}">Delete</g:link></td>
         </tr>
       </g:each>
       </tbody>
