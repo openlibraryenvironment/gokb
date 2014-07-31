@@ -19,6 +19,7 @@ import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 import com.google.refine.io.FileProjectManager;
+
 import com.k_int.gokb.refine.RefineWorkspace;
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
@@ -35,7 +36,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     
     private RefineWorkspace[] workspaces;
 
-    public static final String VERSION = "3.0";
+    public static final String VERSION = "3.1";
 
     private static String userDetails = null;
 
@@ -79,6 +80,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         
         // Add the workspaces detailed in the properties file.
         addWorkspaces();
+        
+        _logger.info("Connection timeout set to " + (double)((double)properties.getInt("timeout") / (double)60000) + " minutes");
     }
     
     private void addWorkspaces () throws IOException {
