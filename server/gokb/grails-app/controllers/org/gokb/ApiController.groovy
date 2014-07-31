@@ -463,13 +463,19 @@ class ApiController {
 
   private def doIngest(parsed_data, project, boolean incremental, user) {
     log.debug("ingesting refine project.. kicking off background task")
-    // Create a new session to run the ingest service in asynchronous.
+    
+    // When using the concurrency manager we need to make sure that the supplied
+    // closure can run independently of this request. Therefore we need to curry across
+    // anything needed to execute the action.
 
-    concurrencyManagerService.createTask(
-      { projData, Long projId, boolean inc, user_id, job_id ->
-        ingestService.ingest(projData, projId, inc, user_id, job_id)
-        log.debug ("Finished data insert.")
-      }.curry(parsed_data, project.id, incremental, user.id))
+    def background_job = concurrencyManagerService.createTask(
+      { IngestService is, projData, Long projId, boolean inc, user_id, job ->
+        // Create a new session to run the ingest.
+        RefineProject.withNewSession {
+          is.ingest(projData, projId, inc, user_id, job)
+          log.debug ("Finished data insert.")
+        }
+      }.curry(ingestService, parsed_data, project.id, incremental, user.id))
     .startOrQueue()
   }
 

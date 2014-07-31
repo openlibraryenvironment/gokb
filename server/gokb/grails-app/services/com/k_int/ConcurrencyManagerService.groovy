@@ -4,6 +4,8 @@ import grails.plugin.executor.PersistenceContextExecutorWrapper
 import grails.transaction.Transactional
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
 
 /**
  * This service will allocate tasks to the Executor service while maintaining a list of current tasks
@@ -17,13 +19,13 @@ class ConcurrencyManagerService {
   
   private class Job {
     int id
-    private Future task
+    private FutureTask task
     int progress
     Date startTime
     private Closure work
     
     public boolean cancel () {
-      work.getProperty("")
+      task.get
       task.cancel false
     }
     
@@ -39,11 +41,19 @@ class ConcurrencyManagerService {
       
       // Check for a parameter on this closure.
       if (work.parameterTypes?.length > 0) {
-        work = work.rcurry(this.id)
+        work = work.rcurry(this)
       }
       
       task = executorService.submit(work)
       this
+    }
+    
+    public def get() {
+      task.get()
+    }
+    
+    public def get(long time, TimeUnit unit) {
+      task.get(time, unit)
     }
   }
   

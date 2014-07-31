@@ -37,15 +37,22 @@ class ComponentLookupService {
     results
   }
   
-  private Map<String, ?> vals = [:].withDefault { String key ->
-    lookupComponentDB (key)
-  }  
+//  private Map<String, ?> vals = [:].withDefault { String key ->
+//    lookupComponentDB (key)
+//  }  
+//  
+//  public <T extends KBComponent> T lookupComponent(String comp_name_string) {
+//    
+//    // Merge this object into the current session if needed.
+//    T object = (T)vals.get(comp_name_string)
+//    if (object != null && !object.isAttached()) {
+//      object = object.merge()
+//      vals.put(comp_name_string, object)
+//    }
+//    return object
+//  }
   
-  public <T extends KBComponent> T lookupComponent(String comp_name_string) {
-    return (T)vals.get(comp_name_string)
-  }
-  
-  private <T extends KBComponent> T lookupComponentDB (String comp_name_string) {
+  private <T extends KBComponent> T lookupComponent (String comp_name_string) {
 
     // The Component
     T comp = null
