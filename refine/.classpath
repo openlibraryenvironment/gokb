@@ -6,7 +6,7 @@
 	<classpathentry kind="src" path="extensions/pc-axis/src"/>
 	<classpathentry kind="src" path="extensions/sample/src"/>
 	<classpathentry kind="src" path="main/tests/server/src"/>
-	<classpathentry kind="src" path="extensions/gokb/src"/>
+	<classpathentry kind="src" output="extensions/gokb/module/MOD-INF/classes" path="extensions/gokb/src"/>
 	<classpathentry kind="src" path="main/tests/client/src"/>
 	<classpathentry kind="src" path="extensions/gokb/module/scripts"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-6-oracle"/>
