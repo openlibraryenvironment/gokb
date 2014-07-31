@@ -6,6 +6,8 @@ import org.gokb.validation.types.LookedUpValue
 import grails.util.GrailsNameUtils
 
 class ComponentLookupService {
+  
+  static scope = 'request'
 
   def grailsApplication
 
@@ -35,7 +37,15 @@ class ComponentLookupService {
     results
   }
   
+  private Map<String, ?> vals = [:].withDefault { String key ->
+    lookupComponentDB (key)
+  }  
+  
   public <T extends KBComponent> T lookupComponent(String comp_name_string) {
+    return (T)vals.get(comp_name_string)
+  }
+  
+  private <T extends KBComponent> T lookupComponentDB (String comp_name_string) {
 
     // The Component
     T comp = null

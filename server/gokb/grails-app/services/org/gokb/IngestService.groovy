@@ -1,5 +1,6 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService
 import grails.converters.JSON
 
 import java.text.SimpleDateFormat
@@ -25,6 +26,7 @@ class IngestService {
   ComponentLookupService componentLookupService
   def packageService
   def sessionFactory
+  ConcurrencyManagerService concurrencyManagerService
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
     new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
@@ -611,8 +613,11 @@ class IngestService {
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project_id, boolean incremental = true, user = null) {
+  def ingest(project_data, project_id, boolean incremental = true, user_id = null, int job_id = null) {
 
+    // Load the user.
+    User user = User.get(user_id)
+    
     // Return result.
     def result = [
       "status"    : (project_data ? true : false),
@@ -626,6 +631,7 @@ class IngestService {
 
       // Set the status of this project.
       updateProjectStatus(project_id, 0, RefineProject.Status.INGESTING)
+      concurrencyManagerService.getJob(job_id).setProgress(0)
 
       // Track the old tipps here.
       final Map<String, Set<Long>> old_tipps = [:]
@@ -710,6 +716,7 @@ class IngestService {
           if (ctr % 25 == 0) {
             // Every chunk of records we update the progress.
             updateProjectStatus(project_id, (ctr / total * 100) as int, RefineProject.Status.INGESTING)
+            concurrencyManagerService.getJob(job_id).setProgress((ctr / total * 100) as int)
           } 
         }
       }
@@ -738,6 +745,7 @@ class IngestService {
 
       // Update the progress.
       project.progress = 100
+      concurrencyManagerService.getJob(job_id).progress((ctr / total * 100) as int)
 
       // Save the project.
       project.save(failOnError:true, flush:true)

@@ -1,6 +1,7 @@
 package org.gokb
 
 import static java.util.UUID.randomUUID
+import com.k_int.ConcurrencyManagerService
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
@@ -65,6 +66,7 @@ class ApiController {
   def grailsApplication
   def springSecurityService
   def componentLookupService
+  ConcurrencyManagerService concurrencyManagerService
 
   /**
    * Before interceptor to check the current version of the refine
@@ -460,20 +462,15 @@ class ApiController {
   }
 
   private def doIngest(parsed_data, project, boolean incremental, user) {
-    log.debug("ingesting refine project.. kicking off background task");
-
-
+    log.debug("ingesting refine project.. kicking off background task")
     // Create a new session to run the ingest service in asynchronous.
 
-    runAsync ({projData, Long projId, boolean inc, usr ->
-      RefineProject.withNewSession {
-
-        // Fire the ingest of the project id.
-        ingestService.ingest(projData, projId, inc, user)
-      }
-
-      log.debug ("Finished data insert.")
-    }.curry(parsed_data, project.id, incremental, user))
+    concurrencyManagerService.createTask(
+      { projData, Long projId, boolean inc, user_id, job_id ->
+        ingestService.ingest(projData, projId, inc, user_id, job_id)
+        log.debug ("Finished data insert.")
+      }.curry(parsed_data, project.id, incremental, user.id))
+    .startOrQueue()
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -510,6 +507,9 @@ class ApiController {
 
       // Get the project.
       def project = RefineProject.get(params.projectID)
+      
+      // Also checking job 1...
+      log.debug ("Job 1: " + concurrencyManagerService.getJob(1)?.progress ?: "Undefined")
 
       if (project) {
         // Return the progress.
