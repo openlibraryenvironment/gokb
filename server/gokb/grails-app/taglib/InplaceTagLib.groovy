@@ -25,7 +25,7 @@ class InplaceTagLib {
     
     // If not editable then we should output as value only and return the value.
     if (!tl_editable) {
-      def content = body() + (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : "" )
+      def content = (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : body()?.trim() )
       out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${owner?.respondsTo('getNiceName') ? owner.getNiceName() : 'component' } is read only.' >${content ?: 'Empty'}</span>"
     }
 
