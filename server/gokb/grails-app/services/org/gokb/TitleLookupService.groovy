@@ -66,6 +66,8 @@ class TitleLookupService {
 
     // The TitleInstance
     TitleInstance the_title = null
+    
+    if (title == null) return null
 
     // Create the normalised title.
     String norm_title = GOKbTextUtils.normaliseString(title)

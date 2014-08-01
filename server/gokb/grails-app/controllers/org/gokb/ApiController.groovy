@@ -2,6 +2,7 @@ package org.gokb
 
 import static java.util.UUID.randomUUID
 import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
@@ -467,8 +468,7 @@ class ApiController {
     // When using the concurrency manager we need to make sure that the supplied
     // closure can run independently of this request. Therefore we need to curry across
     // anything needed to execute the action.
-
-    def background_job = concurrencyManagerService.createTask(
+    Job background_job = concurrencyManagerService.createTask(
       { IngestService is, projData, Long projId, boolean inc, user_id, job ->
         // Create a new session to run the ingest.
         RefineProject.withNewSession {
