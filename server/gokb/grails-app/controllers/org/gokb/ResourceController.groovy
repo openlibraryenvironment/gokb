@@ -47,16 +47,16 @@ class ResourceController {
         result.acl = gokbAclService.readAclSilently(result.displayobj)
 
         // Does the user have permission to edit this record?
-        if ( result.displayobj.isEditable()) {
-          log.debug("User has write permission to all objects of type "+result.displayobjclassname);
-          result.readonly=false
-          result.ediable=true
-        }
-        else {
-          log.debug("No write perm to "+result.displayobjclassname+" assume readonly");
-          result.readonly=true
-          result.ediable=false
-        }
+//        if ( result.displayobj.isEditable()) {
+//          log.debug("User has write permission to all objects of type "+result.displayobjclassname);
+//          result.readonly=false
+//          result.ediable=true
+//        }
+//        else {
+//          log.debug("No write perm to "+result.displayobjclassname+" assume readonly");
+//          result.readonly=true
+//          result.ediable=false
+//        }
       }
       else {
         log.debug("unable to resolve object");

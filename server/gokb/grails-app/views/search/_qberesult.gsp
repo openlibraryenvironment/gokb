@@ -96,19 +96,17 @@
 				<g:each in="${rows}" var="r">
 					<g:if test="${r != null }">
 						<g:set var="r" value="${r}" />
-						<g:set var="readonly"
-							value="${ r.respondsTo('isSystemComponent') && r.isSystemComponent() }" />
 						<tr class="${++counter==det ? 'success':''}">
 							<!-- Row ${counter} -->
 							<td><g:if
-									test="${!readonly && r.respondsTo('availableActions')}">
+									test="${r.isEditable() && r.respondsTo('availableActions')}">
 									<g:set var="al"
 										value="${new JSON(r.availableActions()).toString().encodeAsHTML()}" />
 									<input type="checkbox" name="bulk:${r.class.name}:${r.id}"
 										data-actns="${al}" class="obj-action-ck-box" />
 								</g:if> <g:else>
 									<input type="checkbox"
-										title="${ readonly ? 'Component is read only' : 'No actions available' }"
+										title="${ !r.isEditable() ? 'Component is read only' : 'No actions available' }"
 										disabled="disabled" readonly="readonly" />
 								</g:else></td>
 							<g:each in="${qbeConfig.qbeResults}" var="c">

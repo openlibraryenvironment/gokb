@@ -5,12 +5,8 @@ import java.lang.reflect.Modifier
 
 import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
-import org.gokb.cred.KBDomainInfo
 import org.grails.datastore.gorm.AbstractGormApi
-import org.grails.plugins.springsecurity.service.acl.AclUtilService
 import org.springframework.context.ApplicationContext
-import org.springframework.security.core.Authentication
-import org.springframework.security.core.context.SecurityContextHolder as SECCH
 
 /**
  * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>

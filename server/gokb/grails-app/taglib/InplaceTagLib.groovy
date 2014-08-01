@@ -12,16 +12,7 @@ class InplaceTagLib {
     def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
     
     // Check the attribute.
-    boolean tl_editable = !(attrs?."readonly" == true)
-    
-    // Also check the special flag on the entire component. 
-    if (owner?.respondsTo("isSystemComponent")) {
-      tl_editable = tl_editable && !owner?.isSystemComponent()
-    }
-
-    if ( owner?.respondsTo("isEditable")) {
-      tl_editable = tl_editable && owner.isEditable()
-    }
+    boolean tl_editable = !(owner?.respondsTo("isEditable") && !owner.isEditable())
     
     // If not editable then we should output as value only and return the value.
     if (!tl_editable) {

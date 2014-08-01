@@ -1,6 +1,5 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
-<g:set var="readonly" value="${ d.respondsTo('isSystemComponent') && d.isSystemComponent() }" />
 <h1>
   ${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}
 </h1>
@@ -10,7 +9,7 @@
     <dt><g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel></dt>
     <dd>
       ${d.name}
-      <g:if test="${ !readonly }">(Modify name through variants below)</g:if>
+      <g:if test="${ d.isEditable() }">(Modify name through variants below)</g:if>
     </dd>
   
     <dt><g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel></dt>
@@ -43,7 +42,7 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
     <li><a href="#titledetails" data-toggle="tab">Titles <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
-    <g:if test="${ !readonly }" >
+    <g:if test="${ d.isEditable() }" >
       <li><a href="#altnames" data-toggle="tab">Alt Names</a></li>
     </g:if>
   </ul>
@@ -66,7 +65,7 @@
     <div class="tab-pane" id="titledetails">
       <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat']]" id="">Titles in this package</g:link>
 
-      <g:if test="${ !readonly }" >
+      <g:if test="${ d.isEditable() }" >
 	      <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
 	        <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
 	        <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform"/>
@@ -86,7 +85,7 @@
 	    </g:if>
     </div>
 
-    <g:if test="${ !readonly }" >
+    <g:if test="${ d.isEditable() }" >
 	    <div class="tab-pane" id="altnames">
 	      <div class="control-group">
 	        <dl>
