@@ -71,13 +71,7 @@ abstract class A_Api <T> {
       // Try and retrieve a service from the application context.
       if (name =~ /.*Service/) {
         try {
-          def the_service = getApplicationContext()."${name}"
-          if (the_service) {
-            // Add the service as a static property for faster access next time.
-            getMetaClass()."static"."${name}" = the_service
-          }
-          
-          return the_service
+          return getApplicationContext()."${name}"
           
         } catch (Exception e) {
           throw new MissingPropertyException(name, this, e)
