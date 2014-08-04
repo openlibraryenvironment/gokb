@@ -17,7 +17,7 @@
   </dl>
   <g:if test="${d.id != null}">
 	  <ul id="tabs" class="nav nav-tabs">
-	    <li class="active"><a href="#orgdetails" data-toggle="tab">Organisation</a></li>
+	    <li class="active"><a href="#orgdetails" data-toggle="tab">Organization</a></li>
 	    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning">${d.variantNames?.size()}</span></a></li>
 	    <li><a href="#ids" data-toggle="tab">IDs <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
 	    <li><a href="#licenses" data-toggle="tab">Licenses</a></li>

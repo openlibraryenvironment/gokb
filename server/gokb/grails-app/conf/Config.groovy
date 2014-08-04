@@ -490,7 +490,7 @@ globalSearchTemplates = [
   ],
   'orgs':[
     baseclass:'org.gokb.cred.Org',
-    title:'Organisations',
+    title:'Organizations',
     group:'Secondary',
     qbeConfig:[
       qbeForm:[
