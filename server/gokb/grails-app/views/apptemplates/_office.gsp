@@ -24,7 +24,7 @@
 	<dd> <g:xEditable class="ipe" owner="${d}" field="city" /> </dd>
 	<dt> <g:annotatedLabel owner="${d}" property="zipCode">Zip/Postcode</g:annotatedLabel> </dt>
 	<dd> <g:xEditable class="ipe" owner="${d}" field="zipPostcode" /> </dd>
-	<dt> <g:annotatedLabel owner="${d}" property="region">Region</g:annotatedLabel> </dt>
+	<dt> <g:annotatedLabel owner="${d}" property="region">State/Province/County</g:annotatedLabel> </dt>
 	<dd> <g:xEditable class="ipe" owner="${d}" field="region" /> </dd>
 	<dt> <g:annotatedLabel owner="${d}" property="owner">Owner Org</g:annotatedLabel> </dt>
 	<dd>
