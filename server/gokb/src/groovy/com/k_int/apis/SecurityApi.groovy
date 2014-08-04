@@ -4,10 +4,21 @@ import org.gokb.cred.KBDomainInfo
 import org.springframework.security.acls.model.Permission
 import org.springframework.security.core.context.SecurityContextHolder as SECCH
 
-/**
- * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
+/** 
+ * <p>API class to add meta-methods associated with Security.</p>
  * 
- * API class to add metamethods associated with Security.
+ * <p>Creates a static hasPermission (Permission p, [defaultTo])</p>
+ * <p>Also adds the following in both a static and none static context, all with an optional default value
+ *  if no domain class has been declared as responsible for the permissions.</p>
+ * <ul>
+ *  <li>isEditable ([defaultTo])
+ *  <li>isCreatable ([defaultTo])
+ *  <li>isReadable ([defaultTo])
+ *  <li>isAdministerable ([defaultTo])
+ * </ul>
+ * 
+ * <p>Also adds the following in both a static and none static context:</p>
+ * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
  */
 class SecurityApi <T> extends A_Api<T> {
   
@@ -84,18 +95,13 @@ class SecurityApi <T> extends A_Api<T> {
       boolean can_edit = this.aclUtilService.hasPermission(
         SECCH.context.authentication,
         domain_record_info,
-        p)
+        p
+      )
       
       return can_edit
     }
     
     // Return the default value if not found.
     defaultTo
-  }
-
-  @Override
-  protected boolean applicableFor (Class targetClass) {
-    // Valid for all classes.
-    return true
   }
 }

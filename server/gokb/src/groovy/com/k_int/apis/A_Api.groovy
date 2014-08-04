@@ -10,14 +10,29 @@ import org.springframework.context.ApplicationContext
 
 /**
  * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
- * 
  * API class to add metamethods associated with Security.
+ * 
+ * This abstract class is an attempt to produce a mechanism to easily extend the classes within
+ * Grails and Groovy.
+ * 
+ * Extenders of this class should declare any methods they wish to add as meta-methods using the public visibility
+ * modifier.
+ * 
+ * Public static methods are added to the class and the first parameter supplied should be the class they are extending.
+ * Public none-static methods are added to each instance of the class and the first parameter is the instance itself.
+ * 
+ * The first parameter is added dynamically and won't be part of the generated meta-signature.
+ * 
+ * i.e. public myMethod(T instance, String foo) would add the method myMethod(String foo) to the target.
  */
 abstract class A_Api <T> {
   protected static final Set<String> EXCLUDES = AbstractGormApi.EXCLUDES + [
     // Extend the list with any that aren't caught here.
   ]
   
+  /**
+   * Map to allow quick access to the APIs attached to a particular class.
+   */
   private static final Map<Class<T>, Map<Class<A_Api>, A_Api>> map = [:].withDefault {Class target ->
     [:].withDefault { Class type ->
       type.newInstance(["targetClass" : (target)])
@@ -29,21 +44,41 @@ abstract class A_Api <T> {
   protected A_Api () {}
   
   protected static ApplicationContext appContext
+  
+  /**
+   * Statically retrieve the application context.
+   * 
+   * @return ApplicationContext the app context
+   */
   protected static ApplicationContext getApplicationContext() {
     if (!appContext) appContext = SCH.servletContext.getAttribute(GA.APPLICATION_CONTEXT)
     appContext
   }
   
+  /**
+   * Implementation of the groovy property missing.
+   * @param name
+   * @return
+   */
   protected def propertyMissing (String name) {
     this.class.propertyMissing(name)
   }
   
   static {
+    
+    // Add the method missing in a static context. 
     getMetaClass()."static".propertyMissing = { name ->
       // Try and retrieve a service from the application context.
       if (name =~ /.*Service/) {
         try {
-          return getApplicationContext()."${name}"
+          def the_service = getApplicationContext()."${name}"
+          if (the_service) {
+            // Add the service as a static property for faster access next time.
+            getMetaClass()."static"."${name}" = the_service
+          }
+          
+          return the_service
+          
         } catch (Exception e) {
           throw new MissingPropertyException(name, this, e)
         }
@@ -54,6 +89,12 @@ abstract class A_Api <T> {
     }
   }
   
+  /**
+   * This is responsible for adding the methods to the targets.
+   * 
+   * @param targetClass The target class
+   * @param apiClass The class containing the methods we are to add.
+   */
   public static void addMethods(Class<T> targetClass, Class<A_Api> apiClass) {
     
     // The API.
@@ -97,6 +138,15 @@ abstract class A_Api <T> {
       }
     }
   }
+
   
-  protected abstract boolean applicableFor(Class<T> targetClass);
+  /**
+   * Allows us to programmatically exclude a class. Defaults to true here.
+   * 
+   * @param targetClass The target class to check.
+   * @return
+   */
+  protected boolean applicableFor (Class targetClass) {
+    return true
+  }
 }
