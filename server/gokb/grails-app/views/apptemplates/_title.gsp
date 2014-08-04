@@ -1,7 +1,7 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 
-<h3>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h3>
+<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
 
 <dl class="dl-horizontal">
 

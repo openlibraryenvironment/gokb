@@ -10,6 +10,7 @@
 	  <dt><g:annotatedLabel owner="${d}" property="url">URL</g:annotatedLabel></dt>
 	  <dd><g:xEditable class="ipe" owner="${d}" field="url"/></dd>
 
+
           <dt> <g:annotatedLabel owner="${d}" property="defaultSupplyMethod">Default Supply Method</g:annotatedLabel> </dt>
           <dd> <g:xEditableRefData owner="${d}" field="defaultSupplyMethod" config="Source.DataSupplyMethod" /> </dd>
 
@@ -20,7 +21,6 @@
           <dd>  <g:manyToOneReferenceTypedown owner="${d}" field="responsibleParty" baseClass="org.gokb.cred.Org">
                         ${d.responsibleParty?.name?:''}
                 </g:manyToOneReferenceTypedown> </dd>
-
   </dl>
 </g:if>
 <script type="text/javascript">
