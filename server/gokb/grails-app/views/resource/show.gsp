@@ -17,7 +17,7 @@
             </g:each>
           </select>
           <input type="hidden" name="bulk:${displayobj.class.name}:${displayobj.id}" value="true" />
-          <button type="submit" class="btn btn-primary">Action</button>
+          <button type="submit" class="btn btn-primary">Submit</button>
         </g:form>
       </div>
     </g:if>
