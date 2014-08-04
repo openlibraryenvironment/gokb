@@ -19,7 +19,8 @@
 	      <dt><g:annotatedLabel owner="${d}" property="status">Request Status</g:annotatedLabel></dt>
 	      <dd><g:xEditableRefData owner="${d}" field="status" config='ReviewRequest.Status' /></dd>
 	      <dt><g:annotatedLabel owner="${d}" property="target">Component</g:annotatedLabel></dt>
-	      <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.KBComponent">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown> <g:componentLink object="${d?.componentToReview}">Link</g:componentLink></dd>
+	      <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.KBComponent">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown>
+	      	<g:componentLink object="${d?.componentToReview}" target="_blank" title="View the component (opens in new window)" >view</g:componentLink></dd>
 
         <g:if test="${d.id != null}">
 	        <dt><g:annotatedLabel owner="${d}" property="dateCreated">Request Timestamp</g:annotatedLabel></dt>

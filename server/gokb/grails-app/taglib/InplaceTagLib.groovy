@@ -279,11 +279,19 @@ class InplaceTagLib {
     out << "</a>";
   }
 
-  def componentLink = { attrs, body ->
-    if ( attrs.object != null ) {
-      def object = ClassUtils.deproxy(attrs.object)
+  def componentLink = { Map attrs, body ->
+    
+    def obj = attrs.remove('object')
+    if ( obj != null ) {
+      def object = ClassUtils.deproxy(obj)
       def object_link = createLink(controller:'resource', action: 'show', id:"${object.class.name}:${object.id}")
-      out << "<a href=\"${object_link}\">"
+      out << "<a href=\"${object_link}\""
+      
+      // Ensure we pipe out the rest of the parameters too.
+      attrs.each { name, val ->
+        out << " ${name}=\"${val}\""
+      }
+      out << " >"
       out << body()
       out << "</a>"
     }
