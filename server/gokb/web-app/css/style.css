@@ -30,7 +30,11 @@
   padding: 0 20px 0 20px;
 }
 
-/** ALl select checkbox box styles **/
+/** All select checkbox box styles **/
 .batch-all-info {
 	text-align: center;
+}
+
+#licsummary .more-info .info{
+	cursor: pointer;
 }
