@@ -42,7 +42,7 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-    <li><a href="#titledetails" data-toggle="tab">Titles <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
+    <li><a href="#titledetails" data-toggle="tab">TIPPs <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
     <g:if test="${ !readonly }" >
       <li><a href="#altnames" data-toggle="tab">Alt Names</a></li>
     </g:if>
