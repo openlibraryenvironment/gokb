@@ -217,11 +217,11 @@
 	    </div>
 	
 	    <div class="tab-pane" id="titles">
-	      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:titles', qp_prov_id:d.id]" id="">Titles for this org</g:link>
+	      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:titles', qp_prov_id:d.id, hide:['qp_prov_id']]" id="">Titles for this org</g:link>
 	    </div>
 	
 	    <div class="tab-pane" id="tipps">
-	      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pub_id:d.id]" id="">Tipps for this org</g:link>
+	      <g:link class="display-inline" controller="search" action="index" params="[qbe:'g:tipps', qp_pub_id:d.id, hide:['qp_pub_id']]" id="">Tipps for this org</g:link>
 	    </div>
 	
 	    <div class="tab-pane" id="packages">
