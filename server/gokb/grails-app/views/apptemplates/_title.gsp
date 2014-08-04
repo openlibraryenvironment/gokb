@@ -152,7 +152,7 @@
                   </tr>
                   <tr>
                     <td>
-                      <select name="beforeTitles" size="5" multiple>
+                      <select name="beforeTitles" size="5" multiple class="input-xxlarge" style="width:500px;">
                         <option value="org.gokb.cred.TitleInstance:${d.id}">${d.name}</option>
                       </select><br/>
                     </td>
@@ -161,14 +161,14 @@
                       <button type="button" onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button><br/>
                     </td>
                     <td>
-                      <select name="afterTitles" size="5" multiple/><br/>
+                      <select name="afterTitles" size="5" multiple class="input-xxlarge" style="width:500px;">
                     </td>
                   </tr>
                   <tr>
-                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
+                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"/> <br/>
                          <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
                     <td> </td>
-                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance"/> <br/>
+                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"/> <br/>
                          <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
                   </tr>
                 </table>
