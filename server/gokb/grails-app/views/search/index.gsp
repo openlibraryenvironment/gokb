@@ -17,8 +17,8 @@
 </head>
 <body>
 
-  <div class="container">
-    <div class="row">
+  <div class="container-fluid">
+    <div class="row-fluid">
 
       <div id="mainarea" class=" panel panel-default ${displayobj != null ? 'col-xs-6' : 'col-xs-12'}">
         <div class="well">
@@ -26,7 +26,7 @@
           </g:if>
           <g:else>
             <nav class="navbar navbar-default" role="navigation">
-              <div class="container">
+              <div class="container-fluid">
                 <div class="navbar-header">
                   <span class="navbar-brand">${qbetemplate.title?:'Search'}
                   <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}</g:if></span>
@@ -87,7 +87,7 @@
           <div class="well">
 
             <nav class="navbar navbar-default" role="navigation">
-              <div class="container">
+              <div class="container-fluid">
                 <div class="navbar-header">
                   <span class="navbar-brand"> Record ${det} of ${reccount}</span>
                 </div>
