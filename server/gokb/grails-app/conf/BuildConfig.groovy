@@ -109,6 +109,7 @@ grails.project.dependency.resolution = {
       compile ':famfamfam:1.0.1'
       compile ':jquery-ui:1.8.24'
       compile ':rest:0.7'
-      compile ':twitter-bootstrap:2.3.2'
+      // compile ':twitter-bootstrap:2.3.2'
+      compile ":twitter-bootstrap:3.2.1"
     }
 }
