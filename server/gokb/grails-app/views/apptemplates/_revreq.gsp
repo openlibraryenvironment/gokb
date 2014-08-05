@@ -1,7 +1,8 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 
-<h1>Review Request ${d.id}</h1>
+<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
+
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">

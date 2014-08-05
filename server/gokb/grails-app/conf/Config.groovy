@@ -536,7 +536,7 @@ globalSearchTemplates = [
           prompt:'Name or Title',
           qparam:'qp_name',
           placeholder:'Name or title of item',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
         ],
         [
           prompt:'Content Provider',

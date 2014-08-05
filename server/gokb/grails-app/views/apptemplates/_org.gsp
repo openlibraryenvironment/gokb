@@ -1,7 +1,7 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 <g:set var="editable" value="${d.respondsTo('isEditable') && d.isEditable()}" />
-<h3>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h3>
+<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
 
 <div id="content">
 
