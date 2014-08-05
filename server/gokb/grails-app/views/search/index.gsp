@@ -20,59 +20,51 @@
   <div class="container-fluid">
     <div class="row-fluid">
 
-      <div id="mainarea" class=" panel panel-default ${displayobj != null ? 'span6' : 'span12'}">
+      <div id="mainarea" class=" panel panel-default ${displayobj != null ? 'col-xs-6' : 'col-xs-12'}">
         <div class="well">
           <g:if test="${qbetemplate==null}">
-              Please select a template from the navigation menu
-            </g:if>
+          </g:if>
           <g:else>
+            <nav class="navbar navbar-default" role="navigation">
+              <div class="container-fluid">
+                <div class="navbar-header">
+                  <span class="navbar-brand">${qbetemplate.title?:'Search'}
+                  <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}</g:if></span>
+                </div>
 
-            <div class="navbar">
-              <div class="navbar-inner">
-                <div class="brand panel-heading">
-                  ${qbetemplate.title?:'Search'}
-                  <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}
+                  <g:if test="${recset != null}">
+                    <ul class="nav navbar-nav navbar-right">
+                      <g:if test="${qbetemplate.qbeConfig.actions != null}">
+                        <li class="dropdown">
+                          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Actions <b class="caret"></b> </a>
+
+                          <ul class="dropdown-menu">
+                            <g:each in="${qbetemplate.qbeConfig.actions}" var="a">
+                              <li>
+                                <i class="${a.iconClass}"></i>
+                                <g:link controller="workflow" 
+                                        action="action" 
+                                        params="${[selectedBulkAction:a.code,('bulk:'+qbetemplate.baseclass):'true']}">${a.name}</g:link>
+                              </li>
+                            </g:each>
+                          </ul>
+                        </li>
+                        <li class="divider-vertical"></li>
+                      </g:if>
+
+                      <li><g:link title="Previous Page" controller="search" action="index" params="${params+[offset:(offset-max),det:null]}">
+                          <i class="icon-chevron-left"></i>
+                        </g:link></li>
+
+                      <li></li>
+
+                      <li><g:link title="Next Page" controller="search" action="index" params="${params+[offset:(offset+max),det:null]}">
+                          <i class="icon-chevron-right"></i>
+                        </g:link></li>
+                    </ul>
                   </g:if>
-                </div>
-                <div class="panel-body">
-                <g:if test="${recset != null}">
-                  <ul class="nav navbar-nav navbar-right pull-right">
-
-                    <g:if test="${qbetemplate.qbeConfig.actions != null}">
-                      <li class="pull-right dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Actions <b class="caret"></b> </a>
-
-                        <ul class="dropdown-menu">
-                          <g:each in="${qbetemplate.qbeConfig.actions}" var="a">
-                            <li>
-                              <i class="${a.iconClass}"></i>
-                              <g:link controller="workflow" 
-                                      action="action" 
-                                      params="${[selectedBulkAction:a.code,('bulk:'+qbetemplate.baseclass):'true']}">${a.name}</g:link>
-                            </li>
-                          </g:each>
-                        </ul>
-                      </li>
-                      <li class="divider-vertical"></li>
-                    </g:if>
-
-                    <li><g:link title="Previous Page" controller="search"
-                        action="index"
-                        params="${params+[offset:(offset-max),det:null]}">
-                        <i class="icon-chevron-left"></i>
-                      </g:link></li>
-                    <li class="divider-vertical"></li>
-                    <li><g:link title="Next Page" controller="search"
-                        action="index"
-                        params="${params+[offset:(offset+max),det:null]}">
-                        <i class="icon-chevron-right"></i>
-                      </g:link></li>
-
-                  </ul>
-                </g:if>
-                </div>
               </div>
-            </div>
+            </nav>
 
             <g:if test="${(qbetemplate.message != null)}">
               <p style="text-align:center"><bootstrap:alert class="alert-info">${qbetemplate.message}</bootstrap:alert></p>
@@ -91,18 +83,16 @@
       </div>
 
       <g:if test="${displayobj != null}">
-        <div id="resultsarea" class="span6">
+        <div id="resultsarea" class="col-xs-6">
           <div class="well">
 
-            <div class="navbar">
-              <div class="navbar-inner">
-                <div class="brand">
-                  Record
-                  ${det}
-                  of
-                  ${reccount}
+            <nav class="navbar navbar-default" role="navigation">
+              <div class="container-fluid">
+                <div class="navbar-header">
+                  <span class="navbar-brand"> Record ${det} of ${reccount}</span>
                 </div>
-                <ul class="nav pull-right">
+
+                <ul class="nav navbar-nav navbar-right">
 
                   <li><a data-toggle="modal" data-cache="false"
                     title="Show History"
@@ -133,7 +123,7 @@
                     </g:link></li>
                 </ul>
               </div>
-            </div>
+            </nav>
             <g:if test="${displaytemplate != null}">
               <g:if test="${displaytemplate.type=='staticgsp'}">
                
