@@ -51,6 +51,7 @@ class User {
       log.error( "Error loading admin role (ROLE_ADMIN)" )
     }
     
+    adminRole.save()
     false
   } 
 
@@ -66,6 +67,11 @@ class User {
     }
     if ( displayName == null )
       displayName = username
+  }
+  
+  public boolean isEditable(boolean default_to = true) {
+    // Return the default.
+    return true
   }
 
   protected void encodePassword() {
