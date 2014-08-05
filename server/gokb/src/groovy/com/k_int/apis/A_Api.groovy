@@ -101,31 +101,31 @@ abstract class A_Api <T> {
         def mods = m.getModifiers()
         def pTypes = m.getParameterTypes()
         
+        if (!targetClass.metaClass.getMetaMethod(m.name, pTypes)) {
         
-        
-        if (!m.isSynthetic() && Modifier.isPublic(mods) && !EXCLUDES.contains(m.name)) {
-          
-          if (!Modifier.isStatic(mods)) {
-          
-            // Add this method to the target.
-            targetClass.metaClass."${m.name}" = { args ->
-              
-              def the_args = args ?: [] as List
-              
-              
-              // Prepend the new value.
-              the_args.add(0, delegate)
-              api.invokeMethod("${m.name}", the_args.toArray())
-            }
-          } else {
-            // Add to the static scope.
-            targetClass.metaClass.static."${m.name}" = { args ->
-              
-              def the_args = args ?: [] as List
-              
-              // Prepend the new value.
-              the_args.add(0, delegate.class)
-              apiClass.invokeMethod("${m.name}", the_args.toArray())
+          if (!m.isSynthetic() && Modifier.isPublic(mods) && !EXCLUDES.contains(m.name)) {
+            
+            if (!Modifier.isStatic(mods)) {
+            
+              // Add this method to the target.
+              targetClass.metaClass."${m.name}" = { args ->
+                
+                def the_args = args ?: [] as List
+                
+                // Prepend the new value.
+                the_args.add(0, delegate)
+                api.invokeMethod("${m.name}", the_args.toArray())
+              }
+            } else {
+              // Add to the static scope.
+              targetClass.metaClass.static."${m.name}" = { args ->
+                
+                def the_args = args ?: [] as List
+                
+                // Prepend the new value.
+                the_args.add(0, delegate.class)
+                apiClass.invokeMethod("${m.name}", the_args.toArray())
+              }
             }
           }
         }
