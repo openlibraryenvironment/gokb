@@ -30,10 +30,10 @@ class ResourceController {
       if ( result.displayobj ) {
 
         def new_history_entry = new History(controller:params.controller,
-        action:params.action,
-        actionid:params.id,
-        owner:user,
-        title:"View ${result.displayobj.toString()}").save()
+            action:params.action,
+            actionid:params.id,
+            owner:user,
+            title:"View ${result.displayobj.toString()}").save()
 
         result.displayobjclassname = result.displayobj.class.name
         result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"

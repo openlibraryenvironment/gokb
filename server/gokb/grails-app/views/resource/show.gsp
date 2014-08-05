@@ -3,7 +3,9 @@
   <head>
     <meta name="layout" content="main"/>
     <r:require modules="gokbstyle"/>
-    <title>GOKb</title>
+    <title>GOKb - ${displayobj?.niceName}
+      (<g:if test="${displayobj?.isEditable()}">Editable</g:if><g:else>Read Only</g:else>)
+    </title>
   </head>
   <body class="" >
     <g:if test="${displayobj.respondsTo('availableActions')}">
@@ -21,7 +23,7 @@
         </g:form>
       </div>
     </g:if>
-    <div class="container well">
+    <div class="container-fluid well">
       <g:if test="${displaytemplate != null}">
         <g:if test="${displaytemplate.type=='staticgsp'}">
           <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
