@@ -27,7 +27,7 @@
 	                                     addBlankValue="yes" />
 	        </g:if>
 	        <g:else>
-                  <div class="input-prepend input-append"><g:if test="${fld.contextTree.wildcard=='B' || fld.contextTree.wildcard=='R'}"><span class="add-on">*</span></g:if><input type="text" name="${fld.qparam}" id="${fld.qparam}" placeholder="${fld.placeholder}" value="${params[fld.qparam]}" /><g:if test="${fld.contextTree.wildcard=='B' || fld.contextTree.wildcard=='L'}"><span class="add-on">*</span></g:if></div>
+                  <div class="input-group "><g:if test="${fld.contextTree.wildcard=='B' || fld.contextTree.wildcard=='R'}"><span class="input-group-addon">*</span></g:if><input type="text" name="${fld.qparam}" id="${fld.qparam}" placeholder="${fld.placeholder}" value="${params[fld.qparam]}" /><g:if test="${fld.contextTree.wildcard=='B' || fld.contextTree.wildcard=='L'}"><span class="input-group-addon">*</span></g:if></div>
 	        </g:else>
 	      </div>
 	    </div>
@@ -36,7 +36,7 @@
 
   <div class="control-group">
     <div class="controls">
-      <button type="submit" class="btn btn-primary">Search</button>
+      <button type="submit" class="btn btn-default btn-primary btn-sm">Search</button>
     </div>
   </div>
 

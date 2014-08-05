@@ -17,8 +17,8 @@
 </head>
 <body>
 
-  <div class="container-fluid">
-    <div class="row-fluid">
+  <div class="container">
+    <div class="row">
 
       <div id="mainarea" class=" panel panel-default ${displayobj != null ? 'col-xs-6' : 'col-xs-12'}">
         <div class="well">
@@ -26,7 +26,7 @@
           </g:if>
           <g:else>
             <nav class="navbar navbar-default" role="navigation">
-              <div class="container-fluid">
+              <div class="container">
                 <div class="navbar-header">
                   <span class="navbar-brand">${qbetemplate.title?:'Search'}
                   <g:if test="${recset != null}"> : Records ${offset+1} to ${lasthit} of ${reccount}</g:if></span>
@@ -53,13 +53,13 @@
                       </g:if>
 
                       <li><g:link title="Previous Page" controller="search" action="index" params="${params+[offset:(offset-max),det:null]}">
-                          <i class="icon-chevron-left"></i>
+                          <i class="glyphicon glyphicon-chevron-left"></i>
                         </g:link></li>
 
                       <li></li>
 
                       <li><g:link title="Next Page" controller="search" action="index" params="${params+[offset:(offset+max),det:null]}">
-                          <i class="icon-chevron-right"></i>
+                          <i class="glyphicon glyphicon-chevron-right"></i>
                         </g:link></li>
                     </ul>
                   </g:if>
@@ -87,7 +87,7 @@
           <div class="well">
 
             <nav class="navbar navbar-default" role="navigation">
-              <div class="container-fluid">
+              <div class="container">
                 <div class="navbar-header">
                   <span class="navbar-brand"> Record ${det} of ${reccount}</span>
                 </div>
@@ -97,29 +97,29 @@
                   <li><a data-toggle="modal" data-cache="false"
                     title="Show History"
                     data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>'
-                    data-target="#modal"><i class="icon-time"></i></a></li>
+                    data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
 
                   <li><a data-toggle="modal" data-cache="false"
                     title="Show Notes"
                     data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>'
-                    data-target="#modal"><i class="icon-comment"></i></a></li>
+                    data-target="#modal"><i class="glyphicon glyphicon-comment"></i></a></li>
 
                   <!-- li>
                       <a data-toggle="modal" 
                          data-cache="false" 
                          title="Show File Attachments"
                          data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
-                         data-target="#modal"><i class="icon-file"></i></a>
+                         data-target="#modal"><i class="glyphicon glyphicon-file"></i></a>
                     </li -->
                   <li><g:link controller="search" title="Previous Record"
                       action="index"
                       params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}">
-                      <i class="icon-chevron-left"></i>
+                      <i class="glyphicon glyphicon-chevron-left"></i>
                     </g:link></li>
                   <li><g:link controller="search" title="Next Record"
                       action="index"
                       params="${params+['det':det+1, offset:((int)(det / max))*max]}">
-                      <i class="icon-chevron-right"></i>
+                      <i class="glyphicon glyphicon-chevron-right"></i>
                     </g:link></li>
                 </ul>
               </div>
@@ -152,7 +152,7 @@
     </div>
     <div class="modal-body"></div>
     <div class="modal-footer">
-      <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+      <button class="btn btn-default btn-primary btn-sm" data-dismiss="modal" aria-hidden="true">Close</button>
     </div>
   </div>
 

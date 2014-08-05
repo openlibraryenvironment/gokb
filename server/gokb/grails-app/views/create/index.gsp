@@ -6,9 +6,9 @@
 <title>GOKb</title>
 </head>
 <body>
-	<div class="container-fluid">
-		<div class="row-fluid">
-			<div id="mainarea" class="span12">
+	<div class="container">
+		<div class="row">
+			<div id="mainarea" class="col-md-12">
 				<div class="well">
 					<g:if test="${displaytemplate != null}">
 						<g:if test="${displaytemplate.type=='staticgsp'}">
@@ -18,7 +18,7 @@
 							<g:render template="${displaytemplate.rendername}"
 								contextPath="../apptemplates"
 								model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
-							<button id="save-btn" class="btn btn-primary pull-right">Create
+							<button id="save-btn" class="btn btn-default btn-primary pull-right btn-sm">Create
 								and Edit &gt;&gt;</button>
 							<br />&nbsp;
               </g:if>

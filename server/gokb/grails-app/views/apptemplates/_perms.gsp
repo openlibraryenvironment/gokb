@@ -53,7 +53,7 @@
       </select>
     </dd>
     <dt>To</dt><dd><g:simpleReferenceTypedown name="grantee" baseClass="org.gokb.cred.User" /></dd>
-    <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+    <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
   </g:form>
   Grant Role:
   <g:form controller="ajaxSupport" action="grant" class="form-inline">
@@ -68,7 +68,7 @@
       </select>
     </dd>
     <dt>To</dt><dd><g:simpleReferenceTypedown name="grantee" baseClass="org.gokb.cred.Role" /></dd>
-    <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+    <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
   </g:form>
 </dl>
 

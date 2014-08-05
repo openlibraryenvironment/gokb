@@ -7,8 +7,8 @@
   </head>
   <body>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
+   <div class="container">
+     <div class="row">
        <form action="index">
          Identifier to lookup Namespace:<input type="text" name="nspart" value="${params.nspart}"/> 
                               Identifier:<input type="text" name="idpart" value="${params.idpart}"/><input type="Submit" value="Go"/><br/>
@@ -37,10 +37,10 @@
        </form>
      </div>
      <g:if test="${identifier}">
-       <div class="row-fluid">
+       <div class="row">
          Found identifier ${params.identifier} (${identifier.id})... Attached objects follow:
        </div>
-       <div class="row-fluid">
+       <div class="row">
          <h2>Located ${count} objects for identifier "${params.idpart}" (namespace:${params.nspart?:'None'})</h2>
          <hr/>
          <table class="table">

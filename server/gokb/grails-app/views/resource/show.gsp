@@ -17,11 +17,11 @@
             </g:each>
           </select>
           <input type="hidden" name="bulk:${displayobj.class.name}:${displayobj.id}" value="true" />
-          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="submit" class="btn btn-default btn-primary btn-sm">Submit</button>
         </g:form>
       </div>
     </g:if>
-    <div class="container-fluid well">
+    <div class="container well">
       <g:if test="${displaytemplate != null}">
         <g:if test="${displaytemplate.type=='staticgsp'}">
           <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>

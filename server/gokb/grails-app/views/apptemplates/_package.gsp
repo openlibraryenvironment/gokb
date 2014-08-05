@@ -79,7 +79,7 @@
 	          <dd>
 	            <g:simpleReferenceTypedown name="hostPlatform" baseClass="org.gokb.cred.Platform" />
 	          </dd>
-	          <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+	          <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
 	        </dl>
 	      </g:form>
 	    </g:if>
@@ -144,7 +144,7 @@
 		              </dd>
 		              <dt></dt>
 		              <dd>
-		                <button type="submit" class="btn btn-primary btn-small">Add</button>
+		                <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
 		              </dd>
 		            </g:form>
 		          </dl>

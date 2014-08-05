@@ -7,8 +7,8 @@
   </head>
   <body>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
+   <div class="container">
+     <div class="row">
        <h1>Gokb Integration API</h1>
            <h2>Cross Reference Title</h2>
            <p>

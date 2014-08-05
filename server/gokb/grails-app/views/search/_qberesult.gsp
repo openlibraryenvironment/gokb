@@ -11,20 +11,20 @@
 							<g:if test="${params.sort==c.sort && params.order=='asc'}">
 								<g:link params="${params+['sort':c.sort,order:'desc']}">
 									${c.heading}
-									<i class="icon-sort-up"></i>
+									<i class="glyphicon glyphicon-sort-up"></i>
 								</g:link>
 							</g:if>
 							<g:else>
 								<g:if test="${params.sort==c.sort && params.order=='desc'}">
 									<g:link params="${params+['sort':c.sort,order:'asc']}">
 										${c.heading}
-										<i class="icon-sort-down"></i>
+										<i class="glyphicon glyphicon-sort-down"></i>
 									</g:link>
 								</g:if>
 								<g:else>
 									<g:link params="${params+['sort':c.sort,order:'desc']}">
 										${c.heading}
-										<i class="icon-sort"></i>
+										<i class="glyphicon glyphicon-sort"></i>
 									</g:link>
 								</g:else>
 							</g:else>
@@ -68,20 +68,20 @@
 								<g:if test="${params.sort==c.sort && params.order=='asc'}">
 									<g:link params="${params+['sort':c.sort,order:'desc']}">
 										${c.heading}
-										<i class="icon-sort-up"></i>
+										<i class="glyphicon glyphicon-sort-up"></i>
 									</g:link>
 								</g:if>
 								<g:else>
 									<g:if test="${params.sort==c.sort && params.order=='desc'}">
 										<g:link params="${params+['sort':c.sort,order:'asc']}">
 											${c.heading}
-											<i class="icon-sort-down"></i>
+											<i class="glyphicon glyphicon-sort-down"></i>
 										</g:link>
 									</g:if>
 									<g:else>
 										<g:link params="${params+['sort':c.sort,order:'desc']}">
 											${c.heading}
-											<i class="icon-sort"></i>
+											<i class="glyphicon glyphicon-sort"></i>
 										</g:link>
 									</g:else>
 								</g:else>
@@ -123,7 +123,7 @@
 							</g:each>
 							<td><g:if
 									test="${request.user?.showQuickView?.value=='Yes'}">
-									<g:link class="btn btn-primary pull-right" controller="search"
+									<g:link class="btn btn-default btn-primary pull-right btn-sm" controller="search"
 										action="index" params="${params+['det':counter]}">view >></g:link>
 								</g:if></td>
 						</tr>
@@ -139,7 +139,7 @@
 		<div class="pull-right well" id="bulkActionControls">
 			<h4>Available actions for selected rows</h4>
 			<select id="selectedBulkAction" name="selectedBulkAction"></select>
-			<button type="submit" class="btn btn-primary">Submit</button>
+			<button type="submit" class="btn btn-default btn-primary btn-sm">Submit</button>
 		</div>
 	</g:form>
 </g:else>

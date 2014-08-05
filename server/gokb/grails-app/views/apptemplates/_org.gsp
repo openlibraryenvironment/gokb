@@ -51,7 +51,7 @@
 		                  <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
 		                  <input type="hidden" name="__property" value="roles"/>
 		                  <g:simpleReferenceTypedown name="__relatedObject" baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
-		                  <input type="submit" value="Add..." class="btn btn-primary btn-small"/>
+		                  <input type="submit" value="Add..." class="btn btn-default btn-primary btn-sm "/>
 		                </g:form>
                   </g:if>
 	              </g:if>
@@ -100,7 +100,7 @@
 		                  <dt>Variant Name</dt><dd><input type="text" name="variantName"/></dd>
 		                  <dt>Locale</dt><dd><g:simpleReferenceTypedown name="locale" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.Locale" /></dd>
 		                  <dt>Variant Type</dt><dd><g:simpleReferenceTypedown name="variantType" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.VariantType" /></dd>
-		                  <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+		                  <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
 		                </g:form>
 		              </dl>
 	              </g:if>
@@ -172,7 +172,7 @@
 	                        model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
 	
                   <g:if test="${editable}" >
-	                  <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddOffice" >Add new <i class="icon-plus"></i></button>
+	                  <button class="hidden-license-details btn btn-default btn-sm btn-primary " data-toggle="collapse" data-target="#collapseableAddOffice" >Add new <i class="glyphicon glyphicon-plus"></i></button>
 	                  <dl id="collapseableAddOffice" class="dl-horizontal collapse">
 	                    <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
 	                      <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
@@ -186,7 +186,7 @@
 	                      <dt>Address 2</dt><dd><input type="text" name="addressLine2"/></dd>
 	                      <dt>City</dt><dd><input type="text" name="city"/></dd>
 	                      <dt>Region</dt><dd><input type="text" name="region"/></dd>
-	                      <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+	                      <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
 	                    </g:form>
                     </dl>
                   </g:if>

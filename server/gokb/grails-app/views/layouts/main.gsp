@@ -20,7 +20,7 @@
   <body>
 
     <div class="navbar navbar-default navbar-fixed-top">
-      <div class="container-fluid"> <!--was navbar-inner-->
+      <div class="container"> <!--was navbar-inner-->
         <div class="navbar-header">
           <g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
         </div>
@@ -114,7 +114,7 @@
 
     <div id="Footer">
       <div class="navbar navbar-footer">
-        <div class="navbar-inner">
+        <div class="">
           <div class="container">
 
             <div>

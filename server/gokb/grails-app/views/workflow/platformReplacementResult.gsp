@@ -7,8 +7,8 @@
     <title>GOKb::Package Replacement</title>
   </head>
   <body>
-    <div class="container-fluid">
-      <div class="row-fluid">
+    <div class="container">
+      <div class="row">
         Platform replacement result
       </div>
     </div>

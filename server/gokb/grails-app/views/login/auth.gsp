@@ -91,9 +91,9 @@
 <body>
 
    <div class="navbar navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container-fluid">
-          <a class="brand" href="#">GOKb</a>
+      <div class="navbar-header">
+        <div class="container">
+          <a class="navbar-brand" href="#">GOKb</a>
           <div class="nav-collapse">
             <ul class="nav">
             </ul>
