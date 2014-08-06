@@ -28,9 +28,7 @@ class ReviewRequestNotificationJob {
 
     usermap.each { k,v ->
       println("Email user ${k} about ${v}");
-
-
-      v.needsNotify=false
+      v.needsNotify=False
       v.save()
     }
   }
