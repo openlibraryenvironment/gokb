@@ -20,7 +20,7 @@
   <body>
 
     <div class="navbar navbar-default navbar-fixed-top">
-      <div class="container-fluid"> <!--was navbar-inner-->
+      <div class="container"> <!--was navbar-inner-->
         <div class="navbar-header">
           <g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
         </div>
@@ -87,9 +87,8 @@
                   </ul>
                 </li>
               </sec:ifAnyGranted>
-            </li>
           </ul>
-          <ul class="nav pull-right">
+          <ul class="nav navbar-nav pull-right">
             <sec:ifLoggedIn>
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">${request.user?.displayName?:request.user?.username} <b class="caret"></b></a>
@@ -112,31 +111,19 @@
 
     <g:layoutBody/>
 
-    <div id="Footer">
-      <div class="navbar navbar-footer">
-        <div class="">
-          <div class="container">
 
-            <div>
-              <ul class="footer-sublinks nav">
-                <li><g:link controller="home" action="about">GOKb <g:meta name="app.version"/> / build <g:meta name="app.buildNumber"/></g:link></li>
-              </ul>
-            </div>
-
-            <div class="pull-right">
-              <div class="nav-collapse">
-                <ul class="nav">
-                  <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown"> Tools <b class="caret"></b> </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-          </div>
+      <div class="navbar navbar-default navbar-fixed-bottom">
+	      <div class="container">
+          <ul class="nav navbar-nav">
+            <li><g:link controller="home" action="about">GOKb <g:meta name="app.version"/> / build <g:meta name="app.buildNumber"/></g:link></li>
+          </ul>
+          <ul class="nav navbar-nav pull-right">
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tools <b class="caret"></b> </a>
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
 
     <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
       <g:javascript >
