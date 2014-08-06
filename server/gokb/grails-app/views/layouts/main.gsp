@@ -20,7 +20,7 @@
   <body>
 
     <div class="navbar navbar-default navbar-fixed-top">
-      <div class="container"> <!--was navbar-inner-->
+      <div class="container-fluid"> <!--was navbar-inner-->
         <div class="navbar-header">
           <g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
         </div>
@@ -113,7 +113,7 @@
 
 
       <div class="navbar navbar-default navbar-fixed-bottom">
-	      <div class="container">
+	      <div class="container-fluid">
           <ul class="nav navbar-nav">
             <li><g:link controller="home" action="about">GOKb <g:meta name="app.version"/> / build <g:meta name="app.buildNumber"/></g:link></li>
           </ul>

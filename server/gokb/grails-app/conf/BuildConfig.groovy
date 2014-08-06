@@ -45,7 +45,7 @@ grails.project.dependency.resolution = {
         mavenCentral()
         
         // Custom repo that points to the public nexus repo. Used for elastic search client as there are no "official" ones.
-        mavenRepo name: "KIntPublic", root:"http://projects.k-int.com/nexus-webapp-1.4.0/content/repositories/releases/"
+        mavenRepo "http://projects.k-int.com/nexus-webapp-1.4.0/content/repositories/releases"
 
         // uncomment these (or add new ones) to enable remote dependency resolution from public Maven repositories
         //mavenRepo "http://snapshots.repository.codehaus.org"

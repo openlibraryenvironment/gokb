@@ -17,7 +17,7 @@
 </head>
 <body>
 
-  <div class="container">
+  <div class="container-fluid">
     <div class="row-fluid">
 
       <div id="mainarea" class=" panel panel-default ${displayobj != null ? 'col-xs-6' : 'col-xs-12'}">
@@ -85,7 +85,7 @@
           <div class="well">
 
             <nav class="navbar navbar-default" role="navigation">
-              <div class="container">
+              <div class="container-fluid">
                 <div class="navbar-header">
                   <span class="navbar-brand"> Record ${det} of ${reccount}</span>
                 </div>
