@@ -69,9 +69,28 @@ class User {
       displayName = username
   }
   
+  public isCurrent() {
+    springSecurityService.currentUser == this
+  }
+  
   public boolean isEditable(boolean default_to = true) {
-    // Return the default.
-    return true
+    
+    // Users can edit themselves.
+    return isCurrent() || User.isEditable (default_to)
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+
+    // Deproxy the object first to ensure it isn't a hibernate proxy.
+    def the_obj = KBComponent.deproxy(obj)
+
+    if (the_obj instanceof User) {
+      return this.getId() == the_obj.getId()
+    }
+
+    // Return false if we get here.
+    false
   }
 
   protected void encodePassword() {
