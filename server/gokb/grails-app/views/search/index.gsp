@@ -84,7 +84,7 @@
         <div id="resultsarea" class="col-xs-6">
           <div class="well">
 
-            <nav class="navbar navbar-default" role="navigation">
+            <nav class="navbar navbar-inverse" role="navigation">
               <div class="container-fluid">
                 <div class="navbar-header">
                   <span class="navbar-brand"> Record ${det} of ${reccount}</span>
