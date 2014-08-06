@@ -91,7 +91,7 @@
 <body>
 
    <div class="navbar navbar-default navbar-fixed-top">
-     <div class="container-fluid"> <!--was navbar-inner-->
+     <div class="container"> <!--was navbar-inner-->
        <div class="navbar-header">
          <g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
          <div class="nav-collapse">
@@ -113,7 +113,7 @@
 		</g:if>
 
 		<form action='${postUrl}' method='POST' id='loginForm' class='form-horizontal ' autocomplete='off' role="form">
-                  <div class="container-fluid">
+                  <div class="container">
 			<div class="form-group">
 				<label class="col-sm-3 control-label"for='username'><g:message code="springSecurity.login.username.label"/>:</label>
                                 <div class="col-sm-9">
