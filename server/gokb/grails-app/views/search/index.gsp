@@ -19,9 +19,8 @@
 
   <div class="container-fluid">
     <div class="row-fluid">
-
       <div id="mainarea" class=" panel panel-default ${displayobj != null ? 'col-xs-6' : 'col-xs-12'}">
-        <div class="well">
+        <div> <!-- class="well"-->
           <g:if test="${qbetemplate==null}">
           </g:if>
           <g:else>
@@ -81,8 +80,8 @@
       </div>
 
       <g:if test="${displayobj != null}">
-        <div id="resultsarea" class="col-xs-6">
-          <div class="well">
+        <div id="resultsarea" class="panel panel-default col-xs-6">
+          <div> <!--class="well"-->
 
             <nav class="navbar navbar-inverse" role="navigation">
               <div class="container-fluid">

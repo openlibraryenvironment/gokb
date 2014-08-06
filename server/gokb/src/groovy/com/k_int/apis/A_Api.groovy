@@ -108,7 +108,7 @@ abstract class A_Api <T> {
             // Add this method to the target.
             targetClass.metaClass."${m.name}" = { args ->
 
-              def the_args = args ?: [] as List
+              def the_args = (args ?: []) as List
 
               // Prepend the new value.
               the_args.add(0, delegate)
@@ -119,7 +119,7 @@ abstract class A_Api <T> {
             // Add to the static scope.
             targetClass.metaClass.static."${m.name}" = { args ->
 
-              def the_args = args ?: [] as List
+              def the_args = (args ?: []) as List
 
               // Prepend the new value.
               the_args.add(0, delegate.class)

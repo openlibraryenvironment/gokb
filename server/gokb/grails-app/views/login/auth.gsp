@@ -113,7 +113,8 @@
 		</g:if>
 
 		<form action='${postUrl}' method='POST' id='loginForm' class='form-horizontal ' autocomplete='off' role="form">
-                  <div class="container">
+                  <div class="container-fluid">
+                    <div class="row"
 			<div class="form-group">
 				<label class="col-sm-3 control-label"for='username'><g:message code="springSecurity.login.username.label"/>:</label>
                                 <div class="col-sm-9">
@@ -139,6 +140,7 @@
 				<input type='submit' id="submit" value='${message(code: "springSecurity.login.button")}'/>
                             </div>
                         </div>
+                    </div>
                   </div>
 		</form>
 	</div>

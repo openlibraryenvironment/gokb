@@ -76,7 +76,7 @@ class User {
   public boolean isEditable(boolean default_to = true) {
     
     // Users can edit themselves.
-    return isCurrent() || User.isEditable (default_to)
+    return isCurrent() || User.isEditable ([default_to])
   }
   
   @Override
