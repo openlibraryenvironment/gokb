@@ -72,7 +72,9 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
+    <g:if test="${ d.isEditable() }" >
     <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
+    </g:if>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span class="badge badge-warning">${d.getCombosByPropertyName('publisher')?.size()}</span></a></li>
     <li><a href="#availability" data-toggle="tab">Availability <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
@@ -116,8 +118,8 @@
                     <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
                     <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
                     <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
-                    <td><g:link controller="workflow" action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
-                        <g:link controller="workflow" action="DeleteVariant" id="${v.id}">Delete</g:link></td>
+                    <td><g:if test="${ d.isEditable() }" ><g:link controller="workflow" action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
+                        <g:link controller="workflow" action="DeleteVariant" id="${v.id}">Delete</g:link></td></g:if>
                   </tr>
                 </g:each>
               </tbody>
