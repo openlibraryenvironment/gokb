@@ -23,15 +23,15 @@
           <button type="submit" class="btn btn-default btn-primary btn-sm">Submit</button>
         </g:form>
         </div>
-
-        <div class="container-fluid well">
-          <g:if test="${displaytemplate != null}">
-            <g:if test="${displaytemplate.type=='staticgsp'}">
-              <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
-            </g:if>
-          </g:if>
-        </div>
       </g:if>
+
+      <div class="container-fluid well">
+        <g:if test="${displaytemplate != null}">
+          <g:if test="${displaytemplate.type=='staticgsp'}">
+            <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
+          </g:if>
+        </g:if>
+      </div>
     </g:if>
     <g:else>
       <h1>Unable to find record in database : Please notify support</h1>
