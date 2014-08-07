@@ -7,8 +7,8 @@
   </head>
   <body>
 
-    <div class="container-fluid">
-      <div class="row-fluid">
+    <div class="container">
+      <div class="row">
         <table class="table table-striped">
           <thead>
             <th>Org</th>

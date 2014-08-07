@@ -6,14 +6,14 @@
     <title>GOKb::OAI Interface</title>
   </head>
   <body>
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="span12 hero well">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12 hero well">
           OAI Record Synchronization
         </div>
       </div>
-      <div class="row-fluid">
-        <div class="span12">
+      <div class="row">
+        <div class="col-md-12">
           <ul>
             <li><g:link controller='oai' action='index' id='packages' params="${[verb:'Identify']}">Identify Packages</g:link></li>
             <li><g:link controller='oai' action='index' id='packages' params="${[verb:'ListRecords',metadataPrefix:'gokb']}">Get [full] Packages</g:link></li>

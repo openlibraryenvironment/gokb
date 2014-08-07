@@ -7,10 +7,10 @@
 </head>
 <body>
 
-  <div class="container-fluid">
-    <div class="row-fluid">
+  <div class="container">
+    <div class="row">
 
-      <div id="mainarea" class="span12">
+      <div id="mainarea" class="col-md-12">
         <div class="well">
           <h1>GOKb file upload</h1>
           <p>
@@ -26,7 +26,7 @@
 	            <dt>File to submit</dt>
 	            <dd><input type="file" id="submissionFile" name="submissionFile"/></dd>
 	            <dt></dt>
-	            <dd><button type="submit" class="btn btn-primary">Upload</button></dd>
+	            <dd><button type="submit" class="btn btn-default btn-primary btn-sm">Upload</button></dd>
             </dl>
           </g:form>
         </div>

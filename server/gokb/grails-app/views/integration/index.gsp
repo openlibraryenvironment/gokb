@@ -7,8 +7,8 @@
   </head>
   <body>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
+   <div class="container">
+     <div class="row">
        <h1>Gokb Integration API</h1>
            <h2>Cross Reference Title</h2>
            <p>
@@ -33,7 +33,7 @@ Example:
   ]
 }</pre></code>
 
-The following CURL command will tell GoKB about the JUSP title for "3 Biotech"
+The following CURL command will tell GOKb about the JUSP title for "3 Biotech"
 <code><pre>
 curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title":"3 Biotech",identifiers:[{"type":"eissn","value":"2190-5738"},{"type":"jusp","value":"6416"}]}' <g:createLink controller="integration" action="crossReferenceTitle"/>
 </pre></code>

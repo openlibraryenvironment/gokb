@@ -10,9 +10,9 @@
 <body>
 
    <div class="navbar navbar-fixed-top">
-     <div class="navbar-inner">
-       <div class="container-fluid">
-         <a class="brand" href="#">GOKb</a>
+     <div class="navbar-header">
+       <div class="container">
+         <a class="navbar-brand" href="#">GOKb</a>
          <div class="nav-collapse">
            <ul class="nav">
            </ul>
@@ -27,9 +27,9 @@
 
 
 
-<div class="container-fluid">
-  <div class="row-fluid"
-    <div class='span12'>
+<div class="container">
+  <div class="row"
+    <div class='col-md-12'>
 
 
 <s2ui:form width='650' height='300' elementId='loginFormContainer'

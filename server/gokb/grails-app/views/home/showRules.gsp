@@ -7,9 +7,9 @@
   </head>
   <body>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
-       <div id="sidebar" class="span12">
+   <div class="container">
+     <div class="row">
+       <div id="sidebar" class="col-md-12">
 
          <table class="table table-striped">
            <caption>Active upload rules</caption>

@@ -7,7 +7,7 @@
     <title>GOKb::Title Reconcile</title>
   </head>
   <body>
-    <div class="container-fluid">
+    <div class="container">
       <h1>Collecting Data....</h1>
       <ul>
         <g:each in="${objects_to_action}" var="ota">

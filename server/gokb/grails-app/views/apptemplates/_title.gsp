@@ -122,7 +122,7 @@
                 </g:each>
               </tbody>
             </table>
-            <button class="hidden-license-details btn btn-small btn-primary" data-toggle="collapse" data-target="#collapseableAddTitle" >Add new <i class="icon-plus"></i></button>
+            <button class="hidden-license-details btn btn-default btn-sm btn-primary " data-toggle="collapse" data-target="#collapseableAddTitle" >Add new <i class="glyphicon glyphicon-plus"></i></button>
             <dl id="collapseableAddTitle" class="dl-horizontal collapse">
               <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
                 <input type="hidden" name="__context" value="${d.class.name}:${d.id}"/>
@@ -131,7 +131,7 @@
                 <dt>Add Title Variant</dt><dd><input type="text" name="variantName"/></dd>
                 <dt>Locale</dt><dd><g:simpleReferenceTypedown name="locale" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.Locale" /></dd>
                 <dt>Variant Type</dt><dd><g:simpleReferenceTypedown name="variantType" baseClass="org.gokb.cred.RefdataValue" filter1="KBComponentVariantName.VariantType" /></dd>
-                <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+                <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
               </g:form>
             </dl>
           </dd>

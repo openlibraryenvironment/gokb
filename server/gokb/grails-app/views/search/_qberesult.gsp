@@ -11,20 +11,20 @@
 							<g:if test="${params.sort==c.sort && params.order=='asc'}">
 								<g:link params="${params+['sort':c.sort,order:'desc']}">
 									${c.heading}
-									<i class="icon-sort-up"></i>
+									<i class="glyphicon glyphicon-sort-up"></i>
 								</g:link>
 							</g:if>
 							<g:else>
 								<g:if test="${params.sort==c.sort && params.order=='desc'}">
 									<g:link params="${params+['sort':c.sort,order:'asc']}">
 										${c.heading}
-										<i class="icon-sort-down"></i>
+										<i class="glyphicon glyphicon-sort-down"></i>
 									</g:link>
 								</g:if>
 								<g:else>
 									<g:link params="${params+['sort':c.sort,order:'desc']}">
 										${c.heading}
-										<i class="icon-sort"></i>
+										<i class="glyphicon glyphicon-sort"></i>
 									</g:link>
 								</g:else>
 							</g:else>
@@ -68,20 +68,20 @@
 								<g:if test="${params.sort==c.sort && params.order=='asc'}">
 									<g:link params="${params+['sort':c.sort,order:'desc']}">
 										${c.heading}
-										<i class="icon-sort-up"></i>
+										<i class="glyphicon glyphicon-sort-up"></i>
 									</g:link>
 								</g:if>
 								<g:else>
 									<g:if test="${params.sort==c.sort && params.order=='desc'}">
 										<g:link params="${params+['sort':c.sort,order:'asc']}">
 											${c.heading}
-											<i class="icon-sort-down"></i>
+											<i class="glyphicon glyphicon-sort-down"></i>
 										</g:link>
 									</g:if>
 									<g:else>
 										<g:link params="${params+['sort':c.sort,order:'desc']}">
 											${c.heading}
-											<i class="icon-sort"></i>
+											<i class="glyphicon glyphicon-sort"></i>
 										</g:link>
 									</g:else>
 								</g:else>
@@ -96,19 +96,17 @@
 				<g:each in="${rows}" var="r">
 					<g:if test="${r != null }">
 						<g:set var="r" value="${r}" />
-						<g:set var="readonly"
-							value="${ r.respondsTo('isSystemComponent') && r.isSystemComponent() }" />
 						<tr class="${++counter==det ? 'success':''}">
 							<!-- Row ${counter} -->
 							<td><g:if
-									test="${!readonly && r.respondsTo('availableActions')}">
+									test="${r.isEditable() && r.respondsTo('availableActions')}">
 									<g:set var="al"
 										value="${new JSON(r.availableActions()).toString().encodeAsHTML()}" />
 									<input type="checkbox" name="bulk:${r.class.name}:${r.id}"
 										data-actns="${al}" class="obj-action-ck-box" />
 								</g:if> <g:else>
 									<input type="checkbox"
-										title="${ readonly ? 'Component is read only' : 'No actions available' }"
+										title="${ !r.isEditable() ? 'Component is read only' : 'No actions available' }"
 										disabled="disabled" readonly="readonly" />
 								</g:else></td>
 							<g:each in="${qbeConfig.qbeResults}" var="c">
@@ -125,7 +123,7 @@
 							</g:each>
 							<td><g:if
 									test="${request.user?.showQuickView?.value=='Yes'}">
-									<g:link class="btn btn-primary pull-right" controller="search"
+									<g:link class="btn btn-default btn-primary pull-right btn-sm" controller="search"
 										action="index" params="${params+['det':counter]}">view >></g:link>
 								</g:if></td>
 						</tr>
@@ -141,7 +139,7 @@
 		<div class="pull-right well" id="bulkActionControls">
 			<h4>Available actions for selected rows</h4>
 			<select id="selectedBulkAction" name="selectedBulkAction"></select>
-			<button type="submit" class="btn btn-primary">Action</button>
+			<button type="submit" class="btn btn-default btn-primary btn-sm">Submit</button>
 		</div>
 	</g:form>
 </g:else>

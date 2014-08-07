@@ -1,6 +1,5 @@
 <r:require modules="gokbstyle" />
 <r:require modules="editable" />
-<g:set var="readonly" value="${ d.respondsTo('isSystemComponent') && d.isSystemComponent() }" />
 <h3>
   <g:if test="${d.id != null}">
     ${d.getNiceName()} : ${d.name ?: d.id} -
@@ -83,12 +82,12 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP Details</a></li>
-    <g:if test="${ !readonly }" >
+    <g:if test="${ d.isEditable() }" >
       <li><a href="#tippcoverage" data-toggle="tab">Coverage</a></li>
     </g:if>
     <li><a href="#tippopenaccess" data-toggle="tab">Open Access</a></li>
     <li><a href="#tipplists" data-toggle="tab">Lists</a></li>
-    <g:if test="${ !readonly }" >
+    <g:if test="${ d.isEditable() }" >
 	    <li><a href="#addprops" data-toggle="tab">Additional
 	        Properties <span class="badge badge-warning">
 	          ${d.additionalProperties?.size()}
@@ -123,7 +122,7 @@
       </g:if>
     </div>
     
-    <g:if test="${ !readonly }" >
+    <g:if test="${ d.isEditable() }" >
 	    <div class="tab-pane" id="tippcoverage">
 	      <dl class="dl-horizontal">
 	        <dt><g:annotatedLabel owner="${d}" property="coverage">Coverage</g:annotatedLabel></dt>
@@ -189,7 +188,7 @@
 
     <div class="tab-pane" id="tipplists"></div>
 
-    <g:if test="${ !readonly }" >
+    <g:if test="${ d.isEditable() }" >
 	    <div class="tab-pane" id="addprops">
 	      <g:render template="addprops" contextPath="../apptemplates"
 	        model="${[d:d]}" />

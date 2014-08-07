@@ -74,7 +74,7 @@
           </dd>
           <dt></dt>
           <dd>
-            <button type="submit" class="btn btn-primary btn-small">Add</button>
+            <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
           </dd>
         </g:form>
       </dl>

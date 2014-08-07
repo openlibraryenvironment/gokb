@@ -7,16 +7,16 @@
     <title>GOKb::Title Transfer</title>
   </head>
   <body>
-    <div class="container-fluid">
+    <div class="container">
       <g:form controller="workflow" action="editTitleTransfer" id="${params.id}">
-        <div class="row-fluid">
-          <div class="span12 hero well">
+        <div class="row">
+          <div class="col-md-12 hero well">
             ${d.activityName} - ${d.status?.value}
           </div>
         </div>
-        <div class="row-fluid">
+        <div class="row">
   
-          <div class="span12">
+          <div class="col-md-12">
 
             The following titles:
             <ul>
@@ -75,11 +75,11 @@
 	              <dt>New Platform</dt>
 	              <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Platform" baseClass="org.gokb.cred.Platform"/></dd>
 	              <dt></dt>
-	              <dd><button type="submit" class="btn btn-primary" name="addTransferTipps" value="AddTipps">Add transfer tipps</button></dd>
+	              <dd><button type="submit" class="btn btn-default btn-primary btn-sm" name="addTransferTipps" value="AddTipps">Add transfer tipps</button></dd>
               </dl>
               <br/>
-              <button type="submit" class="btn btn-primary" name="process" value="process">Process Transfer</button>
-              <button type="submit" class="btn btn-danger" name="abandon" value="abandon">Abandon Transfer</button>
+              <button type="submit" class="btn btn-default btn-primary btn-sm" name="process" value="process">Process Transfer</button>
+              <button type="submit" class="btn btn-default btn-danger btn-sm" name="abandon" value="abandon">Abandon Transfer</button>
             </g:if>
             <g:else>
               This activity has been completed.

@@ -8,8 +8,8 @@
     <title>User Profile</title>
   </head>
   <body>
-  <div class="container-fluid">
-    <div class="row-fluid">
+  <div class="container">
+    <div class="row">
       <h3>User Preferences</h3>
       <dl class="dl-horizontal">
         <dt>Show Info Icon :</dt>
@@ -26,7 +26,7 @@
         <dd><g:xEditable owner="${user}" field="defaultPageSize" /></dd>
       </dl>
     </div>
-    <div class="row-fluid">
+    <div class="row">
       <g:form action="changePass">
       <h3>Change Password</h3>
       <dl class="dl-horizontal">

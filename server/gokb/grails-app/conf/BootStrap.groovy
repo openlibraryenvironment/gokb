@@ -77,9 +77,7 @@ class BootStrap {
   
   private void addCustomApis() {
     (grailsApplication.getArtefacts("Domain")*.clazz).each {Class<?> c ->
-      
       grailsApplication.config.apiClasses.each { String className -> 
-      
         // Add the api methods.
         A_Api.addMethods(c, Class.forName(className))
       }

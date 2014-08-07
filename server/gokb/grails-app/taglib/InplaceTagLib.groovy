@@ -12,20 +12,11 @@ class InplaceTagLib {
     def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
     
     // Check the attribute.
-    boolean tl_editable = !(attrs?."readonly" == true)
-    
-    // Also check the special flag on the entire component. 
-    if (owner?.respondsTo("isSystemComponent")) {
-      tl_editable = tl_editable && !owner?.isSystemComponent()
-    }
-
-    if ( owner?.respondsTo("isEditable")) {
-      tl_editable = tl_editable && owner.isEditable()
-    }
+    boolean tl_editable = !(owner?.respondsTo("isEditable") && !owner.isEditable())
     
     // If not editable then we should output as value only and return the value.
     if (!tl_editable) {
-      def content = body() + (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : "" )
+      def content = (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : body()?.trim() )
       out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${owner?.respondsTo('getNiceName') ? owner.getNiceName() : 'component' } is read only.' >${content ?: 'Empty'}</span>"
     }
 
@@ -288,11 +279,19 @@ class InplaceTagLib {
     out << "</a>";
   }
 
-  def componentLink = { attrs, body ->
-    if ( attrs.object != null ) {
-      def object = ClassUtils.deproxy(attrs.object)
+  def componentLink = { Map attrs, body ->
+    
+    def obj = attrs.remove('object')
+    if ( obj != null ) {
+      def object = ClassUtils.deproxy(obj)
       def object_link = createLink(controller:'resource', action: 'show', id:"${object.class.name}:${object.id}")
-      out << "<a href=\"${object_link}\">"
+      out << "<a href=\"${object_link}\""
+      
+      // Ensure we pipe out the rest of the parameters too.
+      attrs.each { name, val ->
+        out << " ${name}=\"${val}\""
+      }
+      out << " >"
       out << body()
       out << "</a>"
     }

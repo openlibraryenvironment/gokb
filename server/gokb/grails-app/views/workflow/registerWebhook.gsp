@@ -7,18 +7,18 @@
     <title>GOKb::Package - Register Webhook </title>
   </head>
   <body>
-    <div class="container-fluid">
+    <div class="container">
       <g:form controller="workflow" action="processCreateWebHook" method="get">
         <input type="hidden" name="from" value="${request.getHeader('referer')}"/>
 
-        <div class="row-fluid">
-          <div class="span12 hero well">
+        <div class="row">
+          <div class="col-md-12 hero well">
             Register Webhook
           </div>
         </div>
-        <div class="row-fluid">
+        <div class="row">
   
-          <div class="span12">
+          <div class="col-md-12">
             <img class="pull-right" src="${resource(dir: 'images', file: 'WebHook.png')}"/>
             
             Register WebHook callbacks for:<br/>

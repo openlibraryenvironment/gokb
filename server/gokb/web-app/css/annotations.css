@@ -15,14 +15,18 @@ div.annotation-editable {
 }
 
 div.annotation-editable:hover {
-  border: 1px dashed #0088CC;
+  border: 1px dashed #989898;
 }
 
 div.annotation-empty {
-  color: #5A3DA6;
+  color: #ff6c91;
   font-style: italic;
 }
 
+
+.popover .note-toolbar {
+	margin-left:0;
+}
 .popover div.editor-buttons {
   padding: 10px 0 0 0;
   text-align:right;

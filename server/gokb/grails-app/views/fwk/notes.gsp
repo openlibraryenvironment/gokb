@@ -31,7 +31,7 @@
       <input type="hidden" name="ownerId" value="${ownerId}"/>
       <input type="hidden" name="creator" value="org.gokb.cred.User:${user.id}"/>
       <dt>Note Text</dt><dd><input type="text" name="note"/></dd>
-      <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+      <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
     </g:form>
   </dl>
 

@@ -1,65 +1,107 @@
 package com.k_int.apis
 
-import java.lang.reflect.Method
-import java.lang.reflect.Modifier
-
-import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
-import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 import org.gokb.cred.KBDomainInfo
-import org.grails.datastore.gorm.AbstractGormApi
-import org.grails.plugins.springsecurity.service.acl.AclUtilService
-import org.springframework.context.ApplicationContext
 import org.springframework.security.acls.model.Permission
-import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder as SECCH
 
-/**
- * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
+/** 
+ * <p>API class to add meta-methods associated with Security.</p>
  * 
- * API class to add metamethods associated with Security.
+ * <p>Creates a static hasPermission (Permission p, [defaultTo])</p>
+ * <p>Also adds the following in both a static and none static context, all with an optional default value
+ *  if no domain class has been declared as responsible for the permissions.</p>
+ * <ul>
+ *  <li>isEditable ([defaultTo])
+ *  <li>isCreatable ([defaultTo])
+ *  <li>isReadable ([defaultTo])
+ *  <li>isAdministerable ([defaultTo])
+ * </ul>
+ * 
+ * <p>Also adds the following in both a static and none static context:</p>
+ * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
  */
 class SecurityApi <T> extends A_Api<T> {
   
   private SecurityApi () {}
   
-  public static boolean isEditable (Class<T> clazz) {
+  public static boolean isEditable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.WRITE)
   }
   
-  public static boolean isCreatable (Class<T> clazz) {
+  public static boolean isCreatable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
   }
   
-  public static isReadable (Class<T> clazz) {
+  public static boolean isReadable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.READ)
   }
   
-  public boolean isDeletable (Class<T> clazz) {
+  public static boolean isDeletable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.DELETE)
   }
   
-  public boolean isAdministerable (Class<T> clazz) {
+  public static boolean isAdministerable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.ADMINISTRATION)
   }
   
-  public static boolean hasPermission(Class<T> clazz, Permission p) {
+  public boolean isEditable(T component, boolean defaultTo = true) {
+    
+    boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
+    if (allowed) {
+      allowed = SecurityApi.isEditable (component.getClass(), defaultTo)
+    }
+    allowed
+  }
+  
+  public boolean isCreatable (T component, boolean defaultTo = true) {
+    
+    boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
+    if (allowed) {
+      allowed = SecurityApi.isCreatable (component.getClass(), defaultTo)
+    }
+    allowed
+  }
+  
+  public boolean isReadable (T component, boolean defaultTo = true) {
+    
+    boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
+    if (allowed) {
+      allowed = SecurityApi.isReadable (component.getClass(), defaultTo)
+    }
+    allowed
+  }
+  
+  public boolean isDeletable (T component, boolean defaultTo = true) {
+    
+    boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
+    if (allowed) {
+      allowed = SecurityApi.isDeletable (component.getClass(), defaultTo)
+    }
+    allowed
+  }
+  
+  public boolean isAdministerable (T component, boolean defaultTo = true) {
+    
+    boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
+    if (allowed) {
+      allowed = SecurityApi.isAdministerable (component.getClass(), defaultTo)
+    }
+    allowed
+  }
+  
+  public static boolean hasPermission(Class<T> clazz, Permission p, boolean defaultTo = true) {
     def domain_record_info = KBDomainInfo.findByDcName(clazz.name)
     if (domain_record_info) {
       boolean can_edit = this.aclUtilService.hasPermission(
         SECCH.context.authentication,
         domain_record_info,
-        p)
+        p
+      )
       
       return can_edit
     }
     
-    // Default to true, as any class without an associated model should be ignored.
-    true
-  }
-
-  @Override
-  protected boolean applicableFor (Class targetClass) {
-    // Valid for all classes.
-    return true
+    // Return the default value if not found.
+    defaultTo
   }
 }

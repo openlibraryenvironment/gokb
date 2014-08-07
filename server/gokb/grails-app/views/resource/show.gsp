@@ -3,7 +3,9 @@
   <head>
     <meta name="layout" content="main"/>
     <r:require modules="gokbstyle"/>
-    <title>GOKb</title>
+    <title>GOKb - ${displayobj?.niceName}
+      (<g:if test="${displayobj?.isEditable()}">Editable</g:if><g:else>Read Only</g:else>)
+    </title>
   </head>
   <body class="" >
     <g:if test="${displayobj != null}">
@@ -18,7 +20,7 @@
             </g:each>
           </select>
           <input type="hidden" name="bulk:${displayobj.class.name}:${displayobj.id}" value="true" />
-          <button type="submit" class="btn btn-primary">Action</button>
+          <button type="submit" class="btn btn-default btn-primary btn-sm">Submit</button>
         </g:form>
         </div>
 

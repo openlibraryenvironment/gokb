@@ -7,9 +7,9 @@
   </head>
   <body>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
-       <div class="well span12">
+   <div class="container">
+     <div class="row">
+       <div class="well col-md-12">
 
          <h1>Application Info</h1>
          <table class="table table-bordered">

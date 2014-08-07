@@ -8,7 +8,7 @@ modules = {
     resource url:'js/inline-content.js'
     resource url:'js/summernote.min.js'
     resource url:'css/summernote.css'
-    resource url:'css/summernote-bs2.css'
+    resource url:'css/summernote-bs3.css'
     resource url:'js/action-forms.js'
     resource url:'css/action-forms.css'
     resource url:'js/annotations.js'

@@ -7,8 +7,8 @@
   </head>
   <body>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
+   <div class="container">
+     <div class="row">
        <p>
          <h2>Coreference Search Service</h2>
          Search for objects in the knowledgebase. Parameters are as follows:

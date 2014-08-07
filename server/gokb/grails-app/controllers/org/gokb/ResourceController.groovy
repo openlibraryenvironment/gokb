@@ -30,10 +30,10 @@ class ResourceController {
       if ( result.displayobj ) {
 
         def new_history_entry = new History(controller:params.controller,
-        action:params.action,
-        actionid:params.id,
-        owner:user,
-        title:"View ${result.displayobj.toString()}").save()
+            action:params.action,
+            actionid:params.id,
+            owner:user,
+            title:"View ${result.displayobj.toString()}").save()
 
         result.displayobjclassname = result.displayobj.class.name
         result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
@@ -45,18 +45,6 @@ class ResourceController {
         result.isComponent = (result.displayobj instanceof KBComponent)
         
         result.acl = gokbAclService.readAclSilently(result.displayobj)
-
-        // Does the user have permission to edit this record?
-        if ( result.displayobj.isEditable()) {
-          log.debug("User has write permission to all objects of type "+result.displayobjclassname);
-          result.readonly=false
-          result.ediable=true
-        }
-        else {
-          log.debug("No write perm to "+result.displayobjclassname+" assume readonly");
-          result.readonly=true
-          result.ediable=false
-        }
       }
       else {
         log.debug("unable to resolve object");
