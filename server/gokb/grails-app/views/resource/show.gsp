@@ -6,9 +6,10 @@
     <title>GOKb</title>
   </head>
   <body class="" >
-    <g:if test="${displayobj.respondsTo('availableActions')}">
+    <g:if test="${displayobj != null}">
+      <g:if test="${displayobj.respondsTo('availableActions')}">
         <div class="pull-right well" id="actionControls">
-  	<g:form controller="workflow" action="action" method="post"  class='action-form' >
+    	<g:form controller="workflow" action="action" method="post"  class='action-form' >
           <h4>Available actions</h4>
           <select id="selectedAction" name="selectedBulkAction">
             <option value="">-- Select an action to perform --</option>
@@ -19,17 +20,19 @@
           <input type="hidden" name="bulk:${displayobj.class.name}:${displayobj.id}" value="true" />
           <button type="submit" class="btn btn-primary">Action</button>
         </g:form>
-      </div>
-    </g:if>
-    <div class="container-fluid well">
-      <g:if test="${displaytemplate != null}">
-        <g:if test="${displaytemplate.type=='staticgsp'}">
-          <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
-        </g:if>
+        </div>
+
+        <div class="container-fluid well">
+          <g:if test="${displaytemplate != null}">
+            <g:if test="${displaytemplate.type=='staticgsp'}">
+              <g:render template="${displaytemplate.rendername}" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}"/>
+            </g:if>
+          </g:if>
+        </div>
       </g:if>
-    </div>
-<!--
-  ${acl}
--->
-</body>
+    </g:if>
+    <g:else>
+      <h1>Unable to find record in database : Please notify support</h1>
+    </g:else>
+  </body>
 </html>
