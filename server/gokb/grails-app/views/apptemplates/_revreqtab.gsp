@@ -10,10 +10,8 @@
         <td>${rr.status?.value}</td>
         <td>${rr.raisedBy?.displayName?:rr.raisedBy?.username}</td>
         <td>${rr.reviewedBy?.displayName?:rr.reviewedBy?.username}</td>
-        <td></td>
       </tr>
     </g:each>
-    </tr>
   </tbody>
 </table>
 
