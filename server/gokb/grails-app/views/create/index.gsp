@@ -6,7 +6,6 @@
 <title>GOKb</title>
 </head>
 <body>
-	<div class="container">
 		<div class="row">
 			<div id="mainarea" class="col-md-12">
 				<div class="well">
@@ -26,7 +25,6 @@
 				</div>
 			</div>
 		</div>
-	</div>
 
 	<script type="text/javascript">
 

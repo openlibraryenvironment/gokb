@@ -1,15 +1,19 @@
 /**
  *  Local gokb overrides for bootstrap
  */
-.navbar-push {
-  clear: both;
-  padding-top: 45px;
-}
-
+ 
+ body {
+   padding-top:55px;
+   padding-bottom:45px;
+ }
+ 
+ h1.panel-title {
+   font-size:2em;
+ }
+ 
 .editable-inline textarea {
   line-height: 1.2em;
-  height: 1.2em;
-  width: 400px;
+  height: 2.4em;
   white-space: nowrap;
   overflow-x: hidden;
   overflow-y: hidden;
@@ -37,4 +41,28 @@
 
 #licsummary .more-info .info{
 	cursor: pointer;
+}
+
+.search-display .navbar {
+	margin-bottom:0;
+	margin-top:0;
+}
+
+.search-display .table {
+	margin-bottom:0;
+	margin-top:0;
+}
+
+#bulkActionControls {
+	margin-top:25px;
+}
+
+.page-jump {
+	font-size:1.2em;
+}
+
+.dropdown-menu-scroll {
+  height: auto;
+  max-height: 400px;
+  overflow-x: hidden;
 }

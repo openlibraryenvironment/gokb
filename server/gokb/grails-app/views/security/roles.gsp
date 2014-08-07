@@ -16,17 +16,17 @@
 				<tr>
           <td class="group-status" >
             <g:if test="${ status }" >
-	            <i class="group-member glyphicon glyphicon-ok-sign" ></i>
+	            <i class="group-member icon-ok-sign" ></i>
               <g:if test="${editable}" >
                 <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : false ]}" title="Remove from role" >
-                  <i class="group-member glyphicon glyphicon-remove-sign" ></i>
+                  <i class="group-member icon-remove-sign" ></i>
                 </g:link>
               </g:if>
             </g:if>
             <g:else>
               <g:if test="${editable}" >
                 <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : true ]}" title="Add to role" >
-                  <i class="group-member glyphicon glyphicon-ok-sign" ></i>
+                  <i class="group-member icon-ok-sign" ></i>
                 </g:link>
               </g:if>
               <i class="group-member icon-remove-sign" ></i>

@@ -3,7 +3,7 @@
   <head>
     <meta name="layout" content="main"/>
     <r:require modules="gokbstyle"/>
-    <title>GOKb - ${displayobj?.niceName}
+    <title>GOKb - ${displayobj?.getNiceName()}
       (<g:if test="${displayobj?.isEditable()}">Editable</g:if><g:else>Read Only</g:else>)
     </title>
   </head>

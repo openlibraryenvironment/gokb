@@ -3,11 +3,13 @@
 <g:set var="counter" value="${offset}" />
 
 <g:if test="${ request.isAjax() }">
+	<g:render template="pagination" contextPath="." model="${params}" />
 	<table class="table table-striped table-condensed table-bordered">
 		<thead>
 			<tr class="nav">
 				<g:each in="${qbeConfig.qbeResults}" var="c">
-					<th><g:if test="${c.sort}">
+					<th>
+						<g:if test="${c.sort}">
 							<g:if test="${params.sort==c.sort && params.order=='asc'}">
 								<g:link params="${params+['sort':c.sort,order:'desc']}">
 									${c.heading}
@@ -28,9 +30,11 @@
 									</g:link>
 								</g:else>
 							</g:else>
-						</g:if> <g:else>
+						</g:if>
+						<g:else>
 							${c.heading}
-						</g:else></th>
+						</g:else>
+					</th>
 				</g:each>
 			</tr>
 		</thead>
@@ -58,7 +62,9 @@
 </g:if>
 <g:else>
 	<g:form controller="workflow" action="action" method="post"
-		class='action-form'>
+		class='action-form' >
+		<div class="batch-all-info" style="display:none;"></div>
+		<g:render template="pagination" contextPath="." model="${params}" />
 		<table class="table table-striped table-condensed table-bordered">
 			<thead>
 				<tr>
@@ -136,6 +142,7 @@
 				</g:each>
 			</tbody>
 		</table>
+		<g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
 		<div class="pull-right well" id="bulkActionControls">
 			<h4>Available actions for selected rows</h4>
 			<select id="selectedBulkAction" name="selectedBulkAction"></select>

@@ -43,6 +43,10 @@ class SearchController {
         log.debug("Execute query");
         doQuery(result.qbetemplate, params, result)
         result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
+        
+        // Add the page information.
+        result.page_current = (result.offset / result.max) + 1
+        result.page_total = (result.reccount / result.max).toInteger() + (result.reccount % result.max > 0 ? 1 : 0)
       }
       else {
         log.error("no template ${result?.qbetemplate}");

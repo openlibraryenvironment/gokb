@@ -1,7 +1,7 @@
 <r:require modules="gokbstyle"/>
 <r:require modules="editable"/>
 
-<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
+<h1>${d.id ? d.getNiceName() + ': ' + d.id : 'Create New ' + d.getNiceName()}</h1>
 
 
 <div id="content">
@@ -30,7 +30,7 @@
         <g:else>
           Additional fields will be available once the record is saved
         </g:else>
-    </dl>
-  </div>
+	    </dl>
+	  </div>
+	</div>
 </div>
-
