@@ -1004,7 +1004,8 @@ defaultOaiConfig = [
 ]
 
 apiClasses = [
-  "com.k_int.apis.SecurityApi"
+  "com.k_int.apis.SecurityApi",
+  "com.k_int.apis.GrailsDomainHelpersApi"
 ]
 
 

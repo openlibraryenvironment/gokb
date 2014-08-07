@@ -578,12 +578,6 @@ abstract class KBComponent {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
   }
 
-  @Transient
-  public String getClassName () {
-    getMetaClass().getTheClass().getName()
-  }
-
-
   /**
    *  Return the combos pertaining to a specific property (Rather than the components linked).
    *  Needed for editing start/end dates. Initially on publisher, but probably on other things too later on.
@@ -613,17 +607,6 @@ abstract class KBComponent {
 
     return combos
   }
-
-  @Transient
-  public boolean isInstanceOf (Class testCase) {
-    boolean val = getMetaClass().getTheClass().isAssignableFrom(testCase)
-    val
-  }
-
-  public static <T> T deproxy(def element) {
-    ClassUtils.deproxy(element)
-  }
-  //  return (getMetaClass().getTheClass() instanceof testCase.class)
 
   @Override
   public boolean equals(Object obj) {
@@ -666,11 +649,6 @@ abstract class KBComponent {
             )
       }
     }
-  }
-
-  @Transient
-  public String getNiceName () {
-    GrailsNameUtils.getNaturalName(getClassName())
   }
 
   public String toString() {
