@@ -61,7 +61,7 @@ abstract class A_Api <T> {
    * @return
    */
   protected def propertyMissing (String name) {
-    this.class.propertyMissing(name)
+    A_Api.propertyMissing(name)
   }
 
   static {
@@ -108,7 +108,7 @@ abstract class A_Api <T> {
             // Add this method to the target.
             targetClass.metaClass."${m.name}" = { args ->
 
-              def the_args = (args ?: []) as List
+              List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
 
               // Prepend the new value.
               the_args.add(0, delegate)
@@ -119,7 +119,7 @@ abstract class A_Api <T> {
             // Add to the static scope.
             targetClass.metaClass.static."${m.name}" = { args ->
 
-              def the_args = (args ?: []) as List
+              List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
 
               // Prepend the new value.
               the_args.add(0, delegate.class)
@@ -130,7 +130,6 @@ abstract class A_Api <T> {
       }
     }
   }
-
 
   /**
    * Allows us to programmatically exclude a class. Defaults to true here.

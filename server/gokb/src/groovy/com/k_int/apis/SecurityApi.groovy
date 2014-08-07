@@ -46,6 +46,10 @@ class SecurityApi <T> extends A_Api<T> {
   
   public boolean isEditable(T component, boolean defaultTo = true) {
     
+    // Calling this method on an ojbect that has no id, and therefore hasn't been saved
+    // will instead route through isCreatable as this is a create and not an edit.
+    if (component.id == null) return isCreatable (component, defaultTo)
+    
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
       allowed = SecurityApi.isEditable (component.getClass(), defaultTo)
