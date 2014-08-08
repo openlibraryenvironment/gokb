@@ -25,7 +25,8 @@ modules = {
   }
   overrides {
     'bootstrap-css' {
-      resource id: 'bootstrap-css', url:'/css/gokbbootstrap-3.min.css'
+      resource id: 'bootstrap-css', url:'/css/gokbbootstrap-3.test.css'
+      // resource id: 'bootstrap-css', url:'/css/gokbbootstrap-3.min.css'
   //     resource id: 'bootstrap-responsive-css', url:'/css/gokbbootstrap-2-responsive.min.css'
     }
   } 
