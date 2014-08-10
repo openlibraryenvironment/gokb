@@ -11,6 +11,7 @@ class WelcomeController {
     def month_queries = [
       [ 'titlesCreated', 'select count(p.id) from TitleInstance as p where p.dateCreated > ? and p.dateCreated < ?', 'titleAdditionData' ],
       [ 'packagesCreated', 'select count(p.id) from Package as p where p.dateCreated > ? and p.dateCreated < ?', 'packageAdditionData' ],
+      [ 'orgsCreated', 'select count(p.id) from Org as p where p.dateCreated > ? and p.dateCreated < ?', 'orgAdditionData' ],
     ]
 
     Calendar calendar = Calendar.getInstance();
@@ -20,6 +21,7 @@ class WelcomeController {
     result.colHeads1 = [['string', 'Year-Month'], ['number', 'Count']]
     result.titleAdditionData=[]
     result.packageAdditionData=[]
+    result.orgAdditionData=[]
 
     // For each month in the past 12 months, execute each stat query defined in the month_queries array and stuff
     // the count for that stat in the matrix (Rows = stats, cols = months)
