@@ -27,9 +27,11 @@ class ReviewRequestNotificationJob {
     }
 
     usermap.each { k,v ->
-      println("Email user ${k} about ${v}");
-      pr.needsNotify=Boolean.FALSE
-      pr.save()
+      v.each { pr ->
+        println("Email user ${k} about ${pr}");
+        pr.needsNotify=Boolean.FALSE
+        pr.save()
+      }
     }
   }
 }

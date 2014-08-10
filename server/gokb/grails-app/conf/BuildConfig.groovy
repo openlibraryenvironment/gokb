@@ -92,6 +92,8 @@ grails.project.dependency.resolution = {
       compile ":spring-security-ui:0.2"
       compile ":spring-security-acl:1.1.1"
 
+      compile ":google-visualization:0.7"
+
       compile ':mail:1.0.1', {
          excludes 'spring-test'
       }
