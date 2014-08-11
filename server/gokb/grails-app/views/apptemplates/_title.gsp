@@ -79,7 +79,7 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
-    <g:if test="${ d?.isEditable() }" >
+    <g:if test="${ d.isEditable() }" >
       <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     </g:if>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
@@ -174,10 +174,10 @@
                     </td>
                   </tr>
                   <tr>
-                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"/> <br/>
+                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge" style="width:500px;"/> <br/>
                          <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
                     <td> </td>
-                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"/> <br/>
+                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge" style="width:500px;"/> <br/>
                          <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
                   </tr>
                 </table>
