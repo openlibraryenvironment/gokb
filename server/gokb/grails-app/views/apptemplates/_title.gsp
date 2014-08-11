@@ -45,18 +45,25 @@
           <td>
             <ul>
               <g:each in="${he.from}" var="ft">
-                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
-                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
-                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
+                <li><g:if test="${ft != null}">
+                      <g:link controller="resource" action="show" id="${ft?.class.name}:${ft.id}">${ft.name}</g:link> (
+                      <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
+                      <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) 
+                    </g:if>
+                    <g:else>From title not present</g:else>
+                </li>
               </g:each>
             </ul>
           </td>
           <td>
             <ul>
               <g:each in="${he.to}" var="ft">
-                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                <li><g:if test="${ft != null}">
+                      <g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
+                    </g:if>
+                    <g:else>From title not present</g:else>
               </g:each>
             </ul>
           </td>
