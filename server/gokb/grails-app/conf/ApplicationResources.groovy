@@ -2,6 +2,10 @@ modules = {
   application {
     dependsOn 'bootstrap-popover'
     dependsOn 'font-awesome'
+    resource url: 'css/metisMenu.min.css'
+    resource url: 'js/metisMenu.min.js'
+//    resource url: 'css/sb-admin-2.css'
+    resource url: 'js/sb-admin-2.js'
     resource url:'js/bootbox.min.js'
     resource url:'js/gokb.js'
     resource url:'js/application.js'
