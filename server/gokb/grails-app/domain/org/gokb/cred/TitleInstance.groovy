@@ -180,7 +180,8 @@ class TitleInstance extends KBComponent {
   static def oaiConfig = [
     id:'titles',
     textDescription:'Title repository for GOKb',
-    query:" from TitleInstance as o where o.status.value != 'Deleted'"
+    query:" from TitleInstance as o where o.status.value != 'Deleted'",
+    pageSize:20
   ]
 
   /**
@@ -203,6 +204,8 @@ class TitleInstance extends KBComponent {
     def tids = getIds() ?: []
     def theIssuer = getIssuer()
     def thePublisher = getPublisher()
+
+    def history = getTitleHistory()
     
     builder.'gokb' (attr) {
       builder.'title' (['id':(id)]) {
@@ -225,6 +228,37 @@ class TitleInstance extends KBComponent {
           }
         }
         
+        builder.history() {
+          history.each { he ->
+            builder.historyEvent(['id':he.id]) {
+              "date"(he.date)
+              "from" {
+                he.from.each { hti ->
+                  title(hti.name)
+                  internalId(hti.id)
+                  "identifiers" {
+                    hti.getIds()?.each { tid ->
+                      builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                    }
+                  
+                  }
+                }
+              }
+              "to" {
+                he.to.each { hti ->
+                  title(hti.name)
+                  internalId(hti.id)
+                  "identifiers" {
+                    hti.getIds()?.each { tid ->
+                      builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
         builder.'TIPPs' (count:tipps?.size()) {
           tipps?.each { tipp ->
             builder.'TIPP' (['id':tipp.id]) {
@@ -263,7 +297,13 @@ class TitleInstance extends KBComponent {
     all_related_history_events.each { he ->
       def from_titles = he.participants.findAll { it.participantRole == 'in' };
       def to_titles = he.participants.findAll { it.participantRole == 'out' };
-      result.add( [ "id":(he.id), date:he.eventDate, from:from_titles.collect{it.participant}, to:to_titles.collect{it.participant} ] );
+
+      def hint = "unknown"
+      if ( ( from_titles?.size() == 1 ) && ( to_titles?.size() == 1 ) && ( from_titles[0].participant.id != to_titles[0].participant.id ) ) {
+        hint="Rename"
+      }
+
+      result.add( [ "id":(he.id), date:he.eventDate, from:from_titles.collect{it.participant}, to:to_titles.collect{it.participant}, hint:hint ] );
     }
     return result;
   }
