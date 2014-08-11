@@ -2,9 +2,9 @@
  *  Local gokb overrides for bootstrap
  */
  
- body {
-   padding-top:55px;
-   padding-bottom:45px;
+ #page-content {
+ 	padding-top:25px;
+ 	padding-bottom:25px;
  }
  
  h1.panel-title {
@@ -39,7 +39,7 @@
 	text-align: center;
 }
 
-#licsummary .more-info .info{
+#licsummary .more-info .info {
 	cursor: pointer;
 }
 
