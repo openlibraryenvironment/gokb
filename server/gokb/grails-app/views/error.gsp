@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<title>Grails Runtime Exception</title>
-		<meta name="layout" content="main">
+                <!-- II removed this - often the controller has not completed the setup needed for the main layout. meta name="layout" content="main" -->
 		<link rel="stylesheet" href="${resource(dir: 'css', file: 'errors.css')}" type="text/css">
 	</head>
 	<body>

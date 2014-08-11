@@ -72,8 +72,8 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
-    <g:if test="${ d.isEditable() }" >
-    <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
+    <g:if test="${ d?.isEditable() }" >
+      <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     </g:if>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span class="badge badge-warning">${d.getCombosByPropertyName('publisher')?.size()}</span></a></li>
@@ -265,10 +265,8 @@
                     <td>
                       <g:xEditableRefData owner="${p}" field="status" config='Combo.Status' />
                     </td>
-                    <td><g:xEditable class="ipe" owner="${p}"
-                        field="startDate" type="date" /></td>
-                    <td><g:xEditable class="ipe" owner="${p}" field="endDate"
-                        type="date" /></td>
+                    <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
+                    <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
                   </tr>
                 </g:each>
               </tbody>
