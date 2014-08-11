@@ -45,18 +45,25 @@
           <td>
             <ul>
               <g:each in="${he.from}" var="ft">
-                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
-                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
-                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
+                <li><g:if test="${ft != null}">
+                      <g:link controller="resource" action="show" id="${ft?.class.name}:${ft.id}">${ft.name}</g:link> (
+                      <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
+                      <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) 
+                    </g:if>
+                    <g:else>From title not present</g:else>
+                </li>
               </g:each>
             </ul>
           </td>
           <td>
             <ul>
               <g:each in="${he.to}" var="ft">
-                <li><g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
+                <li><g:if test="${ft != null}">
+                      <g:link controller="resource" action="show" id="${ft.class.name}:${ft.id}">${ft.name}</g:link> (
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" /> <em>To</em>
                         <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> ) </li>
+                    </g:if>
+                    <g:else>From title not present</g:else>
               </g:each>
             </ul>
           </td>
@@ -73,7 +80,7 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <g:if test="${ d.isEditable() }" >
-    <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
+      <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     </g:if>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning">${d.ids?.size()}</span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span class="badge badge-warning">${d.getCombosByPropertyName('publisher')?.size()}</span></a></li>
@@ -167,10 +174,10 @@
                     </td>
                   </tr>
                   <tr>
-                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"/> <br/>
+                    <td> <g:simpleReferenceTypedown name="fromTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge" style="width:500px;"/> <br/>
                          <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
                     <td> </td>
-                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"/> <br/>
+                    <td> <g:simpleReferenceTypedown name="ToTitle" baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge" style="width:500px;"/> <br/>
                          <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
                   </tr>
                 </table>
@@ -265,10 +272,8 @@
                     <td>
                       <g:xEditableRefData owner="${p}" field="status" config='Combo.Status' />
                     </td>
-                    <td><g:xEditable class="ipe" owner="${p}"
-                        field="startDate" type="date" /></td>
-                    <td><g:xEditable class="ipe" owner="${p}" field="endDate"
-                        type="date" /></td>
+                    <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
+                    <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
                   </tr>
                 </g:each>
               </tbody>
