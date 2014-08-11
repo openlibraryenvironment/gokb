@@ -232,8 +232,8 @@ class TitleInstance extends KBComponent {
           history.each { he ->
             builder.historyEvent(['id':he.id]) {
               "date"(he.date)
-              "from" {
-                he.from.each { hti ->
+              he.from.each { hti ->
+                "from" {
                   title(hti.name)
                   internalId(hti.id)
                   "identifiers" {
@@ -244,8 +244,8 @@ class TitleInstance extends KBComponent {
                   }
                 }
               }
-              "to" {
-                he.to.each { hti ->
+              he.to.each { hti ->
+                "to" {
                   title(hti.name)
                   internalId(hti.id)
                   "identifiers" {
