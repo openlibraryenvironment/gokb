@@ -7,7 +7,7 @@
   <body>
 	 <h1 class="page-header">About GOKb</h1>
    <div id="mainarea"
-		class="panel panel-default ${displayobj != null ? 'col-md-5 ' : ''}">
+		class="panel panel-default">
 			<div class="panel-heading">
 				<h3 class="panel-title">
 					Application Info

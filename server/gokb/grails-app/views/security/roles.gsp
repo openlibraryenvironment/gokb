@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="layout" content="main" />
-<r:require modules="gokbstyle" />
+<meta name="layout" content="sb-admin" />
 <title>GOKb</title>
 </head>
 <body class="">
@@ -16,20 +15,20 @@
 				<tr>
           <td class="group-status" >
             <g:if test="${ status }" >
-	            <i class="group-member fa-ok-sign" ></i>
+	            <i class="group-member fa fa-check-circle" ></i>
               <g:if test="${editable}" >
                 <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : false ]}" title="Remove from role" >
-                  <i class="group-member fa-remove-sign" ></i>
+                  <i class="group-member fa fa-times-circle" ></i>
                 </g:link>
               </g:if>
             </g:if>
             <g:else>
               <g:if test="${editable}" >
                 <g:link class="editable open-inline" controller="security" action="updateRole" params="${ ['id' : (d.class.name + ':' + d.id) ,('role' + role.id) : true ]}" title="Add to role" >
-                  <i class="group-member fa-ok-sign" ></i>
+                  <i class="group-member fa fa-check-circle" ></i>
                 </g:link>
               </g:if>
-              <i class="group-member fa-remove-sign" ></i>
+              <i class="group-member fa fa-times-circle" ></i>
             </g:else>
           </td>
 					<td>

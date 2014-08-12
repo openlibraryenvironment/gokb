@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="layout" content="main" />
-<r:require modules="gokbstyle" />
+<meta name="layout" content="sb-admin" />
 <title>GOKb</title>
 </head>
 <body class="">
@@ -20,16 +19,16 @@
 				  <g:each in="${ perms }" var="mask, pMap">
 						<td>
 						  <g:if test="${ groupPerms.get(role.authority)?.get(pMap.inst.mask) }" >
-	              <i class="fa-ok-sign" ></i>
+	              <i class="fa fa-check-circle" ></i>
                 <g:link class="editable open-inline" controller="security" action="revokePerm" params="${ ['id' : (d.class.name + ':' + d.id) , 'perm' : (pMap.inst.mask), 'recipient' : (role.class.name + ':' + role.id) ]}" title="Revoke permission" >
-                  <i class="fa-remove-sign" ></i>
+                  <i class="fa fa-minus-circle" ></i>
                 </g:link>
 	            </g:if>
 	            <g:else>
                 <g:link class="editable open-inline" controller="security" action="grantPerm" params="${ ['id' : (d.class.name + ':' + d.id) , 'perm' : (pMap.inst.mask), 'recipient' : (role.class.name + ':' + role.id) ]}" title="Grant permission" >
-                  <i class="fa-ok-sign" ></i>
+                  <i class="fa fa-check-circle" ></i>
                 </g:link>
-	              <i class="fa-remove-sign" ></i>
+	              <i class="fa fa-times-circle" ></i>
 	            </g:else>
 						</td>
 				  </g:each>

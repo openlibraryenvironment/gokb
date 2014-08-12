@@ -3,7 +3,7 @@
   <head>
     <meta name="layout" content="main"/>
     <r:require modules="gokbstyle"/>
-    <title>GOKbo : Master Lists</title>
+    <title>GOKb: Master Lists</title>
   </head>
   <body>
 

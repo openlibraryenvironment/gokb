@@ -85,7 +85,6 @@ class ReviewRequest {
     this.closedBy = rrcontext.user
   }
 
-  @Override
   public String getNiceName() {
         return "Review Request";
   }

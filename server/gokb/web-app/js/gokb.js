@@ -5,22 +5,7 @@ window.gokb = {};
 if (typeof jQuery !== 'undefined') {
   (function($) {
 
-    gokb.dialog = function (opts) {
-      var message = opts.message;
-      var buttons = [];
-      if ("buttons" in opts) {    	
-        for (var button in opts.buttons) {
-          
-          // Go through each of the buttons.
-          buttons.push(
-            opts.buttons[button]
-          );
-        }
-      }
-
-      // Create the dialog.
-      return bootbox.dialog(message, buttons, opts);
-    };
+    gokb.dialog = bootbox.dialog;
 
     /**
      * Show a confirmation box.
@@ -43,16 +28,17 @@ if (typeof jQuery !== 'undefined') {
       
       // Add the message.
       var options = {
+        "title"   : "Confirm action",
         "message" : message,
         "buttons" : {
           "Confirm" : {
             "label": confirmText,
-            "class": "btn-success",
+            "className": "btn btn-sm btn-success",
             "callback": confirmCallback
           },
           "No": {
             "label": cancelText,
-            "class": "btn-danger",
+            "className": "btn btn-sm btn-danger",
             "callback": cancelCallback
           }
         }
