@@ -3,30 +3,21 @@
 <head>
 <meta name="layout" content="sb-admin" />
 <title>GOKb Search</title>
-<style>
-	#modal {
-		width: 900px; /* SET THE WIDTH OF THE MODAL */
-		margin-left: -450px;
-	}
-	
-	#modal .modal-body {
-		max-height: 800px;
-	}
-</style>
 </head>
 <body>
+	<h1 class="page-header">${qbetemplate.title?:''}</h1>
 	<div id="mainarea"
-		class="panel panel-default ${displayobj != null ? 'col-md-6' : ''}">
+		class="panel panel-default col-sm-12 ${displayobj != null ? 'col-md-5 ' : ''}">
+		
 		<g:if test="${qbetemplate==null}">
 			
 		</g:if>
 
 		<g:else>
 			<div class="panel-heading">
-				<h1 class="panel-title">
-					${qbetemplate.title?:''}
+				<h3 class="panel-title">
 					Search
-				</h1>
+				</h3>
 			</div>
 			<div class="panel-body">
 				<g:if test="${(qbetemplate.message != null)}">
@@ -52,7 +43,7 @@
 	</div>
 
 	<g:if test="${displayobj != null}">
-		<div id="resultsarea" class="panel panel-default col-md-6">
+		<div id="resultsarea" class="panel panel-default col-md-7 desktop-only">
 			<div>
 				<!--class="well"-->
 
@@ -110,24 +101,19 @@
 			</div>
 		</div>
 	</g:if>
-
-	<div id="modal" class="qmodal modal hide fade" role="dialog">
-		<div class="modal-header">
-			<button type="button" class="close" data-dismiss="modal"
-				aria-hidden="true">×</button>
-			<h3 id="myModalLabel">Modal header</h3>
-		</div>
-		<div class="modal-body"></div>
-		<div class="modal-footer">
-			<button class="btn btn-default btn-primary btn-sm"
-				data-dismiss="modal" aria-hidden="true">Close</button>
+	<div id="modal" class="qmodal modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					<h3 class="modal-title">Modal header</h3>
+				</div>
+				<div class="modal-body"></div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
 		</div>
 	</div>
-
-	<script type="text/javascript">
-      $('#modal').on('hidden', function() {
-        $(this).data('modal').$element.removeData();
-      })
-  </script>
 </body>
 </html>

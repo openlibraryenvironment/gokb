@@ -1,6 +1,9 @@
-<h4>History ${params.id}</h4>
-<p>
-  <table class="table table-striped table-bordered">
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h3 class="modal-title">History ${params.id}</h3>
+</div>
+<div class="modal-body">
+	<table class="table table-striped table-bordered">
     <thead>
       <tr>
         <th>Event ID</th>
@@ -26,4 +29,7 @@
       </g:each>
     </tbody>
   </table>
-</p>
+</div>
+<div class="modal-footer">
+	<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+</div>

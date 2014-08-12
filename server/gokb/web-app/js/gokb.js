@@ -112,5 +112,18 @@ if (typeof jQuery !== 'undefined') {
     if (messages.children().length > 0) {
       bootbox.alert("<h2 class='text-error' >Error</h2>" + messages.html());
     }
+    
+    $('#modal').on('show.bs.modal', function () {
+      $(this).find('.modal-body').css({
+             width:'auto', //probably not needed
+             height:'auto', //probably not needed 
+             'max-height':'100%'
+      });
+    });
+    
+    $('#modal').on('hidden.bs.modal', function() {
+      $(this).removeData('bs.modal')
+    })
+    
   })(jQuery);
 }

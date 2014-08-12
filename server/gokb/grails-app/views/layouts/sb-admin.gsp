@@ -53,25 +53,27 @@
 			</div>
 			<!-- /.navbar-header -->
 
-			<ul class="nav navbar-top-links navbar-right">
-				<li class="dropdown"><a class="dropdown-toggle"
-					data-toggle="dropdown" href="#"><i class="fa fa-user fa-fw"></i> ${request.user?.displayName ?: request.user?.username}
-						<i class="fa fa-caret-down"></i>
-				</a>
-					<ul class="dropdown-menu dropdown-user">
-						<li class="divider"></li>
-						<li><g:link controller="profile"><i class="fa fa-user fa-fw"></i>  Profile</g:link></li>
-						<li><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i>  About GOKb</g:link></li>
-						<li class="divider"></li>
-						<li><g:link controller="integration"><i class="fa fa-database fa-fw"></i> Integration API</g:link></li>
-						<li class="divider"></li>
-						<li><g:link controller="logout"><i class="fa  fa-sign-out fa-fw"></i> Logout</g:link></li>
-						<li class="divider"></li>
-					</ul> <!-- /.dropdown-user --></li>
-				<!-- /.dropdown -->
-			</ul>
-			<!-- /.navbar-top-links -->
-
+			<sec:ifLoggedIn>
+				<ul class="nav navbar-nav navbar-top-links navbar-right">
+					<li class="dropdown"><a class="dropdown-toggle"
+						data-toggle="dropdown" href="#"><i class="fa fa-user fa-fw"></i> ${request.user?.displayName ?: request.user?.username}
+							<i class="fa fa-caret-down"></i>
+					</a>
+						<ul class="dropdown-menu dropdown-user">
+							<li class="divider"></li>
+							<li><g:link controller="profile"><i class="fa fa-user fa-fw"></i>  Profile</g:link></li>
+							<li><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i>  About GOKb</g:link></li>
+							<li class="divider"></li>
+							<li><g:link controller="integration"><i class="fa fa-database fa-fw"></i> Integration API</g:link></li>
+							<li class="divider"></li>
+							<li><g:link controller="logout"><i class="fa  fa-sign-out fa-fw"></i> Logout</g:link></li>
+							<li class="divider"></li>
+						</ul> <!-- /.dropdown-user --></li>
+					<!-- /.dropdown -->
+				</ul>
+				<!-- /.navbar-top-links -->
+			</sec:ifLoggedIn>
+			
 			<div class="navbar-default sidebar" role="navigation">
 				<div class="sidebar-nav navbar-collapse">
 					<ul class="nav" id="side-menu">

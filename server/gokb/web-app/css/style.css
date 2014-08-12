@@ -1,12 +1,29 @@
 /**
- *  Local gokb overrides for bootstrap
+ * Add a couple of classes that will apply to small devices only.
  */
+
+/* medium+ screen sizes */
+@media (min-width:992px) {
+    .desktop-only {
+        display:block !important;
+    }
+}
  
- #page-content {
- 	padding-top:25px;
- 	padding-bottom:25px;
- }
+/* small screen sizes */
+@media (max-width: 991px) {
+    .mobile-only {
+        display:block !important;
+    }
  
+    .desktop-only {
+        display:none !important;
+    }
+}
+
+/**
+ *  Local GOKb overrides for bootstrap
+ */
+
  h1.panel-title {
    font-size:2em;
  }
@@ -65,4 +82,16 @@
   height: auto;
   max-height: 400px;
   overflow-x: hidden;
+}
+
+/** Modal styles **/
+.modal-dialog {
+   width:800px;
+   margin:auto;
+   max-height: 500px;
+}
+.modal-content {
+   position: relative;
+   overflow: auto;
+   padding: 15px;
 }
