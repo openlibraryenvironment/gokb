@@ -2,8 +2,7 @@
 <html>
   <head>
     <meta name="layout" content="main"/>
-    <r:require modules="gokbstyle"/>
-    <title>GOKbo : Coreference Service</title>
+    <title>GOKb : Coreference Service</title>
   </head>
   <body>
 

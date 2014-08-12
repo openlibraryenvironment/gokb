@@ -1,5 +1,5 @@
 <g:if test="${recset != null}">
-	<nav class="navbar navbar-inverse" role="navigation">
+	<nav class="navbar navbar-inverse">
 		<div class="container-fluid">
 			<div class="navbar-header">
 				<span class="navbar-brand">
@@ -8,10 +8,11 @@
 				</span>
 			</div>
 			<ul class="nav navbar-nav navbar-right">
-				<li class="dropdown page-jump${ dropup ? ' dropup' : ''}"><a
-						href="#" class="dropdown-toggle" data-toggle="dropdown">Page
-							${page} of ${page_max} <span class="caret"></span>
-					</a>
+				<g:if test="${ !request.isAjax() }">
+					<li class="dropdown page-jump${ dropup ? ' dropup' : ''}"><a
+							href="#" class="dropdown-toggle" data-toggle="dropdown">Page
+								${page} of ${page_max} <span class="caret"></span>
+						</a>
 						<ul class="dropdown-menu dropdown-menu-scroll" role="menu">
 							<g:each var="p" in="${ 1..page_max }">
 								<li><g:link title="Previous Page" controller="search"
@@ -22,6 +23,7 @@
 							</g:each>
 						</ul>
 					</li>
+				</g:if>
 				<g:if test="${qbetemplate.qbeConfig.actions != null}">
 					<li class="dropdown"><a href="#" class="dropdown-toggle"
 						data-toggle="dropdown">Actions <b class="caret"></b>

@@ -1,8 +1,3 @@
-<r:require modules="gokbstyle"/>
-<r:require modules="editable"/>
-
-<h1>${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}</h1>
-
 <dl class="dl-horizontal">
 
   <dt><g:annotatedLabel owner="${d}" property="name">Territory Name</g:annotatedLabel></dt>
@@ -19,11 +14,3 @@
   <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
   </g:if>
 </dl>
-
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    $.fn.editable.defaults.mode = 'inline';
-    $('.ipe').editable();
-  });
-</script>

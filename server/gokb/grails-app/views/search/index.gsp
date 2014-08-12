@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Search</title>
+<title>Search</title>
 </head>
 <body>
 	<h1 class="page-header">${qbetemplate.title?:''}</h1>

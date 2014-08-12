@@ -2,12 +2,11 @@
   width:100%;
 }
 
-#bulkActionControls, #actionControls{
+#bulkActionControls{
   width: 300px;
   border-color:#BBB;
 }
 
-#actionControls {
-  margin:35px 30px 20px 10px;
-  padding:0 20px 0 20px;
+ #actionControls {
+  border-color:#BBB;
 }

@@ -2,7 +2,6 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<r:require modules="gokbstyle" />
 <title>GOKb : Coreference Service</title>
 </head>
 <body>

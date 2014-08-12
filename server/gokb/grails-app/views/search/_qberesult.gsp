@@ -6,7 +6,7 @@
 	<g:render template="pagination" contextPath="." model="${params}" />
 	<table class="table table-striped table-condensed table-bordered">
 		<thead>
-			<tr class="nav">
+			<tr class="inline-nav">
 				<g:each in="${qbeConfig.qbeResults}" var="c">
 					<th>
 						<g:if test="${c.sort}">
