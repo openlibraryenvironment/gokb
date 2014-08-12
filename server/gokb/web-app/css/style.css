@@ -3,52 +3,51 @@
  */
 
 /* medium+ screen sizes */
-@media (min-width:992px) {
-    .desktop-only {
-        display:block !important;
-    }
+@media ( min-width :992px) {
+	.desktop-only {
+		display: block !important;
+	}
 }
- 
+
 /* small screen sizes */
-@media (max-width: 991px) {
-    .mobile-only {
-        display:block !important;
-    }
- 
-    .desktop-only {
-        display:none !important;
-    }
+@media ( max-width : 991px) {
+	.mobile-only {
+		display: block !important;
+	}
+	.desktop-only {
+		display: none !important;
+	}
 }
 
 /**
  *  Local GOKb overrides for bootstrap
  */
+h1.panel-title {
+	font-size: 2em;
+}
 
- h1.panel-title {
-   font-size:2em;
- }
- 
 .editable-inline textarea {
-  line-height: 1.2em;
-  height: 2.4em;
-  white-space: nowrap;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  resize:none;
+	line-height: 1.2em;
+	height: 2.4em;
+	white-space: nowrap;
+	overflow-x: hidden;
+	overflow-y: hidden;
+	resize: none;
 }
 
 .dl-horizontal dt {
-  width: 200px;
-  margin-bottom: 10px;
+	width: 200px;
+	margin-bottom: 10px;
 }
 
 .dl-horizontal dd {
-  margin-left: 220px;
-  margin-bottom: 10px;
+	float:left;
+	margin-left: 10px;
+	margin-bottom: 10px;
 }
 
 .tab-content dl {
-  padding: 0 20px 0 20px;
+	padding: 0 20px 0 20px;
 }
 
 /** All select checkbox box styles **/
@@ -61,37 +60,59 @@
 }
 
 .search-display .navbar {
-	margin-bottom:0;
-	margin-top:0;
+	margin-bottom: 0;
+	margin-top: 0;
 }
 
 .search-display .table {
-	margin-bottom:0;
-	margin-top:0;
+	margin-bottom: 0;
+	margin-top: 0;
 }
 
 #bulkActionControls {
-	margin-top:25px;
+	margin-top: 25px;
 }
 
 .page-jump {
-	font-size:1.2em;
+	font-size: 1.2em;
 }
 
 .dropdown-menu-scroll {
-  height: auto;
-  max-height: 400px;
-  overflow-x: hidden;
+	height: auto;
+	max-height: 400px;
+	overflow-x: hidden;
 }
 
 /** Modal styles **/
 .modal-dialog {
-   width:800px;
-   margin:auto;
-   max-height: 500px;
+	width: 800px;
+	margin: auto;
+	max-height: 500px;
 }
+
 .modal-content {
-   position: relative;
-   overflow: auto;
-   padding: 15px;
+	position: relative;
+	overflow: auto;
+	padding: 15px;
+}
+
+/** Tabs **/
+.tab-content {
+	border:1px solid #DDD;
+	border-top:0 none;
+	margin-bottom:20px;
+	float:left;
+	width:100%;
+}
+
+.tab-pane {
+	padding:20px;
+}
+
+.nav-tabs {
+	clear:left;
+}
+
+#content {
+	clear:right;
 }

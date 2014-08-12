@@ -1,8 +1,3 @@
-<r:require modules="gokbstyle"/>
-<r:require modules="editable"/>
-
-<h1>Additional Property Definition</h1>
-
 <dl class="dl-horizontal">
 	<dt><g:annotatedLabel owner="${d}" property="id">Internal Id</g:annotatedLabel></dt>
 	<dd>${d.id?:'New record'}</dd>

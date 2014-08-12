@@ -1,6 +1,3 @@
-<r:require modules="gokbstyle"/>
-<r:require modules="editable"/>
-
 <g:if test="${d.id != null}">
   <dl class="dl-horizontal">
 	  <dt><g:annotatedLabel owner="${d}" property="username">User Name</g:annotatedLabel></dt>
@@ -23,11 +20,3 @@
 	  </div>
 	</div>
 </g:if>
-
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    $.fn.editable.defaults.mode = 'inline';
-    $('.ipe').editable();
-  });
-</script>

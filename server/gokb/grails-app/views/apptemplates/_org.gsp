@@ -1,11 +1,3 @@
-<r:require modules="gokbstyle" />
-<r:require modules="editable" />
-<g:set var="editable"
-	value="${d.respondsTo('isEditable') && d.isEditable()}" />
-<h1>
-	${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}
-</h1>
-
 <div id="content">
 
 	<dl class="dl-horizontal">
@@ -42,12 +34,10 @@
 		<ul id="tabs" class="nav nav-tabs">
 			<li class="active"><a href="#orgdetails" data-toggle="tab">Organization</a></li>
 			<li><a href="#altnames" data-toggle="tab">Alternate Names <span
-					class="badge badge-warning">
-						${d.variantNames?.size()}
+					class="badge badge-warning"> ${d.variantNames?.size()}
 				</span></a></li>
 			<li><a href="#ids" data-toggle="tab">IDs <span
-					class="badge badge-warning">
-						${d.ids?.size()}
+					class="badge badge-warning"> ${d.ids?.size()}
 				</span></a></li>
 			<li><a href="#licenses" data-toggle="tab">Licenses</a></li>
 			<li><a href="#packages" data-toggle="tab">Packages</a></li>
@@ -55,16 +45,13 @@
 			<li><a href="#tipps" data-toggle="tab">Tipps</a></li>
 			<li><a href="#platforms" data-toggle="tab">Platforms</a></li>
 			<li><a href="#addprops" data-toggle="tab">Custom Fields <span
-					class="badge badge-warning">
-						${d.additionalProperties?.size()}
+					class="badge badge-warning"> ${d.additionalProperties?.size()}
 				</span></a></li>
 			<li><a href="#review" data-toggle="tab">Review Tasks <span
-					class="badge badge-warning">
-						${d.reviewRequests?.size()}
+					class="badge badge-warning"> ${d.reviewRequests?.size()}
 				</span></a></li>
 			<li><a href="#offices" data-toggle="tab">Offices <span
-					class="badge badge-warning">
-						${d.offices?.size()}
+					class="badge badge-warning"> ${d.offices?.size()}
 				</span></a></li>
 		</ul>
 
@@ -93,7 +80,7 @@
 								</ul>
 								<br />
 
-								<g:if test="${editable}">
+								<g:if test="${d.isEditable()}">
 									<g:form controller="ajaxSupport" action="addToStdCollection"
 										class="form-inline">
 										<input type="hidden" name="__context"
@@ -146,7 +133,7 @@
 								</tbody>
 							</table>
 
-							<g:if test="${editable}">
+							<g:if test="${d.isEditable()}">
 								<h4>
 									<g:annotatedLabel owner="${d}" property="addVariantName">Add Variant Name</g:annotatedLabel>
 								</h4>
@@ -261,7 +248,7 @@
 						<g:render template="comboList" contextPath="../apptemplates"
 							model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
 
-						<g:if test="${editable}">
+						<g:if test="${d.isEditable()}">
 							<button
 								class="hidden-license-details btn btn-default btn-sm btn-primary "
 								data-toggle="collapse" data-target="#collapseableAddOffice">
@@ -365,17 +352,8 @@
 					</dd>
 				</dl>
 			</div>
-
-
 		</div>
 		<g:render template="componentStatus" contextPath="../apptemplates"
 			model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 	</g:if>
 </div>
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    $.fn.editable.defaults.mode = 'inline';
-    $('.ipe').editable();
-  });
-</script>

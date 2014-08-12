@@ -1,9 +1,3 @@
-<r:require modules="gokbstyle"/>
-<r:require modules="editable"/>
-
-<h1>${d.id ? d.getNiceName() + ': ' + d.id : 'Create New ' + d.getNiceName()}</h1>
-
-
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#rrdets" data-toggle="tab">Review Request Details</a></li>

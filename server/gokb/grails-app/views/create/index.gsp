@@ -1,32 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="layout" content="main" />
-<r:require modules="gokbstyle,bootstrap-popover" />
-<title>GOKb</title>
+<meta name="layout" content="sb-admin" />
+<title>GOKb: Create New ${displayobj?.getNiceName() ?: 'Component'}</title>
 </head>
 <body>
-		<div class="row">
-			<div id="mainarea" class="col-md-12">
-				<div class="well">
-					<g:if test="${displaytemplate != null}">
-						<g:if test="${displaytemplate.type=='staticgsp'}">
-							<g:render contextPath="../apptemplates"
-							  template="messages"
-								model="${ ["preMessage" : "There were errors when attempting to create the new component." ]}" />
-							<g:render template="${displaytemplate.rendername}"
-								contextPath="../apptemplates"
-								model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
-							<button id="save-btn" class="btn btn-default btn-primary pull-right btn-sm">Create
-								and Edit &gt;&gt;</button>
-							<br />&nbsp;
-              </g:if>
-					</g:if>
-				</div>
-			</div>
+	<h1 class="page-header">
+		Create New ${displayobj?.getNiceName() ?: 'Component'}
+	</h1>
+	<div id="mainarea" class="panel panel-default">
+		<div class="panel-body">
+			<g:if test="${displaytemplate != null}">
+				<g:if test="${displaytemplate.type=='staticgsp'}">
+					<g:render contextPath="../apptemplates" template="messages"
+						model="${ ["preMessage" : "There were errors when attempting to create the new component." ]}" />
+					<g:render template="${displaytemplate.rendername}"
+						contextPath="../apptemplates"
+						model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
+					<button id="save-btn" class="btn btn-default pull-right btn-sm">Create and Edit &gt;&gt;</button>
+        </g:if>
+			</g:if>
 		</div>
+	</div>
 
-	<script type="text/javascript">
+	<r:script type="text/javascript">
 
       $('#save-btn').click(function() {
           $('.editable').editable('submit', {   //call submit
@@ -51,6 +48,6 @@
               }
           }); 
       });
-    </script>
+    </r:script>
 </body>
 </html>
