@@ -37,7 +37,9 @@
 					model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, det:det, page:page_current, page_max:page_total]}" />
 			</g:if>
 			<g:else>
-				<g:render template="qbeempty" contextPath="." />
+				<div class="panel-footer">
+					<g:render template="qbeempty" contextPath="." />
+				</div>
 			</g:else>
 		</g:else>
 	</div>
