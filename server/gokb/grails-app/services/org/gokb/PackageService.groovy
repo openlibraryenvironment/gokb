@@ -254,10 +254,11 @@ class PackageService {
       log.debug ("No master TIPP associated with this TIPP directly. We should query for one.")
       
       // Now let's try and read an existing tipp from the master package.
-      master_tipp = KBComponent.deproxy( master.getTipps().find {
+      def mtp = master.getTipps().find {
         (it.title == tipp.getTitle()) &&
         (it.hostPlatform == tipp.getHostPlatform())
-      })
+      }
+      master_tipp = (mtp ? KBComponent.deproxy( mtp ) : null)
     }
     
     if (!master_tipp) {
