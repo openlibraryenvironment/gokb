@@ -28,6 +28,23 @@
 				<g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
 			</div>
 			<div class="navbar-collapse collapse" id="navbar-main">
+				<ul class="nav navbar-nav navbar-right">
+					<sec:ifLoggedIn>
+						<li class="dropdown"><a href="#" class="dropdown-toggle"
+							data-toggle="dropdown">
+								${request.user?.displayName?:request.user?.username} <b
+								class="caret"></b>
+						</a>
+							<ul class="dropdown-menu">
+								<li><g:link controller="profile">Profile</g:link></li>
+								<li><g:link controller="logout">Logout</g:link></li>
+								<li><g:link controller="integration">Integration API</g:link></li>
+							</ul></li>
+					</sec:ifLoggedIn>
+					<sec:ifNotLoggedIn>
+						<li>Not logged in</li>
+					</sec:ifNotLoggedIn>
+				</ul>
 				<ul class="nav navbar-nav">
 					<li class="dropdown"><a href="#" class="dropdown-toggle"
 						data-toggle="dropdown">Search</a>
@@ -102,23 +119,6 @@
 								<li><g:link controller="home" action="about">About</g:link></li>
 							</ul></li>
 					</sec:ifAnyGranted>
-				</ul>
-				<ul class="nav navbar-nav pull-right">
-					<sec:ifLoggedIn>
-						<li class="dropdown"><a href="#" class="dropdown-toggle"
-							data-toggle="dropdown">
-								${request.user?.displayName?:request.user?.username} <b
-								class="caret"></b>
-						</a>
-							<ul class="dropdown-menu">
-								<li><g:link controller="profile">Profile</g:link></li>
-								<li><g:link controller="logout">Logout</g:link></li>
-								<li><g:link controller="integration">Integration API</g:link></li>
-							</ul></li>
-					</sec:ifLoggedIn>
-					<sec:ifNotLoggedIn>
-						<li>Not logged in</li>
-					</sec:ifNotLoggedIn>
 				</ul>
 			</div>
 		</div>
