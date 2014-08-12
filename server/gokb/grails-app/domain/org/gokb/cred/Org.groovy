@@ -107,7 +107,6 @@ class Org extends KBComponent {
     located_org
   }
 
-  @Override
   public String getNiceName() {
     return "Organization";
   }

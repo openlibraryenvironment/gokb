@@ -90,7 +90,6 @@ class TitleInstance extends KBComponent {
     ]
   }
 
-  @Override
   public String getNiceName() {
     return "Title";
   }

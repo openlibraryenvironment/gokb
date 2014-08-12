@@ -28,7 +28,6 @@ class Source extends KBComponent {
     responsibleParty(nullable:true, blank:true)
   }
 
-  @Override
   public String getNiceName() {
     return "Source";
   }

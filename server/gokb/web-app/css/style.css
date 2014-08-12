@@ -110,9 +110,15 @@ h1.panel-title {
 }
 
 .nav-tabs {
-	clear:left;
+	clear:both;
+	padding-left:15px;
 }
 
 #content {
 	clear:right;
+}
+
+/* Security Table */
+.security-table .fa {
+	font-size: 1.75em;
 }
