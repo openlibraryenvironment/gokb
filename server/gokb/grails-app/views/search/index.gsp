@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb Search</title>
+<title>GOKb: Search</title>
 </head>
 <body>
 	<h1 class="page-header">${qbetemplate.title?:''}</h1>
 	<div id="mainarea"
-		class="panel panel-default col-sm-12 ${displayobj != null ? 'col-md-5 ' : ''}">
+		class="panel panel-default ${displayobj != null ? 'col-md-5 ' : ''}">
 		
 		<g:if test="${qbetemplate==null}">
 			
