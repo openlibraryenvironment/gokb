@@ -79,16 +79,33 @@
 		                         data-remote='<g:createLink controller="fwk" action="attachments" id="${displayobj.class.name}:${displayobj.id}"/>' 
 		                         data-target="#modal"><i class="glyphicon glyphicon-file"></i></a>
 		                    </li -->
-								<li><g:link controller="search" title="Previous Record"
-										action="index"
-										params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}">
-										<i class="glyphicon glyphicon-chevron-left"></i>
-									</g:link></li>
-								<li><g:link controller="search" title="Next Record"
+								
+								<g:if test="${ det == 1 }">
+									<li class="disabled">
+										<a class="disabled" href="#" ><i class="glyphicon glyphicon-chevron-left"></i></a>
+									</li>
+								</g:if>
+								<g:else>
+									<li><g:link controller="search" title="Previous Record"
+											action="index"
+											params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}">
+											<i class="glyphicon glyphicon-chevron-left"></i>
+										</g:link></li>
+								</g:else>
+								
+								<g:if test="${ det == reccount }">
+									<li class="disabled">
+										<a class="disabled" href="#" ><i class="glyphicon glyphicon-chevron-right"></i></a>
+									</li>
+								</g:if>
+								<g:else>
+									<li><g:link controller="search" title="Next Record"
 										action="index"
 										params="${params+['det':det+1, offset:((int)(det / max))*max]}">
 										<i class="glyphicon glyphicon-chevron-right"></i>
 									</g:link></li>
+								</g:else>
+								
 								<li><g:link controller="search" title="Close"
                     action="index"
                     params="${params+['det':null]}">

@@ -41,24 +41,24 @@
 				</g:if>
 				<g:if test="${ page == 1 }">
 					<li class='disabled'><a class='disabled' href='#'><i
-							class="glyphicon glyphicon-chevron-left"></i> Previous</a></li>
+							class="glyphicon glyphicon-chevron-left"></i></a></li>
 				</g:if>
 				<g:else>
 					<li><g:link title="Previous Page" controller="search"
 							action="index"
 							params="${params+[offset:(offset.toInteger() - max.toInteger()),det:null]}">
-							<i class="glyphicon glyphicon-chevron-left"></i> Previous
+							<i class="glyphicon glyphicon-chevron-left"></i>
 						</g:link></li>
 				</g:else>
 				<g:if test="${ page == page_max }">
-					<li class='disabled'><a href='#'>Next <i
+					<li class='disabled'><a href='#'><i
 							class="glyphicon glyphicon-chevron-right"></i></a></li>
 				</g:if>
 				<g:else>
 					<li><g:link title="Next Page" controller="search"
 							action="index"
 							params="${params+[offset:(offset.toInteger() + max.toInteger()),det:null]}">
-							Next <i class="glyphicon glyphicon-chevron-right"></i>
+							<i class="glyphicon glyphicon-chevron-right"></i>
 						</g:link></li>
 				</g:else>
 			</ul>

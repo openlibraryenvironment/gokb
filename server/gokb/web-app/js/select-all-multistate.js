@@ -8,7 +8,7 @@
   $(document).ready(function(){
     
     // Each table that has checkboxes in the first cell of a row.
-    $('table').each(function() {
+    $('table').not(".no-select-all").each(function() {
       
       // Get the table.
       var table = $(this);

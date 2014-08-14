@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb : Coreference Service</title>
+<title>GOKb: Coreference Service</title>
 </head>
 <body>
 	<h1 class="page-header">Coreference Service</h1>

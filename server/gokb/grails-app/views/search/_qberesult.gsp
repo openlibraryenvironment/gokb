@@ -143,10 +143,14 @@
 			</tbody>
 		</table>
 		<g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
-		<div class="pull-right well" id="bulkActionControls">
+		<div class="pull-right well col-xs-12 col-sm-9 ${displayobj != null ? 'col-md-6' : 'col-md-3'}" id="bulkActionControls">
 			<h4>Available actions for selected rows</h4>
-			<select id="selectedBulkAction" name="selectedBulkAction"></select>
-			<button type="submit" class="btn btn-default btn-primary btn-sm">Submit</button>
+			<div class="input-group" >
+				<select id="selectedBulkAction" class="form-control" name="selectedBulkAction"></select>
+				<span class="input-group-btn">
+					<button type="submit" class="btn btn-default btn-sm">Submit</button>
+				</span>
+			</div>
 		</div>
 	</g:form>
 </g:else>
