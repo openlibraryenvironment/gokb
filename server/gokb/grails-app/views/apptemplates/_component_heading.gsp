@@ -22,9 +22,6 @@
 		</g:if>
 	</g:if>
 	<g:else>
-		<g:if test="${ !d?.isEditable() }">
-			<small><i>&lt;Read only&gt;</i></small>
-		</g:if>
 		${d?.getNiceName() ?: 'Component'}:
 
 		<g:if
