@@ -29,14 +29,6 @@ modules = {
     resource url:'js/moment.min.js'
     resource url:'js/select2.min.js'
   }
-  overrides {
-    'bootstrap-css' {
-      // resource id: 'bootstrap-css', url:'/css/gokbbootstrap-3.test.css'
-      resource id: 'bootstrap-css', url:"/css/${grailsApplication.config.defaultCssSkin?:'gokbbootstrap-3.min.css'}"
-      // resource id: 'bootstrap-css', url:'/css/gokbbootstrap-3.min.css'
-      // resource id: 'bootstrap-responsive-css', url:'/css/gokbbootstrap-2-responsive.min.css'
-    }
-  } 
   dynatree {
     resource url:'js/jquery.dynatree.min.js'
     resource url:'css/ui.dynatree.css'

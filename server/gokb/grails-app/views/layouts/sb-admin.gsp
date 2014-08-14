@@ -82,6 +82,7 @@
 						<li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>
 								Search<span class="fa arrow"></span></a>
 							<ul class="nav nav-second-level">
+								<li class="divider"></li>
 								<li class="sidebar-search">
 									<g:form controller="globalSearch" action="index" method="get">
 										<label for="global-search" class="sr-only">Global Search</label>
@@ -152,6 +153,7 @@
 									<li><g:link controller="search" action="index"
 											params="${[qbe:'g:reviewRequests']}"><i class="fa fa-angle-double-right fa-f"></i>
 											Data Review</g:link></li>
+									<li class="divider"></li>
 								</ul>
 						</li>
 						<li><g:link controller="upload" action="index"><i class="fa fa-upload fa-f"></i> File Upload</g:link></li>
