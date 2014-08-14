@@ -122,3 +122,27 @@ h1.panel-title {
 .security-table .fa {
 	font-size: 1.75em;
 }
+
+.sidebar li a:link,
+.sidebar .nav-second-level li a:link,
+.sidebar li a:visited,
+.sidebar .nav-second-level li a:visited {
+	color:#FFF;
+}
+
+.sidebar li a:active,
+.sidebar .nav-second-level li a:active,
+.sidebar li a:hover,
+.sidebar .nav-second-level li a:hover,
+.sidebar li a:focus,
+.sidebar .nav-second-level li a:focus  {
+	color:#00526E;
+}
+
+.sidebar ul li.divider {
+	/** Copied from .dropdown-menu .divider { **/
+  height: 1px;
+  margin: 9.5px 0;
+  overflow: hidden;
+	background-color:#272727;
+}
