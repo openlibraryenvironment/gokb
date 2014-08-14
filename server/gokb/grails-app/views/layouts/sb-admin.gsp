@@ -82,7 +82,6 @@
 						<li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>
 								Search<span class="fa arrow"></span></a>
 							<ul class="nav nav-second-level">
-								<li class="divider"></li>
 								<li class="sidebar-search">
 									<g:form controller="globalSearch" action="index" method="get">
 										<label for="global-search" class="sr-only">Global Search</label>
@@ -108,12 +107,10 @@
 											</g:link></li>
 									</g:each>
 								</g:each>
-								<li class="divider"></li>
 							</ul> <!-- /.nav-second-level --></li>
 						<li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i>
 								Create<span class="fa arrow"></span></a>
 							<ul class="nav nav-second-level">
-								<li class="divider"></li>
 								<li><g:link controller="create" action="index"
 										params="${[tmpl:'org.gokb.cred.License']}"><i class="fa fa-angle-double-right fa-f"></i> License</g:link></li>
 								<li><g:link controller="create" action="index"
@@ -141,19 +138,16 @@
 									<li><g:link controller="create" action="index"
 											params="${[tmpl:'org.gokb.cred.Territory']}"><i class="fa fa-angle-double-right fa-f"></i> Territory</g:link></li>									
 								</sec:ifAnyGranted>
-								<li class="divider"></li>
 							</ul> <!-- /.nav-second-level --></li>
 						<li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i>
 								To Do<span class="fa arrow"></span></g:link>
 								<ul class="nav nav-second-level">
-									<li class="divider"></li>
 									<li><g:link controller="search" action="index"
 											params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">
 											<i class="fa fa-angle-double-right fa-f"></i> My ToDos</g:link></li>
 									<li><g:link controller="search" action="index"
 											params="${[qbe:'g:reviewRequests']}"><i class="fa fa-angle-double-right fa-f"></i>
 											Data Review</g:link></li>
-									<li class="divider"></li>
 								</ul>
 						</li>
 						<li><g:link controller="upload" action="index"><i class="fa fa-upload fa-f"></i> File Upload</g:link></li>

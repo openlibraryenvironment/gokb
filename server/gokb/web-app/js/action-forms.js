@@ -124,11 +124,11 @@ if (typeof jQuery !== 'undefined') {
         var selected = this.selectedIndex;
 
         // Disable all buttons if the first option is the one selected. 
-        dd.siblings('button').prop('disabled', (selected < 1));
+        dd.parent().find('button').prop('disabled', (selected < 1));
       })
 
       // Also disable sibling buttons.
-      .siblings('button').prop('disabled', true);
+      .parent().find('button').prop('disabled', true);
     });
 
   })(jQuery);

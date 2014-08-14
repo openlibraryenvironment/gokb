@@ -16,7 +16,6 @@ modules = {
     resource url:'css/summernote.css'
     resource url:'css/summernote-bs3.css'
     resource url:'js/action-forms.js'
-    resource url:'css/action-forms.css'
     resource url:'js/annotations.js'
     resource url:'css/annotations.css'
     resource url:'js/bootstrap-editable.min.js'
