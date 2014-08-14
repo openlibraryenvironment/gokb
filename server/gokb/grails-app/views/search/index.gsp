@@ -48,11 +48,14 @@
 
 	<g:if test="${displayobj != null}">
 	  <div class="col-md-7 desktop-only" >
-			<div id="resultsarea" class="panel panel-default">
+			<div class="panel panel-default quickview">
+				<div class="panel-heading">
+					<h3 class="panel-title">Quick View</h3>
+				</div>
 				<div class="panel-body">
 					<!--class="well"-->
 	
-					<nav class="navbar navbar-inverse" role="navigation">
+					<nav class="navbar navbar-inverse">
 						<div class="container-fluid">
 							<div class="navbar-header">
 								<span class="navbar-brand">Record ${det} of ${reccount}</span>
@@ -96,7 +99,7 @@
 					</nav>
 					<g:if test="${displaytemplate != null}">
 						<g:if test="${displaytemplate.type=='staticgsp'}">
-	
+							<h4><g:render template="component_heading" contextPath="../apptemplates" model="${[d:displayobj]}" /></h4>
 							<g:render template="${displaytemplate.rendername}"
 								contextPath="../apptemplates"
 								model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />

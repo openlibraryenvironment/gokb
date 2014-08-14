@@ -146,3 +146,8 @@ h1.panel-title {
   overflow: hidden;
 	background-color:#272727;
 }
+
+.quickview h4 {
+	font-size:1.8em;
+	margin:20px 0 20px 0;
+}
