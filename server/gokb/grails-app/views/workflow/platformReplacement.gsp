@@ -20,7 +20,7 @@
           </div>
 
           <div class="col-md-6">
-            With Platform: <g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="newplatform" baseClass="org.gokb.cred.Platform"/><br/>
+            With Platform: <g:simpleReferenceTypedown class="form-control" name="newplatform" baseClass="org.gokb.cred.Platform"/><br/>
             &nbsp;<br/>
             <input type="submit" value="Update" class="btn btn-default btn-primary btn-sm "/>
           </div>

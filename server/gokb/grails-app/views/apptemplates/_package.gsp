@@ -107,12 +107,12 @@
 						<dl class="dl-horizontal">
 							<dt>Title</dt>
 							<dd>
-								<g:simpleReferenceTypedown name="title"
+								<g:simpleReferenceTypedown class="form-control" name="title"
 									baseClass="org.gokb.cred.TitleInstance" />
 							</dd>
 							<dt>Platform</dt>
 							<dd>
-								<g:simpleReferenceTypedown name="hostPlatform"
+								<g:simpleReferenceTypedown class="form-control" name="hostPlatform"
 									baseClass="org.gokb.cred.Platform" />
 							</dd>
 							<dt></dt>
@@ -182,13 +182,13 @@
 										</dd>
 										<dt>Locale</dt>
 										<dd>
-											<g:simpleReferenceTypedown name="locale"
+											<g:simpleReferenceTypedown class="form-control" name="locale"
 												baseClass="org.gokb.cred.RefdataValue"
 												filter1="KBComponentVariantName.Locale" />
 										</dd>
 										<dt>Variant Type</dt>
 										<dd>
-											<g:simpleReferenceTypedown name="variantType"
+											<g:simpleReferenceTypedown class="form-control" name="variantType"
 												baseClass="org.gokb.cred.RefdataValue"
 												filter1="KBComponentVariantName.VariantType" />
 										</dd>

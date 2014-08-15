@@ -93,12 +93,6 @@ if (typeof jQuery !== 'undefined') {
       }
     });
     
-    // Add the editables
-    $(document).ready(function() {
-      $.fn.editable.defaults.mode = 'inline';
-      $('.ipe').editable();
-    });
-    
     // If we have error messages then let's display them in a modal.
     var messages = $('#msg');
     if (messages.children().length > 0) {

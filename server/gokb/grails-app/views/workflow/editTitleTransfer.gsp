@@ -70,9 +70,9 @@
 	
 	          <dl class="dl-horizontal clearfix">
 	           <dt>New Package</dt>
-	           <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Package" baseClass="org.gokb.cred.Package"/></dd>
+	           <dd><g:simpleReferenceTypedown class="form-control" name="Package" baseClass="org.gokb.cred.Package"/></dd>
 	           <dt>New Platform</dt>
-	           <dd><g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="Platform" baseClass="org.gokb.cred.Platform"/></dd>
+	           <dd><g:simpleReferenceTypedown class="form-control" name="Platform" baseClass="org.gokb.cred.Platform"/></dd>
 	           <dt></dt>
 	           <dd><button type="submit" class="btn btn-default btn-primary btn-sm" name="addTransferTipps" value="AddTipps">Add transfer tipps</button></dd>
 	          </dl>

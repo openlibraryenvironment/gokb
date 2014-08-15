@@ -1,6 +1,7 @@
 modules = {
   gokbstyle {
     dependsOn 'application'
+    dependsOn 'editable'
     resource url: 'css/style.css'
     // resource url: "css/${ApplicationHolder.application.config.defaultCssSkin?:'live.css'}"
   }

@@ -86,7 +86,7 @@
 										<input type="hidden" name="__context"
 											value="${d.class.name}:${d.id}" />
 										<input type="hidden" name="__property" value="roles" />
-										<g:simpleReferenceTypedown name="__relatedObject"
+										<g:simpleReferenceTypedown class="form-control" name="__relatedObject"
 											baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
 										<input type="submit" value="Add..."
 											class="btn btn-default btn-primary btn-sm " />
@@ -151,13 +151,13 @@
 										</dd>
 										<dt>Locale</dt>
 										<dd>
-											<g:simpleReferenceTypedown name="locale"
+											<g:simpleReferenceTypedown class="form-control" name="locale"
 												baseClass="org.gokb.cred.RefdataValue"
 												filter1="KBComponentVariantName.Locale" />
 										</dd>
 										<dt>Variant Type</dt>
 										<dd>
-											<g:simpleReferenceTypedown name="variantType"
+											<g:simpleReferenceTypedown class="form-control" name="variantType"
 												baseClass="org.gokb.cred.RefdataValue"
 												filter1="KBComponentVariantName.VariantType" />
 										</dd>

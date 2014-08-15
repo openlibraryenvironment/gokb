@@ -246,13 +246,13 @@
 								</dd>
 								<dt>Locale</dt>
 								<dd>
-									<g:simpleReferenceTypedown name="locale"
+									<g:simpleReferenceTypedown class="form-control" name="locale"
 										baseClass="org.gokb.cred.RefdataValue"
 										filter1="KBComponentVariantName.Locale" />
 								</dd>
 								<dt>Variant Type</dt>
 								<dd>
-									<g:simpleReferenceTypedown name="variantType"
+									<g:simpleReferenceTypedown class="form-control" name="variantType"
 										baseClass="org.gokb.cred.RefdataValue"
 										filter1="KBComponentVariantName.VariantType" />
 								</dd>
@@ -301,15 +301,13 @@
 										class="input-xxlarge" style="width: 500px;"></td>
 								</tr>
 								<tr>
-									<td><g:simpleReferenceTypedown name="fromTitle"
-											baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"
-											style="width:500px;" /> <br />
+									<td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
+											baseClass="org.gokb.cred.TitleInstance" /> <br />
 										<button type="button"
 											onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
 									<td></td>
-									<td><g:simpleReferenceTypedown name="ToTitle"
-											baseClass="org.gokb.cred.TitleInstance" class="input-xxlarge"
-											style="width:500px;" /> <br />
+									<td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
+											baseClass="org.gokb.cred.TitleInstance" /> <br />
 										<button type="button"
 											onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
 								</tr>
