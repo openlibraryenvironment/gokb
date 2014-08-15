@@ -1,40 +1,30 @@
+<g:set var="perRow" value="${2}" />
+<g:set var="fullRows" value="${(widgets.size() / perRow).toInteger() * perRow}" />
+<g:set var="lastRow" value="${(widgets.size() % perRow).toInteger()}" />
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name='layout' content='register'/>
-    <r:require modules="gokbstyle"/>
-    <title>GOKb</title>
-    <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+    <meta name='layout' content='sb-admin'/>
+    <r:require modules="gokbcharts"/>
+    <title>GOKb: Welcome</title>
   </head>
   <body>
-
-   <div class="container">
-     <div class="row">
-       Stats
-       Headers...
-     </div>
-   </div>
-
-   <br/>&nbsp;<br/>
-   <h3>Package Additions</h3>
-   <div id="packageAdditions">
-   </div>
-  
-
-   <br/>&nbsp;<br/>
-   <h3>Title Additions</h3>
-   <div id="titleAdditions">
-   </div>
-
-   <br/>&nbsp;<br/>
-   <h3>Organisation Additions</h3>
-   <div id="orgAdditions">
-   </div>
-
-
-    <gvisualization:lineCoreChart elementId="titleAdditions" width="${400}" height="${240}" title="Title Additions" columns="${colHeads1}" data="${titleAdditionData}" />
-    <gvisualization:lineCoreChart elementId="packageAdditions" width="${400}" height="${240}" title="Package Additions" columns="${colHeads1}" data="${packageAdditionData}" />
-    <gvisualization:lineCoreChart elementId="orgAdditions" width="${400}" height="${240}" title="Org Additions" columns="${colHeads1}" data="${orgAdditionData}" />
-
+  	<h1 class="page-header">Welcome to GOKb</h1>
+  	
+  	<!-- Full rows -->
+  	<g:each var="name, widget" in="${widgets}" status="wcount" >
+  	
+			<div class="col-md-${ (wcount + 1) <= fullRows ? (12 / perRow) : (12 / lastRow) }">
+				<div class="panel panel-default">
+					<div class="panel-heading">${name}</div>
+					<!-- /.panel-heading -->
+					<div class="panel-body">
+						${ gokb.chart(widget) }
+					</div>
+					<!-- /.panel-body -->
+				</div>
+				<!-- /.panel -->
+			</div>
+		</g:each>		
   </body>
 </html>

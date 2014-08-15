@@ -6,6 +6,13 @@ modules = {
     // resource url: "css/${ApplicationHolder.application.config.defaultCssSkin?:'live.css'}"
   }
   
+  gokbcharts {
+    dependsOn 'gokbstyle'
+    resource url: 'js/morris/raphael.min.js'
+    resource url: 'js/morris/morris.min.js'
+    resource url: 'css/morris.css'
+  }
+  
   
   overrides {
     'bootstrap-css' {

@@ -54,7 +54,7 @@
 			<!-- /.navbar-header -->
 
 			<sec:ifLoggedIn>
-				<ul class="nav navbar-nav navbar-top-links navbar-right">
+				<ul class="nav navbar-nav navbar-right">
 					<li class="dropdown"><a class="dropdown-toggle"
 						data-toggle="dropdown" href="#"><i class="fa fa-user fa-fw"></i> ${request.user?.displayName ?: request.user?.username}
 							<i class="fa fa-caret-down"></i>
@@ -73,86 +73,96 @@
 				</ul>
 				<!-- /.navbar-top-links -->
 			</sec:ifLoggedIn>
+			<sec:ifNotLoggedIn>
+				<ul class="nav navbar-nav navbar-right">
+					<li><g:link controller="register"><i class="fa fa-edit fa-fw"></i> Register</g:link></li>
+					<li><g:link controller="login"><i class="fa fa-sign-in fa-fw"></i> Sign in</g:link></li>
+				</ul>
+				<!-- /.navbar-top-links -->
+			</sec:ifNotLoggedIn>
 			
 			<div class="navbar-default sidebar" role="navigation">
 				<div class="sidebar-nav navbar-collapse">
 					<ul class="nav" id="side-menu">
 						<li class="${params?.controller == "welcome"  ? 'active' : ''}"><g:link controller="welcome"><i class="fa fa-dashboard fa-fw"></i>
-								Dashboard</g:link></li>
-						<li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>
-								Search<span class="fa arrow"></span></a>
-							<ul class="nav nav-second-level">
-								<li class="sidebar-search">
-									<g:form controller="globalSearch" action="index" method="get">
-										<label for="global-search" class="sr-only">Global Search</label>
-										<div class="input-group custom-search-form">
-											<input id="global-search" name="q" type="text" class="form-control" placeholder="Global Search...">
-											<span class="input-group-btn">
-												<button class="btn btn-default" type="submit">
-													<i class="fa fa-search"></i>
-												</button>
-											</span>
-										</div><!-- /input-group -->
-									</g:form>
-								</li>
-								<li class="divider"></li>
-								<g:each in="${session.userPereferences?.mainMenuSections}"
-									var="secname,sec">
-									<!-- ${secname.toLowerCase()} -->
-									<g:each in="${sec}" var="srch">
-										<li class="menu-${secname.toLowerCase()}"><g:link
-												controller="search" action="index"
-												params="${[qbe:'g:'+srch.key]}">
-												<i class="fa fa-angle-double-right fa-f"></i> ${srch.value.title}
-											</g:link></li>
-									</g:each>
-								</g:each>
-							</ul> <!-- /.nav-second-level --></li>
-						<li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i>
-								Create<span class="fa arrow"></span></a>
-							<ul class="nav nav-second-level">
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.License']}"><i class="fa fa-angle-double-right fa-f"></i> License</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.Office']}"><i class="fa fa-angle-double-right fa-f"></i> Office</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.Org']}"><i class="fa fa-angle-double-right fa-f"></i> Org</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.Package']}"><i class="fa fa-angle-double-right fa-f"></i> Package</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.Platform']}"><i class="fa fa-angle-double-right fa-f"></i> Platform</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.ReviewRequest']}"><i class="fa fa-angle-double-right fa-f"></i> Request For Review</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.Source']}"><i class="fa fa-angle-double-right fa-f"></i> Source</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.TitleInstance']}"><i class="fa fa-angle-double-right fa-f"></i> Title</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.Imprint']}"><i class="fa fa-angle-double-right fa-f"></i> Imprint</g:link></li>
-								<sec:ifAnyGranted roles="ROLE_ADMIN">
-									<li class="divider"></li>
-									<li><g:link controller="create" action="index"
-											params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}"><i class="fa fa-angle-double-right fa-f"></i> Additional Property Definition</g:link></li>
-									<li><g:link controller="create" action="index"
-											params="${[tmpl:'org.gokb.cred.RefdataCategory']}"><i class="fa fa-angle-double-right fa-f"></i> Refdata Category</g:link></li>
-									<li><g:link controller="create" action="index"
-											params="${[tmpl:'org.gokb.cred.Territory']}"><i class="fa fa-angle-double-right fa-f"></i> Territory</g:link></li>									
-								</sec:ifAnyGranted>
-							</ul> <!-- /.nav-second-level --></li>
-						<li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i>
-								To Do<span class="fa arrow"></span></g:link>
+								My Dashboard</g:link></li>
+						
+						<sec:ifLoggedIn>
+							<li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>
+									Search<span class="fa arrow"></span></a>
 								<ul class="nav nav-second-level">
-									<li><g:link controller="search" action="index"
-											params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">
-											<i class="fa fa-angle-double-right fa-f"></i> My ToDos</g:link></li>
-									<li><g:link controller="search" action="index"
-											params="${[qbe:'g:reviewRequests']}"><i class="fa fa-angle-double-right fa-f"></i>
-											Data Review</g:link></li>
-								</ul>
-						</li>
-						<li><g:link controller="upload" action="index"><i class="fa fa-upload fa-f"></i> File Upload</g:link></li>
-						<li><g:link controller="masterList" action="index"><i class="fa fa-list-alt fa-f"></i> Master List</g:link></li>
-						<li><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-f"></i> Coreference</g:link></li>
+									<li class="sidebar-search">
+										<g:form controller="globalSearch" action="index" method="get">
+											<label for="global-search" class="sr-only">Global Search</label>
+											<div class="input-group custom-search-form">
+												<input id="global-search" name="q" type="text" class="form-control" placeholder="Global Search...">
+												<span class="input-group-btn">
+													<button class="btn btn-default" type="submit">
+														<i class="fa fa-search"></i>
+													</button>
+												</span>
+											</div><!-- /input-group -->
+										</g:form>
+									</li>
+									<li class="divider"></li>
+									<g:each in="${session.userPereferences?.mainMenuSections}"
+										var="secname,sec">
+										<!-- ${secname.toLowerCase()} -->
+										<g:each in="${sec}" var="srch">
+											<li class="menu-${secname.toLowerCase()}"><g:link
+													controller="search" action="index"
+													params="${[qbe:'g:'+srch.key]}">
+													<i class="fa fa-angle-double-right fa-f"></i> ${srch.value.title}
+												</g:link></li>
+										</g:each>
+									</g:each>
+								</ul> <!-- /.nav-second-level --></li>
+							<li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i>
+									Create<span class="fa arrow"></span></a>
+								<ul class="nav nav-second-level">
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.License']}"><i class="fa fa-angle-double-right fa-fw"></i> License</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.Office']}"><i class="fa fa-angle-double-right fa-fw"></i> Office</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.Org']}"><i class="fa fa-angle-double-right fa-fw"></i> Org</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.Package']}"><i class="fa fa-angle-double-right fa-fw"></i> Package</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.Platform']}"><i class="fa fa-angle-double-right fa-fw"></i> Platform</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.ReviewRequest']}"><i class="fa fa-angle-double-right fa-fw"></i> Request For Review</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.Source']}"><i class="fa fa-angle-double-right fa-fw"></i> Source</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.TitleInstance']}"><i class="fa fa-angle-double-right fa-fw"></i> Title</g:link></li>
+									<li><g:link controller="create" action="index"
+											params="${[tmpl:'org.gokb.cred.Imprint']}"><i class="fa fa-angle-double-right fa-fw"></i> Imprint</g:link></li>
+									<sec:ifAnyGranted roles="ROLE_ADMIN">
+										<li class="divider"></li>
+										<li><g:link controller="create" action="index"
+												params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}"><i class="fa fa-angle-double-right fa-fw"></i> Additional Property Definition</g:link></li>
+										<li><g:link controller="create" action="index"
+												params="${[tmpl:'org.gokb.cred.RefdataCategory']}"><i class="fa fa-angle-double-right fa-fw"></i> Refdata Category</g:link></li>
+										<li><g:link controller="create" action="index"
+												params="${[tmpl:'org.gokb.cred.Territory']}"><i class="fa fa-angle-double-right fa-fw"></i> Territory</g:link></li>									
+									</sec:ifAnyGranted>
+								</ul> <!-- /.nav-second-level --></li>
+							<li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i>
+									To Do<span class="fa arrow"></span></g:link>
+									<ul class="nav nav-second-level">
+										<li><g:link controller="search" action="index"
+												params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">
+												<i class="fa fa-angle-double-right fa-f"></i> My ToDos</g:link></li>
+										<li><g:link controller="search" action="index"
+												params="${[qbe:'g:reviewRequests']}"><i class="fa fa-angle-double-right fa-fw"></i>
+												Data Review</g:link></li>
+									</ul>
+							</li>
+							<li><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
+							<li><g:link controller="masterList" action="index"><i class="fa fa-list-alt fa-fw"></i> Master List</g:link></li>
+							<li><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
+						</sec:ifLoggedIn>
 					</ul>
 				</div>
 				<!-- /.sidebar-collapse -->

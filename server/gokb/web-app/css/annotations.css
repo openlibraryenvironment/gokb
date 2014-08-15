@@ -2,7 +2,7 @@
   cursor:help;
 }
 
-.annotated .icon-info-sign {
+.annotated .fa-info-circle {
   color:#3D57A6;
 }
 
@@ -19,10 +19,13 @@ div.annotation-editable:hover {
 }
 
 div.annotation-empty {
-  color: #ff6c91;
+  color: #dd1144;
   font-style: italic;
 }
 
+.popover {
+	color: #000;
+}
 
 .popover .note-toolbar {
 	margin-left:0;

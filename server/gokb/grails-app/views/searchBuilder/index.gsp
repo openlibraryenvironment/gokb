@@ -11,7 +11,7 @@
     <r:require module="jquery-ui"/>
     <r:require modules="dynatree"/>
 
-    <title>GOKbo : About</title>
+    <title>GOKbo: About</title>
   </head>
   <body>
 
