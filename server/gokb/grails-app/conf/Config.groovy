@@ -583,7 +583,7 @@ globalSearchTemplates = [
           prompt:'Name',
           qparam:'qp_name',
           placeholder:'Project Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
         ],
       ],
       qbeResults:[
