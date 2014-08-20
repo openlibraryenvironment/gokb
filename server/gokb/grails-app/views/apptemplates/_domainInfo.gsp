@@ -23,8 +23,7 @@
 
 <div id="content">
 	<ul id="tabs" class="nav nav-tabs">
-		<li class="active"><a href="#role-permissions" data-toggle="tab">Role
-				Permissions</a></li>
+		<li class="active"><a href="#role-permissions" data-toggle="tab">Role Permissions</a></li>
 	</ul>
 	<div id="my-tab-content" class="tab-content">
 		<div class="tab-pane active" id="role-permissions">

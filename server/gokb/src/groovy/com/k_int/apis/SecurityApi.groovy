@@ -29,7 +29,9 @@ class SecurityApi <T> extends A_Api<T> {
   }
   
   public static boolean isCreatable (Class<T> clazz, boolean defaultTo = true) {
-    hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
+    boolean result = hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
+    log.debug("static is creatable (${defaultTo}) ${clazz} :: "+result);
+    result
   }
   
   public static boolean isReadable (Class<T> clazz, boolean defaultTo = true) {
@@ -48,7 +50,8 @@ class SecurityApi <T> extends A_Api<T> {
     
     // Calling this method on an ojbect that has no id, and therefore hasn't been saved
     // will instead route through isCreatable as this is a create and not an edit.
-    if (component.id == null) return isCreatable (component, defaultTo)
+    if (component.id == null) 
+      return isCreatable (component, defaultTo)
     
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
@@ -58,7 +61,6 @@ class SecurityApi <T> extends A_Api<T> {
   }
   
   public boolean isCreatable (T component, boolean defaultTo = true) {
-    
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
       allowed = SecurityApi.isCreatable (component.getClass(), defaultTo)

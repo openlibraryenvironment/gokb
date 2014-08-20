@@ -7,142 +7,149 @@
 <html lang="en" class="no-js">
 <!--<![endif]-->
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-	<title><g:layoutTitle default="GOKb" /></title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="shortcut icon"
-		href="${resource(dir: 'images', file: 'favicon.ico')}"
-		type="image/x-icon">
-	
-	<g:layoutHead />
-	<g:javascript library="application" />
-	<r:layoutResources />
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title><g:layoutTitle default="GOKb" /></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon"
+    href="${resource(dir: 'images', file: 'favicon.ico')}"
+    type="image/x-icon">
+  
+  <g:layoutHead />
+  <g:javascript library="application" />
+  <r:layoutResources />
 </head>
 
 <body>
+  <div class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fuid">
+      <div class="navbar-header">
+        <g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
+      </div>
+      <div class="navbar-collapse collapse" id="navbar-main">
+        <ul class="nav navbar-nav navbar-right">
+          <sec:ifLoggedIn>
+            <li class="dropdown"><a href="#" class="dropdown-toggle"
+              data-toggle="dropdown">
+                ${request.user?.displayName?:request.user?.username} <b
+                class="caret"></b>
+            </a>
+              <ul class="dropdown-menu">
+                <li><g:link controller="profile">Profile</g:link></li>
+                <li><g:link controller="logout">Logout</g:link></li>
+                <li><g:link controller="integration">Integration API</g:link></li>
+              </ul></li>
+          </sec:ifLoggedIn>
+          <sec:ifNotLoggedIn>
+            <li>Not logged in</li>
+          </sec:ifNotLoggedIn>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li class="dropdown"><a href="#" class="dropdown-toggle"
+            data-toggle="dropdown">Search</a>
+            <ul class="dropdown-menu">
+              <li><g:link controller="globalSearch" action="index">Global Search</g:link></li>
+              <g:each in="${session.userPereferences?.mainMenuSections}"
+                var="secname,sec">
+                <!-- ${secname.toLowerCase()} -->
+                <g:each in="${sec}" var="srch">
+                  <li class="menu-${secname.toLowerCase()}"><g:link
+                      controller="search" action="index"
+                      params="${[qbe:'g:'+srch.key]}">
+                      ${srch.value.title}
+                    </g:link></li>
+                </g:each>
+                <li class="divider"></li>
+              </g:each>
+            </ul></li>
 
-	<div class="navbar navbar-default navbar-fixed-top">
-		<div class="container-fuid">
-			<div class="navbar-header">
-				<g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
-			</div>
-			<div class="navbar-collapse collapse" id="navbar-main">
-				<ul class="nav navbar-nav navbar-right">
-					<sec:ifLoggedIn>
-						<li class="dropdown"><a href="#" class="dropdown-toggle"
-							data-toggle="dropdown">
-								${request.user?.displayName?:request.user?.username} <b
-								class="caret"></b>
-						</a>
-							<ul class="dropdown-menu">
-								<li><g:link controller="profile">Profile</g:link></li>
-								<li><g:link controller="logout">Logout</g:link></li>
-								<li><g:link controller="integration">Integration API</g:link></li>
-							</ul></li>
-					</sec:ifLoggedIn>
-					<sec:ifNotLoggedIn>
-						<li>Not logged in</li>
-					</sec:ifNotLoggedIn>
-				</ul>
-				<ul class="nav navbar-nav">
-					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown">Search</a>
-						<ul class="dropdown-menu">
-							<li><g:link controller="globalSearch" action="index">Global Search</g:link></li>
-							<g:each in="${session.userPereferences?.mainMenuSections}"
-								var="secname,sec">
-								<!-- ${secname.toLowerCase()} -->
-								<g:each in="${sec}" var="srch">
-									<li class="menu-${secname.toLowerCase()}"><g:link
-											controller="search" action="index"
-											params="${[qbe:'g:'+srch.key]}">
-											${srch.value.title}
-										</g:link></li>
-								</g:each>
-								<li class="divider"></li>
-							</g:each>
-						</ul></li>
+          <li class="dropdown"><a href="#" class="dropdown-toggle"
+            data-toggle="dropdown">Create</a>
+            <ul class="dropdown-menu">
+              <g:if test="${org.gokb.cred.License.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.License']}">License</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.Office.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Office']}">Office</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.Org.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.Package.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.Platform.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.ReviewRequest.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.ReviewRequest']}">Request For Review</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.Source.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.TitleInstance.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
+              </g:if>
+              <g:if test="${org.gokb.cred.Imprint.isCreatable(false)==true}">
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Imprint']}">Imprint</g:link></li>
+              </g:if>
 
-					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown">Create</a>
-						<ul class="dropdown-menu">
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.License']}">License</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.Office']}">Office</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.ReviewRequest']}">Request For Review</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
-							<li><g:link controller="create" action="index"
-									params="${[tmpl:'org.gokb.cred.Imprint']}">Imprint</g:link></li>
-							<sec:ifAnyGranted roles="ROLE_ADMIN">
-								<li class="divider"></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}">Additional Property Definition</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
-								<li><g:link controller="create" action="index"
-										params="${[tmpl:'org.gokb.cred.Territory']}">Territory</g:link></li>
-							</sec:ifAnyGranted>
-						</ul></li>
-					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown">ToDo</a>
-						<ul class="dropdown-menu">
-							<li><g:link controller="search" action="index"
-									params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">My ToDos</g:link></li>
-							<li><g:link controller="search" action="index"
-									params="${[qbe:'g:reviewRequests']}">Data Review</g:link></li>
-						</ul></li>
-					<li><g:link controller="upload" action="index">File Upload</g:link></li>
-					<li><g:link controller="masterList" action="index">Master List</g:link></li>
-					<li><g:link controller="coreference" action="index">Coreference</g:link></li>
-					<sec:ifAnyGranted roles="ROLE_ADMIN">
-						<li class="dropdown"><a href="#" class="dropdown-toggle"
-							data-toggle="dropdown">Admin</a>
-							<ul class="dropdown-menu">
-								<li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
-								<li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
-								<li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
-								<li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
-								<li><g:link controller="admin" action="masterListUpdate">Force Master List Update</g:link></li>
-								<li><g:link controller="user" action="search">User Management Console</g:link></li>
-								<li><g:link controller="home" action="about">About</g:link></li>
-							</ul></li>
-					</sec:ifAnyGranted>
-				</ul>
-			</div>
-		</div>
-	</div>
-	<div class="container-fuid" >
-		<g:layoutBody />
-	</div>
-	<div class="navbar navbar-default navbar-fixed-bottom">
-		<div class="container-fluid">
-			<ul class="nav navbar-nav">
-				<li><g:link controller="home" action="about">GOKb <g:meta
-							name="app.version" /> / build <g:meta name="app.buildNumber" />
-					</g:link></li>
-			</ul>
-			<ul class="nav navbar-nav pull-right">
-				<li class="dropdown"><a href="#" class="dropdown-toggle"
-					data-toggle="dropdown">Tools <b class="caret"></b>
-				</a></li>
-			</ul>
-		</div>
-	</div>
+              <sec:ifAnyGranted roles="ROLE_ADMIN">
+                <li class="divider"></li>
+                <li><g:link controller="create" action="index"
+                    params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}">Additional Property Definition</g:link></li>
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.RefdataCategory']}">Refdata Category</g:link></li>
+                <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Territory']}">Territory</g:link></li>
+              </sec:ifAnyGranted>
+            </ul></li>
+          <li class="dropdown"><a href="#" class="dropdown-toggle"
+            data-toggle="dropdown">ToDo</a>
+            <ul class="dropdown-menu">
+              <li><g:link controller="search" action="index"
+                  params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">My ToDos</g:link></li>
+              <li><g:link controller="search" action="index"
+                  params="${[qbe:'g:reviewRequests']}">Data Review</g:link></li>
+            </ul></li>
+          <li><g:link controller="upload" action="index">File Upload</g:link></li>
+          <li><g:link controller="masterList" action="index">Master List</g:link></li>
+          <li><g:link controller="coreference" action="index">Coreference</g:link></li>
+          <sec:ifAnyGranted roles="ROLE_ADMIN">
+            <li class="dropdown"><a href="#" class="dropdown-toggle"
+              data-toggle="dropdown">Admin</a>
+              <ul class="dropdown-menu">
+                <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
+                <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
+                <li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
+                <li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
+                <li><g:link controller="admin" action="masterListUpdate">Force Master List Update</g:link></li>
+                <li><g:link controller="user" action="search">User Management Console</g:link></li>
+                <li><g:link controller="home" action="about">About</g:link></li>
+              </ul></li>
+          </sec:ifAnyGranted>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="container-fuid" >
+    <g:layoutBody />
+  </div>
+  <div class="navbar navbar-default navbar-fixed-bottom">
+    <div class="container-fluid">
+      <ul class="nav navbar-nav">
+        <li><g:link controller="home" action="about">GOKb <g:meta
+              name="app.version" /> / build <g:meta name="app.buildNumber" />
+          </g:link></li>
+      </ul>
+      <ul class="nav navbar-nav pull-right">
+        <li class="dropdown"><a href="#" class="dropdown-toggle"
+          data-toggle="dropdown">Tools <b class="caret"></b>
+        </a></li>
+      </ul>
+    </div>
+  </div>
 
-	<g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
-		<g:javascript>
+  <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
+    <g:javascript>
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
         m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -151,7 +158,7 @@
         ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
         ga('send', 'pageview');
       </g:javascript>
-	</g:if>
+  </g:if>
 </body>
 <r:layoutResources />
 </html>

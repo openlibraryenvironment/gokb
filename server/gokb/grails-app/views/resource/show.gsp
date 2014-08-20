@@ -2,7 +2,9 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: ${displayobj?.getNiceName() ?: 'Component'} &lt;${ displayobj?.isEditable() ? 'Editable' : 'Read Only' }&gt;
+<title>GOKb: ${displayobj?.getNiceName() ?: 'Component'} 
+&lt;${ displayobj?.isEditable() ? 'Editable' : 'Read Only' }&gt; 
+&lt;${ displayobj?.isCreatable() ? 'Creatable' : 'Not Creatable' }&gt;
 </title>
 </head>
 <body>
