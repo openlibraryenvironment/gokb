@@ -30,7 +30,6 @@ class SecurityApi <T> extends A_Api<T> {
   
   public static boolean isCreatable (Class<T> clazz, boolean defaultTo = true) {
     boolean result = hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
-    log.debug("static is creatable (${defaultTo}) ${clazz} :: "+result);
     result
   }
   
@@ -97,13 +96,9 @@ class SecurityApi <T> extends A_Api<T> {
   
   public static boolean hasPermission(Class<T> clazz, Permission p, boolean defaultTo = true) {
     def domain_record_info = KBDomainInfo.findByDcName(clazz.name)
+
     if (domain_record_info) {
-      boolean can_edit = this.aclUtilService.hasPermission(
-        SECCH.context.authentication,
-        domain_record_info,
-        p
-      )
-      
+      boolean can_edit = this.aclUtilService.hasPermission( SECCH.context.authentication, domain_record_info, p)
       return can_edit
     }
     

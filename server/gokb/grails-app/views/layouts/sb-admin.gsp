@@ -121,51 +121,11 @@
                   Create<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
 
-                  <g:if test="${grailsApplication.getArtefact('Domain','org.gokb.cred.License').clazz.isCreatable(false)}">
+                  <g:each in="${session.userPereferences?.createMenu}" var="d">
                     <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.License']}"><i class="fa fa-angle-double-right fa-fw"></i> License</g:link></li></g:if>
+                      params="${[tmpl:d.dcName]}"><i class="fa fa-angle-double-right fa-fw"></i> Create ${d.displayName}</g:link></li>
+                  </g:each>
 
-                  <g:if test="${org.gokb.cred.Office.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.Office']}"><i class="fa fa-angle-double-right fa-fw"></i> Office</g:link></li></g:if>
-
-                  <g:if test="${org.gokb.cred.Org.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.Org']}"><i class="fa fa-angle-double-right fa-fw"></i> Org</g:link></li></g:if>
-
-                  <g:if test="${org.gokb.cred.Package.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.Package']}"><i class="fa fa-angle-double-right fa-fw"></i> Package</g:link></li></g:if>
-
-                  <g:if test="${org.gokb.cred.Platform.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.Platform']}"><i class="fa fa-angle-double-right fa-fw"></i> Platform</g:link></li></g:if>
-
-                  <g:if test="${org.gokb.cred.ReviewRequest.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.ReviewRequest']}"><i class="fa fa-angle-double-right fa-fw"></i> Request For Review</g:link></li></g:if>
-
-                  <g:if test="${org.gokb.cred.Source.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.Source']}"><i class="fa fa-angle-double-right fa-fw"></i> Source</g:link></li></g:if>
-
-                  <g:if test="${org.gokb.cred.TitleInstance.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.TitleInstance']}"><i class="fa fa-angle-double-right fa-fw"></i> Title</g:link></li></g:if>
-
-                  <g:if test="${org.gokb.cred.Imprint.isCreatable(false)}">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:'org.gokb.cred.Imprint']}"><i class="fa fa-angle-double-right fa-fw"></i> Imprint</g:link></li></g:if>
-
-                  <sec:ifAnyGranted roles="ROLE_ADMIN">
-                    <li class="divider"></li>
-                    <li><g:link controller="create" action="index"
-                        params="${[tmpl:'org.gokb.cred.AdditionalPropertyDefinition']}"><i class="fa fa-angle-double-right fa-fw"></i> Additional Property Definition</g:link></li>
-                    <li><g:link controller="create" action="index"
-                        params="${[tmpl:'org.gokb.cred.RefdataCategory']}"><i class="fa fa-angle-double-right fa-fw"></i> Refdata Category</g:link></li>
-                    <li><g:link controller="create" action="index"
-                        params="${[tmpl:'org.gokb.cred.Territory']}"><i class="fa fa-angle-double-right fa-fw"></i> Territory</g:link></li>                  
-                  </sec:ifAnyGranted>
                 </ul> <!-- /.nav-second-level --></li>
               <li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i>
                   To Do<span class="fa arrow"></span></g:link>

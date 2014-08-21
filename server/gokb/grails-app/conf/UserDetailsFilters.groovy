@@ -39,6 +39,7 @@ class UserDetailsFilters {
             session.userPereferences = request.user.getUserPreferences()
             // Generate Menu for this user.
             session.userPereferences.mainMenuSections = [:]
+            session.userPereferences.createMenu = []
             def current_type = null
             def current_list = null;
             // Step 1 : List all domains available to this user order by type, grouped into type
@@ -71,6 +72,12 @@ class UserDetailsFilters {
                   //log.debug("Adding search for ${it.key} - ${it.value.baseclass}");
                   current_list[it.key] = it.value
                 }
+              }
+
+            
+              if ( ( aclUtilService.hasPermission(SCH.context.authentication, d, org.springframework.security.acls.domain.BasePermission.CREATE ) ) ||
+                   ( SpringSecurityUtils.ifAnyGranted('ROLE_ADMIN') ) ) {
+                session.userPereferences.createMenu.add(d);
               }
             }
           }

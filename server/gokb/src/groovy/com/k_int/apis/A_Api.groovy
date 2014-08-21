@@ -98,10 +98,12 @@ abstract class A_Api <T> {
     if (api.applicableFor(targetClass) ) {
 
       apiClass.getDeclaredMethods().each { Method m ->
+        // println("processing declared method ${m}");
         def mods = m.getModifiers()
         def pTypes = m.getParameterTypes()
 
         if (!m.isSynthetic() && Modifier.isPublic(mods) && !EXCLUDES.contains(m.name)) {
+          // println("Inside2");
 
           if (!Modifier.isStatic(mods)) {
 
@@ -115,11 +117,13 @@ abstract class A_Api <T> {
               api.invokeMethod("${m.name}", the_args.toArray())
             }
           } else {
-          
+            println("Adding static method.. ${m.name} to ${targetClass.name}");
             // Add to the static scope.
             targetClass.metaClass.static."${m.name}" = { args ->
 
               List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
+
+              println("Calling static method ${m.name}.. Target Class was ${targetClass.name} Delegate is ${delegate.class.name}");
 
               // Prepend the new value.
               the_args.add(0, delegate.class)
