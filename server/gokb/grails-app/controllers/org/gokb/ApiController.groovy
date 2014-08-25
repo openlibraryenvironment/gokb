@@ -28,6 +28,8 @@ class ApiController {
     // Go through defined properties.
     proj.properties.each { k,v ->
 
+      println("Prop: ${k}");
+
       switch (v) {
         case User :
           User u = v as User

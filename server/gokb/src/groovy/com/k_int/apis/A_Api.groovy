@@ -124,7 +124,6 @@ abstract class A_Api <T> {
               ArrayList the_args = new ArrayList()
 
               if ( args.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!  
-                println("Dynamic no args...");
               }
               else {
                 if ( args instanceof Collection )
