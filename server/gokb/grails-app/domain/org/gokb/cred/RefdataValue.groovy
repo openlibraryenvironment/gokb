@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import org.hibernate.proxy.HibernateProxy
+
 class RefdataValue {
 
   String value
@@ -39,8 +41,11 @@ class RefdataValue {
   public boolean equals (Object obj) {
 
     if (obj != null) {
-      Object dep_obj = KBComponent.deproxy (obj)
-      if (dep_obj instanceof RefdataValue) {
+      if ( obj instanceof RefdataValue ) {
+        return obj.id == id
+      }
+      else if ( obj instanceof HibernateProxy ) {
+        Object dep_obj = KBComponent.deproxy (obj)
         return dep_obj.id == id
       }
     }

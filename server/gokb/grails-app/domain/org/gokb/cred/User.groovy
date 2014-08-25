@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import groovy.util.logging.Log4j;
+import org.hibernate.proxy.HibernateProxy
 
 @Log4j
 class User {
@@ -82,11 +83,15 @@ class User {
   @Override
   public boolean equals(Object obj) {
 
-    // Deproxy the object first to ensure it isn't a hibernate proxy.
-    def the_obj = KBComponent.deproxy(obj)
-
-    if (the_obj instanceof User) {
-      return this.getId() == the_obj.getId()
+    log.debug("USER::equals ${obj?.class.name} :: ${obj}");
+    if ( obj != null ) {
+      if ( obj instanceof User ) {
+        return this.getId() == obj.getId()
+      }
+      else if ( obj instanceof HibernateProxy ) {
+        def the_obj = KBComponent.deproxy(obj)
+        return this.getId() == the_obj.getId()
+      }
     }
 
     // Return false if we get here.

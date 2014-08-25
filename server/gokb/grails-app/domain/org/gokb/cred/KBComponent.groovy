@@ -10,6 +10,7 @@ import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
 
 import com.k_int.ClassUtils
+import org.hibernate.proxy.HibernateProxy
 
 /**
  * Abstract base class for GoKB Components.
@@ -615,12 +616,16 @@ abstract class KBComponent {
   @Override
   public boolean equals(Object obj) {
 
+    if ( obj != null ) {
     // Deproxy the object first to ensure it isn't a hibernate proxy.
-    def the_obj = KBComponent.deproxy(obj)
 
-    if (the_obj instanceof KBComponent) {
-      return (this.getClassName() == the_obj.getClassName()) &&
-      (this.getId() == the_obj.getId())
+      if (obj instanceof KBComponent) {
+        return (this.getClassName() == obj.getClassName()) && (this.getId() == obj.getId())
+      }
+      else if ( obj instanceof org.hibernate.proxy.HibernateProxy ) {
+        def the_obj = KBComponent.deproxy(obj)
+        return (this.getClassName() == the_obj.getClassName()) && (this.getId() == the_obj.getId())
+      }
     }
 
     // Return false if we get here.
@@ -666,6 +671,13 @@ abstract class KBComponent {
   public Map getAllPropertiesAndVals() {
 
     // The list of property names that we are to ignore.
+    // II: ToDo Steve - Please review this.
+    // explanation :: I'm not fully sure what side effects this might have, but in local_props below deproxy is called
+    // for each property. skippedTitles is a list of strings and was causing hell on earth in the A_Api which was unable to tell the
+    // difference between f(x) and f([x]) closure called with a list containing one argument. Not been able to fully 
+    // wrap my head around A_Api yet, so added skippedTitles here as a stop-gap. Substantial changes already made to A_Api and don't
+    // want to change any more yet.
+    // added variantNames, ids
     def ignore_list = [
       'id',
       'outgoingCombos',
@@ -673,7 +685,11 @@ abstract class KBComponent {
       'reviewRequests',
       'tags',
       'systemOnly',
-      'additionalProperties'
+      'additionalProperties',
+      'skippedTitles',
+      'variantNames',
+      'ids',
+      'fileAttachments'
     ]
 
     // Get the domain class.
@@ -694,6 +710,7 @@ abstract class KBComponent {
         return
       }
 
+      // println("Deproxy ${prop}");
       def val = deproxy(this."${prop}")
 
       switch (val) {

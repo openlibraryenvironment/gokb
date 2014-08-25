@@ -105,7 +105,7 @@ class ApiController {
     ]
 
     def json = data as JSON
-    log.debug (json)
+    // log.debug (json)
     render json
     //    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }

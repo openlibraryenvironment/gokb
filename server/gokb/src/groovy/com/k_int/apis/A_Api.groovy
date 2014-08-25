@@ -26,6 +26,9 @@ import org.springframework.context.ApplicationContext
  * i.e. public myMethod(T instance, String foo) would add the method myMethod(String foo) to the target.
  */
 abstract class A_Api <T> {
+
+  static String NO_ARGS_METHOD = 'NO_ARGS_METHOD'
+
   protected static final Set<String> EXCLUDES = AbstractGormApi.EXCLUDES + [
     // Extend the list with any that aren't caught here.
   ]
@@ -94,6 +97,8 @@ abstract class A_Api <T> {
     // The API.
     A_Api api = A_Api.map.get(targetClass).get(apiClass)
 
+    println("Attempt to bind api ${apiClass.name} to targetClass ${targetClass.name}");
+
     // Should we bind this api to this class?
     if (api.applicableFor(targetClass) ) {
 
@@ -107,31 +112,77 @@ abstract class A_Api <T> {
 
           if (!Modifier.isStatic(mods)) {
 
+
             // Add this method to the target.
             targetClass.metaClass."${m.name}" = { args ->
 
-              List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
+              // Please see coment in static section below - I *think* the same problem will manifest itself for non-static methods
+              // So adding this fix here also
+              // List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
+              // Array list lets us add null entries for calls like f(null) - OBV this is usually going to be an error, but we need the actual function f
+              // to encounter the null and throw the exception rather than bombing out here
+              ArrayList the_args = new ArrayList()
+
+              if ( args.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!  
+              }
+              else {
+                if ( args instanceof Collection )
+                  the_args.addAll(args);
+                else
+                  the_args.add(args);
+              }
+
 
               // Prepend the new value.
               the_args.add(0, delegate)
               api.invokeMethod("${m.name}", the_args.toArray())
             }
           } else {
-            println("Adding static method.. ${m.name} to ${targetClass.name}");
+            // println("Adding static method.. ${m.name} to ${targetClass.name}");
             // Add to the static scope.
-            targetClass.metaClass.static."${m.name}" = { args ->
 
-              List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
+            // II : If the meta method is invoked as f() then args will take the default value NO_ARGS_METHOD and we know thats how it's been called
+            // If the meta method is invoked as f(null) then we get an explicit null in args, and all is well with the world..
+            // targetClass.metaClass.static."${m.name}" = { args = NO_ARGS_METHOD ->
+            targetClass.metaClass.static."${m.name}" = { args = NO_ARGS_METHOD ->
 
-              println("Calling static method ${m.name}.. Target Class was ${targetClass.name} Delegate is ${delegate.class.name}");
+              // List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
+
+              // Think this breaks when a function to call has a single argument, and that argument is passed as null - ie f(null)
+              // essentially creates a the_args with no args
+              // Array list lets us add null entries for calls like f(null) - OBV this is usually going to be an error, but we need the actual function f
+              // to encounter the null and throw the exception rather than bombing out here
+              ArrayList the_args = new ArrayList()
+
+              if ( args?.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!   
+              }
+              else {
+                if ( args instanceof Collection ) {
+                  the_args.addAll(args);
+                }
+                else {
+                  the_args.add(args);
+                }
+              }
+
+              // println("Calling static method ${m.name}.. Target Class was ${targetClass.name} Delegate is ${delegate.class.name}");
 
               // Prepend the new value.
-              the_args.add(0, delegate.class)
-              apiClass.invokeMethod("${m.name}", the_args.toArray())
+              // II : I *think* this is what was intended
+              the_args.add(0, targetClass)
+              // And not this:: the_args.add(0, delegate.class) (which is java.lang.Class in the case where a static is called)
+              def result = apiClass.invokeMethod("${m.name}", the_args.toArray())
+
+              // println("Call completed returning");
+
+              result
             }
           }
         }
       }
+    }
+    else {
+      println("API ${api} is not applicable to ${targetClass.name}");
     }
   }
 
