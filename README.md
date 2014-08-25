@@ -15,11 +15,15 @@ Some screenshots follow
 ![ToDos](https://raw.github.com/k-int/gokb-phase1/dev/images/todos.png)
 ![Welcome](https://raw.github.com/k-int/gokb-phase1/dev/images/welcome.png)
 
-# Phase 1
-## Rules Collection / Refine Extension
+# Development Information
+
+
+
+
 
 * To build the refine extension, 
 ** cd into gokb-phase1/refine/extensions/gokb
+
 * run "ant" with any local overrides for refine installation dir and tomcat for server jars, eg
 ** ant -Drefine.dir=/home/ibbo/google-refine-2.5 -Dserver.dir=/home/ibbo/apache-tomcat
 
