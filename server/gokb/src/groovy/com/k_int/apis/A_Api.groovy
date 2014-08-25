@@ -97,7 +97,7 @@ abstract class A_Api <T> {
     // The API.
     A_Api api = A_Api.map.get(targetClass).get(apiClass)
 
-    println("Attempt to bind api ${apiClass.name} to targetClass ${targetClass.name}");
+    // println("Attempt to bind api ${apiClass.name} to targetClass ${targetClass.name}");
 
     // Should we bind this api to this class?
     if (api.applicableFor(targetClass) ) {

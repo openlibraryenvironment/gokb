@@ -45,6 +45,7 @@ grails.project.dependency.resolution = {
         mavenCentral()
         
         // Custom repo that points to the public nexus repo. Used for elastic search client as there are no "official" ones.
+        mavenRepo "http://repo.spring.io/milestone/"
         mavenRepo "http://projects.k-int.com/nexus-webapp-1.4.0/content/repositories/releases"
 
         // uncomment these (or add new ones) to enable remote dependency resolution from public Maven repositories
@@ -56,8 +57,8 @@ grails.project.dependency.resolution = {
     }
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
-        runtime 'mysql:mysql-connector-java:5.1.30'
-        runtime "postgresql:postgresql:8.3-603.jdbc3"
+        runtime 'mysql:mysql-connector-java:5.1.32'
+        // runtime "postgresql:postgresql:8.3-603.jdbc3"
         // To allow us to un-tgz uploaded data files
         runtime 'org.apache.commons:commons-compress:1.4.1'
         runtime 'org.apache.tika:tika-core:1.4'
