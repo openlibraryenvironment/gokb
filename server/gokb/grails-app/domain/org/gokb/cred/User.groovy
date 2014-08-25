@@ -148,4 +148,8 @@ class User {
     return "${username} / ${displayName?:'No display name'}".toString();
   }
 
+  public String getNiceName() {
+    return "User";
+  }
+
 }
