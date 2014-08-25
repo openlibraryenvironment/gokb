@@ -116,6 +116,8 @@ abstract class A_Api <T> {
             // Add this method to the target.
             targetClass.metaClass."${m.name}" = { args = NO_ARGS_METHOD ->
 
+              // println("dynamic ${m.name} ${args}");
+
               // Please see coment in static section below - I *think* the same problem will manifest itself for non-static methods
               // So adding this fix here also
               // List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
@@ -124,6 +126,7 @@ abstract class A_Api <T> {
               ArrayList the_args = new ArrayList()
 
               if ( args.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!  
+                // println("Dynamic no args..");
               }
               else {
                 if ( args instanceof Collection )
