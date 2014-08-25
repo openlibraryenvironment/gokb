@@ -6,6 +6,7 @@ class UserDetailsFilters {
 
   def springSecurityService
   def aclUtilService
+  def gokbAclService
 
   // grailsApplication.config.appDefaultPrefs
 
@@ -60,6 +61,8 @@ class UserDetailsFilters {
                 session.userPereferences.mainMenuSections.put(d.type.value, current_list)
                 //log.debug("Added new menu section for ${d.type.value}");
               }
+
+              // log.debug(gokbAclService.readAclSilently(d));
 
               // Test permissions(Admin sees all anyway)
               // boolean hasPermission(Authentication authentication, domainObject, Permission… permissions)

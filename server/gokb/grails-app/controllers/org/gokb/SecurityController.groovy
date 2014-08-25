@@ -7,6 +7,11 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid
 import org.springframework.security.acls.domain.PrincipalSid
 import org.springframework.security.acls.model.AccessControlEntry
 import org.springframework.security.acls.model.Permission
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.acls.domain.BasePermission
+import org.springframework.transaction.annotation.Transactional
+
+
 
 class SecurityController {
   
@@ -14,6 +19,7 @@ class SecurityController {
   def springSecurityService
   def gokbAclService
   def aclService
+  def aclUtilService
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -55,10 +61,12 @@ class SecurityController {
   }
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
   def grantPerm() {
     if ( params.id && params.perm && params.recipient) {
       
-      log.debug("Attempt to revoke permission ${params.perm} for role ${params.recipient} on ${params.id}.")
+      log.debug("Attempt to GRANT permission ${params.perm} for role ${params.recipient} on ${params.id}.")
       
       // Read in all the objects identified by our parameters.
       KBDomainInfo domain = genericOIDService.resolveOID(params.id)
@@ -69,15 +77,16 @@ class SecurityController {
       def recipient
       def action
       if (recipient_obj instanceof User) {
-        recipient = recipient_obj.username
+        recipient = recipient_obj.username.toString()
         action = "userPermissions"
       } else {
-        recipient = recipient_obj.authority
+        recipient = new org.springframework.security.acls.domain.GrantedAuthoritySid(recipient_obj.authority.toString())
         action = "rolePermissions"
       }
       
       // Grant the permission.
-      gokbAclService.addPermission(domain, recipient, perm)
+      log.debug("\n\nCall gokbAclService.addPermission ${domain}(${domain.class.name}),${recipient},${perm}");
+      aclUtilService.addPermission domain, recipient, perm
       
       if (request.isAjax()) {
         // Send back to the roles action.

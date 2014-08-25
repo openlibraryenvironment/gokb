@@ -240,7 +240,7 @@ public class HQLBuilder {
                                                          crit.value.toLowerCase() +
                                                          ( ( crit.defn.contextTree.wildcard=='R' || crit.defn.contextTree.wildcard=='B') ? '%' : '')
       default:
-        log.error("Unhandled comparator. crit: ${crit}");
+        log.error("Unhandled comparator '${crit.defn.contextTree.comparator}'. crit: ${crit}");
     }
   }
 

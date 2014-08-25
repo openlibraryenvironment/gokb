@@ -15,7 +15,7 @@ import org.springframework.security.acls.model.Permission
 class GokbAclService extends AclUtilService {
   
   /** Ensure we set as none transactional **/
-  static transactional = false
+  // static transactional = false
   
   def aclLookupStrategy
   
@@ -36,6 +36,7 @@ class GokbAclService extends AclUtilService {
   }
   
   private static Map<Integer, Permission> definedPerms = null
+  
   Map<Integer, Permission> getDefinedPerms () {
     if (!GokbAclService.definedPerms) {
       
@@ -44,9 +45,11 @@ class GokbAclService extends AclUtilService {
       
       // Get all static fields that are of the type Permission
       BasePermission.class.declaredFields.each { Field f ->
+
         
         if (Modifier.isStatic(f.getModifiers()) && Permission.class.isAssignableFrom(f.getType())) {
           
+
           // Get the static Permission.
           Permission p = BasePermission."${f.getName()}"
           
