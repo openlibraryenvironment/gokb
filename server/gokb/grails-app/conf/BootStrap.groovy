@@ -131,14 +131,13 @@ class BootStrap {
 
           acl.entries.each { ent ->
             if ( ent.sid instanceof org.springframework.security.acls.domain.PrincipalSid ) {
-              log.debug("User");
-              log.debug("Processing grant for ${ent.sid.principal} ${ent.permission} ${ent.granting}");
+              log.debug("Processing PRINCIPAL grant for ${ent.sid.principal} ${ent.permission} ${ent.granting}");
               if ( ( ent.permission == ADMINISTRATION ) && ( ent.granting == true) && ( ent.sid.principal == 'admin' ) ) {
                   admin_grant_found = true
               }
             }
             else if ( ent.sid instanceof org.springframework.security.acls.domain.GrantedAuthoritySid ) {
-              log.debug("Processing grant for ${ent.sid.grantedAuthority}");
+              log.debug("Processing AUTHORITY grant for ${ent.sid.grantedAuthority}");
               if ( ent.sid.grantedAuthority == 'ROLE_EDITOR' ) {
                   editor_grant_found = true
               }
@@ -162,8 +161,8 @@ class BootStrap {
         }
         else {
           log.debug("Editor user admin perm NOT found.... GRANT it --- SHOULD NOT BE HERE ---");
-          // aclUtilService.addPermission dcinfo, new org.springframework.security.acls.domain.GrantedAuthoritySid('ROLE_EDITOR'), WRITE
-          // aclUtilService.addPermission dcinfo, new org.springframework.security.acls.domain.GrantedAuthoritySid('ROLE_EDITOR'), READ
+          aclUtilService.addPermission dcinfo, new org.springframework.security.acls.domain.GrantedAuthoritySid('ROLE_EDITOR'), WRITE
+          aclUtilService.addPermission dcinfo, new org.springframework.security.acls.domain.GrantedAuthoritySid('ROLE_EDITOR'), READ
         }
        
       }
