@@ -416,6 +416,7 @@ abstract class KBComponent {
 
   /*
    *  ignore any namespace or type - see if we can find a componenet where a linked identifier has the specified value
+   *  @return LIST of all components with this identifier as a value
    */
   static def lookupByIdentifierValue(String idvalue) {
 
@@ -426,13 +427,14 @@ abstract class KBComponent {
       outgoingCombos {
         and {
           identifier {
-            
+            eq('value', idvalue)
           }
           eq ( 'type', combotype)
         }
       }
     }
 
+    lr
   }
 
   /**

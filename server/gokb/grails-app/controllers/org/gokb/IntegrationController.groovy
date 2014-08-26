@@ -19,30 +19,38 @@ class IntegrationController {
   
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertJsonldOrg() { 
-    log.debug("assertOrg, request.json = ${request.JSON}");
+    // log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[:]
     result.status = true;
 
     try {
 
+      log.debug("Trying to locate component with ID ${request.JSON.'@id'}");
+
       // Try and match on primary ID
-      def located_entries = KBComponent.lookupByIdentifierValue('');
+      // def located_entries = KBComponent.lookupByIdentifierValue('');
      
       // try and match on any same as
-      if ( located_entry == null ) located_entry = null;
+      // if ( located_entry == null ) located_entry = null;
 
       // try and match on name
-      if ( located_entry == null ) located_entry = null;
+      // if ( located_entry == null ) located_entry = null;
 
-      if ( located_entry == null ) {
-        log.debug("No match... create");
-      }
+      // if ( located_entry == null ) {
+      //   log.debug("No match... create");
+      // }
       
 
-   
+      result.status = 'OK'
+    }
+    catch ( Exception e ) {
+      log.error("Problem",e)
+      result.status = 'ERROR'
     }
     finally {
     }
+
+    render result as JSON
   }
 
   /**

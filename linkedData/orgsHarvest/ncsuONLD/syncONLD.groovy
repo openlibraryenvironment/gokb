@@ -35,11 +35,11 @@ import org.apache.http.protocol.*
 
 if ( args.length < 2 ) {
   println("Usage:  groovy ./JuspToBibJson.groovy \"<<base url of service>>\"");
-  println("   eg:  groovy \"file:./ONLD.jsonld\" \"http://localhost:8080/demo/\"");
+  println("   eg:  groovy \"file:./ONLD.jsonld\" \"http://localhost:8080/demo/integration/assertJsonldOrg\"");
   System.exit(0);
 }
 
-println("Client uri is ${args[0]}");
+println("Client uri is ${args[1]}");
 
 def api = new RESTClient(args[1])
 def rest_upload_pass = ""
@@ -68,16 +68,14 @@ def data = new JsonSlurper().parse(apiUrl)
 
 int count = 0
 
-data.'@graph'.each {
-  println "[${count++}] ${it.'@id'}"
+data.'@graph'.each { org ->
+  println "[${count++}] ${org.'@id'} posting..."
+  post(api, org)
 }
-
-print("Got data");
-
 
 def post(h, obj) {
   println("Post...${h}");
-  h.post( path : 'api/uploadBibJson',
+  h.post( // path : 'api/uploadBibJson',
           requestContentType : ContentType.JSON,
           body : obj) { resp, json ->
     println("Result: ${resp}, ${json}");
