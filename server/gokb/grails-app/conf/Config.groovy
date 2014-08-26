@@ -421,6 +421,9 @@ auditLog {
 grails.gorm.default.constraints = {
   '*'(nullable: true, blank:false)
 }
+
+grails.gorm.autoFlush=true
+
 //grails.gorm.failOnError=true
 
 

@@ -35,6 +35,22 @@
 				</tr>
 			</g:each>
 		</table>
+
+
+        <h3>Current Permissions for this domain:</h3>
+        <ul>
+          <g:each in="${acl?.entries}" var="entry">
+            <li>
+              <g:if test="${entry.sid instanceof org.springframework.security.acls.domain.PrincipalSid}">
+                Principal ${entry.sid.principal}
+              </g:if>
+              <g:else>
+                Group ${entry.sid.grantedAuthority}
+              </g:else>
+              ${entry.permission}
+            </li>
+          </g:each>
+        </ul>
 	</div>
 </body>
 </html>

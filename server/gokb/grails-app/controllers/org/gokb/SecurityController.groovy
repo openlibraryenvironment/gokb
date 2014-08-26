@@ -61,8 +61,6 @@ class SecurityController {
   }
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
-  @Transactional
-  @PreAuthorize("hasRole('ROLE_ADMIN')")
   def grantPerm() {
     if ( params.id && params.perm && params.recipient) {
       
@@ -131,8 +129,11 @@ class SecurityController {
           [:]
         }
         
+
+        result.acl = gokbAclService.readAclSilently(domain)
+
         // Now construct a map to hold a role and permission
-        gokbAclService.readAclSilently(domain)?.entries?.each { ent ->
+        result.acl?.entries?.each { ent ->
           def sid = ent.sid
           switch (sid) {
             case PrincipalSid :
