@@ -28,7 +28,13 @@ class IntegrationController {
       log.debug("Trying to locate component with ID ${request.JSON.'@id'}");
 
       // Try and match on primary ID
-      // def located_entries = KBComponent.lookupByIdentifierValue('');
+      def located_entries = KBComponent.lookupByIdentifierValue(request.JSON.'@id'.toString());
+      if ( located_entries?.size() == 1 ) {
+        log.debug("Identified record..");
+      }
+      else {
+        log.debug("Not identified - try sameAs relations");
+      }
      
       // try and match on any same as
       // if ( located_entry == null ) located_entry = null;

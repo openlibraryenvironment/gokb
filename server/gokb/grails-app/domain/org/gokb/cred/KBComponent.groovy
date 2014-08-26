@@ -420,21 +420,22 @@ abstract class KBComponent {
    */
   static def lookupByIdentifierValue(String idvalue) {
 
-    def crit = KBComponent.createCriteria()
-    def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+    def result = []
+
+    def crit = Identifier.createCriteria()
+    // def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
 
     def lr = crit.list {
-      outgoingCombos {
-        and {
-          identifier {
-            eq('value', idvalue)
-          }
-          eq ( 'type', combotype)
-        }
+      eq('value', idvalue)
+    }
+
+    lr?.each { id ->
+      id.identifiedComponents.each { component ->
+        result.add ( component )
       }
     }
 
-    lr
+    result
   }
 
   /**
