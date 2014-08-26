@@ -19,6 +19,7 @@ import static org.springframework.security.acls.domain.BasePermission.ADMINISTRA
 import static org.springframework.security.acls.domain.BasePermission.DELETE
 import static org.springframework.security.acls.domain.BasePermission.READ
 import static org.springframework.security.acls.domain.BasePermission.WRITE
+import static org.springframework.security.acls.domain.BasePermission.CREATE
 
 import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.authentication. UsernamePasswordAuthenticationToken
@@ -94,7 +95,13 @@ class BootStrap {
       grailsApplication.config.apiClasses.each { String className -> 
         // log.debug("Adding methods to ${c.name} from ${className}");
         // Add the api methods.
-        A_Api.addMethods(c, Class.forName(className))
+        if ( c.name.startsWith('org.gokb') ) {
+          log.debug("Adding api methods to ${c.name}");
+          A_Api.addMethods(c, Class.forName(className))
+        }
+        else {
+          log.debug("Skipping ${c.name}");
+        }
       }
     }
   }

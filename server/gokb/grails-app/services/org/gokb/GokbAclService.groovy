@@ -12,12 +12,13 @@ import org.springframework.security.acls.model.ObjectIdentity
 import org.springframework.security.acls.model.Permission
 
 
-class GokbAclService extends AclUtilService {
+class GokbAclService {
   
   /** Ensure we set as none transactional **/
   // static transactional = false
   
   def aclLookupStrategy
+  def objectIdentityRetrievalStrategy
   
   Acl readAclSilently(domainObject) {
     
@@ -38,8 +39,12 @@ class GokbAclService extends AclUtilService {
   private static Map<Integer, Permission> definedPerms = null
   
   Map<Integer, Permission> getDefinedPerms () {
+
+    log.debug("getDefinedPerms");
+
     if (!GokbAclService.definedPerms) {
       
+      log.debug("Creating map of defined perms");
       // Set to a tree map.
       GokbAclService.definedPerms = [:] as TreeMap
       
@@ -52,6 +57,8 @@ class GokbAclService extends AclUtilService {
 
           // Get the static Permission.
           Permission p = BasePermission."${f.getName()}"
+
+          log.debug("Adding mask : ${p.mask} with name ${f.getName()}");
           
           // Base permission.
           GokbAclService.definedPerms[p.mask] = [name: GrailsNameUtils.getNaturalName(f.getName()), inst:p]

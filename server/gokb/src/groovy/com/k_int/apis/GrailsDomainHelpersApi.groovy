@@ -11,7 +11,12 @@ public class GrailsDomainHelpersApi<T> extends A_Api<T> {
     GrailsNameUtils.getNaturalName(getClassName(component))
   }
   
+  /*
+   THIS method was overriding the className property on spring security ACLClass domain object, causing 
+   untold horror. Therefore renamed getComponentClassName.
+  */
   public String getClassName (T component) {
+    println("getClassName(${component.class.name}");
     component.getMetaClass().getTheClass().getName();
   }
   
