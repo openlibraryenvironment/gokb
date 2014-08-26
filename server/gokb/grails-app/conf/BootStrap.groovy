@@ -108,9 +108,6 @@ class BootStrap {
 
   def registerDomainClasses() {
 
-    // Must be logged in to create permissions
-    SCH.context.authentication = new UsernamePasswordAuthenticationToken( 'admin', 'admin', AuthorityUtils.createAuthorityList('ROLE_ADMIN'))
-
     def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
     grailsApplication.domainClasses.each { dc ->
       log.debug("Ensure ${dc.name} has entry in KBDomainInfo table");
@@ -118,64 +115,8 @@ class BootStrap {
       if ( dcinfo == null ) {
         dcinfo = new KBDomainInfo(dcName:dc.clazz.name, displayName:dc.name, type:std_domain_type);
         dcinfo.save(flush:true);
- 
-        // grant the admin user permission to admninster the domain
-        aclUtilService.addPermission dcinfo, 'admin', ADMINISTRATION
-      }
-      else {
-        // See if admin user already has perms...
-        def acl = gokbAclService.readAclSilently(dcinfo)
-
-        // log.debug("got ACL ${acl}");
-
-        boolean admin_grant_found = false;
-        boolean editor_grant_found = false;
-
-        if ( acl != null ) {
-
-          if ( acl.owner instanceof org.springframework.security.acls.domain.PrincipalSid ) {
-          }
-
-          acl.entries.each { ent ->
-            if ( ent.sid instanceof org.springframework.security.acls.domain.PrincipalSid ) {
-              log.debug("Processing PRINCIPAL grant for ${ent.sid.principal} ${ent.permission} ${ent.granting}");
-              if ( ( ent.permission == ADMINISTRATION ) && ( ent.granting == true) && ( ent.sid.principal == 'admin' ) ) {
-                  admin_grant_found = true
-              }
-            }
-            else if ( ent.sid instanceof org.springframework.security.acls.domain.GrantedAuthoritySid ) {
-              log.debug("Processing AUTHORITY grant for ${ent.sid.grantedAuthority}");
-              if ( ent.sid.grantedAuthority == 'ROLE_EDITOR' ) {
-                  editor_grant_found = true
-              }
-            }
-            else {
-              log.debug("unhandled sid type : ${acl?.owner?.class.name}");
-            }
-          }
-        }
-
-        if ( admin_grant_found ) {
-          log.debug("Admin user admin perm found....");
-        }
-        else {
-          log.debug("Admin user admin perm NOT found.... GRANT it");
-          // aclUtilService.addPermission dcinfo, 'admin', ADMINISTRATION
-        }
-
-        if ( editor_grant_found ) {
-          log.debug("Editor user admin perm found....");
-        }
-        else {
-          log.debug("Editor user admin perm NOT found.... GRANT it --- SHOULD NOT BE HERE ---");
-          aclUtilService.addPermission dcinfo, new org.springframework.security.acls.domain.GrantedAuthoritySid('ROLE_EDITOR'), WRITE
-          aclUtilService.addPermission dcinfo, new org.springframework.security.acls.domain.GrantedAuthoritySid('ROLE_EDITOR'), READ
-        }
-       
       }
     }
-
-    SCH.clearContext()
   }
 
   def alterDefaultMetaclass = {
