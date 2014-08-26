@@ -28,24 +28,26 @@ class IntegrationController {
       log.debug("Trying to locate component with ID ${request.JSON.'@id'}");
 
       // Try and match on primary ID
-      def located_entries = KBComponent.lookupByIdentifierValue(request.JSON.'@id'.toString());
+      def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()]);
       if ( located_entries?.size() == 1 ) {
         log.debug("Identified record..");
       }
-      else {
+      else if ( located_entries?.size() == 0 ) {
         log.debug("Not identified - try sameAs relations");
+        located_entries = KBComponent.lookupByIdentifierValue(request.JSON.'@owl:sameAs')
+        if ( located_entries?.size() == 0 ) {
+           log.debug("Failed to match on same-as. Attempting primary name match");
+        }
+        else if ( located_entries?.size() == 1 ) {
+           log.debug("Located identifier");
+        }
+        else {
+          log.error("set of SameAs identifiers locate more that one component");
+        }
       }
-     
-      // try and match on any same as
-      // if ( located_entry == null ) located_entry = null;
-
-      // try and match on name
-      // if ( located_entry == null ) located_entry = null;
-
-      // if ( located_entry == null ) {
-      //   log.debug("No match... create");
-      // }
-      
+      else {
+        log.error("Unique identifier finds multiple components.");
+      }
 
       result.status = 'OK'
     }

@@ -418,7 +418,7 @@ abstract class KBComponent {
    *  ignore any namespace or type - see if we can find a componenet where a linked identifier has the specified value
    *  @return LIST of all components with this identifier as a value
    */
-  static def lookupByIdentifierValue(String idvalue) {
+  static def lookupByIdentifierValue(String[] idvalue) {
 
     def result = []
 
@@ -426,7 +426,11 @@ abstract class KBComponent {
     // def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
 
     def lr = crit.list {
-      eq('value', idvalue)
+      or {
+        idvalue.each {
+          eq('value', it)
+        }
+      }
     }
 
     lr?.each { id ->
