@@ -414,6 +414,26 @@ abstract class KBComponent {
     result
   }
 
+  /*
+   *  ignore any namespace or type - see if we can find a componenet where a linked identifier has the specified value
+   */
+  static def lookupByIdentifierValue(String idvalue) {
+
+    def crit = KBComponent.createCriteria()
+    def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+
+    def lr = crit.list {
+      outgoingCombos {
+        and {
+          identifier {
+            
+          }
+          eq ( 'type', combotype)
+        }
+      }
+    }
+
+  }
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.

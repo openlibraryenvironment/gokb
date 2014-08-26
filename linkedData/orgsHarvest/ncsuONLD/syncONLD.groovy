@@ -25,20 +25,51 @@ import static groovyx.net.http.ContentType.JSON
 import org.apache.http.entity.mime.content.*
 import java.nio.charset.Charset
 import groovy.json.JsonSlurper
+import static groovy.json.JsonOutput.*
+import static groovyx.net.http.ContentType.URLENC
+import groovy.util.slurpersupport.GPathResult
+import org.apache.http.*
+import org.apache.http.protocol.*
 
 
-println("Usage:  groovy ./JuspToBibJson.groovy \"<<base url of service>>\"");
-println("   eg:  groovy ./JuspToBibJson.groovy \"http://localhost:8080/demo/\"");
 
-// println("Client uri is ${args[0]}");
+if ( args.length < 2 ) {
+  println("Usage:  groovy ./JuspToBibJson.groovy \"<<base url of service>>\"");
+  println("   eg:  groovy \"file:./ONLD.jsonld\" \"http://localhost:8080/demo/\"");
+  System.exit(0);
+}
+
+println("Client uri is ${args[0]}");
+
+def api = new RESTClient(args[1])
+def rest_upload_pass = ""
+System.in.withReader {
+  print 'admin pass:'
+  rest_upload_pass = it.readLine()
+}
+
+
+// Add preemtive auth
+api.client.addRequestInterceptor( new HttpRequestInterceptor() {
+  void process(HttpRequest httpRequest, HttpContext httpContext) {
+    String auth = "admin:${rest_upload_pass}"
+    String enc_auth = auth.bytes.encodeBase64().toString()
+      httpRequest.addHeader('Authorization', 'Basic ' + enc_auth);
+    }
+})
+
+
+
 
 // def http = new RESTClient(args[0]);
 // URL apiUrl = new URL('http://www.lib.ncsu.edu/ld/onld/downloads/ONLD.jsonld')
 URL apiUrl = new URL('file:./ONLD.jsonld')
 def data = new JsonSlurper().parse(apiUrl)
 
+int count = 0
+
 data.'@graph'.each {
-  println it.'@id'
+  println "[${count++}] ${it.'@id'}"
 }
 
 print("Got data");
