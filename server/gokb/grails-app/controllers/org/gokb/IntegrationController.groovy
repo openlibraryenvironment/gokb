@@ -25,53 +25,60 @@ class IntegrationController {
     try {
 
       def name = request.JSON.'skos:prefLabel'
-      log.debug("Trying to locate component with ID ${request.JSON.'@id'} name is \"${name}\"");
 
-      // Try and match on primary ID
-      def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()] as String[]);
-      if ( located_entries?.size() == 1 ) {
-        log.debug("Identified record..");
-      }
-      else if ( located_entries?.size() == 0 ) {
-
-        log.debug("Not identified - try sameAs relations");
-
-        if ( request.JSON.'owl:sameAs' != null ) {
-          log.debug("Attempt lookup by sameAs : ${request.JSON.'owl:sameAs' as String[]} ");
-          located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'owl:sameAs') as String[])
+      if ( ( name != null ) && ( name.trim().length() > 0 ) ) {
+  
+        log.debug("Trying to locate component with ID ${request.JSON.'@id'} name is \"${name}\"");
+  
+        // Try and match on primary ID
+        def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()] as String[]);
+        if ( located_entries?.size() == 1 ) {
+          log.debug("Identified record..");
         }
-        else {
-          log.debug("No owl:sameAs entries found");
-        }
-
-        if ( located_entries?.size() == 0 ) {
-          log.debug("Failed to match on same-as. Attempting primary name match");
-          def normname = GOKbTextUtils.normaliseString(name)
-          located_entries = KBComponent.findAllByNormname(normname)
-          if ( located_entries?.size() == 0 ) {
-            log.debug("No match on normalised name ${normname}.. Trying variant names");
-            createJsonLDOrg(request.JSON);
-          }
-          else if ( located_entries?.size() == 1 ) {
-             log.debug("Exact match on normalised name ${normname} - good enough");
+        else if ( located_entries?.size() == 0 ) {
+  
+          log.debug("Not identified - try sameAs relations");
+  
+          if ( request.JSON.'owl:sameAs' != null ) {
+            log.debug("Attempt lookup by sameAs : ${request.JSON.'owl:sameAs' as String[]} ");
+            located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'owl:sameAs') as String[])
           }
           else {
-            log.error("Multiple matches on normalised name... abandon all hope");
+            log.debug("No owl:sameAs entries found");
           }
-
-        }
-        else if ( located_entries?.size() == 1 ) {
-           log.debug("Located identifier");
+  
+          if ( located_entries?.size() == 0 ) {
+            log.debug("Failed to match on same-as. Attempting primary name match");
+            def normname = GOKbTextUtils.normaliseString(name)
+            located_entries = KBComponent.findAllByNormname(normname)
+            if ( located_entries?.size() == 0 ) {
+              log.debug("No match on normalised name ${normname}.. Trying variant names");
+              createJsonLDOrg(request.JSON);
+            }
+            else if ( located_entries?.size() == 1 ) {
+               log.debug("Exact match on normalised name ${normname} - good enough");
+            }
+            else {
+              log.error("Multiple matches on normalised name... abandon all hope");
+            }
+  
+          }
+          else if ( located_entries?.size() == 1 ) {
+             log.debug("Located identifier");
+          }
+          else {
+            log.error("set of SameAs identifiers locate more that one component");
+          }
         }
         else {
-          log.error("set of SameAs identifiers locate more that one component");
+          log.error("Unique identifier finds multiple components.");
         }
+  
+        result.status = 'OK'
       }
       else {
-        log.error("Unique identifier finds multiple components.");
+        log.error("skipping org [ ${request.JSON.'@id'}] due to null name");
       }
-
-      result.status = 'OK'
     }
     catch ( Exception e ) {
       log.error("Problem",e)
