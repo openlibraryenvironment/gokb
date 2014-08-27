@@ -28,13 +28,18 @@ class IntegrationController {
       log.debug("Trying to locate component with ID ${request.JSON.'@id'}");
 
       // Try and match on primary ID
-      def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()]);
+      def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()] as String[]);
       if ( located_entries?.size() == 1 ) {
         log.debug("Identified record..");
       }
       else if ( located_entries?.size() == 0 ) {
+
         log.debug("Not identified - try sameAs relations");
-        located_entries = KBComponent.lookupByIdentifierValue(request.JSON.'@owl:sameAs')
+
+        if ( request.JSON.'@owl:sameAs' != null ) {
+          located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'@owl:sameAs') as String[])
+        }
+
         if ( located_entries?.size() == 0 ) {
            log.debug("Failed to match on same-as. Attempting primary name match");
         }

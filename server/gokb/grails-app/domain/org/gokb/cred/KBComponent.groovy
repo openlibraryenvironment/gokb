@@ -422,20 +422,24 @@ abstract class KBComponent {
 
     def result = []
 
-    def crit = Identifier.createCriteria()
-    // def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+    if ( idvalue != null ) {
+      def crit = Identifier.createCriteria()
+      // def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
 
-    def lr = crit.list {
-      or {
-        idvalue.each {
-          eq('value', it)
+      def lr = crit.list {
+        or {
+          idvalue.each {
+            if ( ( it != null ) && ( it.trim().length() > 0 ) ) {
+              eq('value', it)
+            }
+          }
         }
       }
-    }
 
-    lr?.each { id ->
-      id.identifiedComponents.each { component ->
-        result.add ( component )
+      lr?.each { id ->
+        id.identifiedComponents.each { component ->
+          result.add ( component )
+        }
       }
     }
 

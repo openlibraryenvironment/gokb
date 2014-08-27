@@ -35,7 +35,7 @@ import org.apache.http.protocol.*
 
 if ( args.length < 2 ) {
   println("Usage:  groovy ./JuspToBibJson.groovy \"<<base url of service>>\"");
-  println("   eg:  groovy \"file:./ONLD.jsonld\" \"http://localhost:8080/demo/integration/assertJsonldOrg\"");
+  println("   eg:  groovy \"file:./ONLD.jsonld\" \"http://localhost:8080/gokb/integration/assertJsonldOrg\"");
   System.exit(0);
 }
 
@@ -43,7 +43,7 @@ println("Client uri is ${args[1]}");
 
 def api = new RESTClient(args[1])
 def rest_upload_pass = ""
-System.in.withReader {
+System.in.withReader { it ->
   print 'admin pass:'
   rest_upload_pass = it.readLine()
 }
@@ -73,13 +73,12 @@ data.'@graph'.each { org ->
   post(api, org)
 }
 
-def post(h, obj) {
+public void post(h, obj) {
   println("Post...${h}");
   h.post( // path : 'api/uploadBibJson',
           requestContentType : ContentType.JSON,
           body : obj) { resp, json ->
     println("Result: ${resp}, ${json}");
   }
-
 }
 
