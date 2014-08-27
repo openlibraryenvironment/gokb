@@ -4,8 +4,7 @@ import grails.converters.JSON
 import org.gokb.cred.*
 import grails.plugins.springsecurity.Secured
 import org.gokb.cred.*
-
-
+import org.gokb.GOKbTextUtils
 
 class IntegrationController {
 
@@ -25,7 +24,8 @@ class IntegrationController {
 
     try {
 
-      log.debug("Trying to locate component with ID ${request.JSON.'@id'}");
+      def name = request.JSON.'skos:prefLabel'
+      log.debug("Trying to locate component with ID ${request.JSON.'@id'} name is \"${name}\"");
 
       // Try and match on primary ID
       def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()] as String[]);
@@ -45,7 +45,20 @@ class IntegrationController {
         }
 
         if ( located_entries?.size() == 0 ) {
-           log.debug("Failed to match on same-as. Attempting primary name match");
+          log.debug("Failed to match on same-as. Attempting primary name match");
+          def normname = GOKbTextUtils.normaliseString(name)
+          located_entries = KBComponent.findAllByNormname(normname)
+          if ( located_entries?.size() == 0 ) {
+            log.debug("No match on normalised name ${normname}.. Trying variant names");
+            createJsonLDOrg(request.JSON);
+          }
+          else if ( located_entries?.size() == 1 ) {
+             log.debug("Exact match on normalised name ${normname} - good enough");
+          }
+          else {
+            log.error("Multiple matches on normalised name... abandon all hope");
+          }
+
         }
         else if ( located_entries?.size() == 1 ) {
            log.debug("Located identifier");
@@ -68,6 +81,43 @@ class IntegrationController {
     }
 
     render result as JSON
+  }
+
+  def createJsonLDOrg(ldjsonorg) {
+    log.debug("createJsonLDOrg");
+    //             "@id": "http://www.lib.ncsu.edu/ld/onld/00000134" ,
+    //         "skos:prefLabel": "A.B. Lundequistska Bokhandeln" ,
+    //         "owl:sameAs": [
+    //             "http://viaf.org/viaf/152447102" ,
+    //             "http://isni-url.oclc.nl/isni/0000000102215732" ,
+    //             "http://id.loc.gov/authorities/names/n80148304"
+    //         ] ,
+    def name = request.JSON.'skos:prefLabel'
+    def id = request.JSON.'@id'
+    def new_org = new Org(name:name)
+
+    def primary_identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',id)
+    new_org.ids.add(primary_identifier)
+
+    request.JSON.'owl:sameAs'?.each {  said ->
+      def identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',said)
+      new_org.ids.add(identifier)
+    }
+
+    request.JSON.'skos:altLabel'?.each { al ->
+      println("checking alt label ${al}");
+    }
+
+    if ( request.JSON.'foaf:homepage' != null ) {
+      new_org.homepage = request.JSON.'foaf:homepage'
+    }
+
+    if ( new_org.save(flush:true, failOnError : true) ) {
+      log.debug("Saved ok");
+    }
+    else {
+      log.error("Problem saving new org. ${new_org.errors}");
+    }
   }
 
   /**

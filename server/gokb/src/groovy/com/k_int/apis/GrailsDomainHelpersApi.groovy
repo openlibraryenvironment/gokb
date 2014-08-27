@@ -16,7 +16,6 @@ public class GrailsDomainHelpersApi<T> extends A_Api<T> {
    untold horror. Therefore renamed getComponentClassName.
   */
   public String getClassName (T component) {
-    println("getClassName(${component.class.name}");
     component.getMetaClass().getTheClass().getName();
   }
   

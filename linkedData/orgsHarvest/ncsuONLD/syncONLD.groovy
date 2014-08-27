@@ -34,8 +34,8 @@ import org.apache.http.protocol.*
 
 
 if ( args.length < 2 ) {
-  println("Usage:  groovy ./JuspToBibJson.groovy \"<<base url of service>>\"");
-  println("   eg:  groovy \"file:./ONLD.jsonld\" \"http://localhost:8080/gokb/integration/assertJsonldOrg\"");
+  println("Usage:  groovy ./syncONLD.groovy \"<<URL Of JSONLD file>>\" \"<<base url of service>>\"");
+  println("   eg:  groovy ./syncONLD.groovy \"file:./ONLD.jsonld\" \"http://localhost:8080/gokb/integration/assertJsonldOrg\"");
   System.exit(0);
 }
 
