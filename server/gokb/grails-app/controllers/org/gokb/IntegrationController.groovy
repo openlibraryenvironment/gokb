@@ -36,8 +36,12 @@ class IntegrationController {
 
         log.debug("Not identified - try sameAs relations");
 
-        if ( request.JSON.'@owl:sameAs' != null ) {
-          located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'@owl:sameAs') as String[])
+        if ( request.JSON.'owl:sameAs' != null ) {
+          log.debug("Attempt lookup by sameAs : ${request.JSON.'owl:sameAs' as String[]} ");
+          located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'owl:sameAs') as String[])
+        }
+        else {
+          log.debug("No owl:sameAs entries found");
         }
 
         if ( located_entries?.size() == 0 ) {
