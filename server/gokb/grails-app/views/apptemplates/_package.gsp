@@ -1,4 +1,3 @@
-<g:if test="${d.id == null}">
   <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
@@ -36,6 +35,7 @@
         </g:link>
       </dd>
     </g:if>
+
     <dt>
       <g:annotatedLabel owner="${d}" property="listVerifier">List Verifier</g:annotatedLabel>
     </dt>
@@ -56,10 +56,26 @@
       <g:xEditableRefData owner="${d}" field="editStatus"
         config='KBComponent.EditStatus' />
     </dd>
+
+    <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
+    <dd>
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>Territory</th>
+            </tr>
+          </thead>
+          <tbody>
+            <g:each in="${d.getCombosByPropertyName('territories')}" var="p">
+              <tr>
+                <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
+              </tr>
+            </g:each>
+          </tbody>
+        </table>
+    </dd>
   </dl>
-</g:if>
-<g:else>
-  <div id="content">
+
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
@@ -215,4 +231,3 @@
     <g:render template="componentStatus" contextPath="../apptemplates"
       model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
   </div>
-</g:else>

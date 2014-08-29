@@ -69,6 +69,25 @@
 		</g:manyToOneReferenceTypedown>
 	</dd>
 
+    <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
+    <dd>
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>Territory</th>
+            </tr>
+          </thead>
+          <tbody>
+            <g:each in="${d.getCombosByPropertyName('territories')}" var="p">
+              <tr>
+                <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
+              </tr>
+            </g:each>
+          </tbody>
+        </table>
+    </dd>
+
+
 	<g:if test="${d.id != null}">
 		<dt>
 			<g:annotatedLabel owner="${d}" property="country">Country</g:annotatedLabel>
