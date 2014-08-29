@@ -9,6 +9,8 @@
     <dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
     <dd><g:xEditable class="ipe" owner="${d}" field="email"/></dd>
 
+    <!--
+    Commented out for now - users arent components!!
     <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
     <dd>
         <table class="table table-striped table-bordered">
@@ -26,6 +28,7 @@
           </tbody>
         </table>
     </dd>
+    -->
 
   </dl>
   <div id="content">
