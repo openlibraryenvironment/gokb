@@ -146,6 +146,9 @@ class TitleInstance extends KBComponent {
           combo.toComponent = new_publisher
           addToOutgoingCombos(combo)
         }
+        
+        new_publisher.save()
+        save()
 
         return true
         //        publisher.add(new_publisher)

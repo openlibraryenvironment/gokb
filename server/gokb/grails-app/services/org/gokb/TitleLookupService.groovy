@@ -177,20 +177,23 @@ class TitleLookupService {
       // Has the publisher ever existed in the list against this title.
       if (!orgs.contains(publisher)) {
 
-        // Is a review needed.
-        boolean review = (orgs.size() > 0) && ti.changePublisher (
-            componentLookupService.lookupComponent(publisher_name),
-            true
-            )
+        // First publisher added?
+        boolean not_first = orgs.size() > 0
+        
+        // Added a publisher?
+        boolean added = ti.changePublisher (
+          componentLookupService.lookupComponent(publisher_name),
+          true
+        )
 
-        // Raise a review request.
-        if (review) {
+        // Raise a review request, if needed.
+        if (not_first && added) {
           ReviewRequest.raise(
-              ti,
-              "Added '${publisher.name}' as a publisher on '${ti.name}'.",
-              "Publisher supplied in ingested file is different to any already present on TI.",
-              user
-              )
+            ti,
+            "Added '${publisher.name}' as a publisher on '${ti.name}'.",
+            "Publisher supplied in ingested file is different to any already present on TI.",
+            user
+          )
         }
       }
     }

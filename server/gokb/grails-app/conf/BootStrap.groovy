@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
 import org.gokb.cred.*
+import org.gokb.refine.RefineProject
 import org.gokb.validation.Validation
 import org.gokb.validation.types.*
 
@@ -35,7 +36,13 @@ class BootStrap {
 
   def init = { servletContext ->
 
-    log.debug("Init");
+    log.debug("Init")
+    
+    // Add our custom metaclass methods for all KBComponents.
+    alterDefaultMetaclass()
+    
+    // Add Custom APIs.
+    addCustomApis()
 
     // Add a custom check to see if this is an ajax request.
     HttpServletRequest.metaClass.isAjax = {
@@ -82,12 +89,17 @@ class BootStrap {
     registerDomainClasses()
 
     addValidationRules()
-
-    // Add our custom metaclass methods for all KBComponents.
-    alterDefaultMetaclass();
     
-    // Add Custom APIs.
-    addCustomApis()
+    failAnyIngestingProjects()
+  }
+  
+  private void failAnyIngestingProjects() {
+    log.debug("Failing any projects stuck on Ingesting on server start.");
+    RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
+      
+      it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
+      it.save(flush:true)
+    }
   }
   
   private void addCustomApis() {
