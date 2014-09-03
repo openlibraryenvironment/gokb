@@ -8,8 +8,6 @@ import javax.persistence.Transient
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
-
-import com.k_int.ClassUtils
 import org.hibernate.proxy.HibernateProxy
 
 /**
