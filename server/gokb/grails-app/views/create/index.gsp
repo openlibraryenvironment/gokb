@@ -26,27 +26,34 @@
 	<r:script type="text/javascript">
 
       $('#save-btn').click(function() {
-          $('.editable').editable('submit', {   //call submit
-              url: "${createLink(controller:'create', action: 'process', params:[cls:params.tmpl])}",
-              ajaxOptions: {
-                dataType: 'json' //assuming json response
-              },  
-              success: function(data) {
-                // var msg = 'New user created! Now editables work in regular way.';
-                // $('#msg').addClass('alert-success').removeClass('alert-error').html(msg).show();
-                // $('#save-btn').hide(); 
-                window.location = data.uri;
-              },
-              error: function(data) {
-                var msg = '';
-                if(data.errors) {                //validation error
-                  $.each(data.errors, function(k, v) { msg += k+": "+v+"<br>"; });  
-                } else if(data.responseText) {   //ajax error
-                  msg = data.responseText; 
-                }
-                $('#msg').removeClass('alert-success').addClass('alert-error').html(msg).show();
-              }
-          }); 
+      
+      	// Build a list of params.
+      	var params = {};
+      	$('span.editable').not('.editable-empty').each (function(){
+      		var editable = $(this);
+      		
+      		// Add the parameter to the params object.
+      		params[editable.attr("data-name")] = editable.text();
+      	});
+      	
+      	// Now we have the params let's submit them to the controller.
+      	var jqxhr = $.post( "${createLink(controller:'create', action: 'process', params:[cls:params.tmpl])}", params )
+					.done(function(data) {
+             // var msg = 'New user created! Now editables work in regular way.';
+             // $('#msg').addClass('alert-success').removeClass('alert-error').html(msg).show();
+             // $('#save-btn').hide(); 
+             window.location = data.uri;
+					})
+					.fail(function(data) {
+            var msg = '';
+            if(data.errors) {                //validation error
+              $.each(data.errors, function(k, v) { msg += k+": "+v+"<br>"; });  
+            } else if(data.responseText) {   //ajax error
+              msg = data.responseText; 
+            }
+            $('#msg').removeClass('alert-success').addClass('alert-error').html(msg).show();
+          })
+				;
       });
     </r:script>
 </body>
