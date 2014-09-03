@@ -106,7 +106,8 @@
               <td>
                 <ul>
                   <g:each in="${he.to}" var="ft">
-                    <li><g:if test="${ft != null}">
+                    <li>
+                    	<g:if test="${ft != null}">
                         <g:link controller="resource" action="show"
                           id="${ft.class.name}:${ft.id}">
                           ${ft.name}
@@ -117,9 +118,10 @@
                         <em>To</em>
                         <g:formatDate
                           format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedTo}" /> ) </li>
-                    </g:if>
-                    <g:else>From title not present</g:else>
+                          date="${ft.publishedTo}" /> )
+	                    </g:if>
+	                    <g:else>From title not present</g:else>
+                    </li>
                   </g:each>
                 </ul>
               </td>
@@ -271,7 +273,7 @@
             action="createTitleHistoryEvent">
             <dt>
               Titles
-              </td>
+              </dt>
             <dd>
               <table>
                 <tr>
