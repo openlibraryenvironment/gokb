@@ -47,7 +47,7 @@
             <span class="icon-bar"></span>
             <span  class="icon-bar"></span>
         </button>
-        <g:link controller="home" action="index" class="navbar-brand">
+        <g:link uri="/" class="navbar-brand">
           GOKb v<g:meta name="app.version" />
         </g:link>
       </div>
