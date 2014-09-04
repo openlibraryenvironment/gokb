@@ -7,6 +7,8 @@ import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 import org.grails.datastore.gorm.AbstractGormApi
 import org.springframework.context.ApplicationContext
+import groovy.util.logging.Log4j
+
 
 /**
  * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
@@ -25,6 +27,7 @@ import org.springframework.context.ApplicationContext
  * 
  * i.e. public myMethod(T instance, String foo) would add the method myMethod(String foo) to the target.
  */
+@Log4j
 abstract class A_Api <T> {
 
   static String NO_ARGS_METHOD = 'NO_ARGS_METHOD'
@@ -101,6 +104,7 @@ abstract class A_Api <T> {
 
     // Should we bind this api to this class?
     if (api.applicableFor(targetClass) ) {
+      log.debug("Adding ${api.class.name} methods to ${targetClass.name}");
 
       apiClass.getDeclaredMethods().each { Method m ->
         // println("processing declared method ${m}");
@@ -185,7 +189,7 @@ abstract class A_Api <T> {
       }
     }
     else {
-      println("API ${api} is not applicable to ${targetClass.name}");
+      log.debug("Skipping ${targetClass.name} for ${api.class}");
     }
   }
 

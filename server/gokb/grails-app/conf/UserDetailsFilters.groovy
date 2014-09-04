@@ -46,6 +46,9 @@ class UserDetailsFilters {
             // Step 1 : List all domains available to this user order by type, grouped into type
             
             def domains = KBDomainInfo.createCriteria().list {
+              
+              ilike ('dcName', 'org.gokb.cred%')
+              
               createAlias ("type", "menueType")
               
               order ('menueType.sortKey')
@@ -62,14 +65,13 @@ class UserDetailsFilters {
                 //log.debug("Added new menu section for ${d.type.value}");
               }
 
-              // log.debug(gokbAclService.readAclSilently(d));
-
-              // Test permissions(Admin sees all anyway)
+              // Get the target class.
+              Class tc = Class.forName(d.dcName)
+              
               // boolean hasPermission(Authentication authentication, domainObject, Permission… permissions)
-              if ( ( aclUtilService.hasPermission(SCH.context.authentication, d, org.springframework.security.acls.domain.BasePermission.READ ) ) ||
-                   ( SpringSecurityUtils.ifAnyGranted('ROLE_ADMIN') ) ) {
+              if ( tc.isReadable() ) {
  
-              // Find any searches for that domain that the user has access to and add them to the menu section
+                // Find any searches for that domain that the user has access to and add them to the menu section
                 def searches_for_this_domain = grailsApplication.config.globalSearchTemplates.findAll{it.value.baseclass==d.dcName}
                 searches_for_this_domain.each {
                   //log.debug("Adding search for ${it.key} - ${it.value.baseclass}");
@@ -77,9 +79,8 @@ class UserDetailsFilters {
                 }
               }
 
-            
-              if ( ( aclUtilService.hasPermission(SCH.context.authentication, d, org.springframework.security.acls.domain.BasePermission.CREATE ) ) ||
-                   ( SpringSecurityUtils.ifAnyGranted('ROLE_ADMIN') ) ) {
+              // Add if creatable.
+              if ( tc.isCreatable() ) {
                 session.userPereferences.createMenu.add(d);
               }
             }
