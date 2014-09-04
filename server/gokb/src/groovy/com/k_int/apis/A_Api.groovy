@@ -1,5 +1,7 @@
 package com.k_int.apis
 
+import groovy.util.logging.Log4j
+
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
@@ -7,7 +9,6 @@ import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 import org.grails.datastore.gorm.AbstractGormApi
 import org.springframework.context.ApplicationContext
-import groovy.util.logging.Log4j
 
 
 /**
@@ -109,40 +110,60 @@ abstract class A_Api <T> {
       apiClass.getDeclaredMethods().each { Method m ->
         // println("processing declared method ${m}");
         def mods = m.getModifiers()
-        def pTypes = m.getParameterTypes()
 
         if (!m.isSynthetic() && Modifier.isPublic(mods) && !EXCLUDES.contains(m.name)) {
           // println("Inside2");
+          Class<?>[] pTypes = m.getParameterTypes()
+          if (pTypes.length > 0) {
+            pTypes = Arrays.copyOfRange(pTypes, 1, pTypes.length)
+          }
 
           if (!Modifier.isStatic(mods)) {
-
-
-            // Add this method to the target.
-            targetClass.metaClass."${m.name}" = { args = NO_ARGS_METHOD ->
-
-              // println("dynamic ${m.name} ${args}");
-
-              // Please see coment in static section below - I *think* the same problem will manifest itself for non-static methods
-              // So adding this fix here also
-              // List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
-              // Array list lets us add null entries for calls like f(null) - OBV this is usually going to be an error, but we need the actual function f
-              // to encounter the null and throw the exception rather than bombing out here
-              ArrayList the_args = new ArrayList()
-
-              if ( args.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!  
-                // println("Dynamic no args..");
+            
+            // See if we can already find a match for this method.
+            def existing = targetClass.metaClass.methods.find { MetaMethod meth ->
+              meth.getName() == "${m.name}" &&
+              !meth.isStatic() &&
+              meth.isValidMethod(pTypes)
+            }
+            
+            if (!existing) {
+            
+              // Add this method to the target.
+              targetClass.metaClass."${m.name}" << { args = NO_ARGS_METHOD ->
+  
+                // println("dynamic ${m.name} ${args}");
+  
+                // Please see coment in static section below - I *think* the same problem will manifest itself for non-static methods
+                // So adding this fix here also
+                // List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
+                // Array list lets us add null entries for calls like f(null) - OBV this is usually going to be an error, but we need the actual function f
+                // to encounter the null and throw the exception rather than bombing out here
+                ArrayList the_args = new ArrayList()
+  
+                if ( args.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!
+                  // println("Dynamic no args..");
+                }
+                else {
+                  if ( args instanceof Collection )
+                    the_args.addAll(args);
+                  else
+                    the_args.add(args);
+                }
+  
+                // First check to see if there is an original method defined.
+                // if there is then we should use that instead.
+                if (delegate.respondsTo("${m.name}", the_args.toArray())) {
+                  // The element
+                }
+  
+  
+                // Prepend the new value.
+                the_args.add(0, delegate)
+                api.invokeMethod("${m.name}", the_args.toArray())
               }
-              else {
-                if ( args instanceof Collection )
-                  the_args.addAll(args);
-                else
-                  the_args.add(args);
-              }
-
-
-              // Prepend the new value.
-              the_args.add(0, delegate)
-              api.invokeMethod("${m.name}", the_args.toArray())
+            } else {
+              log.debug("Skipping ${m.name} on ${targetClass.name}, allready declared.") 
             }
           } else {
             // println("Adding static method.. ${m.name} to ${targetClass.name}");
@@ -151,38 +172,49 @@ abstract class A_Api <T> {
             // II : If the meta method is invoked as f() then args will take the default value NO_ARGS_METHOD and we know thats how it's been called
             // If the meta method is invoked as f(null) then we get an explicit null in args, and all is well with the world..
             // targetClass.metaClass.static."${m.name}" = { args = NO_ARGS_METHOD ->
-            targetClass.metaClass.static."${m.name}" = { args = NO_ARGS_METHOD ->
-
-              // List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
-
-              // Think this breaks when a function to call has a single argument, and that argument is passed as null - ie f(null)
-              // essentially creates a the_args with no args
-              // Array list lets us add null entries for calls like f(null) - OBV this is usually going to be an error, but we need the actual function f
-              // to encounter the null and throw the exception rather than bombing out here
-              ArrayList the_args = new ArrayList()
-
-              if ( args?.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!   
-              }
-              else {
-                if ( args instanceof Collection ) {
-                  the_args.addAll(args);
+            // See if we can already find a match for this method.
+            def existing = targetClass.metaClass.methods.find { MetaMethod meth ->
+              meth.getName() == "${m.name}" &&
+              meth.isStatic() &&
+              meth.isValidMethod(pTypes)
+            }
+            
+            if (!existing) {
+              targetClass.metaClass.static."${m.name}" << { args = NO_ARGS_METHOD ->
+  
+                // List the_args = (args != null && !(args instanceof Collection)) ? [args] : (args ?: []) as List
+  
+                // Think this breaks when a function to call has a single argument, and that argument is passed as null - ie f(null)
+                // essentially creates a the_args with no args
+                // Array list lets us add null entries for calls like f(null) - OBV this is usually going to be an error, but we need the actual function f
+                // to encounter the null and throw the exception rather than bombing out here
+                ArrayList the_args = new ArrayList()
+  
+                if ( args?.is(NO_ARGS_METHOD) ) { // no args method - nothing to do!!
                 }
                 else {
-                  the_args.add(args);
+                  if ( args instanceof Collection ) {
+                    the_args.addAll(args);
+                  }
+                  else {
+                    the_args.add(args);
+                  }
                 }
+  
+                // println("Calling static method ${m.name}.. Target Class was ${targetClass.name} Delegate is ${delegate.class.name}");
+  
+                // Prepend the new value.
+                // II : I *think* this is what was intended
+                the_args.add(0, targetClass)
+                // And not this:: the_args.add(0, delegate.class) (which is java.lang.Class in the case where a static is called)
+                def result = apiClass.invokeMethod("${m.name}", the_args.toArray())
+  
+                // println("Call completed returning");
+  
+                result
               }
-
-              // println("Calling static method ${m.name}.. Target Class was ${targetClass.name} Delegate is ${delegate.class.name}");
-
-              // Prepend the new value.
-              // II : I *think* this is what was intended
-              the_args.add(0, targetClass)
-              // And not this:: the_args.add(0, delegate.class) (which is java.lang.Class in the case where a static is called)
-              def result = apiClass.invokeMethod("${m.name}", the_args.toArray())
-
-              // println("Call completed returning");
-
-              result
+            } else {
+              log.debug("Skipping static ${m.name} on ${targetClass.name}, allready declared.") 
             }
           }
         }
