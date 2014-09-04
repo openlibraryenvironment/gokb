@@ -7,7 +7,7 @@ class KBDomainInfo {
   RefdataValue type
 
   public String getNiceName() {
-    return "Record Type";
+    return "Domain Info";
   }
 
   static mapping = {
