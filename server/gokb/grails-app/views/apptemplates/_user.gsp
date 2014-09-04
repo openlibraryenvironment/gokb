@@ -9,27 +9,10 @@
     <dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
     <dd><g:xEditable class="ipe" owner="${d}" field="email"/></dd>
 
-    <!--
-    Commented out for now - users arent components!!
     <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
     <dd>
-        <table class="table table-striped table-bordered">
-          <thead>
-            <tr>
-              <th>Territory</th>
-            </tr>
-          </thead>
-          <tbody>
-            <g:each in="${d.getCombosByPropertyName('territories')}" var="p">
-              <tr>
-                <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
-              </tr>
-            </g:each>
-          </tbody>
-        </table>
+       <g:render template="territories" contextPath="../apptemplates" model="${[d:d]}" />
     </dd>
-    -->
-
   </dl>
   <div id="content">
     <ul id="tabs" class="nav nav-tabs">

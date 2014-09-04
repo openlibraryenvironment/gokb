@@ -17,12 +17,13 @@ class User {
   boolean accountExpired
   boolean accountLocked
   boolean passwordExpired
-  Long defaultPageSize = new Long(10);
+  Long defaultPageSize = new Long(10)
+  Set<Territory> territories
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
     
-  static manyByCombo = [
+  static hasMany = [
     territories : Territory
   ]
 

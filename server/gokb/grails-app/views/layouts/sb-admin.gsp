@@ -55,10 +55,12 @@
 
       <sec:ifLoggedIn>
         <ul class="nav navbar-nav navbar-right">
-          <li class="dropdown"><a class="dropdown-toggle"
-            data-toggle="dropdown" href="#"><i class="fa fa-user fa-fw"></i> ${request.user?.displayName ?: request.user?.username}
-              <i class="fa fa-caret-down"></i>
-          </a>
+          <li class="dropdown">
+          	<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            	<i class="fa fa-user fa-fw"></i>
+            	${request.user?.displayName ?: request.user?.username}
+              <i class="fa fa-caret-down fa-fw"></i>
+          	</a>
             <ul class="dropdown-menu dropdown-user">
               <li class="divider"></li>
               <li><g:link controller="profile"><i class="fa fa-user fa-fw"></i>  Profile</g:link></li>
@@ -112,7 +114,7 @@
                       <li class="menu-${secname.toLowerCase()}"><g:link
                           controller="search" action="index"
                           params="${[qbe:'g:'+srch.key]}">
-                          <i class="fa fa-angle-double-right fa-f"></i> ${srch.value.title}
+                          <i class="fa fa-angle-double-right fa-fw"></i> ${srch.value.title}
                         </g:link></li>
                     </g:each>
                   </g:each>
