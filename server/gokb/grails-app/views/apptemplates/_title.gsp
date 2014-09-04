@@ -219,12 +219,14 @@
                         config='KBComponentVariantName.VariantType' /></td>
                     <td><g:xEditableRefData owner="${v}" field="locale"
                         config='KBComponentVariantName.Locale' /></td>
-                    <td><g:if test="${ d.isEditable() }">
+                    <td>
+                    	<g:if test="${ d.isEditable() }">
                         <g:link controller="workflow" action="AuthorizeVariant"
                           id="${v.id}">Make Authorized</g:link>,
                         <g:link controller="workflow"
-                          action="DeleteVariant" id="${v.id}">Delete</g:link></td>
-                    </g:if>
+                          action="DeleteVariant" id="${v.id}" >Delete</g:link>
+                    	</g:if>
+                    </td>
                   </tr>
                 </g:each>
               </tbody>
@@ -296,8 +298,8 @@
                       onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
                     <br />
                   </td>
-                  <td><select name="afterTitles" size="5" multiple
-                    class="input-xxlarge" style="width: 500px;"></td>
+                  <td><select name="afterTitles" size="5" multiple="multiple"
+                    class="input-xxlarge" style="width: 500px;" ></select></td>
                 </tr>
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
