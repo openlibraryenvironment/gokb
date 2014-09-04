@@ -126,7 +126,7 @@
                 </ul>
               </td>
               <td><g:link controller="workflow"
-                  action="DeleteTitleHistoryEvent" id="${he.id}">Delete</g:link></td>
+                  action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${he.id}">Delete</g:link></td>
             </tr>
           </g:each>
         </tbody>
@@ -224,6 +224,7 @@
                         <g:link controller="workflow" action="AuthorizeVariant"
                           id="${v.id}">Make Authorized</g:link>,
                         <g:link controller="workflow"
+                        	class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
                           action="DeleteVariant" id="${v.id}" >Delete</g:link>
                     	</g:if>
                     </td>

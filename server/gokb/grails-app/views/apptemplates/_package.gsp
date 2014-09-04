@@ -161,6 +161,7 @@
                         <td><g:link controller="workflow"
                             action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
                           <g:link controller="workflow" action="DeleteVariant"
+                          	class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
                             id="${v.id}">Delete</g:link></td>
                       </tr>
                     </g:each>
