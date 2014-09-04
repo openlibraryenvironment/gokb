@@ -10,7 +10,7 @@ public class GrailsDomainHelpersApi<T> extends A_Api<T> {
   public String getNiceName (T component) {
     GrailsNameUtils.getNaturalName(getClassName(component))
   }
-  
+
   /*
    THIS method was overriding the className property on spring security ACLClass domain object, causing 
    untold horror. Therefore renamed getComponentClassName.

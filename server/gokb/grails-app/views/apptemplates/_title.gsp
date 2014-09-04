@@ -346,7 +346,7 @@
             <g:each in="${d.tipps}" var="tipp">
               <tr>
                 <td><g:link controller="resource" action="show"
-                    id="${tipp.getClassName()+':'+tipp.id}">
+                    id="${tipp.deproxy().getClassName()+':'+tipp.id}">
                     ${tipp.id}
                   </g:link></td>
                 <td>
