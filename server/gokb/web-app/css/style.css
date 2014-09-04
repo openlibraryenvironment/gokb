@@ -147,19 +147,41 @@ h1.panel-title {
 	font-size: 1.75em;
 }
 
+.sidebar li.active a:link,
+.sidebar li.active a:visited {
+	color:#00526E;
+	background-color:#FFF;
+}
+
+.sidebar li.active .nav-second-level a:link,
+.sidebar li.active .nav-second-level a:visited {
+	background-color:#333333;
+}
+
+.sidebar li.active .nav-second-level a:active,
+.sidebar li.active .nav-second-level a:hover,
+.sidebar li.active .nav-second-level a:focus {
+	background-color:#EEE;
+}
+
 .sidebar li a:link,
 .sidebar .nav-second-level li a:link,
+.sidebar li.active .nav-second-level li a:link,
 .sidebar li a:visited,
-.sidebar .nav-second-level li a:visited {
+.sidebar .nav-second-level li a:visited,
+.sidebar li.active .nav-second-level li a:link {
 	color:#FFF;
 }
 
 .sidebar li a:active,
 .sidebar .nav-second-level li a:active,
+.sidebar li.active .nav-second-level li a:active,
 .sidebar li a:hover,
 .sidebar .nav-second-level li a:hover,
+.sidebar li.active .nav-second-level li a:hover,
 .sidebar li a:focus,
-.sidebar .nav-second-level li a:focus  {
+.sidebar .nav-second-level li a:focus,
+.sidebar li.active .nav-second-level li a:focus {
 	color:#00526E;
 }
 

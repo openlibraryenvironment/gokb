@@ -113,7 +113,8 @@
                     <g:each in="${sec}" var="srch">
                       <li class="menu-${secname.toLowerCase()}"><g:link
                           controller="search" action="index"
-                          params="${[qbe:'g:'+srch.key]}">
+                          params="${[qbe:'g:'+srch.key]}"
+                          title="Search ${srch.value.title}">
                           <i class="fa fa-angle-double-right fa-fw"></i> ${srch.value.title}
                         </g:link></li>
                     </g:each>
@@ -124,8 +125,8 @@
                 <ul class="nav nav-second-level">
 
                   <g:each in="${session.userPereferences?.createMenu}" var="d">
-                    <li><g:link controller="create" action="index"
-                      params="${[tmpl:d.dcName]}"><i class="fa fa-angle-double-right fa-fw"></i> Create ${d.displayName}</g:link></li>
+                    <li><g:link controller="create" action="index" title="New ${d.displayName}"
+                      params="${[tmpl:d.dcName]}"><i class="fa fa-angle-double-right fa-fw"></i> ${d.displayName}</g:link></li>
                   </g:each>
 
                 </ul> <!-- /.nav-second-level --></li>
