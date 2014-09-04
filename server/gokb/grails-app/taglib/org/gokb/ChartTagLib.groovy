@@ -2,7 +2,6 @@ package org.gokb
 
 import grails.converters.JSON
 import grails.util.GrailsNameUtils
-import groovy.json.JsonBuilder
 
 class ChartTagLib {
   static namespace = 'gokb'
