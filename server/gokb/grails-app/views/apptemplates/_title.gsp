@@ -350,21 +350,21 @@
           <tbody>
             <g:each in="${d.tipps}" var="tipp">
               <tr>
-                <td><g:link controller="resource" action="show"
-                    id="${tipp.getClassName()+':'+tipp.id}">
+                <td><g:if test="${tipp != null}"><g:link controller="resource" action="show"
+                    id="${tipp?.getClassName()+':'+tipp.id}">
                     ${tipp.id}
-                  </g:link></td>
+                  </g:link></g:if><g:else>ERROR</g:else></td>
                 <td>
                   ${tipp.status?.value}
                 </td>
-                <td><g:link controller="resource" action="show"
-                    id="${tipp.pkg.getClassName()+':'+tipp.pkg.id}">
+                <td><g:if test="${tipp.pkg != null}"><g:link controller="resource" action="show"
+                    id="${tipp.pkg?.getClassName()+':'+tipp.pkg.id}">
                     ${tipp.pkg.name}
-                  </g:link></td>
-                <td><g:link controller="resource" action="show"
-                    id="${tipp.hostPlatform.getClassName()+':'+tipp.hostPlatform.id}">
+                  </g:link></g:if><g:else>ERROR</g:else></td>
+                <td><g:if test="${tipp.hostPlatform != null}"><g:link controller="resource" action="show"
+                    id="${tipp.hostPlatform?.getClassName()+':'+tipp.hostPlatform.id}">
                     ${tipp.hostPlatform.name}
-                  </g:link></td>
+                  </g:link></g:if><g:else>ERROR: hostPlatform is null</g:else></td>
                 <td>Date: <g:formatDate
                     format="${session.sessionPreferences?.globalDateFormat}"
                     date="${tipp.startDate}" /><br /> Volume: ${tipp.startVolume}<br />
