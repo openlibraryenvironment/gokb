@@ -53,8 +53,7 @@
     <g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditable class="ipe" owner="${d}" type="date"
-      field="publishedFrom" />
+    <g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom" />
   </dd>
 
   <dt>
