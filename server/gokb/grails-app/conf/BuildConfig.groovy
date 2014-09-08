@@ -73,6 +73,7 @@ grails.project.dependency.resolution = {
       
       
       /* Grails 2.4 Upgrade */
+<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
       // build ':tomcat:7.0.52.1' // plugins for the compile step compile
       build ':tomcat:7.0.54' // plugins for the compile step compile
       
@@ -99,11 +100,36 @@ grails.project.dependency.resolution = {
       
       /*************************************/
       
+=======
+      build ':tomcat:7.0.52.1' // plugins for the compile step compile
+      
+      // plugins for the compile step
+//      compile ':scaffolding:2.1.0'
+      compile ':cache:1.1.3'
+      
+//      compile ":spring-security-core:2.0-RC4"
+//      compile ":spring-security-acl:2.0-RC1"
+//      compile ":spring-security-ui:1.0-RC2"
+      
+//      compile ':asset-pipeline:1.8.3'
+      runtime ':hibernate:3.6.10.14'
+      runtime ':database-migration:1.4.0'
+      runtime ":resources:1.2.8"
+      
+      /*************************************/
+      
+//      runtime ':hibernate:3.6.10.2'
+>>>>>>> 55b3c3c Upgraded some dependencies.
       runtime ":jquery:1.8.3"
       runtime ':jquery-ui:1.8.24'
+<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
       
 //      runtime ":resources:1.2"
 //      runtime ':gsp-resources:0.4.4'
+=======
+//      runtime ":resources:1.2"
+      runtime ':gsp-resources:0.4.4'
+>>>>>>> 55b3c3c Upgraded some dependencies.
 
       // Uncomment these (or add new ones) to enable additional resources capabilities
       //runtime ":zipped-resources:1.0"
@@ -111,10 +137,19 @@ grails.project.dependency.resolution = {
       //runtime ":yui-minify-resources:0.1.4"
 
       build ':tomcat:7.0.54'
+<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
+=======
+//      build ':tomcat:7.0.40.1'
+>>>>>>> 55b3c3c Upgraded some dependencies.
       
       runtime ":database-migration:1.4.0"
+<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
+=======
+//      runtime ":database-migration:1.3.3"
+>>>>>>> 55b3c3c Upgraded some dependencies.
       
       compile ':cache:1.1.3'
+//      compile ':cache:1.0.1'
 	
     	// Joda time to handle the ISO dates.
     	compile ":joda-time:1.4"
@@ -142,5 +177,6 @@ grails.project.dependency.resolution = {
       compile ':famfamfam:1.0.1'
       compile ':rest:0.7'
       compile ":twitter-bootstrap:3.2.0.2"
+      // compile ":twitter-bootstrap:3.2.1"
     }
 }
