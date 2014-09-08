@@ -69,6 +69,12 @@
 		</g:manyToOneReferenceTypedown>
 	</dd>
 
+  <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
+  <dd>
+     <g:render template="territories" contextPath="../apptemplates" model="${[d:d]}" />
+  </dd>
+
+
 	<g:if test="${d.id != null}">
 		<dt>
 			<g:annotatedLabel owner="${d}" property="country">Country</g:annotatedLabel>

@@ -1,4 +1,3 @@
-<g:if test="${d.id == null}">
   <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
@@ -36,6 +35,7 @@
         </g:link>
       </dd>
     </g:if>
+
     <dt>
       <g:annotatedLabel owner="${d}" property="listVerifier">List Verifier</g:annotatedLabel>
     </dt>
@@ -56,10 +56,13 @@
       <g:xEditableRefData owner="${d}" field="editStatus"
         config='KBComponent.EditStatus' />
     </dd>
+
+    <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
+    <dd>
+       <g:render template="territories" contextPath="../apptemplates" model="${[d:d]}" />
+    </dd>
   </dl>
-</g:if>
-<g:else>
-  <div id="content">
+
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
@@ -158,6 +161,7 @@
                         <td><g:link controller="workflow"
                             action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
                           <g:link controller="workflow" action="DeleteVariant"
+                          	class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
                             id="${v.id}">Delete</g:link></td>
                       </tr>
                     </g:each>
@@ -215,4 +219,3 @@
     <g:render template="componentStatus" contextPath="../apptemplates"
       model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
   </div>
-</g:else>

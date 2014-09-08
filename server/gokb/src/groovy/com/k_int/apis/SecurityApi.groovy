@@ -3,6 +3,7 @@ package com.k_int.apis
 import org.gokb.cred.KBDomainInfo
 import org.springframework.security.acls.model.Permission
 import org.springframework.security.core.context.SecurityContextHolder as SECCH
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 
 /** 
  * <p>API class to add meta-methods associated with Security.</p>
@@ -29,8 +30,7 @@ class SecurityApi <T> extends A_Api<T> {
   }
   
   public static boolean isCreatable (Class<T> clazz, boolean defaultTo = true) {
-    boolean result = hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
-    result
+    hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
   }
   
   public static boolean isReadable (Class<T> clazz, boolean defaultTo = true) {
@@ -95,6 +95,10 @@ class SecurityApi <T> extends A_Api<T> {
   }
   
   public static boolean hasPermission(Class<T> clazz, Permission p, boolean defaultTo = true) {
+    
+    // Super users can do everything...
+    if (SpringSecurityUtils.ifAnyGranted('ROLE_SUPERUSER')) return true
+    
     def domain_record_info = KBDomainInfo.findByDcName(clazz.name)
 
     if (domain_record_info) {

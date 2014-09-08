@@ -106,7 +106,8 @@
               <td>
                 <ul>
                   <g:each in="${he.to}" var="ft">
-                    <li><g:if test="${ft != null}">
+                    <li>
+                    	<g:if test="${ft != null}">
                         <g:link controller="resource" action="show"
                           id="${ft.class.name}:${ft.id}">
                           ${ft.name}
@@ -117,14 +118,15 @@
                         <em>To</em>
                         <g:formatDate
                           format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedTo}" /> ) </li>
-                    </g:if>
-                    <g:else>From title not present</g:else>
+                          date="${ft.publishedTo}" /> )
+	                    </g:if>
+	                    <g:else>From title not present</g:else>
+                    </li>
                   </g:each>
                 </ul>
               </td>
               <td><g:link controller="workflow"
-                  action="DeleteTitleHistoryEvent" id="${he.id}">Delete</g:link></td>
+                  action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${he.id}">Delete</g:link></td>
             </tr>
           </g:each>
         </tbody>
@@ -217,12 +219,15 @@
                         config='KBComponentVariantName.VariantType' /></td>
                     <td><g:xEditableRefData owner="${v}" field="locale"
                         config='KBComponentVariantName.Locale' /></td>
-                    <td><g:if test="${ d.isEditable() }">
+                    <td>
+                    	<g:if test="${ d.isEditable() }">
                         <g:link controller="workflow" action="AuthorizeVariant"
                           id="${v.id}">Make Authorized</g:link>,
                         <g:link controller="workflow"
-                          action="DeleteVariant" id="${v.id}">Delete</g:link></td>
-                    </g:if>
+                        	class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
+                          action="DeleteVariant" id="${v.id}" >Delete</g:link>
+                    	</g:if>
+                    </td>
                   </tr>
                 </g:each>
               </tbody>
@@ -271,7 +276,7 @@
             action="createTitleHistoryEvent">
             <dt>
               Titles
-              </td>
+              </dt>
             <dd>
               <table>
                 <tr>
@@ -294,8 +299,8 @@
                       onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
                     <br />
                   </td>
-                  <td><select name="afterTitles" size="5" multiple
-                    class="input-xxlarge" style="width: 500px;"></td>
+                  <td><select name="afterTitles" size="5" multiple="multiple"
+                    class="input-xxlarge" style="width: 500px;" ></select></td>
                 </tr>
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
@@ -345,21 +350,21 @@
           <tbody>
             <g:each in="${d.tipps}" var="tipp">
               <tr>
-                <td><g:link controller="resource" action="show"
-                    id="${tipp.getClassName()+':'+tipp.id}">
+                <td><g:if test="${tipp != null}"><g:link controller="resource" action="show"
+                    id="${tipp?.getClassName()+':'+tipp.id}">
                     ${tipp.id}
-                  </g:link></td>
+                  </g:link></g:if><g:else>ERROR</g:else></td>
                 <td>
                   ${tipp.status?.value}
                 </td>
-                <td><g:link controller="resource" action="show"
-                    id="${tipp.pkg.getClassName()+':'+tipp.pkg.id}">
+                <td><g:if test="${tipp.pkg != null}"><g:link controller="resource" action="show"
+                    id="${tipp.pkg?.getClassName()+':'+tipp.pkg.id}">
                     ${tipp.pkg.name}
-                  </g:link></td>
-                <td><g:link controller="resource" action="show"
-                    id="${tipp.hostPlatform.getClassName()+':'+tipp.hostPlatform.id}">
+                  </g:link></g:if><g:else>ERROR</g:else></td>
+                <td><g:if test="${tipp.hostPlatform != null}"><g:link controller="resource" action="show"
+                    id="${tipp.hostPlatform?.getClassName()+':'+tipp.hostPlatform.id}">
                     ${tipp.hostPlatform.name}
-                  </g:link></td>
+                  </g:link></g:if><g:else>ERROR: hostPlatform is null</g:else></td>
                 <td>Date: <g:formatDate
                     format="${session.sessionPreferences?.globalDateFormat}"
                     date="${tipp.startDate}" /><br /> Volume: ${tipp.startVolume}<br />

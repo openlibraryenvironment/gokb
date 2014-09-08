@@ -8,8 +8,6 @@ import javax.persistence.Transient
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
-
-import com.k_int.ClassUtils
 import org.hibernate.proxy.HibernateProxy
 
 /**
@@ -57,51 +55,53 @@ abstract class KBComponent {
 
   @Transient
   protected void touchAllDependants () {
+    
+    //TODO: SO - This really needs to be reviewed. There must be an easy way to do this without hibernate freaking out. Commenting out for now.
 
     // The update closure.
-    def doUpdate = { obj, Date stamp ->
-
-      try {
-
-        def saveParams = [failOnError:true, "system_save" : (systemComponent)]
-
-        obj.lastUpdated = stamp
-        obj.save(saveParams)
-
-      } catch (Throwable t) {
-
-        // Suppress but log.
-        log.error(t)
-      }
-    }
-
-    if (hasProperty("touchOnUpdate")) {
-
-      // We should also update the object(s).
-      this.touchOnUpdate.each { dep_name ->
-
-        // Get the dependant.
-        def deps = this."${dep_name}"
-
-        if (deps) {
-          if (deps instanceof Map) {
-
-            deps.each { k,obj ->
-              doUpdate(obj, lastUpdated)
-            }
-
-          } else if (deps instanceof Iterable) {
-
-            deps.each { obj ->
-              doUpdate(obj, lastUpdated)
-            }
-
-          } else if (grailsApplication.isDomainClass(deps.class)) {
-            doUpdate(deps, lastUpdated)
-          }
-        }
-      }
-    }
+//    def doUpdate = { obj, Date stamp ->
+//
+//      try {
+//
+//        def saveParams = [failOnError:true, "system_save" : (systemComponent)]
+//
+//        obj.lastUpdated = stamp
+//        obj.save(saveParams)
+//
+//      } catch (Throwable t) {
+//
+//        // Suppress but log.
+//        log.error(t)
+//      }
+//    }
+//
+//    if (hasProperty("touchOnUpdate")) {
+//
+//      // We should also update the object(s).
+//      this.touchOnUpdate.each { dep_name ->
+//
+//        // Get the dependant.
+//        def deps = this."${dep_name}"
+//
+//        if (deps) {
+//          if (deps instanceof Map) {
+//
+//            deps.each { k,obj ->
+//              doUpdate(obj, lastUpdated)
+//            }
+//
+//          } else if (deps instanceof Iterable) {
+//
+//            deps.each { obj ->
+//              doUpdate(obj, lastUpdated)
+//            }
+//
+//          } else if (grailsApplication.isDomainClass(deps.class)) {
+//            doUpdate(deps, lastUpdated)
+//          }
+//        }
+//      }
+//    }
   }
 
   @Transient

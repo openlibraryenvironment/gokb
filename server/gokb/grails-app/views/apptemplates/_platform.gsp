@@ -32,6 +32,12 @@
 				config='KBComponent.EditStatus' />
 		</dd>
 
+    <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
+    <dd>
+       <g:render template="territories" contextPath="../apptemplates" model="${[d:d]}" />
+    </dd>
+
+
 	</dl>
 
 	<ul id="tabs" class="nav nav-tabs">

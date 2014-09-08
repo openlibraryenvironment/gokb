@@ -48,7 +48,7 @@ class SecurityController {
       }
             
       // Revoke the permission.
-      gokbAclService.deletePermission(domain, recipient, perm)
+      aclUtilService.deletePermission(domain, recipient, perm)
       
       if (request.isAjax()) {
         // Send back to the roles action.

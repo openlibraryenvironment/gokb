@@ -170,7 +170,6 @@ validation.rules = [
 
   // All platforms
   "platform.*.*" : [
-    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
       type: MustMatchRefdataValue,
       severity: A_ValidationRule.SEVERITY_ERROR,

@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
 import org.gokb.cred.*
+import org.gokb.refine.RefineProject
 import org.gokb.validation.Validation
 import org.gokb.validation.types.*
 
@@ -35,7 +36,13 @@ class BootStrap {
 
   def init = { servletContext ->
 
-    log.debug("Init");
+    log.debug("Init")
+    
+    // Add our custom metaclass methods for all KBComponents.
+    alterDefaultMetaclass()
+    
+    // Add Custom APIs.
+    addCustomApis()
 
     // Add a custom check to see if this is an ajax request.
     HttpServletRequest.metaClass.isAjax = {
@@ -48,11 +55,12 @@ class BootStrap {
     def editorRole = Role.findByAuthority('ROLE_EDITOR') ?: new Role(authority: 'ROLE_EDITOR', roleType:'global').save(failOnError: true)
     def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType:'global').save(failOnError: true)
     def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType:'global').save(failOnError: true)
+    def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
 
     log.debug("Create admin user...");
     def adminUser = User.findByUsername('admin')
     if ( ! adminUser ) {
-      log.error("No admin user found, create");
+      log.error("No admin user found, create")
       adminUser = new User(
           username: 'admin',
           password: 'admin',
@@ -61,8 +69,8 @@ class BootStrap {
           enabled: true).save(failOnError: true)
     }
 
-    // Make sure admin user has all the system roles
-    [contributorRole,userRole,editorRole,adminRole,apiRole].each { role ->
+    // Make sure admin user has all the system roles.
+    [contributorRole,userRole,editorRole,adminRole,apiRole,suRole].each { role ->
       if (!adminUser.authorities.contains(role)) {
         UserRole.create adminUser, role
       }
@@ -82,26 +90,34 @@ class BootStrap {
     registerDomainClasses()
 
     addValidationRules()
-
-    // Add our custom metaclass methods for all KBComponents.
-    alterDefaultMetaclass();
     
-    // Add Custom APIs.
-    addCustomApis()
+    failAnyIngestingProjects()
+  }
+  
+  private void failAnyIngestingProjects() {
+    log.debug("Failing any projects stuck on Ingesting on server start.");
+    RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
+      
+      it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
+      it.save(flush:true)
+    }
   }
   
   private void addCustomApis() {
+    
+    log.debug("Extend Domain classes.")
     (grailsApplication.getArtefacts("Domain")*.clazz).each {Class<?> c ->
+      
+      // SO: Changed this to use the APIs 'applicableFor' method that is used to check whether,
+      // to add to the class or not. This defaults to "true". Have overriden on the GrailsDomainHelperApi utils
+      // and moved the selective code there. This means that *ALL* domain classes will still receive the methods in the
+      // SecurityApi.
+      
+      log.debug("Considering ${c}")
       grailsApplication.config.apiClasses.each { String className -> 
         // log.debug("Adding methods to ${c.name} from ${className}");
         // Add the api methods.
-        if ( c.name.startsWith('org.gokb') ) {
-          log.debug("Adding api methods to ${c.name}");
-          A_Api.addMethods(c, Class.forName(className))
-        }
-        else {
-          log.debug("Skipping ${c.name}");
-        }
+        A_Api.addMethods(c, Class.forName(className))
       }
     }
   }
