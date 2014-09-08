@@ -57,6 +57,7 @@ class IntegrationController {
             }
             else if ( located_entries?.size() == 1 ) {
                log.debug("Exact match on normalised name ${normname} - good enough");
+               enrichJsonLDOrf(located_entries[0], request.JSON)
             }
             else {
               log.error("Multiple matches on normalised name... abandon all hope");
@@ -107,12 +108,23 @@ class IntegrationController {
     new_org.ids.add(primary_identifier)
 
     request.JSON.'owl:sameAs'?.each {  said ->
-      def identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',said)
-      new_org.ids.add(identifier)
+   
+      // Double check that this identifier is NOT already used
+      def existing_usage = KBComponent.lookupByIO('global',said)
+      if ( existing_usage == null ) {
+        def identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',said)
+        new_org.ids.add(identifier)
+      }
+      else {
+        log.error("Not adding identifer to a second item...");
+      }
     }
+
+    new_org.save();
 
     request.JSON.'skos:altLabel'?.each { al ->
       println("checking alt label ${al}");
+      new_org.ensureVariantName(al);
     }
 
     if ( request.JSON.'foaf:homepage' != null ) {
@@ -125,6 +137,9 @@ class IntegrationController {
     else {
       log.error("Problem saving new org. ${new_org.errors}");
     }
+  }
+
+  def enrichJsonLDOrf(org, jsonld) {
   }
 
   /**

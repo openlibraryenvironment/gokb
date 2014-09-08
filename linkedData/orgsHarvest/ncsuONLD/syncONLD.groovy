@@ -14,7 +14,6 @@
 ])
 
 
-// Handy library for handling JDBC statements
 import groovyx.net.http.*
 import org.apache.http.entity.mime.*
 import static groovyx.net.http.Method.GET

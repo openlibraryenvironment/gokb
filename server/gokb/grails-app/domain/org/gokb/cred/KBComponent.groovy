@@ -839,4 +839,30 @@ abstract class KBComponent {
 
     hasOp
   }
+
+  @Transient
+  def ensureVariantName(name) {
+
+    def normname = GOKbTextUtils.normaliseString(name)
+
+    // Check that name is not already a name or a variant, if so, add it.
+    def existing_component = KBComponent.findByNormname( normname )
+
+    if ( existing_component == null ) {
+      // not already a name
+      // Make sure not already a variant name
+      def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
+      if ( existing_variants.size() == 0 ) {
+        KBComponentVariantName kvn = new KBComponentVariantName(owner:this, normVariantName:name).save()
+      }
+      else {
+        log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+      }
+
+    }
+    else {
+      log.error("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
+    }
+
+  }
 }

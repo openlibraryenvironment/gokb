@@ -20,7 +20,7 @@ class Identifier extends KBComponent {
   ]
 
   static mappedByCombo = [
-	identifiedComponents  :  'ids',
+    identifiedComponents  :  'ids',
   ]
 
   @Override
