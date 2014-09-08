@@ -70,9 +70,29 @@ grails.project.dependency.resolution = {
 
     plugins {
       
-      runtime ':hibernate:3.6.10.2'
+      
+      /* Grails 2.4 Upgrade */
+      build ':tomcat:7.0.52.1' // plugins for the compile step compile
+      
+      // plugins for the compile step
+//      compile ':scaffolding:2.1.0'
+      compile ':cache:1.1.3'
+      
+//      compile ":spring-security-core:2.0-RC4"
+//      compile ":spring-security-acl:2.0-RC1"
+//      compile ":spring-security-ui:1.0-RC2"
+      
+//      compile ':asset-pipeline:1.8.3'
+      runtime ':hibernate:3.6.10.14'
+      runtime ':database-migration:1.4.0'
+      runtime ":resources:1.2.8"
+      
+      /*************************************/
+      
+//      runtime ':hibernate:3.6.10.2'
       runtime ":jquery:1.8.3"
-      runtime ":resources:1.2"
+      runtime ':jquery-ui:1.8.24'
+//      runtime ":resources:1.2"
       runtime ':gsp-resources:0.4.4'
 
       // Uncomment these (or add new ones) to enable additional resources capabilities
@@ -80,11 +100,12 @@ grails.project.dependency.resolution = {
       //runtime ":cached-resources:1.0"
       //runtime ":yui-minify-resources:0.1.4"
 
-      build ':tomcat:7.0.40.1'
+//      build ':tomcat:7.0.40.1'
+      
 
-      runtime ":database-migration:1.3.3"
+//      runtime ":database-migration:1.3.3"
 
-      compile ':cache:1.0.1'
+//      compile ':cache:1.0.1'
 	
     	// Joda time to handle the ISO dates.
     	compile ":joda-time:1.4"
@@ -92,8 +113,6 @@ grails.project.dependency.resolution = {
       compile ":spring-security-core:1.2.7.3"
       compile ":spring-security-ui:0.2"
       compile ":spring-security-acl:1.1.1"
-
-      compile ":google-visualization:0.7"
 
       compile ':mail:1.0.1', {
          excludes 'spring-test'
@@ -109,9 +128,9 @@ grails.project.dependency.resolution = {
       compile ':audit-logging:0.5.4' // SO: Tried upgrading to 0.5.5.3, but this caused a null pointer to be thrown.
       compile ':executor:0.3'
       compile ':famfamfam:1.0.1'
-      compile ':jquery-ui:1.8.24'
       compile ':rest:0.7'
-      // compile ':twitter-bootstrap:2.3.2'
       compile ":twitter-bootstrap:3.2.1"
+      
+//      compile ':lesscss-resources:1.3.3'
     }
 }
