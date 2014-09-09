@@ -42,9 +42,8 @@ class InplaceTagLib {
     def id = attrs.id ?: "${oid}:${attrs.field}"
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''}\""
-    out << " data-type=\"${attrs.type?:'textarea'}\""
-    if ( oid && ( oid != '' ) ) 
-      out << " data-pk=\"${oid}\""
+    
+    if ( oid && ( oid != '' ) ) out << " data-pk=\"${oid}\""
     out << " data-name=\"${attrs.field}\""
     
     // SO: fix for FF not honouring no-wrap css.
@@ -55,11 +54,25 @@ class InplaceTagLib {
     def data_link = null
     switch ( attrs.type ) {
       case 'date':
-        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date',format:'yyyy/MM/dd'])
+        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date',format:"MM/dd/yyyy"])
+        out << " data-type='combodate' data-format='${attrs."data-format"?:'YYYY-MM-DD'}' data-viewformat='MM/DD/YYYY' data-template='MMM / DD / YYYY'"
+        if (!attrs."data-value") {
+          if (owner[attrs.field]) {
+    
+            // Date format.
+            def sdf = new java.text.SimpleDateFormat(attrs."format"?:'yyyy-MM-dd')
+            attrs."data-value" = sdf.format(owner[attrs.field])
+          } else {
+            attrs."data-value" = ""
+          }
+        }
+        
+        out << " data-value='${attrs.'data-value'}'"
         break;
       case 'string':
       default:
         data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue')
+        out << " data-type=\"${attrs.type?:'textarea'}\""
         break;
     }
 
@@ -70,12 +83,11 @@ class InplaceTagLib {
       out << body()
     }
     else {
-      if ( owner[attrs.field] && attrs.type=='date' ) {
-        def sdf = new java.text.SimpleDateFormat(attrs.format?:'yyyy-MM-dd')
-        out << sdf.format(owner[attrs.field])
-      }
-      else {
+      if (attrs.type!='date' ) {
         out << owner[attrs.field]
+      } else if (owner[attrs.field]){
+        def sdf = new java.text.SimpleDateFormat(attrs."format"?:'MM/dd/yyyy')
+        out << sdf.format(owner[attrs.field])
       }
     }
     out << "</span>"

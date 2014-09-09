@@ -216,6 +216,9 @@ class TitleInstance extends KBComponent {
           tids?.each { tid ->
             builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
           }
+          if ( grailsApplication.config.serverUrl != null ) {
+            builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.TitleInstance:${id}")
+          }
         }
         
         if (thePublisher) {
