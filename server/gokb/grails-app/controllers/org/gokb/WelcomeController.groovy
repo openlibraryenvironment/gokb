@@ -108,7 +108,6 @@ class WelcomeController {
         d.each { String pName, pVal ->
           result."${widget_name}"."${pName}" += pVal
         }
-        
         for ( int i=0; i<12; i++ ) {
           def period_start_date = calendar.getTime()
           calendar.add(Calendar.MONTH, 1)
