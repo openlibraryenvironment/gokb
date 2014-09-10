@@ -82,10 +82,15 @@ grails.project.dependency.resolution = {
 //      compile ":spring-security-acl:2.0-RC1"
 //      compile ":spring-security-ui:1.0-RC2"
       
-//      compile ':asset-pipeline:1.8.3'
+      compile ':asset-pipeline:1.9.9'
+      
+      // Allows the use of groovy code in css and js files by suffixing with '-gtpl'.
+      // Injects grailsApplication and config for easy access in your files.
+      compile ":groovy-template-grails-asset-pipeline:0.4"
+      
       runtime ':hibernate:3.6.10.14'
       runtime ':database-migration:1.4.0'
-      runtime ":resources:1.2.8"
+//      runtime ":resources:1.2.8"
       
       /*************************************/
       
@@ -93,7 +98,7 @@ grails.project.dependency.resolution = {
       runtime ":jquery:1.8.3"
       runtime ':jquery-ui:1.8.24'
 //      runtime ":resources:1.2"
-      runtime ':gsp-resources:0.4.4'
+//      runtime ':gsp-resources:0.4.4'
 
       // Uncomment these (or add new ones) to enable additional resources capabilities
       //runtime ":zipped-resources:1.0"
@@ -119,7 +124,7 @@ grails.project.dependency.resolution = {
       }
       
       // Font awesome for font based icons.
-      compile ":font-awesome-resources:4.1.0.1"
+      compile ":font-awesome-resources:4.2.0.0"
       
       // Job scheduler plugin.
       compile ":quartz:1.0.1"

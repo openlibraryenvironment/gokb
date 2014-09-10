@@ -23,7 +23,7 @@
 		</div>
 	</div>
 
-	<r:script type="text/javascript">
+	<asset:script type="text/javascript">
 
       $('#save-btn').click(function() {
       
@@ -55,6 +55,6 @@
           })
 				;
       });
-    </r:script>
+    </asset:script>
 </body>
 </html>

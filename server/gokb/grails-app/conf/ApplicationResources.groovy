@@ -1,7 +1,6 @@
 modules = {
   application {
     dependsOn 'bootstrap'
-    dependsOn 'bootstrap-popover'
     dependsOn 'font-awesome'
     resource url: 'css/metisMenu.min.css'
     resource url: 'js/metisMenu.min.js'
@@ -10,7 +9,6 @@ modules = {
     resource url: 'css/bootstrap-editable.css'
     resource url:'js/bootbox.min.js'
     resource url:'js/gokb.js'
-    resource url:'js/application.js'
     resource url:'js/inline-content.js'
     resource url:'js/summernote.min.js'
     resource url:'css/summernote.css'

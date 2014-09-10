@@ -2,7 +2,8 @@
 <html>
   <head>
     <meta name="layout" content="sb-admin"/>
-    <r:require modules="gokbstyle"/>
+    <asset:stylesheet src="gokb/application.css"/>
+<asset:javascript src="gokb/application.js" />
     <r:require modules="editable"/>
     <title>GOKb: Title Transfer</title>
   </head>
