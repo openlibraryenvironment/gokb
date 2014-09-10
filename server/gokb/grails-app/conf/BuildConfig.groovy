@@ -72,7 +72,7 @@ grails.project.dependency.resolution = {
       
       
       /* Grails 2.4 Upgrade */
-      build ':tomcat:7.0.52.1' // plugins for the compile step compile
+      build ':tomcat:7.0.54' // plugins for the compile step compile
       
       // plugins for the compile step
 //      compile ':scaffolding:2.1.0'
@@ -99,11 +99,8 @@ grails.project.dependency.resolution = {
       //runtime ":zipped-resources:1.0"
       //runtime ":cached-resources:1.0"
       //runtime ":yui-minify-resources:0.1.4"
-
-      build ':tomcat:7.0.54'
 //      build ':tomcat:7.0.40.1'
-      
-      runtime ":database-migration:1.4.0"
+
 //      runtime ":database-migration:1.3.3"
       
 //      compile ':cache:1.0.1'
