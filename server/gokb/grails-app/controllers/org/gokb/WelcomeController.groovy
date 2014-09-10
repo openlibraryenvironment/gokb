@@ -13,32 +13,27 @@ class WelcomeController {
   def index() { 
 
     // The defaults for these widgets.
-    def result=[:].withDefault {
-      [
-        xkey:'month',
-        hideHover: 'auto',
-        resize: true,
-        
-      ].withDefault {
-        []
-      }
-    }
+    def result=[:].withDefault {[
+      
+      xkey:'month',
+      hideHover: 'auto',
+      resize: true
+      
+    ].withDefault {[]}}
 
     def widgets = [
       'Titles' : [
         'type'      : 'line',
         'datasets'  : [
           [
-            'query'     : 'select count(p.id) as titlesnew from TitleInstance as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
-            'ykey'      : 'titlesnew',
-            'label'     : 'New Titles',
-            'lineColor' : '#FF0000'
-          ],[
-            'query'     : 'select count(p.id) as titlesall from TitleInstance as p where p.dateCreated < :enddate',
-            'ykey'      : 'titlesall',
-            'label'     : 'Total Titles',
-            'lineColor' : '#0000FF'
-          ]
+            'query'     :
+              'select count(p.id) as titlesall, '+
+              'sum(case when p.dateCreated > :startdate then 1 else 0 end) as titlesnew ' +
+              'from TitleInstance as p where p.dateCreated < :enddate',
+            'ykeys'      : ['titlesall', 'titlesnew'],
+            'labels'     : ['Total Titles','New Titles'],
+            'lineColors' : ['#0000FF', '#FF0000']
+          ],
         ]
       ],
       'Organizations' : [
@@ -46,14 +41,14 @@ class WelcomeController {
         'datasets'  : [
           [
             'query'     : 'select count(p.id) as orgsnew from Org as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
-            'ykey'      : 'orgsnew',
-            'label'     : 'New Organizations',
-            'lineColor' : '#FF0000'
+            'ykeys'      : 'orgsnew',
+            'labels'     : 'New Organizations',
+            'lineColors' : '#FF0000'
           ],[
             'query'     : 'select count(p.id) as orgsall from Org as p where p.dateCreated < :enddate',
-            'ykey'      : 'orgsall',
-            'label'     : 'Total Organizations',
-            'lineColor' : '#0000FF'
+            'ykeys'      : 'orgsall',
+            'labels'     : 'Total Organizations',
+            'lineColors' : '#0000FF'
           ]
         ]
       ],
@@ -62,14 +57,14 @@ class WelcomeController {
         'datasets'  : [
           [
             'query'     : 'select count(p.id) as pkgsnew from Package as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
-            'ykey'      : 'pkgsnew',
-            'label'     : 'New Packages',
-            'lineColor' : '#FF0000'
+            'ykeys'      : 'pkgsnew',
+            'labels'     : 'New Packages',
+            'lineColors' : '#FF0000'
           ],[
             'query'     : 'select count(p.id) as pkgsall from Package as p where p.dateCreated < :enddate',
-            'ykey'      : 'pkgsall',
-            'label'     : 'Total Packages',
-            'lineColor' : '#0000FF'
+            'ykeys'      : 'pkgsall',
+            'labels'     : 'Total Packages',
+            'lineColors' : '#0000FF'
           ]
         ]
       ],
@@ -86,7 +81,7 @@ class WelcomeController {
         
       // Widget data.
       def wData = [:].withDefault {
-        [:].withDefault { [] }
+        [:]
       }
       
       // The datasets.
@@ -104,6 +99,11 @@ class WelcomeController {
         calendar.clear();
         calendar.set(Calendar.MONTH, start_month);
         calendar.set(Calendar.YEAR, start_year);
+          
+        // Merge in the singles into their plural container.
+        d.each { String pName, pVal ->
+          result."${widget_name}"."${pName}" += pVal
+        }
         
         for ( int i=0; i<12; i++ ) {
           def period_start_date = calendar.getTime()
@@ -120,14 +120,6 @@ class WelcomeController {
           
           log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}")
           
-          // Merge in the singles into their plural container.
-          d.each { String pName, pVal ->
-            String plural = "${pName}s"
-            if (!result."${widget_name}"."${plural}".contains(pVal)) {
-              result."${widget_name}"."${plural}" << pVal
-            } 
-          }
-          
           // Execute the query directly with Hibernate so we can just get a list of Maps.
           List<Map> qres = sessionFactory.getCurrentSession().createQuery(q).with {
             setProperties(query_params)
@@ -136,15 +128,22 @@ class WelcomeController {
             list()
           }
           
-          // xkey and ykey.
+          // X-axis key and val.
           String xkey = result."${widget_name}"."xkey"
           def xVal = "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
-          String ykey = d."ykey"
           
-          wData."${xVal}" << [
-            "${xkey}" : "${xVal}",
-            "${ykey}" : qres[0]."${ykey}"
+          // Construct an entry for this xValue
+          def entry = [
+            "${xkey}" : "${xVal}"
           ]
+          
+          // Might be multiple Y vals per row.
+          ([] + d."ykeys").each {String ykey ->
+            entry."${ykey}" = qres[0]."${ykey}"
+          }
+          
+          // Add to the data.
+          wData."${xVal}".putAll(entry)
         }
       }
       
