@@ -9,7 +9,6 @@ grails.project.source.level = 1.6
 //grails.project.dependency.resolver = "maven"
 // grails.project.dependency.resolver = "maven"
 
-
 //switch ("${System.getProperty('grails.env')}") {
 //  case "development":
 //    if (new File("/${basedir}/src/templates/war/web_dev.xml").exists()) {
@@ -73,34 +72,6 @@ grails.project.dependency.resolution = {
       
       
       /* Grails 2.4 Upgrade */
-<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
-      // build ':tomcat:7.0.52.1' // plugins for the compile step compile
-      build ':tomcat:7.0.54' // plugins for the compile step compile
-      
-      // plugins for the compile step
-//      compile ':scaffolding:2.1.0'
-      compile ':cache:1.1.3'
-      
-//      compile ":spring-security-core:2.0-RC4"
-//      compile ":spring-security-acl:2.0-RC1"
-//      compile ":spring-security-ui:1.0-RC2"
-      compile ':asset-pipeline:1.9.9'
-      
-      // Allows the use of groovy code in css and js files by suffixing with '-gtpl'.
-      // Injects grailsApplication and config for easy access in your files.
-//      compile ":groovy-template-grails-asset-pipeline:0.4"
-//      compile ":groovy-asset-pipeline:1.2"
-      
-      // LESS compiler
-      compile ":less-asset-pipeline:1.11.0"
-      
-      runtime ':hibernate:3.6.10.16'
-      // runtime ':hibernate:3.6.10.14' - this pukes forme
-      runtime ':database-migration:1.4.0'
-      
-      /*************************************/
-      
-=======
       build ':tomcat:7.0.52.1' // plugins for the compile step compile
       
       // plugins for the compile step
@@ -119,17 +90,10 @@ grails.project.dependency.resolution = {
       /*************************************/
       
 //      runtime ':hibernate:3.6.10.2'
->>>>>>> 55b3c3c Upgraded some dependencies.
       runtime ":jquery:1.8.3"
       runtime ':jquery-ui:1.8.24'
-<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
-      
-//      runtime ":resources:1.2"
-//      runtime ':gsp-resources:0.4.4'
-=======
 //      runtime ":resources:1.2"
       runtime ':gsp-resources:0.4.4'
->>>>>>> 55b3c3c Upgraded some dependencies.
 
       // Uncomment these (or add new ones) to enable additional resources capabilities
       //runtime ":zipped-resources:1.0"
@@ -137,22 +101,16 @@ grails.project.dependency.resolution = {
       //runtime ":yui-minify-resources:0.1.4"
 
       build ':tomcat:7.0.54'
-<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
-=======
 //      build ':tomcat:7.0.40.1'
->>>>>>> 55b3c3c Upgraded some dependencies.
       
       runtime ":database-migration:1.4.0"
-<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
-=======
 //      runtime ":database-migration:1.3.3"
->>>>>>> 55b3c3c Upgraded some dependencies.
       
       compile ':cache:1.1.3'
 //      compile ':cache:1.0.1'
-	
-    	// Joda time to handle the ISO dates.
-    	compile ":joda-time:1.4"
+  
+      // Joda time to handle the ISO dates.
+      compile ":joda-time:1.4"
 
       compile ":spring-security-core:1.2.7.3"
       compile ":spring-security-ui:0.2"
@@ -167,15 +125,13 @@ grails.project.dependency.resolution = {
       
       // Job scheduler plugin.
       compile ":quartz:1.0.1"
-
-      // II: Added.. Groping around in the dark a bit..
-      // compile ":compass-sass:0.7" - OK this causes an exception
       
       /** Moved plugins from the properties file to here **/
       compile ':audit-logging:0.5.4' // SO: Tried upgrading to 0.5.5.3, but this caused a null pointer to be thrown.
       compile ':executor:0.3'
       compile ':famfamfam:1.0.1'
       compile ':rest:0.7'
+      // compile ':twitter-bootstrap:2.3.2'
       compile ":twitter-bootstrap:3.2.0.2"
       // compile ":twitter-bootstrap:3.2.1"
     }

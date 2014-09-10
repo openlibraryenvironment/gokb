@@ -4,8 +4,8 @@
     <meta name="layout" content="main"/>
 
     <asset:stylesheet src="gokb/application.css"/>
-		<asset:javascript src="gokb/application.js" />
-		<asset:javascript src="gokb/jquery.dynatree.min.js" />
+	<asset:javascript src="gokb/application.js" />
+	<asset:javascript src="gokb/jquery.dynatree.min.js" />
 
     <title>GOKb: About</title>
   </head>

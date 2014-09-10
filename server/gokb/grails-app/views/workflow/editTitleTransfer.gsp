@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
 <head>
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
@@ -133,7 +134,7 @@
 							name="abandon" value="abandon">Abandon Transfer</button>
 					</div>
 				</g:if>
-				<g:else>
+			  <g:else>
 	          This activity has been completed.
 	        </g:else>
 			</div>
