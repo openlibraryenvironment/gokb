@@ -7,11 +7,20 @@ class StatsService {
 
   def statsCache = [:]
 
+  // These queries are for summing month on month activity totals - EG # of titles added in 01/2014
   static def month_queries = [
       [ 'titlesCreated', 'select count(p.id) from TitleInstance as p where p.dateCreated > ? and p.dateCreated < ?', 'titleAdditionData' ],
       [ 'packagesCreated', 'select count(p.id) from Package as p where p.dateCreated > ? and p.dateCreated < ?', 'packageAdditionData' ],
       [ 'orgsCreated', 'select count(p.id) from Org as p where p.dateCreated > ? and p.dateCreated < ?', 'orgAdditionData' ],
   ]
+
+  // These queries are for totals over time
+  static def cumulative_total_queries = [
+      [ 'titlesCreated', 'select count(p.id) from TitleInstance as p where p.dateCreated < ?', 'totalTitlesAdditionData' ],
+      [ 'packagesCreated', 'select count(p.id) from Package as p where p.dateCreated < ?', 'totalPackagesAdditionData' ],
+      [ 'orgsCreated', 'select count(p.id) from Org as p where p.dateCreated < ?', 'totalOrgsAdditionData' ],
+  ]
+
 
   def getStats() {
     if ( statsCache == null ) {
@@ -55,6 +64,10 @@ class StatsService {
       month_queries.each { mc ->
         log.debug("Finding ${mc[0]} from ${period_start_date} to ${period_end_date}");
         result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_start_date, period_end_date])[0]])
+      }
+
+      cumulative_total_queries.each { ct ->
+        result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_end_date])[0]])
       }
 
       if ( month == 12 ) {

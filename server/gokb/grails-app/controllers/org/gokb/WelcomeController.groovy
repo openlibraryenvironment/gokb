@@ -22,17 +22,32 @@ class WelcomeController {
 
     def widgets = [
       'New Titles' : [
-        'query'     : 'select count(p.id) from TitleInstance as p where p.dateCreated > ? and p.dateCreated < ?',
+        'query'     : 'select count(p.id) from TitleInstance as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
+        'type'      : 'line',
+        'lineColors': ['#FF0000']
+      ],
+      'Total Titles' : [
+        'query'     : 'select count(p.id) from TitleInstance as p where p.dateCreated < :enddate',
         'type'      : 'line',
         'lineColors': ['#FF0000']
       ],
       'New Orgs' : [
-        'query'   : 'select count(p.id) from Org as p where p.dateCreated > ? and p.dateCreated < ?',
+        'query'   : 'select count(p.id) from Org as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
+        'type'    : 'line',
+        'lineColors': ['#0000FF']
+      ],
+      'Total Orgs' : [
+        'query'   : 'select count(p.id) from Org as p where p.dateCreated < :enddate',
         'type'    : 'line',
         'lineColors': ['#0000FF']
       ],
       'New Packages' : [
-        'query'     : 'select count(p.id) from Package as p where p.dateCreated > ? and p.dateCreated < ?',
+        'query'     : 'select count(p.id) from Package as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
+        'type'      : 'line',
+        'lineColors': ['#00FF00']
+      ],
+      'Total Packages' : [
+        'query'     : 'select count(p.id) from Package as p where p.dateCreated < :enddate',
         'type'      : 'line',
         'lineColors': ['#00FF00']
       ],
@@ -62,11 +77,19 @@ class WelcomeController {
         def period_start_date = calendar.getTime()
         calendar.add(Calendar.MONTH, 1)
         def period_end_date = calendar.getTime()
+
+        def query_params = [:]
+        if ( q.contains(':startdate') ) {
+          query_params.startdate = period_start_date
+        }
+        if ( q.contains(':enddate') ) {
+          query_params.enddate = period_end_date
+        }
         
         log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}");
         result."${widget_name}".data.add([
           'month': "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}",
-          'total': KBComponent.executeQuery(q,[period_start_date, period_end_date])[0]
+          'total': KBComponent.executeQuery(q,query_params)[0]
         ])
       }
     }
