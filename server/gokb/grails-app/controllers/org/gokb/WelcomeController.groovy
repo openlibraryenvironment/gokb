@@ -108,6 +108,10 @@ class WelcomeController {
         d.each { String pName, pVal ->
           result."${widget_name}"."${pName}" += pVal
         }
+<<<<<<< Upstream, based on cleandev
+=======
+        
+>>>>>>> 4ecd77d Many improvements to graph generation. Now each graph can have multiple Y values generated from multiple queries.
         for ( int i=0; i<12; i++ ) {
           def period_start_date = calendar.getTime()
           calendar.add(Calendar.MONTH, 1)
@@ -121,7 +125,11 @@ class WelcomeController {
             query_params.enddate = period_end_date
           }
           
+<<<<<<< Upstream, based on cleandev
           // log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}")
+=======
+          log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}")
+>>>>>>> 4ecd77d Many improvements to graph generation. Now each graph can have multiple Y values generated from multiple queries.
           
           // Execute the query directly with Hibernate so we can just get a list of Maps.
           List<Map> qres = sessionFactory.getCurrentSession().createQuery(q).with {
