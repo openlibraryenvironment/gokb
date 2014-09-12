@@ -5,22 +5,7 @@ window.gokb = {};
 if (typeof jQuery !== 'undefined') {
   (function($) {
 
-    gokb.dialog = function (opts) {
-      var message = opts.message;
-      var buttons = [];
-      if ("buttons" in opts) {    	
-        for (var button in opts.buttons) {
-          
-          // Go through each of the buttons.
-          buttons.push(
-            opts.buttons[button]
-          );
-        }
-      }
-
-      // Create the dialog.
-      return bootbox.dialog(message, buttons, opts);
-    };
+    gokb.dialog = bootbox.dialog;
 
     /**
      * Show a confirmation box.
@@ -43,16 +28,17 @@ if (typeof jQuery !== 'undefined') {
       
       // Add the message.
       var options = {
+        "title"   : "Confirm action",
         "message" : message,
         "buttons" : {
           "Confirm" : {
             "label": confirmText,
-            "class": "btn-success",
+            "className": "btn btn-sm btn-success",
             "callback": confirmCallback
           },
           "No": {
             "label": cancelText,
-            "class": "btn-danger",
+            "className": "btn btn-sm btn-danger",
             "callback": cancelCallback
           }
         }
@@ -112,5 +98,18 @@ if (typeof jQuery !== 'undefined') {
     if (messages.children().length > 0) {
       bootbox.alert("<h2 class='text-error' >Error</h2>" + messages.html());
     }
+    
+    $('#modal').on('show.bs.modal', function () {
+      $(this).find('.modal-body').css({
+             width:'auto', //probably not needed
+             height:'auto', //probably not needed 
+             'max-height':'100%'
+      });
+    });
+    
+    $('#modal').on('hidden.bs.modal', function() {
+      $(this).removeData('bs.modal')
+    })
+    
   })(jQuery);
 }

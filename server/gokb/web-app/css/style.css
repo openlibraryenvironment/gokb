@@ -1,36 +1,203 @@
 /**
- *  Local gokb overrides for bootstrap
+ * Add a couple of classes that will apply to small devices only.
  */
-.navbar-push {
-  clear: both;
-  padding-top: 45px;
+
+/* medium+ screen sizes */
+@media ( min-width :992px) {
+	.desktop-only {
+		display: block !important;
+	}
+}
+
+/* small screen sizes */
+@media ( max-width : 991px) {
+	.mobile-only {
+		display: block !important;
+	}
+	.desktop-only {
+		display: none !important;
+	}
+}
+
+/**
+ *  Local GOKb overrides for bootstrap
+ */
+h1.panel-title {
+	font-size: 2em;
 }
 
 .editable-inline textarea {
-  line-height: 1.2em;
-  height: 1.2em;
-  width: 400px;
-  white-space: nowrap;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  resize:none;
+	line-height: 1.2em;
+	height: 2.4em;
+	white-space: nowrap;
+	overflow-x: hidden;
+	overflow-y: hidden;
+	resize: none;
 }
 
 .dl-horizontal dt {
-  width: 200px;
-  margin-bottom: 10px;
+	width: 200px;
+	margin-bottom: 10px;
 }
 
 .dl-horizontal dd {
-  margin-left: 220px;
-  margin-bottom: 10px;
+	float:left;
+	margin-left: 10px;
+	margin-bottom: 10px;
 }
 
 .tab-content dl {
-  padding: 0 20px 0 20px;
+	padding: 0 20px 0 20px;
 }
 
-/** ALl select checkbox box styles **/
+/** File input **/
+.btn-file {
+  position: relative;
+  overflow: hidden;
+}
+.form-control label{
+	width:100%;
+}
+.btn-file input[type=file] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 100%;
+  min-height: 100%;
+  font-size: 100px;
+  text-align: right;
+  filter: alpha(opacity=0);
+  opacity: 0;
+  outline: none;
+  background: white;
+  cursor: inherit;
+  display: block;
+}
+
+/** All select checkbox box styles **/
 .batch-all-info {
 	text-align: center;
+}
+
+#licsummary .more-info .info {
+	cursor: pointer;
+}
+
+.search-display .navbar {
+	margin-bottom: 0;
+	margin-top: 0;
+}
+
+.search-display .table {
+	margin-bottom: 0;
+	margin-top: 0;
+}
+
+#bulkActionControls {
+	margin-top: 25px;
+}
+
+.page-jump {
+	font-size: 1.2em;
+}
+
+.dropdown-menu-scroll {
+	height: auto;
+	max-height: 400px;
+	overflow-x: hidden;
+}
+
+/** Modal styles **/
+.modal-dialog {
+	width: 800px;
+	margin: auto;
+	max-height: 500px;
+}
+
+.modal-content {
+	position: relative;
+	overflow: auto;
+	padding: 15px;
+}
+
+/** Tabs **/
+.tab-content {
+	border:1px solid #DDD;
+	border-top:0 none;
+	margin-bottom:20px;
+	float:left;
+	width:100%;
+}
+
+.tab-pane {
+	padding:20px;
+}
+
+.nav-tabs {
+	clear:both;
+	padding-left:15px;
+}
+
+#content {
+	clear:right;
+}
+
+/* Security Table */
+.security-table .fa {
+	font-size: 1.75em;
+}
+
+.sidebar li.active a:link,
+.sidebar li.active a:visited {
+	color:#00526E;
+	background-color:#FFF;
+}
+
+.sidebar li.active .nav-second-level a:link,
+.sidebar li.active .nav-second-level a:visited {
+	background-color:#333333;
+}
+
+.sidebar li.active .nav-second-level a:active,
+.sidebar li.active .nav-second-level a:hover,
+.sidebar li.active .nav-second-level a:focus {
+	background-color:#EEE;
+}
+
+.sidebar li a:link,
+.sidebar .nav-second-level li a:link,
+.sidebar li.active .nav-second-level li a:link,
+.sidebar li a:visited,
+.sidebar .nav-second-level li a:visited,
+.sidebar li.active .nav-second-level li a:link {
+	color:#FFF;
+}
+
+.sidebar li a:active,
+.sidebar .nav-second-level li a:active,
+.sidebar li.active .nav-second-level li a:active,
+.sidebar li a:hover,
+.sidebar .nav-second-level li a:hover,
+.sidebar li.active .nav-second-level li a:hover,
+.sidebar li a:focus,
+.sidebar .nav-second-level li a:focus,
+.sidebar li.active .nav-second-level li a:focus {
+	color:#00526E;
+}
+
+.sidebar ul li.divider {
+	/** Copied from .dropdown-menu .divider { **/
+  height: 1px;
+  margin: 9.5px 0;
+  overflow: hidden;
+	background-color:#272727;
+}
+
+.quickview h4 {
+	font-size:1.8em;
+	margin:20px 0 20px 0;
+}
+
+.webhook-form h1{
+	background:transparent url(../images/WebHook.png) right top no-repeat;  
 }

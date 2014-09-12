@@ -7,6 +7,11 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid
 import org.springframework.security.acls.domain.PrincipalSid
 import org.springframework.security.acls.model.AccessControlEntry
 import org.springframework.security.acls.model.Permission
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.acls.domain.BasePermission
+import org.springframework.transaction.annotation.Transactional
+
+
 
 class SecurityController {
   
@@ -14,6 +19,7 @@ class SecurityController {
   def springSecurityService
   def gokbAclService
   def aclService
+  def aclUtilService
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -42,7 +48,7 @@ class SecurityController {
       }
             
       // Revoke the permission.
-      gokbAclService.deletePermission(domain, recipient, perm)
+      aclUtilService.deletePermission(domain, recipient, perm)
       
       if (request.isAjax()) {
         // Send back to the roles action.
@@ -58,7 +64,7 @@ class SecurityController {
   def grantPerm() {
     if ( params.id && params.perm && params.recipient) {
       
-      log.debug("Attempt to revoke permission ${params.perm} for role ${params.recipient} on ${params.id}.")
+      log.debug("Attempt to GRANT permission ${params.perm} for role ${params.recipient} on ${params.id}.")
       
       // Read in all the objects identified by our parameters.
       KBDomainInfo domain = genericOIDService.resolveOID(params.id)
@@ -69,15 +75,16 @@ class SecurityController {
       def recipient
       def action
       if (recipient_obj instanceof User) {
-        recipient = recipient_obj.username
+        recipient = recipient_obj.username.toString()
         action = "userPermissions"
       } else {
-        recipient = recipient_obj.authority
+        recipient = new org.springframework.security.acls.domain.GrantedAuthoritySid(recipient_obj.authority.toString())
         action = "rolePermissions"
       }
       
       // Grant the permission.
-      gokbAclService.addPermission(domain, recipient, perm)
+      log.debug("\n\nCall gokbAclService.addPermission ${domain}(${domain.class.name}),${recipient},${perm}");
+      aclUtilService.addPermission domain, recipient, perm
       
       if (request.isAjax()) {
         // Send back to the roles action.
@@ -122,8 +129,11 @@ class SecurityController {
           [:]
         }
         
+
+        result.acl = gokbAclService.readAclSilently(domain)
+
         // Now construct a map to hold a role and permission
-        gokbAclService.readAclSilently(domain)?.entries?.each { ent ->
+        result.acl?.entries?.each { ent ->
           def sid = ent.sid
           switch (sid) {
             case PrincipalSid :
@@ -245,7 +255,7 @@ class SecurityController {
         result['d'] = user
         
         // Set editable flag. Must be admin user and also prevent editing of own perms.
-        result["editable"] = currentUser.isAdmin() && currentUser != user
+        result["editable"] = user.isAdmin() || (user.isEditable() && currentUser != user)
                 
         // Current roles the user is a member of.
         def currentRoles = user.getAuthorities()

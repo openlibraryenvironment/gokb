@@ -1,6 +1,9 @@
-<h4>Notes ${params.id}</h4>
-<p>
-  <table class="table table-striped table-bordered">
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h3 class="modal-title">Notes ${params.id}</h3>
+</div>
+<div class="modal-body">
+	<table class="table table-striped table-bordered">
     <thead>
       <tr>
         <th>Note ID</th>
@@ -20,7 +23,6 @@
       </g:each>
     </tbody>
   </table>
-
   <hr/>
   <h4>Add a note</h4>
   <dl class="dl-horizontal">
@@ -31,9 +33,10 @@
       <input type="hidden" name="ownerId" value="${ownerId}"/>
       <input type="hidden" name="creator" value="org.gokb.cred.User:${user.id}"/>
       <dt>Note Text</dt><dd><input type="text" name="note"/></dd>
-      <dt></dt><dd><button type="submit" class="btn btn-primary btn-small">Add</button></dd>
+      <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
     </g:form>
   </dl>
-
-</p>
-
+</div>
+<div class="modal-footer">
+	<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+</div>

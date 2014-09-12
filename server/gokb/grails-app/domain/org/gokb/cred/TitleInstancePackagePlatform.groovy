@@ -110,7 +110,6 @@ class TitleInstancePackagePlatform extends KBComponent {
     ]
   }
 
-  @Override
   public String getNiceName() {
 	return "TIPP";
   }

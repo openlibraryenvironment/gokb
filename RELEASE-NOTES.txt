@@ -1,5 +1,1 @@
 
-2.5 dev
-
-Added sort key to refdata_value to allow more control over sorting refdata. Intention is to sort by sortKey, Description by default. Primarily for support of ordering menu options.
-

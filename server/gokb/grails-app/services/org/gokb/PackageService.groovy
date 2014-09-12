@@ -91,9 +91,9 @@ class PackageService {
 
     // Create the criteria.
     getAllProviders().each { Org pr ->
-      Org.withNewSession { Session sess ->
+      Org.withNewSession ({ long prov_id, Session sess ->
         updateMasterFor (pr.id, delta)
-      }
+      }.curry(pr.id))
     }
   }
   
@@ -204,31 +204,25 @@ class PackageService {
         
         log.debug("Query returns ${tipps.size()} tipps");
 
-        int counter = 1
-
-        for (def t in tipps) {
-          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
+        TitleInstancePackagePlatform.withNewSession {
+         
+          int counter = 1
+  
+          for (def t in tipps) {
             
-          // Do we need to update this tipp.
-          if (!delta || (delta && tipp.lastUpdated > delta)) {
-            TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp, master)
-    
-            // Save everything.
-            tipp.save(failOnError:true)
-            mt.save(failOnError:true)
-            master.save(failOnError:true, flush:true)
-
-            mt.discard();
-          } else {
-            log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
+              
+            // Do we need to update this tipp.
+            if (!delta || (delta && tipp.lastUpdated > delta)) {
+              TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp.id, master.id)
+            } else {
+              log.debug ("TIPP ${tipp.id} has not been updated since last run. Skipping.")
+            }
+            log.debug ("TIPP ${counter} of ${tipps.size()} examined.")
+            counter++
+            tipp.discard();
           }
-          log.debug ("TIPP ${counter} of ${tipps.size()} examined.")
-          counter++
-          tipp.discard();
         }
-        
-        // Flush and clear up the session.
-        cleanUpGorm()
       }
       log.debug("Finished updating master package ${master.id}")
     }
@@ -239,7 +233,10 @@ class PackageService {
    * @param master the master package
    * @return the master tipp
    */
-  public TitleInstancePackagePlatform setOrUpdateMasterTippFor (TitleInstancePackagePlatform tipp, Package master) {
+  public TitleInstancePackagePlatform setOrUpdateMasterTippFor (long tipp_id, long master_id) {
+    
+    Package master = Package.get(master_id)
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
     
     // Check the tipp isn't already a master.
     Package pkg = tipp.pkg
@@ -257,10 +254,11 @@ class PackageService {
       log.debug ("No master TIPP associated with this TIPP directly. We should query for one.")
       
       // Now let's try and read an existing tipp from the master package.
-      master_tipp = KBComponent.deproxy( master.getTipps().find {
+      def mtp = master.getTipps().find {
         (it.title == tipp.getTitle()) &&
         (it.hostPlatform == tipp.getHostPlatform())
-      })
+      }
+      master_tipp = (mtp ? KBComponent.deproxy( mtp ) : null)
     }
     
     if (!master_tipp) {

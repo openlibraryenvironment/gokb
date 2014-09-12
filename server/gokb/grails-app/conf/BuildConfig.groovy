@@ -22,6 +22,9 @@ grails.project.source.level = 1.6
 //    break;
 // }
 
+grails.project.dependency.resolver = "maven"
+
+
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
     inherits("global") {
@@ -40,17 +43,22 @@ grails.project.dependency.resolution = {
 
         mavenLocal()
         mavenCentral()
+        
+        // Custom repo that points to the public nexus repo. Used for elastic search client as there are no "official" ones.
+        mavenRepo "http://repo.spring.io/milestone/"
+        mavenRepo "http://projects.k-int.com/nexus-webapp-1.4.0/content/repositories/releases"
 
         // uncomment these (or add new ones) to enable remote dependency resolution from public Maven repositories
         //mavenRepo "http://snapshots.repository.codehaus.org"
         //mavenRepo "http://repository.codehaus.org"
         //mavenRepo "http://download.java.net/maven/2/"
         //mavenRepo "http://repository.jboss.com/maven2/"
+        mavenRepo "http://central.maven.org/maven2/"
     }
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
-        runtime 'mysql:mysql-connector-java:5.1.30'
-        runtime "postgresql:postgresql:8.3-603.jdbc3"
+        runtime 'mysql:mysql-connector-java:5.1.32'
+        // runtime "postgresql:postgresql:8.3-603.jdbc3"
         // To allow us to un-tgz uploaded data files
         runtime 'org.apache.commons:commons-compress:1.4.1'
         runtime 'org.apache.tika:tika-core:1.4'
@@ -85,12 +93,14 @@ grails.project.dependency.resolution = {
       compile ":spring-security-ui:0.2"
       compile ":spring-security-acl:1.1.1"
 
+      compile ":google-visualization:0.7"
+
       compile ':mail:1.0.1', {
          excludes 'spring-test'
       }
       
       // Font awesome for font based icons.
-      compile ":font-awesome-resources:3.2.1"
+      compile ":font-awesome-resources:4.1.0.1"
       
       // Job scheduler plugin.
       compile ":quartz:1.0.1"
@@ -101,6 +111,7 @@ grails.project.dependency.resolution = {
       compile ':famfamfam:1.0.1'
       compile ':jquery-ui:1.8.24'
       compile ':rest:0.7'
-      compile ':twitter-bootstrap:2.3.2'
+      // compile ':twitter-bootstrap:2.3.2'
+      compile ":twitter-bootstrap:3.2.1"
     }
 }

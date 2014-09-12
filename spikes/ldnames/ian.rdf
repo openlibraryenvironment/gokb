@@ -1,0 +1,13 @@
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:mads="http://www.loc.gov/mads/v2"
+         xmlns:mods="http://www.loc.gov/mods/v3"
+         xmlns:madsrdf="http://www.loc.gov/mads/rdf/v1#"
+         xmlns:modsrdf="http://www.loc.gov/standards/mods/modsrdf/v1/"
+         xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+         xmlns:owl="http://www.w3.org/2002/07/owl">
+   <rdf:Description rdf:about="http://ianibbo.me/#">
+      <skos:prefLabel>Ian Middleton Ibbotson</skos:prefLabel>
+      <skos:altLabel>Ibbo</skos:altLabel>
+      <rdf:type rdf:resource="http://dbpedia.org/ontology/Person"/>
+   </rdf:Description>
+</rdf:RDF>

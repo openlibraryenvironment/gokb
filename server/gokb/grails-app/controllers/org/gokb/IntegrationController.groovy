@@ -4,8 +4,7 @@ import grails.converters.JSON
 import org.gokb.cred.*
 import grails.plugins.springsecurity.Secured
 import org.gokb.cred.*
-
-
+import org.gokb.GOKbTextUtils
 
 class IntegrationController {
 
@@ -17,6 +16,131 @@ class IntegrationController {
   def index() {
   }
   
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def assertJsonldOrg() { 
+    // log.debug("assertOrg, request.json = ${request.JSON}");
+    def result=[:]
+    result.status = true;
+
+    try {
+
+      def name = request.JSON.'skos:prefLabel'
+
+      if ( ( name != null ) && ( name.trim().length() > 0 ) ) {
+  
+        log.debug("Trying to locate component with ID ${request.JSON.'@id'} name is \"${name}\"");
+  
+        // Try and match on primary ID
+        def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()] as String[]);
+        if ( located_entries?.size() == 1 ) {
+          log.debug("Identified record..");
+        }
+        else if ( located_entries?.size() == 0 ) {
+  
+          log.debug("Not identified - try sameAs relations");
+  
+          if ( request.JSON.'owl:sameAs' != null ) {
+            log.debug("Attempt lookup by sameAs : ${request.JSON.'owl:sameAs' as String[]} ");
+            located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'owl:sameAs') as String[])
+          }
+          else {
+            log.debug("No owl:sameAs entries found");
+          }
+  
+          if ( located_entries?.size() == 0 ) {
+            log.debug("Failed to match on same-as. Attempting primary name match");
+            def normname = GOKbTextUtils.normaliseString(name)
+            located_entries = KBComponent.findAllByNormname(normname)
+            if ( located_entries?.size() == 0 ) {
+              log.debug("No match on normalised name ${normname}.. Trying variant names");
+              createJsonLDOrg(request.JSON);
+            }
+            else if ( located_entries?.size() == 1 ) {
+               log.debug("Exact match on normalised name ${normname} - good enough");
+               enrichJsonLDOrf(located_entries[0], request.JSON)
+            }
+            else {
+              log.error("Multiple matches on normalised name... abandon all hope");
+            }
+  
+          }
+          else if ( located_entries?.size() == 1 ) {
+             log.debug("Located identifier");
+          }
+          else {
+            log.error("set of SameAs identifiers locate more that one component");
+          }
+        }
+        else {
+          log.error("Unique identifier finds multiple components.");
+        }
+  
+        result.status = 'OK'
+      }
+      else {
+        log.error("skipping org [ ${request.JSON.'@id'}] due to null name");
+      }
+    }
+    catch ( Exception e ) {
+      log.error("Problem",e)
+      result.status = 'ERROR'
+    }
+    finally {
+    }
+
+    render result as JSON
+  }
+
+  def createJsonLDOrg(ldjsonorg) {
+    log.debug("createJsonLDOrg");
+    //             "@id": "http://www.lib.ncsu.edu/ld/onld/00000134" ,
+    //         "skos:prefLabel": "A.B. Lundequistska Bokhandeln" ,
+    //         "owl:sameAs": [
+    //             "http://viaf.org/viaf/152447102" ,
+    //             "http://isni-url.oclc.nl/isni/0000000102215732" ,
+    //             "http://id.loc.gov/authorities/names/n80148304"
+    //         ] ,
+    def name = request.JSON.'skos:prefLabel'
+    def id = request.JSON.'@id'
+    def new_org = new Org(name:name)
+
+    def primary_identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',id)
+    new_org.ids.add(primary_identifier)
+
+    request.JSON.'owl:sameAs'?.each {  said ->
+   
+      // Double check that this identifier is NOT already used
+      def existing_usage = KBComponent.lookupByIO('global',said)
+      if ( existing_usage == null ) {
+        def identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',said)
+        new_org.ids.add(identifier)
+      }
+      else {
+        log.error("Not adding identifer to a second item...");
+      }
+    }
+
+    new_org.save();
+
+    request.JSON.'skos:altLabel'?.each { al ->
+      println("checking alt label ${al}");
+      new_org.ensureVariantName(al);
+    }
+
+    if ( request.JSON.'foaf:homepage' != null ) {
+      new_org.homepage = request.JSON.'foaf:homepage'
+    }
+
+    if ( new_org.save(flush:true, failOnError : true) ) {
+      log.debug("Saved ok");
+    }
+    else {
+      log.error("Problem saving new org. ${new_org.errors}");
+    }
+  }
+
+  def enrichJsonLDOrf(org, jsonld) {
+  }
 
   /**
    *  assertOrg()

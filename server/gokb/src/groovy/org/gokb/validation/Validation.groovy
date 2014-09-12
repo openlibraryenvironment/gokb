@@ -121,9 +121,12 @@ class Validation {
     // Execute each rule, passing in the column positions for each.
     valRules.each {List ruleDef ->
       
-      // Check whether this rule matches using wilcards.
-      List<String> wild_matches = checkWildcards (ruleDef[1][0], col_positions)
-      if (wild_matches) {
+      def conf = ruleDef[1]
+      
+      if (conf[0] =~ /\*/) {
+      
+        // Check whether this rule matches using wilcards.
+        List<String> wild_matches = checkWildcards (conf[0], col_positions)
         
         // Go through each wild_match
         wild_matches.each { String wild_match ->
@@ -149,7 +152,7 @@ class Validation {
       } else {
 
         // Instantiate the rule.
-        A_ValidationRule rule = (ruleDef[0] as Class).newInstance(ruleDef[1])
+        A_ValidationRule rule = (ruleDef[0] as Class).newInstance(conf)
   
         // Add to the deferred list too for deferring the call to valid().
         if (rule instanceof I_DeferredRowValidationRule) {
@@ -205,9 +208,11 @@ class Validation {
     // Execute each rule, passing in the column positions for each.
     valRules.each {List ruleDef ->
       
+      def conf = ruleDef[1]
+      
       // Check whether this rule matches using wilcards.
-      List<String> wild_matches = checkWildcards (ruleDef[1][0], col_positions)
-      if (wild_matches) {
+      if (conf[0] =~ /\*/) {
+        List<String> wild_matches = checkWildcards (conf[0], col_positions)
         
         // Go through each wild_match
         wild_matches.each { String wild_match ->
@@ -225,7 +230,7 @@ class Validation {
       } else {
       
         // Instantiate the rule.
-        I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(ruleDef[1])
+        I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(conf)
 
         // Execute the rule.
         rule.validate(result, col_positions)

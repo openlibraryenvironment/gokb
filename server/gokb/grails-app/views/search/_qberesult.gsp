@@ -3,34 +3,38 @@
 <g:set var="counter" value="${offset}" />
 
 <g:if test="${ request.isAjax() }">
+	<g:render template="pagination" contextPath="." model="${params}" />
 	<table class="table table-striped table-condensed table-bordered">
 		<thead>
-			<tr class="nav">
+			<tr class="inline-nav">
 				<g:each in="${qbeConfig.qbeResults}" var="c">
-					<th><g:if test="${c.sort}">
+					<th>
+						<g:if test="${c.sort}">
 							<g:if test="${params.sort==c.sort && params.order=='asc'}">
 								<g:link params="${params+['sort':c.sort,order:'desc']}">
 									${c.heading}
-									<i class="icon-sort-up"></i>
+									<i class="glyphicon glyphicon-sort-up"></i>
 								</g:link>
 							</g:if>
 							<g:else>
 								<g:if test="${params.sort==c.sort && params.order=='desc'}">
 									<g:link params="${params+['sort':c.sort,order:'asc']}">
 										${c.heading}
-										<i class="icon-sort-down"></i>
+										<i class="glyphicon glyphicon-sort-down"></i>
 									</g:link>
 								</g:if>
 								<g:else>
 									<g:link params="${params+['sort':c.sort,order:'desc']}">
 										${c.heading}
-										<i class="icon-sort"></i>
+										<i class="glyphicon glyphicon-sort"></i>
 									</g:link>
 								</g:else>
 							</g:else>
-						</g:if> <g:else>
+						</g:if>
+						<g:else>
 							${c.heading}
-						</g:else></th>
+						</g:else>
+					</th>
 				</g:each>
 			</tr>
 		</thead>
@@ -58,7 +62,9 @@
 </g:if>
 <g:else>
 	<g:form controller="workflow" action="action" method="post"
-		class='action-form'>
+		class='action-form' >
+		<div class="batch-all-info" style="display:none;"></div>
+		<g:render template="pagination" contextPath="." model="${params}" />
 		<table class="table table-striped table-condensed table-bordered">
 			<thead>
 				<tr>
@@ -68,20 +74,20 @@
 								<g:if test="${params.sort==c.sort && params.order=='asc'}">
 									<g:link params="${params+['sort':c.sort,order:'desc']}">
 										${c.heading}
-										<i class="icon-sort-up"></i>
+										<i class="glyphicon glyphicon-sort-up"></i>
 									</g:link>
 								</g:if>
 								<g:else>
 									<g:if test="${params.sort==c.sort && params.order=='desc'}">
 										<g:link params="${params+['sort':c.sort,order:'asc']}">
 											${c.heading}
-											<i class="icon-sort-down"></i>
+											<i class="glyphicon glyphicon-sort-down"></i>
 										</g:link>
 									</g:if>
 									<g:else>
 										<g:link params="${params+['sort':c.sort,order:'desc']}">
 											${c.heading}
-											<i class="icon-sort"></i>
+											<i class="glyphicon glyphicon-sort"></i>
 										</g:link>
 									</g:else>
 								</g:else>
@@ -96,19 +102,17 @@
 				<g:each in="${rows}" var="r">
 					<g:if test="${r != null }">
 						<g:set var="r" value="${r}" />
-						<g:set var="readonly"
-							value="${ r.respondsTo('isSystemComponent') && r.isSystemComponent() }" />
 						<tr class="${++counter==det ? 'success':''}">
 							<!-- Row ${counter} -->
 							<td><g:if
-									test="${!readonly && r.respondsTo('availableActions')}">
+									test="${r.isEditable() && r.respondsTo('availableActions')}">
 									<g:set var="al"
 										value="${new JSON(r.availableActions()).toString().encodeAsHTML()}" />
 									<input type="checkbox" name="bulk:${r.class.name}:${r.id}"
 										data-actns="${al}" class="obj-action-ck-box" />
 								</g:if> <g:else>
 									<input type="checkbox"
-										title="${ readonly ? 'Component is read only' : 'No actions available' }"
+										title="${ !r.isEditable() ? 'Component is read only' : 'No actions available' }"
 										disabled="disabled" readonly="readonly" />
 								</g:else></td>
 							<g:each in="${qbeConfig.qbeResults}" var="c">
@@ -125,8 +129,8 @@
 							</g:each>
 							<td><g:if
 									test="${request.user?.showQuickView?.value=='Yes'}">
-									<g:link class="btn btn-primary pull-right" controller="search"
-										action="index" params="${params+['det':counter]}">view >></g:link>
+									<g:link class="btn btn-xs btn-default pull-right desktop-only" controller="search"
+										action="index" params="${params+['det':counter]}"><i class="fa fa-eye" ></i></g:link>
 								</g:if></td>
 						</tr>
 					</g:if>
@@ -138,10 +142,15 @@
 				</g:each>
 			</tbody>
 		</table>
-		<div class="pull-right well" id="bulkActionControls">
+		<g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
+		<div class="pull-right well col-xs-12 col-sm-9 ${displayobj != null ? 'col-md-6' : 'col-md-3'}" id="bulkActionControls">
 			<h4>Available actions for selected rows</h4>
-			<select id="selectedBulkAction" name="selectedBulkAction"></select>
-			<button type="submit" class="btn btn-primary">Action</button>
+			<div class="input-group" >
+				<select id="selectedBulkAction" class="form-control" name="selectedBulkAction"></select>
+				<span class="input-group-btn">
+					<button type="submit" class="btn btn-default btn-sm">Submit</button>
+				</span>
+			</div>
 		</div>
 	</g:form>
 </g:else>

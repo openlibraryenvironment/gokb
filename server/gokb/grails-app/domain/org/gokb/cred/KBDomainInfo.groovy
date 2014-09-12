@@ -6,6 +6,9 @@ class KBDomainInfo {
   String displayName
   RefdataValue type
 
+  public String getNiceName() {
+    return "Domain Info";
+  }
 
   static mapping = {
     id column:'kbd_id'

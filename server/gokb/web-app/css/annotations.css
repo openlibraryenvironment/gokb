@@ -2,7 +2,7 @@
   cursor:help;
 }
 
-.annotated .icon-info-sign {
+.annotated .fa-info-circle {
   color:#3D57A6;
 }
 
@@ -15,14 +15,21 @@ div.annotation-editable {
 }
 
 div.annotation-editable:hover {
-  border: 1px dashed #0088CC;
+  border: 1px dashed #989898;
 }
 
 div.annotation-empty {
-  color: #5A3DA6;
+  color: #dd1144;
   font-style: italic;
 }
 
+.popover {
+	color: #000;
+}
+
+.popover .note-toolbar {
+	margin-left:0;
+}
 .popover div.editor-buttons {
   padding: 10px 0 0 0;
   text-align:right;

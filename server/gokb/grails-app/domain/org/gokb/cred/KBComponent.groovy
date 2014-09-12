@@ -8,8 +8,7 @@ import javax.persistence.Transient
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
-
-import com.k_int.ClassUtils
+import org.hibernate.proxy.HibernateProxy
 
 /**
  * Abstract base class for GoKB Components.
@@ -56,51 +55,53 @@ abstract class KBComponent {
 
   @Transient
   protected void touchAllDependants () {
+    
+    //TODO: SO - This really needs to be reviewed. There must be an easy way to do this without hibernate freaking out. Commenting out for now.
 
     // The update closure.
-    def doUpdate = { obj, Date stamp ->
-
-      try {
-
-        def saveParams = [failOnError:true, "system_save" : (systemComponent)]
-
-        obj.lastUpdated = stamp
-        obj.save(saveParams)
-
-      } catch (Throwable t) {
-
-        // Suppress but log.
-        log.error(t)
-      }
-    }
-
-    if (hasProperty("touchOnUpdate")) {
-
-      // We should also update the object(s).
-      this.touchOnUpdate.each { dep_name ->
-
-        // Get the dependant.
-        def deps = this."${dep_name}"
-
-        if (deps) {
-          if (deps instanceof Map) {
-
-            deps.each { k,obj ->
-              doUpdate(obj, lastUpdated)
-            }
-
-          } else if (deps instanceof Iterable) {
-
-            deps.each { obj ->
-              doUpdate(obj, lastUpdated)
-            }
-
-          } else if (grailsApplication.isDomainClass(deps.class)) {
-            doUpdate(deps, lastUpdated)
-          }
-        }
-      }
-    }
+//    def doUpdate = { obj, Date stamp ->
+//
+//      try {
+//
+//        def saveParams = [failOnError:true, "system_save" : (systemComponent)]
+//
+//        obj.lastUpdated = stamp
+//        obj.save(saveParams)
+//
+//      } catch (Throwable t) {
+//
+//        // Suppress but log.
+//        log.error(t)
+//      }
+//    }
+//
+//    if (hasProperty("touchOnUpdate")) {
+//
+//      // We should also update the object(s).
+//      this.touchOnUpdate.each { dep_name ->
+//
+//        // Get the dependant.
+//        def deps = this."${dep_name}"
+//
+//        if (deps) {
+//          if (deps instanceof Map) {
+//
+//            deps.each { k,obj ->
+//              doUpdate(obj, lastUpdated)
+//            }
+//
+//          } else if (deps instanceof Iterable) {
+//
+//            deps.each { obj ->
+//              doUpdate(obj, lastUpdated)
+//            }
+//
+//          } else if (grailsApplication.isDomainClass(deps.class)) {
+//            doUpdate(deps, lastUpdated)
+//          }
+//        }
+//      }
+//    }
   }
 
   @Transient
@@ -312,6 +313,10 @@ abstract class KBComponent {
     tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
     dateCreated column:'kbc_date_created'
     lastUpdated column:'kbc_last_updated'
+
+    //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
+    //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
+
   }
 
   static constraints = {
@@ -409,6 +414,37 @@ abstract class KBComponent {
     result
   }
 
+  /*
+   *  ignore any namespace or type - see if we can find a componenet where a linked identifier has the specified value
+   *  @return LIST of all components with this identifier as a value
+   */
+  static def lookupByIdentifierValue(String[] idvalue) {
+
+    def result = []
+
+    if ( idvalue != null ) {
+      def crit = Identifier.createCriteria()
+      // def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+
+      def lr = crit.list {
+        or {
+          idvalue.each {
+            if ( ( it != null ) && ( it.trim().length() > 0 ) ) {
+              eq('value', it)
+            }
+          }
+        }
+      }
+
+      lr?.each { id ->
+        id.identifiedComponents.each { component ->
+          result.add ( component )
+        }
+      }
+    }
+
+    result
+  }
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
@@ -578,12 +614,6 @@ abstract class KBComponent {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
   }
 
-  @Transient
-  public String getClassName () {
-    getMetaClass().getTheClass().getName()
-  }
-
-
   /**
    *  Return the combos pertaining to a specific property (Rather than the components linked).
    *  Needed for editing start/end dates. Initially on publisher, but probably on other things too later on.
@@ -614,26 +644,19 @@ abstract class KBComponent {
     return combos
   }
 
-  @Transient
-  public boolean isInstanceOf (Class testCase) {
-    boolean val = getMetaClass().getTheClass().isAssignableFrom(testCase)
-    val
-  }
-
-  public static <T> T deproxy(def element) {
-    ClassUtils.deproxy(element)
-  }
-  //  return (getMetaClass().getTheClass() instanceof testCase.class)
-
   @Override
   public boolean equals(Object obj) {
 
+    if ( obj != null ) {
     // Deproxy the object first to ensure it isn't a hibernate proxy.
-    def the_obj = KBComponent.deproxy(obj)
 
-    if (the_obj instanceof KBComponent) {
-      return (this.getClassName() == the_obj.getClassName()) &&
-      (this.getId() == the_obj.getId())
+      if (obj instanceof KBComponent) {
+        return (this.getClassName() == obj.getClassName()) && (this.getId() == obj.getId())
+      }
+      else if ( obj instanceof org.hibernate.proxy.HibernateProxy ) {
+        def the_obj = KBComponent.deproxy(obj)
+        return (this.getClassName() == the_obj.getClassName()) && (this.getId() == the_obj.getId())
+      }
     }
 
     // Return false if we get here.
@@ -668,11 +691,6 @@ abstract class KBComponent {
     }
   }
 
-  @Transient
-  public String getNiceName () {
-    GrailsNameUtils.getNaturalName(getClassName())
-  }
-
   public String toString() {
     "${name?:''} (${getNiceName()} ${id})".toString()
   }
@@ -684,6 +702,13 @@ abstract class KBComponent {
   public Map getAllPropertiesAndVals() {
 
     // The list of property names that we are to ignore.
+    // II: ToDo Steve - Please review this.
+    // explanation :: I'm not fully sure what side effects this might have, but in local_props below deproxy is called
+    // for each property. skippedTitles is a list of strings and was causing hell on earth in the A_Api which was unable to tell the
+    // difference between f(x) and f([x]) closure called with a list containing one argument. Not been able to fully 
+    // wrap my head around A_Api yet, so added skippedTitles here as a stop-gap. Substantial changes already made to A_Api and don't
+    // want to change any more yet.
+    // added variantNames, ids
     def ignore_list = [
       'id',
       'outgoingCombos',
@@ -691,7 +716,11 @@ abstract class KBComponent {
       'reviewRequests',
       'tags',
       'systemOnly',
-      'additionalProperties'
+      'additionalProperties',
+      'skippedTitles',
+      'variantNames',
+      'ids',
+      'fileAttachments'
     ]
 
     // Get the domain class.
@@ -712,6 +741,7 @@ abstract class KBComponent {
         return
       }
 
+      // println("Deproxy ${prop}");
       def val = deproxy(this."${prop}")
 
       switch (val) {
@@ -808,5 +838,31 @@ abstract class KBComponent {
     }
 
     hasOp
+  }
+
+  @Transient
+  def ensureVariantName(name) {
+
+    def normname = GOKbTextUtils.normaliseString(name)
+
+    // Check that name is not already a name or a variant, if so, add it.
+    def existing_component = KBComponent.findByNormname( normname )
+
+    if ( existing_component == null ) {
+      // not already a name
+      // Make sure not already a variant name
+      def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
+      if ( existing_variants.size() == 0 ) {
+        KBComponentVariantName kvn = new KBComponentVariantName(owner:this, normVariantName:name).save()
+      }
+      else {
+        log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+      }
+
+    }
+    else {
+      log.error("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
+    }
+
   }
 }

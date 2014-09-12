@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import groovy.util.logging.Log4j;
+import org.hibernate.proxy.HibernateProxy
 
 @Log4j
 class User {
@@ -16,12 +17,13 @@ class User {
   boolean accountExpired
   boolean accountLocked
   boolean passwordExpired
-  Long defaultPageSize = new Long(10);
+  Long defaultPageSize = new Long(10)
+  Set<Territory> territories
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
     
-  static manyByCombo = [
+  static hasMany = [
     territories : Territory
   ]
 
@@ -51,6 +53,7 @@ class User {
       log.error( "Error loading admin role (ROLE_ADMIN)" )
     }
     
+    adminRole.save()
     false
   } 
 
@@ -66,6 +69,34 @@ class User {
     }
     if ( displayName == null )
       displayName = username
+  }
+  
+  public isCurrent() {
+    springSecurityService.currentUser == this
+  }
+  
+  public boolean isEditable(boolean default_to = true) {
+    
+    // Users can edit themselves.
+    return isCurrent() || User.isEditable ([default_to])
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+
+    log.debug("USER::equals ${obj?.class.name} :: ${obj}");
+    if ( obj != null ) {
+      if ( obj instanceof User ) {
+        return this.getId() == obj.getId()
+      }
+      else if ( obj instanceof HibernateProxy ) {
+        def the_obj = KBComponent.deproxy(obj)
+        return this.getId() == the_obj.getId()
+      }
+    }
+
+    // Return false if we get here.
+    false
   }
 
   protected void encodePassword() {
@@ -116,6 +147,10 @@ class User {
 
   public String toString() {
     return "${username} / ${displayName?:'No display name'}".toString();
+  }
+
+  public String getNiceName() {
+    return "User";
   }
 
 }

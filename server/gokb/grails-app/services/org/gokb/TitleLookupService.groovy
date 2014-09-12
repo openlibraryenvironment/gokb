@@ -177,20 +177,23 @@ class TitleLookupService {
       // Has the publisher ever existed in the list against this title.
       if (!orgs.contains(publisher)) {
 
-        // Is a review needed.
-        boolean review = (orgs.size() > 0) && ti.changePublisher (
-            componentLookupService.lookupComponent(publisher_name),
-            true
-            )
+        // First publisher added?
+        boolean not_first = orgs.size() > 0
+        
+        // Added a publisher?
+        boolean added = ti.changePublisher (
+          componentLookupService.lookupComponent(publisher_name),
+          true
+        )
 
-        // Raise a review request.
-        if (review) {
+        // Raise a review request, if needed.
+        if (not_first && added) {
           ReviewRequest.raise(
-              ti,
-              "Added '${publisher.name}' as a publisher on '${ti.name}'.",
-              "Publisher supplied in ingested file is different to any already present on TI.",
-              user
-              )
+            ti,
+            "Added '${publisher.name}' as a publisher on '${ti.name}'.",
+            "Publisher supplied in ingested file is different to any already present on TI.",
+            user
+          )
         }
       }
     }
@@ -246,6 +249,11 @@ class TitleLookupService {
         log.debug("Exact distance match for TI.")
         break
 
+      case ( ti.variantNames.collect{GOKbTextUtils.cosineSimilarity(it.normVariantName, norm_title)>= threshold }.size() > 0 ) :
+        // Good match on existing variant titles
+        log.debug("Good match for TI on variant.")
+        break
+
       case {it >= threshold} :
 
       // Good match. Need to add as alternate name.
@@ -254,11 +262,10 @@ class TitleLookupService {
         break
 
       default :
-
-      // Bad match...
+        // Bad match...
         ti.addVariantTitle(title)
 
-      // Raise a review request
+        // Raise a review request
         ReviewRequest.raise(
             ti,
             "'${title}' added as a variant of '${ti.name}'.",

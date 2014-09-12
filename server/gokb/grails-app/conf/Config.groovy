@@ -26,7 +26,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "3.0"
+refine_min_version = "3.1"
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -157,7 +157,7 @@ validationRules = [
 
 validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
 validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
-validation.regex.uri = "^(f|ht)tp(s?):\\/\\/([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(\\/[a-zA-Z\\d\\-\\._~\\/\\?\\#\\[\\]@\\!\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
+validation.regex.uri = "^(f|ht)tp(s?):\\/\\/([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(\\/[a-zA-Z\\d\\-\\._~\\/\\?\\#\\[\\]@\\!\\%\\:\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
 validation.regex.date = "^[1-9][0-9]{3,3}\\-(0[1-9]|1[0-2])\\-(0[1-9]|[1-2][0-9]|3[0-1])\$"
 validation.regex.kbartembargo = "^[RP]\\d+[DMY]\$"
 validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|\\Qabstracts\\E)\$"
@@ -170,7 +170,6 @@ validation.rules = [
 
   // All platforms
   "platform.*.*" : [
-    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
       type: MustMatchRefdataValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -421,6 +420,9 @@ auditLog {
 grails.gorm.default.constraints = {
   '*'(nullable: true, blank:false)
 }
+
+grails.gorm.autoFlush=true
+
 //grails.gorm.failOnError=true
 
 
@@ -490,7 +492,7 @@ globalSearchTemplates = [
   ],
   'orgs':[
     baseclass:'org.gokb.cred.Org',
-    title:'Organisations',
+    title:'Organizations',
     group:'Secondary',
     qbeConfig:[
       qbeForm:[
@@ -536,7 +538,7 @@ globalSearchTemplates = [
           prompt:'Name or Title',
           qparam:'qp_name',
           placeholder:'Name or title of item',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
         ],
         [
           prompt:'Content Provider',
@@ -583,7 +585,7 @@ globalSearchTemplates = [
           prompt:'Name',
           qparam:'qp_name',
           placeholder:'Project Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
         ],
       ],
       qbeResults:[
@@ -973,7 +975,7 @@ grails.plugins.springsecurity.filterChain.chainMap = [
 
 cosine.good_threshold = 0.75
 
-serverUrl = 'https://github.com/k-int/gokb-phase1/wiki/GOKb-Refine-Extensions'
+extensionDownloadUrl = 'https://github.com/k-int/gokb-phase1/wiki/GOKb-Refine-Extensions'
 
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
 
@@ -1002,6 +1004,12 @@ defaultOaiConfig = [
       ]],
   ]
 ]
+
+apiClasses = [
+  "com.k_int.apis.SecurityApi",
+  "com.k_int.apis.GrailsDomainHelpersApi"
+]
+
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'

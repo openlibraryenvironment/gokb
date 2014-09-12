@@ -1,31 +1,28 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="layout" content="main"/>
-    <r:require modules="gokbstyle"/>
-    <title>GOKbo : About</title>
+    <meta name="layout" content="sb-admin"/>
+    <title>GOKb: About</title>
   </head>
   <body>
-
-   <div class="container-fluid">
-     <div class="row-fluid">
-       <div class="well span12">
-
-         <h1>Application Info</h1>
-         <table class="table table-bordered">
-           <tr><td>Build Number</td><td> <g:meta name="app.buildNumber"/></td></tr>
-           <tr><td>Build Profile</td><td> <g:meta name="app.buildProfile"/></td></tr>
-           <tr><td>App version</td><td> <g:meta name="app.version"/></td></tr>
-           <tr><td>Grails version</td><td> <g:meta name="app.grails.version"/></td></tr>
-           <tr><td>Groovy version</td><td> ${GroovySystem.getVersion()}</td></tr>
-           <tr><td>JVM version</td><td> ${System.getProperty('java.version')}</td></tr>
-           <tr><td>Reloading active</td><td> ${grails.util.Environment.reloadingAgentEnabled}</td></tr>
-           <tr><td>Build Date</td><td> <g:meta name="app.buildDate"/></td></tr>
-         </table>
-       </div>
-
-     </div>
-   </div>
-  
+	 <h1 class="page-header">About GOKb</h1>
+   <div id="mainarea"
+		class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">
+					Application Info
+				</h3>
+			</div>
+	  	<table class="table table-bordered">
+	      <tr><th>Build Number</th><td> <g:meta name="app.buildNumber"/></td></tr>
+	      <tr><th>Build Profile</th><td> <g:meta name="app.buildProfile"/></td></tr>
+	      <tr><th>App version</th><td> <g:meta name="app.version"/></td></tr>
+	      <tr><th>Grails version</th><td> <g:meta name="app.grails.version"/></td></tr>
+	      <tr><th>Groovy version</th><td> ${GroovySystem.getVersion()}</td></tr>
+	      <tr><th>JVM version</th><td> ${System.getProperty('java.version')}</td></tr>
+	      <tr><th>Reloading active</th><td> ${grails.util.Environment.reloadingAgentEnabled}</td></tr>
+	      <tr><th>Build Date</th><td> <g:meta name="app.buildDate"/></td></tr>
+	    </table>
+  	</div>
   </body>
 </html>

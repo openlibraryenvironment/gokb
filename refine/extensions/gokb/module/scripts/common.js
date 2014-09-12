@@ -3,7 +3,7 @@ var GOKb = {
   workspace : {},
   workspaces : [],
   current_ws : 0,
-  timeout : 60000, // 1 min timeout.
+  timeout : 1800000, // 3 minute.
   handlers: {},
   globals: {},
   menuItems: [],
@@ -36,11 +36,11 @@ GOKb.hijackFunction = function(functionName, replacement) {
   
   // Method that we use to extract the list of parameters expected by the original method.
   var getArgs = function (func) {
-    var fnStr = func.toString().replace(STRIP_COMMENTS, '')
-    var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES)
+    var fnStr = func.toString().replace(STRIP_COMMENTS, '');
+    var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     if(result === null)
-       result = []
-    return result
+       result = [];
+    return result;
   };
   
   // Get the function.
@@ -70,7 +70,7 @@ GOKb.hijackFunction = function(functionName, replacement) {
     
     // Then execute the replacement.
     return (replacement).apply(this, args);
-  }
+  };
   
   // Generate source to replace old method with the new code.
   eval(functionName + " = " + repMeth.toString());
@@ -277,7 +277,7 @@ GOKb.showDialog = function(dialog) {
       // Execute the onShow code
       dialog.onClose (dialog);
     }
-  }
+  };
   
   // Add the close method as the onClick of the close button.
   dialog.bindings.closeButton.click(dialog.close);
@@ -307,7 +307,7 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
     
     // Display an error message to the user.      
     GOKb.defaultError(JSON.parse( jqXHR.responseText ));
-  }
+  };
   
   // Current success method.
   var currentSuccess = ajaxObj.success;
@@ -654,7 +654,7 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
       } else {
       	// False. Remove the button.
         if (this._quickCreate) {
-        	this._quickCreate.remove()
+        	this._quickCreate.remove();
         	this._quickCreate = null;
         }
       }
@@ -763,7 +763,7 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
  */ 
 RegExp.escape = function(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-}
+};
 
 //Load the available workspaces from refine.
 GOKb.populateWorkspaces = function () {

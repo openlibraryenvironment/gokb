@@ -515,4 +515,15 @@ class WorkflowController {
     result.ref=request.getHeader('referer')
     redirect(url: result.ref)
   }
+
+  def deleteTitleHistoryEvent() {
+    log.debug(params);
+    def result = [:]
+    result.ref=request.getHeader('referer')
+    def he = ComponentHistoryEvent.get(params.id)
+    if (he != null ) {
+      he.delete(flush:true)
+    }
+    redirect(url: result.ref)
+  }
 }

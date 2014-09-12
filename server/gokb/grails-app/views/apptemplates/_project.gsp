@@ -1,10 +1,3 @@
-<r:require modules="gokbstyle" />
-<r:require modules="editable" />
-
-<h3>
-	${d.id ? d.getNiceName() + ': ' + (d.name ?: d.id) : 'Create New ' + d.getNiceName()}
-</h3>
-
 <div id="content">
 
 	<dl class="dl-horizontal">
@@ -14,23 +7,53 @@
 		<dd>
 			<g:xEditable class="ipe" owner="${d}" field="name" />
 		</dd>
-		<dt> <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel> </dt>
-		<dd> <g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /> </dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:xEditableRefData owner="${d}" field="status"
+				config="KBComponent.Status" />
+		</dd>
 
-		<dt><g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel></dt>
-		<dd><g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown></dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:manyToOneReferenceTypedown owner="${d}" field="source"
+				baseClass="org.gokb.cred.Source">
+				${d.source?.name}
+			</g:manyToOneReferenceTypedown>
+		</dd>
 
-		<dt><g:annotatedLabel owner="${d}" property="accessUrl">Access URL</g:annotatedLabel></dt>
-		<dd><g:xEditable owner="${d}" field="accessUrl" /></dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="accessUrl">Access URL</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:xEditable owner="${d}" field="accessUrl" />
+		</dd>
 
-		<dt><g:annotatedLabel owner="${d}" property="dataUrl">Data URL</g:annotatedLabel></dt>
-		<dd><g:xEditable owner="${d}" field="dataUrl" /></dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="dataUrl">Data URL</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:xEditable owner="${d}" field="dataUrl" />
+		</dd>
 
-		<dt> <g:annotatedLabel owner="${d}" property="defaultSupplyMethod">Default Supply Method</g:annotatedLabel> </dt>
-		<dd> <g:xEditableRefData owner="${d}" field="defaultSupplyMethod" config="Source.DataSupplyMethod" /> </dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="defaultSupplyMethod">Default Supply Method</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:xEditableRefData owner="${d}" field="defaultSupplyMethod"
+				config="Source.DataSupplyMethod" />
+		</dd>
 
-		<dt> <g:annotatedLabel owner="${d}" property="defaultDataFormat">Default Data Format</g:annotatedLabel> </dt>
-		<dd> <g:xEditableRefData owner="${d}" field="defaultDataFormat" config="Source.DataFormat" /> </dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="defaultDataFormat">Default Data Format</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:xEditableRefData owner="${d}" field="defaultDataFormat"
+				config="Source.DataFormat" />
+		</dd>
 	</dl>
 
 	<ul id="tabs" class="nav nav-tabs">
@@ -63,8 +86,12 @@
 				</dd>
 
 				<g:if test="${d.id != null}">
-					<dt> <g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel> </dt>
-					<dd> ${d.provider?.name ?: 'Not yet set'} </dd>
+					<dt>
+						<g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel>
+					</dt>
+					<dd>
+						${d.provider?.name ?: 'Not yet set'}
+					</dd>
 
 					<g:if test="${d.lastCheckedOutBy}">
 						<dt>
@@ -87,11 +114,3 @@
 		</div>
 	</div>
 </div>
-
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    $.fn.editable.defaults.mode = 'inline';
-    $('.ipe').editable();
-  });
-</script>

@@ -67,7 +67,7 @@
         // The clicks should bubble up here before being actioned.
         
         // The clicked item. Get the closest matching a tag.
-        var clicked = $(event.target).closest('.nav a, a.open-inline'); 
+        var clicked = $(event.target).closest('.nav a, .inline-nav a, a.open-inline'); 
         
         if (clicked.length > 0) {
           // Is a nav link. First thing to do is to stop the event default.

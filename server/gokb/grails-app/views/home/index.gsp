@@ -7,9 +7,9 @@
   </head>
   <body>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
-       <div id="openActivities" class="span6 well">
+   <div class="container">
+     <div class="row">
+       <div id="openActivities" class="col-md-6 well">
          <g:if test="${(openActivities != null ) && ( openActivities.size() > 0 )}">
            <h3>Currently open activities</h3>
            <table class="table table-striped table-bordered">
@@ -95,7 +95,7 @@
          </g:else>
 
        </div>
-       <div id="recentActivity" class="span6 well">
+       <div id="recentActivity" class="col-md-6 well">
          <h3>History</h3>
          <table class="table table-striped table-bordered">
            <thead>

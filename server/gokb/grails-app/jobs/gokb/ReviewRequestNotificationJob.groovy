@@ -14,7 +14,7 @@ class ReviewRequestNotificationJob {
   }
 
   def sendEmails() {
-    def pendingRequests = ReviewRequest.findAllByNeedsNotify(true)
+    def pendingRequests = ReviewRequest.findAllByNeedsNotify(Boolean.TRUE)
 
     def usermap = [:]
 
@@ -27,11 +27,11 @@ class ReviewRequestNotificationJob {
     }
 
     usermap.each { k,v ->
-      println("Email user ${k} about ${v}");
-
-
-      v.needsNotify=false
-      v.save()
+      v.each { pr ->
+        println("Email user ${k} about ${pr}");
+        pr.needsNotify=Boolean.FALSE
+        pr.save()
+      }
     }
   }
 }

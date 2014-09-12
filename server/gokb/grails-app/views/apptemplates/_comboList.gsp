@@ -31,7 +31,7 @@
   </tbody>
 </table>
 
-<g:if test="${targetClass}">
+<g:if test="${targetClass && d.isEditable()}">
 
   <g:if test="${direction=='in'}">
     <g:set var="recip" value="toComponent"/>
@@ -47,8 +47,8 @@
     <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Combo"/>
     <input type="hidden" name="__recip" value="${recip}"/>
     <input type="hidden" name="type" value="${org.gokb.cred.RefdataCategory.getOID('Combo.Type',d.getComboTypeValue(property))}"/>
-    Add To List : <g:simpleReferenceTypedown name="${comboprop}" baseClass="${targetClass}"/> 
-    <button type="submit" class="btn btn-primary btn-small">Add</button>
+    Add To List : <g:simpleReferenceTypedown class="form-control" name="${comboprop}" baseClass="${targetClass}"/> 
+    <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
   </g:form>
 
 </g:if>

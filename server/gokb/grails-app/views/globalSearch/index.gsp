@@ -1,21 +1,41 @@
-<r:require modules="gokbstyle"/>
-<r:require modules="editable"/>
-
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="layout" content="main"/>
-    <r:require modules="gokbstyle"/>
-    <title>GOKb</title>
+    <meta name="layout" content="sb-admin"/>
+    <title>GOKb: Global Search</title>
   </head>
   <body>
+  
+  	<h1 class="page-header">
+			Global Search
+		</h1>
+		<div id="mainarea" class="panel panel-default">
+			<div class="panel-body">
+				<g:form action="index" method="get">           
+           <div class="input-group">
+						<input type="text" name="q" id="q" class="form-control" value="${params.q}" placeholder="Search for..." />
+						<span class="input-group-btn">
+							<button type="submit" class="btn btn-default" >Search</button>
+						</span>
+					</div>
+         </g:form>
+			</div>
+			<div class="panel-footer" >
+				<g:if test="${resultsTotal != null}">
+		      Search returned ${resultsTotal}
+		    </g:if>
+		    <g:else>
+		      Please enter criteria above (* to search all)
+		    </g:else>
+		  </div>
+		</div>
 
-   <div class="container-fluid">
-     <div class="row-fluid">
-       <div class="span12 well" style="text-align:center;">
+   <div class="container">
+     <div class="row">
+       <div class="col-md-12 well" style="text-align:center;">
 
          <g:form action="index" method="get">
-           <input id="q" name="q" type="text" class="large" value="${params.q}"/><button name="submit" class="btn">Search</button>
+           <input id="q" name="q" type="text" class="large" value="${params.q}"/><button name="submit" class="btn btn-default btn-sm">Search</button>
          </g:form>
 
          <g:if test="${resultsTotal != null}">
@@ -26,8 +46,8 @@
          </g:else>
        </div>
      </div>
-     <div class="row-fluid">
-       <div class="span2">
+     <div class="row">
+       <div class="col-md-2">
          <div class="facetFilter">
            <g:each in="${facets}" var="facet">
              <div>
@@ -41,7 +61,7 @@
            </g:each>
          </div>
        </div>
-       <div class="span10">
+       <div class="col-md-10">
          <div id="resultsarea">
            <table class="table table-striped table-bordered">
              <thead>

@@ -11,17 +11,17 @@
     <r:require module="jquery-ui"/>
     <r:require modules="dynatree"/>
 
-    <title>GOKbo : About</title>
+    <title>GOKbo: About</title>
   </head>
   <body>
 
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="well span12">
+    <div class="container">
+      <div class="row">
+        <div class="well col-md-12">
 
           <div class="navbar">
-            <div class="navbar-inner">
-              <div class="brand">Edit Search Template</div>
+            <div class="navbar-header">
+              <div class="navbar-brand">Edit Search Template</div>
             </div>
           </div>
 
@@ -41,19 +41,19 @@
           <div id="my-tab-content" class="tab-content">
 
             <div class="tab-pane active" id="QBEForm">
-              <div class="container-fluid">
-                <div class="row-fluid">
-                  <div class="span4">
+              <div class="container">
+                <div class="row">
+                  <div class="col-md-4">
                     <h3>Available Search Fields</h3>
                     <div id="QBEDomainTree" class="domainModelTree"></div>
                   </div>
-                  <div class="span4">
+                  <div class="col-md-4">
                     <h3>QBE Form</h3>
                     <ul>
                       <li>Test</li>
                     </ul>
                   </div>
-                  <div class="span4">
+                  <div class="col-md-4">
                     <h3>Properties</h3>
                     <ul>
                       <li>Test</li>
@@ -64,14 +64,14 @@
             </div>
 
             <div class="tab-pane" id="QResults">
-              <div class="container-fluid">
-                <div class="row-fluid">
-                  <div class="span6">
+              <div class="container">
+                <div class="row">
+                  <div class="col-md-6">
                     <h3>Result Columns</h3>
                     <ul>
                     </ul>
                   </div>
-                  <div class="span6">
+                  <div class="col-md-6">
                     <h3>Datamodel</h3>
                     <div id="ResultsDomainTree" class="domainModelTree"></div>
                   </div>

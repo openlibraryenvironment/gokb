@@ -56,7 +56,7 @@ class ReviewRequest {
 	
   	// Create a request.
   	ReviewRequest req = new ReviewRequest (
-  		status	: RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Open'),
+  		status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
   		raisedBy : (raisedBy),
   		allocatedTo : (raisedBy),
   		descriptionOfCause : (cause),
@@ -81,7 +81,12 @@ class ReviewRequest {
 
   def RRClose(rrcontext) {
     log.debug("Close review request ${id} - user=${rrcontext.user}");
-    this.status=RefdataCategory.lookupOrCreate('ReviewRequest.status', 'Closed')
+    this.status=RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
     this.closedBy = rrcontext.user
   }
+
+  public String getNiceName() {
+        return "Review Request";
+  }
+
 }

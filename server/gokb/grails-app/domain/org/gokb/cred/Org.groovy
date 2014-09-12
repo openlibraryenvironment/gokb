@@ -5,6 +5,7 @@ import javax.persistence.Transient
 class Org extends KBComponent {
 
   RefdataValue mission
+  String homepage
 
   static manyByCombo = [
     providedPackages  : Package,
@@ -54,6 +55,7 @@ class Org extends KBComponent {
     //         id column:'org_id'
     //    version column:'org_version'
     mission column:'org_mission_fk_rv'
+    homepage column:'org_homepage'
   }
 
   static constraints = {
@@ -107,7 +109,6 @@ class Org extends KBComponent {
     located_org
   }
 
-  @Override
   public String getNiceName() {
     return "Organization";
   }

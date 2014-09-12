@@ -1,44 +1,53 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="layout" content="main"/>
+    <meta name="layout" content="sb-admin"/>
     <r:require modules="gokbstyle"/>
     <r:require modules="editable"/>
-    <title>GOKb::Title Transfer</title>
+    <title>GOKb: Title Transfer</title>
   </head>
   <body>
-    <div class="container-fluid">
-      <g:form controller="workflow" action="processTitleChange" method="get">
-        <input type="hidden" name="from" value="${request.getHeader('referer')}"/>
-        <div class="row-fluid">
-          <div class="span12 hero well">
-            Title Transfer (1/2)
-          </div>
-        </div>
-        <div class="row-fluid">
   
-          <div class="span6">
-            Title Transfer the following:<br/>
-              <g:each in="${objects_to_action}" var="o">
-                <input type="checkbox" name="tt:${o.id}" checked="true"/> ${o.name} (Currently : ${o.currentPublisher?.name})<br/>
-              </g:each>
-              </ul>
-          </div>
-
-          <div class="span6">
-            New Publisher: <g:simpleReferenceTypedown class="input-xxlarge" style="width:350px;" name="title" baseClass="org.gokb.cred.Org"/><br/>
-            &nbsp;<br/>
-            <input type="submit" value="Step 2" class="btn btn-primary btn-small"/>
-          </div>
-
- 
-        </div>
-        <div class="row-fluid">
-          <div class="span12">
-            Notes
-          </div>
-        </div>
-      </g:form>
+  	<h1 class="page-header">Title Transfer</h1>
+		<div id="mainarea" class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">Step 1 of 2</h3>
+			</div>
+			<div class="panel-body">
+      	<g:form controller="workflow" action="processTitleChange" method="get">
+					<div class="row">
+	          <div class="col-md-6">
+	            <h3>Title(s) to transfer</h3>
+	          	<table class="table table-striped table-bordered no-select-all">
+	          		<thead>
+	          			<tr>
+	          				<th></th>
+	          				<th>Title(s)</th>
+	          			</tr>
+	          		</thead>
+	          		<tbody>
+	          			<g:each in="${objects_to_action}" var="o">
+	          				<tr>
+	          					<td>
+			               		<input type="checkbox" name="tt:${o.id}" checked="checked"/>
+			               	</td>
+			               	<td>
+			               		${o.name} (Currently : ${o.currentPublisher?.name})
+											</td>
+			             </g:each>
+	          		</tbody>
+	          	</table>
+	          </div>
+	          <div class="col-md-6">
+	            <h3>Trasfer to:</h3>
+		            <label>New Publisher:</label>
+		            <g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.Org"/>
+	          </div>
+	        	
+	        </div>
+          <button type="submit" class="btn btn-default btn-sm pull-right" >Next</button>
+	      </g:form>
+			</div>
     </div>
   </body>
 </html>

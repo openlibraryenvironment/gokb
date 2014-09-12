@@ -1,11 +1,25 @@
 modules = {
   gokbstyle {
-    dependsOn 'bootstrap'
-    dependsOn 'bootstrap-popover'
-    // resource url: 'css/scaffolding.css'
-    // resource url: 'css/bootstrap.css'
+    dependsOn 'application'
+    dependsOn 'editable'
     resource url: 'css/style.css'
-    resource url: 'css/bootstrap-editable.css'
     // resource url: "css/${ApplicationHolder.application.config.defaultCssSkin?:'live.css'}"
+  }
+  
+  gokbcharts {
+    dependsOn 'gokbstyle'
+    resource url: 'js/morris/raphael.min.js'
+    resource url: 'js/morris/morris.min.js'
+    resource url: 'css/morris.css'
+  }
+  
+  
+  overrides {
+    'bootstrap-css' {
+      // resource id: 'bootstrap-css', url:'/css/gokbbootstrap-3.test.css'
+      resource id: 'bootstrap-css', url:"/css/${grailsApplication.config.defaultCssSkin?:'gokbbootstrap-3.min.css'}"
+      // resource id: 'bootstrap-css', url:'/css/gokbbootstrap-3.min.css'
+      // resource id: 'bootstrap-responsive-css', url:'/css/gokbbootstrap-2-responsive.min.css'
+    }
   }
 }

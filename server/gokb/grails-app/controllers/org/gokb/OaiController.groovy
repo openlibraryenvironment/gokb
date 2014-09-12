@@ -293,6 +293,7 @@ class OaiController {
       def offset = 0;
       def resumption = null
       def metadataPrefix = null
+      def max = result.oaiConfig.pageSize ?: 10
 
       if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
         def rtc = params.resumptionToken.split('\\|');
@@ -337,7 +338,7 @@ class OaiController {
 
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
       def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
-      def records = Package.executeQuery("select o ${query}",query_params,[offset:offset,max:3])
+      def records = Package.executeQuery("select o ${query}",query_params,[offset:offset,max:max])
 
       log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
 

@@ -1,8 +1,3 @@
-<r:require modules="gokbstyle"/>
-<r:require modules="editable"/>
-
-<h1>Review Request ${d.id}</h1>
-
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#rrdets" data-toggle="tab">Review Request Details</a></li>
@@ -19,7 +14,8 @@
 	      <dt><g:annotatedLabel owner="${d}" property="status">Request Status</g:annotatedLabel></dt>
 	      <dd><g:xEditableRefData owner="${d}" field="status" config='ReviewRequest.Status' /></dd>
 	      <dt><g:annotatedLabel owner="${d}" property="target">Component</g:annotatedLabel></dt>
-	      <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.KBComponent">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown> <g:componentLink object="${d?.componentToReview}">Link</g:componentLink></dd>
+	      <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.KBComponent">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown>
+	      	<g:componentLink object="${d?.componentToReview}" target="_blank" title="View the component (opens in new window)" >view</g:componentLink></dd>
 
         <g:if test="${d.id != null}">
 	        <dt><g:annotatedLabel owner="${d}" property="dateCreated">Request Timestamp</g:annotatedLabel></dt>
@@ -28,7 +24,7 @@
         <g:else>
           Additional fields will be available once the record is saved
         </g:else>
-    </dl>
-  </div>
+	    </dl>
+	  </div>
+	</div>
 </div>
-

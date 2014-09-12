@@ -3,12 +3,12 @@
   <head>
     <meta name="layout" content="main"/>
     <r:require modules="gokbstyle"/>
-    <title>GOKbo : Master Lists</title>
+    <title>GOKb: Master Lists</title>
   </head>
   <body>
 
-    <div class="container-fluid">
-      <div class="row-fluid">
+    <div class="container">
+      <div class="row">
 
         <table class="table table-striped">
           <thead>
