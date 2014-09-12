@@ -97,7 +97,7 @@ class BootStrap {
     alterDefaultMetaclass();
   }
   
-  private void failAnyIngestingProjects() {
+  def failAnyIngestingProjects() {
     log.debug("Failing any projects stuck on Ingesting on server start.");
     RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
       
@@ -105,6 +105,7 @@ class BootStrap {
       it.save(flush:true)
     }
   }
+
   
   private void addCustomApis() {
     
@@ -125,15 +126,6 @@ class BootStrap {
     }
   }
   
-  def failAnyIngestingProjects() {
-    log.debug("Failing any projects stuck on Ingesting on server start.");
-    RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
-      
-      it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
-      it.save(flush:true)
-    }
-  }
-
   def registerDomainClasses() {
 
     def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
