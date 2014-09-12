@@ -92,6 +92,9 @@ class BootStrap {
     addValidationRules()
     
     failAnyIngestingProjects()
+
+    // Add our custom metaclass methods for all KBComponents.
+    alterDefaultMetaclass();
   }
   
   private void failAnyIngestingProjects() {
@@ -119,6 +122,15 @@ class BootStrap {
         // Add the api methods.
         A_Api.addMethods(c, Class.forName(className))
       }
+    }
+  }
+  
+  def failAnyIngestingProjects() {
+    log.debug("Failing any projects stuck on Ingesting on server start.");
+    RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
+      
+      it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
+      it.save(flush:true)
     }
   }
 
