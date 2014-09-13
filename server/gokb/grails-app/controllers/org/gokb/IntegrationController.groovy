@@ -394,7 +394,9 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def loadTitleList() {
     def title_file = request.getFile("titleFile")?.inputStream
-    def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), '\t','"' )
+    char tab = '\t'
+    char quote = '"'
+    def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), tab,quote )
     String [] header = r.readNext()
     String [] nl = r.readNext()
     while ( nl != null ) {

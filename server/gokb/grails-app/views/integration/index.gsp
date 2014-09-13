@@ -136,7 +136,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
       <div class="panel-body">
         <p>Upload a tsv of title data formed as Title	p-ISSN	e-ISSN</p>
         <p>
-          <g:form action="loadTitleList">
+          <g:form action="loadTitleList" enctype="multipart/form-data">
             <input type="file" id="titleFile" name="titleFile"/>
             <input type="submit"/>
           </g:form>
