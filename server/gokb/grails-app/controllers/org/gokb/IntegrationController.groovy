@@ -5,6 +5,7 @@ import org.gokb.cred.*
 import grails.plugins.springsecurity.Secured
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
+import au.com.bytecode.opencsv.CSVReader
 
 class IntegrationController {
 
@@ -387,5 +388,19 @@ class IntegrationController {
     
 
     render result as JSON
+  }
+
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def loadTitleList() {
+    def title_file = request.getFile("titleFile")?.inputStream
+    def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), '\t','"' )
+    String [] header = r.readNext()
+    String [] nl = r.readNext()
+    while ( nl != null ) {
+      log.debug(nl);
+      nl = r.readNext()
+    }
+    log.debug("Done");
   }
 }

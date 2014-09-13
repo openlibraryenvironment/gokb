@@ -65,7 +65,7 @@ grails.project.dependency.resolution = {
         runtime 'xalan:xalan:2.7.1'
         runtime 'org.elasticsearch:elasticsearch:1.0.1'
         runtime 'org.elasticsearch:elasticsearch-client-groovy:1.0.1'
-        // compile 'org.elasticsearch:elasticsearch-lang-groovy:1.4.0'
+        runtime 'net.sf.opencsv:opencsv:2.0'
     }
 
     plugins {
