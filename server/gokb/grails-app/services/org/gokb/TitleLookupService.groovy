@@ -153,7 +153,7 @@ class TitleLookupService {
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
-        log.debug("Succesfully saved TI: ${the_title.name}")
+        log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
       }
       else {
         the_title.errors.each { e ->
@@ -167,33 +167,35 @@ class TitleLookupService {
 
   private TitleInstance addPublisher (String publisher_name, TitleInstance ti, user = null) {
 
-    // Lookup our publisher.
-    Org publisher = componentLookupService.lookupComponent(publisher_name)
+    if ( publisher_name != null ) {
+      // Lookup our publisher.
+      Org publisher = componentLookupService.lookupComponent(publisher_name)
 
-    // Found a publisher.
-    if (publisher) {
-      def orgs = ti.getPublisher()
+      // Found a publisher.
+      if (publisher) {
+        def orgs = ti.getPublisher()
 
-      // Has the publisher ever existed in the list against this title.
-      if (!orgs.contains(publisher)) {
+        // Has the publisher ever existed in the list against this title.
+        if (!orgs.contains(publisher)) {
 
-        // First publisher added?
-        boolean not_first = orgs.size() > 0
+          // First publisher added?
+          boolean not_first = orgs.size() > 0
         
-        // Added a publisher?
-        boolean added = ti.changePublisher (
-          componentLookupService.lookupComponent(publisher_name),
-          true
-        )
-
-        // Raise a review request, if needed.
-        if (not_first && added) {
-          ReviewRequest.raise(
-            ti,
-            "Added '${publisher.name}' as a publisher on '${ti.name}'.",
-            "Publisher supplied in ingested file is different to any already present on TI.",
-            user
+          // Added a publisher?
+          boolean added = ti.changePublisher (
+            componentLookupService.lookupComponent(publisher_name),
+            true
           )
+
+          // Raise a review request, if needed.
+          if (not_first && added) {
+            ReviewRequest.raise(
+              ti,
+              "Added '${publisher.name}' as a publisher on '${ti.name}'.",
+              "Publisher supplied in ingested file is different to any already present on TI.",
+              user
+            )
+          }
         }
       }
     }

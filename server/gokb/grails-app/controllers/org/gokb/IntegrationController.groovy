@@ -397,12 +397,45 @@ class IntegrationController {
     char tab = '\t'
     char quote = '"'
     def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), tab,quote )
+
+    def col_positions = [ 'identifier.pissn':-1, 'identifier.eissn':-1, 'title':-1 ]
+
     String [] header = r.readNext()
-    String [] nl = r.readNext()
-    while ( nl != null ) {
-      log.debug(nl);
-      nl = r.readNext()
+    int ctr = 0
+    header.each { 
+      col_positions [ it.toLowerCase() ] = ctr++
+    }
+
+    if ( ( col_positions.'title' != -1 ) && ( ( col_positions.'identifier.pissn' != -1 ) || ( col_positions.'identifier.eissn' != -1 ) ) ) {
+      // So long as we have at least one identifier...
+      String [] nl = r.readNext()
+      while ( nl != null ) {
+        nl = r.readNext()
+        try {
+          KBComponent.withTransaction() {
+            def candidate_identifiers = []
+            if ( ( col_positions.'identifier.pissn' != -1 ) && 
+                 ( nl[col_positions.'identifier.pissn']?.length() > 0 ) && 
+                 ( nl[col_positions.'identifier.pissn'].toLowerCase() != 'null' ) ) { 
+              candidate_identifiers.add([type:'issn', value:nl[col_positions.'identifier.pissn']]);
+            }
+            if ( ( col_positions.'identifier.eissn' != -1 ) && 
+                 ( nl[col_positions.'identifier.eissn']?.length() > 0 ) && 
+                 ( nl[col_positions.'identifier.eissn'].toLowerCase() != 'null' ) ) { 
+              candidate_identifiers.add([type:'eissn', value:nl[col_positions.'identifier.eissn']]);
+            }
+            if ( candidate_identifiers.size() > 0 ) {
+              log.debug("Looking up ${candidate_identifiers} - ${nl[col_positions.'title']}");
+              def existing_component = titleLookupService.find (nl[col_positions.'title'], null, candidate_identifiers)
+            }
+          }
+        }
+        catch ( Exception e ) {
+          log.error("Unable to process..",e);
+        }
+      }
     }
     log.debug("Done");
+    redirect(action:'index');
   }
 }

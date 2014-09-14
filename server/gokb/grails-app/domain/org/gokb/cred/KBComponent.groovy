@@ -865,4 +865,35 @@ abstract class KBComponent {
     }
 
   }
+
+  /**
+   *  Accept a map of namespace:x,identifier:y pairs. Every identifier which does match something must match the same component
+   *  Non-matches are OK
+   */
+  @Transient
+  static def secureIdentifierLookup(candidate_identifiers) {
+
+    def result = null;
+
+    def base_query = "select distinct c.fromComponent from Combo as c where c.toComponent in ( :l )"
+    def identifier_list = []
+
+    candidate_identifiers.each { id ->
+      identifier_list.add(Identifier.lookupOrCreateCanonicalIdentifier(id.namespace, id.value))
+    }
+
+    def qresult = Combo.executeQuery(base_query,[l:identifier_list],[readOnly:true]);
+
+    if ( qresult.size() == 1 ) {
+      result = qresult[0]
+    }
+    else if ( qresult.size() == 0 ) {
+    }
+    else {
+      def matching_identifiers = qresult.collect{it.id}
+      throw new Exception("secureIdentifierLookup found multiple (${qresult.size()}) matching components (${matching_identifiers}) for a supposedly unique set of identifiers: ${candidate_identifiers}");
+    }
+
+    result
+  }
 }
