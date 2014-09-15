@@ -32,7 +32,7 @@
 
 </head>
 
-<body>
+<body class="theme-${ grailsApplication.config.gokb.theme }">
 
   <div id="wrapper">
 

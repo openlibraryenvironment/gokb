@@ -2,10 +2,10 @@
  * GOKb application CSS. 
  */
 /*
+*= require sb-admin-2
 *= require theme
 *= require font-awesome
 *= require metisMenu.min
-*= require sb-admin-2
 *= require summernote
 *= require summernote-bs3
 *= require annotations

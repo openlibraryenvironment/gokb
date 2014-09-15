@@ -2,8 +2,16 @@
 @import "themes/${config.gokb.theme}/variables.less";
 @import "themes/${config.gokb.theme}/bootswatch.less";
 
-// Override the vars here.
+// Overrides
 @icon-font-path: "../";
+
+body{
+	background-color: @body-bg;
+}
+
+#page-wrapper {
+    background-color: @body-bg;
+}
 
 // medium+ screen sizes
 @media ( min-width :@screen-md) {
@@ -154,38 +162,29 @@ h1.panel-title {
 	font-size: 1.75em;
 }
 
-.sidebar li {
+.sidebar {
 	
-	&.sidebar-search {
-		background-color: @dropdown-link-hover-bg;		
-	}
+	margin-top: @navbar-height;
 	
-	&.divider {
-	  height: 1px;
-	  margin: 9.5px 0;
-	  overflow: hidden;
-		background-color:@navbar-default-link-disabled-color;
-	}
-	
-	a {
-		&:link,
-		&:visited {
-			background-color: @navbar-default-bg;
-			color: @navbar-default-link-color;
+	li {
+		&.sidebar-search {
+			background-color: @dropdown-link-hover-bg;		
 		}
-				
-		&:active,
-		&:hover,
-		&:focus {
-			background-color: @dropdown-link-hover-bg;
-			color: @dropdown-link-hover-color;
+		
+		&.divider {
+		  height: 1px;
+		  margin: 9.5px 0;
+		  overflow: hidden;
+			background-color:@navbar-default-link-disabled-color;
 		}
-	}
-
-	&.active {
+		
 		a {
 			&:link,
-			&:visited,
+			&:visited {
+				background-color: @navbar-default-bg;
+				color: @navbar-default-link-color;
+			}
+					
 			&:active,
 			&:hover,
 			&:focus {
@@ -193,21 +192,34 @@ h1.panel-title {
 				color: @dropdown-link-hover-color;
 			}
 		}
-		
-		.nav-second-level {
-			background-color: @dropdown-link-hover-bg;
+	
+		&.active {
 			a {
 				&:link,
-				&:visited {
-					background-color:@dropdown-link-hover-bg;
-					color: @dropdown-link-hover-color;
-				}
-				
+				&:visited,
 				&:active,
 				&:hover,
 				&:focus {
-					background-color: @navbar-default-link-hover-bg;
-					color: @navbar-default-link-color;
+					background-color: @dropdown-link-hover-bg;
+					color: @dropdown-link-hover-color;
+				}
+			}
+			
+			.nav-second-level {
+				background-color: @dropdown-link-hover-bg;
+				a {
+					&:link,
+					&:visited {
+						background-color:@dropdown-link-hover-bg;
+						color: @dropdown-link-hover-color;
+					}
+					
+					&:active,
+					&:hover,
+					&:focus {
+						background-color: @navbar-default-link-hover-bg;
+						color: @navbar-default-link-color;
+					}
 				}
 			}
 		}
