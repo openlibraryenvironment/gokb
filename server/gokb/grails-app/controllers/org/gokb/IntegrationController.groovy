@@ -408,9 +408,15 @@ class IntegrationController {
       col_positions [ it.toLowerCase() ] = ctr++
     }
 
-    if ( ( col_positions.'title' != -1 ) && ( ( col_positions.'identifier.pissn' != -1 ) || ( col_positions.'identifier.eissn' != -1 ) ) ) {
+    if ( ( col_positions.'title' != -1 ) && 
+         ( ( col_positions.'identifier.pissn' != -1 ) || 
+           ( col_positions.'identifier.eissn' != -1 ) ) ) {
+
       // So long as we have at least one identifier...
       String [] nl = r.readNext()
+
+      int rowctr = 0;
+
       while ( nl != null ) {
         nl = r.readNext()
         try {
@@ -421,11 +427,13 @@ class IntegrationController {
                  ( nl[col_positions.'identifier.pissn'].toLowerCase() != 'null' ) ) { 
               candidate_identifiers.add([type:'issn', value:nl[col_positions.'identifier.pissn']]);
             }
+
             if ( ( col_positions.'identifier.eissn' != -1 ) && 
                  ( nl[col_positions.'identifier.eissn']?.length() > 0 ) && 
                  ( nl[col_positions.'identifier.eissn'].toLowerCase() != 'null' ) ) { 
               candidate_identifiers.add([type:'eissn', value:nl[col_positions.'identifier.eissn']]);
             }
+
             if ( candidate_identifiers.size() > 0 ) {
               log.debug("Looking up ${candidate_identifiers} - ${nl[col_positions.'title']}");
               def existing_component = titleLookupService.find (nl[col_positions.'title'], null, candidate_identifiers)
@@ -434,6 +442,11 @@ class IntegrationController {
         }
         catch ( Exception e ) {
           log.error("Unable to process..",e);
+        }
+
+        if ( rowctr++ > 100 ) {
+          rowctr = 0;
+          cleanUpGorm()
         }
       }
     }
