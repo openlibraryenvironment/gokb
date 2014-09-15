@@ -412,7 +412,7 @@ class IntegrationController {
       while ( nl != null ) {
         nl = r.readNext()
         try {
-          KBComponent.withTransaction() {
+          KBComponent.withNewTransaction() {
             def candidate_identifiers = []
             if ( ( col_positions.'identifier.pissn' != -1 ) && 
                  ( nl[col_positions.'identifier.pissn']?.length() > 0 ) && 

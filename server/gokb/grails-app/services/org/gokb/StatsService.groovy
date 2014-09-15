@@ -70,7 +70,7 @@ class StatsService {
         result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_end_date])[0]])
       }
 
-      if ( month == 12 ) {
+      if ( month == 11 ) {
         year++
         month=0
       }
