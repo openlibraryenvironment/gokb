@@ -35,7 +35,7 @@ class StatsService {
 
     Calendar calendar = Calendar.getInstance();
     int year = calendar.get(Calendar.YEAR) - 1;
-    int month = calendar.get(Calendar.MONTH);
+    int month = calendar.get(Calendar.MONTH);  // Zero based, Jan = 0
 
     result.colHeads1 = [['string', 'Year-Month'], ['number', 'Total']]
 
@@ -72,7 +72,7 @@ class StatsService {
 
       if ( month == 12 ) {
         year++
-        month=1
+        month=0
       }
       else {
         month++
