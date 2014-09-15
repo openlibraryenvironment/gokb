@@ -101,7 +101,7 @@ class CreateController {
           }
           log.debug("Completed setting properties");
 
-          if ( result.newobj?.postCreateClosure != null ) {
+          if ( result.newobj.hasProperty('postCreateClosure') ) {
             log.debug("Created object has a post create closure.. call it");
             result.newobj.postCreateClosure.call([user:user])
           }

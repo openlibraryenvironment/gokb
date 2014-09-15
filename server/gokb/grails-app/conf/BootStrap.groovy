@@ -92,9 +92,12 @@ class BootStrap {
     addValidationRules()
     
     failAnyIngestingProjects()
+
+    // Add our custom metaclass methods for all KBComponents.
+    alterDefaultMetaclass();
   }
   
-  private void failAnyIngestingProjects() {
+  def failAnyIngestingProjects() {
     log.debug("Failing any projects stuck on Ingesting on server start.");
     RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
       
@@ -102,6 +105,7 @@ class BootStrap {
       it.save(flush:true)
     }
   }
+
   
   private void addCustomApis() {
     
@@ -121,7 +125,7 @@ class BootStrap {
       }
     }
   }
-
+  
   def registerDomainClasses() {
 
     def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save()

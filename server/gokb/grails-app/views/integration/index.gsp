@@ -6,8 +6,7 @@
 </head>
 <body>
   <h1 class="page-header">GOKb Integration API</h1>
-   <div id="mainarea"
-    class="panel panel-default ${displayobj != null ? 'col-md-5 ' : ''}">
+   <div id="mainarea" class="panel panel-default ${displayobj != null ? 'col-md-5 ' : ''}">
       <div class="panel-heading">
         <h3 class="panel-title">
           Cross Reference Title
@@ -50,6 +49,7 @@
             value property</td>
         </tr>
       </table>
+
       <div class="panel-footer" >      
         <h4>Example:</h4>
         <pre>
@@ -87,6 +87,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
           <li>Conflict</li>
         </ul>
       </div>
+
       <div class="panel-footer" >      
         <h4>Example:</h4>
         <pre>
@@ -125,5 +126,27 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
         </ul>
       </div>
     </div>
+
+   <div id="mainarea" class="panel panel-default ${displayobj != null ? 'col-md-5 ' : ''}">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          Load Title List
+        </h3>
+      </div>
+      <div class="panel-body">
+        <p>Upload a tsv of title data formed as Title	p-ISSN	e-ISSN</p>
+        <p>
+          <g:form action="loadTitleList" enctype="multipart/form-data">
+            <input type="file" id="titleFile" name="titleFile"/>
+            <input type="submit"/>
+          </g:form>
+        </p>
+      </div>
+      <div class="panel-footer" >      
+      </div>
+    </div>
+  </div>
+
+
 </body>
 </html>
