@@ -1027,6 +1027,7 @@ apiClasses = [
 ]
 
 /** Less config **/
+<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
 grails.assets.less.compiler = 'less4j'
 grails.assets.excludes = ["gokb/themes/**/*.less", "icons"]
 grails.assets.includes = ["gokb/themes/**/theme.less", "jquery/*.js"]
@@ -1035,6 +1036,13 @@ grails.assets.includes = ["gokb/themes/**/theme.less", "jquery/*.js"]
 grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
 
 grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
+=======
+grails.assets.less.compiler = 'standard'
+grails.assets.excludes = ["gokb/themes/**/*.less"]
+
+grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
+grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]
+>>>>>>> fe67b1b More work on the shift to asset pipeline.
 
 gokb.theme = "yeti"
 

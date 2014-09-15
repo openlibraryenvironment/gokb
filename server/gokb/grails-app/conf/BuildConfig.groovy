@@ -82,7 +82,16 @@ grails.project.dependency.resolution = {
 //      compile ":spring-security-acl:2.0-RC1"
 //      compile ":spring-security-ui:1.0-RC2"
       
-//      compile ':asset-pipeline:1.8.3'
+      compile ':asset-pipeline:1.9.9'
+      
+      // Allows the use of groovy code in css and js files by suffixing with '-gtpl'.
+      // Injects grailsApplication and config for easy access in your files.
+//      compile ":groovy-template-grails-asset-pipeline:0.4"
+      compile ":groovy-asset-pipeline:1.0"
+      
+      // LESS compiler
+      compile ":less-asset-pipeline:1.11.0"
+      
       runtime ':hibernate:3.6.10.14'
       runtime ':database-migration:1.4.0'
       runtime ":resources:1.2.8"

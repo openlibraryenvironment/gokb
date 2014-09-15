@@ -29,7 +29,6 @@
 									checked="checked" /></td>
 								<td>
 									${o.name}
-=======
 								</td>
 						</g:each>
 					</tbody>

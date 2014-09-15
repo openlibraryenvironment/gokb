@@ -2,6 +2,7 @@
  * GOKb application CSS. 
  */
 /*
+*= require theme
 *= require font-awesome
 *= require metisMenu.min
 *= require summernote
