@@ -46,6 +46,10 @@ grails.project.dependency.resolution = {
         
         // Custom repo that points to the public nexus repo. Used for elastic search client as there are no "official" ones.
         mavenRepo "http://repo.spring.io/milestone/"
+<<<<<<< Upstream, based on cleandev
+=======
+//        mavenRepo "http://projects.k-int.com/nexus-webapp-1.4.0/content/repositories/releases"
+>>>>>>> 96ab106 Finishing of asset move.
         mavenRepo "http://nexus.k-int.com/content/repositories/releases"
 
         // uncomment these (or add new ones) to enable remote dependency resolution from public Maven repositories
@@ -87,7 +91,7 @@ grails.project.dependency.resolution = {
       // Allows the use of groovy code in css and js files by suffixing with '-gtpl'.
       // Injects grailsApplication and config for easy access in your files.
 //      compile ":groovy-template-grails-asset-pipeline:0.4"
-      compile ":groovy-asset-pipeline:1.0"
+      compile ":groovy-asset-pipeline:1.1"
       
       // LESS compiler
       compile ":less-asset-pipeline:1.11.0"
@@ -136,8 +140,12 @@ grails.project.dependency.resolution = {
       compile ':executor:0.3'
       compile ':famfamfam:1.0.1'
       compile ':rest:0.7'
+<<<<<<< Upstream, based on cleandev
       // compile ':twitter-bootstrap:2.3.2'
       compile ":twitter-bootstrap:3.2.0.2"
       // compile ":twitter-bootstrap:3.2.1"
+=======
+      compile ":twitter-bootstrap:3.2.0.2"
+>>>>>>> 96ab106 Finishing of asset move.
     }
 }
