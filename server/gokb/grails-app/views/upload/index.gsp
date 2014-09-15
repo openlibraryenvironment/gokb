@@ -2,7 +2,6 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<r:require modules="gokbstyle,bootstrap-popover" />
 <title>GOKb: File Upload</title>
 </head>
 <body>
@@ -22,13 +21,13 @@
          
          <div class="input-group" >
          	 <span class="input-group-btn">
-		         <span class="btn btn-default btn-sm btn-file">
+		         <span class="btn btn-default btn-file">
 						    Browse <input type="file" id="submissionFile" name="submissionFile" onchange='$("#upload-file-info").html($(this).val());' />
 						 </span>
 					 </span>
         	 <span class='form-control' id="upload-file-info"><label for="submissionFile" >Select a file...</label></span>
         	 <span class="input-group-btn">
-					   <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+					   <button type="submit" class="btn btn-primary">Upload</button>
 					 </span>
          </div>
       </g:form>

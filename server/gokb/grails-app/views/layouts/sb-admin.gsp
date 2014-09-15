@@ -178,5 +178,6 @@
         ga('send', 'pageview');
       </g:javascript>
   </g:if>
+  <asset:deferredScripts/>
 </body>
 </html>

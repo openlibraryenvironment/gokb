@@ -18,9 +18,6 @@
 //= require morris.min
 //= require_self
 
-// Perform any initialisation needed here.
-${this.metaClass."mixin" org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib}
-
 // Global namespace for GOKb functions.
 // Also add any config options we wish to use here. This is a good place to add links to controllers etc...
 window.gokb = {

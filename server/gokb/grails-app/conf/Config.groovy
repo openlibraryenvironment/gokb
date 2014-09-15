@@ -117,7 +117,9 @@ log4j = {
       'grails.app.filters',
       'grails.app.conf',
       'grails.app.jobs',
-      'com.k_int'
+      'com.k_int',
+      'com.k_int.asset.pipeline.groovy',
+      'asset.pipeline.less.compilers'
 
   //   debug  'org.gokb.DomainClassExtender'
 
@@ -1010,6 +1012,14 @@ apiClasses = [
   "com.k_int.apis.GrailsDomainHelpersApi"
 ]
 
+/** Less config **/
+grails.assets.less.compiler = 'standard'
+grails.assets.excludes = ["gokb/themes/**/*.less"]
+
+grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
+grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]
+
+gokb.theme = "yeti"
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'

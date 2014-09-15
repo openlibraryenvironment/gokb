@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="layout" content="main"/>
-    <asset:stylesheet src="gokb/application.css"/>
+<head>
+<meta name="layout" content="main" />
+<asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-    <r:require modules="editable"/>
-    <title>GOKb::Title Reconcile</title>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Collecting Data....</h1>
-      <ul>
-        <g:each in="${objects_to_action}" var="ota">
-           <li id="title:${ota.id}">${ota.name}</li>
-        </g:each>
-      </ul>
-    </div>
+<title>GOKb::Title Reconcile</title>
+</head>
+<body>
+	<div class="container">
+		<h1>Collecting Data....</h1>
+		<ul>
+			<g:each in="${objects_to_action}" var="ota">
+				<li id="title:${ota.id}">
+					${ota.name}
+				</li>
+			</g:each>
+		</ul>
+	</div>
 
-    <g:javascript>
+	<g:javascript>
       var list = [
         <g:each in="${objects_to_action}" var="ota">
           { oid:"${ota.class.name}:${ota.id}",issns:[
@@ -41,6 +42,6 @@
         }
       });
     </g:javascript>
-  </body>
+</body>
 </html>
 

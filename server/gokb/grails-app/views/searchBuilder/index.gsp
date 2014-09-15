@@ -1,19 +1,13 @@
-<asset:stylesheet src="gokb/application.css"/>
-<asset:javascript src="gokb/application.js" />
-<r:require modules="editable"/>
-
-
 <!DOCTYPE html>
 <html>
   <head>
     <meta name="layout" content="main"/>
 
     <asset:stylesheet src="gokb/application.css"/>
-<asset:javascript src="gokb/application.js" />
-    <r:require module="jquery-ui"/>
-    <r:require modules="dynatree"/>
+		<asset:javascript src="gokb/application.js" />
+		<asset:javascript src="gokb/jquery.dynatree.min.js" />
 
-    <title>GOKbo: About</title>
+    <title>GOKb: About</title>
   </head>
   <body>
 

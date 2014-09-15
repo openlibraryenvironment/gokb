@@ -1,4 +1,4 @@
-(function ($) {
+
   
   var TEXT_CURRENT_PAGE_SELECTED = "<strong>Current page</strong> selected";
   var LINK_CURRENT_PAGE_SELECTED = "Select all pages";
@@ -24,7 +24,8 @@
         
         // Create the checkbox.
         var all_cb = $('<input type="checkbox" name="batch_on" value="none" class="batch-select-all" />')
-          .appendTo(first_header_cell);
+          .appendTo(first_header_cell)
+        ;
         
         // Create the link to flag we would like to select across all pages.
         var link = $('<a href="" class="batch-all-toggle" />');
@@ -114,5 +115,3 @@
       }
     });
   });
-  
-}) (jQuery);

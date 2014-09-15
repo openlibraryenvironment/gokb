@@ -1,7 +1,3 @@
-<asset:stylesheet src="gokb/application.css"/>
-<asset:javascript src="gokb/application.js" />
-<r:require modules="editable"/>
-
 <g:form method="get" class="form-horizontal" controller="search" role="form">
 
   <input type="hidden" name="qbe" value="${params.qbe}"/>

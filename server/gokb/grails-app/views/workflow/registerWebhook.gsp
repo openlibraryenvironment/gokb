@@ -2,8 +2,6 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<asset:stylesheet src="gokb.css"/> />
-<r:require modules="editable" />
 <title>GOKb: Package - Register Webhook</title>
 </head>
 <body>
@@ -81,4 +79,3 @@
 	</g:form>
 </body>
 </html>
-
