@@ -20,8 +20,8 @@
     type="image/x-icon">
   
   <g:layoutHead />
-  <r:require modules="gokbstyle" />
-  <r:layoutResources />
+  <asset:stylesheet src="gokb/application.css"/>
+	<asset:javascript src="gokb/application.js" />
   
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesnt work if you view the page via file:// -->
@@ -32,7 +32,7 @@
 
 </head>
 
-<body>
+<body class="theme-${ grailsApplication.config.gokb.theme }">
 
   <div id="wrapper">
 
@@ -178,7 +178,6 @@
         ga('send', 'pageview');
       </g:javascript>
   </g:if>
+  <asset:deferredScripts/>
 </body>
-<r:layoutResources />
-
 </html>

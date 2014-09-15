@@ -444,7 +444,7 @@
 </div>
 
 
-<r:script type="text/javascript">
+<asset:script type="text/javascript">
   function SelectMoveRows(SS1,SS2) {
     var SelID='';
     var SelText='';
@@ -497,4 +497,4 @@
       ss.options[i].selected = true;
     }
   }
-</r:script>
+</asset:script>
