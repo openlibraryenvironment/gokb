@@ -74,6 +74,10 @@ class StatsService {
         result[ct[2]].add(["${year}-${month}",KBComponent.executeQuery(ct[1],[period_end_date])[0]])
       }
 
+      cumulative_total_queries.each { ct ->
+        result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_end_date])[0]])
+      }
+
       if ( month == 11 ) {
         year++
         month=0

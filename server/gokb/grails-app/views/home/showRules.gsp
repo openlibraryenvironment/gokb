@@ -2,7 +2,8 @@
 <html>
   <head>
     <meta name="layout" content="main"/>
-    <r:require modules="gokbstyle"/>
+    <asset:stylesheet src="gokb/application.css"/>
+<asset:javascript src="gokb/application.js" />
     <title>GOKbo : Show Rules</title>
   </head>
   <body>

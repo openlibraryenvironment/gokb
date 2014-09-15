@@ -4,24 +4,24 @@
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-<title><g:layoutTitle default='User Registration'/></title>
+<title><g:layoutTitle default='User Registration' /></title>
 
-<link rel="shortcut icon" href="${resource(dir:'images',file:'favicon.ico')}" type="image/x-icon"/>
+<link rel="shortcut icon"
+	href="${resource(dir:'images',file:'favicon.ico')}" type="image/x-icon" />
+<asset:javascript src="gokb/application.js" />
+<asset:stylesheet src="gokb/application.css" />
+<asset:javascript src="gokb/register.js" />
+<asset:stylesheet src="gokb/register.css" />
 
-   <r:require modules="register,gokbstyle,bootstrap-popover"/>
-   <r:layoutResources/>
-
-<g:layoutHead/>
+<g:layoutHead />
 
 </head>
 
 <body>
 
-<s2ui:layoutResources module='register' />
+	<g:layoutBody />
 
-<g:layoutBody/>
-
-<s2ui:showFlash/>
+	<s2ui:showFlash />
 
 </body>
 </html>

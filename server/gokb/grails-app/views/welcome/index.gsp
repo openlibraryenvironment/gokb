@@ -5,7 +5,6 @@
 <html>
   <head>
     <meta name='layout' content='sb-admin'/>
-    <r:require modules="gokbcharts"/>
     <title>GOKb: Welcome</title>
   </head>
   <body>
