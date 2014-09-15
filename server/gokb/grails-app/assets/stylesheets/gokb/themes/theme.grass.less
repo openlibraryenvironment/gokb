@@ -1,5 +1,9 @@
+@import "bootstrap.less";
+@import "${config.gokb.theme}/variables.less";
+@import "${config.gokb.theme}/bootswatch.less";
+
 // Overrides
-@icon-font-path: "../../../";
+@icon-font-path: "../../";
 
 body{
 	background-color: @body-bg;
@@ -160,7 +164,7 @@ h1.panel-title {
 
 .sidebar {
 	
-	margin-top: (@navbar-height + 1);
+	margin-top: @navbar-height;
 	
 	li {
 		&.sidebar-search {

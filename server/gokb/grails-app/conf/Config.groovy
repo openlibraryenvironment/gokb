@@ -1044,6 +1044,9 @@ grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
 grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]
 >>>>>>> fe67b1b More work on the shift to asset pipeline.
 
+grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
+grails.assets.plugin."font-awesome-resources".includes = ["font-awesome/font-awesome.less"]
+
 gokb.theme = "yeti"
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
