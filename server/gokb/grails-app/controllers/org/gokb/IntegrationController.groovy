@@ -12,6 +12,8 @@ class IntegrationController {
   def grailsApplication
   def springSecurityService
   def titleLookupService
+  def sessionFactory
+  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -438,4 +440,19 @@ class IntegrationController {
     log.debug("Done");
     redirect(action:'index');
   }
+
+  def cleanUpGorm() {
+    log.debug("Clean up GORM");
+
+    // Get the current session.
+    def session = sessionFactory.currentSession
+
+    // flush and clear the session.
+    session.flush()
+    session.clear()
+
+    // Clear the property instance map.
+    propertyInstanceMap.get().clear()
+  }
+
 }

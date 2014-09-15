@@ -145,11 +145,18 @@ class TitleLookupService {
       // Add the publisher.
       addPublisher(publisher_name, the_title, user)
 
+
+      // II: Changed the following - I think/worry it causes DB row churn.
       // Add all the identifiers.
-      LinkedHashSet id_set = []
-      id_set.addAll(the_title.getIds())
-      id_set.addAll(results['ids'])
-      the_title.setIds(id_set)
+      // LinkedHashSet id_set = []
+      // id_set.addAll(the_title.getIds())
+      // id_set.addAll(results['ids'])
+      // the_title.setIds(id_set)
+      results['ids'].each {
+        if ( ! the_title.getIds().contains(it) ) {
+           the_title.getIds().add(it);
+        }
+      }
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
