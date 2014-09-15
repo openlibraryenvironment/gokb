@@ -35,7 +35,10 @@ class StatsService {
 
     Calendar calendar = Calendar.getInstance();
     int year = calendar.get(Calendar.YEAR) - 1;
-    int month = calendar.get(Calendar.MONTH);  // Zero based, Jan = 0
+
+    int month = calendar.get(Calendar.MONTH) + 1;  // Zero based, Jan = 0 - Add one so we get the full year and not the start of this month last year
+                                                   // IE we want now to be a partial month....
+    if ( month == 12 ) month = 0;
 
     result.colHeads1 = [['string', 'Year-Month'], ['number', 'Total']]
 
@@ -62,12 +65,13 @@ class StatsService {
       month_data.add("${year}-${month}");
 
       month_queries.each { mc ->
-        log.debug("Finding ${mc[0]} from ${period_start_date} to ${period_end_date}");
+        log.debug("Finding ${mc[0]} from ${period_start_date} to ${period_end_date} (${year}-${month})");
         result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_start_date, period_end_date])[0]])
       }
 
       cumulative_total_queries.each { ct ->
-        result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_end_date])[0]])
+        log.debug("Finding (CT) ${ct[0]} from ${period_start_date} to ${period_end_date} (${year}-${month})");
+        result[ct[2]].add(["${year}-${month}",KBComponent.executeQuery(ct[1],[period_end_date])[0]])
       }
 
       if ( month == 11 ) {
