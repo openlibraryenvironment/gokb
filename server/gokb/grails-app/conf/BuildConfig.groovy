@@ -92,7 +92,8 @@ grails.project.dependency.resolution = {
       // LESS compiler
       compile ":less-asset-pipeline:1.11.0"
       
-      runtime ':hibernate:3.6.10.14'
+      runtime ':hibernate:3.6.10.2'
+      // runtime ':hibernate:3.6.10.14' - this pukes forme
       runtime ':database-migration:1.4.0'
       
       /*************************************/
