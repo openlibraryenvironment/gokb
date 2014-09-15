@@ -1019,6 +1019,9 @@ grails.assets.excludes = ["gokb/themes/**/*.less"]
 grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
 grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]
 
+grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
+grails.assets.plugin."font-awesome-resources".includes = ["font-awesome/font-awesome.less"]
+
 gokb.theme = "yeti"
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
