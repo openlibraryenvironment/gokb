@@ -131,7 +131,7 @@ class BootStrap {
 
     def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
     grailsApplication.domainClasses.each { dc ->
-      log.debug("Ensure ${dc.name} has entry in KBDomainInfo table");
+      // log.debug("Ensure ${dc.name} has entry in KBDomainInfo table");
       def dcinfo = KBDomainInfo.findByDcName(dc.clazz.name)
       if ( dcinfo == null ) {
         dcinfo = new KBDomainInfo(dcName:dc.clazz.name, displayName:dc.name, type:std_domain_type);
