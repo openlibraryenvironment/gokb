@@ -122,7 +122,7 @@ class WelcomeController {
             query_params.enddate = period_end_date
           }
           
-          log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}")
+          // log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}")
           
           // Execute the query directly with Hibernate so we can just get a list of Maps.
           List<Map> qres = sessionFactory.getCurrentSession().createQuery(q).with {
@@ -155,7 +155,7 @@ class WelcomeController {
       result."${widget_name}"."data" = wData.values()
     }
 
-    log.debug("${result}")
+    // log.debug("${result}")
     ["widgets" : result]  
   }
 }

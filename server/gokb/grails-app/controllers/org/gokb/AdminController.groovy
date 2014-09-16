@@ -115,4 +115,9 @@ class AdminController {
     packageService.updateAllMasters(true)
     redirect(url: request.getHeader('referer'))
   }
+
+  def clearBlockCache() {
+    // clear the cache used by the blocks tag…
+    grailsCacheAdminService.clearBlocksCache()
+  }
 }
