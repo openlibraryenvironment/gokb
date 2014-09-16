@@ -105,7 +105,7 @@ abstract class A_Api <T> {
 
     // Should we bind this api to this class?
     if (api.applicableFor(targetClass) ) {
-      log.debug("Adding ${api.class.name} methods to ${targetClass.name}");
+      // log.debug("Adding ${api.class.name} methods to ${targetClass.name}");
 
       apiClass.getDeclaredMethods().each { Method m ->
         // println("processing declared method ${m}");
@@ -163,7 +163,7 @@ abstract class A_Api <T> {
                 api.invokeMethod("${m.name}", the_args.toArray())
               }
             } else {
-              log.debug("Skipping ${m.name} on ${targetClass.name}, allready declared.") 
+              // log.debug("Skipping ${m.name} on ${targetClass.name}, allready declared.") 
             }
           } else {
             // println("Adding static method.. ${m.name} to ${targetClass.name}");
@@ -214,14 +214,14 @@ abstract class A_Api <T> {
                 result
               }
             } else {
-              log.debug("Skipping static ${m.name} on ${targetClass.name}, allready declared.") 
+              // log.debug("Skipping static ${m.name} on ${targetClass.name}, allready declared.") 
             }
           }
         }
       }
     }
     else {
-      log.debug("Skipping ${targetClass.name} for ${api.class}");
+      // log.debug("Skipping ${targetClass.name} for ${api.class}");
     }
   }
 
