@@ -73,7 +73,8 @@ grails.project.dependency.resolution = {
       
       
       /* Grails 2.4 Upgrade */
-      build ':tomcat:7.0.52.1' // plugins for the compile step compile
+      // build ':tomcat:7.0.52.1' // plugins for the compile step compile
+      build ':tomcat:7.0.54' // plugins for the compile step compile
       
       // plugins for the compile step
 //      compile ':scaffolding:2.1.0'
@@ -92,7 +93,7 @@ grails.project.dependency.resolution = {
       // LESS compiler
       compile ":less-asset-pipeline:1.11.0"
       
-      runtime ':hibernate:3.6.10.2'
+      runtime ':hibernate:3.6.10.16'
       // runtime ':hibernate:3.6.10.14' - this pukes forme
       runtime ':database-migration:1.4.0'
       

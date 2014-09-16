@@ -7,6 +7,7 @@ class AdminController {
   def uploadAnalysisService
   def FTUpdateService
   def packageService
+  def grailsCacheAdminService
 
   def tidyOrgData() {
 
@@ -114,5 +115,10 @@ class AdminController {
     log.debug("Force master list update");
     packageService.updateAllMasters(true)
     redirect(url: request.getHeader('referer'))
+  }
+
+  def clearBlockCache() {
+    // clear the cache used by the blocks tag…
+    grailsCacheAdminService.clearBlocksCache()
   }
 }
