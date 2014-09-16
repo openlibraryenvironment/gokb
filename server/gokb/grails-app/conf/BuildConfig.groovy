@@ -88,7 +88,7 @@ grails.project.dependency.resolution = {
       // Allows the use of groovy code in css and js files by suffixing with '-gtpl'.
       // Injects grailsApplication and config for easy access in your files.
 //      compile ":groovy-template-grails-asset-pipeline:0.4"
-      compile ":groovy-asset-pipeline:1.1"
+//      compile ":groovy-asset-pipeline:1.2"
       
       // LESS compiler
       compile ":less-asset-pipeline:1.11.0"

@@ -166,8 +166,8 @@ validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|
 
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
-    [ type: ColumnMissing			, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty			, severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ type: ColumnMissing     , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: CellNotEmpty      , severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   // All platforms
@@ -183,8 +183,8 @@ validation.rules = [
   ],
 
   "${IngestService.HOST_PLATFORM_URL}" : [
-    [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: CellMatches,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -197,8 +197,8 @@ validation.rules = [
   ],
 
   "${IngestService.HOST_PLATFORM_NAME}" : [
-    [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: LookedUpValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -207,27 +207,27 @@ validation.rules = [
   ],
 
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
-    [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: EnsureDate    , severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: EnsureDate		, severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ type: EnsureDate    , severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.PACKAGE_NAME}" : [
-    [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    //		[
-    //			type: IsSimilar,
-    //			severity: A_ValidationRule.SEVERITY_WARNING,
-    //			args: [
-    //				org.gokb.cred.Package,
-    //				9
-    //			]
-    //		]
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
+    //    [
+    //      type: IsSimilar,
+    //      severity: A_ValidationRule.SEVERITY_WARNING,
+    //      args: [
+    //        org.gokb.cred.Package,
+    //        9
+    //      ]
+    //    ]
     [
       type: LookedUpValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -236,8 +236,8 @@ validation.rules = [
   ],
 
   "${IngestService.PUBLISHER_NAME}" : [
-    [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ type: CellNotEmpty	, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
       type: LookedUpValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -359,7 +359,7 @@ validation.rules = [
 
   // ISSN
   "${IngestService.IDENTIFIER_PREFIX}issn" : [
-    [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: CellMatches,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -377,7 +377,7 @@ validation.rules = [
   ],
 
   "${IngestService.IDENTIFIER_PREFIX}eissn" : [
-    [ type: ColumnMissing	, severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: CellMatches,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -1015,7 +1015,6 @@ apiClasses = [
 /** Less config **/
 grails.assets.less.compiler = 'standard'
 grails.assets.excludes = ["gokb/themes/**/*.less"]
-//grails.assets.excludes = ["*.*"]
 
 grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
 grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]

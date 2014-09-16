@@ -2,6 +2,8 @@
  * GOKb application javascript file.
  */
 //= require jquery/jquery-1.8.3.min
+//= require raphael.min
+//= require morris.min
 //= require bootstrap
 //= require bootbox.min
 //= require bootstrap-editable.min
@@ -14,17 +16,9 @@
 //= require annotations
 //= require select-all-multistate
 //= require moment.min
-//= require raphael.min
-//= require morris.min
 //= require_self
 
 // Global namespace for GOKb functions.
-// Also add any config options we wish to use here. This is a good place to add links to controllers etc...
-window.gokb = {
-  "config" : {
-    "lookupURI" : "${createLink(controller: 'ajaxSupport', action: 'lookup')}"
-  }
-};
   
 // Using jq instead of dollar here as that is a reserved character in Groovy 
 (function(jq) {
