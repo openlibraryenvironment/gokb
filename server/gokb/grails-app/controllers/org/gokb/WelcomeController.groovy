@@ -75,8 +75,8 @@ class WelcomeController {
     int start_year = calendar.get(Calendar.YEAR) - 1
     int start_month = calendar.get(Calendar.MONTH) + 1
     if ( start_month == 12 ) {
-      start_year++;
-      start_month = 0;
+      start_month = 0
+      start_year++
     }
 
     // For each month in the past 12 months, execute each stat query defined in the month_queries array and stuff
