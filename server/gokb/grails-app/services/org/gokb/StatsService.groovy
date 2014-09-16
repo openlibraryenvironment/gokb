@@ -65,7 +65,7 @@ class StatsService {
       month_data.add("${year}-${month}");
 
       month_queries.each { mc ->
-        log.debug("Finding ${mc[0]} from ${period_start_date} to ${period_end_date} (${year}-${month})");
+        log.debug("Finding (MT) ${mc[0]} from ${period_start_date} to ${period_end_date} (${year}-${month})");
         result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_start_date, period_end_date])[0]])
       }
 
@@ -74,9 +74,9 @@ class StatsService {
         result[ct[2]].add(["${year}-${month}",KBComponent.executeQuery(ct[1],[period_end_date])[0]])
       }
 
-      cumulative_total_queries.each { ct ->
-        result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_end_date])[0]])
-      }
+      // cumulative_total_queries.each { ct ->
+      //   result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_end_date])[0]])
+      // }
 
       if ( month == 11 ) {
         year++
@@ -86,6 +86,8 @@ class StatsService {
         month++
       }
     }
+
+    log.debug(result)
 
     result
   }
