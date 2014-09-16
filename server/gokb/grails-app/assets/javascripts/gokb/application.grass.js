@@ -1,9 +1,7 @@
 /**
  * GOKb application javascript file.
  */
-//= require jquery/jquery-1.8.3.min
-//= require raphael.min
-//= require morris.min
+//= require dependencies
 //= require bootstrap
 //= require bootbox.min
 //= require bootstrap-editable.min
@@ -21,9 +19,9 @@
 // Global namespace for GOKb functions.
   
 // Using jq instead of dollar here as that is a reserved character in Groovy 
-(function(jq) {
+(function($) {
   
-  jq(document).ready(function(){
+  $(document).ready(function(){
 
     gokb.dialog = bootbox.dialog;
   
@@ -69,10 +67,10 @@
     };
     
     // Add some default behaviours we wish to define application wide.
-    jq('.confirm-click').click(function(e) {
+    $('.confirm-click').click(function(e) {
       
       // The target.
-      var target = jq(this);
+      var target = $(this);
       
       if (target.hasClass('confirm-click-confirmed')) {
         
@@ -114,47 +112,47 @@
     });
     
     // If we have error messages then let's display them in a modal.
-    var messages = jq('#msg');
+    var messages = $('#msg');
     if (messages.children().length > 0) {
       bootbox.alert("<h2 class='text-error' >Error</h2>" + messages.html());
     }
     
-    jq('#modal').on('show.bs.modal', function () {
-      jq(this).find('.modal-body').css({
+    $('#modal').on('show.bs.modal', function () {
+      $(this).find('.modal-body').css({
              width:'auto', //probably not needed
              height:'auto', //probably not needed 
              'max-height':'100%'
       });
     });
     
-    jq('#modal').on('hidden.bs.modal', function() {
-      jq(this).removeData('bs.modal')
+    $('#modal').on('hidden.bs.modal', function() {
+      $(this).removeData('bs.modal')
     })
     
     
     /** Editable **/
-    jq.fn.editable.defaults.mode = 'inline';
+    $.fn.editable.defaults.mode = 'inline';
     
-    jq('.xEditableValue').editable();
-    jq(".xEditableManyToOne").editable();
-    jq('.ipe').editable();
+    $('.xEditableValue').editable();
+    $(".xEditableManyToOne").editable();
+    $('.ipe').editable();
   
     
-    var results = jq(".simpleHiddenRefdata");
+    var results = $(".simpleHiddenRefdata");
     
     results.editable({
       url: function(params) {
-        var hidden_field_id = jq(this).data('hidden-id');
-        jq("#"+hidden_field_id).val(params.value);
+        var hidden_field_id = $(this).data('hidden-id');
+        $("#"+hidden_field_id).val(params.value);
         // Element has a data-hidden-id which is the hidden form property that should be set to the appropriate value
       }
     });
   
-    results = jq(".simpleReferenceTypedown");
+    results = $(".simpleReferenceTypedown");
     
     results.each(function() {
       
-      jq(this).select2({
+      $(this).select2({
       
         placeholder: "Search for...",
         allowClear: true,
@@ -167,8 +165,8 @@
             return {
               format:'json',
               q: term,
-              baseClass:jq(this).data('domain'),
-              filter1:jq(this).data('filter1')
+              baseClass:$(this).data('domain'),
+              filter1:$(this).data('filter1')
             };
           },
           results: function (data, page) {
@@ -177,19 +175,19 @@
           }
         },
         initSelection : function (element, callback) {
-          var idv=jq(element).val();
+          var idv=$(element).val();
           console.log("initSelection..%o"+idv,element);
-          var txt=jq(element).context.dataset.displayvalue;
+          var txt=$(element).context.dataset.displayvalue;
           var data = {id: idv, text: txt};
           callback(data);
         }
       });
     });
   
-    jq(".xEditableManyToOneS2").each(function(elem) {
-      var dom = jq(this).data('domain');
-      var filter1 = jq(this).data('filter1');
-      jq(this).editable({
+    $(".xEditableManyToOneS2").each(function(elem) {
+      var dom = $(this).data('domain');
+      var filter1 = $(this).data('filter1');
+      $(this).editable({
         select2: {
           placeholder: "Search for...",
           width:'resolve',
@@ -213,7 +211,7 @@
       });
     });
   
-    jq(".xEditableManyToOneS2Old").editable({
+    $(".xEditableManyToOneS2Old").editable({
       select2: {
         placeholder: "Search for.....",
         width:'resolve',
@@ -226,7 +224,7 @@
               format:'json',
               q: term,
               baseClass:'org.gokb.cred.Org',
-              filter1:jq(this).data('filter1')
+              filter1:$(this).data('filter1')
             }
           },
           results: function (data, page) {

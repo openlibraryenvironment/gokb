@@ -1013,14 +1013,14 @@ apiClasses = [
 ]
 
 /** Less config **/
-grails.assets.less.compiler = 'standard'
-grails.assets.excludes = ["gokb/themes/**/*.less"]
+grails.assets.less.compiler = 'less4j'
+grails.assets.excludes = ["gokb/themes/**/*.less", "icons"]
+grails.assets.includes = ["gokb/themes/**/theme.less", "jquery/*.js"]
+
 
 grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
-grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]
 
 grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
-grails.assets.plugin."font-awesome-resources".includes = ["font-awesome/font-awesome.less"]
 
 gokb.theme = "yeti"
 
