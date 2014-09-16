@@ -1,7 +1,9 @@
 /**
  * GOKb application javascript file.
  */
-//= require dependencies
+//= require jquery/jquery-1.8.3.min
+//= require raphael.min
+//= require morris.min
 //= require bootstrap
 //= require bootbox.min
 //= require bootstrap-editable.min
