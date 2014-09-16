@@ -123,9 +123,7 @@
                     </g:each>
                   </g:each>
                 </ul> <!-- /.nav-second-level --></li>
-
-              <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i>
-                  Create<span class="fa arrow"></span></a>
+              <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i> Create<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
 
                   <g:each in="${session.userPereferences?.createMenu}" var="d">
@@ -134,8 +132,7 @@
                   </g:each>
 
                 </ul> <!-- /.nav-second-level --></li>
-              <li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i>
-                  To Do<span class="fa arrow"></span></g:link>
+              <li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i> To Do<span class="fa arrow"></span></g:link>
                   <ul class="nav nav-second-level">
                     <li><g:link controller="search" action="index"
                         params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">

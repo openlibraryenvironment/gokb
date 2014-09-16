@@ -121,6 +121,7 @@ class WelcomeController {
           if ( q.contains(':enddate') ) {
             query_params.enddate = period_end_date
           }
+          
           // log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}")
           
           // Execute the query directly with Hibernate so we can just get a list of Maps.
