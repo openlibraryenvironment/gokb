@@ -1039,6 +1039,7 @@ grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
 =======
 grails.assets.less.compiler = 'standard'
 grails.assets.excludes = ["gokb/themes/**/*.less"]
+//grails.assets.excludes = ["*.*"]
 
 grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
 grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]

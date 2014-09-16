@@ -135,6 +135,9 @@ grails.project.dependency.resolution = {
       
       // Job scheduler plugin.
       compile ":quartz:1.0.1"
+
+      // II: Added.. Groping around in the dark a bit..
+      // compile ":compass-sass:0.7" - OK this causes an exception
       
       /** Moved plugins from the properties file to here **/
       compile ':audit-logging:0.5.4' // SO: Tried upgrading to 0.5.5.3, but this caused a null pointer to be thrown.

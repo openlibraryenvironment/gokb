@@ -70,7 +70,8 @@ class StatsService {
       }
 
       cumulative_total_queries.each { ct ->
-        result[mc[2]].add(["${year}-${month}",KBComponent.executeQuery(mc[1],[period_end_date])[0]])
+        log.debug("Finding (CT) ${ct[0]} from ${period_start_date} to ${period_end_date} (${year}-${month})");
+        result[ct[2]].add(["${year}-${month}",KBComponent.executeQuery(ct[1],[period_end_date])[0]])
       }
 
       // cumulative_total_queries.each { ct ->
