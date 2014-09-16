@@ -418,7 +418,6 @@ class IntegrationController {
       int rowctr = 0;
 
       while ( nl != null ) {
-        nl = r.readNext()
         try {
           KBComponent.withNewTransaction() {
             def candidate_identifiers = []
@@ -448,6 +447,7 @@ class IntegrationController {
           rowctr = 0;
           cleanUpGorm()
         }
+        nl = r.readNext()
       }
     }
     log.debug("Done");
