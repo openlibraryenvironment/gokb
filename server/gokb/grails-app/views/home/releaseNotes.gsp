@@ -19,6 +19,7 @@
               <li>Upgraded Elasticsearch Dependency to 1.3.2</li>
               <li>Removed ability to drop ES indexes from app, moved into script. Full reset still submits everything from day zero</li>
               <li>Added minimal pagination to global search, tidy global search display somewhat</li>
+              <li>Corrected skos::altLable handling in orgs import</li>
             </ul>
           </li>
         </ul>

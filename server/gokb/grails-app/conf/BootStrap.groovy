@@ -117,6 +117,7 @@ class BootStrap {
       // to add to the class or not. This defaults to "true". Have overriden on the GrailsDomainHelperApi utils
       // and moved the selective code there. This means that *ALL* domain classes will still receive the methods in the
       // SecurityApi.
+      // II: has this caused projects under org.gokb.refine to no longer be visible? Not sure how to fix it.
       
       log.debug("Considering ${c}")
       grailsApplication.config.apiClasses.each { String className -> 
