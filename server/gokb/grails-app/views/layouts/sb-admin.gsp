@@ -195,5 +195,3 @@
 <r:layoutResources />
 
 </html>
-
-${session.userPereferences?.mainMenuSections}
