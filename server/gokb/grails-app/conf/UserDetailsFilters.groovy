@@ -69,7 +69,7 @@ class UserDetailsFilters {
               Class tc = Class.forName(d.dcName)
               
               // boolean hasPermission(Authentication authentication, domainObject, Permission… permissions)
-              if ( tc.isReadable() ) {
+              if ( tc.isReadable() ) { // || request.request.isUserInRole('ROLE_ADM')) {
  
                 // Find any searches for that domain that the user has access to and add them to the menu section
                 def searches_for_this_domain = grailsApplication.config.globalSearchTemplates.findAll{it.value.baseclass==d.dcName}
@@ -80,7 +80,7 @@ class UserDetailsFilters {
               }
 
               // Add if creatable.
-              if ( tc.isCreatable() ) {
+              if ( tc.isCreatable() ) { // || request.request.isUserInRole('ROLE_ADM') ) {
                 session.userPereferences.createMenu.add(d);
               }
             }
