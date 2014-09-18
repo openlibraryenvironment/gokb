@@ -35,6 +35,7 @@ class IntegrationController {
   
         // Try and match on primary ID
         def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()] as String[]);
+
         if ( located_entries?.size() == 1 ) {
           log.debug("Identified record..");
         }
@@ -123,12 +124,13 @@ class IntegrationController {
       }
     }
 
-    new_org.save();
 
     request.JSON.'skos:altLabel'?.each { al ->
       println("checking alt label ${al}");
       new_org.ensureVariantName(al);
     }
+
+    new_org.save();
 
     if ( request.JSON.'foaf:homepage' != null ) {
       new_org.homepage = request.JSON.'foaf:homepage'
