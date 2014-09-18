@@ -5,6 +5,8 @@ import org.codehaus.groovy.grails.commons.GrailsApplication
 
 import java.lang.reflect.Method
 
+import org.gokb.GOKbTextUtils
+
 import javax.servlet.http.HttpServletRequest
 
 import org.gokb.DomainClassExtender
@@ -95,6 +97,13 @@ class BootStrap {
 
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass();
+
+    KBComponent.executeQuery("select kbc from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc ->
+      log.debug("Repair component with no normalised name.. ${kbc}");
+      kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
+      kbc.save();
+
+    }
   }
   
   def failAnyIngestingProjects() {

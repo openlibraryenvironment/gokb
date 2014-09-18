@@ -20,6 +20,24 @@ class IntegrationController {
   }
   
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def assertJsonldPlatform() { 
+    def result = [result:'OK']
+    def name = request.JSON.'skos:prefLabel'
+    def normname = GOKbTextUtils.normaliseString(name)
+    def located_entries = KBComponent.findAllByNormname(normname)
+    log.debug("assertJsonldPlatform ${name}/${normname}");
+    if ( located_entries.size() == 0 ) {
+      log.debug("No platform with normname ${normname} - create");
+      def new_platform = new org.gokb.cred.Platform(name:name, normname:normname).save()
+      result.message="Added new platform"
+    }
+    else {
+      result.message="Entity with that name already exists.."
+    }
+    render result as JSON
+  }
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertJsonldOrg() { 
     // log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[:]
