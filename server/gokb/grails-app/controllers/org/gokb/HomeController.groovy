@@ -38,4 +38,7 @@ class HomeController {
 
   def about() {
   }
+
+  def releaseNotes() {
+  }
 }
