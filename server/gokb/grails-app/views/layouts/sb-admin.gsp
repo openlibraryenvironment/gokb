@@ -202,5 +202,3 @@
   <asset:deferredScripts/>
 </body>
 </html>
-
-${session.userPereferences?.mainMenuSections}
