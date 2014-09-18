@@ -38,6 +38,7 @@ class IntegrationController {
 
         if ( located_entries?.size() == 1 ) {
           log.debug("Identified record..");
+          enrichJsonLDOrg(located_entries[0], request.JSON)
         }
         else if ( located_entries?.size() == 0 ) {
   
@@ -61,7 +62,7 @@ class IntegrationController {
             }
             else if ( located_entries?.size() == 1 ) {
                log.debug("Exact match on normalised name ${normname} - good enough");
-               enrichJsonLDOrf(located_entries[0], request.JSON)
+               enrichJsonLDOrg(located_entries[0], request.JSON)
             }
             else {
               log.error("Multiple matches on normalised name... abandon all hope");
@@ -124,6 +125,7 @@ class IntegrationController {
       }
     }
 
+    new_org.save();
 
     request.JSON.'skos:altLabel'?.each { al ->
       println("checking alt label ${al}");
@@ -144,7 +146,13 @@ class IntegrationController {
     }
   }
 
-  def enrichJsonLDOrf(org, jsonld) {
+  def enrichJsonLDOrg(org, jsonld) {
+    log.debug("Enrich existing..");
+    request.JSON.'skos:altLabel'?.each { al ->
+      println("checking alt label ${al}");
+      org.ensureVariantName(al);
+    }
+
   }
 
   /**

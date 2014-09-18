@@ -853,7 +853,7 @@ abstract class KBComponent {
       // Make sure not already a variant name
       def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
       if ( existing_variants.size() == 0 ) {
-        KBComponentVariantName kvn = new KBComponentVariantName(owner:this, normVariantName:name).save()
+        KBComponentVariantName kvn = new KBComponentVariantName(owner:this, normVariantName:name, variantName:name ).save()
       }
       else {
         log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
