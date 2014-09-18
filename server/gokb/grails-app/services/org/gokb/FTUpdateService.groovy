@@ -1,5 +1,6 @@
 package org.gokb
 
+
 import grails.transaction.Transactional
 import org.gokb.FTControl
 import org.hibernate.ScrollMode
@@ -125,6 +126,15 @@ class FTUpdateService {
   }
 
   def clearDownAndInitES() {
+    FTControl.withTransaction {
+      FTControl.executeUpdate("delete FTControl c");
+    }
+
+    updateFTIndexes();
+  }
+ 
+  def oldClearDownAndInitES() {
+
     log.debug("Clear down and init ES");
     org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
     org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
@@ -159,9 +169,9 @@ class FTUpdateService {
       source  {
         'component' {
           properties {
-            name {
-              type = 'multi_field'
-              fields {
+            name : {
+              type : 'multi_field'
+              fields : {
                 name : [ type : 'string', analyzer : 'snowball' ]
                 altname : [ type : 'string', analyzer : 'snowball']
               }
