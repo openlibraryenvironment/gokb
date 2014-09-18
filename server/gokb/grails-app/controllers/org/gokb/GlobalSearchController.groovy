@@ -19,8 +19,9 @@ class GlobalSearchController {
         params.q = params.q.replace('"',"'")
         params.q = params.q.replace('[',"(")
         params.q = params.q.replace(']',")")
-        params.max = Math.min(params.max ? params.int('max') : 10, 100)
-        params.offset = params.offset ? params.int('offset') : 0
+
+        result.max = params.max ? Integer.parseInt(params.max) : 10;
+        result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
         def query_str = buildQuery(params);
 
@@ -30,8 +31,8 @@ class GlobalSearchController {
                        indices "gokb"
                        types "component"
                        source {
-                         from = params.offset
-                         size = params.max
+                         from = result.offset
+                         size = result.max
                          query {
                            query_string (query: query_str)
                          }
