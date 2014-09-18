@@ -88,8 +88,7 @@
                 My Dashboard</g:link></li>
             
             <sec:ifLoggedIn>
-              <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>
-                  Search<span class="fa arrow"></span></a>
+              <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>Search<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
                   <li class="sidebar-search">
                     <g:form controller="globalSearch" action="index" method="get">
@@ -104,20 +103,18 @@
                       </div><!-- /input-group -->
                     </g:form>
                   </li>
+
                   <li class="divider"></li>
-                  <g:each in="${session.userPereferences?.mainMenuSections}"
-                    var="secname,sec">
-                    <!-- ${secname.toLowerCase()} -->
+
+                  <g:each in="${session.userPereferences?.mainMenuSections}" var="secname,sec">
                     <g:each in="${sec}" var="srch">
-                      <li class="menu-${secname.toLowerCase()}"><g:link
-                          controller="search" action="index"
-                          params="${[qbe:'g:'+srch.key]}"
-                          title="Search ${srch.value.title}">
+                      <li class="menu-${secname.toLowerCase()}"><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}" title="Search ${srch.value.title}">
                           <i class="fa fa-angle-double-right fa-fw"></i> ${srch.value.title}
                         </g:link></li>
                     </g:each>
                   </g:each>
                 </ul> <!-- /.nav-second-level --></li>
+
               <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i>
                   Create<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
@@ -128,6 +125,7 @@
                   </g:each>
 
                 </ul> <!-- /.nav-second-level --></li>
+
               <li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i>
                   To Do<span class="fa arrow"></span></g:link>
                   <ul class="nav nav-second-level">
@@ -197,3 +195,5 @@
 <r:layoutResources />
 
 </html>
+
+${session.userPereferences?.mainMenuSections}

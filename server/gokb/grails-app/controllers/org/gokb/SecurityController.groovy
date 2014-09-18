@@ -102,6 +102,7 @@ class SecurityController {
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def rolePermissions() {
+    log.error("rolePermissions");
     
     // The result.
     def result = [:]
@@ -151,6 +152,9 @@ class SecurityController {
           }
         }
       }
+    }
+    else {
+      log.error("No id supplied to rolePermissions");
     }
     
     result
@@ -242,6 +246,7 @@ class SecurityController {
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def roles () {
+    log.debug("Roles..");
 
     def result = [:]
     if ( params.id ) {
@@ -273,6 +278,9 @@ class SecurityController {
       } else {
         log.error ("Roles can only be viewed altered for a User.")
       }
+    }
+    else {
+      log.error("No id provided..");
     }
     
     result

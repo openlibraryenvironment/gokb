@@ -47,7 +47,7 @@ class UserDetailsFilters {
             
             def domains = KBDomainInfo.createCriteria().list {
               
-              ilike ('dcName', 'org.gokb.cred%')
+              ilike ('dcName', 'org.gokb%')
               
               createAlias ("type", "menueType")
               
