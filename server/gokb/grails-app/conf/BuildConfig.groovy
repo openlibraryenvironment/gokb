@@ -46,7 +46,7 @@ grails.project.dependency.resolution = {
         
         // Custom repo that points to the public nexus repo. Used for elastic search client as there are no "official" ones.
         mavenRepo "http://repo.spring.io/milestone/"
-        mavenRepo "http://projects.k-int.com/nexus-webapp-1.4.0/content/repositories/releases"
+        mavenRepo "http://nexus.k-int.com/content/repositories/releases"
 
         // uncomment these (or add new ones) to enable remote dependency resolution from public Maven repositories
         //mavenRepo "http://snapshots.repository.codehaus.org"
@@ -63,8 +63,8 @@ grails.project.dependency.resolution = {
         runtime 'org.apache.commons:commons-compress:1.4.1'
         runtime 'org.apache.tika:tika-core:1.4'
         runtime 'xalan:xalan:2.7.1'
-        runtime 'org.elasticsearch:elasticsearch:1.0.1'
-        runtime 'org.elasticsearch:elasticsearch-client-groovy:1.0.1'
+        runtime 'org.elasticsearch:elasticsearch:1.3.2'
+        runtime 'org.elasticsearch:elasticsearch-client-groovy:1.3.2'
         runtime 'net.sf.opencsv:opencsv:2.0'
     }
 
