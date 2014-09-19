@@ -9,6 +9,7 @@ grails.project.source.level = 1.6
 //grails.project.dependency.resolver = "maven"
 // grails.project.dependency.resolver = "maven"
 
+
 //switch ("${System.getProperty('grails.env')}") {
 //  case "development":
 //    if (new File("/${basedir}/src/templates/war/web_dev.xml").exists()) {
