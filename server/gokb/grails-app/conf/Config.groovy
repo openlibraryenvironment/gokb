@@ -460,7 +460,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Type', property:'class.simpleName'],
@@ -483,7 +484,8 @@ globalSearchTemplates = [
         ]
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -509,7 +511,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -531,7 +534,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -658,7 +662,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -748,7 +753,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -792,7 +798,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -835,7 +842,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true]
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
