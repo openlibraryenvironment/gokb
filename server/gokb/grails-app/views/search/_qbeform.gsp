@@ -10,7 +10,7 @@
   </g:each>
 
   <g:each in="${formdefn}" var="fld">
-    <g:if test="${hide?.contains(fld.qparam)}" >
+    <g:if test="${((hide?.contains(fld.qparam)) || ( fld.hide==true))}">
       <input type="hidden" name="${fld.qparam}" id="${fld.qparam}" value="${params[fld.qparam]}" />
     </g:if>
     <g:else>
@@ -39,9 +39,13 @@
   </g:each>
 
   <div class="form-group">
-    <div class="col-sm-offset-2 col-sm-10">
-      <button type="submit" class="btn btn-default btn-sm">Search</button>
+    <label class="col-sm-2 control-label"></label>
+    <div class="col-sm-10">
+
+      <button type="submit" class="btn btn-success btn-sm pull-right">Search</button>
     </div>
   </div>
+
+  <br/>&nbsp;<br/>
 
 </g:form>
