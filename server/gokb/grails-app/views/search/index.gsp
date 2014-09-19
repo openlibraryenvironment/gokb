@@ -30,7 +30,7 @@
 					</g:if>
 	
 					<g:render template="qbeform" contextPath="."
-						model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide)]}" />
+						model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide),cfg:qbetemplate.qbeConfig]}" />
 				</div>
 				<!-- panel-body -->
 				<g:if test="${recset}">

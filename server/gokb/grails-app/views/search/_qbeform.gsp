@@ -41,11 +41,17 @@
   <div class="form-group">
     <label class="col-sm-2 control-label"></label>
     <div class="col-sm-10">
-
+      <g:each in="${cfg.qbeGlobals}" var="glob">
+        <g:if test="${glob.qparam != null}">
+          ${glob.prompt} : <select name="${glob.qparam}" value="${params[glob.qparam]}">
+            <option value="on" ${(params[glob.qparam] ?: glob.default ) == 'on' ? 'selected' : ''}>On</option>
+            <option value="off" ${(params[glob.qparam] ?: glob.default ) == 'off' ? 'selected' : ''}>Off</option>
+          </select>
+        </g:if>
+      </g:each>
       <button type="submit" class="btn btn-success btn-sm pull-right">Search</button>
     </div>
   </div>
 
-  <br/>&nbsp;<br/>
 
 </g:form>
