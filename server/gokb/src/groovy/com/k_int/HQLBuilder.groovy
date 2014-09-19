@@ -60,7 +60,20 @@ public class HQLBuilder {
     qbetemplate.qbeConfig.qbeGlobals.each { global_prop_def ->
       // log.debug("Adding query global: ${global_prop_def}");
       // creat a contextTree so we can process the filter just like something added to the query tree
-      criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('.','_'),contextTree:global_prop_def],value:global_prop_def.value])
+      // Is this global user selectable
+      if ( global_prop_def.qparam != null ) {  // Yes
+        if ( params[global_prop_def.qparam] == null ) { // If it's not be set
+          if ( global_prop_def.default == 'on' ) { // And the default is set
+            criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('.','_'),contextTree:global_prop_def],value:global_prop_def.value])
+          }
+        }
+        else if ( params[global_prop_def.qparam] == 'on' ) { // It's set explicitly, if its on, add the criteria
+          criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('.','_'),contextTree:global_prop_def],value:global_prop_def.value])
+        }
+      }
+      else {
+        criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('.','_'),contextTree:global_prop_def],value:global_prop_def.value])
+      }
     }
 
     def hql_builder_context = [:]
@@ -94,7 +107,7 @@ public class HQLBuilder {
     def count_hql = "select count (o) ${hql}"
     def fetch_hql = "select o ${hql}"
 
-    // log.debug("Attempt count qry ${count_hql}");
+    log.debug("Attempt count qry ${count_hql}");
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
