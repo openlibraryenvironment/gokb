@@ -7,6 +7,7 @@ class AdminController {
   def uploadAnalysisService
   def FTUpdateService
   def packageService
+  def grailsCacheAdminService
 
   def tidyOrgData() {
 

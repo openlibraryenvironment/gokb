@@ -1,6 +1,3 @@
-<r:require modules="gokbstyle"/>
-<r:require modules="editable"/>
-
 <g:form method="get" class="form-horizontal" controller="search" role="form">
 
   <input type="hidden" name="qbe" value="${params.qbe}"/>

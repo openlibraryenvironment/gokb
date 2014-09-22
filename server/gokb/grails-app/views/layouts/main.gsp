@@ -31,8 +31,7 @@
           <sec:ifLoggedIn>
             <li class="dropdown"><a href="#" class="dropdown-toggle"
               data-toggle="dropdown">
-                ${request.user?.displayName?:request.user?.username} <b
-                class="caret"></b>
+                ${request.user?.displayName?:request.user?.username} <b class="caret"></b>
             </a>
               <ul class="dropdown-menu">
                 <li><g:link controller="profile">Profile</g:link></li>
@@ -63,8 +62,7 @@
               </g:each>
             </ul></li>
 
-          <li class="dropdown"><a href="#" class="dropdown-toggle"
-            data-toggle="dropdown">Create</a>
+          <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
             <ul class="dropdown-menu">
               <g:if test="${org.gokb.cred.License.isCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.License']}">License</g:link></li>
@@ -114,18 +112,22 @@
           <li><g:link controller="masterList" action="index">Master List</g:link></li>
           <li><g:link controller="coreference" action="index">Coreference</g:link></li>
           <sec:ifAnyGranted roles="ROLE_ADMIN">
-            <li class="dropdown"><a href="#" class="dropdown-toggle"
-              data-toggle="dropdown">Admin</a>
+            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Admin</a>
               <ul class="dropdown-menu">
                 <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
                 <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
                 <li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
                 <li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
                 <li><g:link controller="admin" action="masterListUpdate">Force Master List Update</g:link></li>
+                <li><g:link controller="admin" action="clearBlockCache">Clear Block Cache (eg Stats)</g:link></li>
                 <li><g:link controller="user" action="search">User Management Console</g:link></li>
                 <li><g:link controller="home" action="about">About</g:link></li>
               </ul></li>
           </sec:ifAnyGranted>
+          <sec:ifNotGranted roles="ROLE_ADMIN">
+          <li><g:link controller="coreference" action="index">NotAnAdmin</g:link></li>
+          </sec:ifNotGranted>
+          <li><g:link controller="coreference" action="index">FlibbleDibbleWibble</g:link></li>
         </ul>
       </div>
     </div>

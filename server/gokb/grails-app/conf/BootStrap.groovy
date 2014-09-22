@@ -79,6 +79,7 @@ class BootStrap {
     }
 
     String fs = grailsApplication.config.project_dir
+    log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
 
     log.debug("Make sure project files directory exists, config says it's at ${fs}");
     File f = new File(fs)

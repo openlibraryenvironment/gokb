@@ -8,20 +8,27 @@
 <!--<![endif]-->
 
 <head>
-
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title><g:layoutTitle default="GOKb" /></title>
   
-  <link rel="shortcut icon"
-    href="${resource(dir: 'images', file: 'favicon.ico')}"
-    type="image/x-icon">
-  
+  <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
   <g:layoutHead />
-  <r:require modules="gokbstyle" />
-  <r:layoutResources />
+  
+	<asset:javascript src="gokb/application.grass.js" />
+  <asset:stylesheet src="gokb/sb-admin-2.css"/>
+  <asset:stylesheet src="gokb/application.css"/>
+  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
+  
+	<asset:script type="text/javascript">
+		window.gokb = {
+		  "config" : {
+		  	"lookupURI" : "${createLink(controller: 'ajaxSupport', action: 'lookup')}"
+		  }
+		};
+	</asset:script>
   
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesnt work if you view the page via file:// -->
@@ -32,7 +39,7 @@
 
 </head>
 
-<body>
+<body class="theme-${ grailsApplication.config.gokb.theme }">
 
   <div id="wrapper">
 
@@ -114,9 +121,7 @@
                     </g:each>
                   </g:each>
                 </ul> <!-- /.nav-second-level --></li>
-
-              <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i>
-                  Create<span class="fa arrow"></span></a>
+			  <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i> Create<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
 
                   <g:each in="${session.userPereferences?.createMenu}" var="d">
@@ -125,9 +130,8 @@
                   </g:each>
 
                 </ul> <!-- /.nav-second-level --></li>
+                <li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i> To Do<span class="fa arrow"></span></g:link>
 
-              <li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i>
-                  To Do<span class="fa arrow"></span></g:link>
                   <ul class="nav nav-second-level">
                     <li><g:link controller="search" action="index"
                         params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">
@@ -181,17 +185,16 @@
   <!-- /#wrapper -->
   
   <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
-    <g:javascript>
-        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  
-        ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
-        ga('send', 'pageview');
-      </g:javascript>
-  </g:if>
-</body>
-<r:layoutResources />
+    <asset:script type="text/javascript">
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
+      ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
+      ga('send', 'pageview');
+    </asset:script>
+  </g:if>
+  <asset:deferredScripts/>
+</body>
 </html>

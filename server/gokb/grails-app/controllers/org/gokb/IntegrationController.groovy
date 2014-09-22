@@ -448,7 +448,9 @@ class IntegrationController {
       while ( nl != null ) {
         try {
           KBComponent.withNewTransaction() {
+
             def candidate_identifiers = []
+
             if ( ( col_positions.'identifier.pissn' != -1 ) && 
                  ( nl[col_positions.'identifier.pissn']?.length() > 0 ) && 
                  ( nl[col_positions.'identifier.pissn'].toLowerCase() != 'null' ) ) { 
@@ -465,6 +467,9 @@ class IntegrationController {
               log.debug("Looking up ${candidate_identifiers} - ${nl[col_positions.'title']}");
               def existing_component = titleLookupService.find (nl[col_positions.'title'], null, candidate_identifiers)
             }
+            else {
+              log.debug("No candidate identifiers: ${nl}");
+            }
           }
         }
         catch ( Exception e ) {
@@ -472,10 +477,12 @@ class IntegrationController {
         }
 
         if ( rowctr++ > 100 ) {
+          log.debug("CleanUpGorm..");
           rowctr = 0;
           cleanUpGorm()
         }
         nl = r.readNext()
+        log.debug("Next row: ${nl}");
       }
     }
     log.debug("Done");
