@@ -8,22 +8,18 @@
 <!--<![endif]-->
 
 <head>
-
+	<asset:javascript src="gokb/application.grass.js" />
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title><g:layoutTitle default="GOKb" /></title>
   
-  <link rel="shortcut icon"
-    href="${resource(dir: 'images', file: 'favicon.ico')}"
-    type="image/x-icon">
-  
+  <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
   <g:layoutHead />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
-	<asset:javascript src="gokb/application.grass.js" />
 	<asset:script type="text/javascript">
 		window.gokb = {
 		  "config" : {
@@ -186,15 +182,15 @@
   <!-- /#wrapper -->
   
   <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
-    <g:javascript>
-        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  
-        ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
-        ga('send', 'pageview');
-      </g:javascript>
+    <asset:script type="text/javascript">
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
+      ga('send', 'pageview');
+    </asset:script>
   </g:if>
   <asset:deferredScripts/>
 </body>

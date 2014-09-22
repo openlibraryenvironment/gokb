@@ -1,24 +1,24 @@
 /**
  * GOKb application javascript file.
  */
-//= require dependencies
-//= require bootstrap
-//= require bootbox.min
-//= require bootstrap-editable.min
-//= require select2
-//= require metisMenu.min
-//= require sb-admin-2
-//= require inline-content
-//= require summernote.min
-//= require action-forms
-//= require annotations
-//= require select-all-multistate
-//= require moment.min
-//= require_self
+//=require jquery
+//=require raphael.min
+//=require morris.min
+//=require bootstrap
+//=require bootbox.min
+//=require bootstrap-editable.min
+//=require select2
+//=require metisMenu.min
+//=require sb-admin-2
+//=require inline-content
+//=require summernote.min
+//=require action-forms
+//=require annotations
+//=require select-all-multistate
+//=require moment.min
 
 // Global namespace for GOKb functions.
-  
-// Using jq instead of dollar here as that is a reserved character in Groovy 
+
 (function($) {
   
   $(document).ready(function(){

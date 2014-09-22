@@ -66,6 +66,8 @@ grails.project.dependency.resolution = {
         runtime 'org.elasticsearch:elasticsearch:1.3.2'
         runtime 'org.elasticsearch:elasticsearch-client-groovy:1.3.2'
         runtime 'net.sf.opencsv:opencsv:2.0'
+        
+        compile 'com.github.sommeri:less4j:1.8.2'
     }
 
     plugins {
@@ -90,9 +92,11 @@ grails.project.dependency.resolution = {
 //      compile ":groovy-asset-pipeline:1.2"
       
       // LESS compiler
-      compile ":less-asset-pipeline:1.11.0"
+      compile ":less-asset-pipeline:1.11.0", {
+        excludes 'less4j'
+      }
       
-      runtime ':hibernate:3.6.10.16'
+      runtime ':hibernate:3.6.10.2'
       // runtime ':hibernate:3.6.10.14' - this pukes forme
       runtime ':database-migration:1.4.0'
       runtime ":resources:1.2.8"
@@ -100,8 +104,8 @@ grails.project.dependency.resolution = {
       /*************************************/
       
 //      runtime ':hibernate:3.6.10.2'
-      runtime ":jquery:1.8.3"
-      runtime ':jquery-ui:1.8.24'
+      runtime ":jquery:1.11.1"
+      runtime ':jquery-ui:1.10.3'
 //      runtime ":resources:1.2"
       runtime ':gsp-resources:0.4.4'
 

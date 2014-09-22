@@ -1037,6 +1037,7 @@ grails.assets.includes = ["gokb/themes/**/theme.less", "jquery/*.js"]
 grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
 
 grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
+<<<<<<< Upstream, based on branch 'asset_pipeline_wip' of git@github.com:k-int/gokb-phase1.git
 =======
 grails.assets.less.compiler = 'standard'
 grails.assets.excludes = ["gokb/themes/**/*.less"]
@@ -1055,6 +1056,10 @@ grails.assets.plugin."twitter-bootstrap".includes = ["bootstrap.less"]
 >>>>>>> a06eb9a Latest attempt at getting resource precompilation working.
 
 grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
+=======
+grails.assets.plugin."jquery".excludes = ["**", "*.*"]
+grails.assets.minifyJs = false
+>>>>>>> 4c9e5f8 Dependency tidy up.
 
 gokb.theme = "yeti"
 
