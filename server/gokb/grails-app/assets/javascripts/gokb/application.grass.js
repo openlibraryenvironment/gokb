@@ -190,6 +190,7 @@
       $(this).editable({
         select2: {
           placeholder: "Search for...",
+          allowClear: true,
           width:'resolve',
           minimumInputLength: 0,
           ajax: {
@@ -200,7 +201,8 @@
                 format:'json',
                 q: term,
                 baseClass:dom,
-                filter1:filter1
+                filter1:filter1,
+                addEmpty:'Y'
               }
             },
             results: function (data, page) {
