@@ -38,3 +38,4 @@ class Territory extends KBComponent {
     result
   }
 }
+
