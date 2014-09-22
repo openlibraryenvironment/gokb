@@ -13,6 +13,7 @@ class Office extends KBComponent {
   String city
   String zipPostcode
   String region
+  String state
   RefdataValue country
 
   static hasByCombo = [
@@ -33,6 +34,7 @@ class Office extends KBComponent {
 	city column:'office_city'
 	zipPostcode column:'office_zip_postcode'
 	region column:'office_region'
+	state column:'office_state'
 	country column:'office_country_fk_rv'
   }
   
@@ -46,6 +48,7 @@ class Office extends KBComponent {
 	city (nullable:true, blank:true)
 	zipPostcode (nullable:true, blank:true)
 	region (nullable:true, blank:true)
+	state (nullable:true, blank:true)
 	country (nullable:true, blank:true)
   }
 

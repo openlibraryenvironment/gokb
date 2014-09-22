@@ -26,7 +26,6 @@ class ChartTagLib {
       // Add the attributes to the json.
       command += "(${json.toString()})"
       
-      
       out << "<script type='text/javascript'>\$(document).ready(function(){${command}});</script>"
       
     } else {

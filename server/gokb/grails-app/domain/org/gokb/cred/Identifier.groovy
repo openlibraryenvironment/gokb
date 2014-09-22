@@ -57,4 +57,9 @@ class Identifier extends KBComponent {
 	
 	return false
   }
+
+  @Override
+  public String getName() {
+    return value
+  }
 }

@@ -351,6 +351,11 @@ class AjaxSupportController {
     //                 [id:'Person:23',text:'Jim'],
     //                 [id:'Person:22',text:'Jimmy'],
     //                 [id:'Person:3',text:'JimBob']]
+
+    if ( params.addEmpty=='Y' || params.addEmpty=='y' ) {
+      result.values.add(0, [id:'', text:'']);
+    }
+
     render result as JSON
   }
 
@@ -388,15 +393,16 @@ class AjaxSupportController {
 
     def result = null
 
-    if ( ( target != null ) && ( value != null ) ) {
+    if ( target != null ) {
       // def binding_properties = [ "${params.name}":value ]
       log.debug("Binding: ${params.name} into ${target} - a ${target.class.name}");
       // bindData(target, binding_properties)
       target[params.name] = value
       log.debug("Saving... after assignment ${params.name} = ${target[params.name]}");
       if ( target.save(flush:true) ) {
+
         if ( params.resultProp ) {
-          result = value[params.resultProp]
+          result = value ? value[params.resultProp] : ''
         }
         
         // We should clear the session values for a user if this is a user to force reload of the,
