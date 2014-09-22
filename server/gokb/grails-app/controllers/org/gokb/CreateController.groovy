@@ -15,7 +15,7 @@ class CreateController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
-    log.debug("Create... ${params}");
+    log.debug("CreateControler::index... ${params}");
     def result=[:]
     User user = springSecurityService.currentUser
 
@@ -24,8 +24,10 @@ class CreateController {
     if ( params.tmpl ) {
       def newclass = grailsApplication.getArtefact("Domain",result.newclassname);
       if ( newclass ) {
+        log.debug("Got new class");
         try {
           result.displayobj = newclass.newInstance()
+          log.debug("Got new instance");
 
           if ( params.tmpl ) {
             result.displaytemplate = grailsApplication.config.globalDisplayTemplates[params.tmpl]
@@ -42,14 +44,20 @@ class CreateController {
       }
     }
 
+    log.debug("index:: return");
     result
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def process() {
+    log.debug("CreateControler::process... ${params}");
+
     def result=['responseText':'OK']
     
-    boolean propertyWasSet = false
+
+    // II: Defaulting this to true - don't like it much, but we need to be able to create a title without any
+    // props being set... not ideal, but issue closing.
+    boolean propertyWasSet = true
 
     User user = springSecurityService.currentUser
 
@@ -61,6 +69,7 @@ class CreateController {
       if ( newclass ) {
         try {
           result.newobj = newclass.newInstance()
+          log.debug("got newInstance...");
 
           params.each { p ->
             log.debug("Consider ${p.key} -> ${p.value}");
@@ -107,6 +116,8 @@ class CreateController {
           }
 
 
+          log.debug("Setting combos..");
+
           if (result.displayobj instanceof KBComponent) {
             // The save completed OK.. if we want to be really cool, we can now loop through the properties
             // and set any combos on the object
@@ -126,10 +137,12 @@ class CreateController {
 
           // Add an error message here if no property was set via data sent through from the form.
           if (!propertyWasSet) {
+            log.debug("No properties set");
             flash.error="Please fill in at least one piece of information to create the component."
             result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
           } else {
           
+            log.debug("Saving..");
             if ( !result.newobj.save(flush:true) ) {
               log.error("Problem saving new object")
               flash = "Problem saving new object"
@@ -147,6 +160,8 @@ class CreateController {
         }
       }
     }
+    log.debug("CreateController::process return");
+
     render result as JSON
   }
 }
