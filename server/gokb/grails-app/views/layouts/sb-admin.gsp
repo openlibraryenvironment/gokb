@@ -19,8 +19,8 @@
   
 	<asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
-  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
+  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   
 	<asset:script type="text/javascript">
 		window.gokb = {
