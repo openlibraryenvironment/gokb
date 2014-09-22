@@ -135,7 +135,7 @@
                   <ul class="nav nav-second-level">
                     <li><g:link controller="search" action="index"
                         params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">
-                        <i class="fa fa-angle-double-right fa-f"></i> My ToDos</g:link></li>
+                        <i class="fa fa-angle-double-right fa-fw"></i> My ToDos</g:link></li>
                     <li><g:link controller="search" action="index"
                         params="${[qbe:'g:reviewRequests']}"><i class="fa fa-angle-double-right fa-fw"></i>
                         Data Review</g:link></li>
@@ -148,14 +148,13 @@
               <sec:ifAnyGranted roles="ROLE_ADMIN">
                 <li class="${params?.controller == "admin" ? 'active' : ''}"><a href="#"><i class="fa fa-wrench fa-fw"></i> Admin<span class="fa arrow"></span></a>
                   <ul class="nav nav-second-level">
-                    <li><g:link controller="admin" action="tidyOrgData">Tidy Orgs Data</g:link></li>
-                    <li><g:link controller="admin" action="reSummariseLicenses">Regenerate License Summaries</g:link></li>
-                    <li><g:link controller="admin" action="updateTextIndexes">Update Free Text Indexes</g:link></li>
-                    <li><g:link controller="admin" action="resetTextIndexes">Reset Free Text Indexes</g:link></li>
-                    <li><g:link controller="admin" action="masterListUpdate">Force Master List Update</g:link></li>
-                    <li><g:link controller="admin" action="clearBlockCache">Clear Block Cache (eg Stats)</g:link></li>
-                    <li><g:link controller="user" action="search">User Management Console</g:link></li>
-                    <li><g:link controller="home" action="about">About</g:link></li>
+                    <li><g:link controller="admin" action="tidyOrgData"><i class="fa fa-angle-double-right fa-fw"></i> Tidy Orgs Data</g:link></li>
+                    <li><g:link controller="admin" action="reSummariseLicenses"><i class="fa fa-angle-double-right fa-fw"></i> Regenerate License Summaries</g:link></li>
+                    <li><g:link controller="admin" action="updateTextIndexes"><i class="fa fa-angle-double-right fa-fw"></i> Update Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="resetTextIndexes"><i class="fa fa-angle-double-right fa-fw"></i> Reset Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="masterListUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Force Master List Update</g:link></li>
+                    <li><g:link controller="admin" action="clearBlockCache"><i class="fa fa-angle-double-right fa-fw"></i> Clear Block Cache (eg Stats)</g:link></li>
+                    <li><g:link controller="user" action="search"><i class="fa fa-angle-double-right fa-fw"></i> User Management Console</g:link></li>
                     <li class="divider"></li>
                     <li><g:link controller="integration"><i class="fa fa-database fa-fw"></i> Integration API</g:link></li>
                   </ul></li>
