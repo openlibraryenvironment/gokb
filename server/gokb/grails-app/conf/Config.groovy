@@ -475,6 +475,8 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.Package',
     title:'Packages',
     group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
@@ -545,6 +547,8 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.TitleInstance',
     title:'Titles',
     group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [

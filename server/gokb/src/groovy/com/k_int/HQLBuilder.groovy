@@ -68,8 +68,8 @@ public class HQLBuilder {
     hql_builder_context.query_clauses = []
     hql_builder_context.bindvars = [:]
     hql_builder_context.genericOIDService = genericOIDService;
-    hql_builder_context.sort = params.sort
-    hql_builder_context.order = params.order
+    hql_builder_context.sort = params.sort ?: qbetemplate.defaultSort
+    hql_builder_context.order = params.order ?: qbetemplate.defaultOrder
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
