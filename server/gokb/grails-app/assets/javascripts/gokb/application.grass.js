@@ -153,7 +153,6 @@
     results.each(function() {
       
       $(this).select2({
-      
         placeholder: "Search for...",
         allowClear: true,
         width:'resolve',
@@ -166,7 +165,8 @@
               format:'json',
               q: term,
               baseClass:$(this).data('domain'),
-              filter1:$(this).data('filter1')
+              filter1:$(this).data('filter1'),
+              addEmpty:'Y'
             };
           },
           results: function (data, page) {
