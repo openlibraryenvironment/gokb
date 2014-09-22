@@ -5,12 +5,18 @@
 	<dd>
 		<g:xEditable class="ipe" owner="${d}" field="dcName" />
 	</dd>
-
 	<dt>
 		<g:annotatedLabel owner="${d}" property="displayName">Display Name</g:annotatedLabel>
 	</dt>
 	<dd>
 		<g:xEditable class="ipe" owner="${d}" field="displayName" />
+	</dd>
+
+	<dt>
+		<g:annotatedLabel owner="${d}" property="dcSortOrder">Sort Order</g:annotatedLabel>
+	</dt>
+	<dd>
+		<g:xEditable class="ipe" owner="${d}" field="dcSortOrder" />
 	</dd>
 
 	<dt>

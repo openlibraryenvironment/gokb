@@ -472,7 +472,7 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'packages':[
+  '1packages':[
     baseclass:'org.gokb.cred.Package',
     title:'Packages',
     group:'Secondary',
@@ -501,7 +501,7 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'orgs':[
+  '2orgs':[
     baseclass:'org.gokb.cred.Org',
     title:'Organizations',
     group:'Secondary',
@@ -524,7 +524,7 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'platforms':[
+  '1platforms':[
     baseclass:'org.gokb.cred.Platform',
     title:'Platforms',
     group:'Secondary',
@@ -547,7 +547,7 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'titles':[
+  '1titles':[
     baseclass:'org.gokb.cred.TitleInstance',
     title:'Titles',
     group:'Secondary',
@@ -618,7 +618,7 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'tipps':[
+  '3tipps':[
     baseclass:'org.gokb.cred.TitleInstancePackagePlatform',
     title:'TIPPs',
     group:'Secondary',
@@ -920,6 +920,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name', property:'dcName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Display Name', property:'displayName'],
+        [heading:'Sort Key', property:'dcSortOrder'],
         [heading:'Type', property:'type?.value'],
       ]
     ]
