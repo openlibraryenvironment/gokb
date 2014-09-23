@@ -11,6 +11,7 @@ class UrlMappings {
 
     "/"(controller:'welcome',action:'index')
     "/rules"(controller:'home',action:'showRules')
+    "/nourl"(view:'/NoUrl')
     "500"(view:'/error')
   }
 }
