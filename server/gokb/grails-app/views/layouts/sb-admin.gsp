@@ -70,10 +70,10 @@
           	</a>
             <ul class="dropdown-menu dropdown-user">
               <li class="divider"></li>
-              <li><g:link controller="profile"><i class="fa fa-user fa-fw"></i>  Profile</g:link></li>
-              <li><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i>  About GOKb</g:link></li>
+              <li><g:link controller="home" action="profile"><i class="fa fa-user fa-fw"></i>  My Profile</g:link></li>
+              <li><g:link controller="home" action="preferences"><i class="fa fa-cog fa-fw"></i>  My Preferences</g:link></li>
               <li class="divider"></li>
-              <li><g:link controller="logout"><i class="fa  fa-sign-out fa-fw"></i> Logout</g:link></li>
+              <li><g:link controller="logout"><i class="fa fa-sign-out fa-fw"></i> Logout</g:link></li>
               <li class="divider"></li>
             </ul> <!-- /.dropdown-user --></li>
           <!-- /.dropdown -->
@@ -140,9 +140,9 @@
                         Data Review</g:link></li>
                   </ul>
               </li>
-              <li><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
-              <li><g:link controller="masterList" action="index"><i class="fa fa-list-alt fa-fw"></i> Master List</g:link></li>
-              <li><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
+              <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
+              <li class="${params?.controller == "masterList" ? 'active' : ''}"><g:link controller="masterList" action="index"><i class="fa fa-list-alt fa-fw"></i> Master List</g:link></li>
+              <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 
               <sec:ifAnyGranted roles="ROLE_ADMIN">
                 <li class="${params?.controller == "admin" ? 'active' : ''}"><a href="#"><i class="fa fa-wrench fa-fw"></i> Admin<span class="fa arrow"></span></a>
@@ -161,6 +161,7 @@
 
             </sec:ifLoggedIn>
             <li><a href="https://github.com/k-int/gokb-phase1/wiki/API"><i class="fa fa-cogs fa-fw"></i> API Documentation</a></li>
+            <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i>  About GOKb</g:link></li>
           </ul>
         </div>
         <!-- /.sidebar-collapse -->

@@ -10,24 +10,11 @@
     class="panel panel-default">
       <div class="panel-heading">
         <h3 class="panel-title">
-          User Preferences
+          My Details
         </h3>
       </div>
       <div class="panel-body" >
-        <dl class="dl-horizontal">
-	        <dt>Show Info Icon :</dt>
-	        <dd>
-	          <g:xEditableRefData owner="${user}" field="showInfoIcon"
-	            config="YN" />
-	        </dd>
-	        <dt>Show Quick View :</dt>
-	        <dd>
-	          <g:xEditableRefData owner="${user}" field="showQuickView"
-	            config="YN" />
-	        </dd>
-	        <dt>Default Page Size :</dt>
-	        <dd><g:xEditable owner="${user}" field="defaultPageSize" /></dd>
-	      </dl>
+        <g:render template="user" contextPath="../apptemplates/" model="${ ["d":user] }"></g:render>
       </div>
       <div class="panel-heading">
         <h3 class="panel-title">
