@@ -91,8 +91,7 @@
       <div class="navbar-default sidebar" role="navigation">
         <div class="sidebar-nav navbar-collapse">
           <ul class="nav" id="side-menu">
-            <li class="${params?.controller == "welcome"  ? 'active' : ''}"><g:link controller="welcome"><i class="fa fa-dashboard fa-fw"></i>
-                My Dashboard</g:link></li>
+            <li class="${params?.controller == "welcome"  ? 'active' : ''}"><g:link controller="welcome"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
             
             <sec:ifLoggedIn>
               <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>Search<span class="fa arrow"></span></a>
@@ -161,6 +160,7 @@
               </sec:ifAnyGranted>
 
             </sec:ifLoggedIn>
+            <li><a href="https://github.com/k-int/gokb-phase1/wiki/API"><i class="fa fa-cogs fa-fw"></i> API Documentation</a></li>
           </ul>
         </div>
         <!-- /.sidebar-collapse -->
