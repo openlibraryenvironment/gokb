@@ -29,8 +29,6 @@ class SecurityApi <T> extends A_Api<T> {
   private SecurityApi () {}
   
   public static boolean isTypeEditable (Class<T> clazz, boolean defaultTo = true) {
-    
-    System.out.println("API version of ${clazz}.isEditable called")
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.WRITE)
   }
   
@@ -51,8 +49,6 @@ class SecurityApi <T> extends A_Api<T> {
   }
   
   public boolean isEditable(T component, boolean defaultTo = true) {
-    
-    System.out.println("API version of ${component}.isEditable called")
     
     // Calling this method on an ojbect that has no id, and therefore hasn't been saved
     // will instead route through isCreatable as this is a create and not an edit.

@@ -77,10 +77,7 @@ class User {
      equals(springSecurityService.currentUser)
   }
   
-  public boolean isEditable(boolean default_to = true) {
-    
-    System.out.println("Concrete is editable called.")
-    
+  public boolean isEditable(boolean default_to = true) {    
     // Users can edit themselves.
     return isCurrent() || User.isTypeEditable (default_to)
   }
@@ -88,7 +85,7 @@ class User {
   @Override
   public boolean equals(Object obj) {
 
-    System.out.println("USER::equals ${obj?.class.name} :: ${obj}")
+    log.debug("USER::equals ${obj?.class.name} :: ${obj}")
     if ( obj != null ) {
       
       def o = deproxy(obj)
