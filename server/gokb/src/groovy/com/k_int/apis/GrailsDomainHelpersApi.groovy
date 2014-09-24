@@ -31,6 +31,10 @@ public class GrailsDomainHelpersApi<T> extends A_Api<T> {
     ClassUtils.deproxy(element)
   }
   
+  public static <E> E deproxy(def component) {
+    ClassUtils.deproxy(component)
+  }
+  
   protected boolean applicableFor (Class c) {
     if ( c.name.startsWith('org.gokb') ) {
       return true

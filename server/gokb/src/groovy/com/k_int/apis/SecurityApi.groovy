@@ -1,9 +1,11 @@
 package com.k_int.apis
 
+import groovy.util.logging.Log4j
+
+import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.cred.KBDomainInfo
 import org.springframework.security.acls.model.Permission
 import org.springframework.security.core.context.SecurityContextHolder as SECCH
-import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 
 /** 
  * <p>API class to add meta-methods associated with Security.</p>
@@ -21,31 +23,36 @@ import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
  * <p>Also adds the following in both a static and none static context:</p>
  * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
  */
+@Log4j
 class SecurityApi <T> extends A_Api<T> {
   
   private SecurityApi () {}
   
-  public static boolean isEditable (Class<T> clazz, boolean defaultTo = true) {
+  public static boolean isTypeEditable (Class<T> clazz, boolean defaultTo = true) {
+    
+    System.out.println("API version of ${clazz}.isEditable called")
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.WRITE)
   }
   
-  public static boolean isCreatable (Class<T> clazz, boolean defaultTo = true) {
+  public static boolean isTypeCreatable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.CREATE)
   }
   
-  public static boolean isReadable (Class<T> clazz, boolean defaultTo = true) {
+  public static boolean isTypeReadable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.READ)
   }
   
-  public static boolean isDeletable (Class<T> clazz, boolean defaultTo = true) {
+  public static boolean isTypeDeletable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.DELETE)
   }
   
-  public static boolean isAdministerable (Class<T> clazz, boolean defaultTo = true) {
+  public static boolean isTypeAdministerable (Class<T> clazz, boolean defaultTo = true) {
     hasPermission (clazz, org.springframework.security.acls.domain.BasePermission.ADMINISTRATION)
   }
   
   public boolean isEditable(T component, boolean defaultTo = true) {
+    
+    System.out.println("API version of ${component}.isEditable called")
     
     // Calling this method on an ojbect that has no id, and therefore hasn't been saved
     // will instead route through isCreatable as this is a create and not an edit.
@@ -54,7 +61,7 @@ class SecurityApi <T> extends A_Api<T> {
     
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
-      allowed = SecurityApi.isEditable (component.getClass(), defaultTo)
+      allowed = SecurityApi.isTypeEditable (component.getClass(), defaultTo)
     }
     allowed
   }
@@ -62,7 +69,7 @@ class SecurityApi <T> extends A_Api<T> {
   public boolean isCreatable (T component, boolean defaultTo = true) {
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
-      allowed = SecurityApi.isCreatable (component.getClass(), defaultTo)
+      allowed = SecurityApi.isTypeCreatable (component.getClass(), defaultTo)
     }
     allowed
   }
@@ -71,7 +78,7 @@ class SecurityApi <T> extends A_Api<T> {
     
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
-      allowed = SecurityApi.isReadable (component.getClass(), defaultTo)
+      allowed = SecurityApi.isTypeReadable (component.getClass(), defaultTo)
     }
     allowed
   }
@@ -80,7 +87,7 @@ class SecurityApi <T> extends A_Api<T> {
     
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
-      allowed = SecurityApi.isDeletable (component.getClass(), defaultTo)
+      allowed = SecurityApi.isTypeDeletable (component.getClass(), defaultTo)
     }
     allowed
   }
@@ -89,7 +96,7 @@ class SecurityApi <T> extends A_Api<T> {
     
     boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
     if (allowed) {
-      allowed = SecurityApi.isAdministerable (component.getClass(), defaultTo)
+      allowed = SecurityApi.isTypeAdministerable (component.getClass(), defaultTo)
     }
     allowed
   }
