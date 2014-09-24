@@ -18,6 +18,11 @@
 //=require moment.min
 
 // Global namespace for GOKb functions.
+window.gokb = {
+  "config" : {
+    "lookupURI" : "/gokb/ajaxSupport/lookup"
+  }
+};
 
 (function($) {
   

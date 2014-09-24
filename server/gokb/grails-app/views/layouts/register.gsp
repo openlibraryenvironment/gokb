@@ -8,7 +8,7 @@
 
 <link rel="shortcut icon"
 	href="${resource(dir:'images',file:'favicon.ico')}" type="image/x-icon" />
-<asset:javascript src="gokb/application.js" />
+<asset:javascript src="gokb/application.grass.js" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/register.js" />
 <asset:stylesheet src="gokb/register.css" />

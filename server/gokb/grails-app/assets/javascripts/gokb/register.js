@@ -5,5 +5,5 @@
 //= require jquery/jquery.bgiframe
 //= require jquery/jquery.jdMenu
 //= require jquery/jquery.dataTables.min
-//= require js/jquery-ui-1.8.24.custom.min
+//= require js/jquery-ui-1.10.3.custom.min
 //= require spring-security-ui

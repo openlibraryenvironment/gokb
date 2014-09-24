@@ -1,7 +1,4 @@
-
-
 <html>
-
 <head>
   <meta name='layout' content='register'/>
   <title><g:message code='spring.security.ui.register.title'/></title>

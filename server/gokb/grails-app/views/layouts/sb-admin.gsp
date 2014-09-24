@@ -19,16 +19,8 @@
   
 	<asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
-  <asset:stylesheet src="gokb/application.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
-  
-	<asset:script type="text/javascript">
-		window.gokb = {
-		  "config" : {
-		  	"lookupURI" : "${createLink(controller: 'ajaxSupport', action: 'lookup')}"
-		  }
-		};
-	</asset:script>
+  <asset:stylesheet src="gokb/application.css"/>
   
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesnt work if you view the page via file:// -->

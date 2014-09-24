@@ -11,8 +11,10 @@ class InplaceTagLib {
     // See if there is an owner attribute on the request - owner will be the domain object asking to be edited.
     def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
     
-    // Check the attribute.
-    boolean tl_editable = !(owner?.respondsTo("isEditable") && !owner.isEditable())
+    boolean tl_editable = true
+    if (owner?.respondsTo("isEditable")) {
+      tl_editable = owner.isEditable()
+    }
     
     // If not editable then we should output as value only and return the value.
     if (!tl_editable) {

@@ -1,6 +1,8 @@
 package org.gokb.cred
 
+import grails.plugins.springsecurity.SpringSecurityService
 import groovy.util.logging.Log4j;
+import javax.persistence.Transient
 import org.hibernate.proxy.HibernateProxy
 
 @Log4j
@@ -71,27 +73,27 @@ class User {
       displayName = username
   }
   
-  public isCurrent() {
-    springSecurityService.currentUser == this
+  public boolean isCurrent() {
+     equals(springSecurityService.currentUser)
   }
   
   public boolean isEditable(boolean default_to = true) {
     
+    System.out.println("Concrete is editable called.")
+    
     // Users can edit themselves.
-    return isCurrent() || User.isEditable ([default_to])
+    return isCurrent() || User.isTypeEditable (default_to)
   }
   
   @Override
   public boolean equals(Object obj) {
 
-    log.debug("USER::equals ${obj?.class.name} :: ${obj}");
+    System.out.println("USER::equals ${obj?.class.name} :: ${obj}")
     if ( obj != null ) {
-      if ( obj instanceof User ) {
-        return this.getId() == obj.getId()
-      }
-      else if ( obj instanceof HibernateProxy ) {
-        def the_obj = KBComponent.deproxy(obj)
-        return this.getId() == the_obj.getId()
+      
+      def o = deproxy(obj)
+      if ( o instanceof User ) {
+        return getId() == obj.getId()
       }
     }
 
