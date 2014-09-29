@@ -134,8 +134,25 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
           workspaces[i/3] = ws;
         }
         
+        // Try and find the first available workspace.
+        int wsindex = -1;
+        for (int i=0; i < workspaces.length && wsindex < 0; i++) {
+          RefineWorkspace ws = workspaces[i];
+          if (ws.isAvailable()) {
+            wsindex = i;
+          }
+        }
+        
         // Set active workspace.
-        if (workspaces.length > 0) setActiveWorkspace(0);
+        if (wsindex >= 0) {
+          setActiveWorkspace(wsindex);
+        } else {
+          // Could not connect to any gokb workspace.
+          // TODO: We should disable the whole module here if we can.
+          // for now we shall throw an exception.
+          
+          throw new IOException("Could not connect to any of the defined GOKb services.");
+        }
       }
     }
     

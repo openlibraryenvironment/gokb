@@ -39,7 +39,7 @@ public class RefineWorkspace implements Jsonizable {
   }
   
   public boolean isAvailable () {
-    return available;
+    return available && service.isAlive();
   }
 
   @Override

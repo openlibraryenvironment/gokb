@@ -5,9 +5,14 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.k_int.gokb.module.GOKbModuleImpl;
 
 public class ConditionalDownloader {
+    
+  final static Logger logger = LoggerFactory.getLogger("GOKb-ConditionalDownloader");
 
   
   /**
@@ -38,6 +43,8 @@ public class ConditionalDownloader {
    * @throws IOException
    */
   public static URLConnection getIfChanged (String url, Long since, String etag) throws IOException {
+      
+    logger.debug ("Condtionaly fetching " + url);
 
     // Get the URL.
     URL urlObj = new URL(url);
@@ -52,11 +59,13 @@ public class ConditionalDownloader {
 
     // Last modified date?
     if (since != null && since > 0) {
+      logger.debug ("Using last modified " + since);
       connection.setIfModifiedSince(since);
     }
 
     // ETag compatibility
     if (etag != null) {
+      logger.debug ("Using ETag " + etag);
       connection.setRequestProperty("If-None-Match", etag);
     }
       
@@ -69,13 +78,25 @@ public class ConditionalDownloader {
     switch (code) {
       case 200 :
         // Changed so returning the stream.
+        logger.debug ("Changed response received. Returning stream.");
         return connection;
-        
+      
+
+      case 404 :
+        logger.debug ("Not present code received. Assume unchanged so default will be saved.");
       case 304 :
         // Unchanged.
+        logger.debug ("Unchanged response received.");
+        
+        // Disconnect our connection first.
+        connection.disconnect();
         return null;
         
       default :
+        logger.debug ("Unexpected response received. Code: " + code);
+          
+        // Disconnect our connection first.
+        connection.disconnect();
         // Unsupported code. Let's throw an error.
         throw new IOException("Received an unsupported response code when performing conditional get. Code " + code);
     }
