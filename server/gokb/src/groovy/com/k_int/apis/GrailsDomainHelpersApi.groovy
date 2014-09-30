@@ -33,7 +33,7 @@ public class GrailsDomainHelpersApi<T> extends A_Api<T> {
     ClassUtils.deproxy(element)
   }
   
-  public static <E> E deproxy(def component) {
+  public <E> E deproxy(T component) {
     ClassUtils.deproxy(component)
   }
   

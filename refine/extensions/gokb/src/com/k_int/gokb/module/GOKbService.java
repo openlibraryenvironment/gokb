@@ -135,10 +135,12 @@ public class GOKbService {
   }
 
   private String URL;
+  
+  private boolean alive = true;
 
   private ServiceSettings settings;
 
-  private JSONObject capabilities;
+  private JSONObject capabilities = new JSONObject("{}");
 
   public JSONObject getCapabilities () {
     return capabilities;
@@ -177,8 +179,18 @@ public class GOKbService {
    * @throws IOException 
    * @throws JSONException 
    */
-  private void initialise() throws IOException, JSONException {
-    capabilities = getSettings("capabilities");
+  private void initialise() throws JSONException {
+    try {
+      capabilities = getSettings("capabilities");      
+      
+    } catch (IOException e) {
+      // This exception will be thrown if the service was unavailable. We should still
+      // allow the service to be initialized.
+      logger.debug("Setting the capabilities resulted in an error. " + e.getMessage());
+      logger.debug("Service is probably unavailable.");
+      
+      alive = false;
+    }
   }
 
   /**
@@ -213,6 +225,6 @@ public class GOKbService {
    * @return true or false
    */
   public boolean isAlive() {
-    return true;
+    return alive;
   }
 }

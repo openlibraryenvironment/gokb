@@ -107,8 +107,9 @@
       // In this case we are not going to be running the original.
       // Just send through our new alert method instead.
       GOKb.notify.show({
-        title : "Data Updated",
-        text : historyEntry.description,
+        title   : "Data Updated",
+        text    : historyEntry.description,
+        type    : 'success',
         before_open : function (notice) {
           
           // Build the undo link.

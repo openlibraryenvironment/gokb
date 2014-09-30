@@ -40,7 +40,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
     public static final String VERSION = "3.1";
     public static String getVersion() {
       if (version == null) {
-        singleton.getProperties().getString("module.version");
+        version = singleton.getProperties().getString("module.version");
       }
       
       return version;

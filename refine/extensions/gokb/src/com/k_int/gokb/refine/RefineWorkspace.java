@@ -5,8 +5,11 @@ import java.util.Properties;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.refine.Jsonizable;
+
 import com.k_int.gokb.module.GOKbService;
 
 public class RefineWorkspace implements Jsonizable {
@@ -15,6 +18,8 @@ public class RefineWorkspace implements Jsonizable {
   private GOKbService service;
   private File wsFolder;
   private boolean available = true;
+
+  final static Logger _logger = LoggerFactory.getLogger("GOKb-RefineWorkspace");
   
   public RefineWorkspace (String name, String URL, File wsFolder) {
     this.name = name;
@@ -22,6 +27,7 @@ public class RefineWorkspace implements Jsonizable {
     try {
       this.service = new GOKbService (URL, wsFolder);
     } catch (Exception e) {
+      _logger.error("Error creating service for " + URL, e);
       this.available = false;
     }
   }
@@ -49,7 +55,7 @@ public class RefineWorkspace implements Jsonizable {
     writer.object();
     writer.key("name"); writer.value(getName());
     writer.key("available"); writer.value(isAvailable());
-    writer.key("capabilities"); writer.value(getService().getCapabilities());
+    writer.key("capabilities"); writer.value(getService().getCapabilities().toString());
     writer.endObject();
   }
 }

@@ -81,9 +81,9 @@ public class ConditionalDownloader {
         logger.debug ("Changed response received. Returning stream.");
         return connection;
       
-
       case 404 :
-        logger.debug ("Not present code received. Assume unchanged so default will be saved.");
+        logger.debug ("404 received. Assume unchanged so default will be saved.");
+        
       case 304 :
         // Unchanged.
         logger.debug ("Unchanged response received.");

@@ -87,8 +87,13 @@ class User {
 
     log.debug("USER::equals ${obj?.class.name} :: ${obj}")
     if ( obj != null ) {
+
+      def o = obj
       
-      def o = deproxy(obj)
+      if ( o instanceof HibernateProxy) {
+        o = deproxy(o)
+      }
+      
       if ( o instanceof User ) {
         return getId() == obj.getId()
       }
