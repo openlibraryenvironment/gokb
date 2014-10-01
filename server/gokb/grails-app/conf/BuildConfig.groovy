@@ -73,6 +73,8 @@ grails.project.dependency.resolution = {
     plugins {
       
       
+      compile ":grails-melody:1.52.0"
+
       /* Grails 2.4 Upgrade */
       build ':tomcat:7.0.54' // plugins for the compile step compile
       
