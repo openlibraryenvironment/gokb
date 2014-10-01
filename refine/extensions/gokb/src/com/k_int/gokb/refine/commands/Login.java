@@ -17,61 +17,61 @@ import com.k_int.gokb.refine.RefineAPICallback;
 
 
 public class Login extends A_RefineAPIBridge {
-    final static Logger logger = LoggerFactory.getLogger("GOKb-login_command");
-    
-    @Override
-    public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        handleRequest(request, response);
-    }
-    
-    private void handleRequest (final HttpServletRequest request, final HttpServletResponse response) {
-            
-        // Get the parameters submitted to this page.
-        Map<String, String[]> params;
-        try {
-            params = params(request);
-        
-            // Get the parameters.
-            String[] username = params.get("username");
-            String[] password = params.get("password");
+  final static Logger logger = LoggerFactory.getLogger("GOKb-login_command");
 
-            // Ensure the details have been set.
-            if (username != null && password != null && username.length == 1 && password.length == 1) {
+  @Override
+  public void doPost(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    handleRequest(request, response);
+  }
 
-                // Set the current user details.
-                GOKbModuleImpl.setCurrentUserDetails(username[0], password[0]);
-            }
-            
-            // Get the page.
-            String referrer = request.getHeader("referer");
-            final String page = referrer != null && !"".equals(referrer) ? referrer : "/";
+  private void handleRequest (final HttpServletRequest request, final HttpServletResponse response) {
 
-            // Now we need to pass the data to the API.
-            postToAPI(response, "checkLogin", params, null, new RefineAPICallback() {
+    // Get the parameters submitted to this page.
+    Map<String, String[]> params;
+    try {
+      params = params(request);
 
-                @Override
-                protected void onSuccess(InputStream result, int responseCode) throws Exception {
+      // Get the parameters.
+      String[] username = params.get("username");
+      String[] password = params.get("password");
 
-                    /* Do nothing */
-                }
+      // Ensure the details have been set.
+      if (username != null && password != null && username.length == 1 && password.length == 1) {
 
-                @Override
-                protected void onError(InputStream result, int respCode, Exception e) throws Exception {
-                    /* Do nothing */
-                }
+        // Set the current user details.
+        GOKbModuleImpl.setCurrentUserDetails(username[0], password[0]);
+      }
 
-                @Override
-                protected void complete(InputStream result) throws Exception {
-                    // Redirect
-                    response.sendRedirect(page);
-                }
-            });
+      // Get the page.
+      String referrer = request.getHeader("referer");
+      final String page = referrer != null && !"".equals(referrer) ? referrer : "/";
 
-        } catch (Exception e1) {
+      // Now we need to pass the data to the API.
+      postToAPI(response, "checkLogin", params, null, new RefineAPICallback() {
 
-            // Error!
-            respondWithErrorPage(request, response, e1.getLocalizedMessage(), e1);
+        @Override
+        protected void onSuccess(InputStream result, int responseCode) throws Exception {
+
+          /* Do nothing */
         }
+
+        @Override
+        protected void onError(InputStream result, int respCode, Exception e) throws Exception {
+          /* Do nothing */
+        }
+
+        @Override
+        protected void complete(InputStream result) throws Exception {
+          // Redirect
+          response.sendRedirect(page);
+        }
+      });
+
+    } catch (Exception e1) {
+
+      // Error!
+      respondOnError(request, response, e1);
     }
+  }
 }

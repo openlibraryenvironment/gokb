@@ -11,9 +11,9 @@ import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.refine.ProjectManager;
-import com.google.refine.commands.Command;
 import com.k_int.gokb.module.GOKbModuleImpl;
+
+import com.google.refine.commands.Command;
 
 
 public class SetWorkspace extends Command {
