@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,9 +97,12 @@ public abstract class A_RefineAPIBridge extends Command {
   private static final int    POST_MAX_FILE_BUFFER  = 1*1024*1024;
 
   protected static String getJSONFromStream(InputStream is) throws IOException, JSONException {
-
+    return getJSONObjectFromStream(is).toString();
+  }
+  
+  protected static JSONObject getJSONObjectFromStream (InputStream is) throws JSONException, IOException {
     String json = ParsingUtilities.inputStreamToString(is);
-    return ParsingUtilities.evaluateJsonStringToObject(json).toString();
+    return ParsingUtilities.evaluateJsonStringToObject(json);
   }
 
   protected static void proxyReturn (HttpServletResponse clientResponse, InputStream apiResponse) throws IOException, JSONException, ServletException {
