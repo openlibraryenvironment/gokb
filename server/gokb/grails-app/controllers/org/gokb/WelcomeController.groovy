@@ -10,7 +10,23 @@ class WelcomeController {
   
   SessionFactory sessionFactory
 
-  def index() { 
+  static stats_cache = null;
+  static stats_timestamp = null;
+
+  def index() {
+    if ( ( stats_timestamp == null )|| ( System.currentTimeMillis() - stats_timestamp > 3600000 ) ) {
+      stats_timestamp = System.currentTimeMillis()
+      stats_cache = calculate();
+    }
+    else {
+      log.debug("stats from cache...");
+    }
+
+    return stats_cache
+  }
+
+  def calculate() {
+    log.debug("Calculating stats...");
 
     // The defaults for these widgets.
     def result=[:].withDefault {[
