@@ -51,6 +51,14 @@ class ApiController {
           switch (k) {
             case "incomingCombos" :
             case "outgoingCombos" :
+            case "allPropertiesAndVals" :
+            case "allComboPropertyNames" :
+            case "allComboTypeValues" :
+            case {it ==~ /^.+Service$/} :
+            case "grailsApplication" :
+            case "allComboPropertyNames" :
+            case "allComboTypeValues" :
+            case "allComboTypeValues" :
               /* DO nothing */
             break
 

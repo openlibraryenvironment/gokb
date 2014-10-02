@@ -121,6 +121,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
         // The workspaces.
         workspaces = new RefineWorkspace[apis.size() / 3];
         
+        _logger.info("Configuring workspaces...");
+        
         // Go through each group and add the file and URL.
         for (int i=0; i<apis.size(); i+=3) {
           
@@ -132,6 +134,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl {
           
           // Add to the array.
           workspaces[i/3] = ws;
+
+          _logger.info("\tAdded " + ws.getName() + " (" + ws.getService().getURL() + ")" + (!ws.isAvailable() ? " [offline]" : "") );
         }
         
         // Try and find the first available workspace.
