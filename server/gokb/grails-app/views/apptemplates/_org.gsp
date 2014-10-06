@@ -42,7 +42,6 @@
 			<li><a href="#licenses" data-toggle="tab">Licenses</a></li>
 			<li><a href="#packages" data-toggle="tab">Packages</a></li>
 			<li><a href="#titles" data-toggle="tab">Published Titles</a></li>
-			<li><a href="#tipps" data-toggle="tab">Tipps</a></li>
 			<li><a href="#platforms" data-toggle="tab">Platforms</a></li>
 			<li><a href="#addprops" data-toggle="tab">Custom Fields <span
 					class="badge badge-warning"> ${d.additionalProperties?.size()}
@@ -334,11 +333,6 @@
 				<g:link class="display-inline" controller="search" action="index"
 					params="[qbe:'g:titles', qp_prov_id:d.id, hide:['qp_prov_id']]"
 					id="">Titles published</g:link>
-			</div>
-
-			<div class="tab-pane" id="tipps">
-				<g:link class="display-inline" controller="search" action="index"
-					params="[qbe:'g:tipps', qp_pub_id:d.id, hide:['qp_pub_id']]" id="">Tipps for this org</g:link>
 			</div>
 
 			<div class="tab-pane" id="packages">
