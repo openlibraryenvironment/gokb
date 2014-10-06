@@ -240,9 +240,22 @@ class AjaxSupportController {
             }
           }
         } 
+        else {
+          // Stand alone object.. Save it!
+          log.debug("Saving stand along reference object");
+          if ( new_obj.save() ) {
+            log.debug("Saved OK");
+          }
+          else {
+            new_obj.errors.each { e ->
+              log.debug("Problem ${e}");
+            }
+          }
+        }
 
         // Special combo processing
-        if ( ( new_obj != null ) && ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
+        if ( ( new_obj != null ) && 
+             ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
           log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
           new_obj.hasByCombo.keySet().each { hbc ->
             log.debug("Testing ${hbc} -> ${params[hbc]}");
@@ -253,8 +266,6 @@ class AjaxSupportController {
           }
           new_obj.save()
         }
-
-
       }
       else {
         log.debug("Unable to locate instance of context class with oid ${params.__context}");
