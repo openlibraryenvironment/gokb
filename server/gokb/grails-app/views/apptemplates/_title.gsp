@@ -424,6 +424,16 @@
         </table>
       </dd>
 
+        <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
+          <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
+          <input type="hidden" name="__property" value="publisher" />
+          <dt>Add Publisher:</td>
+          <dd>
+            <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+          </dd>
+        </g:form>
+
+
     </div>
 
     <div class="tab-pane" id="identifiers">
