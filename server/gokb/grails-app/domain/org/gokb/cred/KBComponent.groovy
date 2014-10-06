@@ -520,7 +520,7 @@ abstract class KBComponent {
     def result=null
     ids?.each { id ->
       if ( id.toComponent instanceof Identifier ) {
-        if ( id.toComponent.ns?.ns == idtype )
+        if ( id.toComponent.ns?.ns.toLowerCase() == idtype.toLowerCase() )
           result = id.toComponent?.value
       }
     }

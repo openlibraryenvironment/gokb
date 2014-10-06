@@ -167,11 +167,13 @@ class TitleInstance extends KBComponent {
   static def refdataFind(params) {
     def result = [];
     def ql = null;
-    ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
+    // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
+    // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
+    ql = TitleInstance.executeQuery("select t.id, t.name from TitleInstance as t where lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) )", ["${params.q}%","${params.q}%"],[max:20]);
 
     if ( ql ) {
       ql.each { t ->
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        result.add([id:"org.gokb.cred.TitleInstance:${t[0]}",text:"${t[1]} "])
       }
     }
 
@@ -312,4 +314,6 @@ class TitleInstance extends KBComponent {
     }
     return result;
   }
+
+
 }
