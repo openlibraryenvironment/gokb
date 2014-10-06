@@ -125,7 +125,7 @@
 
                   <ul class="nav nav-second-level">
                     <li><g:link controller="search" action="index"
-                        params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">
+                        params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id, qp_status:org.gokb.cred.RefdataCategory.getOID('ReviewRequest.Status','Open')]}">
                         <i class="fa fa-angle-double-right fa-fw"></i> My ToDos</g:link></li>
                     <li><g:link controller="search" action="index"
                         params="${[qbe:'g:reviewRequests']}"><i class="fa fa-angle-double-right fa-fw"></i>
