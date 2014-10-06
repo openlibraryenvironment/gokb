@@ -11,8 +11,7 @@
     <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditableRefData owner="${d}" field="status"
-      config='KBComponent.Status' />
+    <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
   </dd>
 
   <dt>
