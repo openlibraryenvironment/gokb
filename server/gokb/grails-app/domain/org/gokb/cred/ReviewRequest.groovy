@@ -6,6 +6,9 @@ class ReviewRequest {
   
   static auditable = true
 
+  @Transient
+  def springSecurityService
+
   KBComponent componentToReview
   String descriptionOfCause
   String reviewRequest
@@ -88,5 +91,13 @@ class ReviewRequest {
   public String getNiceName() {
         return "Review Request";
   }
+
+  def beforeUpdate() {
+    if ( isDirty('status') ) {
+      reviewedBy = springSecurityService.currentUser
+    }
+  }
+
+
 
 }
