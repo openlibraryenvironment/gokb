@@ -35,10 +35,10 @@
     </g:if>
 
     <dt>
-      <g:annotatedLabel owner="${d}" property="listVerifier">List Verifier</g:annotatedLabel>
+      <g:annotatedLabel owner="${d}" property="userListVerifier">List Verifier</g:annotatedLabel>
     </dt>
     <dd>
-      <g:xEditable class="ipe" owner="${d}" field="listVerifier" />
+      <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier?.displayName}</g:manyToOneReferenceTypedown>
     </dd>
     <dt>
       <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel>
@@ -106,8 +106,7 @@
             <dl class="dl-horizontal">
               <dt>Title</dt>
               <dd>
-                <g:simpleReferenceTypedown class="form-control" name="title"
-                  baseClass="org.gokb.cred.TitleInstance" />
+                <g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.TitleInstance" />
               </dd>
               <dt>Platform</dt>
               <dd>

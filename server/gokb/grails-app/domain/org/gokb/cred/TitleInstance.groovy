@@ -13,6 +13,7 @@ class TitleInstance extends KBComponent {
   RefdataValue	pureOA
   RefdataValue	continuingSeries
   RefdataValue	reasonRetired
+  RefdataValue	oa
   Date publishedFrom
   Date publishedTo
 //  String imprint
@@ -78,6 +79,7 @@ class TitleInstance extends KBComponent {
     medium (nullable:true, blank:false)
     pureOA (nullable:true, blank:false)
     reasonRetired (nullable:true, blank:false)
+    oa (nullable:true, blank:false)
 //    imprint (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo (nullable:true, blank:false)

@@ -183,11 +183,11 @@
           </dd>
 
           <dt>
-            <g:annotatedLabel owner="${d}" property="pureOA">pureOA</g:annotatedLabel>
+            <g:annotatedLabel owner="${d}" property="oa">OA</g:annotatedLabel>
           </dt>
           <dd>
-            <g:xEditableRefData owner="${d}" field="pureOA"
-              config='TitleInstance.PureOA' />
+            <g:xEditableRefData owner="${d}" field="oa"
+              config='TitleInstance.OAStatus' />
           </dd>
 
           <dt>

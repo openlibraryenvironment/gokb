@@ -285,6 +285,12 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Journal").save()
 
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Yes").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "No").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Hybrid").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Delayed").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save()
+
     RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes").save()
     RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "No").save()
     RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Unknown").save()
