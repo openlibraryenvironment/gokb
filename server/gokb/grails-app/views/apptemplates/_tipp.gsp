@@ -215,8 +215,7 @@
 		</div>
 
 		<div class="tab-pane" id="review">
-			<g:render template="revreqtab" contextPath="../apptemplates"
-				model="${[d:d]}" />
+			<g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
 		</div>
 	</g:if>
 </div>
