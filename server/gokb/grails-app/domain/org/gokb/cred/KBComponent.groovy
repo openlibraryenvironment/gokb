@@ -313,6 +313,7 @@ abstract class KBComponent {
     tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
     dateCreated column:'kbc_date_created'
     lastUpdated column:'kbc_last_updated'
+    reviewRequests sort: 'id', order: 'asc'
 
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
