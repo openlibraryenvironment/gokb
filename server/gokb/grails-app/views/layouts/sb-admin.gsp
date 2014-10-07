@@ -36,7 +36,7 @@
   <div id="wrapper">
 
     <!-- Navigation -->
-    <nav class="navbar navbar-default navbar-static-top" role="navigation"
+    <nav class="navbar navbar-default navbar-static-top container-fluid" role="navigation"
       style="margin-bottom: 0">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse"
