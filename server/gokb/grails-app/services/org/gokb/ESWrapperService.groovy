@@ -1,9 +1,9 @@
 package org.gokb
 
+import grails.util.Holders
 import org.elasticsearch.groovy.node.GNode
 import org.elasticsearch.groovy.node.GNodeBuilder
 import static org.elasticsearch.groovy.node.GNodeBuilder.*
-import org.codehaus.groovy.grails.commons.ApplicationHolder
 
 class ESWrapperService {
 
@@ -14,6 +14,7 @@ class ESWrapperService {
 
   @javax.annotation.PostConstruct
   def init() {
+    
     log.debug("Init");
 
     // System.setProperty("java.net.preferIPv4Stack","true");
@@ -23,7 +24,7 @@ class ESWrapperService {
     // Settings s = ImmutableSettings.settingsBuilder() .put(m).build();
     // TransportClient client = new TransportClient(s);
 
-    def clus_nm = ApplicationHolder.application.config.gokb.es.cluster ?: "gokb"
+    def clus_nm = Holders.grailsApplication.config.gokb.es.cluster ?: "gokb"
 
     log.debug("Using ${clus_nm} as ES cluster name...");
 
