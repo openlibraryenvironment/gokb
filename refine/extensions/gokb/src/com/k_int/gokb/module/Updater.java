@@ -62,34 +62,42 @@ public class Updater {
     temp_dir.delete();
 
     // Create zip file entry.
-    ZipFile zipFile = new ZipFile(from);
+    ZipFile zipFile = null;
+    
+    try {
+      zipFile = new ZipFile(from);
 
-    // Each entry in the zip needs extracting.
-    Enumeration<? extends ZipEntry> entries = zipFile.entries();
-    while (entries.hasMoreElements()) {
+      // Each entry in the zip needs extracting.
+      Enumeration<? extends ZipEntry> entries = zipFile.entries();
+      while (entries.hasMoreElements()) {
 
-      // Single entry.
-      ZipEntry entry = entries.nextElement();
+        // Single entry.
+        ZipEntry entry = entries.nextElement();
 
-      // Extract to the destination.
-      File entryDestination = new File(temp_dir,  entry.getName());
+        // Extract to the destination.
+        File entryDestination = new File(temp_dir,  entry.getName());
 
-      // We May need to create the directories.
-      if (entry.isDirectory()) {
-        entryDestination.mkdirs();
+        // We May need to create the directories.
+        if (entry.isDirectory()) {
+          entryDestination.mkdirs();
 
-      } else {
+        } else {
 
-        // Create every folder needed to create this file.
-        entryDestination.getParentFile().mkdirs();
+          // Create every folder needed to create this file.
+          entryDestination.getParentFile().mkdirs();
 
-        // This is a none directory type file. Let's save the data.
-        InputStream in = zipFile.getInputStream(entry);
-        OutputStream out = new FileOutputStream(entryDestination);
-        IOUtils.copy(in, out);
-        IOUtils.closeQuietly(in);
-        IOUtils.closeQuietly(out);
+          // This is a none directory type file. Let's save the data.
+          InputStream in = zipFile.getInputStream(entry);
+          OutputStream out = new FileOutputStream(entryDestination);
+          IOUtils.copy(in, out);
+          IOUtils.closeQuietly(in);
+          IOUtils.closeQuietly(out);
+        }
       }
+    } finally {
+      
+      // Ensure we close the Zip file.
+      if (zipFile != null) zipFile.close();
     }
     
     for (File dir : temp_dir.listFiles((FileFilter)FileFilterUtils.directoryFileFilter())) {
