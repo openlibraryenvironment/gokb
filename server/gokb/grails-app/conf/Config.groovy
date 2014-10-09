@@ -35,7 +35,7 @@ refine = [
   refineRepoTagPattern: /\Q2.6-beta.1\E/,
   refineRepoPath      : "gokb-build/refine",
   gokbRepoURL         : "https://github.com/k-int/gokb-phase1.git",
-  gokbRepoBranch      : "feature-extension_improvements",
+  gokbRepoBranch      : "release",
   gokbRepoTagPattern  : /\QCLIENT_\E(.*)/,
   extensionRepoPath   : "gokb-build/extension",
   gokbExtensionPath   : "refine/extensions/gokb",
@@ -140,7 +140,9 @@ log4j = {
       'com.k_int',
       'com.k_int.apis',
       'com.k_int.asset.pipeline.groovy',
-      'asset.pipeline.less.compilers'
+      'asset.pipeline.less.compilers',
+      'com.k_int.RefineUtils',
+      'com.k_int.grgit.GitUtils'
 
   //   debug  'org.gokb.DomainClassExtender'
 
