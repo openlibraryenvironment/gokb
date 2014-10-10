@@ -1,6 +1,11 @@
 package org.gokb
 
+import com.k_int.TextUtils
+import com.k_int.RefineUtils
+import com.k_int.grgit.GConsoleMonitor
+import com.k_int.grgit.GitUtils
 import grails.transaction.Transactional
+import org.codehaus.gant.GantBuilder
 import org.codehaus.groovy.grails.commons.GrailsApplication
 
 
@@ -8,46 +13,193 @@ import org.codehaus.groovy.grails.commons.GrailsApplication
 class RefineService {
   static scope = "singleton"
   
-  GrailsApplication grailsApplication
   
-  private FilenameFilter filter = new FilenameFilter() {
+  private static final String EXTENSION_PREFIX = "gokb-release-"
+  private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E(\\d+(\\.\\d)*)"
+  private static final String FILENAME_REGEX = (NAMING_REGEX + "\\.\\Qzip\\E")
+
+  GrailsApplication grailsApplication
+
+  /**
+   * File filter to only get refine downloads.
+   */
+  private static FilenameFilter filter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
-      return name ==~ (zip_regex + "\\.\\Qzip\\E")
+      return name ==~ FILENAME_REGEX
     }
   };
-  
-  private static final String zip_regex = "\\Qgokb-release-\\E(\\d)\\.(\\d)\\.(\\d|\\d\\.\\d)" 
-  
-  private final String refine_folder = new File (grailsApplication.mainContext.getResource('WEB-INF').file, "refine").absolutePath
-  
-  String getCurrentLocalExtension () {
-    
+
+  private static class VersionedStringComparitor implements Comparator<String> {
+    public int compare(String s1, String s2) {
+
+      // Now we have the versions we can compare them.
+      return TextUtils.versionCompare(s1.replaceFirst(NAMING_REGEX, "\$1"), s2.replaceFirst(NAMING_REGEX, "\$1"));
+    }
+  }
+
+  private static final VersionedStringComparitor comp = new VersionedStringComparitor()
+
+  private String refineFolderSingleton
+  public String getRefineFolder() {
+    if (!refineFolderSingleton) refineFolderSingleton = grailsApplication.mainContext.getResource('refine').file.absolutePath
+    refineFolderSingleton
+  }
+
+  private String getLatestCurrentLocalExtension () {
+
     // Open the webapp_dir
-    File folder = new File(refine_folder)
-    
+    File folder = new File(refineFolder)
+
     // Ensure that the folder is a directory.
     if (folder.isDirectory()) {
+
+      // Get a list of all GOKb extension zips.
+      String[] extensions = folder.list(filter)
+
+      // Sort the results.
+      Arrays.sort(extensions, comp)
+
+      // Now we should have a sorted array. Take the last element.
+      return extensions[extensions.length - 1]
+    }
+
+    // Null if none could be found.
+    null
+  }
+
+  /**
+   * Need to check whether the currently available local tool is a "later" release
+   * than the one currently in use by the user. 
+   * 
+   * @param current_version The user's current refine version.
+   * @return
+   */
+  def checkUpdate (String current_version) {
+    
+    // If this is the developer version of the tool then always report no update.
+    if (current_version == 'development') {
+      return [
+        "latest-version" : null,
+        "update-available" : false
+      ]
+    }
+
+    // Get the latest local version
+    String current_local_version = getLatestCurrentLocalExtension()
+
+    def data = ["latest-version" : current_local_version]
+
+    if (current_local_version) {
       
-      // Try and get the file.
-      def files = folder.list(filter)
-      if (files.length == 1) {
-        return files[0]
+      // Handle the fact that previous refine versions will report incorrectly formatted version values here.
+      if (current_version ==~ NAMING_REGEX) {
+        data << [
+          "update-available"  : (comp.compare(current_local_version.replaceFirst(".[^\\.]+\$", ""), current_version) > 0)
+        ]
+      } else {
+      
+        data << [
+          "update-available"  : true
+        ]
+      }
+
+    } else {
+      data << [
+        "update-available"  : false
+      ]
+    }
+    
+    data
+  }
+  
+  File extensionDownloadFile (String version_required) {
+    if (version_required ==~ FILENAME_REGEX) {
+      
+      // Return file uri if the file exists.
+      File f = new File (refineFolder, version_required)
+      if (f.exists()) {
+        return f
       }
     }
     
-    
+    null
   }
-
-  def checkUpdate (String current_version) {
+  
+  def buildExtension () {
     
-    // Default to no update.
-    boolean update = false
+    // Create a Gant Builder for this operation.
+    GantBuilder gant = new GantBuilder()
     
-    // Test version number format.
-    def matcher = current_version =~ "\\Qgokb-release-\\E(\\d)\\.(\\d)\\.(\\d|\\d\\.\\d)"
+    // Build Open refine first.
+    buildOpenRefine (gant)
     
-    if (matcher) {
-      // Format match. We now need to test each value in turn.
+    // Now build the extension.
+    def results = buildGOKbRefineExtension (gant)
+    
+    // Deploy the extension.
+    if (results?.containsKey("refine_package")) {
+      RefineUtils.copyZip(gant, "${results.remove('refine_package')}", "${refineFolder}")
     }
+    
+    results
+  }
+  
+  
+  private void buildOpenRefine (AntBuilder ant) {
+    
+    def config = grailsApplication.config
+    
+    // Create the directory to house the OpenRefine project.
+    File refine_repo = new File("${System.properties['user.home']}", "${config.refine.refineRepoPath}")
+    
+    // The build.xml located in the OpenRefine download.
+    File refine_bxml = new File (refine_repo, "${config.refine.refineBuildFile}")
+    
+    // Do the build.
+    RefineUtils.buildRefine(
+      config.refine.refineRepoURL,
+      refine_repo,
+      refine_bxml,
+      config.refine.refineBuildTarget,
+      ant,
+      config.refine.refineRepoBranch,
+      config.refine.refineRepoTagPattern
+    )
+  }
+  
+  private def buildGOKbRefineExtension (AntBuilder ant) {
+    
+    def config = grailsApplication.config
+    
+    // Create the directory to house the OpenRefine project.
+    File refine_repo = new File("${System.properties['user.home']}", "${config.refine.refineRepoPath}")
+    
+    // The target to copy the directory to.
+    File gokb_extension_target = new File(refine_repo, "${config.refine.gokbExtensionTarget}")
+    
+    // Create the directory for project containing refine extension.
+    File extension_repo = new File("${System.properties['user.home']}", "${config.refine.extensionRepoPath}")
+    
+    // The extension location within the repo.
+    File gokb_extension_path = new File(extension_repo, "${config.refine.gokbExtensionPath}")
+    
+    // The build.xml for the GOKb extension.
+    File refine_extension_bxml = new File (gokb_extension_target, "${config.refine.extensionBuildFile}")
+    
+    def info = RefineUtils.buildGOKbRefineExtension(
+      config.refine.gokbRepoURL,
+      extension_repo,
+      refine_extension_bxml,
+      config.refine.extensionBuildTarget,
+      refine_repo,
+      gokb_extension_path,
+      gokb_extension_target,
+      config.refine.gokbRepoTagPattern,
+      ant,
+      config.refine.gokbRepoBranch,
+      config.refine.gokbRepoTagPattern
+    )
+    
+    info
   }
 }

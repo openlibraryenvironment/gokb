@@ -18,6 +18,8 @@ import org.gokb.refine.RefineProject
  */
 
 class ApiController {
+  
+  RefineService refineService
 
   private static final Closure TRANSFORMER_PROJECT = {
 
@@ -825,5 +827,29 @@ class ApiController {
       log.error(t)
       apiReturn (null, "There was an error creating a new Component of ${type}")
     }
+  }
+  
+  def checkUpdate () {
+    def result = refineService.checkUpdate(params."current-version")
+    apiReturn (result)
+  }
+  
+  def downloadUpdate () {
+    
+    // Grab the download.
+    def file = refineService.extensionDownloadFile (params."requested-version")
+    if (file) {
+      // Send the file.
+      response.setContentType("application/x-gzip")
+      response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
+      response.outputStream << file.newInputStream()
+    }
+
+    // Send not found.
+    response.status = 404
+  }
+  
+  def buildExtension() {
+    apiReturn (refineService.buildExtension())
   }
 }
