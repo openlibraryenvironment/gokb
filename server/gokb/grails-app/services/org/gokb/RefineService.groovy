@@ -1,12 +1,12 @@
 package org.gokb
 
-import com.k_int.TextUtils
-import com.k_int.RefineUtils
-import com.k_int.grgit.GConsoleMonitor
-import com.k_int.grgit.GitUtils
 import grails.transaction.Transactional
+
 import org.codehaus.gant.GantBuilder
 import org.codehaus.groovy.grails.commons.GrailsApplication
+
+import com.k_int.RefineUtils
+import com.k_int.TextUtils
 
 
 @Transactional
