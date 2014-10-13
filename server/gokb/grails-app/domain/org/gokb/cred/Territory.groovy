@@ -2,13 +2,13 @@ package org.gokb.cred
 
 class Territory extends KBComponent {
   
-  Set<User> users
+//  Set<User> users
+//  
+//  static hasMany = [
+//    users:User,
+//  ]
   
-  static hasMany = [
-    users:User,
-  ]
-  
-  static belongsTo = [ User ]
+//  static belongsTo = [ User ]
   
   static manyByCombo = [
   	licenses 	: License,

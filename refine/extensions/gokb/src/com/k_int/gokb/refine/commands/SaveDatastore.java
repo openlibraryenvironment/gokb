@@ -16,48 +16,48 @@ import com.google.refine.model.Project;
 
 
 public class SaveDatastore extends A_RefineAPIBridge {
-    final static Logger logger = LoggerFactory.getLogger("GOKb-save-datastore_command");
+  final static Logger logger = LoggerFactory.getLogger("GOKb-save-datastore_command");
 
-    @Override
-    public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        handleRequest(request, response);
+  @Override
+  public void doPost(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    handleRequest(request, response);
+  }
+
+  @Override
+  public void doGet(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    handleRequest(request, response);
+  }
+
+  private void handleRequest (HttpServletRequest request, HttpServletResponse response) {
+    // Get the project manager and flag that it is busy.
+
+    final ProjectManager pm = ProjectManager.singleton;
+    pm.setBusy(true);
+    try {
+
+      // Get the project.
+      final Project project = getProject(request);
+      String[] dataStore = params(request).get("ds");
+      if (dataStore != null && dataStore.length == 1 ) {
+        // Set the metadata.
+        project.getMetadata().setCustomMetadata(
+            "gokb-data", dataStore[0]
+            );
+
+        // Ensure project & Metadata is saved.
+        respond(response, "{ \"code\" : \"success\"}");
+      }
+
+    } catch (Exception e) {
+
+      // Respond with the error page.
+      respondOnError(request, response, e);
+
+    } finally {
+      // Make sure we clear the busy flag.
+      pm.setBusy(false);
     }
-
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        handleRequest(request, response);
-    }
-
-    private void handleRequest (HttpServletRequest request, HttpServletResponse response) {
-        // Get the project manager and flag that it is busy.
-        
-        final ProjectManager pm = ProjectManager.singleton;
-        pm.setBusy(true);
-        try {
-            
-            // Get the project.
-            final Project project = getProject(request);
-            String[] dataStore = params(request).get("ds");
-            if (dataStore != null && dataStore.length == 1 ) {
-                // Set the metadata.
-                project.getMetadata().setCustomMetadata(
-                  "gokb-data", dataStore[0]
-                );
-
-                // Ensure project & Metadata is saved.
-                respond(response, "{ \"code\" : \"success\"}");
-            }
-
-        } catch (Exception e) {
-
-            // Respond with the error page.
-            respondWithErrorPage(request, response, e.getLocalizedMessage(), e);
-
-        } finally {
-            // Make sure we clear the busy flag.
-            pm.setBusy(false);
-        }
-    }
+  }
 }

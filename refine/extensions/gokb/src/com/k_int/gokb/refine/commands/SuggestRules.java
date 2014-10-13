@@ -20,57 +20,57 @@ import com.google.refine.model.Project;
 
 
 public class SuggestRules extends A_RefineAPIBridge {
-    final static Logger logger = LoggerFactory.getLogger("GOKb-suggest-rules_command");
+  final static Logger logger = LoggerFactory.getLogger("GOKb-suggest-rules_command");
 
-    @Override
-    public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        handleRequest(request, response);
-    }
+  @Override
+  public void doPost(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    handleRequest(request, response);
+  }
 
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        handleRequest(request, response);
-    }
+  @Override
+  public void doGet(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+    handleRequest(request, response);
+  }
 
-    private void handleRequest (HttpServletRequest request, final HttpServletResponse response) {
-        // Get the project manager and flag that it is busy.
-        final ProjectManager pm = ProjectManager.singleton;
-        pm.setBusy(true);
-        try {
-            // Get the project.
-            final Project project = getProject(request);
+  private void handleRequest (HttpServletRequest request, final HttpServletResponse response) {
+    // Get the project manager and flag that it is busy.
+    final ProjectManager pm = ProjectManager.singleton;
+    pm.setBusy(true);
+    try {
+      // Get the project.
+      final Project project = getProject(request);
 
-            // Get files sent to this method.
-            Map<String, Object> files = files(request);
+      // Get files sent to this method.
+      Map<String, Object> files = files(request);
 
-            // Ensure the project has been saved.
-            pm.ensureProjectSaved(project.id);
-            
-            // Add the project data zip to the files list.
-            files.put("dataZip", RefineUtil.projectToDataZip(project));
+      // Ensure the project has been saved.
+      pm.ensureProjectSaved(project.id);
 
-            // Now we need to pass the data to the API.
-            postToAPI(response, "suggestRulesFromData", params(request), files, new RefineAPICallback(){
+      // Add the project data zip to the files list.
+      files.put("dataZip", RefineUtil.projectToDataZip(project));
 
-                @Override
-                protected void onSuccess(InputStream result, int responseCode)
-                        throws Exception {
+      // Now we need to pass the data to the API.
+      postToAPI(response, "suggestRulesFromData", params(request), files, new RefineAPICallback(){
 
-                    // Proxy through the api response to the client.
-                    proxyReturn (response, result);
-                }
-            });
+        @Override
+        protected void onSuccess(InputStream result, int responseCode)
+            throws Exception {
 
-        } catch (Exception e) {
-
-            // Respond with the error page.
-            respondWithErrorPage(request, response, e.getLocalizedMessage(), e);
-
-        } finally {
-            // Make sure we clear the busy flag.
-            pm.setBusy(false);
+          // Proxy through the api response to the client.
+          proxyReturn (response, result);
         }
+      });
+
+    } catch (Exception e) {
+
+      // Respond with the error page.
+      respondOnError(request, response, e);
+
+    } finally {
+      // Make sure we clear the busy flag.
+      pm.setBusy(false);
     }
+  }
 }

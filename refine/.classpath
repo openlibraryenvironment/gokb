@@ -2,9 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="main/src"/>
 	<classpathentry kind="src" path="server/src"/>
-	<classpathentry kind="src" path="extensions/gdata/src"/>
 	<classpathentry kind="src" path="extensions/pc-axis/src"/>
-	<classpathentry kind="src" path="main/tests/server/src"/>
 	<classpathentry kind="src" output="extensions/gokb/module/MOD-INF/classes" path="extensions/gokb/src"/>
 	<classpathentry kind="src" path="main/tests/client/src"/>
 	<classpathentry kind="src" path="extensions/gokb/module/scripts"/>
