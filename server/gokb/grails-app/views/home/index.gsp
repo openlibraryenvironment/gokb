@@ -1,122 +1,104 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="layout" content="main"/>
-    <asset:stylesheet src="gokb/application.css"/>
-		<asset:javascript src="gokb/application.js" />
-    <title>GOKb</title>
-  </head>
-  <body>
+<head>
+<meta name='layout' content='public' />
+<title>GOKb: Welcome</title>
+</head>
 
-   <div class="container">
-     <div class="row">
-       <div id="openActivities" class="col-md-6 well">
-         <g:if test="${(openActivities != null ) && ( openActivities.size() > 0 )}">
-           <h3>Currently open activities</h3>
-           <table class="table table-striped table-bordered">
-             <thead>
-               <tr>
-                 <td>Activity</td>
-                 <td>Type</td>
-                 <td>Created</td>
-                 <td>Last Updated</td>
-               </tr>
-             </thead>
-             <tbody>
-               <g:each in="${openActivities}" var="activity">
-                 <tr>
-                   <td><g:link controller="workflow" action="${activity.activityAction}" id="${activity.id}">${activity.activityName?:'No name'}</g:link></td>
-                   <td>${activity.type}</td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.dateCreated}"/></td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.lastUpdated}"/></td>
-                 </tr>
-               </g:each>
-             </tbody>
-           </table>
-         </g:if>
-         <g:else>
-           <h3>No open activities</h3>
-         </g:else>
+<body>
+	<div class="container">
+		<div class="row">
+			<div class="box">
+				<div class="col-lg-12 text-center">
+					<div id="carousel" class="carousel slide" data-ride="carousel"
+						data-interval="4000" data-wrap="true">
+						<!-- Indicators -->
+						<ol class="carousel-indicators hidden-xs">
+							<li data-target="#carousel" data-slide-to="0" class="active"></li>
+							<li data-target="#carousel" data-slide-to="1"></li>
+							<li data-target="#carousel" data-slide-to="2"></li>
+							<li data-target="#carousel" data-slide-to="3"></li>
+						</ol>
 
-         <g:if test="${(recentReviewRequests != null ) && ( recentReviewRequests.size() > 0 )}">
-           <h3>Your most recent review requests</h3>
-           <table class="table table-striped table-bordered">
-             <thead>
-               <tr>
-                 <td>Object</td>
-                 <td>Cause</td>
-                 <td>Request</td>
-                 <td>Date</td>
-               </tr>
-             </thead>
-             <tbody>
-               <g:each in="${recentReviewRequests}" var="rr">
-                 <tr>
-                   <td><g:link controller="resource" action="show" id="${rr.componentToReview.class.name}:${rr.componentToReview.id}">${rr.componentToReview.toString()}</g:link></td>
-                   <td>${rr.descriptionOfCause}</td>
-                   <td>${rr.reviewRequest}</td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${rr.dateCreated}"/></td>
-                 </tr>
-               </g:each>
-             </tbody>
-           </table>
-         </g:if>
-         <g:else>
-           <h3>There are no outstanding review requests allocated to you</h3>
-         </g:else>
+						<!-- Wrapper for slides -->
+						<div class="carousel-inner">
+							<div class="item active">
+								<asset:image src="gokb/carousel/001.jpg" />
+							</div>
+							<div class="item">
+								<asset:image src="gokb/carousel/002.jpg" />
+							</div>
+							<div class="item">
+								<asset:image src="gokb/carousel/003.jpg" />
+							</div>
+							<div class="item">
+								<asset:image src="gokb/carousel/004.jpg" />
+							</div>
+						</div>
 
+						<!-- Controls -->
+						<a class="left carousel-control" href="#carousel"
+							data-slide="prev"> <span class="icon-prev"></span>
+						</a> <a class="right carousel-control" href="#carousel"
+							data-slide="next"> <span class="icon-next"></span>
+						</a>
+					</div>
+					<span class="brand-before"> <small>Welcome to</small>
+					</span>
+					<h1 class="brand-name">GOKb</h1>
+				</div>
+			</div>
+		</div>
 
-         <g:if test="${(recentlyClosedActivities != null ) && ( recentlyClosedActivities.size() > 0 )}">
-           <h3>Recently Closed activities</h3>
-           <table class="table table-striped table-bordered">
-             <thead>
-               <tr>
-                 <td>Activity</td>
-                 <td>Type</td>
-                 <td>Status</td>
-                 <td>Created</td>
-                 <td>Last Updated</td>
-               </tr>
-             </thead>
-             <tbody>
-               <g:each in="${recentlyClosedActivities}" var="activity">
-                 <tr>
-                   <td><g:link controller="workflow" action="${activity.activityAction}" id="${activity.id}">${activity.activityName?:'No name'}</g:link></td>
-                   <td>${activity.type.value}</td>
-                   <td>${activity.status.value}</td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.dateCreated}"/></td>
-                   <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.lastUpdated}"/></td>
-                 </tr>
-               </g:each>
-             </tbody>
-           </table>
-         </g:if>
-         <g:else>
-           <h3>No recently closed activities</h3>
-         </g:else>
+		<div class="row">
+			<div class="box">
+				<div class="col-lg-12">
+					<hr>
+					<h2 class="intro-text text-center">
+						Blah <strong>worth visiting</strong>
+					</h2>
+					<hr>
+					<p>The boxes used in this template are nested inbetween a
+						normal Bootstrap row and the start of your column layout. The
+						boxes will be full-width boxes, so if you want to make them
+						smaller then you will need to customize.</p>
+					<p>
+						A huge thanks to <a href="http://join.deathtothestockphoto.com/"
+							target="_blank">Death to the Stock Photo</a> for allowing us to
+						use the beautiful photos that make this template really come to
+						life. When using this template, make sure your photos are decent.
+						Also make sure that the file size on your photos is kept to a
+						minumum to keep load times to a minimum.
+					</p>
+					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+						Nunc placerat diam quis nisl vestibulum dignissim. In hac
+						habitasse platea dictumst. Interdum et malesuada fames ac ante
+						ipsum primis in faucibus. Pellentesque habitant morbi tristique
+						senectus et netus et malesuada fames ac turpis egestas.</p>
+				</div>
+			</div>
+		</div>
 
-       </div>
-       <div id="recentActivity" class="col-md-6 well">
-         <h3>History</h3>
-         <table class="table table-striped table-bordered">
-           <thead>
-             <tr>
-               <td>Activity</td>
-               <td>Date</td>
-             </tr>
-           </thead>
-           <tbody>
-             <g:each in="${recentlyViewed}" var="activity">
-               <tr>
-                 <td><g:link controller="${activity.controller}" action="${activity.action}" id="${activity.actionid}">${activity.title}</g:link></td>
-                 <td><g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${activity.activityDate}"/></td>
-               </tr>
-             </g:each>
-           </tbody>
-         </table>
-       </div>
-     </div>
-   </div>
-  
-  </body>
+		<div class="row">
+			<div class="box">
+				<div class="col-lg-12">
+					<hr>
+					<h2 class="intro-text text-center">
+						Beautiful boxes <strong>to showcase your content</strong>
+					</h2>
+					<hr>
+					<p>Use as many boxes as you like, and put anything you want in
+						them! They are great for just about anything, the sky's the limit!</p>
+					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+						Nunc placerat diam quis nisl vestibulum dignissim. In hac
+						habitasse platea dictumst. Interdum et malesuada fames ac ante
+						ipsum primis in faucibus. Pellentesque habitant morbi tristique
+						senectus et netus et malesuada fames ac turpis egestas.</p>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	<!-- /.container -->
+</body>
 </html>

@@ -36,7 +36,7 @@
   <div id="wrapper">
 
     <!-- Navigation -->
-    <nav class="navbar navbar-default navbar-static-top container-fluid" role="navigation"
+    <nav class="navbar navbar-default navbar-static-top" role="navigation"
       style="margin-bottom: 0">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse"
@@ -84,7 +84,7 @@
       <div class="navbar-default sidebar" role="navigation">
         <div class="sidebar-nav navbar-collapse">
           <ul class="nav" id="side-menu">
-            <li class="${params?.controller == "welcome"  ? 'active' : ''}"><g:link controller="welcome"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
+            <li class="${params?.controller == "home" && params?.action == 'home' ? 'active' : ''}"><g:link controller="home"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
             
             <sec:ifLoggedIn>
               <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>Search<span class="fa arrow"></span></a>
