@@ -57,7 +57,7 @@ class InplaceTagLib {
     switch ( attrs.type ) {
       case 'date':
         data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date',format:"MM/dd/yyyy"])
-        out << " data-type='combodate' data-format='${attrs."data-format"?:'YYYY-MM-DD'}' data-viewformat='MM/DD/YYYY' data-template='MMM / DD / YYYY'"
+        out << " data-type='combodate' data-format='${attrs."data-format"?:'YYYY-MM-DD'}' data-combodate='{minYear : 1900,smartDays:true}' data-viewformat='MM/DD/YYYY' data-template='MMM / DD / YYYY'"
         if (!attrs."data-value") {
           if (owner[attrs.field]) {
     
