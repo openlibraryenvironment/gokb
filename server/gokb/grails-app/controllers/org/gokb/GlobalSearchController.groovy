@@ -2,7 +2,7 @@ package org.gokb
 
 class GlobalSearchController {
 
-  static def reversemap = ['subject':'subjectKw']
+  static def reversemap = ['subject':'subjectKw','componentType':'componentType']
   static def non_analyzed_fields = ['componentType']
 
 
