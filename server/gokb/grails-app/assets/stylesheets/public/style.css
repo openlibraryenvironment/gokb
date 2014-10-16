@@ -17,6 +17,10 @@ body {
     -o-background-size: cover;
 }
 
+.pad-out {
+	padding-bottom:125px !important;
+}
+
 h1,
 h2,
 h3,

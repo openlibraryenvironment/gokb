@@ -26,6 +26,7 @@ window.gokb = {
 
 (function($) {
   
+  // When DOM is ready.
   $(document).ready(function(){
 
     gokb.dialog = bootbox.dialog;

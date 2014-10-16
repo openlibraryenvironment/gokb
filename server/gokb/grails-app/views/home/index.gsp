@@ -51,11 +51,11 @@
 		</div>
 
 		<div class="row">
-			<div class="box">
+			<div class="box" id="about">
 				<div class="col-lg-12">
 					<hr>
 					<h2 class="intro-text text-center">
-						Blah <strong>worth visiting</strong>
+						About <strong>GOKb</strong>
 					</h2>
 					<hr>
 					<p>The boxes used in this template are nested inbetween a
