@@ -303,55 +303,48 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     }, 1, 60, TimeUnit.SECONDS);
   }
 
-  private boolean updating = false;
   private synchronized void scheduledTasks() throws Throwable {
     _logger.debug("Running scheduled tasks.");
-    updating = true;
-    
-    try {
 
-      // Run all scheduled updates.
-      for (A_ScheduledUpdates up : scheduledObjects) {
-        up.doScheduledUpdates();
-      }
-  
-      // Now we can see if we have any module updates available.
-      String updateTo = null;
-      for (GOKbService s : getAllServices()) {
-  
-        if (s.hasUpdate()) {
-          if (updateTo == null) {
-            updateTo = s.getAvailableModuleVersion();
-          } else {
-  
-            // Compare existing with available.
-            String available = s.getAvailableModuleVersion();
-            if (TextUtils.versionCompare(updateTo, available) > 0) {
-              // Later version here.
-              updateTo = available;
-            }
+    // Run all scheduled updates.
+    for (A_ScheduledUpdates up : scheduledObjects) {
+      up.doScheduledUpdates();
+    }
+
+    // Now we can see if we have any module updates available.
+    String updateTo = null;
+    for (GOKbService s : getAllServices()) {
+
+      if (s.hasUpdate()) {
+        if (updateTo == null) {
+          updateTo = s.getAvailableModuleVersion();
+        } else {
+
+          // Compare existing with available.
+          String available = s.getAvailableModuleVersion();
+          if (TextUtils.versionCompare(updateTo, available) > 0) {
+            // Later version here.
+            updateTo = available;
           }
         }
       }
-  
-      // If we have an update then we should add a system message.
-      if (updateTo != null) {
-        
-        Notification n = Notification.fromJSON("{"
-            + "id:'module-update',"
-            + "text:'A system update (version " + updateTo + ") has been donwloaded. You must restart refine for the update to take effect.',"
-            + "title:'GOKb Update',"
-            + "hide:false}"
-        );
-        
-        // Remove the buttons.
-        n.getButtons().put("closer", false);
-        n.getButtons().put("sticker", false);
-        
-        NotificationStack.getSystemStack().add(n);
-      }
-    } finally {
-      updating = false;
+    }
+
+    // If we have an update then we should add a system message.
+    if (updateTo != null) {
+
+      Notification n = Notification.fromJSON("{"
+          + "id:'module-update',"
+          + "text:'A system update (version " + updateTo + ") has been donwloaded. You must restart refine for the update to take effect.',"
+          + "title:'GOKb Update',"
+          + "hide:false}"
+          );
+
+      // Remove the buttons.
+      n.getButtons().put("closer", false);
+      n.getButtons().put("sticker", false);
+
+      NotificationStack.getSystemStack().add(n);
     }
   }
 
@@ -429,30 +422,33 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   @Override
   public void write (JSONWriter writer, Properties options)
       throws JSONException {
-    
-    // We should try and wait if there is an update occuring.
-    while (updating) { /* Wait until not updating*/ }
-    
+
     // This is the set of data returned by .
     writer.object()
-      .key("notification-stacks").object()
-         .key("system");
-    
+    .key("notification-stacks").object()
+    .key("system");
+
     NotificationStack.getSystemStack().write(writer, options);
-    
+
     writer
-      .endObject()
-      .key("workspaces").array()
+    .endObject()
+    .key("workspaces").array()
     ;
-    
+
     // Add all the workspaces.
     for (RefineWorkspace w : workspaces) {
       w.write(writer, options);
     }
-    
+
     writer
-      .endArray()
-      .key("current").value(getCurrentWorkspaceId())
+    .endArray()
+    .key("current").value(getCurrentWorkspaceId())
     .endObject();
+  }
+
+  @Override
+  public void destroy () throws Exception {
+    this.scheduler.shutdown();
+    super.destroy();
   }
 }

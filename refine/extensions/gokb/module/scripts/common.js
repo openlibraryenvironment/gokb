@@ -13,7 +13,7 @@ var GOKb = {
   refine:{},
   versionError : false,
   hijacked : [],
-  core_update : false
+  timer_id : false
 };
 
 /**
@@ -754,54 +754,91 @@ RegExp.escape = function(text) {
 };
 
 /**
- * Load the available workspaces from refine.
+ * Get the core data from the backend.
  */
-GOKb.populateWorkspaces = function () {
-  
-  // Get the workspaces.
-  GOKb.doCommand(
-    "get-workspaces",
+GOKb.fetchCoreData = function() { 
+  return GOKb.doCommand(
+    "get-coredata",
     {},
     {},
-    {
-      onDone : function (data) {
-        if ("workspaces" in data && "current" in data) {
-          
-          // Add the current workspace pointer.
-          GOKb.current_ws = data.current;
-          GOKb.workspaces = data.workspaces;
-          GOKb.workspace=data.workspaces[data.current];
-        }
+    { onDone : function(data) {
+        GOKb.core = data;
+        GOKb.core.workspace = GOKb.core.workspaces[GOKb.core.current];
       }
     }
   );
 };
 
 /**
- * This will poll for any changes from GOKb.
+ * This will return local core data or fetch it if not present.
  */
 GOKb.getCoreData = function () {
   
-  // Set update in progress.
-  GOKb.core_update = true;
+  // Create the deferred object.
+  var listener;
+
+  if (typeof GOKb.core === 'undefined') {
+    // We need to populate the core instead.
+    listener = GOKb.fetchCoreData();
+  } else {
+    
+    // Return the current data, which will be updated regularly.
+    listener = $.Deferred();
+    listener.resolve(GOKb.core);
+  }
   
   // Get the workspaces.
-  GOKb.doCommand(
-    "get-coredata",
-    {},
-    {},
-    { onDone : GOKb.updateWithCoreData }
-  ).done(function(){
-    GOKb.core_update = false;
-  });
+  return listener;
+};
+
+/**
+ * Timer recurring functions.
+ */
+GOKb.timer = function() {
+  
+  // Create the deferred object.
+  var listener = $.Deferred();
+  
+  if (GOKb.timer_id != null) {
+    // Need to cancel the previous schedule.
+    clearTimeout(GOKb.timer_id);
+    GOKb.timer_id = null;
+  }
+  
+  if (!GOKb.versionError) {
+  
+    // Just call with empty callbacks. If the api is not up there will be a timeout.
+    // If the versions are wrong then the default error callback will be fired and the,
+    // version missmatch reported to the user.
+    GOKb.doCommand("isUp", {}, {}, {});
+    
+    if (!GOKb.versionError) {
+      
+      // Grab the core data.
+      GOKb.fetchCoreData().done(function(data){
+        
+        // Resolve the listener so that anything waiting on this to finish can then execute anything they need.
+        listener.resolve(data);
+        
+        // Check again in 30 seconds if not called before.
+        GOKb.timer_id = setTimeout(GOKb.timer, 30000);
+      });
+      
+      return listener;
+    }
+  }
+  
+  // If we get here then we have a version error and should reject.
+  listener.reject();
+  
+  // Return the listener.
+  return listener;
 };
 
 /**
  * Act on data been sent from GOKb module backend.
  */
-GOKb.updateWithCoreData = function (data) {
-  
-  GOKb.core = data;
+GOKb.updateSystemNotifications = function (data) {
   
   // Add any system notifications.
   $.each(data['notification-stacks']['system'], function(){

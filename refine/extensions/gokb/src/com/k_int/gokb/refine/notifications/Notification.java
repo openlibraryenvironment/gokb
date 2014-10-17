@@ -60,11 +60,6 @@ public class Notification extends Jsonizable {
     // JSON value.
     JSONObject me = new JSONObject(toJSON());
     
-    // Append the buttons.
-    for (String key : buttons.keySet()) {
-      me.append(key, buttons.get(key));
-    }
-    
     // Write the object.
     writer.value(me);
   }

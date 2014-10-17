@@ -9,102 +9,105 @@ GOKb.ui.projects = function (elmt) {
   
   $(document).ready(function(){
     
-    // Testing.
-    GOKb.doRefineCommand(
-       "core/get-all-project-metadata",
-       {},
-       null,
-       {
-         onDone : function (localProjects) {
-           
-           if ("projects" in localProjects) self._localProjects = localProjects.projects;
-           
-            // Get the projects list from GOKb.
-            GOKb.api.getProjects(
-              { checkedIn : "True" },
-              {
-                onDone : function (data) {
-                  
-                  if ("result" in data && data.result.length > 0) {
-                    var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
-                    var body = [];
+    GOKb.getCoreData().done(function(){
+      
+      // Testing.
+      GOKb.doRefineCommand(
+         "core/get-all-project-metadata",
+         {},
+         null,
+         {
+           onDone : function (localProjects) {
+             
+             if ("projects" in localProjects) self._localProjects = localProjects.projects;
+             
+              // Get the projects list from GOKb.
+              GOKb.api.getProjects(
+                { checkedIn : "True" },
+                {
+                  onDone : function (data) {
                     
-                    // Add each project to the projects screen.
-                    $.each(data.result, function () {
+                    if ("result" in data && data.result.length > 0) {
+                      var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
+                      var body = [];
                       
-                      // Need to remove the links from the normal open-project tab.
-                      for (var i = 0; i < Refine.actionAreas.length; i++) {
-                        var actionArea = Refine.actionAreas[i];
-                        if ("open-project" == actionArea.id) {
-                          $('a[href*="' + this.localProjectID + '"]', actionArea.bodyElmt).each(function() {
-                            var row = $(this).closest("tr");
-                            var firstCell = row.children(":first");
-                            firstCell.html("");
-                            
-                            // Remove all secondary controls too!
-                            $('a.secondary', row).remove();
-                            
-                            // Add a rollover.
-                            row.attr("title", "This is a GOKb project and can be managed through the GOKb tab.");
-                          });
+                      // Add each project to the projects screen.
+                      $.each(data.result, function () {
+                        
+                        // Need to remove the links from the normal open-project tab.
+                        for (var i = 0; i < Refine.actionAreas.length; i++) {
+                          var actionArea = Refine.actionAreas[i];
+                          if ("open-project" == actionArea.id) {
+                            $('a[href*="' + this.localProjectID + '"]', actionArea.bodyElmt).each(function() {
+                              var row = $(this).closest("tr");
+                              var firstCell = row.children(":first");
+                              firstCell.html("");
+                              
+                              // Remove all secondary controls too!
+                              $('a.secondary', row).remove();
+                              
+                              // Add a rollover.
+                              row.attr("title", "This is a GOKb project and can be managed through the GOKb tab.");
+                            });
+                          }
                         }
-                      }
+                        
+                        var name = this.name;
+                        if (self.isLocalProject(this)) {
+                          // Name need to link to current local project.
+                          name = $('<a />')
+                            .attr('href', '/project?project=' + this.localProjectID)
+                            .text(name)
+                            .attr('title', 'Open project to make changes.')
+                          ;
+                        }
+                        
+                        var status = $('<span />').attr("id", "projectStatus" + this.id).attr("ref", this.id);
+                        
+                        // Set the status.
+                        self.setStatus (status, this);
+                        
+                        // Add the row.
+                        var row = [
+                          self.getProjectControls(this),
+                          name,
+                          this.description,
+                          status,
+                          formatRelativeDate(this.modified)
+                        ];
+                        
+                        // Push the row to the body.
+                        body.push(row);
+                      });
                       
-                      var name = this.name;
-                      if (self.isLocalProject(this)) {
-                        // Name need to link to current local project.
-                        name = $('<a />')
-                          .attr('href', '/project?project=' + this.localProjectID)
-                          .text(name)
-                          .attr('title', 'Open project to make changes.')
-                        ;
-                      }
-                      
-                      var status = $('<span />').attr("id", "projectStatus" + this.id).attr("ref", this.id);
-                      
-                      // Set the status.
-                      self.setStatus (status, this);
-                      
-                      // Add the row.
-                      var row = [
-                        self.getProjectControls(this),
-                        name,
-                        this.description,
-                        status,
-                        formatRelativeDate(this.modified)
-                      ];
-                      
-                      // Push the row to the body.
-                      body.push(row);
-                    });
-                    
-                    // Now we have the data create the table.
-                    var table = GOKb.toTable(head, body, false);
+                      // Now we have the data create the table.
+                      var table = GOKb.toTable(head, body, false);
 
-                    // Add show/hide to controls.
-                    $("tr", table).mouseenter(function() {
-                      $('.control', this).css("visibility", "visible");
-                    }).mouseleave(function() {
-                      $('.control', this).css("visibility", "hidden");
-                    });
-                    
-                    // Write the table as the contents of the main window.
-                    self._elmts.projects.html(table);
+                      // Add show/hide to controls.
+                      $("tr", table).mouseenter(function() {
+                        $('.control', this).css("visibility", "visible");
+                      }).mouseleave(function() {
+                        $('.control', this).css("visibility", "hidden");
+                      });
+                      
+                      // Write the table as the contents of the main window.
+                      self._elmts.projects.html(table);
 
-                    // Default to this action area.
-                    Refine.selectActionArea("gokb");
+                      // Default to this action area.
+                      Refine.selectActionArea("gokb");
+                    }
                   }
                 }
-              }
-            );
+              );
+           }
          }
-       }
-    );
-    
-    // Do the update regularly.
-    self.regularlyUpdate(self);
-    
-    self.populateWorkspaces(self._elmts);
+      );
+      
+      // Do the update regularly.
+      self.regularlyUpdate(self);
+
+      self.populateWorkspaces(self._elmts);
+    });
   });
 };
 
@@ -118,20 +121,20 @@ GOKb.ui.projects.prototype.populateWorkspaces = function (elems) {
   list.empty();
   
   // Go through each of the workspaces.
-  for (var i=0; i<GOKb.workspaces.length; i++) {
+  for (var i=0; i<GOKb.core.workspaces.length; i++) {
     
     // Selected?
-    var selected = GOKb.current_ws == i;
+    var selected = GOKb.core.current == i;
     
     // Workspace.
     var ws = $("<option />", {
         value: i,
-        text: GOKb.workspaces[i].name
+        text: GOKb.core.workspaces[i].name
       })
       
       // Set selected if the current value is set.
       .prop("selected", selected)
-      .prop("disabled", !GOKb.workspaces[i].available)
+      .prop("disabled", !GOKb.core.workspaces[i].available)
     ;
     
     // Add each workspace to the list.
