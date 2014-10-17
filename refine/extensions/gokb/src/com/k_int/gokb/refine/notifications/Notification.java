@@ -1,11 +1,27 @@
 package com.k_int.gokb.refine.notifications;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONWriter;
+
+import com.k_int.gokb.refine.Jsonizable;
+
 import com.google.gson.Gson;
 
-public class Notification {
+public class Notification extends Jsonizable {
   private String text;
   private String title;
   private boolean hide;
+  private String id;
+  private Map<String,Object> buttons = new HashMap<String,Object>();
+  
+  public String getId() {
+    return id;
+  }
   
   public String getText () {
     return text;
@@ -31,13 +47,29 @@ public class Notification {
     this.hide = hide;
   }
   
-  public static <T extends Notification> T fromJSON (String json, Class<T> theClass) {
+  @SuppressWarnings("unchecked")
+  public static <T extends Notification> T fromJSON (String json) {
     Gson gson = new Gson();
-    return gson.fromJson(json, theClass);
+    return (T) gson.fromJson(json, Notification.class);
   }
-  
-  public String toJSON () {
-    Gson gson = new Gson();
-    return gson.toJson(this);
+
+  @Override
+  public void write (JSONWriter writer, Properties options)
+      throws JSONException {
+    
+    // JSON value.
+    JSONObject me = new JSONObject(toJSON());
+    
+    // Append the buttons.
+    for (String key : buttons.keySet()) {
+      me.append(key, buttons.get(key));
+    }
+    
+    // Write the object.
+    writer.value(me);
+  }
+
+  public Map<String,Object> getButtons () {
+    return buttons;
   }
 }

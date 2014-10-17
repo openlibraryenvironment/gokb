@@ -13,6 +13,7 @@ var GOKb = {
   refine:{},
   versionError : false,
   hijacked : [],
+  core_update : false
 };
 
 /**
@@ -331,7 +332,7 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
   delete ajaxObj.error;
   
   // Set the callbacks.
-  $.ajax(ajaxObj)
+  var deferred = $.ajax(ajaxObj)
     .done ( newSucessFunction )
     .fail ( error )
   ;
@@ -342,6 +343,9 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
       dismissBusy = DialogSystem.showBusy(message);
     }
   }, 2000);
+  
+  // Return the deferred.
+  return deferred;
 };
 
 /**
@@ -743,29 +747,15 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
 };
 
 /**
- * Check for access to API.
- */
-(GOKb.checkIsUp = function() {
-  
-  // Just call with empty callbacks. If the api is not up there will be a timeout.
-  // If the versions are wrong then the default error callback will be fired and the,
-  // version missmatch reported to the user.
-  GOKb.doCommand("isUp", {}, {}, {});
-  
-  if (!GOKb.versionError) {
-    // Check again in 3 minutes.
-    setTimeout(GOKb.checkIsUp, 180000);
-  }
-})();
-
-/**
  * Add an escape function to the regexp.
  */ 
 RegExp.escape = function(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 };
 
-//Load the available workspaces from refine.
+/**
+ * Load the available workspaces from refine.
+ */
 GOKb.populateWorkspaces = function () {
   
   // Get the workspaces.
@@ -787,5 +777,35 @@ GOKb.populateWorkspaces = function () {
   );
 };
 
-// Initialise the workspaces.
-GOKb.populateWorkspaces();
+/**
+ * This will poll for any changes from GOKb.
+ */
+GOKb.getCoreData = function () {
+  
+  // Set update in progress.
+  GOKb.core_update = true;
+  
+  // Get the workspaces.
+  GOKb.doCommand(
+    "get-coredata",
+    {},
+    {},
+    { onDone : GOKb.updateWithCoreData }
+  ).done(function(){
+    GOKb.core_update = false;
+  });
+};
+
+/**
+ * Act on data been sent from GOKb module backend.
+ */
+GOKb.updateWithCoreData = function (data) {
+  
+  GOKb.core = data;
+  
+  // Add any system notifications.
+  $.each(data['notification-stacks']['system'], function(){
+    GOKb.notify.show(this, "system");
+  });
+};
+

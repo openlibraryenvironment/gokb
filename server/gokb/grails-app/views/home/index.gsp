@@ -58,46 +58,40 @@
 						About <strong>GOKb</strong>
 					</h2>
 					<hr>
-					<p>The boxes used in this template are nested inbetween a
-						normal Bootstrap row and the start of your column layout. The
-						boxes will be full-width boxes, so if you want to make them
-						smaller then you will need to customize.</p>
+					<p>GOKb, the Global Open Knowledgebase, is a community-managed
+						aim to describe electronic journals and books, publisher
+						packages, and platforms in a way that will be familiar to
+						librarians who have worked with electronic resources. Following
+						launch in November 2014, libraries and consortia will be working
+						together to extend and maintain the knowledge base.</p>
 					<p>
-						A huge thanks to <a href="http://join.deathtothestockphoto.com/"
-							target="_blank">Death to the Stock Photo</a> for allowing us to
-						use the beautiful photos that make this template really come to
-						life. When using this template, make sure your photos are decent.
-						Also make sure that the file size on your photos is kept to a
-						minumum to keep load times to a minimum.
+						The GOKb project has been supported by the Andrew W. Mellon
+						Foundation. It is managed by the <a
+							href="http://www.kuali.org/ole/partners">Kuali OLE founding
+							partners</a> and <a href="https://www.jisc-collections.ac.uk/">JISC
+							Collections</a> of the United Kingdom, collaborating with
+						organizations and editors from a number of countries.
 					</p>
-					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-						Nunc placerat diam quis nisl vestibulum dignissim. In hac
-						habitasse platea dictumst. Interdum et malesuada fames ac ante
-						ipsum primis in faucibus. Pellentesque habitant morbi tristique
-						senectus et netus et malesuada fames ac turpis egestas.</p>
+					<p>The data found in GOKb is freely available for reuse under a
+						CC0 license.</p>
+					<p>
+						Organizations and individuals wishing to access data or to take
+						part as editorial contributors should contact <a
+							href="mailto:kristen_wilson@ncsu.edu">Kristen Wilson</a>, the
+						GOKb editor.
+					</p>
+					<p>
+						Guidance for editors can be found on the <a
+							href="https://wiki.kuali.org/display/OLE/GOKb+Data+Management+Wiki">GOKb
+							Wiki</a>
+					</p>
+					<p>
+						Further general information about the project can be found at <a
+							href="http://gokb.org/">http://gokb.org</a>.
+					</p>
 				</div>
 			</div>
 		</div>
-
-		<div class="row">
-			<div class="box">
-				<div class="col-lg-12">
-					<hr>
-					<h2 class="intro-text text-center">
-						Beautiful boxes <strong>to showcase your content</strong>
-					</h2>
-					<hr>
-					<p>Use as many boxes as you like, and put anything you want in
-						them! They are great for just about anything, the sky's the limit!</p>
-					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-						Nunc placerat diam quis nisl vestibulum dignissim. In hac
-						habitasse platea dictumst. Interdum et malesuada fames ac ante
-						ipsum primis in faucibus. Pellentesque habitant morbi tristique
-						senectus et netus et malesuada fames ac turpis egestas.</p>
-				</div>
-			</div>
-		</div>
-
 	</div>
 	<!-- /.container -->
 </body>

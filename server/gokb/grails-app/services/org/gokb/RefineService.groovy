@@ -76,40 +76,35 @@ class RefineService {
    */
   def checkUpdate (String current_version) {
     
-    // If this is the developer version of the tool then always report no update.
-    if (current_version == 'development') {
-      return [
-        "latest-version" : null,
-        "update-available" : false
-      ]
-    }
-
+    // Update available
+    boolean update = false;
+    
     // Get the latest local version
     String current_local_version = getLatestCurrentLocalExtension()
 
-    def data = ["latest-version" : current_local_version]
-
-    if (current_local_version) {
+    def data = [
+      "latest-version" : current_local_version?.replaceFirst(FILENAME_REGEX, "\$1"),
+      "file-name"       : current_local_version
+    ]
+    
+    // If this is the developer version of the tool then always report no update.
+    if (current_version == 'development') {
+      update = false;
+      
+    } else if (current_local_version) {
       
       // Handle the fact that previous refine versions will report incorrectly formatted version values here.
       if (current_version ==~ NAMING_REGEX) {
-        data << [
-          "update-available"  : (comp.compare(current_local_version.replaceFirst(".[^\\.]+\$", ""), current_version) > 0)
-        ]
+        update = (comp.compare(current_local_version.replaceFirst(".[^\\.]+\$", ""), current_version) > 0)
       } else {
-      
-        data << [
-          "update-available"  : true
-        ]
+        update = true;
       }
 
     } else {
-      data << [
-        "update-available"  : false
-      ]
+      update = false
     }
     
-    data
+    data += ['update-available' : (update)]  
   }
   
   File extensionDownloadFile (String version_required) {

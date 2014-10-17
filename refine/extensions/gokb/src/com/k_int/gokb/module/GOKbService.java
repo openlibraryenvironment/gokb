@@ -4,11 +4,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,16 +18,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k_int.gokb.module.util.ConditionalDownloader;
+import com.k_int.gokb.module.util.URLConenectionUtils;
+import java.net.HttpURLConnection;
 
 /**
  * Represents a remote GOKb web service.
  * 
  * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
  */
-public class GOKbService {
+public class GOKbService extends A_ScheduledUpdates {
   public static final String SERVICE_DIR = "_gokb";
   
   final static Logger logger = LoggerFactory.getLogger("GOKb-Service");
+  private boolean update = false;
+  public boolean hasUpdate() {
+    return update;
+  }
 
   private class ServiceSettings {
 
@@ -101,7 +109,6 @@ public class GOKbService {
      * Get the data from the web service if it has changed or just retrieve from the local storage.
      * 
      * @param url
-     * @param since
      * @param etag
      * @return
      * @throws IOException
@@ -112,26 +119,39 @@ public class GOKbService {
       URLConnection connection = ConditionalDownloader.getIfChanged(url, etag);
       if (connection != null) {
         // Try and read JSONObject form the server.
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        BufferedReader in = null;
+        
+        try {
+          in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
-        // The string builder.
-        StringBuilder str = new StringBuilder();
-
-        // Read into a string builder.
-        String inputStr;
-        while ((inputStr = in.readLine()) != null) {
-          str.append(inputStr);
+          // The string builder.
+          StringBuilder str = new StringBuilder();
+  
+          // Read into a string builder.
+          String inputStr;
+          while ((inputStr = in.readLine()) != null) {
+            str.append(inputStr);
+          }
+  
+          String suppliedEtag = connection.getHeaderField("ETag");
+          suppliedEtag = (suppliedEtag != null ? suppliedEtag : "0");
+  
+          // Now create the JSON from the text.
+          return new JSONObject ("{\"etag\":" + suppliedEtag + ",\"data\": " + str.toString() + "}");
+        } finally {
+          if (in != null) in.close();
         }
-
-        String suppliedEtag = connection.getHeaderField("ETag");
-        suppliedEtag = (suppliedEtag != null ? suppliedEtag : "0");
-
-        // Now create the JSON from the text.
-        return new JSONObject ("{\"etag\":" + suppliedEtag + ",\"data\": " + str.toString() + "}");
       }
 
       return null;
     }
+  }
+  
+  private String availableModuleVersion = null;
+  private String availableModuleFilename = null;
+
+  public String getAvailableModuleFilename () {
+    return availableModuleFilename;
   }
 
   private String URL;
@@ -226,5 +246,96 @@ public class GOKbService {
    */
   public boolean isAlive() {
     return alive;
+  }
+  
+  public String getAvailableModuleVersion() {
+    return availableModuleVersion;
+  }
+  
+  /**
+   * Checks for an update. Returns true if one was found and sets available client version.
+   * @return
+   * @throws IOException
+   * @throws JSONException 
+   * @throws FileUploadException 
+   */
+  private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
+    
+    // Get the current version we are using to send for comparison.
+    JSONObject res = apiJSON("checkUpdate");
+    if ("success".equalsIgnoreCase(res.getString("code"))) {
+      
+      res = res.getJSONObject("result");
+      
+      // Set the available version.
+      availableModuleVersion = res.optString("latest-version");
+      
+      // and the filename.
+      availableModuleFilename = res.optString("file-name");
+
+      // Return whether there is an update.
+      return res.getBoolean("update-available");
+    }
+    return false;
+  }
+  
+  private JSONObject apiJSON (String apiMethod) throws JSONException, IOException, FileUploadException {
+    return URLConenectionUtils.getJSONObjectFromStream( callAPI (apiMethod).getInputStream() );
+  }
+  
+  private JSONObject apiJSON (String apiMethod, Map<String, String[]> params) throws JSONException, IOException, FileUploadException {
+    return URLConenectionUtils.getJSONObjectFromStream( callAPI (apiMethod, URLConenectionUtils.METHOD_TYPE.GET, params).getInputStream() );
+  }
+  
+  private HttpURLConnection callAPI (String apiMethod) throws IOException, FileUploadException {
+    return callAPI (apiMethod, URLConenectionUtils.METHOD_TYPE.GET);
+  }
+  
+  private HttpURLConnection callAPI (String apiMethod, URLConenectionUtils.METHOD_TYPE methodType) throws IOException, FileUploadException {
+    return callAPI (apiMethod, methodType, null);
+  }
+  
+  private HttpURLConnection callAPI (String apiMethod, URLConenectionUtils.METHOD_TYPE methodType, Map<String, String[]> params) throws FileUploadException, IOException {
+
+    String urlString = URL + apiMethod;
+
+    // If get then append the param string here.
+    if (methodType == URLConenectionUtils.METHOD_TYPE.GET) {
+      urlString += URLConenectionUtils.paramString(params);
+    }
+
+    // Create a URL object.
+    URL url = new URL(urlString);
+    
+    // Open the connection.
+    HttpURLConnection connection = URLConenectionUtils.getAPIConnection(methodType, url);
+      
+    // If we are posting then parameters should be written to the stream.
+    if (methodType == URLConenectionUtils.METHOD_TYPE.POST) {
+      URLConenectionUtils.postFilesAndParams(connection, params, null);
+    }
+
+    return connection;
+  }
+
+  @Override
+  public void doScheduledUpdates () throws JSONException, IOException, FileUploadException {
+    try {
+      JSONObject res = apiJSON("isUp");
+      if ("success".equalsIgnoreCase(res.getString("code"))) {
+        alive = true;
+        if (alive) {
+          update = checkUpdate();
+        }
+      } else {
+        
+        // We would only receive an error when running this command if we are running a version of the 
+        // module which is too low for any server compatibility and so should flag as a dead service. 
+        alive = false;
+      }
+    } catch (IOException e ) {
+      // Service gone...
+      alive = false;
+    }
   }
 }

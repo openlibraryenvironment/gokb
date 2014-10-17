@@ -2,11 +2,14 @@ package org.gokb
 
 import static java.util.UUID.randomUUID
 import com.k_int.ConcurrencyManagerService
+import com.k_int.TextUtils
 import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
+import java.security.SecureRandom
 
+import org.apache.commons.codec.binary.Base64
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
@@ -20,6 +23,7 @@ import org.gokb.refine.RefineProject
 class ApiController {
   
   RefineService refineService
+  SecureRandom rand
 
   private static final Closure TRANSFORMER_PROJECT = {
 
@@ -93,8 +97,8 @@ class ApiController {
     else {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
-
-      if (gokbVersion != grailsApplication.config.refine_min_version) {
+      
+      if (gokbVersion != 'development' && TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
         apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
         "Please download and install the latest version from <a href='${serv_url}' >${serv_url}</a>." +
         "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
@@ -113,6 +117,34 @@ class ApiController {
 
   // Internal API return object that ensures consistent formatting of API return objects
   private def apiReturn = {result, String message = "", String status = "success" ->
+    
+    // If the status is error then we should log an entry.
+    if (status == 'error') {
+      
+      // Generate a 16bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
+      byte[] randomBytes = new byte[16]
+      rand.nextBytes(randomBytes)
+      def ticket = Base64.encodeBase64URLSafeString(rand);
+      
+      // Let's see if we have a throwable.
+      if (result && result instanceof Throwable) {
+        
+        // Log the error with the stack...
+        log.error("[[${ticket}]] - ${message == "" ? result.getLocalizedMessage() : message}", result)
+      } else {        
+        log.error("[[${ticket}]] - ${message == "" ? 'An error occured, but no message or exception was supplied. Check preceding log entries.' : message}")
+      }
+      
+      // Ensure we have something to send back to the user.
+      if (message == "") {
+        message = "An unknow error occurred."
+      } else {
+      
+        // We should now send the message along with the ticket.
+        message = "${message}".replaceFirst("\\.\\s*\$", ". The error has been logged with the reference 'ticket'")
+      }
+    }
+    
     def data = [
       code    : (status),
       result    : (result),
@@ -198,6 +230,9 @@ class ApiController {
         log.debug("Try and predetermine the changes.");
         result = ingestService.estimateChanges(parsed_project_file, params.projectID, (params.boolean("incremental") != false))
 
+      } catch (Exception e) {
+        
+        apiReturn(e, null, "error")
       } finally {
         if ( temp_data_zipfile ) {
           try {
@@ -824,13 +859,13 @@ class ApiController {
       
     } catch (Throwable t) {
       /* Just return an empty list. */
-      log.error(t)
+      (t)
       apiReturn (null, "There was an error creating a new Component of ${type}")
     }
   }
   
   def checkUpdate () {
-    def result = refineService.checkUpdate(params."current-version")
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"))
     apiReturn (result)
   }
   

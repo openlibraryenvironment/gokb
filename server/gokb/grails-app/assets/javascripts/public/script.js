@@ -40,9 +40,7 @@
   $(document).ready(function(){
     $('a.page-scroll').bind('click', function(event) {
       var $anchor = $(this);
-      $('html, body').stop();
-      
-      $("html").animate({
+      $('html, body').stop().animate({
         scrollTop: ($($anchor.attr('href')).offset().top - ($(window).width() < 768 ? 250 : 75))
       }, 1000);
       event.preventDefault();

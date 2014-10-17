@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.refine.ProjectManager;
 import com.google.refine.model.Project;
+
+import com.k_int.gokb.module.util.URLConenectionUtils;
 import com.k_int.gokb.refine.A_RefineAPIBridge;
 import com.k_int.gokb.refine.RefineAPICallback;
 import com.k_int.gokb.refine.RefineUtil;
@@ -67,7 +69,7 @@ public class ValidateData extends A_RefineAPIBridge {
             stack.clear();
             
             // The data.
-            JSONObject data = getJSONObjectFromStream(result);
+            JSONObject data = URLConenectionUtils.getJSONObjectFromStream(result);
             
             // Grab the messages.
             JSONArray messages = data

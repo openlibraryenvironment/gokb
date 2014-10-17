@@ -26,7 +26,7 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "3.1"
+refine_min_version = "3.0.0"
 
 // Config for the refine extension build process.
 refine = [
