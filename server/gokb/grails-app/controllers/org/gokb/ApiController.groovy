@@ -120,7 +120,7 @@ class ApiController {
     apiReturn(RefineOperation.findAll ())
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def checkMD5() {
 
     def metadata = JSON.parse(params.get("md"));
@@ -147,7 +147,7 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def checkSkippedTitles() {
 
     long pId = params.long("project");
@@ -162,7 +162,7 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def estimateDataChanges() {
     log.debug("Try to estimate what changes will occur in CRED for data in zip file.")
     def f = request.getFile('dataZip')
@@ -201,7 +201,7 @@ class ApiController {
     apiReturn ( result )
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def saveOperations() {
     // Get the operations as a list.
 
@@ -225,12 +225,12 @@ class ApiController {
     apiReturn( null, "Succesfully saved the operations.")
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectList() {
     apiReturn (RefineProject.findAll().collect(TRANSFORMER_PROJECT))
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectCheckout() {
 
     // Get the current user from the security service.
@@ -274,7 +274,7 @@ class ApiController {
     response.status = 404;
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectCheckin() {
 
     // Get the current user from the security service.
@@ -400,7 +400,7 @@ class ApiController {
     response.status = 404;
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   private def projectIngest (RefineProject project, parsed_data, boolean incremental, User user) {
     log.debug("projectIngest....");
 
@@ -422,7 +422,7 @@ class ApiController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectDataValid() {
 
     log.debug("Try to validate data in zip file.")
@@ -504,7 +504,7 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectIngestProgress() {
     if (params.projectID) {
 
@@ -526,7 +526,7 @@ class ApiController {
    *   Return a JSON structured array of the fields that should be collected when a project is checked in for the
    *   first time
    */
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def getProjectProfileProperties() {
     def result = [
       [
@@ -574,7 +574,7 @@ class ApiController {
    * Suggest the rules that might apply to the data.txt within this zip file.
    * @param dataZip
    */
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def suggestRulesFromData() {
 
     log.debug ("Attempting to get rule suggestions from data zip.")
@@ -625,7 +625,7 @@ class ApiController {
     }
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
     
     // Results per page.
@@ -761,7 +761,7 @@ class ApiController {
     }
   }
   
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def quickCreate() {
     // Get the type of component we are going to attempt to create.
     def type = params.qq_type
