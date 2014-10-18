@@ -81,6 +81,14 @@ class ReviewRequest {
     ]
   }
 
+  @Transient
+  static def globalActions() {
+    [
+      [code:'method::RRTransfer', label:'Transfer To...'],
+      [code:'method::RRClose', label:'Close']
+    ]
+  }
+
 
   def RRClose(rrcontext) {
     log.debug("Close review request ${id} - user=${rrcontext.user}");
