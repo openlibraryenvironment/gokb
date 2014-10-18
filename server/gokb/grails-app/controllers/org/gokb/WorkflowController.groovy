@@ -296,7 +296,12 @@ class WorkflowController {
     else if ( params.process ) {
       log.debug("Process...");
       processTitleTransfer(activity_record, activity_data);
-      redirect(controller:'home', action:'index');
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
     }
     else if ( params.abandon ) {
       log.debug("**ABANDON**...");
@@ -360,6 +365,7 @@ class WorkflowController {
 
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
 
     def publisher = Org.get(activity_data.newPublisherId);
 
@@ -373,7 +379,9 @@ class WorkflowController {
 
     // Step two : Process TIPP adjustments
     activity_data.tipps.each { tipp_map_entry ->
+
       def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
+
       log.debug("Processing current tipp : ${current_tipp.id}");
 
       tipp_map_entry.value.newtipps.each { newtipp ->
@@ -387,15 +395,33 @@ class WorkflowController {
                                    pkg:new_package,
                                    hostPlatform:new_platform,
                                    title:current_tipp.title,
-                                   startDate:current_tipp.startDate,
-                                   startVolume:current_tipp.startVolume,
-                                   startIssue:current_tipp.startIssue,
-                                   endDate:current_tipp.endDate,
-                                   endVolume:current_tipp.endVolume,
-                                   endIssue:current_tipp.endIssue]).save()
+                                   startDate: ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null, 
+                                   startVolume:newtipp.startVolume,
+                                   startIssue:newtipp.startIssue,
+                                   endDate: (newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null,
+                                   endVolume:newtipp.endVolume,
+                                   endIssue:newtipp.endIssue]).save()
+
+        if ( newtipp.review == 'on' ) {
+          log.debug("User requested a review request be generated for this new tipp");
+          ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title transfer cause this new tipp to be created', request.user)
+        }
       }
 
-      current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+      // Retire the tipp if
+      if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
+        log.debug("Retiring old tipp");
+        current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
+        }
+      }
+      else {
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
+        }
+      }
+
       current_tipp.save()
     }
 
