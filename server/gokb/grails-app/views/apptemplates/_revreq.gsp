@@ -16,6 +16,14 @@
 	      <dt><g:annotatedLabel owner="${d}" property="target">Component</g:annotatedLabel></dt>
 	      <dd><g:manyToOneReferenceTypedown owner="${d}" field="componentToReview" baseClass="org.gokb.cred.KBComponent">${d.componentToReview?.name?:''}</g:manyToOneReferenceTypedown>
 	      	<g:componentLink object="${d?.componentToReview}" target="_blank" title="View the component (opens in new window)" >view</g:componentLink></dd>
+	      <dt><g:annotatedLabel owner="${d}" property="refineProject">Refine Project</g:annotatedLabel></dt>
+              <dd>
+                <g:if test="${d.refineProject != null}">
+                  <g:link controller="resource" action="show" id="${d.refineProject.class.name}:${d.refineProject.id}">${d.refineProject.name}</g:link>
+                </g:if>
+              </dd>
+
+ 
 
         <g:if test="${d.id != null}">
 	        <dt><g:annotatedLabel owner="${d}" property="dateCreated">Request Timestamp</g:annotatedLabel></dt>

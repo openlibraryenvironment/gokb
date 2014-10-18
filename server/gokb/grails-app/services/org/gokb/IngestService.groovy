@@ -379,7 +379,7 @@ class IngestService {
     }
   }
 
-  private handleNonePresentTipps(old_tipps, user) {
+  private handleNonePresentTipps(old_tipps, user, project = null) {
 
     // Soft delete the TIPPs not updated here.
     RefineProject.withTransaction { t ->
@@ -395,7 +395,7 @@ class IngestService {
                 tipp,
                 "TIPP Not present when performing package update",
                 "This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
-                user
+                user, project
                 )
 
             // Save.
@@ -437,7 +437,8 @@ class IngestService {
             jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
             getRowValue(datarow,col_positions,PUBLISHER_NAME),
             ids,
-            user
+            user,
+            RefineProject.get(project_id)
           );
 
           // If we match a title then ingest...
@@ -697,11 +698,11 @@ class IngestService {
         }
       }
 
-      // Handle none-present TIPPs
-      handleNonePresentTipps(old_tipps, user)
-
       // Read in the project.
       RefineProject project = RefineProject.get(project_id)
+
+      // Handle none-present TIPPs
+      handleNonePresentTipps(old_tipps, user, project)
 
       // If any rows with data have been skipped then we need to set them against the,
       // project here, for reporting back into refine.
