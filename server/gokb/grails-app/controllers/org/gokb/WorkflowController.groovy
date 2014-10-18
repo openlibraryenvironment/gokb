@@ -170,8 +170,10 @@ class WorkflowController {
           result.titles.add(title_instance) 
           titleTransferData.title_ids.add(title_instance.id)
           title_instance.tipps.each { tipp ->
-            result.tipps.add(tipp)
-            titleTransferData.tipps[tipp.id] = [newtipps:[]]
+            if ( tipp.status?.value != 'Deleted' ) {
+              result.tipps.add(tipp)
+              titleTransferData.tipps[tipp.id] = [newtipps:[]]
+            }
           }
         }
         else {
@@ -307,7 +309,12 @@ class WorkflowController {
       log.debug("**ABANDON**...");
       activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
       activity_record.save()
-      redirect(controller:'home', action:'index');
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
     }
 
     log.debug("Processing...");
