@@ -214,11 +214,16 @@ class WorkflowController {
       def value = request.getParameter(pn)
       if ( pn.startsWith('_tippdata') ) {
         def key_components = pn.split(':');
-        if ( ( value != null ) && ( value.length() > 0 ) ) {
-          activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
+        if (  activity_data.tipps[key_components[1]] != null ) {
+          if ( ( value != null ) && ( value.length() > 0 ) ) {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
+          }
+          else {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
+          }
         }
         else {
-          activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
+          log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}");
         }
       }
     }
@@ -341,7 +346,8 @@ class WorkflowController {
                           startIssue:newtipp_info.startIssue,
                           endDate:newtipp_info.endDate,
                           endVolume:newtipp_info.endVolume,
-                          endIssue:newtipp_info.endIssue
+                          endIssue:newtipp_info.endIssue,
+                          review:newtipp_info.review,
                           ])
       }
     }

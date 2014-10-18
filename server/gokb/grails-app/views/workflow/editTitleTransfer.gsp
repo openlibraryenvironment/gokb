@@ -69,13 +69,13 @@
 							<td> <input type="date" value="<g:formatDate date="${tipp.endDate}" format="yyyy-MM-dd"/>" readonly/> </td>
 							<td> ${tipp.endVolume} </td>
 							<td> ${tipp.endIssue} </td>
-							<td> <input name="close-${tipp.id}" type="checkbox" checked="checked" /> </td>
-							<td> <input name="review-${tipp.id}" type="checkbox" checked="checked" /></td>
+							<td> <input name="oldtipp_close:${tipp.id}" type="checkbox" ${params["oldtipp_close:${tipp.id}"]=='on'?'checked':''} /></td>
+							<td> <input name="oldtipp_review:${tipp.id}" type="checkbox"  ${params["oldtipp_review:${tipp.id}"]=='on'?'checked':''} /></td>
 						</tr>
                                           </g:if>
                                           <g:else>
 						<tr style="background-color: #4DFF4D;">
-							<td> ${tipp.parent} / ${tipp.seq} </td>
+							<td> </td>
 							<td> ${tipp.type} </td>
 							<td> ${tipp.title.name} </td>
 							<td> ${tipp.pkg.name} </td>
@@ -87,7 +87,7 @@
 							<td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endVolume" value="${tipp.endVolume}" style="width:40px;"/> </td>
 							<td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endIssue" value="${tipp.endIssue}" style="width:40px;"/> </td>
 							<td> <button type="submit" name="remove" value="${tipp.parent}:${tipp.seq}" class="btn btn-warn">Remove</button></td>
-							<td><input name="review-${tipp.id}" type="checkbox" checked="checked" /></td>
+							<td> <input name="_tippdata:${tipp.parent}:${tipp.seq}:review" type="checkbox" ${tipp.review=='on'?'checked':''} /></td>
 						</tr>
                                           </g:else>
 					</g:each>
@@ -131,9 +131,6 @@
 			</div>
 		</div>
 	</g:form>
-<pre>
-${tipps}
-</pre>
 </body>
 </html>
 
