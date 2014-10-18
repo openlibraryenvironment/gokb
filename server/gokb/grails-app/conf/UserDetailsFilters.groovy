@@ -81,8 +81,19 @@ class UserDetailsFilters {
               }
 
               // Add if creatable.
+<<<<<<< HEAD
               if ( tc.isTypeCreatable() ) { // || request.request.isUserInRole('ROLE_ADM') ) {
                 session.userPereferences.createMenu.add(d);
+=======
+              if ( tc.isCreatable() ) { // || request.request.isUserInRole('ROLE_ADM') ) {
+                // II: This is dirty, but it will do for now
+                if ( d.dcName == 'org.gokb.cred.TitleInstancePackagePlatform' ) {
+                  // Suppress for now.
+                }
+                else {
+                  session.userPereferences.createMenu.add(d);
+                }
+>>>>>>> 3_0_maintenance
               }
             }
           }
