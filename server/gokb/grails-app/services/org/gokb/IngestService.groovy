@@ -52,7 +52,8 @@ class IngestService {
   //  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}issn"
   //  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}eissn"
   public static final String HOST_PLATFORM_NAME = 'platform.host.name'
-  public static final String HOST_PLATFORM_URL = 'platform.host.url'
+  // public static final String HOST_PLATFORM_URL = 'platform.host.url'
+  public static final String HOST_PLATFORM_URL = 'tipp.url'
 
   public static final String COVERAGE_DEPTH = 'CoverageDepth'
   public static final String COVERAGE_NOTES = 'CoverageNotes'
