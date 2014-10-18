@@ -70,6 +70,7 @@ class IngestService {
   public static final String PRIMARY_TIPP = "PrimaryTIPP"
   public static final String TIPP_PAYMENT = "TIPPPayment"
   public static final String TIPP_STATUS = "TIPPStatus"
+  public static final String TITLE_OA_STATUS = "title.oastatus"
 
   /**
    *  Validate a parsed project. 
@@ -444,6 +445,16 @@ class IngestService {
 
           // If we match a title then ingest...
           if (title_info != null) {
+
+            // Set TITLE OA STATUS if it's not null and different to the current value.. This might cause title OA status
+            // to oscillate between different values - raised as a concern but dismissed as unlikely in weekly calls.
+            def title_oa_status = datarow.cells[col_positions[TITLE_OA_STATUS]]
+            if ( title_oa_status != null ) {
+              if ( title_info.oa_status?.value != title_oa_status ) {
+                //titleOAStatus:getRowRefdataValue('TitleInstance.OAStatus', datarow, col_positions, TITLE_OA_STATUS)
+                title_info.oa_status = RefdataCategory.lookupOrCreate('TitleInstance.OAStatus', title_oa_status)
+              }
+            }
 
             // Additional TI properties.
             for (apd in gokb_additional_ti_props) {
