@@ -111,7 +111,14 @@ public class HQLBuilder {
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
-    result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,[max: result.max, offset: result.offset])
+
+    def query_params = [:]
+    if ( result.max )
+      query_params.max = result.max;
+    if ( result.offset )
+      query_params.offset = result.offset
+
+    result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,query_params);
 
     // log.debug("Result of count query: ${result.reccount}");
   }

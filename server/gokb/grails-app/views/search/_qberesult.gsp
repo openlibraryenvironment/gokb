@@ -61,7 +61,7 @@
 	</table>
 </g:if>
 <g:else>
-	<g:form controller="workflow" action="action" method="post"
+	<g:form controller="workflow" action="action" method="post" params="${params}"
 		class='action-form' >
 		<div class="batch-all-info" style="display:none;"></div>
 		<g:render template="pagination" contextPath="." model="${params}" />
@@ -143,6 +143,8 @@
 			</tbody>
 		</table>
 		<g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
+
+                <!-- see grails-app/assets/javascripts/gokb/action-forms.js for code relating to bulk actions -->
 		<div class="pull-right well col-xs-12 col-sm-9 ${displayobj != null ? 'col-md-6' : 'col-md-3'}" id="bulkActionControls">
 			<h4>Available actions for selected rows</h4>
 			<div class="input-group" >

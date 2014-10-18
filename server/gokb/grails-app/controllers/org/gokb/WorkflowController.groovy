@@ -7,6 +7,7 @@ import groovy.json.JsonSlurper
 
 class WorkflowController {
 
+  def grailsApplication
   def genericOIDService
   def springSecurityService
 
@@ -25,16 +26,48 @@ class WorkflowController {
     log.debug("WorkflowController::action(${params})");
     def result = [:]
     result.ref=request.getHeader('referer')
+
     def action_config = actionConfig[params.selectedBulkAction];
+
     if ( action_config ) {
 
       result.objects_to_action = []
 
-      params.each { p ->
-        if ( ( p.key.startsWith('bulk:') ) && ( p.value ) && ( p.value instanceof String ) ) {
-          def oid_to_action = p.key.substring(5);
-          log.debug("Action oid: ${oid_to_action}");
-          result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+      if ( params.batch_on == 'all' ) {
+        log.debug("Requested batch_on all.. so evaluate the query and do the right thing...");
+        if ( params.qbe ) {
+          def qresult = [:]
+          if ( params.qbe.startsWith('g:') ) {
+            // Global template, look in config
+            def global_qbe_template_shortcode = params.qbe.substring(2,params.qbe.length());
+            // log.debug("Looking up global template ${global_qbe_template_shortcode}");
+            qresult.qbetemplate = grailsApplication.config.globalSearchTemplates[global_qbe_template_shortcode]
+            // log.debug("Using template: ${result.qbetemplate}");
+          }
+
+          // Looked up a template from somewhere, see if we can execute a search
+          if ( qresult.qbetemplate ) {
+            log.debug("Execute query");
+            // doQuery(result.qbetemplate, params, result)
+            def target_class = grailsApplication.getArtefact("Domain",qresult.qbetemplate.baseclass);
+            com.k_int.HQLBuilder.build(grailsApplication, qresult.qbetemplate, params, qresult, target_class, genericOIDService)
+
+            qresult.recset.each {
+              def oid_to_action = "${it.class.name}:${it.id}"
+              log.debug("Action oid: ${oid_to_action}");
+              result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+            }
+          }
+        }
+      }
+      else {
+        log.debug("Assuming standard selection of rows to action");
+        params.each { p ->
+          if ( ( p.key.startsWith('bulk:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+            def oid_to_action = p.key.substring(5);
+            log.debug("Action oid: ${oid_to_action}");
+            result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+          }
         }
       }
 

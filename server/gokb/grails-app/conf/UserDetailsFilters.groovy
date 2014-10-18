@@ -81,7 +81,7 @@ class UserDetailsFilters {
               }
 
               // Add if creatable.
-              if ( tc.isCreatable() ) { // || request.request.isUserInRole('ROLE_ADM') ) {
+              if ( tc.isTypeCreatable() ) { // || request.request.isUserInRole('ROLE_ADM') ) {
                 // II: This is dirty, but it will do for now
                 if ( d.dcName == 'org.gokb.cred.TitleInstancePackagePlatform' ) {
                   // Suppress for now.

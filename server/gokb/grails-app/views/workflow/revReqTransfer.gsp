@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="layout" content="main" />
+<meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
 <title>GOKb::Review Request Transfer</title>
@@ -43,6 +43,7 @@
 			<div class="row">
 				<div class="col-md-12">Notes</div>
 			</div>
+   
 		</g:form>
 	</div>
 </body>
