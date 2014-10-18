@@ -44,7 +44,7 @@
 				<tr class="${++counter==det ? 'success':''}">
 					<!-- Row ${counter} -->
 					<g:each in="${qbeConfig.qbeResults}" var="c">
-						<td><g:if test="${c.link != null}">
+						<td><g:if test="${c.link != null }">
 								<g:link controller="${c.link.controller}"
 									action="${c.link.action}"
 									id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
@@ -116,15 +116,16 @@
 										disabled="disabled" readonly="readonly" />
 								</g:else></td>
 							<g:each in="${qbeConfig.qbeResults}" var="c">
-								<td><g:if test="${c.link != null}">
+                                                          <g:set var="colVal" value="${groovy.util.Eval.x(r, 'x.' + c.property)}"/>
+								<td><g:if test="${ ( c.link != null ) && ( colVal != null ) }">
 										<g:link controller="${c.link.controller}"
 											action="${c.link.action}"
 											id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
 											params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">
-											${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty'}
+											${colVal}
 										</g:link>
 									</g:if> <g:else>
-										${groovy.util.Eval.x(r, 'x.' + c.property)}
+										${colVal?:'Empty'}
 									</g:else></td>
 							</g:each>
 							<td><g:if

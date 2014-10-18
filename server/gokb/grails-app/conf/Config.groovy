@@ -743,6 +743,7 @@ globalSearchTemplates = [
         [heading:'Raised By', property:'raisedBy?.username'],
         [heading:'Allocated To', property:'allocatedTo?.username'],
         [heading:'Timestamp', property:'dateCreated'],
+        [heading:'Project', property:'refineProject?.file', link:[controller:'resource', action:'show', id:'x.r.refineProject?.class?.name+\':\'+x.r.refineProject?.id']],
       ]
     ]
   ],
