@@ -123,4 +123,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
     result
   }
+
+  public String getName() {
+    return super.name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
+  }
 }
