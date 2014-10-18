@@ -21,7 +21,6 @@ class WelcomeController {
     else {
       log.debug("stats from cache...");
     }
-
     return stats_cache
   }
 

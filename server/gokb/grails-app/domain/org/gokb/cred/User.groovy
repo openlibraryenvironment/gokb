@@ -20,14 +20,14 @@ class User {
   boolean accountLocked
   boolean passwordExpired
   Long defaultPageSize = new Long(10)
-  Set<Territory> territories
+//  Set<Territory> territories
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
     
-  static hasMany = [
-    territories : Territory
-  ]
+//  static hasMany = [
+//    territories : Territory
+//  ]
 
   static constraints = {
     username blank: false, unique: true

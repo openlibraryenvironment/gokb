@@ -80,7 +80,7 @@ class IngestService {
     def result = Validation.doValidate(project_data)
 
     if ( result.messages?.size() > 0 ) {
-      log.error("validation has messages: a failure: ${result.messages}")
+      log.debug("validation has messages: a failure: ${result.messages}")
       // TODO: This needs fixing. The validity should be determined by each rule executing.
       // Warnings should probably always return true to keep validation halting on warnings.
       // Shouldn't have to go through the messages here again.
