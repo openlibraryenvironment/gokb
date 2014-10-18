@@ -6,24 +6,6 @@
 
 <body>
 
-   <div class="navbar navbar-fixed-top">
-     <div class="navbar-header">
-       <div class="container">
-         <a class="navbar-brand" href="#">GOKb</a>
-         <div class="nav-collapse">
-           <ul class="nav">
-           </ul>
-         </div>
-       </div>
-     </div>
-   </div>
-
-<div class="navbar-push"></div>
-&nbsp;<br/>
-
-
-
-
 <div class="container">
   <div class="row"
     <div class='col-md-12'>

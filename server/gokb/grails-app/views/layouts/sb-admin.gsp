@@ -75,6 +75,7 @@
       <sec:ifNotLoggedIn>
         <ul class="nav navbar-nav navbar-right">
           <li><g:link controller="register"><i class="fa fa-edit fa-fw"></i> Register</g:link></li>
+          <li><g:link controller="register" action="forgotPassword"><i class="fa fa-edit fa-fw"></i> Forgotten Password</g:link></li>
           <li><g:link controller="login"><i class="fa fa-sign-in fa-fw"></i> Sign in</g:link></li>
         </ul>
         <!-- /.navbar-top-links -->
