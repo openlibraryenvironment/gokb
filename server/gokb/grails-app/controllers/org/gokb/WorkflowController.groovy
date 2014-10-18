@@ -204,10 +204,24 @@ class WorkflowController {
   def editTitleTransfer() {
     log.debug("editTitleTransfer() - ${params}");
 
+    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def activity_record = Activity.get(params.id)
     def activity_data = new JsonSlurper().parseText(activity_record.activityData)
 
-    log.debug("Activity record: ${activity_data}");
+    // Pull in all updated tipp properties like start volumes, etc.
+    request.getParameterNames().each { pn ->
+      def value = request.getParameter(pn)
+      if ( pn.startsWith('_tippdata') ) {
+        def key_components = pn.split(':');
+        if ( ( value != null ) && ( value.length() > 0 ) ) {
+          activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
+        }
+        else {
+          activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
+        }
+      }
+    }
 
     if ( params.addTransferTipps ) {
       // Add Transfer tipps
@@ -221,6 +235,7 @@ class WorkflowController {
               def tipp_id = p.key.substring(6)
               log.debug("Add new tipp for ${new_tipp_package}, ${new_tipp_platform} to replace ${tipp_id}");
               def old_tipp = KBComponent.get(tipp_id);
+              log.debug("Old Tipp: ${old_tipp}");
               def tipp_info = activity_data.tipps[tipp_id]
 
               if ( tipp_info != null ) {
@@ -228,16 +243,18 @@ class WorkflowController {
                 if ( tipp_info.newtipps == null )
                   tipp_info.newtipps = [:]
 
-                tipp_info.newtipps.add([
+                def new_tipp_info = [
                                         title_id:old_tipp.title.id, 
                                         package_id:new_tipp_package.id, 
                                         platform_id:new_tipp_platform.id,
-                                        start_date:old_tipp.start_date,
-                                        start_volume:old_tipp.start_volume,
-                                        start_issue:old_tipp.start_issue,
-                                        end_date:old_tipp.end_date,
-                                        end_volume:old_tipp.end_volume,
-                                        end_issue:old_tipp.end_issue])
+                                        startDate:old_tipp.startDate ? sdf.format(old_tipp.startDate) : null,
+                                        startVolume:old_tipp.startVolume,
+                                        startIssue:old_tipp.startIssue,
+                                        endDate:old_tipp.endDate? sdf.format(old_tipp.endDate) : null,
+                                        endVolume:old_tipp.endVolume,
+                                        endIssue:old_tipp.endIssue]
+                log.debug("new_tipp_info :: ${new_tipp_info}");
+                tipp_info.newtipps.add(new_tipp_info);
               }
               else {
                 log.error("Unable to find key (${tipp_id}) In map: ${activity_data.tipps}");
@@ -259,6 +276,18 @@ class WorkflowController {
           log.error("Add transfer tipps but package or platform not set");
       }
     }
+    else if ( params.update ) {
+      log.debug("Update...");
+    }
+    else if ( params.remove ) {
+      log.debug("remove... ${params.remove}");
+      def remove_components = params.remove.split(':');
+      activity_data.tipps[remove_components[0]].newtipps.remove(Integer.parseInt(remove_components[1]))
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+    }
     else if ( params.process ) {
       log.debug("Process...");
       processTitleTransfer(activity_record, activity_data);
@@ -271,6 +300,8 @@ class WorkflowController {
       redirect(controller:'home', action:'index');
     }
 
+    log.debug("Processing...");
+
     def result = [:]
     result.titles = []
     result.tipps = []
@@ -279,6 +310,7 @@ class WorkflowController {
     activity_data.title_ids.each { tid ->
       result.titles.add(TitleInstance.get(tid))
     }
+
 
     activity_data.tipps.each { tipp_info ->
       def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
@@ -295,13 +327,16 @@ class WorkflowController {
                         endVolume:tipp_object.endVolume,
                         endIssue:tipp_object.endIssue
                         ])
+      int seq=0;
       tipp_info.value.newtipps.each { newtipp_info ->
         result.tipps.add([
                           type:'NEW',
+                          parent:tipp_object.id,
+                          seq:seq++,
                           title:KBComponent.get(newtipp_info.title_id),
                           pkg:KBComponent.get(newtipp_info.package_id),
                           hostPlatform:KBComponent.get(newtipp_info.platform_id),
-                          startDate:newtipp_info.startDate,
+                          startDate: newtipp_info.startDate,
                           startVolume:newtipp_info.startVolume,
                           startIssue:newtipp_info.startIssue,
                           endDate:newtipp_info.endDate,
