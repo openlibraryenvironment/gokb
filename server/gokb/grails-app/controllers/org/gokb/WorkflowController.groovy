@@ -173,9 +173,22 @@ class WorkflowController {
       tipps.each { tipp ->
         log.debug("Add tipp to discontinue ${tipp}");
         titleChangeData.tipps[tipp.id] = [newtipps:[]]
+
+        params.list('afterTitles').each { new_title_oid ->
+          def new_title_obj = genericOIDService.resolveOID2(new_title_oid)
+          def new_tipp_info = [
+                               title_id:new_title_obj.id,
+                               package_id:tipp.pkg.id,
+                               platform_id:tipp.hostPlatform.id,
+                               startDate:tipp.startDate ? sdf.format(old_tipp.startDate) : null,
+                               startVolume:tipp.startVolume,
+                               startIssue:tipp.startIssue,
+                               endDate:tipp.endDate? sdf.format(old_tipp.endDate) : null,
+                               endVolume:tipp.endVolume,
+                               endIssue:tipp.endIssue]
+          titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
+        }
       }
-
-
     }
 
     def builder = new JsonBuilder()
