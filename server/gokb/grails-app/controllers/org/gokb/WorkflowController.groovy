@@ -143,22 +143,48 @@ class WorkflowController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def startTitleChange() {
 
+    log.debug("startTitleChange(${params})");
+
     def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
 
     def titleChangeData = [:]
+    titleChangeData.tipps = [:]
+    def first_title = null
+
+    // Iterate through before titles.. For each one of these will will close out any existing tipps
+    params.list('beforeTitles').each { title_oid ->
+      log.debug("process ${title_oid}");
+      if ( first_title == null )
+        first_title = title_oid
+      def title_obj = genericOIDService.resolveOID2(title_oid)
+      def tipps = TitleInstancePackagePlatform.executeQuery(
+                         'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ?',
+                         [title_obj, 'Deleted','TitleInstance.Tipps']);
+      tipps.each { tipp ->
+        log.debug("Add tipp to discontinue ${tipp}");
+        titleChangeData.tipps[tipp.id] = [newtipps:[]]
+      }
+
+
+    }
 
     def builder = new JsonBuilder()
     builder(titleChangeData)
 
-    def new_activity = new Activity(
-                                    activityName:"Title Change ${sw.toString()}",
-                                    activityData:builder.toString(),
-                                    owner:user,
-                                    status:active_status, 
-                                    type:transfer_type).save()
+    // def new_activity = new Activity(
+    //                                 activityName:"Title Change ${sw.toString()}",
+    //                                 activityData:builder.toString(),
+    //                                 owner:user,
+    //                                 status:active_status, 
+    //                                 type:transfer_type).save()
+
+    log.debug("redirect to edit activity (Really title) ${builder.toString()}");
     
-    redirect(action:'editTitleChange',id:new_activity.id)
+    if ( first_title )
+      redirect(controller:'resource', action:'show', id:first_title);
+    else
+      redirect(controller:'home', action:'index');
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -815,8 +841,8 @@ class WorkflowController {
                      'Embargo	Coverage note	Host Platform URL	Format	Payment Type	Delayed OA	Delayed OA Embargo	Hybrid OA	Hybrid OA URL\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
-                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? order by tipp.id',
-                         [pkg, 'Deleted']);
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
+                         [pkg, 'Deleted', 'Package.Tipps']);
 
 
 
