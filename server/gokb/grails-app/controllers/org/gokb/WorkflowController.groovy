@@ -151,6 +151,9 @@ class WorkflowController {
 
     def titleChangeData = [:]
     titleChangeData.tipps = [:]
+    titleChangeData.beforeTitles = params.list('beforeTitles')
+    titleChangeData.afterTitles = params.list('afterTitles')
+    titleChangeData.eventDate = params.list('eventDate')
     def first_title = null
 
     def sw = new StringWriter();
@@ -570,6 +573,8 @@ class WorkflowController {
 
   def processTitleChange(activity_record, activity_data) {
 
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+
     activity_data.tipps.each { tipp_map_entry ->
       tipp_map_entry.value.newtipps.each { newtipp ->
         log.debug("Process new tipp : ${newtipp}");
@@ -608,6 +613,28 @@ class WorkflowController {
         }
       }
     }
+
+
+    // Default to today if not set
+    def event_date = activityData.eventDate ?: sdf.format(new Date());
+
+    // Create title history event
+    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:sdf.parse(event_date)).save()
+
+    activityData.afterTitles?.each { at ->
+      def component = genericOIDService.resolveOID2(at)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'out').save()
+    }
+
+    activityData.beforeTitles?.each { bt ->
+      def component = genericOIDService.resolveOID2(bt)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'in').save()
+    }
+
 
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
     activity_record.save()
