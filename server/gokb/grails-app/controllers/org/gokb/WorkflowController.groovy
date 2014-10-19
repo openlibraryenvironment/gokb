@@ -163,7 +163,7 @@ class WorkflowController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def startTitleTransfer() {
-    log.debug("startTitleChange");
+    log.debug("startTitleTransfer");
     def user = springSecurityService.currentUser
     def result = [:]
     result.titles = []
@@ -209,9 +209,12 @@ class WorkflowController {
       }
     }
 
+    log.debug("loaded Title Data");
+
     result.newPublisher = genericOIDService.resolveOID2(params.title)
     titleTransferData.newPublisherId = result.newPublisher.id
 
+    log.debug("Build title transfer record");
     def builder = new JsonBuilder()
     builder(titleTransferData)
 
@@ -219,6 +222,7 @@ class WorkflowController {
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleTransfer').save()
 
 
+    log.debug("Create activity");
     def new_activity = new Activity(
                                     activityName:"Title transfer ${sw.toString()} to ${result.newPublisher.name}",
                                     activityData:builder.toString(),
@@ -226,6 +230,7 @@ class WorkflowController {
                                     status:active_status, 
                                     type:transfer_type).save()
     
+    log.debug("Redirect to edit title transfer activity");
     redirect(action:'editTitleTransfer',id:new_activity.id)
   }
 
