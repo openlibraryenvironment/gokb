@@ -306,7 +306,7 @@ abstract class KBComponent {
     id column:'kbc_id'
     version column:'kbc_version'
     name column:'kbc_name'
-    normname column:'kbc_normname'
+    normname column:'kbc_normname', index:'kbc_normname_idx'
     source column:'kbc_source_fk'
     status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
