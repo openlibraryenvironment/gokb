@@ -42,7 +42,9 @@ class GOKbTextUtils {
 
 	// Break apart the string.
 	String[] components = s.split("\\s");
-	Arrays.sort(components);
+
+        // II: Don't sort - it's madness
+	// Arrays.sort(components);
 
 	// Re-piece the array back into a string.
 	String normstring = "";
@@ -54,7 +56,7 @@ class GOKbTextUtils {
 	  }
 	}
 
-	normstring.trim();
+	normstring.trim().replaceAll(" +", " ")
   }
   
   public static double cosineSimilarity(String s1, String s2, int degree = 2) {
