@@ -20,7 +20,6 @@
         <table class="table table-bordered no-select-all">
           <thead>
             <tr>
-              <th>Select</th>
               <th>Type</th>
               <th>Title</th>
               <th>Package</th>
@@ -39,7 +38,6 @@
             <g:each in="${tipps}" var="tipp">
               <g:if test="${tipp.type=='CURRENT'}">
                 <tr style="background-color: #FF4D4D;">
-                  <td> <input name="addto-${tipp.id}" type="checkbox" checked="checked" /> </td>
                   <td> ${tipp.type} </td>
                   <td> ${tipp.title.name} </td>
                   <td> ${tipp.pkg.name} </td>
@@ -56,7 +54,6 @@
               </g:if>
               <g:else>
                 <tr style="background-color: #4DFF4D;">
-                  <td> </td>
                   <td> ${tipp.type} </td>
                   <td> ${tipp.title.name} </td>
                   <td> ${tipp.pkg.name} </td>
