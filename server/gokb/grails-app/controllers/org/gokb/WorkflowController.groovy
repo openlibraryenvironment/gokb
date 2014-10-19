@@ -145,6 +145,7 @@ class WorkflowController {
 
     log.debug("startTitleChange(${params})");
 
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
 
@@ -180,10 +181,10 @@ class WorkflowController {
                                title_id:new_title_obj.id,
                                package_id:tipp.pkg.id,
                                platform_id:tipp.hostPlatform.id,
-                               startDate:tipp.startDate ? sdf.format(old_tipp.startDate) : null,
+                               startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
                                startVolume:tipp.startVolume,
                                startIssue:tipp.startIssue,
-                               endDate:tipp.endDate? sdf.format(old_tipp.endDate) : null,
+                               endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
                                endVolume:tipp.endVolume,
                                endIssue:tipp.endIssue]
           titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
@@ -566,6 +567,51 @@ class WorkflowController {
     result
   }
 
+
+  def processTitleChange(activity_record, activity_data) {
+
+    activity_data.tipps.each { tipp_map_entry ->
+      tipp_map_entry.value.newtipps.each { newtipp ->
+        log.debug("Process new tipp : ${newtipp}");
+
+        def new_package = Package.get(newtipp.package_id)
+        def new_platform = Platform.get(newtipp.platform_id)
+
+        // def new_tipp = new TitleInstancePackagePlatform(
+        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
+                                   pkg:new_package,
+                                   hostPlatform:new_platform,
+                                   title:current_tipp.title,
+                                   startDate: ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null,
+                                   startVolume:newtipp.startVolume,
+                                   startIssue:newtipp.startIssue,
+                                   endDate: (newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null,
+                                   endVolume:newtipp.endVolume,
+                                   endIssue:newtipp.endIssue]).save()
+
+        if ( newtipp.review == 'on' ) {
+          ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
+        }
+      }
+
+      // Retire the tipp if
+      if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
+        log.debug("Retiring old tipp");
+        current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
+        }
+      }
+      else {
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
+        }
+      }
+    }
+
+    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
+    activity_record.save()
+  }
 
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");

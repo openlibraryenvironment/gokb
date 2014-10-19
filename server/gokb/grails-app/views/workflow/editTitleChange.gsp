@@ -7,7 +7,7 @@
 <title>GOKb: Title Change</title>
 </head>
 <body>
-  <g:form controller="workflow" action="editTitleTransfer" id="${params.id}">
+  <g:form controller="workflow" action="editTitleChange" id="${params.id}">
     <h1 class="page-header">Title Change</h1>
     <div id="mainarea" class="panel panel-default">
       <div class="panel-heading">
@@ -72,7 +72,13 @@
           </tbody>
         </table>
       </div>
-      <button type="submit" class="btn btn-default btn-success btn-sm pull-right" name="update" value="update">Update</button>
+
+      <div class="btn-group clearfix pull-right">
+        <button type="submit" class="btn btn-default btn-success btn-sm pull-right" name="update" value="update">Update</button>
+        <button type="submit" class="btn btn-default btn-success btn-sm pull-right" name="process" value="process">Process Transfer</button>
+        <button type="submit" class="btn btn-default btn-danger btn-sm " name="abandon" value="abandon">Abandon Transfer</button>
+      </div>
+
     </div>
   </g:form>
 </body>
