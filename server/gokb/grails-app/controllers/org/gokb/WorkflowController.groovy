@@ -402,6 +402,121 @@ class WorkflowController {
     result
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def editTitleChange() {
+    log.debug("editTitleChange() - ${params}");
+
+    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def activity_record = Activity.get(params.id)
+    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
+
+    // Pull in all updated tipp properties like start volumes, etc.
+    request.getParameterNames().each { pn ->
+      def value = request.getParameter(pn)
+      if ( pn.startsWith('_tippdata') ) {
+        def key_components = pn.split(':');
+        if (  activity_data.tipps[key_components[1]] != null ) {
+          if ( ( value != null ) && ( value.length() > 0 ) ) {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
+          }
+          else {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
+          }
+        }
+        else {
+          log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}");
+        }
+      }
+    }
+
+    if ( params.update ) {
+      log.debug("Update...");
+    }
+    else if ( params.remove ) {
+      log.debug("remove... ${params.remove}");
+      def remove_components = params.remove.split(':');
+      activity_data.tipps[remove_components[0]].newtipps.remove(Integer.parseInt(remove_components[1]))
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+    }
+    else if ( params.process ) {
+      log.debug("Process...");
+      processTitleChange(activity_record, activity_data);
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+    else if ( params.abandon ) {
+      log.debug("**ABANDON**...");
+      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
+      activity_record.save()
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+
+    log.debug("Processing...");
+
+    def result = [:]
+    result.titles = []
+    result.tipps = []
+    result.d = activity_record
+
+    activity_data.title_ids.each { tid ->
+      result.titles.add(TitleInstance.get(tid))
+    }
+
+
+    activity_data.tipps.each { tipp_info ->
+      def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
+      result.tipps.add([
+                        id:tipp_object.id,
+                        type:'CURRENT',
+                        title:tipp_object.title, 
+                        pkg:tipp_object.pkg, 
+                        hostPlatform:tipp_object.hostPlatform,
+                        startDate:tipp_object.startDate,
+                        startVolume:tipp_object.startVolume,
+                        startIssue:tipp_object.startIssue,
+                        endDate:tipp_object.endDate,
+                        endVolume:tipp_object.endVolume,
+                        endIssue:tipp_object.endIssue
+                        ])
+      int seq=0;
+      tipp_info.value.newtipps.each { newtipp_info ->
+        result.tipps.add([
+                          type:'NEW',
+                          parent:tipp_object.id,
+                          seq:seq++,
+                          title:KBComponent.get(newtipp_info.title_id),
+                          pkg:KBComponent.get(newtipp_info.package_id),
+                          hostPlatform:KBComponent.get(newtipp_info.platform_id),
+                          startDate: newtipp_info.startDate,
+                          startVolume:newtipp_info.startVolume,
+                          startIssue:newtipp_info.startIssue,
+                          endDate:newtipp_info.endDate,
+                          endVolume:newtipp_info.endVolume,
+                          endIssue:newtipp_info.endIssue,
+                          review:newtipp_info.review,
+                          ])
+      }
+    }
+
+    result.id = params.id
+
+    result
+  }
+
+
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");

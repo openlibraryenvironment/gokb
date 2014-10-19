@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <h1 class="page-header">Title Transfer</h1>
+  <h1 class="page-header">Title Change</h1>
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
       <h3 class="panel-title">Step 1 of 2</h3>
