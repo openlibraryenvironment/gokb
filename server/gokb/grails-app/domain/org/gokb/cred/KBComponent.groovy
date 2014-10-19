@@ -520,9 +520,12 @@ abstract class KBComponent {
   String getIdentifierValue(idtype) {
     def result=null
     ids?.each { id ->
-      if ( id.toComponent instanceof Identifier ) {
-        if ( id.toComponent.ns?.ns.toLowerCase() == idtype.toLowerCase() )
-          result = id.toComponent?.value
+      the_id = KBComponent.deproxy(id)
+      tc = KBComponent.deproxy(the_id.toComponent)
+      if ( ( tc != null ) && ( tc instanceof Identifier ) ) {
+        if ( tc.ns.ns.toLowerCase() == idtype.toLowerCase() ) {
+          result = tc.value
+        }
       }
     }
     result

@@ -4,6 +4,7 @@ import org.gokb.cred.*
 import grails.plugins.springsecurity.Secured
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
+import grails.converters.JSON
 
 class WorkflowController {
 
@@ -18,7 +19,8 @@ class WorkflowController {
     'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
     'method::RRClose':[actionType:'simple' ],
-    'title::reconcile':[actionType:'workflow', view:'titleReconcile' ]
+    'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
+    'exportPackage':[actionType:'process', method:'packageTSVExport']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -121,6 +123,9 @@ class WorkflowController {
           break;
         case 'workflow':
           render view:action_config.view, model:result
+          break;
+        case 'process':
+          this."${action_config.method}"(result.objects_to_action);
           break;
         default:
           flash.message="Invalid action type information: ${action_config.actionType}";
@@ -632,5 +637,73 @@ class WorkflowController {
       he.delete(flush:true)
     }
     redirect(url: result.ref)
+  }
+
+  private def packageTSVExport(packages_to_export) {
+    def filename = null;
+
+    if ( packages_to_export.size() == 0 ) 
+      return
+
+    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def export_date = sdf.format(new java.util.Date());
+
+    if ( packages_to_export.size() == 1 ) {
+      filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
+    }
+    else {
+      filename = "GOKb Export : multiple_packages : ${export_date}.tsv"
+    }
+
+    try {
+      response.setHeader("Content-disposition", "attachment; filename=${filename}")
+      response.contentType = "text/tsv"
+      def out = response.outputStream
+      out.withWriter { writer ->
+
+        packages_to_export.each { pkg ->
+
+          // As per spec header at top of file / section
+          writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
+
+          writer.write('TIPP ID	TIPP URL	Title ID	Title	TIPP Status	[TI] Publisher	[TI] Imprint	[TI] Published From	[TI] Published to	[TI] Medium	[TI] OA Status	'+
+                     '[TI] Continuing series	[TI] ISSN	[TI] EISSN	Package	Package ID	Package URL	Platform	'+
+                     'Platform URL	Platform ID	Reference	Edit Status	Access Start Date	Access End Date	Coverage Start Date	'+
+                     'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
+                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type	Delayed OA	Delayed OA Embargo	Hybrid OA	Hybrid OA URL\n');
+
+          def tipps = TitleInstancePackagePlatform.executeQuery(
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? order by tipp.id',
+                         [pkg, 'Deleted']);
+
+
+
+          tipps.each { tipp_id ->
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+            writer.write( tipp.id + '\t' + tipp.url + '\t' + tipp.title.id + '\t' + tipp.title.name + '\t' +
+                          tipp.status.value + '\t' + tipp.title.getCurrentPublisher?.name + '\t' + tipp.title.imprint?.name + '\t' + tipp.title.publishedFrom + '\t' +
+                          tipp.title.publishedTo + '\t' + tipp.title.medium?.value + '\t' + tipp.title.oa?.status + '\t' +
+                          tipp.title.continuingSeries?.value + '\t' + 
+                          'SteveToFix\t' + // tipp.title.getIdentifierValue('ISSN') + '\t' +
+                          'SteveToFix\t' + //tipp.title.getIdentifierValue('eISSN') + '\t' 
+                          pkg.name + '\t' + pkg.id + '\t' + '\t' + tipp.hostPlatform.name + '\t' +
+                          tipp.hostPlatform.primaryUrl + '\t' + tipp.hostPlatform.id + '\t\t' + tipp.status?.value + '\t' + tipp.accessStartDate  + '\t' +
+                          tipp.accessEndDate + '\t' + tipp.startDate + '\t' + tipp.startVolume + '\t' + tipp.startIssue + '\t' + tipp.endDate + '\t' +
+                          tipp.endVolume + '\t' + tipp.endIssue + '\t' + tipp.embargo + '\t' + tipp.coverageNote + '\t' + tipp.hostPlatform.primaryUrl + '\t' +
+                          tipp.format?.value + '\t' + tipp.paymentType?.value + '\t' + tipp.delayedOA?.value + '\t' + tipp.delayedOAEmbargo + '\t' +
+                          tipp.hybridOA?.value + '\t' + tipp.hybridOAUrl +
+                          '\n');
+            tipp.discard();
+          }
+        }
+
+        writer.flush();
+        writer.close();
+      }
+      out.close()
+    }
+    catch ( Exception e ) {
+      log.error("Problem with export",e);
+    }
   }
 }

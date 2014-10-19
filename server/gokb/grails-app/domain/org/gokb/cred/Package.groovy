@@ -121,7 +121,8 @@ class Package extends KBComponent {
   def availableActions() {
     [
       [code:'method::deleteSoft', label:'Delete (with associated TIPPs)'],
-      [code:'method::registerWebhook', label:'Register Web Hook']
+      [code:'exportPackage', label:'TSV Export'],
+      // [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }
 
