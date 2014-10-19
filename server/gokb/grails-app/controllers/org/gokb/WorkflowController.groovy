@@ -15,6 +15,7 @@ class WorkflowController {
   def actionConfig = [
     'method::deleteSoft':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
+    'title::change':      [actionType:'workflow', view:'titleChange'],
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement'],
     'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
@@ -140,8 +141,29 @@ class WorkflowController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def processTitleChange() {
-    log.debug("processTitleChange");
+  def startTitleChange() {
+
+    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
+    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
+
+    def titleChangeData = [:]
+
+    def builder = new JsonBuilder()
+    builder(titleChangeData)
+
+    def new_activity = new Activity(
+                                    activityName:"Title Change ${sw.toString()}",
+                                    activityData:builder.toString(),
+                                    owner:user,
+                                    status:active_status, 
+                                    type:transfer_type).save()
+    
+    redirect(action:'editTitleChange',id:new_activity.id)
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def startTitleTransfer() {
+    log.debug("startTitleChange");
     def user = springSecurityService.currentUser
     def result = [:]
     result.titles = []
