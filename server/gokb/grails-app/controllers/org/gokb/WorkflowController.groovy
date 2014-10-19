@@ -152,12 +152,21 @@ class WorkflowController {
     titleChangeData.tipps = [:]
     def first_title = null
 
+    def sw = new StringWriter();
+
     // Iterate through before titles.. For each one of these will will close out any existing tipps
     params.list('beforeTitles').each { title_oid ->
       log.debug("process ${title_oid}");
-      if ( first_title == null )
+      if ( first_title == null ) {
         first_title = title_oid
+      }
+      else {
+        sw.write(', ');
+      }
+
       def title_obj = genericOIDService.resolveOID2(title_oid)
+      sw.write(title_obj.name);
+
       def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ?',
                          [title_obj, 'Deleted','TitleInstance.Tipps']);
@@ -172,19 +181,21 @@ class WorkflowController {
     def builder = new JsonBuilder()
     builder(titleChangeData)
 
-    // def new_activity = new Activity(
-    //                                 activityName:"Title Change ${sw.toString()}",
-    //                                 activityData:builder.toString(),
-    //                                 owner:user,
-    //                                 status:active_status, 
-    //                                 type:transfer_type).save()
+    def new_activity = new Activity(
+                                    activityName:"Title Change ${sw.toString()}",
+                                    activityData:builder.toString(),
+                                    owner:request.user,
+                                    status:active_status, 
+                                    type:transfer_type).save()
 
     log.debug("redirect to edit activity (Really title) ${builder.toString()}");
     
-    if ( first_title )
-      redirect(controller:'resource', action:'show', id:first_title);
-    else
-      redirect(controller:'home', action:'index');
+    // if ( first_title )
+    //   redirect(controller:'resource', action:'show', id:first_title);
+    // else
+    //   redirect(controller:'home', action:'index');
+
+    redirect(action:'editTitleChange',id:new_activity.id)
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
