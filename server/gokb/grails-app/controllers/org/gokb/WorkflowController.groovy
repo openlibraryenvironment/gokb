@@ -983,12 +983,12 @@ class WorkflowController {
     }
 
     try {
-      response.setHeader("Content-disposition", "attachment; filename=${filename}")
+      response.setHeader("Content-disposition", "attachment;filename=${filename}")
       response.contentType = "text/tsv"
       def out = response.outputStream
       out.withWriter { writer ->
         
-        def sanitize = { it ? it.trim() : "" }
+        def sanitize = { it ? "${it}".trim() : "" }
 
         packages_to_export.each { pkg ->
 
