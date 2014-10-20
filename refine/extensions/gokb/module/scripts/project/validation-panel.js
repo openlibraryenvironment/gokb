@@ -147,17 +147,22 @@ ValidationPanel.prototype._render = function() {
   // Modify the context of the element.
   GOKb.notify.getStack('validation').context = elmts.validationContent;
   
+  var errors = 0, warnings = 0;
+  
   if ("dataCheck" in data) {
     if ("messages" in data.dataCheck) {
       
+      // Handle the errors first.
       $.each(data.dataCheck.messages, function() {
         
         // Push to the stack.
         if (this.type == 'error') {
           self.showMessage(this);
+          errors ++;
         }
       });
       
+      // Handle the warnings next.
       $.each(data.dataCheck.messages, function() {
         
         // Push to the stack.
@@ -172,10 +177,14 @@ ValidationPanel.prototype._render = function() {
         
         if (this.type != 'error') {
           self.showMessage(this);
+          warnings ++;
         }
       });
     }
   }
+  
+  // Add the counters.
+  $("#gokb-validation-tab .count").html("<span class='error'>" + errors + "</span>/<span class='warning'>" + warnings + "</span>");
 };
 
 /**
