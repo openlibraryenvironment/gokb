@@ -21,19 +21,19 @@ import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.refine.Jsonizable;
-import com.google.refine.ProjectManager;
-import com.google.refine.RefineServlet;
-import com.google.refine.grel.ControlFunctionRegistry;
-import com.google.refine.importing.ImportingManager;
-import com.google.refine.io.FileProjectManager;
-
 import com.k_int.gokb.module.util.TextUtils;
 import com.k_int.gokb.refine.RefineWorkspace;
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 import com.k_int.gokb.refine.notifications.Notification;
 import com.k_int.gokb.refine.notifications.NotificationStack;
+
+import com.google.refine.Jsonizable;
+import com.google.refine.ProjectManager;
+import com.google.refine.RefineServlet;
+import com.google.refine.grel.ControlFunctionRegistry;
+import com.google.refine.importing.ImportingManager;
+import com.google.refine.io.FileProjectManager;
 
 import edu.mit.simile.butterfly.ButterflyModule;
 import edu.mit.simile.butterfly.ButterflyModuleImpl;
@@ -312,33 +312,46 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     }
 
     // Now we can see if we have any module updates available.
-    String updateTo = null;
+    GOKbService service = null;
     for (GOKbService s : getAllServices()) {
 
       if (s.hasUpdate()) {
-        if (updateTo == null) {
-          updateTo = s.getAvailableModuleVersion();
+        if (service == null) {
+          service = s;
         } else {
 
           // Compare existing with available.
           String available = s.getAvailableModuleVersion();
-          if (TextUtils.versionCompare(updateTo, available) > 0) {
+          if (TextUtils.versionCompare(service.getAvailableModuleVersion(), available) > 0) {
             // Later version here.
-            updateTo = available;
+            service = s;
           }
         }
       }
     }
 
     // If we have an update then we should add a system message.
-    if (updateTo != null) {
-
+    if (service != null) {
+      
+      // Let's update...
+      File module_path = singleton.getPath().getParentFile().getParentFile();
+        
+      // Updater.
+      Updater updt = new Updater(
+          module_path,
+          service,
+          getPath().getParentFile().getParentFile());
+      
+      // Do the update.
+      updt.update();
+      
+      // Now lets raise a notification.
       Notification n = Notification.fromJSON("{"
           + "id:'module-update',"
-          + "text:'A system update (version " + updateTo + ") has been donwloaded. You must restart refine for the update to take effect.',"
+          + "text:'A system update (version " + service.getAvailableModuleVersion() + ") has been donwloaded. You must restart refine for the update to take effect.',"
           + "title:'GOKb Update',"
           + "hide:false}"
-          );
+      );
 
       // Remove the buttons.
       n.getButtons().put("closer", false);

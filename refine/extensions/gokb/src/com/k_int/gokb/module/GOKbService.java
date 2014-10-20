@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -19,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import com.k_int.gokb.module.util.ConditionalDownloader;
 import com.k_int.gokb.module.util.URLConenectionUtils;
-import java.net.HttpURLConnection;
 
 /**
  * Represents a remote GOKb web service.
@@ -148,11 +148,6 @@ public class GOKbService extends A_ScheduledUpdates {
   }
   
   private String availableModuleVersion = null;
-  private String availableModuleFilename = null;
-
-  public String getAvailableModuleFilename () {
-    return availableModuleFilename;
-  }
 
   private String URL;
   
@@ -269,14 +264,21 @@ public class GOKbService extends A_ScheduledUpdates {
       
       // Set the available version.
       availableModuleVersion = res.optString("latest-version");
-      
-      // and the filename.
-      availableModuleFilename = res.optString("file-name");
 
       // Return whether there is an update.
       return res.getBoolean("update-available");
     }
     return false;
+  }
+  
+  public HttpURLConnection getUpdatePackage() throws FileUploadException, IOException {
+    return callAPI(
+      "downloadUpdate",
+      URLConenectionUtils.METHOD_TYPE.POST,
+      URLConenectionUtils.paramStringMap(
+        "requested-version=" + availableModuleVersion
+      )
+    );
   }
   
   private JSONObject apiJSON (String apiMethod) throws JSONException, IOException, FileUploadException {

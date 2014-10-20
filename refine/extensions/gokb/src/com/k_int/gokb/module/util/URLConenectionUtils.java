@@ -10,6 +10,8 @@ import java.io.InputStream;
 import java.io.InvalidClassException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.fileupload.FileItem;
@@ -212,6 +214,38 @@ public class URLConenectionUtils {
       }
     }
     return pString;
+  }
+  
+  public static Map<String, String[]> paramStringMap(String params) throws FileUploadException {
+
+    // Parameter string.
+    Map<String, String[]> pmap = new HashMap<String, String[]>();
+    if (params != null) {
+      String[] parts = params.replaceAll("\\?", "").split("\\&");
+      for (String pair : parts) {
+        
+        // Split into key/val.
+        String[] pair_parts = pair.split("\\=");
+        
+        if (pair_parts.length == 2) {
+
+          // Get multiple values per parameter.
+          String[] vals = pmap.get(pair_parts[0]);
+          if (vals == null) {
+
+            // The value array.
+            vals = new String[] {pair_parts[1]};
+            
+          } else {
+          
+            // Copy the array into the other. and leave space for our new value.
+            vals = Arrays.copyOf(vals, vals.length + 1);
+            vals[vals.length-1] = pair_parts[1];
+          }
+        }
+      }
+    }
+    return pmap;
   }
   
 }

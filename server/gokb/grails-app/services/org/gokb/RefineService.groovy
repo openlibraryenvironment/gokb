@@ -15,8 +15,10 @@ class RefineService {
   
   
   private static final String EXTENSION_PREFIX = "gokb-release-"
-  private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E(\\d+(\\.\\d)*)"
-  private static final String FILENAME_REGEX = (NAMING_REGEX + "\\.\\Qzip\\E")
+  private static final String EXTENSION_SUFFIX = ".zip"
+  private static final String VERSIONING_REGEX = "(\\d+(\\.\\d)*)"
+  private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${VERSIONING_REGEX}"
+  private static final String FILENAME_REGEX = "${NAMING_REGEX}\\Q${EXTENSION_SUFFIX}\\E"
 
   GrailsApplication grailsApplication
 
@@ -60,7 +62,7 @@ class RefineService {
       Arrays.sort(extensions, comp)
 
       // Now we should have a sorted array. Take the last element.
-      return extensions[extensions.length - 1]
+      return extensions[extensions.length - 1].replaceFirst(FILENAME_REGEX, "\$1")
     }
 
     // Null if none could be found.
@@ -94,8 +96,8 @@ class RefineService {
     } else if (current_local_version) {
       
       // Handle the fact that previous refine versions will report incorrectly formatted version values here.
-      if (current_version ==~ NAMING_REGEX) {
-        update = (comp.compare(current_local_version.replaceFirst(".[^\\.]+\$", ""), current_version) > 0)
+      if (current_version ==~ VERSIONING_REGEX) {
+        update = (comp.compare(current_local_version, current_version) > 0)
       } else {
         update = true;
       }
@@ -108,10 +110,10 @@ class RefineService {
   }
   
   File extensionDownloadFile (String version_required) {
-    if (version_required ==~ FILENAME_REGEX) {
+    if (version_required ==~ VERSIONING_REGEX) {
       
       // Return file uri if the file exists.
-      File f = new File (refineFolder, version_required)
+      File f = new File (refineFolder, "${EXTENSION_PREFIX}${version_required}${EXTENSION_SUFFIX}")
       if (f.exists()) {
         return f
       }

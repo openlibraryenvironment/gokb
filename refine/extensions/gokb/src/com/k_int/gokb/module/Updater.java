@@ -6,47 +6,52 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 
+import com.google.common.io.Files;
+
 public class Updater {
 
-  private URL location;
+  private GOKbService service;
   private File destination;
   private File tempdir;
 
-  public Updater (File tempdir, URL location, File destination) {
+  public Updater (File tempdir, GOKbService service, File destination) {
     this.tempdir = tempdir;
-    this.location = location;
+    this.service = service;
     this.destination = destination;
   }
 
   /**
    * Download and extract the update for the module. We May need to restart the application too.
    * @throws IOException 
+   * @throws FileUploadException 
    */
-  public void update () throws IOException {
+  public void update () throws IOException, FileUploadException {
 
-    // Get the file extension.
-    String ext = FilenameUtils.getExtension(location.getPath());
+    // Create a temporary file for the zip file.
+    File dl = File.createTempFile("gokb_mod_update", "zip");
+    
+    // Get the update.
+    InputStream is = service.getUpdatePackage().getInputStream();
+    byte[] buffer = new byte[is.available()];
+    is.read(buffer);
+ 
+    // Write to the temp file.
+    Files.write(buffer, dl);
+    
+    // Close the input stream.
+    IOUtils.closeQuietly(is);
 
-    // We only handle zips for now...
-    if ("zip".equals(ext)) {
-
-      // Create a temporary file for the zip file.
-      File dl = File.createTempFile("gokb_mod_update", ext);
-      FileUtils.copyURLToFile(location, dl);
-
-      // Now we have the file let's try and extract the contents.
-      unzip(dl, destination);
-    }
+    // Now we have the file let's try and extract the contents.
+    unzip(dl, destination);
   }
 
   private void unzip (File from, File to_folder) throws IOException {
