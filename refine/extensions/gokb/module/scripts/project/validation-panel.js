@@ -161,13 +161,17 @@ ValidationPanel.prototype._render = function() {
       $.each(data.dataCheck.messages, function() {
         
         // Push to the stack.
+//        if (this.type != 'error') {
+//          self.showMessage($.extend(this, {
+//            buttons: {
+//              closer    : true,
+//              sticker   : false,
+//            }
+//          }));
+//        }
+        
         if (this.type != 'error') {
-          self.showMessage($.extend(this, {
-            buttons: {
-              closer    : true,
-              sticker   : false,
-            }
-          }));
+          self.showMessage(this);
         }
       });
     }
