@@ -75,7 +75,7 @@ class RefineUtils {
       
       // Now lets add to the properties file.
       def now = System.currentTimeMillis()
-      String zip_name = "${branch_name}"
+      String ver = "${branch_name}"
       
       // Create application config entries.
       entries << [
@@ -89,17 +89,17 @@ class RefineUtils {
         def matcher = tag_name =~ tag_matcher_pattern
         
         if (matcher && matcher?.getAt(0)?.getAt(1)) {
-          zip_name = "gokb-release-${matcher[0][1]}"
+          ver = "${matcher[0][1]}"
         }
       } else {
         // Use the timestamp.
-        zip_name += "-${now}"
+        ver += "-${now}"
       }
       
-      zip_name = zip_name.toLowerCase()
+      String zip_name = "gokb-release-${ver}".toLowerCase()
       
       // We can override the build properties here.
-      def build_props = ["fullname" : zip_name]
+      def build_props = ["fullname" : zip_name, "version" : ver]
       
       // Build the XML file overriding the properties in the file with our custom values.
       Project p = antBuild(bxml, ant, b_target, build_props)

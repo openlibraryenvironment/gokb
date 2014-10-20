@@ -337,13 +337,13 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       File module_path = singleton.getPath().getParentFile().getParentFile();
         
       // Updater.
-      Updater updt = new Updater(
-          module_path,
-          service,
-          getPath().getParentFile().getParentFile());
-      
-      // Do the update.
-      updt.update();
+//      Updater updt = new Updater(
+//          module_path,
+//          service,
+//          getPath().getParentFile().getParentFile());
+//      
+//      // Do the update.
+//      updt.update();
       
       // Now lets raise a notification.
       Notification n = Notification.fromJSON("{"

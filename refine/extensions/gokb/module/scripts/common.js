@@ -11,7 +11,7 @@ var GOKb = {
   api : {},
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   refine:{},
-  versionError : false,
+  lockdown : false,
   hijacked : [],
   timer_id : false
 };
@@ -82,10 +82,10 @@ GOKb.hijackFunction = function(functionName, replacement) {
  */
 GOKb.defaultError = function (data) {
   
-  if (!GOKb.versionError && "result" in data && "errorType" in data.result && data.result.errorType == "authError") {
+  if (!GOKb.lockdown && "result" in data && "errorType" in data.result && data.result.errorType == "authError") {
     
     // Authentication error, do not show the error but instead show the login box.
-    var login = GOKb.createDialog("Login to " + GOKb.workspace.name, "form_login");
+    var login = GOKb.createDialog("Login to " + GOKb.core.workspace.name, "form_login");
     
     // Add the message if there is one.
     if ("message" in data && data.message && data.message != "") {
@@ -115,12 +115,14 @@ GOKb.defaultError = function (data) {
       msg = data.message;
       
       // Check for the special case version error.
-      if ("result" in data && "errorType" in data.result && data.result.errorType == "versionError") {
-        
+      if ("result" in data && "errorType" in data.result)
+        if (data.result.errorType == "versionError" || data.result.errorType == "permError") {
+          
         // Remove close button.
         error.bindings.closeButton.hide();
         
-        GOKb.versionError = true;
+        // Lockdown the extension for this service.
+        GOKb.lockdown = true;
       }
     } else {
       msg = "There was an error contacting the GOKb server.";
@@ -221,7 +223,7 @@ GOKb.createDialog = function(title, template) {
  */
 GOKb.createErrorDialog = function(title, template) {
   
-  if (!GOKb.versionError && !GOKb.globals.eDialogOpen) {
+  if (!GOKb.lockdown && !GOKb.globals.eDialogOpen) {
     
     // Temporary set to same as dialog.
     var error = GOKb.createDialog(title, template);
@@ -374,7 +376,7 @@ GOKb.postProcess = function(command, params, body, updateOptions, callbacks) {
 GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
   ajaxOpts = ajaxOpts || {};
   
-  if (!GOKb.versionError) {
+  if (!GOKb.lockdown) {
   
     var ajaxObj = $.extend(ajaxOpts, {
       cache     : false,
@@ -805,14 +807,14 @@ GOKb.timer = function() {
     GOKb.timer_id = null;
   }
   
-  if (!GOKb.versionError) {
+  if (!GOKb.lockdown) {
   
     // Just call with empty callbacks. If the api is not up there will be a timeout.
     // If the versions are wrong then the default error callback will be fired and the,
     // version missmatch reported to the user.
     GOKb.doCommand("isUp", {}, {}, {});
     
-    if (!GOKb.versionError) {
+    if (!GOKb.lockdown) {
       
       // Grab the core data.
       GOKb.fetchCoreData().done(function(data){

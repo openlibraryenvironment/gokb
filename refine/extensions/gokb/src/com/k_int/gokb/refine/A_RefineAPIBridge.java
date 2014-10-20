@@ -21,6 +21,7 @@ import com.k_int.gokb.module.GOKbModuleImpl;
 import com.k_int.gokb.module.RequestParser;
 import com.k_int.gokb.module.util.URLConenectionUtils;
 import com.k_int.gokb.refine.RefineAPICallback.GOKbAuthRequiredException;
+import com.k_int.gokb.refine.RefineAPICallback.GOKbPermissionDeniedException;
 
 import com.google.refine.commands.Command;
 
@@ -192,12 +193,31 @@ public abstract class A_RefineAPIBridge extends Command {
     } catch (GOKbAuthRequiredException e) {
 
       // Return the error to the client to display the login box.
-      String message = GOKbModuleImpl.getCurrentUserDetails() != null ? "\"message\":\"The user details supplied are incorrect or you do not have permission to access the API.\", " : "";
+      String message = GOKbModuleImpl.getCurrentUserDetails() != null ? "\"message\":\"The user details supplied are incorrect.\", " : "";
       String content = "{"+ message + "\"result\":{\"errorType\":\"authError\"}, \"code\":\"error\"}";
       clientResponse.setCharacterEncoding("UTF-8");
 
       // Set the status to a 401 unauthorized.
       clientResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      Writer w = clientResponse.getWriter();
+      if (w != null) {
+        w.write(content);
+        w.flush();
+        w.close();
+      } else {
+        throw new ServletException("response returned a null writer");
+      }
+
+    } catch (GOKbPermissionDeniedException e) {
+
+      // Return the error to the client to display the login box.
+      String message = GOKbModuleImpl.getCurrentUserDetails() != null ? "\"message\":\"Although you have successfully authenticated,"
+          + " you do not have the necessary permissions to use Refine to access this service. If you believe you should have access, please contact the administrator.\", " : "";
+      String content = "{"+ message + "\"result\":{\"errorType\":\"permError\"}, \"code\":\"error\"}";
+      clientResponse.setCharacterEncoding("UTF-8");
+
+      // Set the status to a 401 unauthorized.
+      clientResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
       Writer w = clientResponse.getWriter();
       if (w != null) {
         w.write(content);

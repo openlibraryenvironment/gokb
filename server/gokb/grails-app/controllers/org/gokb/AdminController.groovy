@@ -8,6 +8,7 @@ class AdminController {
   def FTUpdateService
   def packageService
   def grailsCacheAdminService
+  def refineService
 
   def tidyOrgData() {
 
@@ -120,5 +121,9 @@ class AdminController {
   def clearBlockCache() {
     // clear the cache used by the blocks tag…
     grailsCacheAdminService.clearBlocksCache()
+  }
+  
+  def buildExtension() {
+    refineService.buildExtension()
   }
 }
