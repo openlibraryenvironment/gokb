@@ -518,17 +518,11 @@ abstract class KBComponent {
 
   @Transient
   String getIdentifierValue(idtype) {
-    def result=null
-    ids?.each { id ->
-      the_id = KBComponent.deproxy(id)
-      tc = KBComponent.deproxy(the_id.toComponent)
-      if ( ( tc != null ) && ( tc instanceof Identifier ) ) {
-        if ( tc.ns.ns.toLowerCase() == idtype.toLowerCase() ) {
-          result = tc.value
-        }
-      }
-    }
-    result
+    
+    // As ids are combo controlled it should be enough just to call find here.
+    // This will return only the first match and stop looking afterwards.
+    // Null returned if no match.
+    ids?.find { it.namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
   }
 
   @Transient
