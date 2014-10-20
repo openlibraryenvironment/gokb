@@ -50,7 +50,8 @@ class IsSimilar extends A_ValidationRule implements I_DeferredRowValidationRule 
       List<? extends KBComponent> matching_components = type_class.list().each { KBComponent comp ->
 
         // Compare the normalised value of this val with the data.
-        String norm_val = GOKbTextUtils.normaliseString(val)
+        String norm_val = GOKbTextUtils.generateKey(val)
+
         double sim = GOKbTextUtils.cosineSimilarity(norm_val, comp.normname)
         if (sim >= threshold && sim > maxValue && sim < 1) {
 

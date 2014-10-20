@@ -312,7 +312,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def delete() {
-    log.debug("delete(${params})");
+    log.debug("delete(${params}), referer: ${request.getHeader('referer')}");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
     if ( contextObj ) {

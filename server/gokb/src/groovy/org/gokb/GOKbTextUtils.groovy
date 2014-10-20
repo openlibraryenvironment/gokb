@@ -28,7 +28,15 @@ class GOKbTextUtils {
     return 0
   }
   
+  public static String generateKey(String s) {
+    return internalNormalise(s,true)
+  }
+
   public static String normaliseString(String s) {
+    return internalNormalise(s,false)
+  }
+
+  private static String internalNormalise(String s, boolean do_sort) {
 
 	// Ensure s is not null.
 	if (!s) s = "";
@@ -44,7 +52,8 @@ class GOKbTextUtils {
 	String[] components = s.split("\\s");
 
         // II: Don't sort - it's madness
-	// Arrays.sort(components);
+        if ( do_sort )
+	  Arrays.sort(components);
 
 	// Re-piece the array back into a string.
 	String normstring = "";
