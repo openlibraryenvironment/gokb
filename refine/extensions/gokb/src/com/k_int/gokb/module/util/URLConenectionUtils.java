@@ -242,6 +242,9 @@ public class URLConenectionUtils {
             vals = Arrays.copyOf(vals, vals.length + 1);
             vals[vals.length-1] = pair_parts[1];
           }
+          
+          // Add to the parameter map.
+          pmap.put(pair_parts[0], vals);
         }
       }
     }

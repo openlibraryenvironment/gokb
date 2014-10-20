@@ -6,6 +6,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -14,17 +17,17 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
-
-import com.google.common.io.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Updater {
+  
+  final static Logger _logger = LoggerFactory.getLogger("GOKb-Updater");
 
   private GOKbService service;
   private File destination;
-  private File tempdir;
 
-  public Updater (File tempdir, GOKbService service, File destination) {
-    this.tempdir = tempdir;
+  public Updater (GOKbService service, File destination) {
     this.service = service;
     this.destination = destination;
   }
@@ -37,15 +40,13 @@ public class Updater {
   public void update () throws IOException, FileUploadException {
 
     // Create a temporary file for the zip file.
-    File dl = File.createTempFile("gokb_mod_update", "zip");
+    Path dl = Files.createTempFile("gokb_mod_update", "zip");
     
     // Get the update.
     InputStream is = service.getUpdatePackage().getInputStream();
-    byte[] buffer = new byte[is.available()];
-    is.read(buffer);
  
     // Write to the temp file.
-    Files.write(buffer, dl);
+    Files.copy(is, dl, StandardCopyOption.REPLACE_EXISTING);
     
     // Close the input stream.
     IOUtils.closeQuietly(is);
@@ -54,23 +55,21 @@ public class Updater {
     unzip(dl, destination);
   }
 
-  private void unzip (File from, File to_folder) throws IOException {
+  private void unzip (Path from, File to_folder) throws IOException {
 
     // Simplify the path.
     to_folder = to_folder.getCanonicalFile();
     
     // Create a a temporary folder to unzip to.
-    File temp_dir = File.createTempFile("unzip", File.separator, tempdir);
-    
-    // Need to delete here as the above method returns a file. We will
-    // create it as a directory later on.
-    temp_dir.delete();
+    File temp_dir = Files.createTempDirectory("unzip").toFile();
 
     // Create zip file entry.
     ZipFile zipFile = null;
     
+    _logger.info("Extracting files from {} to {}", from.toString(), temp_dir.getAbsolutePath() );
+    
     try {
-      zipFile = new ZipFile(from);
+      zipFile = new ZipFile(from.toFile());
 
       // Each entry in the zip needs extracting.
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -104,6 +103,8 @@ public class Updater {
       // Ensure we close the Zip file.
       if (zipFile != null) zipFile.close();
     }
+    
+    _logger.info("Moving files from {} to {}", temp_dir.getAbsolutePath(), to_folder.getAbsolutePath() );
     
     for (File dir : temp_dir.listFiles((FileFilter)FileFilterUtils.directoryFileFilter())) {
       

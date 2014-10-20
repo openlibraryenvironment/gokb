@@ -2,6 +2,9 @@
  * One time executed init methods.
  */
 (function($) {
-  // Start the timer functions.
-  GOKb.timer();
+  
+  // Need to do this in document 
+  $(document).ready(function(){
+    GOKb.timer().done(GOKb.preCoreUpdate);
+  });
 })(jQuery);

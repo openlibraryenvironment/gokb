@@ -83,19 +83,6 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
   public static void setCurrentUserDetails(String username, String password) {
     userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
-
-    // Test restart here.
-    //        File module_path = singleton.getPath().getParentFile().getParentFile();
-    //        try {
-    //          Updater updt = new Updater(
-    //            module_path,
-    //            new URL("http://d7.localhost/test.zip"),
-    //            singleton.getPath().getParentFile().getParentFile());
-    //          updt.updateAndRestart();
-    //        } catch (IOException e) {
-    //          // TODO Auto-generated catch block
-    //          e.printStackTrace();
-    //        }
   }
 
   private int currentWorkspaceId;
@@ -334,16 +321,15 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     if (service != null) {
       
       // Let's update...
-      File module_path = singleton.getPath().getParentFile().getParentFile();
+      File module_path = getPath().getParentFile();
         
       // Updater.
-//      Updater updt = new Updater(
-//          module_path,
-//          service,
-//          getPath().getParentFile().getParentFile());
-//      
-//      // Do the update.
-//      updt.update();
+      Updater updt = new Updater(
+          service,
+          module_path);
+      
+      // Do the update.
+      updt.update();
       
       // Now lets raise a notification.
       Notification n = Notification.fromJSON("{"

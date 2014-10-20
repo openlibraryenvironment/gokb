@@ -109,8 +109,9 @@ GOKb.defaultError = function (data) {
     
   } else {
   
-    var error = GOKb.createErrorDialog("Error");
+//    var error = GOKb.createErrorDialog("Error");
     var msg;
+    var close = true;
     if  (data && ("message" in data) ) {
       msg = data.message;
       
@@ -119,7 +120,8 @@ GOKb.defaultError = function (data) {
         if (data.result.errorType == "versionError" || data.result.errorType == "permError") {
           
         // Remove close button.
-        error.bindings.closeButton.hide();
+//        error.bindings.closeButton.hide();
+        close = false;
         
         // Lockdown the extension for this service.
         GOKb.lockdown = true;
@@ -127,12 +129,25 @@ GOKb.defaultError = function (data) {
     } else {
       msg = "There was an error contacting the GOKb server.";
     }
-    if (error) {
       
-      error.bindings.dialogContent.html("<p>" + msg + "</p>");
-      return GOKb.showDialog(error);
-      
+//    error.bindings.dialogContent.html("<p>" + msg + "</p>");
+//      return GOKb.showDialog(error);
+    
+    // Show an error.
+    var error = {
+      text  : msg,
+      title : "Error",
+      hide  : false,
+      type : "error"
+    };
+    
+    if (!close) {
+      error.buttons = {
+        sticker : false,
+        closer  : false
+      };
     }
+    return GOKb.notify.show(error);
   }
   
   // If we haven't returned anything then return then.
@@ -820,10 +835,12 @@ GOKb.timer = function() {
       GOKb.fetchCoreData().done(function(data){
         
         // Resolve the listener so that anything waiting on this to finish can then execute anything they need.
-        listener.resolve(data);
+        listener.resolve(GOKb);
         
         // Check again in 30 seconds if not called before.
-        GOKb.timer_id = setTimeout(GOKb.timer, 30000);
+        GOKb.timer_id = setTimeout(function(){
+          GOKb.timer().done(GOKb.preCoreUpdate);
+        }, 30000);
       });
       
       return listener;
@@ -835,6 +852,14 @@ GOKb.timer = function() {
   
   // Return the listener.
   return listener;
+};
+
+/**
+ * Method to run after core update.
+ * data will be the full GOKb object.
+ */
+GOKb.preCoreUpdate = function(data){
+  GOKb.updateSystemNotifications(data.core);
 };
 
 /**

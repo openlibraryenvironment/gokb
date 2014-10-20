@@ -161,8 +161,14 @@ public class GOKbService extends A_ScheduledUpdates {
     return capabilities;
   }
 
+  private File directory;
+  public File getDirectory () {
+    return directory;
+  }
+
   public GOKbService (String URL, File directory) throws IOException, JSONException {
     this.URL = URL;
+    this.directory = directory;
     this.settings = new ServiceSettings(directory);
     
     logger.debug("Initialising service at " + URL);
@@ -263,7 +269,7 @@ public class GOKbService extends A_ScheduledUpdates {
       res = res.getJSONObject("result");
       
       // Set the available version.
-      availableModuleVersion = res.optString("latest-version");
+      availableModuleVersion = res.getString("latest-version");
 
       // Return whether there is an update.
       return res.getBoolean("update-available");
