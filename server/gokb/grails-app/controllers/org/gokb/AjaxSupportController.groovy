@@ -321,7 +321,17 @@ class AjaxSupportController {
     else {
       log.error("Unable to resolve context obj : ${params.__context}");
     }
-    redirect(url: request.getHeader('referer'))
+   
+    def redirect_to = request.getHeader('referer')
+
+    if ( params.redirect ) {
+      redirect_to = params.redirect
+    }
+    else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+      redirect_to = "${redirect_to}#${params.fragment}"
+    }
+
+    redirect(url: redirect_to)
   }
 
   def resolveOID2(oid) {

@@ -437,7 +437,7 @@
 
     <div class="tab-pane" id="identifiers">
       <g:render template="combosByType" contextPath="../apptemplates"
-        model="${[d:d, property:'ids', cols:[
+        model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
     </div>
