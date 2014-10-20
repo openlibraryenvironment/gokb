@@ -77,7 +77,7 @@
         <div class="sidebar-nav navbar-collapse">
           <ul class="nav" id="side-menu">
             <sec:ifLoggedIn>
-              <li class="${params?.controller == "home" && params?.action == 'home' ? 'active' : ''}"><g:link controller="home"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
+              <li class="${params?.controller == "home" && (params?.action == 'index' || params?.action == 'dashboard') ? 'active' : ''}"><g:link controller="home"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
               <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>Search<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
                   <li class="sidebar-search">
