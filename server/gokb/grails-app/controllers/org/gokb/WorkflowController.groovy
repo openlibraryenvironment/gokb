@@ -987,6 +987,8 @@ class WorkflowController {
       response.contentType = "text/tsv"
       def out = response.outputStream
       out.withWriter { writer ->
+        
+        def sanitize = { it ? it.trim() : "" }
 
         packages_to_export.each { pkg ->
 
@@ -1007,18 +1009,18 @@ class WorkflowController {
 
           tipps.each { tipp_id ->
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-            writer.write( tipp.id + '\t' + tipp.url + '\t' + tipp.title.id + '\t' + tipp.title.name + '\t' +
-                          tipp.status.value + '\t' + tipp.title.getCurrentPublisher?.name + '\t' + tipp.title.imprint?.name + '\t' + tipp.title.publishedFrom + '\t' +
-                          tipp.title.publishedTo + '\t' + tipp.title.medium?.value + '\t' + tipp.title.oa?.status + '\t' +
-                          tipp.title.continuingSeries?.value + '\t' + 
-                          'SteveToFix\t' + // tipp.title.getIdentifierValue('ISSN') + '\t' +
-                          'SteveToFix\t' + //tipp.title.getIdentifierValue('eISSN') + '\t' 
-                          pkg.name + '\t' + pkg.id + '\t' + '\t' + tipp.hostPlatform.name + '\t' +
-                          tipp.hostPlatform.primaryUrl + '\t' + tipp.hostPlatform.id + '\t\t' + tipp.status?.value + '\t' + tipp.accessStartDate  + '\t' +
-                          tipp.accessEndDate + '\t' + tipp.startDate + '\t' + tipp.startVolume + '\t' + tipp.startIssue + '\t' + tipp.endDate + '\t' +
-                          tipp.endVolume + '\t' + tipp.endIssue + '\t' + tipp.embargo + '\t' + tipp.coverageNote + '\t' + tipp.hostPlatform.primaryUrl + '\t' +
-                          tipp.format?.value + '\t' + tipp.paymentType?.value + '\t' + tipp.delayedOA?.value + '\t' + tipp.delayedOAEmbargo + '\t' +
-                          tipp.hybridOA?.value + '\t' + tipp.hybridOAUrl +
+            writer.write( sanitize( tipp.id ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.id ) + '\t' + sanitize( tipp.title.name ) + '\t' +
+                          sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
+                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
+                          sanitize( tipp.title.continuingSeries?.value ) + '\t' + 
+                          '\t' + sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
+                          '\t' + sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                          sanitize( pkg.name ) + '\t' + sanitize( pkg.id ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
+                          sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.id ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
+                          sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
+                          sanitize( tipp.endVolume ) + '\t' + sanitize( tipp.endIssue ) + '\t' + sanitize( tipp.embargo ) + '\t' + sanitize( tipp.coverageNote ) + '\t' + sanitize( tipp.hostPlatform.primaryUrl ) + '\t' +
+                          sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) + '\t' + sanitize( tipp.delayedOA?.value ) + '\t' + sanitize( tipp.delayedOAEmbargo ) + '\t' +
+                          sanitize( tipp.hybridOA?.value ) + '\t' + sanitize( tipp.hybridOAUrl ) +
                           '\n');
             tipp.discard();
           }
