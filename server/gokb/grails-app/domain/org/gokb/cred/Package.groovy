@@ -25,6 +25,7 @@ class Package extends KBComponent {
   RefdataValue global
   RefineProject lastProject
   String listVerifier
+  User userListVerifier
   Date listVerifiedDate
   
   private static refdataDefaults = [
@@ -69,6 +70,7 @@ class Package extends KBComponent {
     paymentType column:'pkg_payment_type_rv_fk'
     global column:'pkg_global_rv_fk'
     listVerifier column:'pkg_list_verifier'
+    userListVerifier column:'pkg_list_verifier_user_fk'
   }
 
   static constraints = {
@@ -115,11 +117,31 @@ class Package extends KBComponent {
     }
   }
   
+
+  public void retire (context) {
+    // Call the delete method on the superClass.
+    this.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    this.save();
+
+    // Delete the tipps too as a TIPP should not exist without the associated,
+    // package.
+    def tipps = getTipps()
+
+    tipps.each { def tipp ->
+      tipp = deproxy(tipp)
+      tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+      tipp.save()
+    }
+  }
+
+
   @Transient
   def availableActions() {
     [
       [code:'method::deleteSoft', label:'Delete (with associated TIPPs)'],
-      [code:'method::registerWebhook', label:'Register Web Hook']
+      [code:'method::retire', label:'Retire Package (with associated TIPPs)'],
+      [code:'exportPackage', label:'TSV Export'],
+      // [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }
 

@@ -9,28 +9,27 @@ import javax.persistence.Transient
 class RefineProject extends KBComponent {
   
   public enum Status {
-  CHECKED_IN      ("Checked In"),
-  CHECKED_OUT      ("Checked Out"),
-  INGESTING      ("Ingesting"),
-  INGESTED      ("Ingested"),
-  INGEST_FAILED    ("Ingest Failed"),
-  PARTIALLY_INGESTED  ("Partialy Ingested")
+    CHECKED_IN      ("Checked In"),
+    CHECKED_OUT      ("Checked Out"),
+    INGESTING      ("Ingesting"),
+    INGESTED      ("Ingested"),
+    INGEST_FAILED    ("Ingest Failed"),
+    PARTIALLY_INGESTED  ("Partialy Ingested")
   
-  private name
+    private name
   
-  private Status (String name) {
-    this.name = name
-  }
+    private Status (String name) {
+      this.name = name
+    }
   
-  public String getName () {
-    name
-  }
+    public String getName () {
+      name
+    }
   }
 
    String description
      Date modified
    String file
-//  Boolean checkedIn
       User lastCheckedOutBy
       User modifiedBy
       User createdBy
@@ -46,8 +45,6 @@ class RefineProject extends KBComponent {
    String accessUrl
    String dataUrl
 
-   // UpdateStatus - Full/Partial
-   
    // The rows skipped in the ingest process.
    Set<String> skippedTitles = []
    

@@ -81,7 +81,6 @@
 	<g:if test="${ d.isEditable() }">
 		<li><a href="#tippcoverage" data-toggle="tab">Coverage</a></li>
 	</g:if>
-	<li><a href="#tippopenaccess" data-toggle="tab">Open Access</a></li>
 	<li><a href="#tipplists" data-toggle="tab">Lists</a></li>
 	<g:if test="${ d.isEditable() }">
 		<li><a href="#addprops" data-toggle="tab">Additional
@@ -172,40 +171,6 @@
 		</div>
 	</g:if>
 
-	<div class="tab-pane" id="tippopenaccess">
-		<dl class="dl-horizontal">
-			<dt>
-				<g:annotatedLabel owner="${d}" property="delayedOA">Delayed OA ?</g:annotatedLabel>
-			</dt>
-			<dd>
-				<g:xEditableRefData owner="${d}" field="delayedOA"
-					config="TitleInstancePackagePlatform.DelayedOA" />
-			</dd>
-
-			<dt>
-				<g:annotatedLabel owner="${d}" property="delayedOAEmbargo">Delayed OA Embargo</g:annotatedLabel>
-			</dt>
-			<dd>
-				<g:xEditable class="ipe" owner="${d}" field="delayedOAEmbargo" />
-			</dd>
-
-			<dt>
-				<g:annotatedLabel owner="${d}" property="hybridOA">Hybrid OA ?</g:annotatedLabel>
-			</dt>
-			<dd>
-				<g:xEditableRefData owner="${d}" field="hybridOA"
-					config="TitleInstancePackagePlatform.HybridOA" />
-			</dd>
-
-			<dt>
-				<g:annotatedLabel owner="${d}" property="hybridOAUrl">Hybrid OA URL</g:annotatedLabel>
-			</dt>
-			<dd>
-				<g:xEditable class="ipe" owner="${d}" field="hybridOAUrl" />
-			</dd>
-		</dl>
-	</div>
-
 	<div class="tab-pane" id="tipplists"></div>
 
 	<g:if test="${ d.isEditable() }">
@@ -215,8 +180,7 @@
 		</div>
 
 		<div class="tab-pane" id="review">
-			<g:render template="revreqtab" contextPath="../apptemplates"
-				model="${[d:d]}" />
+			<g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
 		</div>
 	</g:if>
 </div>

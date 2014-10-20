@@ -111,7 +111,14 @@ public class HQLBuilder {
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
-    result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,[max: result.max, offset: result.offset])
+
+    def query_params = [:]
+    if ( result.max )
+      query_params.max = result.max;
+    if ( result.offset )
+      query_params.offset = result.offset
+
+    result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,query_params);
 
     // log.debug("Result of count query: ${result.reccount}");
   }
@@ -249,8 +256,12 @@ public class HQLBuilder {
         break;
       case 'ilike':
         hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}lower(${scoped_property}) like :${crit.defn.qparam}");
+        def base_value = crit.value.toLowerCase()
+        if ( crit.defn.contextTree.normalise == true ) {
+          base_value = org.gokb.GOKbTextUtils.normaliseString(base_value)
+        }
         hql_builder_context.bindvars[crit.defn.qparam] = ( ( crit.defn.contextTree.wildcard=='L' || crit.defn.contextTree.wildcard=='B') ? '%' : '') +
-                                                         crit.value.toLowerCase() +
+                                                         base_value +
                                                          ( ( crit.defn.contextTree.wildcard=='R' || crit.defn.contextTree.wildcard=='B') ? '%' : '')
       default:
         log.error("Unhandled comparator '${crit.defn.contextTree.comparator}'. crit: ${crit}");

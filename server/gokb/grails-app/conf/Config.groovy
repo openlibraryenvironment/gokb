@@ -164,7 +164,7 @@ validation.regex.issn = "^\\d{4}\\-\\d{3}[\\dX]\$"
 validation.regex.isbn = "^(97(8|9))?\\d{9}[\\dX]\$"
 validation.regex.uri = "^(f|ht)tp(s?):\\/\\/([a-zA-Z\\d\\-\\.])+(:\\d{1,4})?(\\/[a-zA-Z\\d\\-\\._~\\/\\?\\#\\[\\]@\\!\\%\\:\\\$\\&'\\(\\)\\*\\+,;=]*)?\$"
 validation.regex.date = "^[1-9][0-9]{3,3}\\-(0[1-9]|1[0-2])\\-(0[1-9]|[1-2][0-9]|3[0-1])\$"
-validation.regex.kbartembargo = "^[RP]\\d+[DMY]\$"
+validation.regex.kbartembargo = "^([RP]\\d+[DMY](;?))+\$"
 validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|\\Qabstracts\\E)\$"
 
 validation.rules = [
@@ -485,7 +485,7 @@ globalSearchTemplates = [
           prompt:'Name of Package',
           qparam:'qp_name',
           placeholder:'Package Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'normname', 'wildcard':'B', normalise:true]
         ]
       ],
       qbeGlobals:[
@@ -743,6 +743,7 @@ globalSearchTemplates = [
         [heading:'Raised By', property:'raisedBy?.username'],
         [heading:'Allocated To', property:'allocatedTo?.username'],
         [heading:'Timestamp', property:'dateCreated'],
+        [heading:'Project', property:'refineProject?.name', link:[controller:'resource', action:'show', id:'x.r.refineProject?.class?.name+\':\'+x.r.refineProject?.id']],
       ]
     ]
   ],

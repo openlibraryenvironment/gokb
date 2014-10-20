@@ -28,7 +28,15 @@ class GOKbTextUtils {
     return 0
   }
   
+  public static String generateKey(String s) {
+    return internalNormalise(s,true)
+  }
+
   public static String normaliseString(String s) {
+    return internalNormalise(s,false)
+  }
+
+  private static String internalNormalise(String s, boolean do_sort) {
 
 	// Ensure s is not null.
 	if (!s) s = "";
@@ -42,7 +50,10 @@ class GOKbTextUtils {
 
 	// Break apart the string.
 	String[] components = s.split("\\s");
-	Arrays.sort(components);
+
+        // II: Don't sort - it's madness
+        if ( do_sort )
+	  Arrays.sort(components);
 
 	// Re-piece the array back into a string.
 	String normstring = "";
@@ -54,7 +65,7 @@ class GOKbTextUtils {
 	  }
 	}
 
-	normstring.trim();
+	normstring.trim().replaceAll(" +", " ")
   }
   
   public static double cosineSimilarity(String s1, String s2, int degree = 2) {

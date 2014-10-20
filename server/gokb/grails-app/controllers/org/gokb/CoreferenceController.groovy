@@ -23,41 +23,58 @@ class CoreferenceController {
         eq('value',params.idpart)
       }
 
-      def int_id = q.get()
+      def matched_ids = q.list()
+      log.debug("Query matched ${matched_ids.size()} identifers");
 
-      if ( int_id ) {
-        log.debug("Recognised identifier.. find all occurrences")
+      result.matched_identifiers = []
+      if ( matched_ids ) {
+        matched_ids.each { int_id ->
+          def matched_id = [:]
+          log.debug("Recognised identifier.. find all occurrences")
 		
-		ComboCriteria crit = ComboCriteria.createFor(KBComponent.createCriteria())
+  	  ComboCriteria crit = ComboCriteria.createFor(KBComponent.createCriteria())
 		
-        result.identifier = int_id
-        result.records = crit.list {
-		  crit.add ("ids.id", "eq", int_id.id)
-		}
-		result.count = result.records.size()
-		
-        log.debug("result: ${result.identifier} ${result.count} ${result.records}");
+          matched_id.identifier = int_id
+          matched_id.records = crit.list {
+		crit.add ("ids.id", "eq", int_id.id)
+	  }
+	  matched_id.count = matched_id.records.size()
+
+	  result.matched_identifiers.add(matched_id);
+        }
+	result.count = result.matched_identifiers.size()
       }
+      log.debug("result: ${result}");
     }
 
     def api_response;
+
     if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
       api_response = ['requestedNS':params.nspart,
                        'requestedID':params.idpart, 
-                       'gokbIdentifier': result.identifier ? "${result.identifier.class.name}:${result.identifier.id}" : "UNKNOWN",
                        'count':result.count ?: 0,
-                       'records':[]]
-      result.records?.each { r ->
-        def rec_identifiers = []
-        rec_identifiers.add(['namespace':'gokb','identifier':"${result.identifier.class.name}:${result.identifier.id}"])
-        r.ids.each { rid ->
-          rec_identifiers.add(['namespace':rid.namespace.value,'identifier':rid.value])
+                       'matchedIdentifiers':[]]
+
+      result.matched_identifiers?.each { r ->
+        def rec_identifier = ['namespace':'gokb',
+                              'internalIdentifier':"${r.identifier.class.name}:${r.identifier.id}",
+                              'namespace':r.identifier.namespace.value,
+                              'value':r.identifier.value,
+                              'linkedComponents':[]]
+
+        r.records.each { cr ->
+          def rec_identifiers = []
+          rec_identifier.linkedComponents.add(['type':cr.class.name,
+                                         'id':cr.id,
+                                         'name':cr.name,
+                                         'gokbIdentifier':"${cr.class.name}:${cr.id}",
+                                         'sameAs':rec_identifiers])
+
+          cr.ids.each { rid ->
+            rec_identifiers.add(['namespace':rid.namespace.value,'identifier':rid.value])
+          }
         }
-        api_response.records.add(['type':r.class.name,
-                                   'id':r.id,
-                                   'name':r.name,
-                                   'gokbIdentifier':"${r.class.name}:${r.id}",
-                                   'sameAs':rec_identifiers])
+        api_response.matchedIdentifiers.add(rec_identifier)
       }
     }
 

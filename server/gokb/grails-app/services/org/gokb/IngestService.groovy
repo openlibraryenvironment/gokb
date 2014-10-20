@@ -52,7 +52,8 @@ class IngestService {
   //  public static final String PRINT_IDENTIFIER = "${IDENTIFIER_PREFIX}issn"
   //  public static final String ONLINE_IDENTIFIER = "${IDENTIFIER_PREFIX}eissn"
   public static final String HOST_PLATFORM_NAME = 'platform.host.name'
-  public static final String HOST_PLATFORM_URL = 'platform.host.url'
+  // public static final String HOST_PLATFORM_URL = 'platform.host.url'
+  public static final String HOST_PLATFORM_URL = 'tipp.url'
 
   public static final String COVERAGE_DEPTH = 'CoverageDepth'
   public static final String COVERAGE_NOTES = 'CoverageNotes'
@@ -69,6 +70,7 @@ class IngestService {
   public static final String PRIMARY_TIPP = "PrimaryTIPP"
   public static final String TIPP_PAYMENT = "TIPPPayment"
   public static final String TIPP_STATUS = "TIPPStatus"
+  public static final String TITLE_OA_STATUS = "title.oastatus"
 
   /**
    *  Validate a parsed project. 
@@ -80,7 +82,7 @@ class IngestService {
     def result = Validation.doValidate(project_data)
 
     if ( result.messages?.size() > 0 ) {
-      log.error("validation has messages: a failure: ${result.messages}")
+      log.debug("validation has messages: a failure: ${result.messages}")
       // TODO: This needs fixing. The validity should be determined by each rule executing.
       // Warnings should probably always return true to keep validation halting on warnings.
       // Shouldn't have to go through the messages here again.
@@ -379,7 +381,7 @@ class IngestService {
     }
   }
 
-  private handleNonePresentTipps(old_tipps, user) {
+  private handleNonePresentTipps(old_tipps, user, project = null) {
 
     // Soft delete the TIPPs not updated here.
     RefineProject.withTransaction { t ->
@@ -395,7 +397,7 @@ class IngestService {
                 tipp,
                 "TIPP Not present when performing package update",
                 "This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
-                user
+                user, project
                 )
 
             // Save.
@@ -437,11 +439,22 @@ class IngestService {
             jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
             getRowValue(datarow,col_positions,PUBLISHER_NAME),
             ids,
-            user
+            user,
+            RefineProject.get(project_id)
           );
 
           // If we match a title then ingest...
           if (title_info != null) {
+
+            // Set TITLE OA STATUS if it's not null and different to the current value.. This might cause title OA status
+            // to oscillate between different values - raised as a concern but dismissed as unlikely in weekly calls.
+            def title_oa_status = datarow.cells[col_positions[TITLE_OA_STATUS]]
+            if ( title_oa_status != null ) {
+              if ( title_info.oa_status?.value != title_oa_status ) {
+                //titleOAStatus:getRowRefdataValue('TitleInstance.OAStatus', datarow, col_positions, TITLE_OA_STATUS)
+                title_info.oa_status = RefdataCategory.lookupOrCreate('TitleInstance.OAStatus', title_oa_status)
+              }
+            }
 
             // Additional TI properties.
             for (apd in gokb_additional_ti_props) {
@@ -697,11 +710,11 @@ class IngestService {
         }
       }
 
-      // Handle none-present TIPPs
-      handleNonePresentTipps(old_tipps, user)
-
       // Read in the project.
       RefineProject project = RefineProject.get(project_id)
+
+      // Handle none-present TIPPs
+      handleNonePresentTipps(old_tipps, user, project)
 
       // If any rows with data have been skipped then we need to set them against the,
       // project here, for reporting back into refine.

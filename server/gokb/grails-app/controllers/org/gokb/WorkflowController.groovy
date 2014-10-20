@@ -4,20 +4,24 @@ import org.gokb.cred.*
 import grails.plugins.springsecurity.Secured
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
+import grails.converters.JSON
 
 class WorkflowController {
 
+  def grailsApplication
   def genericOIDService
   def springSecurityService
 
   def actionConfig = [
     'method::deleteSoft':[actionType:'simple'],
     'title::transfer':      [actionType:'workflow', view:'titleTransfer'],
+    'title::change':      [actionType:'workflow', view:'titleChange'],
     'platform::replacewith':[actionType:'workflow', view:'platformReplacement'],
     'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
     'method::RRClose':[actionType:'simple' ],
-    'title::reconcile':[actionType:'workflow', view:'titleReconcile' ]
+    'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
+    'exportPackage':[actionType:'process', method:'packageTSVExport']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -25,16 +29,48 @@ class WorkflowController {
     log.debug("WorkflowController::action(${params})");
     def result = [:]
     result.ref=request.getHeader('referer')
+
     def action_config = actionConfig[params.selectedBulkAction];
+
     if ( action_config ) {
 
       result.objects_to_action = []
 
-      params.each { p ->
-        if ( ( p.key.startsWith('bulk:') ) && ( p.value ) && ( p.value instanceof String ) ) {
-          def oid_to_action = p.key.substring(5);
-          log.debug("Action oid: ${oid_to_action}");
-          result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+      if ( params.batch_on == 'all' ) {
+        log.debug("Requested batch_on all.. so evaluate the query and do the right thing...");
+        if ( params.qbe ) {
+          def qresult = [:]
+          if ( params.qbe.startsWith('g:') ) {
+            // Global template, look in config
+            def global_qbe_template_shortcode = params.qbe.substring(2,params.qbe.length());
+            // log.debug("Looking up global template ${global_qbe_template_shortcode}");
+            qresult.qbetemplate = grailsApplication.config.globalSearchTemplates[global_qbe_template_shortcode]
+            // log.debug("Using template: ${result.qbetemplate}");
+          }
+
+          // Looked up a template from somewhere, see if we can execute a search
+          if ( qresult.qbetemplate ) {
+            log.debug("Execute query");
+            // doQuery(result.qbetemplate, params, result)
+            def target_class = grailsApplication.getArtefact("Domain",qresult.qbetemplate.baseclass);
+            com.k_int.HQLBuilder.build(grailsApplication, qresult.qbetemplate, params, qresult, target_class, genericOIDService)
+
+            qresult.recset.each {
+              def oid_to_action = "${it.class.name}:${it.id}"
+              log.debug("Action oid: ${oid_to_action}");
+              result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+            }
+          }
+        }
+      }
+      else {
+        log.debug("Assuming standard selection of rows to action");
+        params.each { p ->
+          if ( ( p.key.startsWith('bulk:') ) && ( p.value ) && ( p.value instanceof String ) ) {
+            def oid_to_action = p.key.substring(5);
+            log.debug("Action oid: ${oid_to_action}");
+            result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
+          }
         }
       }
 
@@ -89,6 +125,9 @@ class WorkflowController {
         case 'workflow':
           render view:action_config.view, model:result
           break;
+        case 'process':
+          this."${action_config.method}"(result.objects_to_action);
+          break;
         default:
           flash.message="Invalid action type information: ${action_config.actionType}";
           break;
@@ -102,8 +141,83 @@ class WorkflowController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def processTitleChange() {
-    log.debug("processTitleChange");
+  def startTitleChange() {
+
+    log.debug("startTitleChange(${params})");
+
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
+    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
+
+    def titleChangeData = [:]
+    titleChangeData.tipps = [:]
+    titleChangeData.beforeTitles = params.list('beforeTitles')
+    titleChangeData.afterTitles = params.list('afterTitles')
+    titleChangeData.eventDate = params.list('eventDate')
+    def first_title = null
+
+    def sw = new StringWriter();
+
+    // Iterate through before titles.. For each one of these will will close out any existing tipps
+    params.list('beforeTitles').each { title_oid ->
+      log.debug("process ${title_oid}");
+      if ( first_title == null ) {
+        first_title = title_oid
+      }
+      else {
+        sw.write(', ');
+      }
+
+      def title_obj = genericOIDService.resolveOID2(title_oid)
+      sw.write(title_obj.name);
+
+      def tipps = TitleInstancePackagePlatform.executeQuery(
+                         'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ?',
+                         [title_obj, 'Deleted','TitleInstance.Tipps']);
+      tipps.each { tipp ->
+        log.debug("Add tipp to discontinue ${tipp}");
+        titleChangeData.tipps[tipp.id] = [newtipps:[]]
+
+        params.list('afterTitles').each { new_title_oid ->
+          def new_title_obj = genericOIDService.resolveOID2(new_title_oid)
+          def new_tipp_info = [
+                               title_id:new_title_obj.id,
+                               package_id:tipp.pkg.id,
+                               platform_id:tipp.hostPlatform.id,
+                               startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+                               startVolume:tipp.startVolume,
+                               startIssue:tipp.startIssue,
+                               endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+                               endVolume:tipp.endVolume,
+                               endIssue:tipp.endIssue]
+          titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
+        }
+      }
+    }
+
+    def builder = new JsonBuilder()
+    builder(titleChangeData)
+
+    def new_activity = new Activity(
+                                    activityName:"Title Change ${sw.toString()}",
+                                    activityData:builder.toString(),
+                                    owner:request.user,
+                                    status:active_status, 
+                                    type:transfer_type).save()
+
+    log.debug("redirect to edit activity (Really title) ${builder.toString()}");
+    
+    // if ( first_title )
+    //   redirect(controller:'resource', action:'show', id:first_title);
+    // else
+    //   redirect(controller:'home', action:'index');
+
+    redirect(action:'editTitleChange',id:new_activity.id)
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def startTitleTransfer() {
+    log.debug("startTitleTransfer");
     def user = springSecurityService.currentUser
     def result = [:]
     result.titles = []
@@ -137,8 +251,10 @@ class WorkflowController {
           result.titles.add(title_instance) 
           titleTransferData.title_ids.add(title_instance.id)
           title_instance.tipps.each { tipp ->
-            result.tipps.add(tipp)
-            titleTransferData.tipps[tipp.id] = [newtipps:[]]
+            if ( tipp.status?.value != 'Deleted' ) {
+              result.tipps.add(tipp)
+              titleTransferData.tipps[tipp.id] = [newtipps:[]]
+            }
           }
         }
         else {
@@ -147,9 +263,12 @@ class WorkflowController {
       }
     }
 
+    log.debug("loaded Title Data");
+
     result.newPublisher = genericOIDService.resolveOID2(params.title)
     titleTransferData.newPublisherId = result.newPublisher.id
 
+    log.debug("Build title transfer record");
     def builder = new JsonBuilder()
     builder(titleTransferData)
 
@@ -157,6 +276,7 @@ class WorkflowController {
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleTransfer').save()
 
 
+    log.debug("Create activity");
     def new_activity = new Activity(
                                     activityName:"Title transfer ${sw.toString()} to ${result.newPublisher.name}",
                                     activityData:builder.toString(),
@@ -164,6 +284,7 @@ class WorkflowController {
                                     status:active_status, 
                                     type:transfer_type).save()
     
+    log.debug("Redirect to edit title transfer activity");
     redirect(action:'editTitleTransfer',id:new_activity.id)
   }
 
@@ -171,10 +292,29 @@ class WorkflowController {
   def editTitleTransfer() {
     log.debug("editTitleTransfer() - ${params}");
 
+    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def activity_record = Activity.get(params.id)
     def activity_data = new JsonSlurper().parseText(activity_record.activityData)
 
-    log.debug("Activity record: ${activity_data}");
+    // Pull in all updated tipp properties like start volumes, etc.
+    request.getParameterNames().each { pn ->
+      def value = request.getParameter(pn)
+      if ( pn.startsWith('_tippdata') ) {
+        def key_components = pn.split(':');
+        if (  activity_data.tipps[key_components[1]] != null ) {
+          if ( ( value != null ) && ( value.length() > 0 ) ) {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
+          }
+          else {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
+          }
+        }
+        else {
+          log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}");
+        }
+      }
+    }
 
     if ( params.addTransferTipps ) {
       // Add Transfer tipps
@@ -188,6 +328,7 @@ class WorkflowController {
               def tipp_id = p.key.substring(6)
               log.debug("Add new tipp for ${new_tipp_package}, ${new_tipp_platform} to replace ${tipp_id}");
               def old_tipp = KBComponent.get(tipp_id);
+              log.debug("Old Tipp: ${old_tipp}");
               def tipp_info = activity_data.tipps[tipp_id]
 
               if ( tipp_info != null ) {
@@ -195,16 +336,18 @@ class WorkflowController {
                 if ( tipp_info.newtipps == null )
                   tipp_info.newtipps = [:]
 
-                tipp_info.newtipps.add([
+                def new_tipp_info = [
                                         title_id:old_tipp.title.id, 
                                         package_id:new_tipp_package.id, 
                                         platform_id:new_tipp_platform.id,
-                                        start_date:old_tipp.start_date,
-                                        start_volume:old_tipp.start_volume,
-                                        start_issue:old_tipp.start_issue,
-                                        end_date:old_tipp.end_date,
-                                        end_volume:old_tipp.end_volume,
-                                        end_issue:old_tipp.end_issue])
+                                        startDate:old_tipp.startDate ? sdf.format(old_tipp.startDate) : null,
+                                        startVolume:old_tipp.startVolume,
+                                        startIssue:old_tipp.startIssue,
+                                        endDate:old_tipp.endDate? sdf.format(old_tipp.endDate) : null,
+                                        endVolume:old_tipp.endVolume,
+                                        endIssue:old_tipp.endIssue]
+                log.debug("new_tipp_info :: ${new_tipp_info}");
+                tipp_info.newtipps.add(new_tipp_info);
               }
               else {
                 log.error("Unable to find key (${tipp_id}) In map: ${activity_data.tipps}");
@@ -226,17 +369,41 @@ class WorkflowController {
           log.error("Add transfer tipps but package or platform not set");
       }
     }
+    else if ( params.update ) {
+      log.debug("Update...");
+    }
+    else if ( params.remove ) {
+      log.debug("remove... ${params.remove}");
+      def remove_components = params.remove.split(':');
+      activity_data.tipps[remove_components[0]].newtipps.remove(Integer.parseInt(remove_components[1]))
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+    }
     else if ( params.process ) {
       log.debug("Process...");
       processTitleTransfer(activity_record, activity_data);
-      redirect(controller:'home', action:'index');
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
     }
     else if ( params.abandon ) {
       log.debug("**ABANDON**...");
       activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
       activity_record.save()
-      redirect(controller:'home', action:'index');
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
     }
+
+    log.debug("Processing...");
 
     def result = [:]
     result.titles = []
@@ -246,6 +413,7 @@ class WorkflowController {
     activity_data.title_ids.each { tid ->
       result.titles.add(TitleInstance.get(tid))
     }
+
 
     activity_data.tipps.each { tipp_info ->
       def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
@@ -262,18 +430,22 @@ class WorkflowController {
                         endVolume:tipp_object.endVolume,
                         endIssue:tipp_object.endIssue
                         ])
+      int seq=0;
       tipp_info.value.newtipps.each { newtipp_info ->
         result.tipps.add([
                           type:'NEW',
+                          parent:tipp_object.id,
+                          seq:seq++,
                           title:KBComponent.get(newtipp_info.title_id),
                           pkg:KBComponent.get(newtipp_info.package_id),
                           hostPlatform:KBComponent.get(newtipp_info.platform_id),
-                          startDate:newtipp_info.startDate,
+                          startDate: newtipp_info.startDate,
                           startVolume:newtipp_info.startVolume,
                           startIssue:newtipp_info.startIssue,
                           endDate:newtipp_info.endDate,
                           endVolume:newtipp_info.endVolume,
-                          endIssue:newtipp_info.endIssue
+                          endIssue:newtipp_info.endIssue,
+                          review:newtipp_info.review,
                           ])
       }
     }
@@ -284,8 +456,193 @@ class WorkflowController {
     result
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def editTitleChange() {
+    log.debug("editTitleChange() - ${params}");
+
+    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def activity_record = Activity.get(params.id)
+    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
+
+    // Pull in all updated tipp properties like start volumes, etc.
+    request.getParameterNames().each { pn ->
+      def value = request.getParameter(pn)
+      if ( pn.startsWith('_tippdata') ) {
+        def key_components = pn.split(':');
+        if (  activity_data.tipps[key_components[1]] != null ) {
+          if ( ( value != null ) && ( value.length() > 0 ) ) {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
+          }
+          else {
+            activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = null
+          }
+        }
+        else {
+          log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}");
+        }
+      }
+    }
+
+    if ( params.update ) {
+      log.debug("Update...");
+    }
+    else if ( params.remove ) {
+      log.debug("remove... ${params.remove}");
+      def remove_components = params.remove.split(':');
+      activity_data.tipps[remove_components[0]].newtipps.remove(Integer.parseInt(remove_components[1]))
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+    }
+    else if ( params.process ) {
+      log.debug("Process...");
+      processTitleChange(activity_record, activity_data);
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+    else if ( params.abandon ) {
+      log.debug("**ABANDON**...");
+      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
+      activity_record.save()
+      if ( activity_data.title_ids?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+
+    log.debug("Processing...");
+
+    def result = [:]
+    result.titles = []
+    result.tipps = []
+    result.d = activity_record
+
+    activity_data.title_ids.each { tid ->
+      result.titles.add(TitleInstance.get(tid))
+    }
+
+
+    activity_data.tipps.each { tipp_info ->
+      def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
+      result.tipps.add([
+                        id:tipp_object.id,
+                        type:'CURRENT',
+                        title:tipp_object.title, 
+                        pkg:tipp_object.pkg, 
+                        hostPlatform:tipp_object.hostPlatform,
+                        startDate:tipp_object.startDate,
+                        startVolume:tipp_object.startVolume,
+                        startIssue:tipp_object.startIssue,
+                        endDate:tipp_object.endDate,
+                        endVolume:tipp_object.endVolume,
+                        endIssue:tipp_object.endIssue
+                        ])
+      int seq=0;
+      tipp_info.value.newtipps.each { newtipp_info ->
+        result.tipps.add([
+                          type:'NEW',
+                          parent:tipp_object.id,
+                          seq:seq++,
+                          title:KBComponent.get(newtipp_info.title_id),
+                          pkg:KBComponent.get(newtipp_info.package_id),
+                          hostPlatform:KBComponent.get(newtipp_info.platform_id),
+                          startDate: newtipp_info.startDate,
+                          startVolume:newtipp_info.startVolume,
+                          startIssue:newtipp_info.startIssue,
+                          endDate:newtipp_info.endDate,
+                          endVolume:newtipp_info.endVolume,
+                          endIssue:newtipp_info.endIssue,
+                          review:newtipp_info.review,
+                          ])
+      }
+    }
+
+    result.id = params.id
+
+    result
+  }
+
+
+  def processTitleChange(activity_record, activity_data) {
+
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+
+    activity_data.tipps.each { tipp_map_entry ->
+      tipp_map_entry.value.newtipps.each { newtipp ->
+        log.debug("Process new tipp : ${newtipp}");
+
+        def new_package = Package.get(newtipp.package_id)
+        def new_platform = Platform.get(newtipp.platform_id)
+
+        // def new_tipp = new TitleInstancePackagePlatform(
+        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
+                                   pkg:new_package,
+                                   hostPlatform:new_platform,
+                                   title:current_tipp.title,
+                                   startDate: ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null,
+                                   startVolume:newtipp.startVolume,
+                                   startIssue:newtipp.startIssue,
+                                   endDate: (newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null,
+                                   endVolume:newtipp.endVolume,
+                                   endIssue:newtipp.endIssue]).save()
+
+        if ( newtipp.review == 'on' ) {
+          ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
+        }
+      }
+
+      // Retire the tipp if
+      if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
+        log.debug("Retiring old tipp");
+        current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
+        }
+      }
+      else {
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
+        }
+      }
+    }
+
+
+    // Default to today if not set
+    def event_date = activityData.eventDate ?: sdf.format(new Date());
+
+    // Create title history event
+    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:sdf.parse(event_date)).save()
+
+    activityData.afterTitles?.each { at ->
+      def component = genericOIDService.resolveOID2(at)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'out').save()
+    }
+
+    activityData.beforeTitles?.each { bt ->
+      def component = genericOIDService.resolveOID2(bt)
+      def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                    participant:component,
+                                                                    participantRole:'in').save()
+    }
+
+
+    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
+    activity_record.save()
+  }
+
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
 
     def publisher = Org.get(activity_data.newPublisherId);
 
@@ -299,7 +656,9 @@ class WorkflowController {
 
     // Step two : Process TIPP adjustments
     activity_data.tipps.each { tipp_map_entry ->
+
       def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
+
       log.debug("Processing current tipp : ${current_tipp.id}");
 
       tipp_map_entry.value.newtipps.each { newtipp ->
@@ -313,15 +672,33 @@ class WorkflowController {
                                    pkg:new_package,
                                    hostPlatform:new_platform,
                                    title:current_tipp.title,
-                                   startDate:current_tipp.startDate,
-                                   startVolume:current_tipp.startVolume,
-                                   startIssue:current_tipp.startIssue,
-                                   endDate:current_tipp.endDate,
-                                   endVolume:current_tipp.endVolume,
-                                   endIssue:current_tipp.endIssue]).save()
+                                   startDate: ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null, 
+                                   startVolume:newtipp.startVolume,
+                                   startIssue:newtipp.startIssue,
+                                   endDate: (newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null,
+                                   endVolume:newtipp.endVolume,
+                                   endIssue:newtipp.endIssue]).save()
+
+        if ( newtipp.review == 'on' ) {
+          log.debug("User requested a review request be generated for this new tipp");
+          ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title transfer cause this new tipp to be created', request.user)
+        }
       }
 
-      current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+      // Retire the tipp if
+      if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
+        log.debug("Retiring old tipp");
+        current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
+        }
+      }
+      else {
+        if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
+          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
+        }
+      }
+
       current_tipp.save()
     }
 
@@ -525,5 +902,73 @@ class WorkflowController {
       he.delete(flush:true)
     }
     redirect(url: result.ref)
+  }
+
+  private def packageTSVExport(packages_to_export) {
+    def filename = null;
+
+    if ( packages_to_export.size() == 0 ) 
+      return
+
+    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def export_date = sdf.format(new java.util.Date());
+
+    if ( packages_to_export.size() == 1 ) {
+      filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
+    }
+    else {
+      filename = "GOKb Export : multiple_packages : ${export_date}.tsv"
+    }
+
+    try {
+      response.setHeader("Content-disposition", "attachment; filename=${filename}")
+      response.contentType = "text/tsv"
+      def out = response.outputStream
+      out.withWriter { writer ->
+
+        packages_to_export.each { pkg ->
+
+          // As per spec header at top of file / section
+          writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
+
+          writer.write('TIPP ID	TIPP URL	Title ID	Title	TIPP Status	[TI] Publisher	[TI] Imprint	[TI] Published From	[TI] Published to	[TI] Medium	[TI] OA Status	'+
+                     '[TI] Continuing series	[TI] ISSN	[TI] EISSN	Package	Package ID	Package URL	Platform	'+
+                     'Platform URL	Platform ID	Reference	Edit Status	Access Start Date	Access End Date	Coverage Start Date	'+
+                     'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
+                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type	Delayed OA	Delayed OA Embargo	Hybrid OA	Hybrid OA URL\n');
+
+          def tipps = TitleInstancePackagePlatform.executeQuery(
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
+                         [pkg, 'Deleted', 'Package.Tipps']);
+
+
+
+          tipps.each { tipp_id ->
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+            writer.write( tipp.id + '\t' + tipp.url + '\t' + tipp.title.id + '\t' + tipp.title.name + '\t' +
+                          tipp.status.value + '\t' + tipp.title.getCurrentPublisher?.name + '\t' + tipp.title.imprint?.name + '\t' + tipp.title.publishedFrom + '\t' +
+                          tipp.title.publishedTo + '\t' + tipp.title.medium?.value + '\t' + tipp.title.oa?.status + '\t' +
+                          tipp.title.continuingSeries?.value + '\t' + 
+                          'SteveToFix\t' + // tipp.title.getIdentifierValue('ISSN') + '\t' +
+                          'SteveToFix\t' + //tipp.title.getIdentifierValue('eISSN') + '\t' 
+                          pkg.name + '\t' + pkg.id + '\t' + '\t' + tipp.hostPlatform.name + '\t' +
+                          tipp.hostPlatform.primaryUrl + '\t' + tipp.hostPlatform.id + '\t\t' + tipp.status?.value + '\t' + tipp.accessStartDate  + '\t' +
+                          tipp.accessEndDate + '\t' + tipp.startDate + '\t' + tipp.startVolume + '\t' + tipp.startIssue + '\t' + tipp.endDate + '\t' +
+                          tipp.endVolume + '\t' + tipp.endIssue + '\t' + tipp.embargo + '\t' + tipp.coverageNote + '\t' + tipp.hostPlatform.primaryUrl + '\t' +
+                          tipp.format?.value + '\t' + tipp.paymentType?.value + '\t' + tipp.delayedOA?.value + '\t' + tipp.delayedOAEmbargo + '\t' +
+                          tipp.hybridOA?.value + '\t' + tipp.hybridOAUrl +
+                          '\n');
+            tipp.discard();
+          }
+        }
+
+        writer.flush();
+        writer.close();
+      }
+      out.close()
+    }
+    catch ( Exception e ) {
+      log.error("Problem with export",e);
+    }
   }
 }

@@ -183,11 +183,11 @@
           </dd>
 
           <dt>
-            <g:annotatedLabel owner="${d}" property="pureOA">pureOA</g:annotatedLabel>
+            <g:annotatedLabel owner="${d}" property="oa">OA</g:annotatedLabel>
           </dt>
           <dd>
-            <g:xEditableRefData owner="${d}" field="pureOA"
-              config='TitleInstance.PureOA' />
+            <g:xEditableRefData owner="${d}" field="oa"
+              config='TitleInstance.OAStatus' />
           </dd>
 
           <dt>
@@ -437,7 +437,7 @@
 
     <div class="tab-pane" id="identifiers">
       <g:render template="combosByType" contextPath="../apptemplates"
-        model="${[d:d, property:'ids', cols:[
+        model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
     </div>
@@ -511,4 +511,17 @@
       ss.options[i].selected = true;
     }
   }
+
+
+  var hash = window.location.hash;
+  hash && $('ul.nav a[href="' + hash + '"]').tab('show');
+
+  $('.nav-tabs a').click(function (e) {
+    $(this).tab('show');
+    var scrollmem = $('body').scrollTop();
+    window.location.hash = this.hash;
+    $('html,body').scrollTop(scrollmem);
+  });
+
+
 </asset:script>

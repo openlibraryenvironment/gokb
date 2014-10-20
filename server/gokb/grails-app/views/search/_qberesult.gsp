@@ -44,7 +44,7 @@
 				<tr class="${++counter==det ? 'success':''}">
 					<!-- Row ${counter} -->
 					<g:each in="${qbeConfig.qbeResults}" var="c">
-						<td><g:if test="${c.link != null}">
+						<td><g:if test="${c.link != null }">
 								<g:link controller="${c.link.controller}"
 									action="${c.link.action}"
 									id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
@@ -61,7 +61,7 @@
 	</table>
 </g:if>
 <g:else>
-	<g:form controller="workflow" action="action" method="post"
+	<g:form controller="workflow" action="action" method="post" params="${params}"
 		class='action-form' >
 		<div class="batch-all-info" style="display:none;"></div>
 		<g:render template="pagination" contextPath="." model="${params}" />
@@ -116,15 +116,16 @@
 										disabled="disabled" readonly="readonly" />
 								</g:else></td>
 							<g:each in="${qbeConfig.qbeResults}" var="c">
-								<td><g:if test="${c.link != null}">
+                                                          <g:set var="colVal" value="${groovy.util.Eval.x(r, 'x.' + c.property)}"/>
+								<td><g:if test="${ ( c.link != null ) && ( colVal != null ) }">
 										<g:link controller="${c.link.controller}"
 											action="${c.link.action}"
 											id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
 											params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">
-											${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty'}
+											${colVal}
 										</g:link>
 									</g:if> <g:else>
-										${groovy.util.Eval.x(r, 'x.' + c.property)}
+										${colVal?:'Empty'}
 									</g:else></td>
 							</g:each>
 							<td><g:if
@@ -143,6 +144,8 @@
 			</tbody>
 		</table>
 		<g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
+
+                <!-- see grails-app/assets/javascripts/gokb/action-forms.js for code relating to bulk actions -->
 		<div class="pull-right well col-xs-12 col-sm-9 ${displayobj != null ? 'col-md-6' : 'col-md-3'}" id="bulkActionControls">
 			<h4>Available actions for selected rows</h4>
 			<div class="input-group" >

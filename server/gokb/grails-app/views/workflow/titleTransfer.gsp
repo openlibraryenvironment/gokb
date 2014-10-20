@@ -14,7 +14,7 @@
 			<h3 class="panel-title">Step 1 of 2</h3>
 		</div>
 		<div class="panel-body">
-			<g:form controller="workflow" action="processTitleChange"
+			<g:form controller="workflow" action="startTitleTransfer"
 				method="get">
 				<div class="row">
 					<div class="col-md-6">

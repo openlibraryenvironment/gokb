@@ -1,7 +1,5 @@
 includeTargets << grailsScript("_GrailsDocs")
  
-import org.codehaus.groovy.grails.commons.ApplicationHolder
-
 includeTargets << grailsScript("_GrailsBootstrap")
 
 target(main: "Generate the property matrix for KBComponents") {
@@ -10,8 +8,10 @@ target(main: "Generate the property matrix for KBComponents") {
   depends( configureProxy, packageApp, classpath, loadApp, configureApp )
 
   try {
+    def application = grails.util.Holders.getGrailsApplication()
+
     //def component_class = ApplicationHolder.application.getClassForName("org.gokb.cred.KBComponent")
-    def component_class = ApplicationHolder.application.getDomainClass('org.gokb.cred.KBComponent')
+    def component_class = application.getDomainClass('org.gokb.cred.KBComponent')
     grailsConsole.addStatus "Got KBComponent class(${component_class})... list subclasses"
 
     // for (dc in ApplicationHolder.application.domainClasses) { 
@@ -53,8 +53,8 @@ target(main: "Generate the property matrix for KBComponents") {
     }
 
     // Add any special additional 
-    componentClasses.add(ApplicationHolder.application.getDomainClass('org.gokb.cred.OrgRole'));
-    componentClasses.add(ApplicationHolder.application.getDomainClass('org.gokb.cred.User'));
+    componentClasses.add(application.getDomainClass('org.gokb.cred.OrgRole'));
+    componentClasses.add(application.getDomainClass('org.gokb.cred.User'));
 
 
     grailsConsole.addStatus "Calculating GoKB component matrix"

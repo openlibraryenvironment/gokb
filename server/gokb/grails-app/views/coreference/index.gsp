@@ -57,31 +57,12 @@
             params="${[nspart:'ncsu-internal',idpart:'ncsu:2',format:'json']}">[json]</g:link>
           <g:link controller="coreference" action="index"
             params="${[nspart:'ncsu-internal',idpart:'ncsu:2',format:'xml']}">[xml]</g:link>
-          will lookup specific occurences within the ncsu-internal namespace.
+          will lookup specific occurences within the ncsu-internal namespace. <br/>
+                                        More detail can be found in <a href="https://github.com/k-int/gokb-phase1/wiki/Co-referencing-Detail">the github wiki page for coreferencing</a>`
         </li>
       </ul>
-      <h3>RESTful api</h3>
-      Send http requests to <g:link controller="coreference" action="index">${createLink(controller:'coreference', action: 'index')}</g:link> with the following parameters
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Parameter</th>
-            <th>Mandatory?</th>
-            <th>Description?</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr> <td>nspart</td> <td>Yes</td> <td> The namespace part. 
-             ${org.gokb.cred.IdentifierNamespace.list().collect{"<b>${it.value}</b>"}}
-            </td> </tr>
-          <tr> <td>idpart</td> <td>Yes</td> <td>The identifier, for example "1600-0390" (Without quotes) for the ISSN above</td> </tr>
-          <tr> <td>format</td> <td>No</td> <td>Optional content negotiaiton control. Omit this parameter for accept header processing (Default HTML from browser) or use <b>xml</b> and <b>json</b> to request specific formats</td> </tr>
-          </tr>
-        </tbody>
-      </table>
-
     </div>
-    <g:if test="${identifier}">
+    <g:if test="${matched_identifiers}">
       <table class="table table-striped table-condensed table-bordered">
         <thead>
           <tr>
@@ -96,28 +77,31 @@
           </tr>
         </thead>
         <tbody>
-          <g:each in="${records}" var="i">
-            <tr>
-              <td><g:link controller="resource" action="show"
-                  id="${i.getClassName()}:${i.id}">
-                  ${i.getClassName()}:${i.id}
-                </g:link></td>
-              <td><g:link controller="resource" action="show"
-                  id="${i.getClassName()}:${i.id}">
-                  ${i.name}
-                </g:link></td>
-              <td><g:each in="${i.ids}" var="sa">
-                  <g:link controller="coreference" action="index"
-                    params="${[nspart:sa.namespace.value,idpart:sa.value]}">
-                    ${sa.namespace.value}:${sa.value}
-                  </g:link>
-                  <br />
-                </g:each></td>
+          <g:each in="${matched_identifiers}" var="i2">
+            <g:each in="${i2.records}" var="i">
+              <tr>
+                <td><g:link controller="resource" action="show"
+                    id="${i.getClassName()}:${i.id}">
+                    ${i.getClassName()}:${i.id}
+                  </g:link></td>
+                <td><g:link controller="resource" action="show"
+                    id="${i.getClassName()}:${i.id}">
+                    ${i.name}
+                  </g:link></td>
+                <td><g:each in="${i.ids}" var="sa">
+                    <g:link controller="coreference" action="index"
+                      params="${[nspart:sa.namespace.value,idpart:sa.value]}">
+                      ${sa.namespace.value}:${sa.value}
+                    </g:link>
+                    <br />
+                  </g:each>
+                </td>
+              </tr>
+            </g:each>
           </g:each>
         </tbody>
       </table>
     </g:if>
-    
   </div>
 </body>
 </html>

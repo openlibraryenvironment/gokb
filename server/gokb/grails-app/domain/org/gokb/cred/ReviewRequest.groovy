@@ -1,10 +1,14 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import org.gokb.refine.RefineProject
 
 class ReviewRequest {
   
   static auditable = true
+
+  @Transient
+  def springSecurityService
 
   KBComponent componentToReview
   String descriptionOfCause
@@ -16,6 +20,7 @@ class ReviewRequest {
   User closedBy
   User reviewedBy
   Boolean needsNotify
+  RefineProject refineProject
 
   // Timestamps
   Date dateCreated
@@ -50,9 +55,10 @@ class ReviewRequest {
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
     needsNotify(nullable:true, blank:true)
+    refineProject(nullable:true, blank:true)
   }
   
-  public static ReviewRequest raise (KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null) {
+  public static ReviewRequest raise (KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, refineProject = null) {
 	
   	// Create a request.
   	ReviewRequest req = new ReviewRequest (
@@ -60,7 +66,8 @@ class ReviewRequest {
   		raisedBy : (raisedBy),
   		allocatedTo : (raisedBy),
   		descriptionOfCause : (cause),
-  		reviewRequest : (actionRequired)
+  		reviewRequest : (actionRequired),
+                refineProject: (refineProject)
   	)
   	
   	// Add to the list of requests for the component.
@@ -78,6 +85,14 @@ class ReviewRequest {
     ]
   }
 
+  @Transient
+  static def globalActions() {
+    [
+      [code:'method::RRTransfer', label:'Transfer To...'],
+      [code:'method::RRClose', label:'Close']
+    ]
+  }
+
 
   def RRClose(rrcontext) {
     log.debug("Close review request ${id} - user=${rrcontext.user}");
@@ -88,5 +103,13 @@ class ReviewRequest {
   public String getNiceName() {
         return "Review Request";
   }
+
+  def beforeUpdate() {
+    if ( isDirty('status') ) {
+      reviewedBy = springSecurityService.currentUser
+    }
+  }
+
+
 
 }

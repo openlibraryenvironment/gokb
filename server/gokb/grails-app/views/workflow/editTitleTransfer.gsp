@@ -36,7 +36,7 @@
 						background</span> will be created by this transfer.
 				</p>
 			</div>
-			<table class="table table-striped table-bordered no-select-all">
+			<table class="table table-bordered no-select-all">
 				<thead>
 					<tr>
 						<th>Select</th>
@@ -56,52 +56,44 @@
 				</thead>
 				<tbody>
 					<g:each in="${tipps}" var="tipp">
-						<tr
-							style="background-color: ${tipp.type=='NEW'?'#4DFF4D':'#FF4D4D'};">
-							<td><g:if test="${tipp.type=='CURRENT'}">
-									<input name="addto-${tipp.id}" type="checkbox"
-										checked="checked" />
-								</g:if></td>
-							<td>
-								${tipp.type}
-							</td>
-							<td>
-								${tipp.title.name}
-							</td>
-							<td>
-								${tipp.pkg.name}
-							</td>
-							<td>
-								${tipp.hostPlatform.name}
-							</td>
-							<td><g:formatDate
-									format="${session.sessionPreferences?.globalDateFormat}"
-									date="${tipp.startDate}" /></td>
-							<td>
-								${tipp.startVolume}
-							</td>
-							<td>
-								${tipp.startIssue}
-							</td>
-							<td><g:formatDate
-									format="${session.sessionPreferences?.globalDateFormat}"
-									date="${tipp.endDate}" /></td>
-							<td>
-								${tipp.endVolume}
-							</td>
-							<td>
-								${tipp.endIssue}
-							</td>
-							<td><g:if test="${tipp.type=='CURRENT'}">
-									<input name="close-${tipp.id}" type="checkbox"
-										checked="checked" />
-								</g:if></td>
-							<td><input name="review-${tipp.id}" type="checkbox"
-								checked="checked" /></td>
+                                          <g:if test="${tipp.type=='CURRENT'}">
+						<tr style="background-color: #FF4D4D;">
+							<td> <input name="addto-${tipp.id}" type="checkbox" checked="checked" /> </td>
+							<td> ${tipp.type} </td>
+							<td> ${tipp.title.name} </td>
+							<td> ${tipp.pkg.name} </td>
+							<td> ${tipp.hostPlatform.name} </td>
+							<td> <input type="date" value="<g:formatDate date="${tipp.startDate}" format="yyyy-MM-dd"/>" readonly/> </td>
+							<td> ${tipp.startVolume} </td>
+							<td> ${tipp.startIssue} </td>
+							<td> <input type="date" value="<g:formatDate date="${tipp.endDate}" format="yyyy-MM-dd"/>" readonly/> </td>
+							<td> ${tipp.endVolume} </td>
+							<td> ${tipp.endIssue} </td>
+							<td> <input name="oldtipp_close:${tipp.id}" type="checkbox" ${params["oldtipp_close:${tipp.id}"]=='on'?'checked':''} /></td>
+							<td> <input name="oldtipp_review:${tipp.id}" type="checkbox"  ${params["oldtipp_review:${tipp.id}"]=='on'?'checked':''} /></td>
 						</tr>
+                                          </g:if>
+                                          <g:else>
+						<tr style="background-color: #4DFF4D;">
+							<td> </td>
+							<td> ${tipp.type} </td>
+							<td> ${tipp.title.name} </td>
+							<td> ${tipp.pkg.name} </td>
+							<td> ${tipp.hostPlatform.name} </td>
+							<td> <input type="date" value="${tipp.startDate}"/> </td>
+							<td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:startVolume" value="${tipp.startVolume}" style="width:40px;"/> </td>
+							<td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:startIssue" value="${tipp.startIssue}" style="width:40px;"/> </td>
+							<td> <input type="date" value="${tipp.endDate}"/> </td>
+							<td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endVolume" value="${tipp.endVolume}" style="width:40px;"/> </td>
+							<td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endIssue" value="${tipp.endIssue}" style="width:40px;"/> </td>
+							<td> <button type="submit" name="remove" value="${tipp.parent}:${tipp.seq}" class="btn btn-warn">Remove</button></td>
+							<td> <input name="_tippdata:${tipp.parent}:${tipp.seq}:review" type="checkbox" ${tipp.review=='on'?'checked':''} /></td>
+						</tr>
+                                          </g:else>
 					</g:each>
 				</tbody>
 			</table>
+			<button type="submit" class="btn btn-default btn-success btn-sm pull-right" name="update" value="update">Update</button>
 			<div class="panel-footer clearfix">
 				<g:if test="${d.status?.value=='Active'}">
 					<p>Use the following form to indicate the package and platform

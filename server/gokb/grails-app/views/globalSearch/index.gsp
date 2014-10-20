@@ -1,4 +1,41 @@
 <!DOCTYPE html>
+<%
+  def addFacet = { params, facet, val ->
+    def newparams = [:]
+    newparams.putAll(params)
+    def current = newparams[facet]
+    if ( current == null ) {
+      newparams[facet] = val
+    }
+    else if ( current instanceof String[] ) {
+      newparams.remove(current)
+      newparams[facet] = current as List
+      newparams[facet].add(val);
+    }
+    else {
+      newparams[facet] = [ current, val ]
+    }
+    newparams
+  }
+
+  def removeFacet = { params, facet, val ->
+    def newparams = [:]
+    newparams.putAll(params)
+    def current = newparams[facet]
+    if ( current == null ) {
+    }
+    else if ( current instanceof String[] ) {
+      newparams.remove(current)
+      newparams[facet] = current as List
+      newparams[facet].remove(val);
+    }
+    else if ( current?.equals(val.toString()) ) {
+      newparams.remove(facet)
+    }
+    newparams
+  }
+%>
+
 <html>
   <head>
     <meta name="layout" content="sb-admin"/>
@@ -29,20 +66,40 @@
         </g:else>
       </div>
     </div>
-
+      <p>
+        <g:each in="${['componentType']}" var="facet">
+          <g:each in="${params.list(facet)}" var="fv">
+            <span class="badge alert-info">${facet}:${fv} &nbsp; <g:link controller="${controller}" action="${action}" params="${removeFacet(params,facet,fv)}"><i class="fa fa-times"></i></g:link></span>
+          </g:each>
+        </g:each>
+      </p> 
      <div class="row">
+
        <div class="col-md-2">
          <div class="facetFilter">
-           <g:each in="${facets}" var="facet">
-             <div>
-               <b>${facet.key}</b>
-               <ul>
-                 <g:each in="${facet.value}" var="fe">
-                   <li>${fe.display}:${fe.count}</li>
-                 </g:each>
-               </ul>
-             </div>
-           </g:each>
+          <g:each in="${facets}" var="facet">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <b><g:message code="facet.so.${facet.key}" default="${facet.key}" /></b>
+              </div>
+              <div class="panel-body">
+                <ul>
+                  <g:each in="${facet.value}" var="v">
+                    <li>
+                      <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
+
+                      <g:if test="${params.list('componentType').contains(v.term.toString())}">
+                        ${v.display} (${v.count})
+                      </g:if>
+                      <g:else>
+                        <g:link controller="${controller}" action="${action}" params="${addFacet(params,'componentType',v.term)}">${v.display}</g:link> (${v.count})
+                      </g:else>
+                    </li>
+                  </g:each>
+                </ul>
+              </div>
+            </div>
+          </g:each>
          </div>
        </div>
 

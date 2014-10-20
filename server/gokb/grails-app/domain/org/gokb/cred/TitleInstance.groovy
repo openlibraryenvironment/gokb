@@ -8,11 +8,13 @@ import groovy.util.logging.*
 @Log4j
 class TitleInstance extends KBComponent {
 
+
   // title is now NAME in the base component class...
   RefdataValue	medium
   RefdataValue	pureOA
   RefdataValue	continuingSeries
   RefdataValue	reasonRetired
+  RefdataValue	oa
   Date publishedFrom
   Date publishedTo
 //  String imprint
@@ -78,6 +80,7 @@ class TitleInstance extends KBComponent {
     medium (nullable:true, blank:false)
     pureOA (nullable:true, blank:false)
     reasonRetired (nullable:true, blank:false)
+    oa (nullable:true, blank:false)
 //    imprint (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo (nullable:true, blank:false)
@@ -86,6 +89,7 @@ class TitleInstance extends KBComponent {
   def availableActions() {
     [ [code:'method::deleteSoft', label:'Delete'],
       [code:'title::transfer', label:'Title Transfer'],
+      [code:'title::change', label:'Title Change'],
       // [code:'title::reconcile', label:'Title Reconcile'] 
     ]
   }

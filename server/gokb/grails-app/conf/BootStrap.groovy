@@ -58,6 +58,7 @@ class BootStrap {
     def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType:'global').save(failOnError: true)
     def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType:'global').save(failOnError: true)
     def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
+    def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
 
     log.debug("Create admin user...");
     def adminUser = User.findByUsername('admin')
@@ -99,11 +100,14 @@ class BootStrap {
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass();
 
-    KBComponent.executeQuery("select kbc from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc ->
-      log.debug("Repair component with no normalised name.. ${kbc}");
-      kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
-      kbc.save();
-
+    KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
+      KBComponent.withNewTransaction {
+        KBComponent kbc = KBComponent.get(kbc_id)
+        log.debug("Repair component with no normalised name.. ${kbc.id} ${kbc.name}");
+        kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
+        kbc.save();
+        kbc.discard()
+      }
     }
   }
   
@@ -284,6 +288,10 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Film").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Journal").save()
+
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Full OA").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "No OA").save()
 
     RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes").save()
     RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "No").save()
