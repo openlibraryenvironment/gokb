@@ -70,7 +70,7 @@ class TitleLookupService {
     if (title == null) return null
 
     // Create the normalised title.
-    String norm_title = GOKbTextUtils.normaliseString(title)
+    String norm_title = GOKbTextUtils.generateComparableKey(title)
 
     // Lookup any class 1 identifier matches
     def results = class_one_match (identifiers)
@@ -224,7 +224,7 @@ class TitleLookupService {
     TitleInstance.list().each { TitleInstance t ->
 
       // Get the distance and then determine whether to add to the list or
-      double distance = GOKbTextUtils.cosineSimilarity(norm_title, t.normname)
+      double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.generateComparableKey(t.getName()))
       if (distance >= best_distance) {
         ti = t
         best_distance = distance
@@ -249,7 +249,7 @@ class TitleLookupService {
     double threshold = grailsApplication.config.cosine.good_threshold
 
     // Work out the distance between the 2 title strings.
-    double distance = GOKbTextUtils.cosineSimilarity(ti.normname, norm_title)
+    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title)
 
     // Check the distance.
     switch (distance) {
@@ -260,7 +260,7 @@ class TitleLookupService {
         log.debug("Exact distance match for TI.")
         break
 
-      case ( ti.variantNames.collect{GOKbTextUtils.cosineSimilarity(it.normVariantName, norm_title)>= threshold }.size() > 0 ) :
+      case ( ti.variantNames.collect{GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(it.variantName), norm_title)>= threshold }.size() > 0 ) :
         // Good match on existing variant titles
         log.debug("Good match for TI on variant.")
         break
