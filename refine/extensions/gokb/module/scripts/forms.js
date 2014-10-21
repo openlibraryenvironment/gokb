@@ -235,7 +235,7 @@ GOKb.forms.bindDataLookup = function (elem, def) {
       
       // The text.
       var text;
-      var suffix = "0000}"
+      var suffix = "0000}";
       if (query.term && "value" in result && result.value.indexOf(suffix, this.length - suffix.length) === -1) {
         
         // Highlight within the label the matched area.
@@ -393,12 +393,12 @@ GOKb.forms.saveValues = function(form) {
 	});
 	
 	// Save to the metadata.
-	GOKb.doCommand(
+	return GOKb.doCommand(
 	  "datastore-save",
 	  {},
-	  {project : theProject.id, ds : JSON.stringify(data_store)},
+	  {project : theProject.id, ds : JSON.stringify(data_store),},
 	  {},
-	  {async : false, type : "post"}
+	  {type : "post",}
 	);
 };
 
@@ -409,7 +409,7 @@ GOKb.forms.saveValues = function(form) {
 GOKb.forms.getColumnsAsListOptions = function() {
 	var opts = [];
 	var cols = theProject.columnModel.columns;
-	for (i=0; i<cols.length; i++) {
+	for (var i=0; i<cols.length; i++) {
 		opts.push({
 			type 		: 'option',
 			text 		: cols[i].name,
