@@ -66,7 +66,7 @@ class TitleLookupService {
 
     // The TitleInstance
     TitleInstance the_title = null
-    
+
     if (title == null) return null
 
     // Create the normalised title.
@@ -80,10 +80,10 @@ class TitleLookupService {
 
     switch (matches.size()) {
       case 0 :
-        // No match behaviour.
+      // No match behaviour.
         log.debug ("Title class one identifier lookup yielded no matches.")
 
-        // Check for presence of class one ID
+      // Check for presence of class one ID
         if (results['class_one']) {
           log.debug ("One or more class 1 IDs supplied so must be a new TI.")
 
@@ -156,7 +156,7 @@ class TitleLookupService {
       // the_title.setIds(id_set)
       results['ids'].each {
         if ( ! the_title.getIds().contains(it) ) {
-           the_title.getIds().add(it);
+          the_title.getIds().add(it);
         }
       }
 
@@ -189,21 +189,21 @@ class TitleLookupService {
 
           // First publisher added?
           boolean not_first = orgs.size() > 0
-        
+
           // Added a publisher?
           boolean added = ti.changePublisher (
-            componentLookupService.lookupComponent(publisher_name),
-            true
-          )
+              componentLookupService.lookupComponent(publisher_name),
+              true
+              )
 
           // Raise a review request, if needed.
           if (not_first && added) {
             ReviewRequest.raise(
-              ti,
-              "Added '${publisher.name}' as a publisher on '${ti.name}'.",
-              "Publisher supplied in ingested file is different to any already present on TI.",
-              user, project
-            )
+                ti,
+                "Added '${publisher.name}' as a publisher on '${ti.name}'.",
+                "Publisher supplied in ingested file is different to any already present on TI.",
+                user, project
+                )
           }
         }
       }
@@ -256,18 +256,21 @@ class TitleLookupService {
 
       case 1 :
 
-      // Do nothing just continue using the TI.
+        // Do nothing just continue using the TI.
         log.debug("Exact distance match for TI.")
         break
 
-      case ( ti.variantNames.collect{GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(it.variantName), norm_title)>= threshold }.size() > 0 ) :
+      case {
+        ti.variantNames.find {alt ->
+          GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
+        }}:
         // Good match on existing variant titles
         log.debug("Good match for TI on variant.")
         break
 
       case {it >= threshold} :
 
-      // Good match. Need to add as alternate name.
+        // Good match. Need to add as alternate name.
         log.debug("Good distance match for TI. Add as variant.")
         ti.addVariantTitle(title)
         break
