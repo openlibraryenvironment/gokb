@@ -5,13 +5,16 @@ import org.gokb.cred.KBComponent
 class EnsureDate extends A_ValidationRule implements I_RowValidationRule {
 
   private static final String ERROR_TYPE = "date_invalid"
+  private String transformation;
 
-  public EnsureDate(String columnName, String severity) {
+  public EnsureDate(String columnName, String severity, String transformation = "value.toDate()" ) {
     super(columnName, severity)
 
     if (!(columnName instanceof String)) {
       throw new IllegalArgumentException ("EnsureDate rule expects a single argument of type String.")
     }
+    
+    this.transformation = transformation;
   }
 
   @Override
@@ -30,7 +33,7 @@ class EnsureDate extends A_ValidationRule implements I_RowValidationRule {
       text			     : "One or more rows contains invalid dates in the column \"${columnName}\".",
       facetValue	   : "if (isNonBlank(value), if (value.toDate().toString() != value.toString(), 'invalid', null), null)",
       facetName		   : "Invalid dates in ${columnName}",
-      transformation : "value.toDate()"
+      transformation : "${transformation}"
     ]
   }
 

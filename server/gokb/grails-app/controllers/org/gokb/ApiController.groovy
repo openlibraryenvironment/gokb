@@ -99,9 +99,7 @@ class ApiController {
       def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
       
       if (gokbVersion != 'development' && TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
-        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-        "Please download and install the latest version from <a href='${serv_url}' >${serv_url}</a>." +
-        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
+        apiReturn([errorType : "versionError"], "The refine extension you are using is not compaitble with this instance of the service.",
         "error")
         return false
       }
@@ -160,7 +158,7 @@ class ApiController {
   def index() {
   }
 
-  //  @Secured(["ROLE_USER"])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def describe() {
     apiReturn(RefineOperation.findAll ())
   }

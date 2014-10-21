@@ -9,24 +9,28 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k_int.gokb.module.util.ConditionalDownloader;
 import com.k_int.gokb.module.util.URLConenectionUtils;
 
+import com.google.refine.Jsonizable;
+
 /**
  * Represents a remote GOKb web service.
  * 
  * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
  */
-public class GOKbService extends A_ScheduledUpdates {
+public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
   public static final String SERVICE_DIR = "_gokb";
   
   final static Logger logger = LoggerFactory.getLogger("GOKb-Service");
@@ -162,11 +166,13 @@ public class GOKbService extends A_ScheduledUpdates {
   }
 
   private File directory;
+
+  private boolean compatible = true;
   public File getDirectory () {
     return directory;
   }
 
-  public GOKbService (String URL, File directory) throws IOException, JSONException {
+  public GOKbService (String URL, File directory) throws IOException, JSONException, FileUploadException {
     this.URL = URL;
     this.directory = directory;
     this.settings = new ServiceSettings(directory);
@@ -199,10 +205,12 @@ public class GOKbService extends A_ScheduledUpdates {
    * Initialise the service object using data from the server.
    * @throws IOException 
    * @throws JSONException 
+   * @throws FileUploadException 
    */
-  private void initialise() throws JSONException {
+  private void initialise() throws JSONException, FileUploadException {
     try {
-      capabilities = getSettings("capabilities");      
+      capabilities = getSettings("capabilities");
+      doScheduledUpdates ();
       
     } catch (IOException e) {
       // This exception will be thrown if the service was unavailable. We should still
@@ -247,6 +255,10 @@ public class GOKbService extends A_ScheduledUpdates {
    */
   public boolean isAlive() {
     return alive;
+  }
+  
+  public boolean isCompatible() {
+    return compatible ;
   }
   
   public String getAvailableModuleVersion() {
@@ -329,21 +341,34 @@ public class GOKbService extends A_ScheduledUpdates {
   @Override
   public void doScheduledUpdates () throws JSONException, IOException, FileUploadException {
     try {
+      
       JSONObject res = apiJSON("isUp");
       if ("success".equalsIgnoreCase(res.getString("code"))) {
         alive = true;
-        if (alive) {
-          update = checkUpdate();
-        }
+        compatible = true;
+        update = checkUpdate();
       } else {
         
         // We would only receive an error when running this command if we are running a version of the 
-        // module which is too low for any server compatibility and so should flag as a dead service. 
-        alive = false;
+        // module which is too low for any server compatibility and so should flag as an alive but incompatible service.
+        alive = true;
+        compatible = false;
       }
     } catch (IOException e ) {
       // Service gone...
       alive = false;
     }
+  }
+
+  @Override
+  public void write (JSONWriter writer, Properties options)
+      throws JSONException {
+  
+    writer.object()
+      .key("capabilities").value(getCapabilities())
+      .key("alive").value(isAlive())
+      .key("compatible").value(isCompatible())
+    .endObject();
+    
   }
 }

@@ -1,9 +1,6 @@
 var GOKb = {
   messageBusy : "Contacting GOKb",
-  workspace : {},
-  workspaces : [],
-  current_ws : 0,
-  timeout : 1800000, // 3 minute.
+  timeout : 6000000, // 10 minute.
   handlers: {},
   globals: {},
   menuItems: [],
@@ -107,28 +104,33 @@ GOKb.defaultError = function (data) {
     // Show the login box.
     return login;
     
-  } else {
+  } else if (! ("result" in data && "errorType" in data.result && data.result.errorType == "authError")){
   
 //    var error = GOKb.createErrorDialog("Error");
     var msg;
     var close = true;
+    var block = false;
     if  (data && ("message" in data) ) {
       msg = data.message;
-      
-      // Check for the special case version error.
-      if ("result" in data && "errorType" in data.result)
-        if (data.result.errorType == "versionError" || data.result.errorType == "permError") {
-          
-        // Remove close button.
-//        error.bindings.closeButton.hide();
-        close = false;
-        
-        // Lockdown the extension for this service.
-        GOKb.lockdown = true;
-      }
     } else {
-      msg = "There was an error contacting the GOKb server.";
+      msg = "There was an error contacting this GOKb server.";
     }
+    
+    // Check for the special case version error.
+    if ("result" in data && "errorType" in data.result)
+      if (data.result.errorType == "versionError" || data.result.errorType == "permError") {
+        
+      // Remove close button.
+//        error.bindings.closeButton.hide();
+      close = false;
+      
+      // Lockdown the extension for this service.
+      GOKb.lockdown = true;
+      
+      // Block user input.
+      block = true;
+    }
+    
       
 //    error.bindings.dialogContent.html("<p>" + msg + "</p>");
 //      return GOKb.showDialog(error);
@@ -138,13 +140,14 @@ GOKb.defaultError = function (data) {
       text  : msg,
       title : "Error",
       hide  : false,
-      type : "error"
+      type : "error",
+      "block" : block,
     };
     
     if (!close) {
       error.buttons = {
         sticker : false,
-        closer  : false
+        closer  : false,
       };
     }
     return GOKb.notify.show(error);
@@ -853,6 +856,7 @@ GOKb.timer = function() {
   // Return the listener.
   return listener;
 };
+
 
 /**
  * Method to run after core update.

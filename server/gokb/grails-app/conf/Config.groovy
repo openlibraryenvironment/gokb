@@ -232,25 +232,21 @@ validation.rules = [
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: EnsureDate    , severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ type: EnsureDate    ,severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: EnsureDate    , severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ 
+      type: EnsureDate,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: ["value.gokbDateCeiling()"]
+    ]
   ],
 
   "${IngestService.PACKAGE_NAME}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
-    //    [
-    //      type: IsSimilar,
-    //      severity: A_ValidationRule.SEVERITY_WARNING,
-    //      args: [
-    //        org.gokb.cred.Package,
-    //        9
-    //      ]
-    //    ]
     [
       type: LookedUpValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -423,6 +419,24 @@ validation.rules = [
         "if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
       ]
     ],
+  ],
+
+
+  // Other columns we know about that need warnings if not present.
+  "${IngestService.VOLUME_FIRST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+  ],
+
+  "${IngestService.VOLUME_LAST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+  ],
+
+  "${IngestService.NUMBER_FIRST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+  ],
+
+  "${IngestService.NUMBER_LAST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
   ],
 ]
 

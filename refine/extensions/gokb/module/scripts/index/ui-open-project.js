@@ -134,8 +134,14 @@ GOKb.ui.projects.prototype.populateWorkspaces = function (elems) {
       
       // Set selected if the current value is set.
       .prop("selected", selected)
-      .prop("disabled", !GOKb.core.workspaces[i].available)
     ;
+    
+    if (!GOKb.core.workspaces[i].available || !GOKb.core.workspaces[i].service.compatible) {
+      ws
+        .prop("disabled", true)
+        .text(ws.text() + " <" + (GOKb.core.workspaces[i].service.alive ? "Incompatible" : "Unavailable") + ">")
+      ;
+    } 
     
     // Add each workspace to the list.
     list.append(

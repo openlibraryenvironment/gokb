@@ -181,7 +181,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       int wsindex = -1;
       for (int i=0; i < workspaces.length && wsindex < 0; i++) {
         RefineWorkspace ws = workspaces[i];
-        if (ws.isAvailable()) {
+        if (ws.isAvailable() && ws.getService().isCompatible()) {
           wsindex = i;
         }
       }

@@ -111,6 +111,14 @@ Notification.prototype.show = function (notification, stack_name) {
     this.idMap[n.id] = note;
   }
   
+  // Test to see if we should block input.
+  if ("block" in n && n.block == true) {
+    var overlay = $('<div>&nbsp;</div>')
+      .addClass("dialog-overlay")
+      .css("z-index", 9998)
+      .appendTo(document.body);
+  }
+  
   return note;
 };
 

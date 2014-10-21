@@ -52,10 +52,10 @@ public class RefineWorkspace implements Jsonizable {
   public void write (JSONWriter writer, Properties options) throws JSONException {
     
     // Add Any properties we wish to output when represented in JSON.
-    writer.object();
-    writer.key("name"); writer.value(getName());
-    writer.key("available"); writer.value(isAvailable());
-    writer.key("capabilities"); writer.value(getService().getCapabilities().toString());
+    writer.object()
+      .key("name").value(getName())
+      .key("available").value(isAvailable())
+      .key("service");service.write(writer, options);
     writer.endObject();
   }
 }

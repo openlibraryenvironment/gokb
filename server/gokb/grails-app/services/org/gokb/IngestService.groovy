@@ -37,6 +37,9 @@ class IngestService {
     new SimpleDateFormat('yyyy')
   ];
 
+  // ISO Date parser.
+  DateTimeFormatter ISODateParser = ISODateTimeFormat.dateTimeParser()
+
   /** Field prefixes ***/
   public static final String IDENTIFIER_PREFIX = 'title.identifier.'
   public static final String TI_FIELD_PREFIX = 'gokb.ti.'
@@ -101,64 +104,6 @@ class IngestService {
 
     result
   }
-
-//  /**
-//   * Do some validation on the content here.
-//   */
-//  def validateContent (project_data, col_positions, result) {
-//
-//    // Only check the content if the status is correct.
-//    if (result.status) {
-//
-//      // Go through the data and see whether each row is valid.
-//      def rowCount = 1
-//
-//      // Keep track of package ids in this doc.
-//      Set packageIdentifiers = []
-//      project_data.rowData.each { datarow ->
-//
-//        // Check the presence of the name first.
-//        def pkg_name_pos = col_positions[PACKAGE_NAME]
-//
-//        if (pkg_name_pos != null) {
-//
-//          // Check the value of package name here.
-//          def value = getRowValue(datarow,col_positions,PACKAGE_NAME)
-//          if (!value || value == "") {
-//            result.messages.add([text:"Row ${rowCount} contains no data for column ${PACKAGE_NAME}", type:"data_invalid", col: "${PACKAGE_NAME}"]);
-//          } else {
-//            // Add to the list of package ids.
-//            packageIdentifiers << value.toString()
-//          }
-//        }
-//        rowCount ++
-//      }
-//
-//      // Check existing packages.
-//      if (packageIdentifiers) {
-//        def q = ComboCriteria.createFor(Package.createCriteria())
-//        def existingPkgs = q.list {
-//          and {
-//            q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-//            q.add ("ids.value", "in", [packageIdentifiers])
-//          }
-//        }
-//
-//        if (existingPkgs) {
-//          // Get the package ids that cause the issue.
-//          Set offendingIds = []
-//          existingPkgs.each {pkg ->
-//            pkg.ids.each {Identifier theId ->
-//              if (packageIdentifiers.contains(theId.value)) offendingIds << theId.value
-//            }
-//          }
-//
-//          // Add a message.
-//          result.messages.add([text:"Data present in column \"${PACKAGE_NAME}\" would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
-//        }
-//      }
-//    }
-//  }
 
   /**
    * Estimate the number of each component that would be Created/Updated as a result of ingesting this data.
@@ -299,19 +244,6 @@ class IngestService {
 
     // Try and find a package for the provider with the name entered.
     def existingPkgs = componentLookupService.lookupComponents(packageIdentifiers).size()
-
-    //    def q = ComboCriteria.createFor(Package.createCriteria())
-    //    def existingPkgs = q.get {
-    //      and {
-    //        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-    //        q.add ("ids.value", "in", [packageIdentifiers])
-    //        eq ("status", current)
-    //      }
-    //
-    //      projections {
-    //        countDistinct ("id")
-    //      }
-    //    }
 
     // New packages.
     newPkgs = packageIdentifiers.size() - existingPkgs
@@ -1012,18 +944,15 @@ class IngestService {
     // Parse the date.
     Date the_date = null
 
-    if (datestr) {
-
-      // ISO parser.
-      DateTimeFormatter parser = ISODateTimeFormat.dateTimeParser()
+    if (datestr && datestr.trim() != "") {
 
       log.debug ("Trying to parse date from ${datestr}")
       try {
-        the_date = parser.parseDateTime(datestr).toDate()
+        the_date = ISODateParser.parseDateTime(datestr).toDate()
 
       } catch (Throwable t) {
 
-        log.debug ("Error parsing date resulted in null date.")
+        log.debug ("Error parsing date. '${datestr}' resulted in null date.")
 
         // Ensure null date.
         the_date = null

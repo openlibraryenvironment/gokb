@@ -31,7 +31,8 @@ function registerCommands() {
 function registerFunctions() {
 	Packages.java.lang.System.out.print("\tRegistering functions...");
 	registerFunction("ExtractHost", new com.k_int.gokb.refine.functions.ExtractHost());
-	registerFunction("CaseInsensitiveCellLookup", new com.k_int.gokb.refine.functions.CaseInsensitiveCellLookup());
+  registerFunction("CaseInsensitiveCellLookup", new com.k_int.gokb.refine.functions.CaseInsensitiveCellLookup());
+  registerFunction("DateCeiling", new com.k_int.gokb.refine.functions.DateCeiling());
 	Packages.java.lang.System.out.println("done");
 }
 

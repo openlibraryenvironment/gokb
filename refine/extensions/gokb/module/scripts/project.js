@@ -3,7 +3,7 @@
  */
 
 /**
- * Add an extra method toi the GOKb namespace to allow for case insensitive search for column.
+ * Add an extra method to the GOKb namespace to allow for case insensitive search for column.
  */ 
 GOKb.caseInsensitiveColumnName = function (name) {
   var columns = theProject.columnModel.columns;
@@ -16,6 +16,59 @@ GOKb.caseInsensitiveColumnName = function (name) {
   return name;
 };
 
+/**
+ * Adds the validation panel and tabs to the existing UI left panel
+ */
+GOKb.ui.addValidationPanel = function () {
+//The Validation tab.
+  var vTab = $('<a>Errors <span class="count">0</span></a>')
+    .attr("id", "gokb-validation-tab")
+    .attr("href", "#gokb-validation-panel")
+    .appendTo($("<li />").appendTo( $('ul.ui-tabs-nav', ui.leftPanelTabs)) )
+  ;
+  
+  // The validation panel.
+  var vPanel = $('<div>')
+    .attr("id", "gokb-validation-panel")
+    .appendTo(ui.leftPanelTabs)
+  ;
+  
+  // Create the validation panel.
+  GOKb.ui.validationPanel = new ValidationPanel(vPanel, vTab);
+  
+  // Remove tabs.
+  ui.leftPanelTabs.tabs( "destroy" );
+  
+  // Re-add the tabs.
+  ui.leftPanelTabs.tabs({ selected: 2 });
+};
+
+/**
+ * Add the GOKb process tab for any extra functions.
+ */
+GOKb.ui.addGOKbProcessTab = function () {
+  
+};
+
+/**
+ * Hijack the resize method.
+ */
+GOKb.hijackFunction (
+  "resizeAll",
+  function (oldFunction) {
+    
+    if (arguments.length > 1) {
+      // Called via an event listener so first arg is event.
+      oldFunction = arguments[1];
+    }
+
+    // Execute the old code.
+    oldFunction.apply(this, arguments);
+    
+    // Resize our new panel too.
+    GOKb.ui.validationPanel.resize();
+  }
+);
 
 /*
  * The following methods are used to replace already existing methods within refine.
@@ -29,30 +82,13 @@ GOKb.hijackFunction (
     // Execute the old code.
     oldFunction.apply(this, arguments);
     
-    // The Validation tab.
-    var vTab = $('<a>Errors <span class="count">0</span></a>')
-      .attr("id", "gokb-validation-tab")
-      .attr("href", "#gokb-validation-panel")
-      .appendTo($("<li />").appendTo( $('ul.ui-tabs-nav', ui.leftPanelTabs)) )
-    ;
+    // Add the validation panel.
+    GOKb.ui.addValidationPanel();
     
-    // The validation panel.
-    var vPanel = $('<div>')
-      .attr("id", "gokb-validation-panel")
-      .appendTo(ui.leftPanelTabs)
-    ;
     
-    // Create the validation panel.
-    GOKb.validationPanel = new ValidationPanel(vPanel, vTab);
     
-    // Remove tabs.
-    ui.leftPanelTabs.tabs( "destroy" );
-    
-    // Re-add the tabs.
-    ui.leftPanelTabs.tabs({ selected: 2 });
-    resize();
-    resizeTabs();
-    GOKb.validationPanel.resize();
+    // Do an initial resize.
+    resizeAll();
   }
 );
 
@@ -127,7 +163,7 @@ GOKb.hijackFunction (
 
 
 // Replace the current CreateUpdate function with our own to update the validation panel.
-GOKb.validationPanelRun = true;
+GOKb.ui.validationPanelRun = true;
 GOKb.hijackFunction (
   'Refine.createUpdateFunction',
   function(options, onFinallyDone, oldFunction) {
@@ -135,15 +171,15 @@ GOKb.hijackFunction (
     var functions = [oldFunction.apply(this, arguments)];
     
     // Push our update function to list of functions to be executed.
-//    if (GOKb.validationPanelRun || options.everythingChanged || options.modelsChanged || options.rowsChanged || options.rowMetadataChanged || options.cellsChanged) {
+//    if (GOKb.ui.validationPanelRun || options.everythingChanged || options.modelsChanged || options.rowsChanged || options.rowMetadataChanged || options.cellsChanged) {
       
       // If one of the above flags is true then we need to update the validation tab.
       // Passing in the previously added function.
       functions.unshift(function() {
-        GOKb.validationPanel.update(functions[1]);
+        GOKb.ui.validationPanel.update(functions[1]);
       });
       
-      GOKb.validationPanelRun = false;
+      GOKb.ui.validationPanelRun = false;
 //    }
     
     // Execute our function.
@@ -159,6 +195,6 @@ GOKb.hijackFunction (
     oldFunction.apply(this, arguments);
     
     // We now need to add the current workspace title too.
-    document.title = document.title + " using " + GOKb.workspace.name;
+    document.title = document.title + " using " + GOKb.core.workspace.name;
   }
 );

@@ -1,5 +1,5 @@
 /**
- * One time executed init methods.
+ * One time executed init methods for both index and project views.
  */
 (function($) {
   
