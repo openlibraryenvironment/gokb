@@ -30,5 +30,12 @@ import com.hp.hpl.jena.query.*;
 import com.hp.hpl.jena.rdf.model.* ;
 import com.hp.hpl.jena.graph.*;
 import java.text.SimpleDateFormat
+import java.util.prefs.*
 
 print "Use OAI to get latest orgs data and publish as linked open data"
+Preferences prefs = Preferences.userRoot().node("com/k_int/oai2lod/gokborgs")
+def max_timestamp = prefs.get('MAX_TIMESTAMP', "0")
+def test1 = prefs.get('TEST1', "0")
+test1=test1+'*'
+prefs.set('TEST1',test1)
+

@@ -1,4 +1,3 @@
-// see http://www.packer.io/intro/getting-started/build-image.html
 {
   "variables": {
     "aws_access_key": "",
@@ -8,8 +7,8 @@
     "type": "amazon-ebs",
     "access_key": "{{user `aws_access_key`}}",
     "secret_key": "{{user `aws_secret_key`}}",
-    "region": "us-east-1",
-    "source_ami": "aki-52a34525", // Ubuntu 14.04 amd64 ebs
+    "region": "eu-west-1",
+    "source_ami": "ami-00b11177",
     "instance_type": "t1.micro",
     "ssh_username": "ubuntu",
     "ami_name": "gokb-server {{timestamp}}"
