@@ -8,9 +8,9 @@
     "access_key": "{{user `aws_access_key`}}",
     "secret_key": "{{user `aws_secret_key`}}",
     "region": "us-east-1",
-    "source_ami": "ami-de0d9eb7",
+    "source_ami": "aki-52a34525", // Ubuntu 14.04 amd64 ebs
     "instance_type": "t1.micro",
     "ssh_username": "ubuntu",
-    "ami_name": "packer-example {{timestamp}}"
+    "ami_name": "gokb-server {{timestamp}}"
   }]
 }
