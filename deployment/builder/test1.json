@@ -24,7 +24,7 @@
       "rm /boot/grub/menu.lst",
       "echo Removed old grub menu",
       "update-grub-legacy-ec2 -y",
-      "echo updated grub - do dist-upgrade"
+      "echo updated grub - do dist-upgrade",
       "sudo apt-get dist-upgrade -qq --force-yes",
       "echo upgrade completed",
       "sudo apt-get -y install puppet wget",
