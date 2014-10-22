@@ -135,9 +135,11 @@ ValidationPanel.prototype._render = function() {
   
   if ("md5Check" in data && "hashCheck" && data.md5Check) {
     if (data.md5Check.hashCheck == false) {
-      
-      // Add the warning.
-      warnMess.push(["<span class='warning' >GOKb has detected that at this file may have been used to create another project.</span>", ""]);
+      self.showMessage({
+        type  : "notice",
+        title : "Source file check",
+        text  : "GOKb has detected that this file may have been used to create another project."
+      });
     }
   }
   
@@ -198,31 +200,34 @@ ValidationPanel.prototype.showMessage = function (message) {
   var m = $.extend({}, message, {
     title: message.col,
     before_open : function (notice) {
-      // Add the menu.
-      var menuLink = $("<div class='gokb-message-actions' />").append(
-        $("<span class='ui-icon ui-icon-wrench' title='Menu'></span>")
-        
-      ).click(function() {
-        ValidationPanel.messages.getActions(message, $(this));
-        
-      }).hide();
       
-      notice.container.prepend(menuLink);
-      
-      // Add the mouseover listener.
-      notice.elem.on({
-        "mouseenter": function(e){
-          // Show the button.
-          menuLink.show();
-        },
-        "mouseleave": function(e){
-          // Show the button.
-          menuLink.hide();
-        }
-      });
+      // Add the menu if needed.
+      if ("quickRes" in message) {
+        var menuLink = $("<div class='gokb-message-actions' />").append(
+          $("<span class='ui-icon ui-icon-wrench' title='Menu'></span>")
+          
+        ).click(function() {
+          ValidationPanel.messages.getActions(message, $(this));
+          
+        }).hide();
+        
+        notice.container.prepend(menuLink);
+        
+        // Add the mouseover listener.
+        notice.elem.on({
+          "mouseenter": function(e){
+            // Show the button.
+            menuLink.show();
+          },
+          "mouseleave": function(e){
+            // Show the button.
+            menuLink.hide();
+          }
+        });
+      }
     },
   });
   
-  // Add the message.
+  // Add the message to the validation stack..
   GOKb.notify.show(m, 'validation');
 };
