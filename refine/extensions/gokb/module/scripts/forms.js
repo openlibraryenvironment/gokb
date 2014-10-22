@@ -48,54 +48,83 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
 	// The form element.
 	var theForm = $('<form />').attr({"id" : name, "name" : (name)});
 	
+	// Add the action if it is not a function or false.
+	if (action != false && !$.isFunction(action)) {
+	  theForm.attr("action", action);
+	}
+	
 	var submitFunction = function (callback) {
+	  
+	  // The deferred ovbject to listen for when form submission has succeeded.
+	  var listener = $.Deferred();
 		
 		// Always store the values.
-		GOKb.forms.saveValues(theForm);
+		var saving = GOKb.forms.saveValues(theForm);
 		
-		if (!validate || !$.isFunction(validate) || validate(theForm)) {
-			
-			// Check for callback.
-			if (callback && $.isFunction(callback)) {
-				
-				// Default behaviour to deny submission as callback handles,
-				// the data instead.
-				return (callback() == true);
-			}
-			
-			// We have no callback and either we don't have a validation method,
-			// or validation has succeeded.
-			return (callback != false);
-		}
+		// Saving flag, is a deferred object.
+		saving.done(function() {
 		
-		// As validation failed and there is no callback method.
-		return false;
+		  // Successfully saved values in local storage.
+  		if (!validate || !$.isFunction(validate) || validate(theForm)) {
+  			
+  			// Check for callback.
+  			if (callback && $.isFunction(callback) && callback() == true) {
+  				
+  				// Default behaviour to deny submission as callback handles,
+  				// the data instead.
+  				listener.resolveWith(theForm);
+  				
+  			} else if (callback != false) {
+  			  listener.resolveWith(theForm);
+  			} else {
+  			  listener.rejectWith(theForm);
+  			}
+  		} else {
+  		  
+  	    // As validation failed and there is no callback method.
+        listener.rejectWith(theForm);
+  		}
+		});
+		
+		return listener;
 	};
 	
-	// Add the correct submit behaviour.
-	if (action == false || $.isFunction(action)) {
-		// Need to add on submit...
-		theForm.submit(function(e) {
-			if (!submitFunction(action)) {
-				e.preventDefault();
-				return false;
-			}
-			
-			return true;
-		});
-	} else {
-		// set the action parameter..
-		theForm.submit(function(e) {
-			
-			if (!submitFunction()) {
-				e.preventDefault();
-				return false;
-			}
-			
-			return true;
-		});
-		theForm.attr("action", action);
-	}
+  // Create a new submit handler that submits the form via AJAX.
+  var submitHandler = function(e) {
+    
+    var listener;
+    
+    // Always prevent the default. as we will do the submission in the background.
+	  e.preventDefault();
+	  
+    if (action == false || $.isFunction(action)) {
+      listener = submitFunction(action);
+    } else {
+      listener = submitFunction();
+    }
+    
+    // Append the callbacks.
+    listener.done(function(form) {
+      
+      var f = $(form);
+      var method = f.attr("method");
+      var action = f.attr("action");
+      
+      // Form needs to be submitted.
+      $[method](action, f.serialize(), function(data){
+        // Show something of success or failure.
+        window.console.log(data);A                                                                                                                                  
+      });
+      
+    });
+    listener.fail(function(form) {
+      // Do not submit the form.
+      window.console.log("Form wasn't submitted");
+    });
+  };
+  
+	// Need to add on submit...
+	theForm.submit(submitHandler);
 	
 	// Add any custom attributes supplied.
 	if (attr) theForm.attr(attr);
