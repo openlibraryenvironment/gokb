@@ -18,10 +18,19 @@
     "inline": [
       "sleep 30",
       "sudo apt-get update",
-      "sudo apt-get dist-upgrade",
-      "sudo apt-get install -y puppet wget",
-      "wget https://github.com/k-int/gokb-phase1/raw/dev/deployment/puppet/gokb_baseline.pp"
-      "puppet apply -v ./gokb_baseline.pp"
+      "echo Updated",
+      "export DEBIAN_FRONTEND=noninteractive",
+      "echo switched off interactive upgrades",
+      "rm /boot/grub/menu.lst",
+      "update-grub-legacy-ec2 -y",
+      "sudo apt-get dist-upgracde -qq --force-yes",
+      "echo upgrade completed",
+      "sudo apt-get -y install puppet wget",
+      "echo Puppet installed",
+      "wget https://github.com/k-int/gokb-phase1/raw/dev/deployment/puppet/gokb_baseline.pp",
+      "echo Got puppet file",
+      "puppet apply -v ./gokb_baseline.pp",
+      "echo Puppet file applied"
     ]
   }]
 }
