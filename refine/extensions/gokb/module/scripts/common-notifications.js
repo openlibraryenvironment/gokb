@@ -115,7 +115,6 @@ Notification.prototype.show = function (notification, stack_name) {
   if ("block" in n && n.block == true) {
     var overlay = $('<div>&nbsp;</div>')
       .addClass("dialog-overlay")
-      .css("z-index", 9998)
       .appendTo(document.body);
   }
   

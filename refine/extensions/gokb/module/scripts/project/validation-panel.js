@@ -60,7 +60,7 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
       			// Close the statement.
       			grel += "\\\\E') != null";
       			
-      			self.showMessage({
+      			self.data.dataCheck.messages.push({
               type        : "notice",
               title       : "Source file check",
               text        : "One or more title was not ingested during the last ingest.",
@@ -70,11 +70,6 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
               type        : "notice",
               sub_type    : "data_invalid"
             });
-      			
-      			// Add a validation message here.
-//      			self.data.dataCheck.messages.push(
-//      			  {"facetValue":grel,"text":"One or more title was not ingested during the last ingest.","col":"publicationtitle","facetName":"Un-ingested rows","type":"warning","sub_type":"data_invalid"}
-//      			);
       		}
       	}
       }
@@ -141,6 +136,12 @@ ValidationPanel.prototype._render = function() {
   // Bind the elements.
   var elmts = DOM.bind(this._div);
   
+  // Clear it down.
+  elmts.validationContent.html("");
+  
+  // Modify the context of the element.
+  GOKb.notify.getStack('validation').context = elmts.validationContent;
+  
   // Check the data
   var data = self.data;
   
@@ -153,13 +154,7 @@ ValidationPanel.prototype._render = function() {
       });
     }
   }
-  
-  // Clear it down.
-  elmts.validationContent.html("");
-  
-  // Modify the context of the element.
-  GOKb.notify.getStack('validation').context = elmts.validationContent;
-  
+    
   var errors = 0, warnings = 0;
   
   if ("dataCheck" in data) {
@@ -174,6 +169,59 @@ ValidationPanel.prototype._render = function() {
           errors ++;
         }
       });
+      
+      // If we have no errors at this point then we can add the ingest note.
+      if (errors == 0) {
+        
+        // Show a message allowing ingest.
+        var ingest_note = {
+          title : "Project valid"
+        };
+        
+        if (data.dataCheck.messages.length > 0) {
+          // Warnings in project.
+          $.extend(ingest_note, {
+            type: "info",
+            text: "There are warnings for this project, but these will not stop you from continuing to update GOKb with the data in this project."
+          });
+        } else {
+          // No warnings.
+          $.extend(ingest_note, {
+            type: "success",
+            text: "There are no warnings or errors for this project. You can now update GOKb with the data in this project."
+          });
+        }
+        
+        // Add the confirmation buttons to trigger an ingest.
+        ingest_note.confirm = {
+          confirm: true,
+          buttons: [{
+            text: 'Update GOKb',
+            addClass: 'button',
+            click: function(notice) {
+              // Modify the notice to prevent further clicking.
+//              notice.update({
+//                text: 'Beginning update process...',
+//                confirm: {
+//                  confirm: false
+//                }
+//              });
+              
+              // Fire the data change estimates.
+              GOKb.handlers.estimateChanges(true);
+            }
+          }]
+        };
+        
+        // Fix issue with only setting 1 button.
+        ingest_note.before_init = function(opts) {
+          // Remove the last element.
+          opts.confirm.buttons = opts.confirm.buttons.splice(0,opts.confirm.buttons.length - 1);
+        };
+        
+        // Show the notification now.
+        self.showMessage(ingest_note);
+      }
       
       // Handle the warnings next.
       $.each(data.dataCheck.messages, function() {

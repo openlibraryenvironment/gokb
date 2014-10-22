@@ -107,14 +107,22 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
     listener.done(function(form) {
       
       var f = $(form);
-      var method = f.attr("method");
       var action = f.attr("action");
       
-      // Form needs to be submitted.
-      $[method](action, f.serialize(), function(data){
-        // Show something of success or failure.
-        window.console.log(data);A                                                                                                                                  
-      });
+      if (action != null) {
+        
+        // Grab the method.
+        var method = f.attr("method");
+        
+        // Default the method to a post.
+        method = method == null ? "post" : method;
+      
+        // Form needs to be submitted.
+        $[method](action, f.serialize(), function(data){
+          // Show something of success or failure.
+          window.console.log(data);                                                                                                                               
+        });
+      }
       
     });
     listener.fail(function(form) {
@@ -154,7 +162,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		var add_to = null;
 		
 		// Add the element based on the def.
-		var	elem, opts;
+		var	elem;
 		switch (def.type) {
 			case 'select' :
 				elem = $("<select />");
@@ -213,7 +221,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		// Add any attributes.
 		var attr = def.attr || {};
 		if (def.name) {
-			attr = $.extend(attr, {id : def.name, name : def.name})
+			attr = $.extend(attr, {id : def.name, name : def.name});
 		}
 		elem.attr(attr);
 		
@@ -249,10 +257,9 @@ GOKb.forms.bindDataLookup = function (elem, def) {
     selectOnBlur        : true,
     escapeMarkup        : function (m) { return m; },
     id                  : function (object) { return object.value; },
-    initSelection       : function (element, callback) {
-      var data = {id: element.val(), text: element.val()};
-      callback(data);
-    }
+    nextSearchTerm      : function (selectedObject, currentSearchTerm) {
+      return currentSearchTerm;
+    },
   };
   
   // If not a select then add a query lookup, else we need to fetch all the results first and add them all.
@@ -334,8 +341,38 @@ GOKb.forms.bindDataLookup = function (elem, def) {
       }, 1000);
     };
     
+    // Also need to add the function that sets the initial value.
+    conf.initSelection = function (element, callback) {
+      
+      // Grab the element value.
+      var vals = $(element).val().split("::{" + source[1] + ":");
+      if (vals.length == 2) {
+        GOKb['get' + source[0]] (
+            vals[1].substring(0, vals[1].length-1),
+            {
+              "type" : source[1],
+              "match" : "id",
+            },
+            {
+              onDone : function(data) {
+                if (data.length == 1) {
+                  callback(data[0]);
+                }
+              }
+            }
+        );
+      }
+      
+      // Check that the data 
+      var data = {id: element.val(), text: element.val()};
+      callback(data);
+    };
+    
     // Add the select2.
     elem.select2(conf);
+    
+    // Set the current value.
+    elem.select2("val", def.currentValue);
   } else {
     
     // Get the list of options.
@@ -346,10 +383,19 @@ GOKb.forms.bindDataLookup = function (elem, def) {
           // Add each element.
           $.each(data.result.datalist, function () {
             var op = this;
-            elem.append($("<option />", {
+            
+            // Create the option.
+            var op_elem = $("<option />", {
               value : (op.value),
               text  : (op.name)
-            }));
+            });
+            
+            if (op.value == def.currentValue) {   
+              op_elem.prop("selected", true);
+            }
+            
+            // Add to the list.
+            elem.append(op_elem);
           });
           
           // Add the select2 once we have finished.

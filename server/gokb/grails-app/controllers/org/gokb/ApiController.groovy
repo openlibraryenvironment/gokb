@@ -1,12 +1,15 @@
 package org.gokb
 
 import static java.util.UUID.randomUUID
+
 import com.k_int.ConcurrencyManagerService
 import com.k_int.TextUtils
 import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
+
 import java.security.SecureRandom
 
 import org.apache.commons.codec.binary.Base64
@@ -685,7 +688,10 @@ class ApiController {
     
     // Object attributes to search.
     def match_in = ["name"]
+    
+    // Lists from jQuery come through with brackets...
     match_in += params.list("match")
+    match_in += params.list("match[]")
     
     // Attributes to return.
     def attr = ["label"]
@@ -721,7 +727,12 @@ class ApiController {
             // Add a condition for each parameter we wish to search.
             or {
               match_in.each { String param_name ->
-                criteria.add ("${param_name}", "ilike", "%${term}%")
+                switch (param_name) {
+                  
+                  case "id" : criteria.add ("${param_name}", "eq", term.toLong());break;
+                  // Like for strings.
+                  default : criteria.add ("${param_name}", "ilike", "%${term}%")
+                }
               }
             }
           }
@@ -744,7 +755,12 @@ class ApiController {
             // Add a condition for each parameter we wish to search.
             or {
               match_in.each { String param_name ->
-                criteria.add ("${param_name}", "ilike", "%${term}%")
+                switch (param_name) {
+                  
+                  case "id" : criteria.add ("${param_name}", "eq", term.toLong());break;
+                  // Like for strings.
+                  default : criteria.add ("${param_name}", "ilike", "%${term}%")
+                }
               }
             }
           }
