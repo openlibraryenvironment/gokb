@@ -12,5 +12,16 @@
     "instance_type": "t1.micro",
     "ssh_username": "ubuntu",
     "ami_name": "gokb-server {{timestamp}}"
+  }],
+  "provisioners": [{
+    "type": "shell",
+    "inline": [
+      "sleep 30",
+      "sudo apt-get update",
+      "sudo apt-get dist-upgrade",
+      "sudo apt-get install -y puppet wget",
+      "wget https://github.com/k-int/KBPlus/raw/newdev/conf_hints/puppet/baseline.pp"
+      "puppet apply -v ./baseline.pp"
+    ]
   }]
 }
