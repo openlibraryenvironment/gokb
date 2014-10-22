@@ -21,7 +21,7 @@
       "sudo apt-get dist-upgrade",
       "sudo apt-get install -y puppet wget",
       "wget https://github.com/k-int/gokb-phase1/raw/dev/deployment/puppet/gokb_baseline.pp"
-      "puppet apply -v ./baseline.pp"
+      "puppet apply -v ./gokb_baseline.pp"
     ]
   }]
 }
