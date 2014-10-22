@@ -60,10 +60,21 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
       			// Close the statement.
       			grel += "\\\\E') != null";
       			
+      			self.showMessage({
+              type        : "notice",
+              title       : "Source file check",
+              text        : "One or more title was not ingested during the last ingest.",
+              facetValue  : grel,
+              col         : "publicationtitle",
+              facetName   : "Un-ingested rows",
+              type        : "notice",
+              sub_type    : "data_invalid"
+            });
+      			
       			// Add a validation message here.
-      			self.data.dataCheck.messages.push(
-      			  {"facetValue":grel,"text":"One or more title was not ingested during the last ingest.","col":"publicationtitle","facetName":"Un-ingested rows","type":"warning","sub_type":"data_invalid"}
-      			);
+//      			self.data.dataCheck.messages.push(
+//      			  {"facetValue":grel,"text":"One or more title was not ingested during the last ingest.","col":"publicationtitle","facetName":"Un-ingested rows","type":"warning","sub_type":"data_invalid"}
+//      			);
       		}
       	}
       }
