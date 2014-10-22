@@ -91,9 +91,11 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
         // Store in the cache.
         cache.put(key, settings);
       }
-
+      
+      String etag = settings.has("etag") ? settings.getString("etag") : null;
+      
       // Now we check if the service has an updated version.
-      JSONObject update = getIfChanged (url, settings.getString("etag"));
+      JSONObject update = getIfChanged (url, etag);
       if (update != null) {
         // Then the server has responded with new data. We should use that instead.
         settings = update;
