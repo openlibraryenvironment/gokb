@@ -22,8 +22,10 @@
       "export DEBIAN_FRONTEND=noninteractive",
       "echo switched off interactive upgrades",
       "rm /boot/grub/menu.lst",
+      "echo Removed old grub menu",
       "update-grub-legacy-ec2 -y",
-      "sudo apt-get dist-upgracde -qq --force-yes",
+      "echo updated grub - do dist-upgrade"
+      "sudo apt-get dist-upgrade -qq --force-yes",
       "echo upgrade completed",
       "sudo apt-get -y install puppet wget",
       "echo Puppet installed",

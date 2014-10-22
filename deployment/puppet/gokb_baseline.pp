@@ -40,8 +40,8 @@ user { "hostingUser" :
 }
 
 exec { 'tcsetup':
-      command => 'tomcat7-instance-create tomcat-kbplus',
-      creates => '/home/hosting/tomcat-kbplus',
+      command => 'tomcat7-instance-create tomcat-gokb',
+      creates => '/home/hosting/tomcat-gokb',
       cwd => '/home/hosting',
       logoutput => true,
       path => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
@@ -50,7 +50,7 @@ exec { 'tcsetup':
 }
 
 exec { 'activateAPR':
-      command => 'vi /home/hosting/tomcat-kbplus/conf/server.xml -c ":g/org.apache.catalina.core.AprLifecycleListener/normal ddp" -c ":wq"',
+      command => 'vi /home/hosting/tomcat-gokb/conf/server.xml -c ":g/org.apache.catalina.core.AprLifecycleListener/normal ddp" -c ":wq"',
       path => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
       user => hosting,
       requires => [ 'tcsetup' ],
