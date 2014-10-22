@@ -53,7 +53,6 @@ exec { 'activateAPR':
       command => 'vi /home/hosting/tomcat-gokb/conf/server.xml -c ":g/org.apache.catalina.core.AprLifecycleListener/normal ddp" -c ":wq"',
       path => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
       user => hosting,
-      requires => [ 'tcsetup' ],
+      require => [ 'tcsetup' ],
       returns => [ 1 ]
 }
-
