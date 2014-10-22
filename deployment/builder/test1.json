@@ -3,7 +3,7 @@
     "aws_access_key": "",
     "aws_secret_key": "",
     "dbpass": "",
-    "canonicalName": ""
+    "canonicalName": "",
     "gokbsysid":""
   },
   "builders": [{
@@ -28,16 +28,15 @@
       "echo updated grub - do dist-upgrade",
       "sudo apt-get -y --force-yes dist-upgrade",
       "echo upgrade completed",
-      "sudo apt-get -y install git puppet wget puppet-module-puppetlabs-apt",
+      "sudo apt-get -y install unzip git puppet wget puppet-module-puppetlabs-apt",
       "echo Puppet installed",
       "sudo wget https://github.com/k-int/gokb-phase1/raw/dev/deployment/puppet/gokb_baseline.pp",
       "echo Got puppet file",
+      "echo {{user `dbpass`}} > /tmp/dbpass",
+      "echo {{user `canonicalName`}} > /tmp/canonicalName",
+      "echo {{user `gokbsysid`}} > /tmp/sysid",
       "sudo puppet apply -v ./gokb_baseline.pp",
-      "echo Puppet file applied - install gvm"
-      "curl -s get.gvmtool.net | bash"
-      "echo Got GVM, install grails 2.3.7"
-      "echo {{dbpass}} {{canonicalName}} {{gokbsysid}}"
-     "gvm use grails 2.3.7"
+      "echo Puppet file applied"
     ]
   }]
 }
