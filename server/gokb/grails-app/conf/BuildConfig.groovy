@@ -9,18 +9,18 @@ grails.project.source.level = 1.6
 //grails.project.dependency.resolver = "maven"
 // grails.project.dependency.resolver = "maven"
 
-//switch ("${System.getProperty('grails.env')}") {
-//  case "development":
-//    if (new File("/${basedir}/src/templates/war/web_dev.xml").exists()) {
-//        grails.config.base.webXml = "file:${basedir}/src/templates/war/web_dev.xml"
-//    }
-//    break;
-//  default:
-//    if (new File("/${basedir}/src/templates/war/web.xml").exists()) {
-//        grails.config.base.webXml = "file:${basedir}/src/templates/war/web.xml"
-//    }
-//    break;
-// }
+switch ("${System.getProperty('grails.env')}") {
+  case "development":
+    if (new File("/${basedir}/src/templates/war/web_dev.xml").exists()) {
+        grails.config.base.webXml = "file:${basedir}/src/templates/war/web_dev.xml"
+    }
+    break;
+  default:
+    if (new File("/${basedir}/src/templates/war/web.xml").exists()) {
+        grails.config.base.webXml = "file:${basedir}/src/templates/war/web.xml"
+    }
+    break;
+}
 
 grails.project.dependency.resolver = "maven"
 
