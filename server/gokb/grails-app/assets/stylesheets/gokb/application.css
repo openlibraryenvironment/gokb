@@ -9,7 +9,7 @@
 *= require annotations
 *= require security-styles
 *= require select2
-*= require select2-bootstrap
+*= require select2-bootstrap3
 *= require bootstrap-editable
 *= require morris
 *= encoding UTF-8
