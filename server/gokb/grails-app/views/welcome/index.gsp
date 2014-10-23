@@ -1,6 +1,5 @@
 <g:set var="perRow" value="${2}" />
-<g:set var="fullRows" value="${(widgets.size() / perRow).toInteger() * perRow}" />
-<g:set var="lastRow" value="${(widgets.size() % perRow).toInteger()}" />
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -9,8 +8,12 @@
   </head>
   <body>
     <h1 class="page-header">Welcome to GOKb</h1>
-    <cache:block>
-      <!-- Full rows -->
+    <!-- Full rows -->
+    <g:if test="${widgets}">
+
+      <g:set var="fullRows" value="${(widgets.size() / perRow).toInteger() * perRow}" />
+      <g:set var="lastRow" value="${(widgets.size() % perRow).toInteger()}" />
+
       <g:each var="name, widget" in="${widgets}" status="wcount" >
         <div class="col-md-${ (wcount + 1) <= fullRows ? (12 / perRow) : (12 / lastRow) }">
           <div class="panel panel-default">
@@ -24,6 +27,6 @@
           <!-- /.panel -->
         </div>
       </g:each>
-    </cache:block>
+    </g:if>
   </body>
 </html>

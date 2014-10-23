@@ -124,7 +124,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     result
   }
 
-  public String getName() {
-    return super.name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
-  }
+  // II : Removed this - it was causing a horrible recusrsive problem :: Not sure how it got back in here
+  // public String getName() {
+  //   return super.name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
+  // }
 }

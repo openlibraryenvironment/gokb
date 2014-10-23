@@ -263,9 +263,10 @@ class WorkflowController {
       }
     }
 
-    log.debug("loaded Title Data");
-
+    log.debug("loaded Title Data.. Looking up publisher");
     result.newPublisher = genericOIDService.resolveOID2(params.title)
+
+    log.debug("Assigning new publisher");
     titleTransferData.newPublisherId = result.newPublisher.id
 
     log.debug("Build title transfer record");
