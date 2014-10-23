@@ -19,6 +19,8 @@ class SearchController {
   def index() {
     User user = springSecurityService.currentUser
 
+    log.debug("Entering SearchController:index");
+
     def result = [:]
 
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
@@ -42,6 +44,7 @@ class SearchController {
       if ( result.qbetemplate ) {
         log.debug("Execute query");
         doQuery(result.qbetemplate, params, result)
+        log.debug("Query complete");
         result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
         
         // Add the page information.
@@ -113,7 +116,7 @@ class SearchController {
       }
     }
 
-    // log.debug("leaving SearchController::index...");
+    log.debug("leaving SearchController::index...");
 
     withFormat {
       html result

@@ -111,6 +111,7 @@ public class HQLBuilder {
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
+    log.debug("Got count result: ${result.reccount}");
 
     def query_params = [:]
     if ( result.max )
@@ -118,9 +119,9 @@ public class HQLBuilder {
     if ( result.offset )
       query_params.offset = result.offset
 
+    log.debug("Get data rows..");
     result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,query_params);
-
-    // log.debug("Result of count query: ${result.reccount}");
+    log.debug("Returning..");
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {

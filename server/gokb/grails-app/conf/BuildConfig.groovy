@@ -98,7 +98,7 @@ grails.project.dependency.resolution = {
         excludes 'less4j'
       }
       
-      runtime ':hibernate:3.6.10.2'
+      runtime ':hibernate:3.6.10.16'
       // runtime ':hibernate:3.6.10.14' - this pukes forme
       runtime ':database-migration:1.4.0'
       
