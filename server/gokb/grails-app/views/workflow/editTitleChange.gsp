@@ -42,12 +42,12 @@
                   <td> ${tipp.title.name} </td>
                   <td> ${tipp.pkg.name} </td>
                   <td> ${tipp.hostPlatform.name} </td>
-                  <td> <input type="date" name="_oldtipp:${tipp.parent}:startDate" value="${tipp.startDate}"/> </td>
-                  <td> ${tipp.startVolume} </td>
-                  <td> ${tipp.startIssue} </td>
-                  <td> <input type="date" value="<g:formatDate date="${tipp.endDate}" format="yyyy-MM-dd"/>" readonly/> </td>
-                  <td> ${tipp.endVolume} </td>
-                  <td> ${tipp.endIssue} </td>
+                  <td> <input name="_oldtipp:${tipp.id}:startDate" type="date" value="${tipp.startDate}"/> </td>
+                  <td> <input type="text" name="_oldtipp:${tipp.id}:startVolume" value="${tipp.startVolume}" style="width:40px;"/> </td>
+                  <td> <input type="text" name="_oldtipp:${tipp.id}:startIssue" value="${tipp.startIssue}" style="width:40px;"/> </td>
+                  <td> <input name="_oldtipp:${tipp.id}:endDate" type="date" value="${tipp.endDate}"/> </td>
+                  <td> <input type="text" name="_oldtipp:${tipp.id}:endVolume" value="${tipp.endVolume}" style="width:40px;"/> </td>
+                  <td> <input type="text" name="_oldtipp:${tipp.id}:endIssue" value="${tipp.endIssue}" style="width:40px;"/> </td>
                   <td> <input name="oldtipp_close:${tipp.id}" type="checkbox" ${params["oldtipp_close:${tipp.id}"]=='on'?'checked':''} /></td>
                   <td> <input name="oldtipp_review:${tipp.id}" type="checkbox"  ${params["oldtipp_review:${tipp.id}"]=='on'?'checked':''} /></td>
                 </tr>
@@ -75,8 +75,8 @@
 
       <div class="btn-group clearfix pull-right">
         <button type="submit" class="btn btn-default btn-success btn-sm pull-right" name="update" value="update">Update</button>
-        <button type="submit" class="btn btn-default btn-success btn-sm pull-right" name="process" value="process">Process Transfer</button>
-        <button type="submit" class="btn btn-default btn-danger btn-sm " name="abandon" value="abandon">Abandon Transfer</button>
+        <button type="submit" class="btn btn-default btn-success btn-sm pull-right" name="process" value="process">Process Change</button>
+        <button type="submit" class="btn btn-default btn-danger btn-sm " name="abandon" value="abandon">Abandon Change</button>
       </div>
 
     </div>

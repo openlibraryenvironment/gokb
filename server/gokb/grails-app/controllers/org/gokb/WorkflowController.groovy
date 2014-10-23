@@ -530,7 +530,6 @@ class WorkflowController {
         }
       }
       else if ( pn.startsWith('_oldtipp') ) {
-        log.debug("oldtipp...");
         def key_components = pn.split(':');
 
         if ( activity_data.tipps[key_components[1]].oldTippValue == null ) { activity_data.tipps[key_components[1]].oldTippValue = [:] }
@@ -636,6 +635,9 @@ class WorkflowController {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
 
     activity_data.tipps.each { tipp_map_entry ->
+
+      def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
+
       tipp_map_entry.value.newtipps.each { newtipp ->
         log.debug("Process new tipp : ${newtipp}");
 
@@ -676,19 +678,19 @@ class WorkflowController {
 
 
     // Default to today if not set
-    def event_date = activityData.eventDate ?: sdf.format(new Date());
+    def event_date = activity_data.eventDate ?: sdf.format(new Date());
 
     // Create title history event
     def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:sdf.parse(event_date)).save()
 
-    activityData.afterTitles?.each { at ->
+    activity_data.afterTitles?.each { at ->
       def component = genericOIDService.resolveOID2(at)
       def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
                                                                     participant:component,
                                                                     participantRole:'out').save()
     }
 
-    activityData.beforeTitles?.each { bt ->
+    activity_data.beforeTitles?.each { bt ->
       def component = genericOIDService.resolveOID2(bt)
       def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
                                                                     participant:component,
