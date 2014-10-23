@@ -193,9 +193,9 @@ class IngestService {
       or {
 
         project_data.rowData.each { datarow ->
-          if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+          if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE) ) {
 
-            def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+            def host_platform_name = getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
             //			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
 
             // Just add the normname to the platforms list.
@@ -358,7 +358,7 @@ class IngestService {
     RefineProject.withNewTransaction { TransactionStatus status ->
 
       RefineProject project = RefineProject.get(project_id)
-      if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+      if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE) ) {
         try {
           def ids = []
           for (ai in identifiers) {
@@ -386,7 +386,7 @@ class IngestService {
 
             // Set TITLE OA STATUS if it's not null and different to the current value.. This might cause title OA status
             // to oscillate between different values - raised as a concern but dismissed as unlikely in weekly calls.
-            def title_oa_status = datarow.cells[col_positions[TITLE_OA_STATUS]]
+            def title_oa_status = getRowValue(datarow,col_positions,TITLE_OA_STATUS)
             if ( title_oa_status != null ) {
               if ( title_info.oa_status?.value != title_oa_status ) {
                 //titleOAStatus:getRowRefdataValue('TitleInstance.OAStatus', datarow, col_positions, TITLE_OA_STATUS)

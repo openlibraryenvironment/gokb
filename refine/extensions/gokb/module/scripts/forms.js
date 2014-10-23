@@ -104,9 +104,10 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
     }
     
     // Append the callbacks.
-    listener.done(function(form) {
+    listener.done(function() {
       
-      var f = $(form);
+      // The context is the form.
+      var f = $(this);
       var action = f.attr("action");
       
       if (action != null) {
@@ -291,6 +292,13 @@ GOKb.forms.bindDataLookup = function (elem, def) {
     conf.formatResult = formatResult;
     conf.formatSelection = formatResult;
     
+    // Add the functionality for user to add their own.
+//    conf.createSearchChoicePosition = "top";
+//    conf.createSearchChoice = function(term) {
+//      return { id : query.term + "::{" + source[1] + ":0000}"};
+//    };
+    
+    
     // Variable to hold the timeout method, to wait for
     // a timeout after the user stops typing.
     var toMethod = null;
@@ -319,9 +327,9 @@ GOKb.forms.bindDataLookup = function (elem, def) {
                 results: []
               };
               
-              if (def.create && query.page == 1) {
-                res.results.push({value: (query.term + "::{" + source[1] + ":0000}"), label: (query.term)});
-              }
+//              if (def.create && query.page == 1) {
+//                res.results.push({value: (query.term + "::{" + source[1] + ":0000}"), label: (query.term)});
+//              }
               
               if (data && "list" in data && data.list.length > 0) {
                 

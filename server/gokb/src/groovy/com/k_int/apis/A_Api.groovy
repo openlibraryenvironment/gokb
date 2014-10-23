@@ -31,8 +31,6 @@ import org.springframework.context.ApplicationContext
 @Log4j
 abstract class A_Api <T> {
 
-  static String NO_ARGS_METHOD = 'NO_ARGS_METHOD'
-
   protected static final Set<String> EXCLUDES = AbstractGormApi.EXCLUDES + [
     // Extend the list with any that aren't caught here.
   ]

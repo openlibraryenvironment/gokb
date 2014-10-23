@@ -91,7 +91,7 @@ class User {
       def o = obj
       
       if ( o instanceof HibernateProxy) {
-        o = deproxy(o)
+        o = User.deproxy(o)
       }
       
       if ( o instanceof User ) {

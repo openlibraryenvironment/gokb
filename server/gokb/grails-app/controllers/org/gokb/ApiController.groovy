@@ -514,7 +514,7 @@ class ApiController {
     // When using the concurrency manager we need to make sure that the supplied
     // closure can run independently of this request. Therefore we need to curry across
     // anything needed to execute the action.
-    Job background_job = concurrencyManagerService.createTask(
+    Job background_job = concurrencyManagerService.createJob (
       { IngestService is, projData, Long projId, boolean inc, user_id, job ->
         // Create a new session to run the ingest.
         RefineProject.withNewSession {

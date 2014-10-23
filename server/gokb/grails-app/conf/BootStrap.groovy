@@ -97,9 +97,6 @@ class BootStrap {
     
     failAnyIngestingProjects()
 
-    // Add our custom metaclass methods for all KBComponents.
-    alterDefaultMetaclass();
-
     KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
       KBComponent.withNewTransaction {
         KBComponent kbc = KBComponent.get(kbc_id)
