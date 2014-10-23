@@ -91,7 +91,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'downloadUpdate']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
