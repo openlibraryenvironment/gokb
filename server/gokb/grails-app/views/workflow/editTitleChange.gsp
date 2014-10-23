@@ -42,7 +42,7 @@
                   <td> ${tipp.title.name} </td>
                   <td> ${tipp.pkg.name} </td>
                   <td> ${tipp.hostPlatform.name} </td>
-                  <td> <input type="date" value="<g:formatDate date="${tipp.startDate}" format="yyyy-MM-dd"/>" readonly/> </td>
+                  <td> <input type="date" name="_oldtipp:${tipp.parent}:startDate" value="${tipp.startDate}"/> </td>
                   <td> ${tipp.startVolume} </td>
                   <td> ${tipp.startIssue} </td>
                   <td> <input type="date" value="<g:formatDate date="${tipp.endDate}" format="yyyy-MM-dd"/>" readonly/> </td>
@@ -81,6 +81,10 @@
 
     </div>
   </g:form>
+
+  <pre>
+    ${d.activityData}
+  </pre>
 </body>
 </html>
 
