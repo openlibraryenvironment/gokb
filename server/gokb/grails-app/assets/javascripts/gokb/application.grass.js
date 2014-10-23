@@ -2,6 +2,7 @@
  * GOKb application javascript file.
  */
 //=require jquery
+//=require jquery.mask
 //=require raphael.min
 //=require morris.min
 //=require bootstrap
@@ -16,6 +17,7 @@
 //=require annotations
 //=require select-all-multistate
 //=require moment.min
+
 
 // Global namespace for GOKb functions.
 window.gokb = {
@@ -141,7 +143,32 @@ window.gokb = {
     
     $('.xEditableValue').editable();
     $(".xEditableManyToOne").editable();
-    $('.ipe').editable();
+    
+    // Handle dates differently now.
+    $('.ipe').each(function() {
+      
+      // The context.
+      var me = $(this);
+      
+      if (me.is(".date")) {
+        // This is a date element. We should add the date functionality.
+        me.on('shown', function(e, editable) {
+          editable.input.$input.mask(
+            '0000/M0/D0',
+            {
+              'translation': {
+                M: {pattern: /[0-1]/},
+                D: {pattern: /[0-3]/},
+              },
+              'placeholder': "YYYY/MM/DD"
+            }
+          );
+        });
+      }
+      
+      // Make it editbale()
+      me.editable();
+    });
   
     
     var results = $(".simpleHiddenRefdata");

@@ -387,7 +387,7 @@ class AjaxSupportController {
     def target_object = resolveOID2(params.pk)
     if ( target_object ) {
       if ( params.type=='date' ) {
-        target_object."${params.name}" = params.date('value','yyyy-MM-dd')
+        target_object."${params.name}" = params.date('value',params.format ?: 'yyyy-MM-dd')
       }
       else {
         def binding_properties = [:]

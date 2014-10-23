@@ -42,8 +42,11 @@ class InplaceTagLib {
 
     def oid = owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
+    
+    // Default the format.
+    attrs."data-format" = attrs."data-format" ?: 'yyyy/MM/dd' 
 
-    out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''}\""
+    out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''} ${attrs.type == 'date' ? 'date' : ''}\""
     
     if ( oid && ( oid != '' ) ) out << " data-pk=\"${oid}\""
     out << " data-name=\"${attrs.field}\""
@@ -56,20 +59,22 @@ class InplaceTagLib {
     def data_link = null
     switch ( attrs.type ) {
       case 'date':
-        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date',format:"MM/dd/yyyy"])
-        out << " data-type='combodate' data-format='${attrs."data-format"?:'YYYY-MM-DD'}' data-combodate='{minYear : 1900,smartDays:true}' data-viewformat='MM/DD/YYYY' data-template='MMM / DD / YYYY'"
-        if (!attrs."data-value") {
-          if (owner[attrs.field]) {
-    
-            // Date format.
-            def sdf = new java.text.SimpleDateFormat(attrs."format"?:'yyyy-MM-dd')
-            attrs."data-value" = sdf.format(owner[attrs.field])
-          } else {
-            attrs."data-value" = ""
-          }
-        }
+        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date', format: (attrs."data-format"?:'yyyy-MM-dd')])
+//        out << " data-type='dateui' data-format='${attrs."data-format"?:'YYYY-MM-DD'}' data-datepicker='{minYear : 1900,smartDays:true}' data-viewformat='MM/DD/YYYY'"
+//        if (!attrs."data-value") {
+//          if (owner[attrs.field]) {
+//    
+//            // Date format.
+//            def sdf = new java.text.SimpleDateFormat(attrs."format"?:'yyyy-MM-dd')
+//            attrs."data-value" = sdf.format(owner[attrs.field])
+//          } else {
+//            attrs."data-value" = ""
+//          }
+//        }
+//        
+//        out << " data-value='${attrs.'data-value'}'"
         
-        out << " data-value='${attrs.'data-value'}'"
+        out << " data-type=\"text\" data-format='${attrs."data-format"?:'yyyy-MM-dd'}'"
         break;
       case 'string':
       default:
@@ -88,7 +93,7 @@ class InplaceTagLib {
       if (attrs.type!='date' ) {
         out << owner[attrs.field]
       } else if (owner[attrs.field]){
-        def sdf = new java.text.SimpleDateFormat(attrs."format"?:'MM/dd/yyyy')
+        def sdf = new java.text.SimpleDateFormat(attrs."data-format"?:'yyyy-MM-dd')
         out << sdf.format(owner[attrs.field])
       }
     }
