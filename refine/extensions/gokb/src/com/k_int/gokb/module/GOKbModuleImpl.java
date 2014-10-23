@@ -321,7 +321,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     if (service != null) {
       
       // Let's update...
-      File module_path = getPath().getParentFile();
+      File module_path = getPath().getParentFile().getParentFile();
         
       // Updater.
       Updater updt = new Updater(

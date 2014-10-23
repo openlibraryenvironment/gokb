@@ -74,8 +74,8 @@
 	         </propertyfile>
 
 	         <zip destfile="${dist.dir}/${fullname}.zip">
-	            <zipfileset dir="${ext.dir}">
-	                <include name="**/**"/>
+	            <zipfileset dir="${dist.dir}">
+	                <include name="${name}/**"/>
 	            </zipfileset>
 	         </zip>
 	        
