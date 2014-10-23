@@ -26,7 +26,7 @@ import org.gokb.refine.RefineProject
 class ApiController {
   
   RefineService refineService
-  SecureRandom rand
+  SecureRandom rand = new SecureRandom()
 
   private static final Closure TRANSFORMER_PROJECT = {
 
@@ -101,10 +101,13 @@ class ApiController {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
       
-      if (gokbVersion != 'development' && TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
-        apiReturn([errorType : "versionError"], "The refine extension you are using is not compaitble with this instance of the service.",
-        "error")
-        return false
+      if (gokbVersion != 'development') {
+        if (!gokbVersion || TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
+          apiReturn([errorType : "versionError"], "The refine extension you are using is not compaitble with this instance of the service.",
+          "error")
+          
+          return false
+        }
       }
     }
   }
@@ -123,9 +126,9 @@ class ApiController {
     if (status == 'error') {
       
       // Generate a 16bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
-      byte[] randomBytes = new byte[16]
+      byte[] randomBytes = new byte[6]
       rand.nextBytes(randomBytes)
-      def ticket = Base64.encodeBase64URLSafeString(rand);
+      def ticket = Base64.encodeBase64String(randomBytes);
       
       // Let's see if we have a throwable.
       if (result && result instanceof Throwable) {
@@ -142,7 +145,7 @@ class ApiController {
       } else {
       
         // We should now send the message along with the ticket.
-        message = "${message}".replaceFirst("\\.\\s*\$", ". The error has been logged with the reference 'ticket'")
+        message = "${message}".replaceFirst("\\.\\s*\$", ". The error has been logged with the reference '${ticket}'")
       }
     }
     

@@ -109,7 +109,12 @@ class RefineService {
     data += ['update-available' : (update)]  
   }
   
-  File extensionDownloadFile (String version_required) {
+  File extensionDownloadFile (String version_required = null) {
+    
+    if (version_required == null) {
+      version_required = getLatestCurrentLocalExtension()
+    }
+    
     if (version_required ==~ VERSIONING_REGEX) {
       
       // Return file uri if the file exists.
