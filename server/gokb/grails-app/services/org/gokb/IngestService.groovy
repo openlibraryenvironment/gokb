@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService
 import grails.converters.JSON
+import groovy.json.JsonSlurper
 
 import java.text.SimpleDateFormat
 
@@ -738,7 +739,7 @@ class IngestService {
    *  @return Map containing parsed project data
    */
   def extractRefineproject(String zipFilename) {
-    def result = null;
+    def result = [:]
 
     try {
       def full_filename = grailsApplication.config.project_dir + zipFilename
@@ -754,6 +755,19 @@ class IngestService {
         switch ( ae.name ) {
           case 'metadata.json':
             log.debug("Handle metadata");
+            
+            def json = new JsonSlurper()
+            def bai = new ByteArrayOutputStream()
+            int bytes_to_read = ae.getSize()
+            byte[] buffer = new byte[4096]
+            while (bytes_to_read) {
+              int bytes_read = tin.read(buffer,0,4096)
+              log.debug("Copying ${bytes_read} bytes to byte array");
+              bai.write(buffer, 0, bytes_read)
+              bytes_to_read -= bytes_read
+            }
+          
+            result.metadata = json.parseText(bai.toString());
             break;
           case 'data.zip':
             def temp_data_zipfile
@@ -774,7 +788,7 @@ class IngestService {
               fos.flush()
               fos.close();
 
-              result = extractRefineDataZip(temp_data_zipfile)
+              extractRefineDataZip(temp_data_zipfile, result)
             }
             finally {
               if ( temp_data_zipfile ) {
@@ -799,14 +813,13 @@ class IngestService {
     catch ( Exception e ) {
       log.error("Unexpected error trying to extract refine data.",e);
       e.printStackTrace();
+      return null
     }
 
     result
   }
 
-  def extractRefineDataZip (def zip_file) {
-
-    def result=null
+  def extractRefineDataZip (def zip_file, def result) {
 
     // Open temp zip file as a zip object
     if ( zip_file ) {
@@ -815,7 +828,6 @@ class IngestService {
       java.util.zip.ZipEntry ze = zf.getEntry('data.txt')
       if ( ze ) {
         log.debug("Got data.txt")
-        result = [:]
         result.processingCompleted = false;
         processData(result, zf.getInputStream(ze));
       }

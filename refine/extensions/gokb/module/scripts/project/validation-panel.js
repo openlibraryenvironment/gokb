@@ -78,7 +78,7 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
 
   // Shared params.
   var params = {
-  		md 			: JSON.stringify(theProject.metadata),
+  		hash		: JSON.stringify(theProject.metadata.customMetadata.hash),
   		project : theProject.id
   };
   

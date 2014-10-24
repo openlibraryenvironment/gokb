@@ -27,6 +27,7 @@ class Package extends KBComponent {
   String listVerifier
   User userListVerifier
   Date listVerifiedDate
+  DataFile sourceFile 
   
   private static refdataDefaults = [
     "scope"       : "Front File",

@@ -172,11 +172,7 @@ class ApiController {
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def checkMD5() {
 
-    def metadata = JSON.parse(params.get("md"));
-
-    // The parameters.
-    log.debug(metadata);
-    def md5 = metadata.customMetadata.hash;
+    def md5 = params.get("hash");
     long pId = params.long("project");
 
     // RefineProject
@@ -229,7 +225,8 @@ class ApiController {
             Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
             )
         f.transferTo(temp_data_zipfile)
-        def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip(temp_data_zipfile, parsed_project_file)
 
         log.debug("Try and predetermine the changes.");
         result = ingestService.estimateChanges(parsed_project_file, params.projectID, (params.boolean("incremental") != false))
@@ -337,6 +334,8 @@ class ApiController {
     def f = request.getFile('projectFile')
 
     if (f && !f.empty) {
+      
+      boolean new_project = false;
 
       // Get the project.
       RefineProject project
@@ -352,6 +351,8 @@ class ApiController {
         project = new RefineProject()
         project.setCreatedBy(user)
         project.setLastCheckedOutBy(user)
+        
+        new_project = true
       }
 
       if (project) {
@@ -410,6 +411,19 @@ class ApiController {
 
         if ( parsed_project_file == null )
           throw new Exception("Problem parsing project file");
+          
+        // We now need to save the embeded source-file (if one is present)
+        if (new_project) {
+          String source_file_str = parsed_project_file?.metadata?."source-file"
+          if (source_file_str) {
+            
+            // We need to decode it (base64).
+            def source_tgz = Base64.decodeBase64(source_file_str)
+            
+            DataFile df = new DataFile()
+            
+          }
+        }
 
         project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
 
@@ -490,7 +504,8 @@ class ApiController {
             Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
             )
         f.transferTo(temp_data_zipfile)
-        def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip(temp_data_zipfile, parsed_project_file)
 
         log.debug("Validate the data in the zip");
         validationResult = ingestService.validate(parsed_project_file)
@@ -650,7 +665,8 @@ class ApiController {
             Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
             );
         f.transferTo(temp_data_zipfile)
-        def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip (temp_data_zipfile, parsed_project_file)
         rules = suggestRulesFromParsedData ( parsed_project_file, provider )
 
       } finally {
