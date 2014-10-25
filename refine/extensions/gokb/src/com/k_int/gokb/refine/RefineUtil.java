@@ -206,12 +206,20 @@ public class RefineUtil extends ProjectUtilities {
   
   public static void main (String[] args) throws NoSuchAlgorithmException, IOException {
     File in = new File("/home/sosguthorpe/Documents/Tax Return/viewTaxReturnPdf.pdf");
-    FileOutputStream out = new FileOutputStream(new File("/home/sosguthorpe/Documents/Tax Return/text.tgz"));
+    FileOutputStream out = new FileOutputStream(new File("/home/sosguthorpe/Documents/Tax Return/test.tgz"));
+    FileOutputStream textout = new FileOutputStream(new File("/home/sosguthorpe/Documents/Tax Return/text.txt"));
     
     StringBuilder sb = new StringBuilder();
     stringifyAndHashFile (in, sb);
     
-    out.write(Base64.decode(sb.toString().getBytes()));
+    byte[] bytes = sb.toString().getBytes("UTF-8");
+    
+    // Write the text to a file.
+    textout.write(bytes);
+    textout.close();
+    
+    // Unencode.
+    out.write(Base64.decode(bytes));
     out.close();
   }
 }

@@ -13,6 +13,7 @@ import grails.util.GrailsNameUtils
 import java.security.SecureRandom
 
 import org.apache.commons.codec.binary.Base64
+import org.apache.tika.Tika
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
@@ -27,6 +28,7 @@ class ApiController {
   
   RefineService refineService
   SecureRandom rand = new SecureRandom()
+  UploadAnalysisService uploadAnalysisService
 
   private static final Closure TRANSFORMER_PROJECT = {
 
@@ -414,14 +416,14 @@ class ApiController {
           
         // We now need to save the embeded source-file (if one is present)
         if (new_project) {
-          String source_file_str = parsed_project_file?.metadata?."source-file"
+          log.debug("First time checking in the project. Let's add the source file.")
+          final String source_file_str = parsed_project_file?.metadata?.customMetadata?."source-file"
           if (source_file_str) {
             
+            log.debug("Found source file in metadata. Decoding and adding to project.")
             // We need to decode it (base64).
             def source_tgz = Base64.decodeBase64(source_file_str)
-            
-            DataFile df = new DataFile()
-            
+            project.setSourceFile(source_tgz)
           }
         }
 
