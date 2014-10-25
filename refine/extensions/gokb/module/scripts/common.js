@@ -414,6 +414,12 @@ GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
             GOKb.defaultError(dataR);
           }
         } else {
+          
+          // Check the redirects first.
+          if ("redirect" in dataR) {
+            window.location.href = dataR.redirect;
+          }
+          
           if ("onDone" in callbacks) {
             try {
               callbacks.onDone(dataR);
