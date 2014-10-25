@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.tools.tar.TarOutputStream;
+import org.json.JSONException;
+import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,8 +100,22 @@ public class CheckInProject extends A_RefineAPIBridge {
           // Remove the project from refine.
           pm.deleteProject(project);
 
-          // Redirect to the refine index.
-          redirect(response, "/");
+          try {
+            response.setCharacterEncoding("UTF-8");
+            response.setHeader("Content-Type", "application/json");
+            
+            // The writer.
+            JSONWriter writer = new JSONWriter(response.getWriter());
+            
+            // Open an object.
+            writer.object()
+              .key("code").value("success")
+              .key("redirect").value("/")
+            .endObject();
+            
+          } catch (JSONException e) {
+            respondException(response, e);
+          }
         }
 
       });

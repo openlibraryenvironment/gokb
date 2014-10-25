@@ -121,7 +121,9 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
         // Form needs to be submitted.
         $[method](action, f.serialize(), function(data){
           // Show something of success or failure.
-          window.console.log(data);                                                                                                                               
+          if ("code" in data && data.code == "success" && "redirect" in data) {
+            window.location = data.redirect;
+          }
         });
       }
       
