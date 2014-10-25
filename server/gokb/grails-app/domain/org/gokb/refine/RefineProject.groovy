@@ -1,9 +1,11 @@
 package org.gokb.refine
 
+import org.apache.bcel.classfile.SourceFile;
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Org
 import org.gokb.cred.User
+
 import javax.persistence.Transient
 
 class RefineProject extends KBComponent {
@@ -76,7 +78,7 @@ class RefineProject extends KBComponent {
      possibleRulesString column: 'rp_matching_rules', type: 'text'
                    notes column: 'rp_notes'
            projectStatus column: 'rp_project_status'
-              sourceFile column: 'rp_source_file', lazy: true, type: 'longblob' 
+              sourceFile column: 'rp_source_file', sqlType:'longblob', lazy: true
   }
 
   
@@ -95,7 +97,7 @@ class RefineProject extends KBComponent {
     defaultDataFormat(nullable:true, blank:true)
     accessUrl(nullable:true, blank:true)
     dataUrl(nullable:true, blank:true)
-
+    
   }
 
   @Transient
