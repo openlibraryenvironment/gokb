@@ -44,6 +44,7 @@ class RefineProject extends KBComponent {
    RefdataValue defaultDataFormat
    String accessUrl
    String dataUrl
+   byte[] sourceFile
 
    // The rows skipped in the ingest process.
    Set<String> skippedTitles = []
@@ -65,16 +66,17 @@ class RefineProject extends KBComponent {
                     file column: 'rp_file'
 //               checkedIn column: 'rp_checked_in'
         lastCheckedOutBy column: 'rp_last_checked_out_by'
-             createdBy column: 'rp_created_by'
-        modifiedBy column: 'rp_modified_by'
+               createdBy column: 'rp_created_by'
+              modifiedBy column: 'rp_modified_by'
           localProjectID column: 'rp_local_project_id'
                     hash column: 'rp_hash'
                 provider column: 'rp_prov_fk'
     lastValidationResult column: 'rp_last_validation_result', type: 'text'
                 progress column: 'rp_progress'
      possibleRulesString column: 'rp_matching_rules', type: 'text'
-          notes column: 'rp_notes'
-       projectStatus column: 'rp_project_status'
+                   notes column: 'rp_notes'
+           projectStatus column: 'rp_project_status'
+              sourceFile column: 'rp_source_file', lazy: true, type: 'longblob' 
   }
 
   
