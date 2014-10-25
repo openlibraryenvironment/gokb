@@ -74,6 +74,7 @@ grails.project.dependency.resolution = {
 
     plugins {
       
+      runtime ":cors:1.1.6"
       
       compile ":grails-melody:1.52.0"
 
