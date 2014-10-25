@@ -138,8 +138,8 @@ abstract class A_Api <T> {
                   
                 } else {
                   if (args.length == 1 && args[0] instanceof Object[]) {
-                    // Treat this as the list of parameters.
-                    the_args.addAll(args[0].toList())
+                    // Treat this as the parameter.
+                    the_args.add(args[0])
                   } else {
                     the_args.addAll(args.toList())
                   }
@@ -178,10 +178,10 @@ abstract class A_Api <T> {
                   
                 } else {
                   if (args.length == 1 && args[0] instanceof Object[]) {
-                    // Treat this as the list of parameters.
-                    the_args.addAll(args[0].toList())
+                    // Treat this as the parameter.
+                    the_args.add(args[0])
                   } else {
-                    the_args.addAll(args.toList())
+                    the_args.addAll(args)
                   }
                 }
                 
