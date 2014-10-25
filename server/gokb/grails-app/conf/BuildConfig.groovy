@@ -70,6 +70,7 @@ grails.project.dependency.resolution = {
         compile 'com.github.sommeri:less4j:1.8.2'
         
         compile 'org.ajoberstar:grgit:0.2.3' // 0.3.0 is Groovy >=2.3 and breaks for me.
+        build 'org.apache.httpcomponents:httpcore:4.3.2'
     }
 
     plugins {
