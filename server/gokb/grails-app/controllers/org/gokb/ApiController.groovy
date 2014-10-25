@@ -86,6 +86,7 @@ class ApiController {
   def grailsApplication
   def springSecurityService
   def componentLookupService
+  def genericOIDService
   ConcurrencyManagerService concurrencyManagerService
 
   /**
@@ -93,7 +94,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'downloadUpdate']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'downloadUpdate', 'search']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -918,4 +919,48 @@ class ApiController {
     // Send not found.
     response.status = 404
   }
+
+  // this is used as an entrypoint for single page apps based on frameworks like angular.
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def search() {
+    def result = [:]
+
+    User user = springSecurityService.currentUser
+
+    log.debug("Entering SearchController:index");
+
+    result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
+    result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+
+    if ( params.qbe ) {
+      if ( params.qbe.startsWith('g:') ) {
+        // Global template, look in config
+        def global_qbe_template_shortcode = params.qbe.substring(2,params.qbe.length());
+        result.qbetemplate = grailsApplication.config.globalSearchTemplates[global_qbe_template_shortcode]
+      }
+
+      // Looked up a template from somewhere, see if we can execute a search
+      if ( result.qbetemplate ) {
+        log.debug("Execute query");
+        doQuery(result.qbetemplate, params, result)
+        log.debug("Query complete");
+        result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
+
+        // Add the page information.
+        result.page_current = (result.offset / result.max) + 1
+        result.page_total = (result.reccount / result.max).toInteger() + (result.reccount % result.max > 0 ? 1 : 0)
+      }
+      else {
+        log.error("no template ${result?.qbetemplate}");
+      }
+    }
+
+    render result as JSON
+  }
+
+  def private doQuery (qbetemplate, params, result) {
+    def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
+    com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
+  }
+
 }

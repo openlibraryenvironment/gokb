@@ -83,19 +83,12 @@ grails.project.dependency.resolution = {
       build ':tomcat:7.0.54' // plugins for the compile step compile
       
       // plugins for the compile step
-//      compile ':scaffolding:2.1.0'
       compile ':cache:1.1.3'
-      
-//      compile ":spring-security-core:2.0-RC4"
-//      compile ":spring-security-acl:2.0-RC1"
-//      compile ":spring-security-ui:1.0-RC2"
       
       compile ':asset-pipeline:1.9.9'
       
       // Allows the use of groovy code in css and js files by suffixing with '-gtpl'.
       // Injects grailsApplication and config for easy access in your files.
-//      compile ":groovy-template-grails-asset-pipeline:0.4"
-//      compile ":groovy-asset-pipeline:1.2"
       
       // LESS compiler
       compile ":less-asset-pipeline:1.11.0", {
@@ -108,7 +101,6 @@ grails.project.dependency.resolution = {
       
       /*************************************/
       
-//      runtime ':hibernate:3.6.10.2'
       runtime ":jquery:1.11.1"
       runtime ':jquery-ui:1.10.3'
 
@@ -116,11 +108,7 @@ grails.project.dependency.resolution = {
       //runtime ":zipped-resources:1.0"
       //runtime ":cached-resources:1.0"
       //runtime ":yui-minify-resources:0.1.4"
-//      build ':tomcat:7.0.40.1'
 
-//      runtime ":database-migration:1.3.3"
-      
-//      compile ':cache:1.0.1'
   
       // Joda time to handle the ISO dates.
       compile ":joda-time:1.4"
@@ -139,15 +127,11 @@ grails.project.dependency.resolution = {
       // Job scheduler plugin.
       compile ":quartz:1.0.1"
 
-      // II: Added.. Groping around in the dark a bit..
-      // compile ":compass-sass:0.7" - OK this causes an exception
-      
       /** Moved plugins from the properties file to here **/
       compile ':audit-logging:0.5.4' // SO: Tried upgrading to 0.5.5.3, but this caused a null pointer to be thrown.
       compile ':executor:0.3'
       compile ':famfamfam:1.0.1'
       compile ':rest:0.7'
-      // compile ':twitter-bootstrap:2.3.2'
       compile ":twitter-bootstrap:3.2.0.2"
     }
 }
