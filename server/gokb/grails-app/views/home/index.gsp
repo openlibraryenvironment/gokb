@@ -23,16 +23,16 @@
 						<!-- Wrapper for slides -->
 						<div class="carousel-inner">
 							<div class="item active">
-								<asset:image src="gokb/carousel/001.jpg" />
+								<asset:image src="gokb/carousel/001_opt.jpg" />
 							</div>
 							<div class="item">
-								<asset:image src="gokb/carousel/002.jpg" />
+								<asset:image src="gokb/carousel/002_opt.jpg" />
 							</div>
 							<div class="item">
-								<asset:image src="gokb/carousel/003.jpg" />
+								<asset:image src="gokb/carousel/003_opt.jpg" />
 							</div>
 							<div class="item">
-								<asset:image src="gokb/carousel/004.jpg" />
+								<asset:image src="gokb/carousel/004_opt.jpg" />
 							</div>
 						</div>
 
