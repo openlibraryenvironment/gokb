@@ -966,12 +966,14 @@ class ApiController {
     def resultrows = []
 
     log.debug("process recset..");
+    int seq = result.offset
     result.recset.each { rec ->
       // log.debug("process rec..");
       def response_row = [:]
+      response_row['__oid'] = rec.class.name+':'+rec.id
+      response_row['__seq'] = seq++
       qbetemplate.qbeConfig.qbeResults.each { r ->
         response_row[r.heading] = groovy.util.Eval.x(rec, 'x.' + r.property)
-        // log.debug("process col.. ${r.property} = ${cv}");
       }
       resultrows.add(response_row);
     }
