@@ -138,8 +138,15 @@ abstract class A_Api <T> {
                   
                 } else {
                   if (args.length == 1 && args[0] instanceof Object[]) {
-                    // Treat this as the parameter.
-                    the_args.add(args[0])
+                    // Could be any type of array at this point.
+                    if (args[0].class == Object[].class) {
+                      
+                      // Treat this as an array of parameter.
+                      the_args.addAll(args[0])
+                    } else {
+                      // Treat as only parameter.
+                      the_args.add(args[0])
+                    }
                   } else {
                     the_args.addAll(args.toList())
                   }
@@ -178,8 +185,16 @@ abstract class A_Api <T> {
                   
                 } else {
                   if (args.length == 1 && args[0] instanceof Object[]) {
-                    // Treat this as the parameter.
-                    the_args.add(args[0])
+                    
+                    // Could be any type of array at this point.
+                    if (args[0].class == Object[].class) {
+                      
+                      // Treat this as an array of parameter.
+                      the_args.addAll(args[0])
+                    } else {
+                      // Treat as only parameter.
+                      the_args.add(args[0])
+                    }
                   } else {
                     the_args.addAll(args)
                   }

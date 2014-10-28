@@ -70,6 +70,7 @@ class ApiController {
             case "allComboPropertyNames" :
             case "allComboTypeValues" :
             case "allComboTypeValues" :
+            case "sourceFile" :
               /* DO nothing */
             break
 
