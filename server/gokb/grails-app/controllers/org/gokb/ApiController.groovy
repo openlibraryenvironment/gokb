@@ -939,7 +939,7 @@ class ApiController {
         // Looked up a template from somewhere, see if we can execute a search
         if ( result.qbetemplate ) {
           log.debug("Execute query");
-          def qresult = [:]
+          def qresult = [max:result.max, offset:result.offset]
           result.rows = doQuery(result.qbetemplate, params, qresult)
           log.debug("Query complete");
           result.lasthit = result.offset + result.max > qresult.reccount ? qresult.reccount : ( result.offset + result.max )
@@ -960,6 +960,7 @@ class ApiController {
   }
 
   def private doQuery (qbetemplate, params, result) {
+    log.debug("doQuery ${result}");
     def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
     com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
     def resultrows = []
