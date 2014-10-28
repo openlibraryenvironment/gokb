@@ -6,8 +6,6 @@ import org.gokb.validation.types.LookedUpValue
 import grails.util.GrailsNameUtils
 
 class ComponentLookupService {
-  
-  static scope = 'request'
 
   def grailsApplication
 
