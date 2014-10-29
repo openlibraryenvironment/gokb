@@ -175,7 +175,8 @@ ValidationPanel.prototype._render = function() {
         
         // Show a message allowing ingest.
         var ingest_note = {
-          title : "Project valid"
+          title : "Project valid",
+          noMenu : true
         };
         
         if (data.dataCheck.messages.length > 0) {
@@ -259,9 +260,9 @@ ValidationPanel.prototype.showMessage = function (message) {
   var m = $.extend({}, message, {
     title: message.col,
     before_open : function (notice) {
-      
       // Add the menu if needed.
-      if ("quickRes" in message) {
+      
+      if (!("noMenu" in message) || !message.noMenu) {
         var menuLink = $("<div class='gokb-message-actions' />").append(
           $("<span class='ui-icon ui-icon-wrench' title='Menu'></span>")
           
@@ -284,7 +285,7 @@ ValidationPanel.prototype.showMessage = function (message) {
           }
         });
       }
-    },
+    }
   });
   
   // Add the message to the validation stack..
