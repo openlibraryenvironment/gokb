@@ -354,8 +354,15 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         _logger.info("Loading GOKb properties ({})", propFile);
         BufferedInputStream stream = null;
         try {
+          Properties ps = new Properties();
           stream = new BufferedInputStream(new FileInputStream(propFile));
-          p.load(stream);
+          ps.load(stream);
+          
+          // Go through each property and clean the value first.
+          for (Object key : ps.keySet()) {
+            String k = (String)key;
+            p.addProperty(k, ps.getProperty(k));
+          }
         } finally {
           // Close the stream.
           if (stream != null) stream.close();
