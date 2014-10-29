@@ -28,7 +28,7 @@ import com.google.refine.commands.Command;
 
 public abstract class A_RefineAPIBridge extends Command {
 
-  private enum REQUEST_TYPE {
+  protected enum REQUEST_TYPE {
     NORMAL, AJAX
   }
 
@@ -46,7 +46,7 @@ public abstract class A_RefineAPIBridge extends Command {
     super();
   }
 
-  private REQUEST_TYPE determineRequestType (HttpServletRequest req) {
+  protected REQUEST_TYPE determineRequestType (HttpServletRequest req) {
 
     if ("XMLHttpRequest".equalsIgnoreCase(req.getHeader("X-Requested-With"))) {
       return REQUEST_TYPE.AJAX;

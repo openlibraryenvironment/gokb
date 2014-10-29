@@ -101,17 +101,27 @@ public class CheckInProject extends A_RefineAPIBridge {
           pm.deleteProject(project);
 
           try {
-            response.setCharacterEncoding("UTF-8");
-            response.setHeader("Content-Type", "application/json");
             
-            // The writer.
-            JSONWriter writer = new JSONWriter(response.getWriter());
-            
-            // Open an object.
-            writer.object()
-              .key("code").value("success")
-              .key("redirect").value("/")
-            .endObject();
+            // Can be called using ajax or directly.
+            switch (determineRequestType(request)) {
+              case AJAX:
+                response.setCharacterEncoding("UTF-8");
+                response.setHeader("Content-Type", "application/json");
+                
+                // The writer.
+                JSONWriter writer = new JSONWriter(response.getWriter());
+                
+                // Open an object.
+                writer.object()
+                  .key("code").value("success")
+                  .key("redirect").value("/")
+                .endObject();
+                break;
+              case NORMAL:
+              default:
+                redirect(response, "/");
+                break;
+            }
             
           } catch (JSONException e) {
             respondException(response, e);
