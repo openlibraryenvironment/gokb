@@ -372,7 +372,9 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         // Now lets raise a notification.
         Notification n = Notification.fromJSON("{"
             + "id:'module-update',"
-            + "text:'A system update (version " + updateService.getAvailableModuleVersion() + ") has been donwloaded, and refine has now been shutdown, and the update attempted to install. You will now need to restart refine to continue working.',"
+            + "text:'A system update (version " + updateService.getAvailableModuleVersion() + ") has been donwloaded from the service at '"
+                + updateService.getURL() + "'. Refine has now been shutdown, and you will now need to restart refine and clear your browser caches to continue working.',"
+            
             + "title:'GOKb Update',"
             + "block:true,"
             + "hide:false}"
