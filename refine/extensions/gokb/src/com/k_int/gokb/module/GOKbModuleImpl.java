@@ -35,12 +35,15 @@ import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 import com.google.refine.io.FileProjectManager;
 
+import edu.mit.simile.butterfly.ButterflyClassLoader;
 import edu.mit.simile.butterfly.ButterflyModule;
 import edu.mit.simile.butterfly.ButterflyModuleImpl;
 
 public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
   final static Logger _logger = LoggerFactory.getLogger("GOKb-ModuleImpl");
+  
+  private boolean updated = false;
 
   public static ExtendedProperties properties;
 
@@ -128,7 +131,6 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         } catch (Exception e){
 
           // Log the error
-
           _logger.error(e.getLocalizedMessage(), e);
         }
       }
@@ -290,6 +292,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     }, 1, 60, TimeUnit.SECONDS);
   }
 
+  /**
+   * This is the entry point that runs all registered scheduled updates.
+   * @throws Throwable
+   */
   private synchronized void scheduledTasks() throws Throwable {
     _logger.debug("Running scheduled tasks.");
 
@@ -297,53 +303,86 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     for (A_ScheduledUpdates up : scheduledObjects) {
       up.doScheduledUpdates();
     }
-
-    // Now we can see if we have any module updates available.
-    GOKbService service = null;
-    for (GOKbService s : getAllServices()) {
-
-      if (s.hasUpdate()) {
-        if (service == null) {
-          service = s;
-        } else {
-
-          // Compare existing with available.
-          String available = s.getAvailableModuleVersion();
-          if (TextUtils.versionCompare(service.getAvailableModuleVersion(), available) > 0) {
-            // Later version here.
-            service = s;
+    
+    // Update the core data once we have finished executing our scheduled tasks.
+    updateCoreData();
+  }
+  
+  /**
+   * Update the core module data
+   * @throws Throwable
+   */
+  private synchronized void updateCoreData() throws Throwable {
+    
+    if (!updated) {
+    
+      // Now we can see if we have any module updates available.
+      GOKbService updateService = null;
+      
+      for (GOKbService s : getAllServices()) {
+  
+        if (s.hasUpdate()) {
+          if (updateService == null) {
+            updateService = s;
+          } else {
+  
+            // Compare existing with available.
+            String available = s.getAvailableModuleVersion();
+            if (TextUtils.versionCompare(updateService.getAvailableModuleVersion(), available) > 0) {
+              // Later version here.
+              updateService = s;
+            }
           }
         }
       }
-    }
-
-    // If we have an update then we should add a system message.
-    if (service != null) {
-      
-      // Let's update...
-      File module_path = getPath().getParentFile().getParentFile();
+  
+      // If we have an update then we should add a system message.
+      if (updateService != null) {
         
-      // Updater.
-      Updater updt = new Updater(
-          service,
-          module_path);
-      
-      // Do the update.
-      updt.update();
-      
-      // Now lets raise a notification.
-      Notification n = Notification.fromJSON("{"
-          + "id:'module-update',"
-          + "text:'A system update (version " + service.getAvailableModuleVersion() + ") has been donwloaded. You must restart refine for the update to take effect.',"
-          + "title:'GOKb Update',"
-          + "hide:false}"
-      );
+        // Let's update...
+        final File module_path = getPath().getParentFile().getParentFile();
+        
+        // Final references so they can be passed across threads.
+        final GOKbService s = updateService;
+        
+        // Because of how jars are locked on the windows platform, we need to update after we release all resources. To do
+        // this we add a shutdown hook which will fire as the VM shuts down.
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+          
+          @Override
+          public void run() {
+            
+            // Construct the updater.
+            Updater updt = new Updater(s, module_path, (ButterflyClassLoader) _classLoader);
 
-      // Remove the buttons.
-      n.getButtons().put("closer", false);
-      n.getButtons().put("sticker", false);
-
-      NotificationStack.getSystemStack().add(n);
+            try {
+              // Do the update.
+              updt.update();
+            } catch (Exception e) {
+              // Any error here will mean that the file needs to be manually downloaded.
+              _logger.error("An error occured while updating the file. You should re-download the file fully and replace it manually.");
+            }
+          }
+        });
+        
+        // Now lets raise a notification.
+        Notification n = Notification.fromJSON("{"
+            + "id:'module-update',"
+            + "text:'A system update (version " + updateService.getAvailableModuleVersion() + ") has been donwloaded, and refine has now been shutdown, and the update attempted to install. You will now need to restart refine to continue working.',"
+            + "title:'GOKb Update',"
+            + "hide:false}"
+        );
+  
+        // Remove the buttons.
+        n.getButtons().put("closer", false);
+        n.getButtons().put("sticker", false);
+  
+        // Add to the system notification stack.
+        NotificationStack.getSystemStack().add(n);
+        
+        // Flag that this has run already... No need to keep downloading updates.
+        updated = true;
+      }
     }
   }
 

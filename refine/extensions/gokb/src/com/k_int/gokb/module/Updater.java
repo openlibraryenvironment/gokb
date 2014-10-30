@@ -20,16 +20,20 @@ import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.mit.simile.butterfly.ButterflyClassLoader;
+
 public class Updater {
   
   final static Logger _logger = LoggerFactory.getLogger("GOKb-Updater");
 
   private GOKbService service;
   private File destination;
+  private ButterflyClassLoader cl;
 
-  public Updater (GOKbService service, File destination) {
+  public Updater (GOKbService service, File destination, ButterflyClassLoader cl) {
     this.service = service;
     this.destination = destination;
+    this.cl = cl;
   }
 
   /**
@@ -103,9 +107,11 @@ public class Updater {
       // Ensure we close the Zip file.
       if (zipFile != null) zipFile.close();
     }
-    
+        
     _logger.info("Moving files from {} to {}", temp_dir.getAbsolutePath(), to_folder.getAbsolutePath() );
     
+    // Close the class loader here...
+    cl.close();
     for (File dir : temp_dir.listFiles((FileFilter)FileFilterUtils.directoryFileFilter())) {
       
       // First create the destination.
