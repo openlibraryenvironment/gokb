@@ -67,6 +67,9 @@ grails.project.dependency.resolution = {
         runtime 'org.elasticsearch:elasticsearch-client-groovy:1.3.2'
         runtime 'net.sf.opencsv:opencsv:2.0'
         
+        // Gant. Matched the version that ships with grails bootstrap in Grails 2.3.11
+        runtime 'org.codehaus.gant:gant_groovy1.8:1.9.6'
+        
         compile 'com.github.sommeri:less4j:1.8.2'
         
         compile 'org.ajoberstar:grgit:0.2.3' // 0.3.0 is Groovy >=2.3 and breaks for me.
