@@ -59,9 +59,9 @@
 					</h2>
 					<hr>
 					<p>GOKb, the Global Open Knowledgebase, is a community-managed
-						aim to describe electronic journals and books, publisher
-						packages, and platforms in a way that will be familiar to
-						librarians who have worked with electronic resources. Following
+						project that aims to describe electronic journals and books,
+						publisher packages, and platforms in a way that will be familiar
+						to librarians who have worked with electronic resources. Following
 						launch in November 2014, libraries and consortia will be working
 						together to extend and maintain the knowledge base.</p>
 					<p>
