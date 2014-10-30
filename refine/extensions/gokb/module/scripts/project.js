@@ -141,19 +141,22 @@ GOKb.hijackFunction (
     var dataTr = dataTable.rows[0];
     var headerTr = headerTable.rows[headerTable.rows.length - 1];
 
-    for (var i = 1; i < headerTr.cells.length; i++) {
-      var headerTd = $(headerTr.cells[i]);
-      var dataTd = $(dataTr.cells[i + 2]);
-      var htd_div = headerTd.find('> div').width("1%");
-      var dtd_div = dataTd.find('> div').width("1%");
-      var commonWidth = Math.max(
-        headerTd.width(),
-        dataTd.width()
-      );
-      	
-      // Change the widths.
-      htd_div.width(commonWidth);
-      dtd_div.width(commonWidth);
+    if (typeof dataTr != "undefined") {
+    
+      for (var i = 1; i < headerTr.cells.length; i++) {
+        var headerTd = $(headerTr.cells[i]);
+        var dataTd = $(dataTr.cells[i + 2]);
+        var htd_div = headerTd.find('> div').width("1%");
+        var dtd_div = dataTd.find('> div').width("1%");
+        var commonWidth = Math.max(
+          headerTd.width(),
+          dataTd.width()
+        );
+        	
+        // Change the widths.
+        htd_div.width(commonWidth);
+        dtd_div.width(commonWidth);
+      }
     }
     
     // Make sure the scroll is correct.
