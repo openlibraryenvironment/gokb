@@ -31,6 +31,12 @@ public class GetCoreData extends Command {
       JSONWriter writer = new JSONWriter(response.getWriter());
       GOKbModuleImpl.singleton.write(writer, null);
       
+      // Do we need to close the app?
+      if (GOKbModuleImpl.singleton.isUpdated()) {
+        // Exit.
+        System.exit(0);
+      }
+      
     } catch (JSONException e) {
       respondException(response, e);
     }

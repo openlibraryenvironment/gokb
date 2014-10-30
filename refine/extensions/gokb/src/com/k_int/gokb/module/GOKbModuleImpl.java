@@ -49,6 +49,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
   public static GOKbModuleImpl singleton;
 
+  public boolean isUpdated () {
+    return updated;
+  }
+
   private static String userDetails = null;
   private static String version = null;
 
