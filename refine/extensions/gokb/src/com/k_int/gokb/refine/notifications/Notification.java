@@ -16,6 +16,7 @@ public class Notification extends Jsonizable {
   private String text;
   private String title;
   private boolean hide;
+  private boolean block;
   private String id;
   private Map<String,Object> buttons = new HashMap<String,Object>();
   
@@ -66,5 +67,13 @@ public class Notification extends Jsonizable {
 
   public Map<String,Object> getButtons () {
     return buttons;
+  }
+
+  public boolean isBlock () {
+    return block;
+  }
+
+  public void setBlock (boolean block) {
+    this.block = block;
   }
 }

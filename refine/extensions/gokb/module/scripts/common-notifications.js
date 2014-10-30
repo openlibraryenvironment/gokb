@@ -12,6 +12,7 @@ Notification = function () {
       dir2  : "left",
       _notification_defaults  : {
         type : "info",
+        addclass: "system-stack"
       },
     },
     "validation" : {
@@ -113,9 +114,12 @@ Notification.prototype.show = function (notification, stack_name) {
   
   // Test to see if we should block input.
   if ("block" in n && n.block == true) {
-    var overlay = $('<div>&nbsp;</div>')
-      .addClass("dialog-overlay")
-      .appendTo(document.body);
+    if ($('#block-notification-overlay').length == 0) {
+      $('<div>&nbsp;</div>')
+        .attr("id", "block-notification-overlay")
+        .addClass("dialog-overlay")
+        .appendTo(document.body);
+    }
   }
   
   return note;

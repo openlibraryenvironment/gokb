@@ -374,6 +374,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
             + "id:'module-update',"
             + "text:'A system update (version " + updateService.getAvailableModuleVersion() + ") has been donwloaded, and refine has now been shutdown, and the update attempted to install. You will now need to restart refine to continue working.',"
             + "title:'GOKb Update',"
+            + "block:true,"
             + "hide:false}"
         );
   
