@@ -217,7 +217,7 @@ ValidationPanel.messages.quickRes.renameColumn = function(message) {
 				Refine.postCoreProcess(
 					"rename-column", 
 					{
-					  oldColumnName: name,
+					  oldColumnName: GOKb.caseInsensitiveColumnName(name),
 					  newColumnName: message.col
 					},
 					null,
