@@ -1,6 +1,7 @@
 package com.k_int.gokb.refine.commands;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -33,8 +34,14 @@ public class GetCoreData extends Command {
       
       // Do we need to close the app?
       if (GOKbModuleImpl.singleton.isUpdated()) {
-        // Exit.
-        System.exit(0);
+        
+        GOKbModuleImpl.singleton.scheduler.schedule(new Runnable(){
+
+          @Override
+          public void run () {
+            // 5 second grace period.
+            System.exit(0);
+          }}, 5, TimeUnit.SECONDS);
       }
       
     } catch (JSONException e) {

@@ -836,9 +836,6 @@ GOKb.timer = function() {
     // Just call with empty callbacks. If the api is not up there will be a timeout.
     // If the versions are wrong then the default error callback will be fired and the,
     // version missmatch reported to the user.
-    GOKb.doCommand("isUp", {}, {}, {});
-    
-    if (!GOKb.lockdown) {
       
       // Grab the core data.
       GOKb.fetchCoreData().done(function(data){
@@ -853,7 +850,6 @@ GOKb.timer = function() {
       });
       
       return listener;
-    }
   }
   
   // If we get here then we have a version error and should reject.

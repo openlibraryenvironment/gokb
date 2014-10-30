@@ -80,7 +80,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     return version;
   }
 
-  private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+  public ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
   private Set<A_ScheduledUpdates> scheduledObjects = new HashSet<A_ScheduledUpdates> ();
   public void registerScheduledObject (A_ScheduledUpdates obj) {
 
