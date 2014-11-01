@@ -540,6 +540,8 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.Org',
     title:'Organizations',
     group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
