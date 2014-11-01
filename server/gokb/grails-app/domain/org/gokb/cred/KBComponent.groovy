@@ -643,6 +643,12 @@ abstract class KBComponent {
   }
 
   @Override
+  @Transient 
+  public String getDerivedName() {
+    return name;
+  }
+
+  @Override
   public boolean equals(Object obj) {
 
     if ( obj != null ) {

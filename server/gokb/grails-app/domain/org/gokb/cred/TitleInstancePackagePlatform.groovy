@@ -124,8 +124,10 @@ class TitleInstancePackagePlatform extends KBComponent {
     result
   }
 
-  // II : Removed this - it was causing a horrible recusrsive problem :: Not sure how it got back in here
-  // public String getName() {
-  //   return super.name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
-  // }
+  @Override
+  @Transient
+  public String getDerivedName() {
+    return name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
+  }
+
 }
