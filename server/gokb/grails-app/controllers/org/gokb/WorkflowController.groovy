@@ -999,7 +999,7 @@ class WorkflowController {
                      '[TI] Continuing series	[TI] ISSN	[TI] EISSN	Package	Package ID	Package URL	Platform	'+
                      'Platform URL	Platform ID	Reference	Edit Status	Access Start Date	Access End Date	Coverage Start Date	'+
                      'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
-                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type	Delayed OA	Delayed OA Embargo	Hybrid OA	Hybrid OA URL\n');
+                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
@@ -1019,8 +1019,7 @@ class WorkflowController {
                           sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.id ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
                           sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
                           sanitize( tipp.endVolume ) + '\t' + sanitize( tipp.endIssue ) + '\t' + sanitize( tipp.embargo ) + '\t' + sanitize( tipp.coverageNote ) + '\t' + sanitize( tipp.hostPlatform.primaryUrl ) + '\t' +
-                          sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) + '\t' + sanitize( tipp.delayedOA?.value ) + '\t' + sanitize( tipp.delayedOAEmbargo ) + '\t' +
-                          sanitize( tipp.hybridOA?.value ) + '\t' + sanitize( tipp.hybridOAUrl ) +
+                          sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) +
                           '\n');
             tipp.discard();
           }
