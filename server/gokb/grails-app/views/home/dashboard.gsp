@@ -8,7 +8,7 @@
     <title>GOKb: Dashboard</title>
   </head>
   <body>
-    <h1 class="page-header">Welcome to your GOKb</h1>
+    <h1 class="page-header">Welcome to GOKb</h1>
     <cache:block>
       <!-- Full rows -->
       <g:each var="name, widget" in="${widgets}" status="wcount" >
