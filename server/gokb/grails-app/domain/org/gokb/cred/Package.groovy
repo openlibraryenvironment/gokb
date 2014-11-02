@@ -140,7 +140,7 @@ class Package extends KBComponent {
       // against an instance which attempts to deproxy this component. Calling deproxy(t) here will invoke the method
       // against the current package. this.deproxy(t).
       // So Package.deproxy(t) or t.deproxy() should work...
-      tipp = Package.deproxy(t)
+      def tipp = Package.deproxy(t)
       log.debug("Retiring tipp ${tipp.id}");
       tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
       tipp.save()
