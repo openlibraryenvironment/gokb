@@ -114,7 +114,7 @@ class Package extends KBComponent {
       
       // Ensure they aren't the javassist type classes here, as we will get a NoSuchMethod exception
       // thrown below if we don't.
-      tipp = deproxy(tipp)
+      tipp = KBComponent.deproxy(tipp)
       
       tipp.deleteSoft()
     }
@@ -133,9 +133,10 @@ class Package extends KBComponent {
     log.debug("Retiring tipps");
     def tipps = getTipps()
 
-    tipps.each { def tipp ->
+    tipps.each { def t ->
+      log.debug("deroxy ${t} ${t.class.name}");
+      tipp = deproxy(t)
       log.debug("Retiring tipp ${tipp.id}");
-      tipp = deproxy(tipp)
       tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
       tipp.save()
     }
