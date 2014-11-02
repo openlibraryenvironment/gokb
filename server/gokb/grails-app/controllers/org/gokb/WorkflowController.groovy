@@ -1013,8 +1013,8 @@ class WorkflowController {
                           sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
                           sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
                           sanitize( tipp.title.continuingSeries?.value ) + '\t' + 
-                          '\t' + sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                          '\t' + sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                          sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
+                          sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
                           sanitize( pkg.name ) + '\t' + sanitize( pkg.id ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
                           sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.id ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
                           sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
