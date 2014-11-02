@@ -599,11 +599,22 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
         ],
         [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
+          prompt:'Publisher',
+          qparam:'qp_pub',
+          placeholder:'Publisher',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
+          hide:false
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
           prompt:'Content Provider',
           qparam:'qp_prov_id',
-          placeholder:'Content Provider Id',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher.id','type' : 'java.lang.Long'],
-          hide:true
+          placeholder:'Content Provider',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider'],
+          hide:false
         ],
       ],
       qbeGlobals:[
