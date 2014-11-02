@@ -129,7 +129,7 @@ class ApiController {
     // If the status is error then we should log an entry.
     if (status == 'error') {
       
-      // Generate a 16bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
+      // Generate 6bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
       byte[] randomBytes = new byte[6]
       rand.nextBytes(randomBytes)
       def ticket = Base64.encodeBase64String(randomBytes);
