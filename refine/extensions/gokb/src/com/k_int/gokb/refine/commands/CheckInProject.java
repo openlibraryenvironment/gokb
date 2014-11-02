@@ -10,6 +10,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.poi.util.IOUtils;
 import org.apache.tools.tar.TarOutputStream;
 import org.json.JSONException;
 import org.json.JSONWriter;
@@ -18,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import com.k_int.gokb.refine.A_RefineAPIBridge;
 import com.k_int.gokb.refine.RefineAPICallback;
-
 import com.google.refine.ProjectManager;
 import com.google.refine.model.Project;
 
@@ -71,22 +71,41 @@ public class CheckInProject extends A_RefineAPIBridge {
 
         // Create a GZipped Tar Stream to create our tar.gz file.
         TarOutputStream tgzout = new TarOutputStream(
-            new GZIPOutputStream(
-                out
-                )
-            );
+          new GZIPOutputStream(
+            out
+          )
+        );
 
         try {
 
           // Export the project to the output stream.
-          pm.exportProject(project.id, tgzout);
+          try {
+            
+            // Because of the bloat in the metadata (Source File).
+            // We may run into an issue with a missing file (present at time of file list gen but not at time of constructing tar)
+            pm.exportProject(project.id, tgzout);
+          } catch (Exception e) {
+            
+            // Just close the streams and retry.
+            IOUtils.closeQuietly(tgzout);
+            out = new ByteArrayOutputStream();
+
+            // Create a GZipped Tar Stream to create our tar.gz file.
+            tgzout = new TarOutputStream(
+              new GZIPOutputStream(
+                out
+              )
+            );
+            // Retry...
+            pm.exportProject(project.id, tgzout);
+          }
 
           // Add the stream to the map.
           files.put("projectFile", out);
         } finally {
 
           // Ensure we close our output stream.
-          tgzout.close();
+          IOUtils.closeQuietly(tgzout);
         }
       }
 
