@@ -1,9 +1,12 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import groovy.util.logging.Log4j
+
 
 import org.gokb.refine.*
 
+@Log4j
 class Package extends KBComponent {
 
   // Owens defaults:
@@ -119,15 +122,19 @@ class Package extends KBComponent {
   
 
   public void retire (context) {
+    log.debug("package::retire");
     // Call the delete method on the superClass.
+    log.debug("Updating package status to retired");
     this.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
     this.save();
 
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
+    log.debug("Retiring tipps");
     def tipps = getTipps()
 
     tipps.each { def tipp ->
+      log.debug("Retiring tipp ${tipp.id}");
       tipp = deproxy(tipp)
       tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
       tipp.save()

@@ -591,7 +591,9 @@ abstract class KBComponent {
     save(failOnError:true)
   }
 
+  @Override
   public void retire () {
+    log.debug("KBComponent::retire");
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
     save(failOnError:true)

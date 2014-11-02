@@ -21,7 +21,8 @@ class WorkflowController {
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
     'method::RRClose':[actionType:'simple' ],
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
-    'exportPackage':[actionType:'process', method:'packageTSVExport']
+    'exportPackage':[actionType:'process', method:'packageTSVExport'],
+    'method::retire':[actionType:'simple' ],
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
