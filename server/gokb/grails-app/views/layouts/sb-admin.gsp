@@ -142,7 +142,7 @@
                     <li><g:link controller="integration"><i class="fa fa-database fa-fw"></i> Integration API</g:link></li>
                   </ul></li>
               </sec:ifAnyGranted>
-              <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Opperating environment</g:link></li>
+              <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Operating environment</g:link></li>
 
             </sec:ifLoggedIn>
             <sec:ifNotLoggedIn>
