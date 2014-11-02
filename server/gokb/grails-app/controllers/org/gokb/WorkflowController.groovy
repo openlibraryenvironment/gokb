@@ -984,7 +984,8 @@ class WorkflowController {
     }
 
     try {
-      response.setHeader("Content-disposition", "attachment;filename=${filename}")
+      response.setContentType('text/tsv')
+      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
       response.contentType = "text/tsv"
       def out = response.outputStream
       out.withWriter { writer ->
