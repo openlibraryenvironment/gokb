@@ -331,7 +331,7 @@
 
 			<div class="tab-pane" id="titles">
 				<g:link class="display-inline" controller="search" action="index"
-					params="[qbe:'g:titles', qp_prov_id:d.id, hide:['qp_prov_id']]"
+					params="[qbe:'g:1titles', qp_pub:'org.gokb.cred.Org:'+d.id, hide:['qp_pub']]"
 					id="">Titles published</g:link>
 			</div>
 
