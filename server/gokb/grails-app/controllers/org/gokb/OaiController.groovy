@@ -334,6 +334,12 @@ class OaiController {
         query += ' and o.lastUpdated < ?'
         query_params.add(sdf.parse(params.until))
       }
+
+      if ( params.set != null ) {
+        query += ' and o.identifier = ? '
+        query_params.add(params.set)
+      }
+
       query += ' order by o.lastUpdated'
 
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
