@@ -374,8 +374,10 @@ class ApiController {
           // Need to set the source here.
           Source src = componentLookupService.lookupComponent(params.source)
           
-          // Replace the component regex to just leave the string, and set as the name.
-          src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
+          if (!src.name || src.name == "") {
+            // Replace the component regex to just leave the string, and set as the name.
+            src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
+          }
           
           // Set the source of this project.
           project.setSource(src)
@@ -436,9 +438,9 @@ class ApiController {
 
         // Save and flush the project
         project.save(flush:true, failOnError:true)
-
+        
         if (params.ingest) {
-
+          
           // Is this an incremental update.
           boolean incremental = (params.boolean("incremental") != false)
 
@@ -671,7 +673,7 @@ class ApiController {
         f.transferTo(temp_data_zipfile)
         def parsed_project_file = [:]
         ingestService.extractRefineDataZip (temp_data_zipfile, parsed_project_file)
-        rules = suggestRulesFromParsedData ( parsed_project_file, provider )
+        rules = suggestRulesFromParsedData ( parsed_projpossibleRulesStringect_file, provider )
 
       } finally {
         if ( temp_data_zipfile ) {
