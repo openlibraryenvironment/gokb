@@ -87,20 +87,16 @@ class IngestService {
 
     def result = Validation.doValidate(project_data)
 
-    if ( result.messages?.size() > 0 ) {
-      log.debug("validation has messages: a failure: ${result.messages}")
-      // TODO: This needs fixing. The validity should be determined by each rule executing.
-      // Warnings should probably always return true to keep validation halting on warnings.
-      // Shouldn't have to go through the messages here again.
-      boolean valid = true
-      for (int i=0; valid && i<result.messages.size(); i++) {
-        def message = result.messages[i]
-        valid = (message.severity != A_ValidationRule.SEVERITY_ERROR)
+    if (!result.status) {
+      log.debug("Project is invalid.")
+    } else {
+    
+      if ( result.messages?.size() > 0 ) {
+        log.debug("Project is valid but has warnings.")
       }
-      result.status = valid
-    }
-    else {
-      log.debug("No messages, file valid");
+      else {
+        log.debug("Project is fully valid");
+      }
     }
 
     result

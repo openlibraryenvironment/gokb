@@ -73,10 +73,10 @@ class Validation {
     }
 
     // Check the rules for the column context.
-    checkColumnRules (result, col_positions)
+    checkColumnRules (result, col_positions) && result.status
 
     // Row-level checks.
-    checkRowRules (result, col_positions, project_data)
+    checkRowRules (result, col_positions, project_data) && result.status
 
     // Return the result.
     result
@@ -109,7 +109,9 @@ class Validation {
     matches
   }
 
-  private void checkRowRules (final result, final col_positions, final project_data) {
+  private boolean checkRowRules (final result, final col_positions, final project_data) {
+    
+    boolean valid = result.status
 
     // The rules.
     List<List> valRules = validationRules [CONTEXT_ROW]
@@ -181,11 +183,11 @@ class Validation {
         if (rule instanceof I_DeferredRowValidationRule) {
 
           // Call the process method.
-          (rule as I_DeferredRowValidationRule).process(col_positions, rowNum, datarow)
+          valid = ((rule as I_DeferredRowValidationRule).process(col_positions, rowNum, datarow) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
         } else {
 
           // Call the validate method.
-          (rule as I_RowValidationRule).validate(result, col_positions, rowNum, datarow)
+          valid = ((rule as I_RowValidationRule).validate(result, col_positions, rowNum, datarow) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
         }
       }
 
@@ -196,11 +198,20 @@ class Validation {
     // We now just need to go through the deferred validation rules and call the valid method to
     // get the validation result.
     deferredRules.each { I_DeferredRowValidationRule rule ->
-      rule.validate(result)
+      valid = (rule.validate(result) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
     }
+    
+    // Set the status again.
+    result.status = valid
+    
+    valid
   }
 
-  private void checkColumnRules (final result, final col_positions) {
+  private boolean checkColumnRules (final result, final col_positions) {
+    
+    // The boolean validity value. Defaults to true and only errors can force this to false.
+    // Warnings do not count as failures.
+    boolean valid = result.status
 
     // The rules.
     List<List> valRules = validationRules [CONTEXT_COLUMN]
@@ -225,7 +236,7 @@ class Validation {
           I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(inst_params as Object[])
   
           // Execute the rule.
-          rule.validate(result, col_positions)
+          valid = (rule.validate(result, col_positions) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
         }
       } else {
       
@@ -233,9 +244,14 @@ class Validation {
         I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(conf)
 
         // Execute the rule.
-        rule.validate(result, col_positions)
+        valid = (rule.validate(result, col_positions) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
       }
     }
+    
+    // Set the status again.
+    result.status = valid
+    
+    valid
   }
 
   private void checkProcessingComplete(result, project_data) {

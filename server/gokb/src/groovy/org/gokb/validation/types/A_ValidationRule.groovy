@@ -11,6 +11,10 @@ abstract class A_ValidationRule {
   String columnName
   String severity
 
+  public String getSeverity () {
+    return severity;
+  }
+
   private A_ValidationRule () { /* Hide the default constructor */ }
 
   protected A_ValidationRule (String columnName, String severity) {
