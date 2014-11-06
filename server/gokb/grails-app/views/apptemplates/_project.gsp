@@ -68,21 +68,35 @@
 					<g:annotatedLabel owner="${d}" property="createdBy">Created By</g:annotatedLabel>
 				</dt>
 				<dd>
-					${d.createdBy?.displayName}&nbsp;
+					${ d.createdBy.displayName ?: d.createdBy.username }
 				</dd>
+				
+        <dt>
+          <g:annotatedLabel owner="${d}" property="projectStatus">Project Status</g:annotatedLabel>
+        </dt>
+        <dd>
+          ${d.projectStatus.name ?: "&nbsp;"}
+        </dd>
 
-				<dt>
-					<g:annotatedLabel owner="${d}" property="checkedOutBy">Checked Out By</g:annotatedLabel>
-				</dt>
-				<dd>
-					${d.lastCheckedOutBy?.displayName}&nbsp;
-				</dd>
+        <g:if test="${ d.projectStatus == org.gokb.refine.RefineProject.Status.CHECKED_OUT }" >
+					<dt>
+						<g:annotatedLabel owner="${d}" property="checkedOutBy">Checked Out By</g:annotatedLabel>
+					</dt>
+				</g:if>
+				<g:else>
+				  <dt>
+            <g:annotatedLabel owner="${d}" property="lastCheckedOutBy">Last Checked Out By</g:annotatedLabel>
+          </dt>
+				</g:else>
+        <dd>
+          ${ d.lastCheckedOutBy.displayName ?: d.lastCheckedOutBy.username }
+        </dd>
 
 				<dt>
 					<g:annotatedLabel owner="${d}" property="lastModifiedBy">Last Modified By</g:annotatedLabel>
 				</dt>
 				<dd>
-					${d.modifiedBy?.displayName}&nbsp;
+					${ d.modifiedBy.displayName ?: d.modifiedBy.username }
 				</dd>
 
 				<g:if test="${d.id != null}">
@@ -92,22 +106,11 @@
 					<dd>
 						${d.provider?.name ?: 'Not yet set'}
 					</dd>
-
-					<g:if test="${d.lastCheckedOutBy}">
-						<dt>
-							<g:annotatedLabel owner="${d}" property="lastCheckedOutBy">Last Checked Out By</g:annotatedLabel>
-						</dt>
-						<dd>
-							<g:link url="mailto:${ d.lastCheckedOutBy.email }">
-								${ d.lastCheckedOutBy.displayName ?: d.lastCheckedOutBy.username }
-							</g:link>
-						</dd>
-					</g:if>
 					<dt>
 						<g:annotatedLabel owner="${d}" property="lastValidationResult">Last validation result</g:annotatedLabel>
 					</dt>
 					<dd>
-						${d.lastValidationResult?:'Not yet validated'}
+						${d.lastValidationResult ?: 'Not yet validated'}
 					</dd>
 				</g:if>
 			</dl>
