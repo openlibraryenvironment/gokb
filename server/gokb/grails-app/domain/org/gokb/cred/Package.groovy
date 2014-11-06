@@ -221,12 +221,16 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
       builder.'package' (['id':(id)]) {
         'scope' ( scope?.value )
         'listStatus' ( listStatus?.value )
+        'status' ( status?.value )
         'breakable' ( breakable?.value )
         'consistent' ( consistent?.value )
         'fixed' ( fixed?.value )
         'paymentType' ( paymentType?.value )
         'global' ( global?.value )
+        'nominalPlatform' ( nominalPlatform?.name )
+        'nominalProvider' ( nominalPlatform?.provider?.name )
         'name' (name)
+        'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
