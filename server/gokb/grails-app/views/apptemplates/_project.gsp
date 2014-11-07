@@ -47,13 +47,26 @@
 				config="Source.DataSupplyMethod" />
 		</dd>
 
-		<dt>
-			<g:annotatedLabel owner="${d}" property="defaultDataFormat">Default Data Format</g:annotatedLabel>
-		</dt>
-		<dd>
-			<g:xEditableRefData owner="${d}" field="defaultDataFormat"
-				config="Source.DataFormat" />
-		</dd>
+    <dt>
+      <g:annotatedLabel owner="${d}" property="defaultDataFormat">Default Data Format</g:annotatedLabel>
+    </dt>
+    <dd>
+      <g:xEditableRefData owner="${d}" field="defaultDataFormat"
+        config="Source.DataFormat" />
+    </dd>
+
+    
+	    <dt>
+	      <g:annotatedLabel owner="${d}" property="sourceFile">Source file</g:annotatedLabel>
+	    </dt>
+	    <dd>
+	      <g:if test="${ d.sourceFile }" >
+	        <g:link controller="resource" action="download" id="${d.getClassName()}:${d.id}" params="${ ["prop" : "sourceFile"] }">Download the source file</g:link>
+	      </g:if>
+	      <g:else>
+	        No source file	      
+	      </g:else>
+	    </dd>
 	</dl>
 
 	<ul id="tabs" class="nav nav-tabs">
