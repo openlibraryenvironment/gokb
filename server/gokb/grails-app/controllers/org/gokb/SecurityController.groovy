@@ -174,7 +174,8 @@ class SecurityController {
         // User.
         User user = obj as User
         
-        if (springSecurityService.currentUser != user) {
+        // Allow only admins and 
+        if (user.isAdmin() || springSecurityService.currentUser != user) {
         
           params.each { String k, v ->
             
