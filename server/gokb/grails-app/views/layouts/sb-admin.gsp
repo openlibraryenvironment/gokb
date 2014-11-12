@@ -172,6 +172,23 @@
 
   </div>
   <!-- /#wrapper -->
+
+<asset:script type="text/javascript" src="//assets.zendesk.com/external/zenbox/v2.6/zenbox.js"></asset:script>
+<style type="text/css" media="screen, projection">
+  @import url(//assets.zendesk.com/external/zenbox/v2.6/zenbox.css);
+</style>
+<asset:script type="text/javascript">
+  if (typeof(Zenbox) !== "undefined") {
+    Zenbox.init({
+      dropboxID:   "20310953",
+      url:         "https://gokb.zendesk.com",
+      tabTooltip:  "Support",
+      tabImageURL: "https://p1.zdassets.com/external/zenbox/images/tab_support_right.png",
+      tabColor:    "#ed0003",
+      tabPosition: "Right"
+    });
+  }
+</asset:script>
   
   <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
     <asset:script type="text/javascript">
