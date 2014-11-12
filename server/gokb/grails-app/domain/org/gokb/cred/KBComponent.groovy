@@ -652,17 +652,10 @@ abstract class KBComponent {
 
   @Override
   public boolean equals(Object obj) {
-
-    if ( obj != null ) {
-    // Deproxy the object first to ensure it isn't a hibernate proxy.
-
-      if (obj instanceof KBComponent) {
-        return (this.getClassName() == obj.getClassName()) && (this.getId() == obj.getId())
-      }
-      else if ( obj instanceof org.hibernate.proxy.HibernateProxy ) {
-        def the_obj = KBComponent.deproxy(obj)
-        return (this.getClassName() == the_obj.getClassName()) && (this.getId() == the_obj.getId())
-      }
+    Object o = KBComponent.deproxy(obj)
+    if ( o != null ) {
+      // Deproxy the object first to ensure it isn't a hibernate proxy.
+      return (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
     }
 
     // Return false if we get here.
