@@ -117,13 +117,11 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
         
         // Default the method to a post.
         method = method == null ? "post" : method;
-      
-        // Form needs to be submitted.
-        $[method](action, f.serialize(), function(data){
-          // Show something of success or failure.
-          if ("code" in data && data.code == "success" && "redirect" in data) {
-            window.location = data.redirect;
-          }
+        
+        // Should be enough to just call the method with no on done call back as method
+        // is expected to either return a redirect or an error.
+        GOKb.doAjaxRequest (action, null, f.serialize(), {}, {
+          type: method
         });
       }
       

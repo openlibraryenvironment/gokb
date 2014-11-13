@@ -392,13 +392,28 @@ GOKb.postProcess = function(command, params, body, updateOptions, callbacks) {
  * Helper method to execute a command in the Refine backend
  */
 GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
+  return GOKb.doAjaxRequest("command/" + command, params, data, callbacks, ajaxOpts);
+};
+
+/**
+ * Generic url get/post with our custom callback handling.
+ */
+GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
   ajaxOpts = ajaxOpts || {};
+  
+  if (params && typeof params != 'undefined') {
+    if (params instanceof String || typeof params === 'string') {
+      url += "?" + params;
+    } else {
+      url += "?" + $.param(params);
+    }
+  }
   
   if (!GOKb.lockdown) {
   
     var ajaxObj = $.extend(ajaxOpts, {
-      cache     : false,
-      url       : "command/" + command + "?" + $.param(params), 
+      cache      : false,
+      url        : url, 
       data       : data,
       timeout    : GOKb.timeout,
       dataType   : "json",
@@ -417,10 +432,10 @@ GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
           
           // Check the redirects first.
           if ("redirect" in dataR) {
+            
             window.location.href = dataR.redirect;
-          }
-          
-          if ("onDone" in callbacks) {
+            
+          } else if ("onDone" in callbacks) {
             try {
               callbacks.onDone(dataR);
             } catch (e) {
@@ -435,7 +450,6 @@ GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
     return GOKb.ajaxWaiting (ajaxObj);
   }
 };
-
 
 /**
  * Return a data-table jQuery object.
