@@ -73,10 +73,10 @@ class Validation {
     }
 
     // Check the rules for the column context.
-    checkColumnRules (result, col_positions) && result.status
+    checkColumnRules (result, col_positions)
 
     // Row-level checks.
-    checkRowRules (result, col_positions, project_data) && result.status
+    checkRowRules (result, col_positions, project_data)
 
     // Return the result.
     result
@@ -174,16 +174,16 @@ class Validation {
     def rowNum = 1
 
     // Go through each row.
-    project_data.rowData.each { datarow ->
+    for (def datarow : project_data.rowData ) {
 
       // Execute each rule on the row in turn.
-      rules.each { A_ValidationRule rule ->
+      for (A_ValidationRule rule : rules ) {
 
         // Go through each rule and execute.
         if (rule instanceof I_DeferredRowValidationRule) {
 
           // Call the process method.
-          valid = ((rule as I_DeferredRowValidationRule).process(col_positions, rowNum, datarow) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
+          (rule as I_DeferredRowValidationRule).process(col_positions, rowNum, datarow)
         } else {
 
           // Call the validate method.
