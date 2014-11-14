@@ -301,54 +301,6 @@ validation.rules = [
     ]
   ],
 
-//  "${IngestService.DELAYED_OA}" : [
-//    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
-//    [
-//      type: IsOneOf,
-//      severity: A_ValidationRule.SEVERITY_ERROR,
-//      args: [
-//        ["Yes", "No", "Unknown"]
-//      ]
-//    ]
-//  ],
-//
-//  "${IngestService.DELAYED_OA_EMBARGO}" : [
-//    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
-//    [
-//      type: CellMatches,
-//      severity: A_ValidationRule.SEVERITY_ERROR,
-//      args: [
-//        "${validation.regex.kbartembargo}",
-//        "Data in the column \"${IngestService.DELAYED_OA_EMBARGO}\" must follow the <a target='_blank' href='http://www.uksg.org/kbart/s5/guidelines/data_fields#embargo' >KBART guidelines for an embargo</a>.",
-//        "if (and(isNonBlank(value), (value.match(/${validation.regex.kbartembargo}/) == null)), 'invalid', null)",
-//      ]
-//    ]
-//  ],
-//
-//  "${IngestService.HYBRID_OA}" : [
-//    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
-//    [
-//      type: IsOneOf,
-//      severity: A_ValidationRule.SEVERITY_ERROR,
-//      args: [
-//        ["Yes", "No", "Unknown"]
-//      ]
-//    ]
-//  ],
-//
-//  "${IngestService.HYBRID_OA_URL}" : [
-//    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
-//    [
-//      type: CellMatches,
-//      severity: A_ValidationRule.SEVERITY_ERROR,
-//      args: [
-//        "${validation.regex.uri}",
-//        "One or more rows contain invalid URIs in the column \"${IngestService.HYBRID_OA_URL}\"",
-//        "if (and (isNonBlank(value), (value.match(/${validation.regex.uri}/) == null)), 'invalid', null)",
-//      ]
-//    ]
-//  ],
-
   "${IngestService.PRIMARY_TIPP}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
