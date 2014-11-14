@@ -729,6 +729,14 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
+          baseClass:'org.gokb.refine.RefineProject',
+          prompt:'Project',
+          qparam:'qp_project',
+          placeholder:'Project',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'refineProject']
+        ],
+        [
+          type:'lookup',
           baseClass:'org.gokb.cred.User',
           prompt:'Raised By',
           qparam:'qp_raisedby',
