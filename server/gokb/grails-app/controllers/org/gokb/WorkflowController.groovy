@@ -236,6 +236,8 @@ class WorkflowController {
     log.debug("startTitleTransfer");
     def user = springSecurityService.currentUser
     def result = [:]
+
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     result.titles = []
     result.tipps = []
     result.newtipps = [:]
