@@ -454,7 +454,8 @@ abstract class KBComponent {
   static def refdataFind(params) {
     def result = [];
     def ql = null;
-    ql = KBComponent.findAllByNameIlike("${params.q}%",params)
+    ql = Class.forName(params.baseClass).findAllByNameIlike("${params.q}%",params)
+//    ql = KBComponent.findAllByNameIlike("${params.q}%",params)
 
     if ( ql ) {
       ql.each { t ->
