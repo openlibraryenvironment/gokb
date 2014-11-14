@@ -316,7 +316,7 @@ class IngestService {
     }
   }
 
-  private handleNonePresentTipps(old_tipps, user, project = null) {
+  private handleNonePresentTipps(final old_tipps, user, project = null) {
 
     // Soft delete the TIPPs not updated here.
     RefineProject.withTransaction { t ->
@@ -349,7 +349,7 @@ class IngestService {
     }
   }
 
-  private boolean addDatatRow(result, long project_id, boolean incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, old_tipps, retire_packages, skipped_titles, user) {
+  private boolean addDatatRow(result, long project_id, boolean incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, final old_tipps, retire_packages, skipped_titles, user) {
 
     // Transaction for each row.
     RefineProject.withNewTransaction { TransactionStatus status ->
@@ -487,8 +487,7 @@ class IngestService {
               log.debug("TIPP already present, attempting update");
 
               // Remove from the list.
-              def pkg_tipps = getPackageTipps(old_tipps, pkg_name, pkg)
-              pkg_tipps.remove(tipp.id)
+              getPackageTipps(old_tipps, pkg_name, pkg).remove(tipp.id)
 
               // Set all properties on the object.
               tipp_values.each { prop, value ->
@@ -1138,7 +1137,7 @@ class IngestService {
     pkg
   }
 
-  private static Set<Long> getPackageTipps (Map<String, Set<Long>> packageTippLists, String pkgName, Package pkg) {
+  private static Set<Long> getPackageTipps (final Map<String, Set<Long>> packageTippLists, String pkgName, Package pkg) {
 
     // Get from the map.
     Set<Long> tipps = packageTippLists.get(pkgName)

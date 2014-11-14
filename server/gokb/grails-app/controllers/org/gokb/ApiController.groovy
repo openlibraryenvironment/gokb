@@ -95,7 +95,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'downloadUpdate', 'search']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -306,14 +306,10 @@ class ApiController {
           response.setContentType("application/x-gzip")
           response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
           response.outputStream << file.newInputStream()
-
-          // Set the checkout details.
-          //		  def chOut = (params.checkOutName ?: "No Name Given") +
-          //			  " (" + (params.checkOutEmail ?: "No Email Given") + ")"
-          //		  project.setCheckedOutBy(chOut)
+          
           project.setLastCheckedOutBy(user)
           project.setProjectStatus(RefineProject.Status.CHECKED_OUT)
-          //		  project.setCheckedIn(false)
+
           project.setLocalProjectID(params.long("localProjectID"))
           return
         } else {
@@ -535,17 +531,14 @@ class ApiController {
   private def doIngest(parsed_data, project, boolean incremental, user) {
     log.debug("ingesting refine project.. kicking off background task")
     
-    // When using the concurrency manager we need to make sure that the supplied
-    // closure can run independently of this request. Therefore we need to curry across
-    // anything needed to execute the action.
-    Job background_job = concurrencyManagerService.createJob (
-      { IngestService is, projData, Long projId, boolean inc, user_id, job ->
-        // Create a new session to run the ingest.
-        RefineProject.withNewSession {
-          is.ingest(projData, projId, inc, user_id, job)
-          log.debug ("Finished data insert.")
-        }
-      }.curry(ingestService, parsed_data, project.id, incremental, user.id))
+    // The concurrency manager returns a Job that can be used to track progress of this,
+    // Background task.
+    Job background_job = concurrencyManagerService.createJob { Job job ->
+      // Create a new session to run the ingest.
+      
+      ingestService.ingest(parsed_data, project.id, incremental, user.id, job)
+      log.debug ("Finished data insert.")
+    }
     .startOrQueue()
   }
 

@@ -23,13 +23,13 @@ class ConcurrencyManagerService {
     int progress
     Date startTime
     private Closure work
+    boolean begun = false;
     
     /**
      * Cancel the job.
      * @see java.util.concurrent.FutureTask#cancel()
      */
-    public boolean cancel () {
-      task.get
+    public synchronized boolean cancel () {
       task.cancel false
     }
     
@@ -37,7 +37,7 @@ class ConcurrencyManagerService {
      * Attempt to force Cancel the job.
      * @see java.util.concurrent.FutureTask#cancel(boolean mayInterruptIfRunning)
      */
-    public boolean forceCancel () {
+    public synchronized boolean forceCancel () {
       task.cancel true
     }
     
@@ -45,7 +45,7 @@ class ConcurrencyManagerService {
      * See if the job is done.
      * @see java.util.concurrent.FutureTask#done()
      */
-    public boolean isDone () {
+    public synchronized boolean isDone () {
       task.done
     }
     
@@ -53,11 +53,19 @@ class ConcurrencyManagerService {
      * Starts the background task. 
      * @return this Job
      */
-    public Job startOrQueue () {
+    public synchronized Job startOrQueue () {
       
-      // Check for a parameter on this closure.
-      work = work.rcurry(this)      
-      task = executorService.submit(work)
+      // Just return if this task has already started.
+      if (!begun) {
+      
+        // Check for a parameter on this closure.
+        work = work.rcurry(this)
+        
+        task = executorService.submit(work)
+        
+        begun = true
+      }
+      
       this
     }
     
@@ -65,7 +73,7 @@ class ConcurrencyManagerService {
      * Attempt to retrieve the result. May be Null
      * @see java.util.concurrent.FutureTask#get()
      */
-    public def get() {
+    public synchronized def get() {
       task.get()
     }
     
@@ -73,7 +81,7 @@ class ConcurrencyManagerService {
      * Attempt to retrieve the result. May be Null
      * @see java.util.concurrent.FutureTask#get(long timeout, TimeUnit unit)
      */
-    public def get(long time, TimeUnit unit) {
+    public synchronized def get(long time, TimeUnit unit) {
       task.get(time, unit)
     }
   }
