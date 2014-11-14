@@ -4,7 +4,7 @@ import javax.persistence.Transient
 import org.gokb.refine.RefineProject
 
 class ReviewRequest {
-  
+
   static auditable = true
 
   @Transient
@@ -57,24 +57,24 @@ class ReviewRequest {
     needsNotify(nullable:true, blank:true)
     refineProject(nullable:true, blank:true)
   }
-  
+
   public static ReviewRequest raise (KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, refineProject = null) {
-	
-  	// Create a request.
-  	ReviewRequest req = new ReviewRequest (
-  		status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
-  		raisedBy : (raisedBy),
-  		allocatedTo : (raisedBy),
-  		descriptionOfCause : (cause),
-  		reviewRequest : (actionRequired),
-                refineProject: (refineProject)
-  	)
-  	
-  	// Add to the list of requests for the component.
-  	forComponent.addToReviewRequests( req )
-  	
-  	// Just return the request.
-  	req
+
+    // Create a request.
+    ReviewRequest req = new ReviewRequest (
+        status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
+        raisedBy : (raisedBy),
+        allocatedTo : (raisedBy),
+        descriptionOfCause : (cause),
+        reviewRequest : (actionRequired),
+        refineProject: (refineProject)
+        )
+
+    // Add to the list of requests for the component.
+    forComponent.addToReviewRequests( req )
+
+    // Just return the request.
+    req
   }
 
   @Transient
@@ -101,7 +101,7 @@ class ReviewRequest {
   }
 
   public String getNiceName() {
-        return "Review Request";
+    return "Review Request";
   }
 
   def beforeUpdate() {
@@ -109,7 +109,4 @@ class ReviewRequest {
       reviewedBy = springSecurityService.currentUser
     }
   }
-
-
-
 }
