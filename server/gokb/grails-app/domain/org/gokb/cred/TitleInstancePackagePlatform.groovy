@@ -62,8 +62,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     "gokb:TIPP:${title?.id}:${pkg?.id}"
   }
   
-  public static isTypeCreatable() {
-    return false;
+  public static isTypeCreatable(boolean defaultValue = false) {
+    return defaultValue;
   }
 
   static mapping = {
