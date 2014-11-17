@@ -5,8 +5,6 @@ class KBDomainInfo {
   String dcName
   String displayName
   String dcSortOrder
-  String group
-  
   RefdataValue type
 
   public String getNiceName() {
@@ -26,7 +24,6 @@ class KBDomainInfo {
     displayName (nullable:false, blank:false)
     dcSortOrder (nullable:true, blank:false)
     type (nullable:true, blank:false)
-    group(nullable:true, blank:false)
   }
 
 }
