@@ -61,6 +61,10 @@ class TitleInstancePackagePlatform extends KBComponent {
   public getPersistentId() {
     "gokb:TIPP:${title?.id}:${pkg?.id}"
   }
+  
+  public static isTypeCreatable() {
+    return false;
+  }
 
   static mapping = {
     startDate column:'tipp_start_date'

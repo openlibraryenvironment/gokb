@@ -82,13 +82,17 @@ class UserDetailsFilters {
 
               // Add if creatable.
               if ( tc.isTypeCreatable() ) { // || request.request.isUserInRole('ROLE_ADM') ) {
+                
+                // SO: Commenting out for now and overridden isTypeCreatable() on the TitleInstancePackagePlatform class to return false
+                
                 // II: This is dirty, but it will do for now
                 if ( d.dcName == 'org.gokb.cred.TitleInstancePackagePlatform' ) {
                   // Suppress for now.
+                  log.error ("TitleInstancePackagePlatform.isTypeCreatable() is testing true!!")
                 }
-                else {
+//                else {
                   session.userPereferences.createMenu.add(d);
-                }
+//                }
               }
             }
           }
