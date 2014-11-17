@@ -8,6 +8,7 @@ class RefdataValue {
   String icon
   String description
   String sortKey
+  String group
   RefdataValue useInstead
 
   static belongsTo = [
@@ -30,6 +31,7 @@ class RefdataValue {
     description(nullable:true, blank:true, maxSize:64)
     useInstead(nullable:true, blank:false)
     sortKey(nullable:true, blank:false)
+    group(nullable:true, blank:false)
   }
 
   @Override
