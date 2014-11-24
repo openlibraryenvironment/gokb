@@ -30,7 +30,7 @@
 					<g:each in="${d.values}" var="v">
 						<tr>
 							<td>
-								${v.value}
+								<g:xEditable class="ipe" owner="${v}" field="value" />
 							</td>
 							<td><g:manyToOneReferenceTypedown owner="${v}"
 									field="useInstead" baseClass="org.gokb.cred.RefdataValue"
@@ -53,7 +53,7 @@
 				<g:form controller="ajaxSupport" action="addToCollection"
 					class="form-inline">
 					<input type="hidden" name="__context"
-						value="${d.class.name}:${d.id}" />
+						value="${d.className}:${d.id}" />
 					<input type="hidden" name="__newObjectClass"
 						value="org.gokb.cred.RefdataValue" />
 					<input type="hidden" name="__recip" value="owner" />
