@@ -78,7 +78,7 @@
           <ul class="nav" id="side-menu">
             <sec:ifLoggedIn>
               <li class="${params?.controller == "home" && (params?.action == 'index' || params?.action == 'dashboard') ? 'active' : ''}"><g:link controller="home"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
-              <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i>Search<span class="fa arrow"></span></a>
+              <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i> Search<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
                   <li class="sidebar-search">
                     <g:form controller="globalSearch" action="index" method="get">
@@ -95,21 +95,26 @@
                   </li>
 
                   <li class="divider"></li>
-
-                  <g:each in="${session.userPereferences?.mainMenuSections}" var="secname,sec">
-                    <g:each in="${sec}" var="srch">
-                      <li class="menu-${secname.toLowerCase()}"><g:link controller="search" action="index" params="${[qbe:'g:'+srch.key]}" title="Search ${srch.value.title}">
-                          <i class="fa fa-angle-double-right fa-fw"></i> ${srch.value.title}
-                        </g:link></li>
+                  <g:each in="${session.menus?.search}" var="type,items" status="counter">
+                    <g:if test="${ counter > 0 }" >
+                      <li class="divider">${type}</li>
+                    </g:if>
+                    <g:each in="${items}" var="item">
+                      <li class="menu-search-${type}">${ g.link(item.link + item.attr) { "<i class='fa fa-angle-double-right fa-fw'></i> ${item.text}" } }</li>
                     </g:each>
                   </g:each>
-                </ul> <!-- /.nav-second-level --></li>
-			  <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i> Create<span class="fa arrow"></span></a>
+                </ul> <!-- /.nav-second-level -->
+              </li>
+			        <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i> Create<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
-
-                  <g:each in="${session.userPereferences?.createMenu}" var="d">
-                    <li><g:link controller="create" action="index" title="New ${d.displayName}"
-                      params="${[tmpl:d.dcName]}"><i class="fa fa-angle-double-right fa-fw"></i> ${d.displayName}</g:link></li>
+                
+                  <g:each in="${session.menus?.create}" var="type,items" status="counter">
+                    <g:if test="${ counter > 0 }" >
+                      <li class="divider">${type}</li>
+                    </g:if>
+                    <g:each in="${items}" var="item">
+                      <li class="menu-create-${type}">${ g.link(item.link + item.attr) { "<i class='fa fa-angle-double-right fa-fw'></i> ${item.text}" } }</li>
+                    </g:each>
                   </g:each>
 
                 </ul> <!-- /.nav-second-level --></li>
