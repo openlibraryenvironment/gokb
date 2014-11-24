@@ -708,7 +708,7 @@ globalSearchTemplates = [
         ['ctxtp':'filter', 'prop':'desc', 'comparator' : 'ilike', 'value':'Combo.%', 'negate' : true]
       ],
       qbeResults:[
-        [heading:'Description', property:'desc',  link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']],
+        [heading:'Description', property:'desc',  link:[controller:'resource',action:'show',id:'x.r.className+\':\'+x.r.id']],
       ]
     ]
   ],
