@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import grails.plugins.springsecurity.SpringSecurityService
 import groovy.util.logging.Log4j;
+import java.lang.reflect.Field
 import javax.persistence.Transient
 import org.hibernate.proxy.HibernateProxy
 
@@ -120,8 +121,8 @@ class User {
     
     // Use the available meta methods to get a list of all the properties against the user.
     // If they are of type refdata/and are set then we add here. If they are null then we should omit.
-    List<MetaProperty> props = getProperties()
-    for (MetaProperty p : props) {
+    def props = User.declaredFields.grep { !it.synthetic }
+    for (Field p : props) {
       if (p.type == RefdataValue.class) {
         // Let's get the value.
         
