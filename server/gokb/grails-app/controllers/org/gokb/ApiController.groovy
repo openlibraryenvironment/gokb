@@ -67,10 +67,11 @@ class ApiController {
             case "allComboTypeValues" :
             case {it ==~ /^.+Service$/} :
             case "grailsApplication" :
-            case "allComboPropertyNames" :
-            case "allComboTypeValues" :
-            case "allComboTypeValues" :
             case "sourceFile" :
+            case "possibleRulesString" :
+            case "lastValidationResultAsMap" :
+            case "possibleRulesResultAsList" :
+            
               /* DO nothing */
             break
 
