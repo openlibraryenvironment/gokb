@@ -6,7 +6,7 @@
     ${d.getDisplayName()}
   </g:if>
   <g:elseif test="${ d?.respondsTo('getName') }">
-    ${d?.getName() ?: displayobj?.getId()}
+    ${d?.getName()?.trim() ?: displayobj?.getId()}
   </g:elseif>
   <g:else>
     ${d?.getId() ?: ''}

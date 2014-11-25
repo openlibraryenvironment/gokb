@@ -130,7 +130,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Override
   @Transient
-  public String getDerivedName() {
+  public String getDisplayName() {
     return name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
   }
 
