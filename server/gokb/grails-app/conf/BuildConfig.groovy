@@ -61,10 +61,10 @@ grails.project.dependency.resolution = {
         // runtime "postgresql:postgresql:8.3-603.jdbc3"
         // To allow us to un-tgz uploaded data files
         runtime 'org.apache.commons:commons-compress:1.4.1'
-        runtime 'org.apache.tika:tika-core:1.6'
+        compile 'org.apache.tika:tika-core:1.6'
         
         // Must get parsers as well as core or we can only detect generic types.
-        runtime 'org.apache.tika:tika-parsers:1.6'
+        compile 'org.apache.tika:tika-parsers:1.6'
         runtime 'xalan:xalan:2.7.1'
         runtime 'org.elasticsearch:elasticsearch:1.3.2'
         runtime 'org.elasticsearch:elasticsearch-client-groovy:1.3.2'
