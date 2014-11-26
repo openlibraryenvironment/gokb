@@ -58,7 +58,7 @@
               </table>
             </dd>
             <dt>Event Date</dt>
-            <dd> <input type="date" name="EventDate" /> </dd>
+            <dd> <input type="date" name="eventDate" /> </dd>
             <dt></dt>
             <dd>
             </dd>

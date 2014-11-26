@@ -515,6 +515,7 @@ class WorkflowController {
     def activity_record = Activity.get(params.id)
     def activity_data = new JsonSlurper().parseText(activity_record.activityData)
 
+
     // Pull in all updated tipp properties like start volumes, etc.
     request.getParameterNames().each { pn ->
       def value = request.getParameter(pn)
