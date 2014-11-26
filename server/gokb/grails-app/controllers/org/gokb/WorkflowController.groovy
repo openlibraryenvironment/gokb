@@ -737,9 +737,9 @@ class WorkflowController {
         if ( tipp_map_entry.value.oldTippValue?.startDate )
           current_tipp.startDate = sdf.parse(tipp_map_entry.value.oldTippValue?.startDate)
         if ( tipp_map_entry.value.oldTippValue?.startVolume )
-          current_tipp.startVolume = sdf.parse(tipp_map_entry.value.oldTippValue?.startVolume)
+          current_tipp.startVolume = tipp_map_entry.value.oldTippValue?.startVolume
         if ( tipp_map_entry.value.oldTippValue?.startIssue )
-          current_tipp.startIssue = sdf.parse(tipp_map_entry.value.oldTippValue?.startIssue)
+          current_tipp.startIssue = tipp_map_entry.value.oldTippValue?.startIssue
 
         if ( tipp_map_entry.value.oldTippValue?.endDate )
           current_tipp.endDate = sdf.parse(tipp_map_entry.value.oldTippValue?.endDate)
