@@ -58,7 +58,7 @@
           <g:each in="${tipps}" var="tipp">
           <g:if test="${tipp.type=='CURRENT'}">
             <tr style="background-color: #FF4D4D;">
-              <td> <input name="addto-${tipp.id}" type="checkbox" checked="checked" /> </td>
+              <td> <input name="addto-${tipp.id}" type="checkbox" /> </td>
               <td> ${tipp.type} </td>
               <td> ${tipp.title.name} </td>
               <td> ${tipp.pkg.name} </td>
