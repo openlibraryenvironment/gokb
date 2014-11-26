@@ -899,4 +899,11 @@ abstract class KBComponent {
 
     result
   }
+
+  @Override
+  @Transient
+  public String getDisplayName() {
+    return name
+  }
+
 }

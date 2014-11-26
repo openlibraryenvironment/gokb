@@ -37,7 +37,7 @@
 				<dd>
 					<g:manyToOneReferenceTypedown owner="${d}"
 						field="componentToReview" baseClass="org.gokb.cred.KBComponent">
-						${d.componentToReview?.name?:''}
+						${d.componentToReview?.displayName?:''}
 					</g:manyToOneReferenceTypedown>
 					<g:componentLink object="${d?.componentToReview}" target="_blank"
 						title="View the component (opens in new window)">view</g:componentLink>
