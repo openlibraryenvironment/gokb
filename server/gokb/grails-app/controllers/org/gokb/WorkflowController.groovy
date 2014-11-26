@@ -386,12 +386,12 @@ class WorkflowController {
                                         title_id:old_tipp.title.id, 
                                         package_id:new_tipp_package.id, 
                                         platform_id:new_tipp_platform.id,
-                                        startDate:old_tipp.startDate ? sdf.format(old_tipp.startDate) : null,
-                                        startVolume:old_tipp.startVolume,
-                                        startIssue:old_tipp.startIssue,
-                                        endDate:old_tipp.endDate? sdf.format(old_tipp.endDate) : null,
-                                        endVolume:old_tipp.endVolume,
-                                        endIssue:old_tipp.endIssue]
+                                        startDate:new_tipp.startDate ? sdf.format(new_tipp.startDate) : null,
+                                        startVolume:new_tipp.startVolume,
+                                        startIssue:new_tipp.startIssue,
+                                        endDate:new_tipp.endDate? sdf.format(new_tipp.endDate) : null,
+                                        endVolume:new_tipp.endVolume,
+                                        endIssue:new_tipp.endIssue]
                 log.debug("new_tipp_info :: ${new_tipp_info}");
                 tipp_info.newtipps.add(new_tipp_info);
               }
