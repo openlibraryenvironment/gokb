@@ -649,11 +649,13 @@ class WorkflowController {
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
 
+        def new_title = TitleInstance.get(newtipp.title_id);
+
         // def new_tipp = new TitleInstancePackagePlatform(
         def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
                                    pkg:new_package,
                                    hostPlatform:new_platform,
-                                   title:current_tipp.title,
+                                   title:new_title,
                                    startDate: ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null,
                                    startVolume:newtipp.startVolume,
                                    startIssue:newtipp.startIssue,
