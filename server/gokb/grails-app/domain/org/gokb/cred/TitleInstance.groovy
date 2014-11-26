@@ -104,9 +104,17 @@ class TitleInstance extends KBComponent {
     publisher_combos.each { Combo pc ->
       if ( pc.endDate == null ) {
         if (isComboReverse('publisher')) {
-          result = pc.fromComponent
+          if ( pc.fromComponent.status?.value == 'Deleted' ) {
+          }
+          else {
+            result = pc.fromComponent
+          }
         } else {
-          result = pc.toComponent
+          if ( pc.toComponent.status?.value == 'Deleted' ) {
+          }
+          else {
+            result = pc.toComponent
+          }
         }
       }
     }
