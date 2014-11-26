@@ -93,7 +93,7 @@ class UserDetailsFilters {
             }
           }
           
-          log.debug ("${menus}")
+          // log.debug ("${menus}")
 
           if ( session.userPereferences == null ) {
             //log.debug("Set up user prefs");
