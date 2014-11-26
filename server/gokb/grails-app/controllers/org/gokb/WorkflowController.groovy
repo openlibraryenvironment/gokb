@@ -522,6 +522,9 @@ class WorkflowController {
       def value = request.getParameter(pn)
       if ( pn.startsWith('_tippdata') ) {
         def key_components = pn.split(':');
+
+        log.debug("Set ${key_components} = ${value}");
+
         if (  activity_data.tipps[key_components[1]] != null ) {
           if ( ( value != null ) && ( value.length() > 0 ) ) {
             activity_data.tipps[key_components[1]].newtipps[Integer.parseInt(key_components[2])][key_components[3]] = value
@@ -550,6 +553,10 @@ class WorkflowController {
 
     if ( params.update ) {
       log.debug("Update...");
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
     }
     else if ( params.remove ) {
       log.debug("remove... ${params.remove}");
