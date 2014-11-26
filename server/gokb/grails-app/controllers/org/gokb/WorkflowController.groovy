@@ -269,7 +269,7 @@ class WorkflowController {
           result.titles.add(title_instance) 
           titleTransferData.title_ids.add(title_instance.id)
           title_instance.tipps.each { tipp ->
-            if ( tipp.status?.value != 'Deleted' ) {
+            if ( ( tipp.status?.value != 'Deleted' ) && ( tipp.pkg.scope?.value != 'GOKb Master' ) ) {
               result.tipps.add(tipp)
               titleTransferData.tipps[tipp.id] = [
                 oldTippValue:[

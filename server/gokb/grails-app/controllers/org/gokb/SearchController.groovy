@@ -19,7 +19,7 @@ class SearchController {
   def index() {
     User user = springSecurityService.currentUser
 
-    log.debug("Entering SearchController:index");
+    // log.debug("Entering SearchController:index");
 
     def result = [:]
 
@@ -42,9 +42,9 @@ class SearchController {
 
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate ) {
-        log.debug("Execute query");
+        // log.debug("Execute query");
         doQuery(result.qbetemplate, params, result)
-        log.debug("Query complete");
+        // log.debug("Query complete");
         result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
         
         // Add the page information.
@@ -65,7 +65,7 @@ class SearchController {
             recno = 0;
           }
   
-          log.debug("Trying to display record ${recno}");
+          // log.debug("Trying to display record ${recno}");
   
           result.displayobj = result.recset.get(recno)
   
@@ -116,7 +116,7 @@ class SearchController {
       }
     }
 
-    log.debug("leaving SearchController::index...");
+    // log.debug("leaving SearchController::index...");
 
     withFormat {
       html result

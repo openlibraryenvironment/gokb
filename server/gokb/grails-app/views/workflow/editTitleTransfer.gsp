@@ -131,9 +131,10 @@
       </div>
     </div>
   </g:form>
-  <pre>
+    
+  <!--
     ${d.activityData}
-  </pre>
+  -->
 
 </body>
 </html>

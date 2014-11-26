@@ -119,7 +119,7 @@ public class HQLBuilder {
       fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql}"
     }
 
-    log.debug("Attempt count qry ${count_hql}");
+    // log.debug("Attempt count qry ${count_hql}");
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
@@ -131,9 +131,9 @@ public class HQLBuilder {
     if ( result.offset )
       query_params.offset = result.offset
 
-    log.debug("Get data rows..");
+    // log.debug("Get data rows..");
     result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,query_params);
-    log.debug("Returning..");
+    // log.debug("Returning..");
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
@@ -267,6 +267,7 @@ public class HQLBuilder {
           }
         }
         break;
+
       case 'ilike':
         hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}lower(${scoped_property}) like :${crit.defn.qparam}");
         def base_value = crit.value.toLowerCase()
@@ -276,6 +277,8 @@ public class HQLBuilder {
         hql_builder_context.bindvars[crit.defn.qparam] = ( ( crit.defn.contextTree.wildcard=='L' || crit.defn.contextTree.wildcard=='B') ? '%' : '') +
                                                          base_value +
                                                          ( ( crit.defn.contextTree.wildcard=='R' || crit.defn.contextTree.wildcard=='B') ? '%' : '')
+        break;
+
       default:
         log.error("Unhandled comparator '${crit.defn.contextTree.comparator}'. crit: ${crit}");
     }
