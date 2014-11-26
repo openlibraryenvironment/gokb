@@ -31,6 +31,8 @@ class MasterListController {
     def result = [:]
 
     Org o = Org.get(params.id)
+    
+    result.o = o
 
     // Generate list of cp orgs where a tipp exists for that org as a cp
     // select distinct(tipp_title_combos.fromComponent)

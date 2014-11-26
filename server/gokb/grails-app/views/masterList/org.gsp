@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="layout" content="main"/>
+    <meta name="layout" content="sb-admin"/>
     <asset:stylesheet src="gokb/application.css"/>
-<asset:javascript src="gokb/application.js" />
+    <asset:javascript src="gokb/application.js" />
     <title>GOKb: Master Lists</title>
   </head>
   <body>
-
-    <div class="container">
-      <div class="row">
-
+	  <h1 class="page-header">
+	    Master lists for <g:render template="component_heading" contextPath="../apptemplates" model="${[d:o]}" />
+	  </h1>
+    <div id="mainarea" class="panel panel-default">
+      <div class="panel-body">
         <table class="table table-striped">
           <thead>
-            <th>Package</th>
+            <tr>
+              <th>Package</th>
+            </tr>
           </thead>
           <tbody>
             <g:each in="${org_packages}" var="pkg">
@@ -26,12 +29,14 @@
 
         <table class="table table-striped">
           <thead>
-            <th></th>
-            <th>Titles</th>
-            <th>Package</th>
-            <th>Platform</th>
-            <th>Start</th>
-            <th>End</th>
+            <tr>
+	            <th></th>
+	            <th>Titles</th>
+	            <th>Package</th>
+	            <th>Platform</th>
+	            <th>Start</th>
+	            <th>End</th>
+	          </tr>
           </thead>
           <tbody>
             <g:each in="${tipps}" var="tipp">
@@ -46,9 +51,7 @@
             </g:each>
           </tbody>
         </table>
-
       </div>
     </div>
-
   </body>
 </html>
