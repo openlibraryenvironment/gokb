@@ -130,7 +130,6 @@
                   </ul>
               </li>
               <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
-              <li class="${params?.controller == "masterList" ? 'active' : ''}"><g:link controller="masterList" action="index"><i class="fa fa-list-alt fa-fw"></i> Master List</g:link></li>
               <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 
               <sec:ifAnyGranted roles="ROLE_ADMIN">

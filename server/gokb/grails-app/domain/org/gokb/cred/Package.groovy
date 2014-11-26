@@ -154,6 +154,7 @@ class Package extends KBComponent {
       [code:'method::deleteSoft', label:'Delete (with associated TIPPs)'],
       [code:'method::retire', label:'Retire Package (with associated TIPPs)'],
       [code:'exportPackage', label:'TSV Export'],
+      [code:'kbartExport', label:'KBART Export'],
       // [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }

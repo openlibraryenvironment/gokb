@@ -22,6 +22,7 @@ class WorkflowController {
     'method::RRClose':[actionType:'simple' ],
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
+    'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
   ];
 
@@ -969,6 +970,79 @@ class WorkflowController {
     }
     redirect(url: result.ref)
   }
+
+
+  private def packageKBartExport(packages_to_export) {
+    def filename = null;
+
+    if ( packages_to_export.size() == 0 ) 
+      return
+
+    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def export_date = sdf.format(new java.util.Date());
+
+    if ( packages_to_export.size() == 1 ) {
+      filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
+    }
+    else {
+      filename = "GOKb Export : multiple_packages : ${export_date}.tsv"
+    }
+
+    try {
+      response.setContentType('text/tab-separated-values');
+      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
+      response.contentType = "text/tab-separated-values" // "text/tsv"
+
+      def out = response.outputStream
+      out.withWriter { writer ->
+        
+        def sanitize = { it ? "${it}".trim() : "" }
+
+        packages_to_export.each { pkg ->
+
+          // As per spec header at top of file / section
+          writer.write('publication_title	print_identifier	online_identifier	date_first_issue_online	num_first_vol_online	num_first_issue_online	date_last_issue_online	num_last_vol_online	num_last_issue_online	title_url	first_author	title_id	embargo_info	coverage_depth	coverage_notes	publisher_name\n');
+
+          def tipps = TitleInstancePackagePlatform.executeQuery(
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
+                         [pkg, 'Deleted', 'Package.Tipps']);
+
+
+
+          tipps.each { tipp_id ->
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+            writer.write( 
+                          sanitize( tipp.title.name ) + '\t' +
+                          sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
+                          sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                          sanitize( tipp.startDate ) + '\t' + 
+                          sanitize( tipp.startVolume ) + '\t' + 
+                          sanitize( tipp.startIssue ) + '\t' + 
+                          sanitize( tipp.endDate ) + '\t' +
+                          sanitize( tipp.endVolume ) + '\t' + 
+                          sanitize( tipp.endIssue ) + '\t' + 
+                          sanitize( tipp.url ) + '\t' + 
+                          '\t'+
+                          sanitize( tipp.title.id ) + '\t' + 
+                          sanitize( tipp.embargo ) + '\t' + 
+                          sanitize( tipp.coverageDepth ) + '\t' + 
+                          sanitize( tipp.coverageNote ) + '\t' + 
+                          sanitize( tipp.title.getCurrentPublisher()?.name ) +
+                          '\n');
+            tipp.discard();
+          }
+        }
+
+        writer.flush();
+        writer.close();
+      }
+      out.close()
+    }
+    catch ( Exception e ) {
+      log.error("Problem with export",e);
+    }
+  }
+
 
   private def packageTSVExport(packages_to_export) {
     def filename = null;
