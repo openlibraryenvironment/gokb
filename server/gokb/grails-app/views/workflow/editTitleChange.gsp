@@ -58,10 +58,10 @@
                   <td> ${tipp.title.name} </td>
                   <td> ${tipp.pkg.name} </td>
                   <td> ${tipp.hostPlatform.name} </td>
-                  <td> <input type="date" value="${tipp.startDate}"/> </td>
+                  <td> <input type="date" name="_tippdata:${tipp.parent}:${tipp.seq}:startDate" value="${tipp.startDate}"/> </td>
                   <td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:startVolume" value="${tipp.startVolume}" style="width:40px;"/> </td>
                   <td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:startIssue" value="${tipp.startIssue}" style="width:40px;"/> </td>
-                  <td> <input type="date" value="${tipp.endDate}"/> </td>
+                  <td> <input type="date" name="_tippdata:${tipp.parent}:${tipp.seq}:endDate" value="${tipp.endDate}"/> </td>
                   <td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endVolume" value="${tipp.endVolume}" style="width:40px;"/> </td>
                   <td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endIssue" value="${tipp.endIssue}" style="width:40px;"/> </td>
                   <td> <button type="submit" name="remove" value="${tipp.parent}:${tipp.seq}" class="btn btn-warn">Remove</button></td>
