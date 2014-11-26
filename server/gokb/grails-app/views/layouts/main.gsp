@@ -64,31 +64,31 @@
 
           <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Create</a>
             <ul class="dropdown-menu">
-              <g:if test="${org.gokb.cred.License.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.License.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.License']}">License</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.Office.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.Office.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Office']}">Office</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.Org.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.Org.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Org']}">Org</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.Package.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.Package.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Package']}">Package</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.Platform.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.Platform.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Platform']}">Platform</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.ReviewRequest.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.ReviewRequest.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.ReviewRequest']}">Request For Review</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.Source.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.Source.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Source']}">Source</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.TitleInstance.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.TitleInstance.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.TitleInstance']}">Title</g:link></li>
               </g:if>
-              <g:if test="${org.gokb.cred.Imprint.isCreatable(false)==true}">
+              <g:if test="${org.gokb.cred.Imprint.isTypeCreatable(false)==true}">
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Imprint']}">Imprint</g:link></li>
               </g:if>
 
