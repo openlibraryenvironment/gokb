@@ -11,6 +11,7 @@ grails.project.source.level = 1.6
 
 switch ("${System.getProperty('grails.env')}") {
   case "development":
+  case "test":
     if (new File("/${basedir}/src/templates/war/web_dev.xml").exists()) {
         grails.config.base.webXml = "file:${basedir}/src/templates/war/web_dev.xml"
     }

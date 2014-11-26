@@ -49,12 +49,13 @@ environments {
 //            url = "jdbc:h2:mem:testDb;MVCC=TRUE;LOCK_TIMEOUT=10000"
 //        }
       dataSource {
-        dbCreate = "update"
+        // dbCreate = "update"
+        dbCreate = "create"
         driverClassName = "com.mysql.jdbc.Driver"
         dialect=org.hibernate.dialect.MySQL5Dialect
         username = "k-int"
         password = "k-int"
-        url = "jdbc:mysql://localhost/GoKB?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
+        url = "jdbc:mysql://localhost/GoKBTest?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
         pooled = true
         // logSql = true
         // formatSql = true
