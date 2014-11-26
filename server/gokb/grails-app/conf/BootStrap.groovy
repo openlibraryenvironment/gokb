@@ -106,6 +106,8 @@ class BootStrap {
         kbc.discard()
       }
     }
+    
+    defaultSortKeys ()
   }
   
   def failAnyIngestingProjects() {
@@ -191,6 +193,25 @@ class BootStrap {
         // Add the rule now we have the args build.
         Validation.addRule(ruleDef.type, (args as Object[]))
       }
+    }
+  }
+  
+  def defaultSortKeys () {
+    def vals = RefdataValue.executeQuery("select o from RefdataValue o where o.sortKey is null or trim(o.sortKey) = ''")
+    
+    // Default the sort key to 0.
+    vals.each {
+      it.sortKey = "0"
+      it.save()
+    }
+    
+    // Now we should also do the same for the Domain objects.
+    vals = KBDomainInfo.executeQuery("select o from KBDomainInfo o where o.dcSortOrder is null or trim(o.dcSortOrder) = ''")
+    
+    // Default the sort key to 0.
+    vals.each {
+      it.dcSortOrder = "0"
+      it.save()
     }
   }
 
