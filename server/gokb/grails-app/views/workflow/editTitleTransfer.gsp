@@ -63,7 +63,9 @@
               <td> ${tipp.title.name} </td>
               <td> ${tipp.pkg.name} </td>
               <td> ${tipp.hostPlatform.name} </td>
-              <td> <input name="_oldtipp:${tipp.id}:startDate" type="date" value="${tipp.startDate}"/> </td>
+              <td> 
+                <input name="_oldtipp:${tipp.id}:startDate" type="date" value="${tipp.startDate}"/> 
+              </td>
               <td> <input type="text" name="_oldtipp:${tipp.id}:startVolume" value="${tipp.startVolume}" style="width:40px;"/> </td>
               <td> <input type="text" name="_oldtipp:${tipp.id}:startIssue" value="${tipp.startIssue}" style="width:40px;"/> </td>
               <td> <input name="_oldtipp:${tipp.id}:endDate" type="date" value="${tipp.endDate}"/> </td>
