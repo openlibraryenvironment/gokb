@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 @Transactional
 class ConcurrencyManagerService {
   
-  private class Job {
+  public class Job {
     int id
     private FutureTask task
     int progress
