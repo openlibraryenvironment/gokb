@@ -1,0 +1,7 @@
+
+
+This directory contains scripts and configuration files for continuous deployment of GOKb.
+
+Usually a configuration will be tied to a branch and auto-deployed when changes happen on that branch.
+
+Release management discipline is used to ensure that the final release branch is promoted only from accepted test branches
