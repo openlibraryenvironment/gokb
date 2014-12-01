@@ -104,7 +104,11 @@ environments {
     grails.logging.jul.usebridge = false
     // TODO: grails.serverURL = "http://www.changeme.com"
   }
+  test {
+    grails.serverURL = "http://localhost:${ System.getProperty("server.port")?:'8080' }/${appName}"
+  }
 }
+
 
 // log4j configuration
 log4j = {

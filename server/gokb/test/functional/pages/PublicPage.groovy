@@ -2,7 +2,8 @@ package pages
 
 class PublicPage extends GokbPage {
     // static url = "/gokb"
-    static url = "http://localhost:80080/gokb"
+    static url = "/";
+
     static at = { 
       browser.page.title.startsWith "GOKb: Welcome" 
     };

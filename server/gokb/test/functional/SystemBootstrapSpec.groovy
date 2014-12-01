@@ -10,9 +10,8 @@ class SystemBootstrapSpec extends GebReportingSpec {
 
   def "FrontPage" (){
     when:
-      go "http://localhost:80080/gokb"
-      // to PublicPage
-      // at PublicPage
+      to PublicPage
+      at PublicPage
     then:
       browser.page.title.startsWith "GOKb: Welcome"
   }
