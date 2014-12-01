@@ -2,7 +2,7 @@ package pages
 
 class PublicPage extends GokbPage {
     // static url = "/gokb"
-    static url = "/";
+    static url = "/gokb";
 
     static at = { 
       browser.page.title.startsWith "GOKb: Welcome" 
