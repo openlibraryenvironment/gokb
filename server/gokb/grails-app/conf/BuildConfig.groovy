@@ -25,6 +25,8 @@ switch ("${System.getProperty('grails.env')}") {
 
 grails.project.dependency.resolver = "maven"
 
+def gebVersion = "0.9.3"
+def seleniumVersion = "2.43.1"
 
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
@@ -79,6 +81,16 @@ grails.project.dependency.resolution = {
         
         compile 'org.ajoberstar:grgit:0.2.3' // 0.3.0 is Groovy >=2.3 and breaks for me.
         build 'org.apache.httpcomponents:httpcore:4.3.2'
+
+        test("org.seleniumhq.selenium:selenium-htmlunit-driver:$seleniumVersion") {
+            exclude 'xml-apis'
+        }
+        test "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
+        test "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
+
+        test "org.spockframework:spock-grails-support:0.7-groovy-2.0"
+        test "org.gebish:geb-spock:$gebVersion"
+
     }
 
     plugins {
@@ -141,5 +153,12 @@ grails.project.dependency.resolution = {
       compile ':famfamfam:1.0.1'
       compile ':rest:0.7'
       compile ":twitter-bootstrap:3.2.0.2"
+
+      // compile ":profiler:0.5"
+      test ":spock:0.7", {
+        exclude "spock-grails-support"
+      }
+      test ":geb:$gebVersion"
+
     }
 }
