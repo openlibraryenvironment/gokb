@@ -375,7 +375,7 @@ class IngestService {
             getRowValue(datarow,col_positions,PUBLISHER_NAME),
             ids,
             user,
-            RefineProject.get(project_id)
+            project
           );
 
           // If we match a title then ingest...
@@ -420,6 +420,9 @@ class IngestService {
             // Set the propvider of the package to that on the project.
             Org provider = project.provider
             pkg.setProvider (provider)
+            
+            // Set the source.
+            pkg.setSource(project.getSource())
 
             // Set the latest project.
             pkg.setLastProject(project)
