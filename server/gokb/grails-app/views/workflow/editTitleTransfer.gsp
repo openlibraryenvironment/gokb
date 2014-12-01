@@ -58,7 +58,7 @@
           <g:each in="${tipps}" var="tipp">
           <g:if test="${tipp.type=='CURRENT'}">
             <tr style="background-color: #FF4D4D;">
-              <td> <input name="addto-${tipp.id}" type="checkbox" /> </td>
+              <td> <input name="addto-${tipp.id}" type="checkbox" value="on"/> </td>
               <td> ${tipp.type} </td>
               <td> ${tipp.title.name} </td>
               <td> ${tipp.pkg.name} </td>
@@ -71,8 +71,8 @@
               <td> <input name="_oldtipp:${tipp.id}:endDate" type="date" value="${tipp.endDate}"/> </td>
               <td> <input type="text" name="_oldtipp:${tipp.id}:endVolume" value="${tipp.endVolume}" style="width:40px;"/> </td>
               <td> <input type="text" name="_oldtipp:${tipp.id}:endIssue" value="${tipp.endIssue}" style="width:40px;"/> </td>
-              <td> <input name="oldtipp_close:${tipp.id}" type="checkbox" ${params["oldtipp_close:${tipp.id}"]=='on'?'checked':''} /></td>
-              <td> <input name="oldtipp_review:${tipp.id}" type="checkbox"  ${params["oldtipp_review:${tipp.id}"]=='on'?'checked':''} /></td>
+              <td> <input name="oldtipp_close:${tipp.id}" type="checkbox" value="on" ${params["oldtipp_close:${tipp.id}"]=='on'?'checked':''} /></td>
+              <td> <input name="oldtipp_review:${tipp.id}" type="checkbox" value="on"  ${params["oldtipp_review:${tipp.id}"]=='on'?'checked':''} /></td>
             </tr>
           </g:if>
           <g:else>
@@ -89,7 +89,7 @@
               <td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endVolume" value="${tipp.endVolume}" style="width:40px;"/> </td>
               <td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endIssue" value="${tipp.endIssue}" style="width:40px;"/> </td>
               <td> <button type="submit" name="remove" value="${tipp.parent}:${tipp.seq}" class="btn btn-warn">Remove</button></td>
-              <td> <input name="_tippdata:${tipp.parent}:${tipp.seq}:review" type="checkbox" ${tipp.review=='on'?'checked':''} /></td>
+              <td> <input name="_tippdata:${tipp.parent}:${tipp.seq}:review" type="checkbox" value="on" ${tipp.review=='on'?'checked':''} /></td>
             </tr>
           </g:else>
           </g:each>

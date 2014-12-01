@@ -432,8 +432,15 @@ class WorkflowController {
       activity_record.save()
     }
     else if ( params.process ) {
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+
       log.debug("Process...");
+
       processTitleTransfer(activity_record, activity_data);
+
       if ( activity_data.title_ids?.size() > 0 ) {
         redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
       }
@@ -752,8 +759,8 @@ class WorkflowController {
       log.debug("Processing current tipp : ${current_tipp.id}");
 
       tipp_map_entry.value.newtipps.each { newtipp ->
-        log.debug("Process new tipp : ${newtipp}");
 
+        log.debug("Process new tipp : ${newtipp}");
 
         if ( tipp_map_entry.value.oldTippValue?.startDate ) {
           try {
@@ -810,6 +817,8 @@ class WorkflowController {
       }
 
       // Retire the tipp if
+      log.debug("Checking close flags..${params}");
+
       if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
         log.debug("Retiring old tipp");
         current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
@@ -823,6 +832,22 @@ class WorkflowController {
         }
       }
 
+      def parsed_start_date = null
+      def parsed_end_date = null
+      try {
+        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? sdf.parse(tipp_map_entry.value.oldTippValue.startDate) : null;
+        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? sdf.parse(tipp_map_entry.value.oldTippValue.endDate) : null;
+      }
+      catch ( Exception e ) {}
+
+      current_tipp.startDate = parsed_start_date;
+      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume;
+      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue;
+      current_tipp.endDate = parsed_end_date;
+      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume;
+      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue;
+
+      log.debug("Saving current tipp");
       current_tipp.save()
     }
 
