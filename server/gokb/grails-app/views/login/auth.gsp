@@ -31,6 +31,8 @@
 						type='password' class='form-control' name='j_password'
 						id='password' />
 				</div>
+				
+				<p>Have you <g:link controller="register" action="forgotPassword" >forgotten your password?</g:link></p>
 
 				<div class="form-group" id="remember_me_holder">
 					<input type='checkbox' class='chk' name='${rememberMeParameter}'
