@@ -61,7 +61,7 @@ class SearchController {
 
         if ( result.recset.size() >= recno) {
 
-          if ( ( recno < 0 ) || ( recno > result.max ) ) {
+          if ( ( recno < 0 ) || ( recno => result.max ) ) {
             recno = 0;
           }
   
