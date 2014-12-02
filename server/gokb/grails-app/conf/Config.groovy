@@ -300,7 +300,8 @@ validation.rules = [
       type: IsOneOf,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Yes", "No", "Hybrid", "Delayed", "Unknown"]
+//        ["Yes", "No", "Hybrid", "Delayed", "Unknown"]
+        ["No OA", "Full OA", "Unknown"]
       ]
     ]
   ],
