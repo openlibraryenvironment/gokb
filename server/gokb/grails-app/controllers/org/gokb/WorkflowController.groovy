@@ -577,6 +577,7 @@ class WorkflowController {
     else if ( params.process ) {
       log.debug("Process...");
 
+      def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
       activity_record.save()
