@@ -61,8 +61,13 @@ class SearchController {
 
         if ( result.recset.size() >= recno) {
 
-          if ( ( recno < 0 ) || ( recno >= result.max ) ) {
+          if ( recno >= result.recset.size() ) {
+            recno = result.recset.size() - 1;
+            result.det = result.reccount;
+          }
+          else if ( recno < 0 ) {
             recno = 0;
+            result.det = 0;
           }
   
           // log.debug("Trying to display record ${recno}");
