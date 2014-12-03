@@ -50,7 +50,7 @@
             <th>End Date</th>
             <th>End Volume</th>
             <th>End Issue</th>
-            <th>Close</th>
+            <th>Retire</th>
             <th>Review</th>
           </tr>
         </thead>
