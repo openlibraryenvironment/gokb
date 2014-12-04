@@ -14,14 +14,15 @@ class TitleInstance extends KBComponent {
   RefdataValue	pureOA
   RefdataValue	continuingSeries
   RefdataValue	reasonRetired
-  RefdataValue	oa
+  RefdataValue	OAStatus
   Date publishedFrom
   Date publishedTo
 //  String imprint
 
   private static refdataDefaults = [
     "medium"		: "Journal",
-    "pureOA"		: "No"
+    "pureOA"		: "No",
+    "OAStatus"  : "Unknown"
   ]
 
   public void addVariantTitle (String title, String locale = "EN-us") {
