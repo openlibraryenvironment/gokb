@@ -62,6 +62,8 @@ class ApiController {
           switch (k) {
             case "incomingCombos" :
             case "outgoingCombos" :
+            case "otherIncomingCombos" :
+            case "otherOutgoingCombos" :
             case "allPropertiesAndVals" :
             case "allComboPropertyNames" :
             case "allComboTypeValues" :

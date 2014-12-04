@@ -17,10 +17,24 @@
   <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
   <g:layoutHead />
   
-	<asset:javascript src="gokb/application.grass.js" />
+  <asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
+
+	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/extras/modernizr-custom.js"></asset:script>
+	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/polyfiller.js"></asset:script>
+	<asset:script type="text/javascript" src="//assets.zendesk.com/external/zenbox/v2.6/zenbox.js"></asset:script>
+	
+	<asset:script>
+	  webshims.setOptions('waitReady', false);
+	  webshims.setOptions('forms-ext', {types: 'date'});
+	  webshims.polyfill('forms forms-ext');
+	</asset:script>
+	
+	<style type="text/css" media="screen, projection">
+	  @import url(//assets.zendesk.com/external/zenbox/v2.6/zenbox.css);
+	</style>
   
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesnt work if you view the page via file:// -->
@@ -176,23 +190,18 @@
 
   </div>
   <!-- /#wrapper -->
-
-<asset:script type="text/javascript" src="//assets.zendesk.com/external/zenbox/v2.6/zenbox.js"></asset:script>
-<style type="text/css" media="screen, projection">
-  @import url(//assets.zendesk.com/external/zenbox/v2.6/zenbox.css);
-</style>
-<asset:script type="text/javascript">
-  if (typeof(Zenbox) !== "undefined") {
-    Zenbox.init({
-      dropboxID:   "20310953",
-      url:         "https://gokb.zendesk.com",
-      tabTooltip:  "Support",
-      tabImageURL: "https://p1.zdassets.com/external/zenbox/images/tab_support_right.png",
-      tabColor:    "#ed0003",
-      tabPosition: "Right"
-    });
-  }
-</asset:script>
+	<asset:script type="text/javascript">
+	  if (typeof(Zenbox) !== "undefined") {
+	    Zenbox.init({
+	      dropboxID:   "20310953",
+	      url:         "https://gokb.zendesk.com",
+	      tabTooltip:  "Support",
+	      tabImageURL: "https://p1.zdassets.com/external/zenbox/images/tab_support_right.png",
+	      tabColor:    "#ed0003",
+	      tabPosition: "Right"
+	    });
+	  }
+	</asset:script>
   
   <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
     <asset:script type="text/javascript">
@@ -206,5 +215,7 @@
     </asset:script>
   </g:if>
   <asset:deferredScripts/>
+
+
 </body>
 </html>

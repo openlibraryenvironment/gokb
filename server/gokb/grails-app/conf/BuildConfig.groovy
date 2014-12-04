@@ -25,6 +25,8 @@ switch ("${System.getProperty('grails.env')}") {
 
 grails.project.dependency.resolver = "maven"
 
+def gebVersion = "0.9.3"
+def seleniumVersion = "2.43.1"
 
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
@@ -61,11 +63,12 @@ grails.project.dependency.resolution = {
         runtime 'mysql:mysql-connector-java:5.1.32'
         // runtime "postgresql:postgresql:8.3-603.jdbc3"
         // To allow us to un-tgz uploaded data files
-        runtime 'org.apache.commons:commons-compress:1.4.1'
-        compile 'org.apache.tika:tika-core:1.6'
+        runtime 'org.apache.commons:commons-compress:1.9'
+        runtime 'org.apache.tika:tika-core:1.6'
         
         // Must get parsers as well as core or we can only detect generic types.
-        compile 'org.apache.tika:tika-parsers:1.6'
+        runtime 'org.apache.tika:tika-parsers:1.6'
+        
         runtime 'xalan:xalan:2.7.1'
         runtime 'org.elasticsearch:elasticsearch:1.3.2'
         runtime 'org.elasticsearch:elasticsearch-client-groovy:1.3.2'
@@ -78,6 +81,16 @@ grails.project.dependency.resolution = {
         
         compile 'org.ajoberstar:grgit:0.2.3' // 0.3.0 is Groovy >=2.3 and breaks for me.
         build 'org.apache.httpcomponents:httpcore:4.3.2'
+
+        test("org.seleniumhq.selenium:selenium-htmlunit-driver:$seleniumVersion") {
+            exclude 'xml-apis'
+        }
+        test "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
+        test "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
+
+        test "org.spockframework:spock-grails-support:0.7-groovy-2.0"
+        test "org.gebish:geb-spock:$gebVersion"
+
     }
 
     plugins {
@@ -140,5 +153,12 @@ grails.project.dependency.resolution = {
       compile ':famfamfam:1.0.1'
       compile ':rest:0.7'
       compile ":twitter-bootstrap:3.2.0.2"
+
+      // compile ":profiler:0.5"
+      test ":spock:0.7", {
+        exclude "spock-grails-support"
+      }
+      test ":geb:$gebVersion"
+
     }
 }

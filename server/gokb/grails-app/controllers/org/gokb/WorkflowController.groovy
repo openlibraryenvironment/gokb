@@ -435,8 +435,15 @@ class WorkflowController {
       activity_record.save()
     }
     else if ( params.process ) {
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+
       log.debug("Process...");
+
       processTitleTransfer(activity_record, activity_data);
+
       if ( activity_data.title_ids?.size() > 0 ) {
         redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
       }
@@ -543,6 +550,8 @@ class WorkflowController {
       else if ( pn.startsWith('_oldtipp') ) {
         def key_components = pn.split(':');
 
+        log.debug("Set ${key_components} = ${value}");
+
         if ( activity_data.tipps[key_components[1]].oldTippValue == null ) { activity_data.tipps[key_components[1]].oldTippValue = [:] }
 
         if ( ( value != null ) && ( value.length() > 0 ) ) {
@@ -572,6 +581,12 @@ class WorkflowController {
     }
     else if ( params.process ) {
       log.debug("Process...");
+
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+
       processTitleChange(activity_record, activity_data);
       if ( activity_data.title_ids?.size() > 0 ) {
         redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
@@ -661,15 +676,24 @@ class WorkflowController {
 
         def new_title = TitleInstance.get(newtipp.title_id);
 
+        def parsed_start_date = null;
+        def parsed_end_date = null;
+        try {
+          parsed_start_date = ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null;
+          parsed_end_date = ( newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null;
+        }
+        catch ( Exception e ) {
+        }
+
         // def new_tipp = new TitleInstancePackagePlatform(
         def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
                                    pkg:new_package,
                                    hostPlatform:new_platform,
                                    title:new_title,
-                                   startDate: ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null,
+                                   startDate: parsed_start_date,
                                    startVolume:newtipp.startVolume,
                                    startIssue:newtipp.startIssue,
-                                   endDate: (newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null,
+                                   endDate: parsed_end_date,
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue]).save()
 
@@ -677,6 +701,29 @@ class WorkflowController {
           ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
         }
       }
+
+
+      // Update old tipp
+      def parsed_start_date = null
+      def parsed_end_date = null
+      try {
+        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? sdf.parse(tipp_map_entry.value.oldTippValue.startDate) : null;
+        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? sdf.parse(tipp_map_entry.value.oldTippValue.endDate) : null;
+      }
+      catch ( Exception e ) {
+      }
+
+      current_tipp.startDate = parsed_start_date;
+      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume;
+      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue;
+      current_tipp.endDate = parsed_end_date;
+      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume;
+      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue;
+
+      log.debug("Saving current tipp");
+      current_tipp.save()
+
+
 
       // Retire the tipp if
       if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
@@ -741,18 +788,28 @@ class WorkflowController {
       log.debug("Processing current tipp : ${current_tipp.id}");
 
       tipp_map_entry.value.newtipps.each { newtipp ->
+
         log.debug("Process new tipp : ${newtipp}");
 
-
-        if ( tipp_map_entry.value.oldTippValue?.startDate )
-          current_tipp.startDate = sdf.parse(tipp_map_entry.value.oldTippValue?.startDate)
+        if ( tipp_map_entry.value.oldTippValue?.startDate ) {
+          try {
+            current_tipp.startDate = sdf.parse(tipp_map_entry.value.oldTippValue?.startDate)
+          }
+          catch ( Exception e ) {
+          }
+        }
         if ( tipp_map_entry.value.oldTippValue?.startVolume )
           current_tipp.startVolume = tipp_map_entry.value.oldTippValue?.startVolume
         if ( tipp_map_entry.value.oldTippValue?.startIssue )
           current_tipp.startIssue = tipp_map_entry.value.oldTippValue?.startIssue
 
-        if ( tipp_map_entry.value.oldTippValue?.endDate )
-          current_tipp.endDate = sdf.parse(tipp_map_entry.value.oldTippValue?.endDate)
+        if ( tipp_map_entry.value.oldTippValue?.endDate ) {
+          try { 
+            current_tipp.endDate = sdf.parse(tipp_map_entry.value.oldTippValue?.endDate)
+          }
+          catch ( Exception e ) {
+          }
+        }
         if ( tipp_map_entry.value.oldTippValue?.endVolume )
           current_tipp.endVolume = tipp_map_entry.value.oldTippValue?.endVolume
         if ( tipp_map_entry.value.oldTippValue?.endIssue )
@@ -761,15 +818,24 @@ class WorkflowController {
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
  
+        def parsed_start_date = null;
+        def parsed_end_date = null;
+        try {
+          parsed_start_date = ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null;
+          parsed_end_date = ( newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null;
+        }
+        catch ( Exception e ) {
+        }
+
         // def new_tipp = new TitleInstancePackagePlatform(
         def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
                                    pkg:new_package,
                                    hostPlatform:new_platform,
                                    title:current_tipp.title,
-                                   startDate: ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null, 
+                                   startDate: parsed_start_date,
                                    startVolume:newtipp.startVolume,
                                    startIssue:newtipp.startIssue,
-                                   endDate: (newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null,
+                                   endDate: parsed_end_date,
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue]).save()
 
@@ -780,6 +846,8 @@ class WorkflowController {
       }
 
       // Retire the tipp if
+      log.debug("Checking close flags..${params}");
+
       if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
         log.debug("Retiring old tipp");
         current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
@@ -793,6 +861,22 @@ class WorkflowController {
         }
       }
 
+      def parsed_start_date = null
+      def parsed_end_date = null
+      try {
+        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? sdf.parse(tipp_map_entry.value.oldTippValue.startDate) : null;
+        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? sdf.parse(tipp_map_entry.value.oldTippValue.endDate) : null;
+      }
+      catch ( Exception e ) {}
+
+      current_tipp.startDate = parsed_start_date;
+      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume;
+      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue;
+      current_tipp.endDate = parsed_end_date;
+      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume;
+      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue;
+
+      log.debug("Saving current tipp");
       current_tipp.save()
     }
 

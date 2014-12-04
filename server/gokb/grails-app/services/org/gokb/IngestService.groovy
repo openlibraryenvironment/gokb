@@ -375,7 +375,7 @@ class IngestService {
             getRowValue(datarow,col_positions,PUBLISHER_NAME),
             ids,
             user,
-            RefineProject.get(project_id)
+            project
           );
 
           // If we match a title then ingest...
@@ -385,9 +385,9 @@ class IngestService {
             // to oscillate between different values - raised as a concern but dismissed as unlikely in weekly calls.
             def title_oa_status = getRowValue(datarow,col_positions,TITLE_OA_STATUS)
             if ( title_oa_status != null ) {
-              if ( title_info.oa_status?.value != title_oa_status ) {
+              if ( title_info.OAStatus?.value != title_oa_status ) {
                 //titleOAStatus:getRowRefdataValue('TitleInstance.OAStatus', datarow, col_positions, TITLE_OA_STATUS)
-                title_info.oa_status = RefdataCategory.lookupOrCreate('TitleInstance.OAStatus', title_oa_status)
+                title_info.OAStatus = RefdataCategory.lookupOrCreate('TitleInstance.OAStatus', title_oa_status)
               }
             }
 
@@ -420,6 +420,9 @@ class IngestService {
             // Set the propvider of the package to that on the project.
             Org provider = project.provider
             pkg.setProvider (provider)
+            
+            // Set the source.
+            pkg.setSource(project.getSource())
 
             // Set the latest project.
             pkg.setLastProject(project)

@@ -96,6 +96,7 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
     
     // Always prevent the default. as we will do the submission in the background.
 	  e.preventDefault();
+	  e.stopImmediatePropagation();
 	  
     if (action == false || $.isFunction(action)) {
       listener = submitFunction(action);

@@ -7,6 +7,7 @@
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
 import org.gokb.validation.types.*
+import org.gokb.cred.KBComponent
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
   "classpath:${appName}-config.groovy",
@@ -104,7 +105,11 @@ environments {
     grails.logging.jul.usebridge = false
     // TODO: grails.serverURL = "http://www.changeme.com"
   }
+  test {
+    grails.serverURL = "http://localhost:${ System.getProperty("server.port")?:'8080' }/${appName}"
+  }
 }
+
 
 // log4j configuration
 log4j = {
@@ -196,7 +201,7 @@ validation.rules = [
   // All platforms
   "platform.*.*" : [
     [
-      type: MustMatchRefdataValue,
+      type: ColNameMustMatchRefdataValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         /platform\.([^\.]*)\..*/,
@@ -293,10 +298,13 @@ validation.rules = [
   "${IngestService.TITLE_OA_STATUS}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Yes", "No", "Hybrid", "Delayed", "Unknown"]
+        "TitleInstance.OAStatus"
+        
+//        ["Yes", "No", "Hybrid", "Delayed", "Unknown"]
+//        ["No OA", "Full OA", "Hybrid OA", "Delayed OA", "Unknown"]
       ]
     ]
   ],
@@ -304,10 +312,11 @@ validation.rules = [
   "${IngestService.PRIMARY_TIPP}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Yes", "No"]
+//        ["Yes", "No"]
+        "TitleInstancePackagePlatform.Primary"
       ]
     ]
   ],
@@ -315,10 +324,11 @@ validation.rules = [
   "${IngestService.TIPP_PAYMENT}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
+        "TitleInstancePackagePlatform.PaymentType"
+//        ["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
       ]
     ]
   ],
@@ -326,10 +336,11 @@ validation.rules = [
   "${IngestService.TIPP_STATUS}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Current", "Retired", "Expected"]
+        "${KBComponent.RD_STATUS}"
+//        ["Current", "Retired", "Expected"]
       ]
     ]
   ],
@@ -753,6 +764,8 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'Cause', property:'descriptionOfCause', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id']],
@@ -1074,6 +1087,13 @@ grails.assets.plugin."jquery".excludes = ["**", "*.*"]
 grails.assets.minifyJs = false
 
 gokb.theme = "yeti"
+
+
+waiting {
+  timeout = 60
+  retryInterval = 0.5
+}
+
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'
