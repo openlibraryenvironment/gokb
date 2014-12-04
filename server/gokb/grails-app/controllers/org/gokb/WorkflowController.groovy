@@ -547,6 +547,8 @@ class WorkflowController {
       else if ( pn.startsWith('_oldtipp') ) {
         def key_components = pn.split(':');
 
+        log.debug("Set ${key_components} = ${value}");
+
         if ( activity_data.tipps[key_components[1]].oldTippValue == null ) { activity_data.tipps[key_components[1]].oldTippValue = [:] }
 
         if ( ( value != null ) && ( value.length() > 0 ) ) {
@@ -696,6 +698,29 @@ class WorkflowController {
           ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
         }
       }
+
+
+      // Update old tipp
+      def parsed_start_date = null
+      def parsed_end_date = null
+      try {
+        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? sdf.parse(tipp_map_entry.value.oldTippValue.startDate) : null;
+        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? sdf.parse(tipp_map_entry.value.oldTippValue.endDate) : null;
+      }
+      catch ( Exception e ) {
+      }
+
+      current_tipp.startDate = parsed_start_date;
+      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume;
+      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue;
+      current_tipp.endDate = parsed_end_date;
+      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume;
+      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue;
+
+      log.debug("Saving current tipp");
+      current_tipp.save()
+
+
 
       // Retire the tipp if
       if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
