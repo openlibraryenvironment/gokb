@@ -200,7 +200,7 @@ validation.rules = [
   // All platforms
   "platform.*.*" : [
     [
-      type: MustMatchRefdataValue,
+      type: ColNameMustMatchRefdataValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         /platform\.([^\.]*)\..*/,

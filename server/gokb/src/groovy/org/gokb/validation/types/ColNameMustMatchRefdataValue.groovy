@@ -2,7 +2,7 @@ package org.gokb.validation.types
 
 import org.gokb.cred.RefdataValue
 
-class MustMatchRefdataValue extends A_ValidationRule implements I_ColumnValidationRule {
+class ColNameMustMatchRefdataValue extends A_ValidationRule implements I_ColumnValidationRule {
 
   private static final String ERROR_TYPE = "incorrect_column_name"
   
@@ -10,7 +10,7 @@ class MustMatchRefdataValue extends A_ValidationRule implements I_ColumnValidati
   
   private boolean valid = false
 
-  public MustMatchRefdataValue (String columnName, String severity, String regex, String rd_cat) {
+  public ColNameMustMatchRefdataValue(String columnName, String severity, String regex, String rd_cat) {
 
     // Call super constructor.
     super (columnName, severity)
