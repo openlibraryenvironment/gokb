@@ -152,6 +152,7 @@ class WorkflowController {
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
 
     def titleChangeData = [:]
+    titleChangeData.title_ids = []
     titleChangeData.tipps = [:]
     titleChangeData.beforeTitles = params.list('beforeTitles')
     titleChangeData.afterTitles = params.list('afterTitles')
@@ -172,6 +173,8 @@ class WorkflowController {
 
       def title_obj = genericOIDService.resolveOID2(title_oid)
       sw.write(title_obj.name);
+
+      titleChangeData.title_ids.add(title_obj.id)
 
       def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ?',
