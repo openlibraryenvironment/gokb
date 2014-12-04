@@ -181,36 +181,39 @@ class WorkflowController {
                          [title_obj, 'Deleted','TitleInstance.Tipps']);
       tipps.each { tipp ->
 
-        log.debug("Add tipp to discontinue ${tipp}");
+        if ( ( tipp.status?.value != 'Deleted' ) && ( tipp.pkg.scope?.value != 'GOKb Master' ) ) {
 
-        titleChangeData.tipps[tipp.id] = [
-          oldTippValue:[
-            title_id:tipp.title.id,
-            package_id:tipp.pkg.id,
-            platform_id:tipp.hostPlatform.id,
-            startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
-            startVolume:tipp.startVolume,
-            startIssue:tipp.startIssue,
-            endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
-            endVolume:tipp.endVolume,
-            endIssue:tipp.endIssue
-          ],
-          newtipps:[]
-        ]
+          log.debug("Add tipp to discontinue ${tipp}");
 
-        params.list('afterTitles').each { new_title_oid ->
-          def new_title_obj = genericOIDService.resolveOID2(new_title_oid)
-          def new_tipp_info = [
-                               title_id:new_title_obj.id,
-                               package_id:tipp.pkg.id,
-                               platform_id:tipp.hostPlatform.id,
-                               startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
-                               startVolume:tipp.startVolume,
-                               startIssue:tipp.startIssue,
-                               endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
-                               endVolume:tipp.endVolume,
-                               endIssue:tipp.endIssue]
-          titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
+          titleChangeData.tipps[tipp.id] = [
+            oldTippValue:[
+              title_id:tipp.title.id,
+              package_id:tipp.pkg.id,
+              platform_id:tipp.hostPlatform.id,
+              startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+              startVolume:tipp.startVolume,
+              startIssue:tipp.startIssue,
+              endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+              endVolume:tipp.endVolume,
+              endIssue:tipp.endIssue
+            ],
+            newtipps:[]
+          ]
+  
+          params.list('afterTitles').each { new_title_oid ->
+            def new_title_obj = genericOIDService.resolveOID2(new_title_oid)
+            def new_tipp_info = [
+                                 title_id:new_title_obj.id,
+                                 package_id:tipp.pkg.id,
+                                 platform_id:tipp.hostPlatform.id,
+                                 startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+                                 startVolume:tipp.startVolume,
+                                 startIssue:tipp.startIssue,
+                                 endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+                                 endVolume:tipp.endVolume,
+                                 endIssue:tipp.endIssue]
+            titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
+          }
         }
       }
     }
