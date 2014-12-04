@@ -1,7 +1,5 @@
 package org.gokb.validation.types
 
-import java.util.Collection;
-
 import org.gokb.cred.RefdataValue
 
 class IsOneOfRefdata extends CellMatches {
@@ -15,8 +13,12 @@ class IsOneOfRefdata extends CellMatches {
 
     // Now need to collect allowed values for this refdata type.
     Set<String> all_items = RefdataValue.createCriteria().list {
-      owner {
-        ilike ('desc', rd_cat)
+      and {
+        owner {
+          ilike ('desc', rd_cat)
+        }
+        
+        isNull('useInstead')
       }
 
       projections {
