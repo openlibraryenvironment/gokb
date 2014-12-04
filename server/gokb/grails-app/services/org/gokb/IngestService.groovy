@@ -385,9 +385,9 @@ class IngestService {
             // to oscillate between different values - raised as a concern but dismissed as unlikely in weekly calls.
             def title_oa_status = getRowValue(datarow,col_positions,TITLE_OA_STATUS)
             if ( title_oa_status != null ) {
-              if ( title_info.oa_status?.value != title_oa_status ) {
+              if ( title_info.OAStatus?.value != title_oa_status ) {
                 //titleOAStatus:getRowRefdataValue('TitleInstance.OAStatus', datarow, col_positions, TITLE_OA_STATUS)
-                title_info.oa_status = RefdataCategory.lookupOrCreate('TitleInstance.OAStatus', title_oa_status)
+                title_info.OAStatus = RefdataCategory.lookupOrCreate('TitleInstance.OAStatus', title_oa_status)
               }
             }
 
