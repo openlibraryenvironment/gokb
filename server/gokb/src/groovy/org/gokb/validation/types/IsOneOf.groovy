@@ -15,6 +15,6 @@ class IsOneOf extends CellMatches {
     this.regex = (case_sensitive ? "" : "(?i)") + "^(\\Q${all_items.join('\\E|\\Q')}\\E)\$"
     this.text = "One or more rows contain invalid values in the column \"${columnName}\"." +
         "Allowed values are \"${all_items.join('\", \"')}\". Values are ${(case_sensitive ? '' : 'not ')}case sensitive."
-    this.facetValue = "if (and (isNonBlank(value), value.match(/${regex}/)), 'invalid', null)"
+    this.facetValue = "if (and (isNonBlank(value), isNull(value.match(/${regex}/))), 'invalid', null)"
   }
 }

@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.gokb.cred.RefdataValue
 
-class IsOneOfRefdata extends IsOneOf {
+class IsOneOfRefdata extends CellMatches {
 
   private static final String ERROR_TYPE = "data_invalid"
 
@@ -27,6 +27,6 @@ class IsOneOfRefdata extends IsOneOf {
     this.regex = (case_sensitive ? "" : "(?i)") + "^(\\Q${all_items.join('\\E|\\Q')}\\E)\$"
     this.text = "One or more rows contain invalid values in the column \"${columnName}\"." +
         "Allowed values are \"${all_items.join('\", \"')}\". Values are ${(case_sensitive ? '' : 'not ')}case sensitive."
-    this.facetValue = "if (and (isNonBlank(value), value.match(/${regex}/)), 'invalid', null)"
+    this.facetValue = "if (and (isNonBlank(value), isNull(value.match(/${regex}/))), 'invalid', null)"
   }
 }
