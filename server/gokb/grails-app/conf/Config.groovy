@@ -7,6 +7,7 @@
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
 import org.gokb.validation.types.*
+import org.gokb.cred.KBComponent
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
   "classpath:${appName}-config.groovy",
@@ -297,11 +298,13 @@ validation.rules = [
   "${IngestService.TITLE_OA_STATUS}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
+        "TitleInstance.OAStatus"
+        
 //        ["Yes", "No", "Hybrid", "Delayed", "Unknown"]
-        ["No OA", "Full OA", "Hybrid OA", "Delayed OA", "Unknown"]
+//        ["No OA", "Full OA", "Hybrid OA", "Delayed OA", "Unknown"]
       ]
     ]
   ],
@@ -309,10 +312,11 @@ validation.rules = [
   "${IngestService.PRIMARY_TIPP}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Yes", "No"]
+//        ["Yes", "No"]
+        "TitleInstancePackagePlatform.Primary"
       ]
     ]
   ],
@@ -320,10 +324,11 @@ validation.rules = [
   "${IngestService.TIPP_PAYMENT}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
+        "TitleInstancePackagePlatform.PaymentType"
+//        ["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
       ]
     ]
   ],
@@ -331,10 +336,11 @@ validation.rules = [
   "${IngestService.TIPP_STATUS}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
-      type: IsOneOf,
+      type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-        ["Current", "Retired", "Expected"]
+        "${KBComponent.RD_STATUS}"
+//        ["Current", "Retired", "Expected"]
       ]
     ]
   ],

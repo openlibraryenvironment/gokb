@@ -16,7 +16,7 @@ class IsOneOfRefdata extends IsOneOf {
     // Now need to collect allowed values for this refdata type.
     Set<String> all_items = RefdataValue.createCriteria().list {
       owner {
-        eq ('desc', rd_cat)
+        ilike ('desc', rd_cat)
       }
 
       projections {
