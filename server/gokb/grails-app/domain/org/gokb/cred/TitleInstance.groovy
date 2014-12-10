@@ -236,6 +236,14 @@ class TitleInstance extends KBComponent {
           }
         }
         
+        if ( variantNames ) {
+          builder.'variantNames' {
+            variantNames.each { vn ->
+              builder.'variantName' ( vn.variantName )
+            }
+          }
+        }
+
         if (thePublisher) {
           builder."publisher" (['id': thePublisher.id]) {
             "name" (thePublisher.name)

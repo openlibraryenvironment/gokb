@@ -231,6 +231,13 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         'nominalPlatform' ( nominalPlatform?.name )
         'nominalProvider' ( nominalPlatform?.provider?.name )
         'name' (name)
+         if ( variantNames ) {
+           builder.'variantNames' {
+             variantNames.each { vn ->
+               builder.'variantName' ( vn.variantName )
+             }
+           }
+         }
         'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {
           tipps.each { tipp ->

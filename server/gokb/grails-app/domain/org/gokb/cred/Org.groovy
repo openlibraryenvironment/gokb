@@ -160,6 +160,14 @@ class Org extends KBComponent {
             }
           }
         }
+
+        if ( variantNames ) {
+          builder.'variantNames' {
+            variantNames.each { vn ->
+              builder.'variantName' ( vn.variantName )
+            }
+          }
+        }
         
         if (publishes) {
           'publishedTitles' {
@@ -175,7 +183,7 @@ class Org extends KBComponent {
             }
           }
         }
-        
+
         if (issues) {
           'issuedTitles' {
             issues.each { title ->
