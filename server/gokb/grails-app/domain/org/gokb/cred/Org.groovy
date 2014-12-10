@@ -144,10 +144,19 @@ class Org extends KBComponent {
     builder.'gokb' (attr) {
       builder.'org' (['id':(id)]) {
         builder.'name' (name)
+
         if (identifiers) {
           builder.'identifiers' {
             identifiers.each { tid ->
               builder.'identifier' (['namespace':tid.namespace.value], tid.value) 
+            }
+          }
+        }
+
+        if ( roles ) {
+          builder.'roles' {
+            roles.each { role ->
+              builder.'role' (role.value)
             }
           }
         }
