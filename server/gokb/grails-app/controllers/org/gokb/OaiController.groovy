@@ -78,7 +78,8 @@ class OaiController {
   private def buildMetadata (subject, builder, result, prefix, config) {
     log.debug("buildMetadata....");
     
-    def attr = ["xsi:schemaLocation" : "${config.schema}"]
+    // def attr = ["xsi:schemaLocation" : "${config.schema}"]
+    def attr = [:]
     config.metadataNamespaces.each {ns, url ->
       ns = (ns == '_default_' ? '' : ":${ns}")
       
