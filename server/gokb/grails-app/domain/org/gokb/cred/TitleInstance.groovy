@@ -226,7 +226,16 @@ class TitleInstance extends KBComponent {
     
     builder.'gokb' (attr) {
       builder.'title' (['id':(id)]) {
+
         builder.'name' (name)
+        builder.'imprint' (imprint?.name)
+        builder.'medium' (medium?.value)
+        builder.'OAStatus' (OAStatus?.value)
+        builder.'continuingSeries' (continuingSeries?.value)
+        builder.'publishedFrom' (publishedFrom)
+        builder.'publishedTo' (publishedTo)
+        builder.'issuer' (issuer?.name)
+
         builder.'identifiers' {
           tids?.each { tid ->
             builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
