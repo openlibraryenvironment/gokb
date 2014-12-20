@@ -2,6 +2,8 @@ package org.gokb
 
 
 class MasterListUpdateJob {
+
+  def grailsApplication
   
   // Allow only one run at a time.
   def concurrent = false
