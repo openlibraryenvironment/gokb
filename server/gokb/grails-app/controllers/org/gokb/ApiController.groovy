@@ -78,7 +78,9 @@ class ApiController {
             break
 
             default :
-              props[k] = v
+              if (!(KBComponent.deproxy(v) instanceof KBComponent)) {
+                props[k] = v
+              }
           }
       }
     }
