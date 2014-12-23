@@ -71,8 +71,11 @@ class ApiController {
             case "grailsApplication" :
             case "sourceFile" :
             case "possibleRulesString" :
+            case "lastValidationResult" :
             case "lastValidationResultAsMap" :
             case "possibleRulesResultAsList" :
+            case "reviewRequests" :
+            case "fileAttachments" :
             
               /* DO nothing */
             break
