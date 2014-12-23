@@ -1,11 +1,6 @@
 package org.gokb
 
 import static java.util.UUID.randomUUID
-
-import com.k_int.ConcurrencyManagerService
-import com.k_int.TextUtils
-import com.k_int.ConcurrencyManagerService.Job
-
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
@@ -13,10 +8,13 @@ import grails.util.GrailsNameUtils
 import java.security.SecureRandom
 
 import org.apache.commons.codec.binary.Base64
-import org.apache.tika.Tika
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
+
+import com.k_int.ConcurrencyManagerService
+import com.k_int.TextUtils
+import com.k_int.ConcurrencyManagerService.Job
 
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
@@ -34,59 +32,25 @@ class ApiController {
 
     // Treat as refine project.
     RefineProject proj = it as RefineProject
-
-    // Populate the map.
-    TreeMap props = ["id" : proj.id] // Id is not included in properties...
-
-    // Go through defined properties.
-    proj.properties.each { k,v ->
-
-      // println("Prop: ${k}");
-
-      switch (v) {
-        case User :
-          User u = v as User
-          props[k] = [
-            "id"      : "${u.id}",
-            "email"     : "${u.email}",
-            "displayName"   : "${u.displayName}"
-          ]
-          break
-
-        case RefdataValue :
-          RefdataValue rd = v as RefdataValue
-          props[k] = rd.value
-          break
-
-        default :
-          switch (k) {
-            case "incomingCombos" :
-            case "outgoingCombos" :
-            case "otherIncomingCombos" :
-            case "otherOutgoingCombos" :
-            case "allPropertiesAndVals" :
-            case "allComboPropertyNames" :
-            case "allComboTypeValues" :
-            case {it ==~ /^.+Service$/} :
-            case "grailsApplication" :
-            case "sourceFile" :
-            case "possibleRulesString" :
-            case "lastValidationResult" :
-            case "lastValidationResultAsMap" :
-            case "possibleRulesResultAsList" :
-            case "reviewRequests" :
-            case "fileAttachments" :
-            
-              /* DO nothing */
-            break
-
-            default :
-              if (!(KBComponent.deproxy(v) instanceof KBComponent)) {
-                props[k] = v
-              }
-          }
-      }
+    
+    // Closure to format user.
+    def formatUser = { u ->
+      [
+        "id"      : "${u.id}",
+        "email"     : "${u.email}",
+        "displayName"   : "${u.displayName}"
+      ]
     }
+
+    // Populate the map manually instead of excluding more and more.
+    TreeMap props = [
+      "id"                : proj.id,
+      "localProjectID"    : proj.localProjectID,
+      "name"              : proj.name,
+      "projectStatus"     : proj.projectStatus,
+      "lastCheckedOutBy"  : formatUser (proj.lastCheckedOutBy),
+      "progress"          : proj.progress
+    ]
 
     return props
   }
