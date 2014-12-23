@@ -231,6 +231,7 @@ class ApiController {
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def saveOperations() {
     // Get the operations as a list.
+    log.debug("saveOperations");
 
     // The line below looks like it replaces like with like but because the
     // second parameter is a regex it gets double escaped.
@@ -487,8 +488,8 @@ class ApiController {
 
         log.debug("Validate the data in the zip");
         validationResult = ingestService.validate(parsed_project_file)
-
       } finally {
+        log.debug("validate completed, delete tempfile");
         if ( temp_data_zipfile ) {
           try {
             temp_data_zipfile.delete();
