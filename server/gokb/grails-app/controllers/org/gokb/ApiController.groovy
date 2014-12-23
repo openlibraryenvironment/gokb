@@ -288,7 +288,9 @@ class ApiController {
 
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectList() {
+    long time = System.currentTimeMillis()
     apiReturn (RefineProject.findAll().collect(TRANSFORMER_PROJECT))
+    log.debug ("Project list ${System.currentTimeMillis() - time} milliseconds")
   }
 
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
