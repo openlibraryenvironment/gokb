@@ -47,9 +47,11 @@ class ApiController {
       "id"                : proj.id,
       "localProjectID"    : proj.localProjectID,
       "name"              : proj.name,
+      "description"       : proj.description,
       "projectStatus"     : proj.projectStatus,
       "lastCheckedOutBy"  : formatUser (proj.lastCheckedOutBy),
-      "progress"          : proj.progress
+      "progress"          : proj.progress,
+      "modified"          : proj.modified
     ]
 
     return props
