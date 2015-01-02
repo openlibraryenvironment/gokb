@@ -144,6 +144,7 @@ class Org extends KBComponent {
     builder.'gokb' (attr) {
       builder.'org' (['id':(id)]) {
         builder.'name' (name)
+        builder.'homepage' (homepage)
 
         if (identifiers) {
           builder.'identifiers' {
