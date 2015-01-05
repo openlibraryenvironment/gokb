@@ -76,10 +76,18 @@ class Platform extends KBComponent {
         builder.'authentication' (authentication?.value)
         builder.'software' (software?.value)
         builder.'service' (service?.value)
+        builder.'status' (status?.value)
         if (identifiers) {
           builder.'identifiers' {
             identifiers.each { tid ->
               builder.'identifier' (['namespace':tid.namespace.value], tid.value)
+            }
+          }
+        }
+        if ( variantNames ) {
+          builder.'variantNames' {
+            variantNames.each { vn ->
+              builder.'variantName' ( vn.variantName )
             }
           }
         }
