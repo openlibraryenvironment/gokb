@@ -243,7 +243,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
               builder.'status' (tipp[14]?.value)
-              builder.'medium' (tipp[17]?.value])
+              builder.'medium' (tipp[17]?.value)
               builder.'title' (['id':tipp[2]]) {
                 builder.'name' (tipp[1]?.trim())
                 builder.'identifiers' {
