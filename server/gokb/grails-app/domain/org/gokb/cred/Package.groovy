@@ -205,7 +205,7 @@ class Package extends KBComponent {
 
     // Get the tipps manually rather than iterating over the collection - For better management
     // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
-    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status, tipp.accessStartDate, tipp.accessEndDate from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
+    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status, tipp.accessStartDate, tipp.accessEndDate, tipp.format, tipp.embargo from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
 where pkgCombo.toComponent=tipp
   and pkgCombo.fromComponent= ?
   and pkgCombo.type= ?
@@ -243,6 +243,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
               builder.'status' (tipp[14]?.value)
+              builder.'medium' (tipp[17]?.value])
               builder.'title' (['id':tipp[2]]) {
                 builder.'name' (tipp[1]?.trim())
                 builder.'identifiers' {
@@ -263,7 +264,8 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
                 endVolume:tipp[9],
                 endIssue:tipp[10],
                 coverageDepth:tipp[11]?.value,
-                coverageNote:tipp[12])
+                coverageNote:tipp[12],
+                embargo: tipp[18] )
               if ( tipp[13] != null ) { 'url'(tipp[13]) }
             }
           }
