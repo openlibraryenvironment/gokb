@@ -119,6 +119,7 @@
                   </g:each>
                 </ul> <!-- /.nav-second-level -->
               </li>
+              <g:if test="${session.menus?.create}">
 			        <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i> Create<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
                 
@@ -143,6 +144,7 @@
                         Data Review</g:link></li>
                   </ul>
               </li>
+              </g:if>
               <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
               <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 
