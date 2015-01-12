@@ -217,113 +217,119 @@ class TitleInstance extends KBComponent {
   @Transient
   def toGoKBXml(builder, attr) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    def tipps = getTipps()
     def tids = getIds() ?: []
-    def theIssuer = getIssuer()
-    def thePublisher = getPublisher()
 
-    def history = getTitleHistory()
-    
-    builder.'gokb' (attr) {
-      builder.'title' (['id':(id)]) {
-
-        builder.'name' (name)
-        builder.'imprint' (imprint?.name)
-        builder.'medium' (medium?.value)
-        builder.'OAStatus' (OAStatus?.value)
-        builder.'continuingSeries' (continuingSeries?.value)
-        builder.'publishedFrom' (publishedFrom)
-        builder.'publishedTo' (publishedTo)
-        builder.'issuer' (issuer?.name)
-
-        builder.'identifiers' {
-          tids?.each { tid ->
-            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
-          }
-          if ( grailsApplication.config.serverUrl != null ) {
-            builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.TitleInstance:${id}")
-          }
-        }
-        
-        if ( variantNames ) {
-          builder.'variantNames' {
-            variantNames.each { vn ->
-              builder.'variantName' ( vn.variantName )
+    try {
+      def tipps = getTipps()
+      def theIssuer = getIssuer()
+      def thePublisher = getPublisher()
+  
+      def history = getTitleHistory()
+      
+      builder.'gokb' (attr) {
+        builder.'title' (['id':(id)]) {
+  
+          builder.'name' (name)
+          builder.'imprint' (imprint?.name)
+          builder.'medium' (medium?.value)
+          builder.'OAStatus' (OAStatus?.value)
+          builder.'continuingSeries' (continuingSeries?.value)
+          builder.'publishedFrom' (publishedFrom)
+          builder.'publishedTo' (publishedTo)
+          builder.'issuer' (issuer?.name)
+  
+          builder.'identifiers' {
+            tids?.each { tid ->
+              builder.'identifier' ('namespace':tid?.namespace?.value, 'value':tid?.value)
+            }
+            if ( grailsApplication.config.serverUrl != null ) {
+              builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.TitleInstance:${id}")
             }
           }
-        }
-
-        if (thePublisher) {
-          builder."publisher" (['id': thePublisher.id]) {
-            "name" (thePublisher.name)
-          }
-        }
-        
-        if (theIssuer) {
-          builder."issuer" (['id': theIssuer.id]) {
-            "name" (theIssuer.name)
-          }
-        }
-        
-        builder.history() {
-          history.each { he ->
-            builder.historyEvent(['id':he.id]) {
-              "date"(he.date)
-              he.from.each { hti ->
-                "from" {
-                  title(hti.name)
-                  internalId(hti.id)
-                  "identifiers" {
-                    hti.getIds()?.each { tid ->
-                      builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
-                    }
-                  
-                  }
-                }
-              }
-              he.to.each { hti ->
-                "to" {
-                  title(hti.name)
-                  internalId(hti.id)
-                  "identifiers" {
-                    hti.getIds()?.each { tid ->
-                      builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
-                    }
-                  }
-                }
+          
+          if ( variantNames ) {
+            builder.'variantNames' {
+              variantNames.each { vn ->
+                builder.'variantName' ( vn.variantName )
               }
             }
           }
-        }
-
-        builder.'TIPPs' (count:tipps?.size()) {
-          tipps?.each { tipp ->
-            builder.'TIPP' (['id':tipp.id]) {
-              
-              def pkg = tipp.pkg
-              builder.'package' (['id':pkg.id]) {
-                builder.'name' (pkg.name)
+  
+          if (thePublisher) {
+            builder."publisher" (['id': thePublisher?.id]) {
+              "name" (thePublisher?.name)
+            }
+          }
+          
+          if (theIssuer) {
+            builder."issuer" (['id': theIssuer.id]) {
+              "name" (theIssuer.name)
+            }
+          }
+          
+          builder.history() {
+            history.each { he ->
+              builder.historyEvent(['id':he.id]) {
+                "date"(he.date)
+                he.from.each { hti ->
+                  "from" {
+                    title(hti.name)
+                    internalId(hti.id)
+                    "identifiers" {
+                      hti.getIds()?.each { tid ->
+                        builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                      }
+                    
+                    }
+                  }
+                }
+                he.to.each { hti ->
+                  "to" {
+                    title(hti.name)
+                    internalId(hti.id)
+                    "identifiers" {
+                      hti.getIds()?.each { tid ->
+                        builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                      }
+                    }
+                  }
+                }
               }
-              
-              def platform = tipp.hostPlatform
-              builder.'platform'(['id':platform.id]) {
-                builder.'name' (platform.name)
+            }
+          }
+  
+          builder.'TIPPs' (count:tipps?.size()) {
+            tipps?.each { tipp ->
+              builder.'TIPP' (['id':tipp.id]) {
+                
+                def pkg = tipp.pkg
+                builder.'package' (['id':pkg?.id]) {
+                  builder.'name' (pkg?.name)
+                }
+                
+                def platform = tipp.hostPlatform
+                builder.'platform'(['id':platform?.id]) {
+                  builder.'name' (platform?.name)
+                }
+                
+                builder.'coverage'(
+                  startDate:(tipp.startDate ? sdf.format(tipp.startDate):null),
+                  startVolume:tipp.startVolume,
+                  startIssue:tipp.startIssue,
+                  endDate:(tipp.endDate ? sdf.format(tipp.endDate):null),
+                  endVolume:tipp.endVolume,
+                  endIssue:tipp.endIssue,
+                  coverageDepth:tipp.coverageDepth?.value,
+                  coverageNote:tipp.coverageNote)
+                if ( tipp.url != null ) { 'url'(tipp.url) }
               }
-              
-              builder.'coverage'(
-                startDate:(tipp.startDate ?sdf.format(tipp.startDate):null),
-                startVolume:tipp.startVolume,
-                startIssue:tipp.startIssue,
-                endDate:(tipp.endDate?sdf.format(tipp.endDate):null),
-                endVolume:tipp.endVolume,
-                endIssue:tipp.endIssue,
-                coverageDepth:tipp.coverageDepth?.value,
-                coverageNote:tipp.coverageNote)
-              if ( tipp.url != null ) { 'url'(tipp.url) }
             }
           }
         }
       }
+    }
+    catch ( Exception e ) {
+      log.error("problem creating record",e);
     }
   }
 
