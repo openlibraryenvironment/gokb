@@ -3,6 +3,22 @@
 		<li class="active"><a href="#rrdets" data-toggle="tab">Review
 				Request Details</a></li>
 	</ul>
+		<nav class="navbar navbar-inverse">
+		<div class="container-fluid">
+			<ul class="nav navbar-nav navbar-right">
+				<li><a data-toggle="modal" data-cache="false"
+					title="Show History"
+					data-remote='<g:createLink controller="fwk" action="history" id="${d.class.name}:${d.id}"/>'
+					data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
+
+				<li><a data-toggle="modal" data-cache="false"
+					title="Show Notes"
+					data-remote='<g:createLink controller="fwk" action="notes" id="${d.class.name}:${d.id}"/>'
+					data-target="#modal"><i class="glyphicon glyphicon-comment"></i></a></li>
+
+			</ul>
+		</div>
+		</nav>
 	<div id="my-tab-content" class="tab-content">
 		<div class="tab-pane active" id="rrdets">
 			<dl class="dl-horizontal">
@@ -69,6 +85,21 @@
           Additional fields will be available once the record is saved
         </g:else>
 			</dl>
+		</div>
+	</div>
+
+	<div id="modal" class="qmodal modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					<h3 class="modal-title">Modal header</h3>
+				</div>
+				<div class="modal-body"></div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
