@@ -889,6 +889,7 @@ class WorkflowController {
 
   def processPackageReplacement() {
     def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    def result = [:]
     params.each { p ->
       log.debug("Testing ${p.key}");
       if ( ( p.key.startsWith('tt') ) && ( p.value ) && ( p.value instanceof String ) ) {
@@ -896,20 +897,24 @@ class WorkflowController {
          log.debug("Platform to replace: \"${tt}\"");
          def old_platform = Platform.get(tt)
          def new_platform = genericOIDService.resolveOID2(params.newplatform)
-
          log.debug("old: ${old_platform} new: ${new_platform}");
          try {
+           def updates_count = Combo.executeQuery("select count(combo) from Combo combo where combo.fromComponent = ?",[old_platform]);
            Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[new_platform,old_platform]);
 
            old_platform.status = deleted_status
            old_platform.save(flush:true)
+           result['old'] = old_platform
+           result['new'] = new_platform
+           result['count'] = updates_count
+           result['status'] = old_platform.status
          }
          catch ( Exception e ) {
            log.debug("Problem executing update");
          }
       }
     }
-    render view:'platformReplacementResult'
+    render view:'platformReplacementResult' , model:[result:result]
   }
 
   def download() {
