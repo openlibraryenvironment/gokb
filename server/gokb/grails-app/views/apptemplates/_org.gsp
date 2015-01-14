@@ -99,79 +99,8 @@
 					</dl>
 				</g:if>
 			</div>
-			<div class="tab-pane" id="altnames">
-				<g:if test="${d.id != null}">
-					<dl>
-						<dt>
-							<g:annotatedLabel owner="${d}" property="alternateNames">Alternate Names</g:annotatedLabel>
-						</dt>
-						<dd>
-							<table class="table table-striped table-bordered">
-								<thead>
-									<tr>
-										<th>Alternate Name</th>
-										<th>Status</th>
-										<th>Variant Type</th>
-										<th>Locale</th>
-									</tr>
-								</thead>
-								<tbody>
-									<g:each in="${d.variantNames}" var="v">
-										<tr>
-											<td>
-												${v.variantName}
-											</td>
-											<td><g:xEditableRefData owner="${v}" field="status"
-													config='KBComponentVariantName.Status' /></td>
-											<td><g:xEditableRefData owner="${v}" field="variantType"
-													config='KBComponentVariantName.VariantType' /></td>
-											<td><g:xEditableRefData owner="${v}" field="locale"
-													config='KBComponentVariantName.Locale' /></td>
-										</tr>
-									</g:each>
-								</tbody>
-							</table>
-
-							<g:if test="${d.isEditable()}">
-								<h4>
-									<g:annotatedLabel owner="${d}" property="addVariantName">Add Variant Name</g:annotatedLabel>
-								</h4>
-								<dl class="dl-horizontal">
-									<g:form controller="ajaxSupport" action="addToCollection"
-										class="form-inline">
-										<input type="hidden" name="__context"
-											value="${d.class.name}:${d.id}" />
-										<input type="hidden" name="__newObjectClass"
-											value="org.gokb.cred.KBComponentVariantName" />
-										<input type="hidden" name="__recip" value="owner" />
-										<dt>Variant Name</dt>
-										<dd>
-											<input type="text" name="variantName" />
-										</dd>
-										<dt>Locale</dt>
-										<dd>
-											<g:simpleReferenceTypedown class="form-control" name="locale"
-												baseClass="org.gokb.cred.RefdataValue"
-												filter1="KBComponentVariantName.Locale" />
-										</dd>
-										<dt>Variant Type</dt>
-										<dd>
-											<g:simpleReferenceTypedown class="form-control" name="variantType"
-												baseClass="org.gokb.cred.RefdataValue"
-												filter1="KBComponentVariantName.VariantType" />
-										</dd>
-										<dt></dt>
-										<dd>
-											<button type="submit"
-												class="btn btn-default btn-primary btn-sm ">Add</button>
-										</dd>
-									</g:form>
-								</dl>
-							</g:if>
-						</dd>
-					</dl>
-				</g:if>
-			</div>
+			<g:render template="showVariantnames" contextPath="../tabTemplates"
+			model="${[d:displayobj, showActions:false]}" />
 			<div class="tab-pane" id="ids">
 				<g:if test="${d.id != null}">
 					<dl>
