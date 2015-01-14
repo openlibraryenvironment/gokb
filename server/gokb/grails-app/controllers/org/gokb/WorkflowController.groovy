@@ -946,15 +946,24 @@ class WorkflowController {
     if ( variant != null ) {
       // Does the current owner.name exist in a variant? If not, we should create one so we don't loose the info
       def current_name_as_variant = variant.owner.variantNames.find { it.variantName == variant.owner.name }
-
       if ( current_name_as_variant == null ) {
-        def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant.owner.name).save(flush:true);
+        log.debug("No variant name found for current name: ${variant.owner.name} ")
+        def variant_name = variant.owner.getId();
+        if(variant.owner.name){
+          variant_name = variant.owner.name
+        }else if (variant.owner?.respondsTo('getDisplayName') && variant.owner.getDisplayName()){
+          variant_name = variant.owner.getDisplayName()?.trim()
+        }else if(variant.owner?.respondsTo('getName') ) {
+           variant_name = variant.owner?.getName()?.trim()  
+        }
+        def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant_name).save(flush:true);
+
+        variant.owner.name = variant.variantName
+        variant.owner.save(flush:true);
+      }else{
+          log.debug("Found existing variant name: ${current_name_as_variant}")
       }
-
-      variant.owner.name = variant.variantName
-      variant.owner.save(flush:true);
     }
-
     redirect(url: result.ref)
   }
 
