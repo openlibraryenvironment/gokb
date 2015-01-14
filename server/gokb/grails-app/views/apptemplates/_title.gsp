@@ -142,6 +142,10 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title
         Details</a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names 
+      <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
+    </a></li>
+        
     <g:if test="${ d.isEditable() }">
       <li><a href="#history" data-toggle="tab">Add to Title
           History</a></li>
@@ -197,81 +201,13 @@
             <g:xEditableRefData owner="${d}" field="continuingSeries"
               config='TitleInstance.ContinuingSeries' />
           </dd>
-
-          <dt>
-            <g:annotatedLabel owner="${d}" property="alternateTitles">Alternate Titles</g:annotatedLabel>
-          </dt>
-          <dd>
-            <table class="table table-striped table-bordered">
-              <thead>
-                <tr>
-                  <th>Variant Title</th>
-                  <th>Status</th>
-                  <th>Variant Type</th>
-                  <th>Locale</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <g:each in="${d.variantNames}" var="v">
-                  <tr>
-                    <td><g:xEditable owner="${v}" field="variantName" /></td>
-                    <td><g:xEditableRefData owner="${v}" field="status"
-                        config='KBComponentVariantName.Status' /></td>
-                    <td><g:xEditableRefData owner="${v}" field="variantType"
-                        config='KBComponentVariantName.VariantType' /></td>
-                    <td><g:xEditableRefData owner="${v}" field="locale"
-                        config='KBComponentVariantName.Locale' /></td>
-                    <td>
-                    	<g:if test="${ d.isEditable() }">
-                        <g:link controller="workflow" action="AuthorizeVariant"
-                          id="${v.id}">Make Authorized</g:link>,
-                        <g:link controller="workflow"
-                        	class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
-                          action="DeleteVariant" id="${v.id}" >Delete</g:link>
-                    	</g:if>
-                    </td>
-                  </tr>
-                </g:each>
-              </tbody>
-            </table>
-            <button
-              class="hidden-license-details btn btn-default btn-sm btn-primary "
-              data-toggle="collapse" data-target="#collapseableAddTitle">
-              Add new <i class="glyphicon glyphicon-plus"></i>
-            </button>
-            <dl id="collapseableAddTitle" class="dl-horizontal collapse">
-              <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
-                <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
-                <input type="hidden" name="__newObjectClass" value="org.gokb.cred.KBComponentVariantName" />
-                <input type="hidden" name="__recip" value="owner" />
-                <dt>Add Title Variant</dt>
-                <dd>
-                  <input type="text" name="variantName" />
-                </dd>
-                <dt>Locale</dt>
-                <dd>
-                  <g:simpleReferenceTypedown class="form-control" name="locale"
-                    baseClass="org.gokb.cred.RefdataValue"
-                    filter1="KBComponentVariantName.Locale" />
-                </dd>
-                <dt>Variant Type</dt>
-                <dd>
-                  <g:simpleReferenceTypedown class="form-control" name="variantType"
-                    baseClass="org.gokb.cred.RefdataValue"
-                    filter1="KBComponentVariantName.VariantType" />
-                </dd>
-                <dt></dt>
-                <dd>
-                  <button type="submit"
-                    class="btn btn-default btn-primary btn-sm ">Add</button>
-                </dd>
-              </g:form>
-            </dl>
-          </dd>
         </dl>
       </g:if>
     </div>
+
+    <g:render template="showVariantnames" contextPath="../tabTemplates"
+      model="${[d:displayobj, showActions:true]}" />
+
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
         <dl class="dl-horizontal">

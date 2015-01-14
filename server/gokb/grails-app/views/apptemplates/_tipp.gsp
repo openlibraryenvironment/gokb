@@ -78,6 +78,10 @@
 <ul id="tabs" class="nav nav-tabs">
 	<li class="active"><a href="#tippdetails" data-toggle="tab">TIPP
 			Details</a></li>
+	<li><a href="#altnames" data-toggle="tab">Alternate Names 
+		<span class="badge badge-warning"> ${d.variantNames?.size()}</span>
+	</a></li>
+
 	<g:if test="${ d.isEditable() }">
 		<li><a href="#tippcoverage" data-toggle="tab">Coverage</a></li>
 	</g:if>
@@ -96,6 +100,10 @@
 
 
 <div id="my-tab-content" class="tab-content">
+    
+    <g:render template="showVariantnames" contextPath="../tabTemplates"
+      model="${[d:displayobj, showActions:true]}" />
+
 	<div class="tab-pane active" id="tippdetails">
 
 		<g:if test="${d.id != null}">
