@@ -43,10 +43,12 @@
 	<ul id="tabs" class="nav nav-tabs">
 		<li class="active"><a href="#platformdetails" data-toggle="tab">Platform
 				Details</a></li>
-		<li><a href="#altnames" data-toggle="tab">Alternate Names <span
-					class="badge badge-warning"> ${d.variantNames?.size()}
-				</span></a></li>
+		<li><a href="#altnames" data-toggle="tab">Alternate Names 
+			<span class="badge badge-warning"> ${d.variantNames?.size()}</span>
+		</a></li>
 	</ul>
+
+
 	<div id="my-tab-content" class="tab-content">
 		<div class="tab-pane active" id="platformdetails">
 
@@ -87,7 +89,7 @@
 		</div>
 		<g:render template="showVariantnames" contextPath="../tabTemplates"
 			model="${[d:displayobj, showActions:true]}" />
-
+						
 	</div>
 	<g:render template="componentStatus" contextPath="../apptemplates"
 		model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
