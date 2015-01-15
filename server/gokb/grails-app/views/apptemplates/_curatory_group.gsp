@@ -1,6 +1,6 @@
 <dl class="dl-horizontal">
 
-  <dt><g:annotatedLabel owner="${d}" property="name">Territory Name</g:annotatedLabel></dt>
+  <dt><g:annotatedLabel owner="${d}" property="name">Curatory Group Name</g:annotatedLabel></dt>
   <dd><g:xEditable class="ipe" owner="${d}" field="name" /></dd>
 
   <g:if test="${d.id != null}">

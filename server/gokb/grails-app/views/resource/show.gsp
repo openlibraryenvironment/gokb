@@ -14,30 +14,41 @@
 	<div id="mainarea" class="panel panel-default">
 		<div class="panel-body">
 			<g:if test="${displayobj != null}">
-				<g:if test="${displayobj.respondsTo('availableActions')}">
-					<div class="col-xs-3 pull-right well" id="actionControls">
-						<g:form controller="workflow" action="action" method="post"
-							class='action-form'>
-							<h4>Available actions</h4>
-							<input type="hidden"
-								name="bulk:${displayobj.class.name}:${displayobj.id}"
-								value="true" />
-							<div class="input-group">
-								<select id="selectedAction" name="selectedBulkAction" class="form-control" >
-									<option value="">-- Select an action to perform --</option>
-									<g:each var="action" in="${displayobj.availableActions()}">
-										<option value="${action.code}">
-											${action.label}
-										</option>
-									</g:each>
-								</select>
-								<span class="input-group-btn">
-									<button type="submit" class="btn btn-default" >Go</button>
-								</span>
-							</div>
-						</g:form>
-					</div>
-				</g:if>
+			  <g:if test="${ !displayobj.respondsTo("isEditable") || (displayobj.respondsTo("isEditable") && displayobj.isEditable()) }" >
+				  <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" >
+				    <div class="col-xs-3 pull-right well">
+				      <div class="alert alert-warning">
+                <h4>Warning</h4>
+                <p>You are not a curator of this component. To edit this component irrespective of this, please confirm using the button below.</p>
+                <p><g:link class="btn btn-danger" controller="${ params.controller }" action="${ params.action }" id="${ displayobj.className }:${ displayobj.id }" params="${ (request.param ?: [:]) + ["curationOverride" : true] }" >Confirm and switch to edit mode</g:link></p>
+              </div>
+            </div>
+				  </g:if>
+					<g:elseif test="${displayobj.respondsTo('availableActions')}">
+						<div class="col-xs-3 pull-right well" id="actionControls">
+							<g:form controller="workflow" action="action" method="post"
+								class='action-form'>
+								<h4>Available actions</h4>
+								<input type="hidden"
+									name="bulk:${displayobj.class.name}:${displayobj.id}"
+									value="true" />
+								<div class="input-group">
+									<select id="selectedAction" name="selectedBulkAction" class="form-control" >
+										<option value="">-- Select an action to perform --</option>
+										<g:each var="action" in="${displayobj.availableActions()}">
+											<option value="${action.code}">
+												${action.label}
+											</option>
+										</g:each>
+									</select>
+									<span class="input-group-btn">
+										<button type="submit" class="btn btn-default" >Go</button>
+									</span>
+								</div>
+							</g:form>
+						</div>
+					</g:elseif>
+			  </g:if>
 				<g:if test="${displaytemplate != null}">
 					<g:if test="${displaytemplate.type=='staticgsp'}">
 						<g:render template="${displaytemplate.rendername}"

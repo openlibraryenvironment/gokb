@@ -801,16 +801,16 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'Territories':[
-    baseclass:'org.gokb.cred.Territory',
-    title:'Territories',
+  'CuratoryGroups':[
+    baseclass:'org.gokb.cred.CuratoryGroup',
+    title:'Curatory Groups',
     group:'Secondary',
     qbeConfig:[
       qbeForm:[
         [
           prompt:'Name or Title',
           qparam:'qp_name',
-          placeholder:'Name of Territory',
+          placeholder:'Name of Curatory Group',
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
         ],
       ],
@@ -994,7 +994,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
   'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ],
   'org.gokb.cred.Office': [ type:'staticgsp', rendername:'office' ],
-  'org.gokb.cred.Territory': [ type:'staticgsp', rendername:'territory' ],
+  'org.gokb.cred.CuratoryGroup': [ type:'staticgsp', rendername:'curatory_group' ],
   'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
   'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
