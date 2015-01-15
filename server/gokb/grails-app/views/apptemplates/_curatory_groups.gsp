@@ -1,6 +1,10 @@
+<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" />
 <table class="table table-bordered">
   <thead>
-    <tr><th>Curatory Group</th><th>Actions</th></tr>
+    <tr>
+      <th>Curatory Group</th>
+      <th>Actions</th>
+    </tr>
   </thead>
   <tbody>
   	<g:if test="${ d.curatoryGroups?.size() > 0 }" >
@@ -16,7 +20,7 @@
     		<td colspan="2">There are currently no linked Curatory Groups</td>
     	</tr>
     </g:else>
-    <g:if test="${d.isEditable()}">
+    <g:if test="${editable}">
     <tr>
     	<th colspan="2">Link a Curatory Group</th>
     </tr>

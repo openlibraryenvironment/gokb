@@ -1,10 +1,11 @@
+<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" />  
   <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
     </dt>
     <dd>
       ${d.name}
-      <g:if test="${ d.isEditable() }">(Modify name through variants below)</g:if>
+      <g:if test="${ editable }">(Modify name through variants below)</g:if>
     </dd>
 
     <dt>
@@ -67,7 +68,7 @@
       <li><a href="#titledetails" data-toggle="tab">Titles <span class="badge badge-warning"> ${d.tipps?.size()} </span></a></li>
                         <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size()} </span></a></li>
 
-      <g:if test="${ d.isEditable() }">
+      <g:if test="${ editable }">
         <li><a href="#altnames" data-toggle="tab">Alt Names</a></li>
       </g:if>
     </ul>
@@ -95,7 +96,7 @@
           params="[qbe:'g:3tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat']]"
           id="">Titles in this package</g:link>
 
-        <g:if test="${ d.isEditable() }">
+        <g:if test="${ editable }">
           <g:form controller="ajaxSupport" action="addToCollection"
             class="form-inline">
             <input type="hidden" name="__context"
@@ -124,7 +125,7 @@
       </div>
 
 
-      <g:if test="${ d.isEditable() }">
+      <g:if test="${ editable }">
         <div class="tab-pane" id="altnames">
           <div class="control-group">
             <dl>
