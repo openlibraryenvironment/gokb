@@ -32,6 +32,14 @@ class ResourceController {
       result.displayobj = genericOIDService.resolveOID(params.id)
 
       if ( result.displayobj ) {
+        
+        
+        // Need to figure out whether the current user has curatorial rights (or is an admin).
+        // Defaults to true as not all components have curatorial groups defined.
+        if (result.displayobj.respondsTo("getCuratoryGroups")) {
+          def cur = user.curatoryGroups?.id.intersect(result.displayobj.curatoryGroups?.id) ?: []
+          request.curator = cur
+        }
 
         def new_history_entry = new History(controller:params.controller,
         action:params.action,
