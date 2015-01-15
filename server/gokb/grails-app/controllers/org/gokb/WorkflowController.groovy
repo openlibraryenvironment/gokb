@@ -890,6 +890,10 @@ class WorkflowController {
   def processPackageReplacement() {
     def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def result = [:]
+    result['old'] = []
+    result['new'] = ''
+    result['count'] = 0
+    
     params.each { p ->
       log.debug("Testing ${p.key}");
       if ( ( p.key.startsWith('tt') ) && ( p.value ) && ( p.value instanceof String ) ) {
@@ -901,13 +905,11 @@ class WorkflowController {
          try {
            def updates_count = Combo.executeQuery("select count(combo) from Combo combo where combo.fromComponent = ?",[old_platform]);
            Combo.executeUpdate("update Combo combo set combo.fromComponent = ? where combo.fromComponent = ?",[new_platform,old_platform]);
-
+           result['count'] += updates_count
+           result['old'] += old_platform.name
+           result['new'] = new_platform.name
            old_platform.status = deleted_status
            old_platform.save(flush:true)
-           result['old'] = old_platform
-           result['new'] = new_platform
-           result['count'] = updates_count
-           result['status'] = old_platform.status
          }
          catch ( Exception e ) {
            log.debug("Problem executing update");

@@ -4,19 +4,29 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKb::Package Replacement</title>
+<title>GOKb: Platform Replacement</title>
 </head>
 <body>
-	<div class="container">
-		<div class="row">
-			Platform replacement result: ${result['count']}
-			Platform replacement old: ${result['old']}
-			Platform replacement old status: ${result['status']}
 
-			Platform replacement new: ${result['new']}
+		<h1 class="page-header">Replace Platform Complete</h1>
+		<div id="mainarea" class="panel panel-default">
+			<div class="panel-body">
+				<h3>Process result:</h3>
+			<ul>
+				<li>${result['count']} TIPPs have successfully been updated to platform ${result['new']}.</li>
+				<li> The following platforms have been retired:
+					<ul>
+						<g:each in="${result['old']}" var="o">
+						<li>${o}</li>
+						</g:each>
 
+					</ul>
+				</li>
+			</ul>									
+			</div>
 		</div>
-	</div>
 </body>
+
+
 </html>
 

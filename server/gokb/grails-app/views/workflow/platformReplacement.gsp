@@ -13,13 +13,12 @@
 		<h1 class="page-header">Replace Platform</h1>
 		<div id="mainarea" class="panel panel-default">
 			<div class="panel-body">
-				<h3>Update TIPP records and replace the platform on the
-					following package(s)</h3>
+				<h3>Update TIPP records and replace the following platform(s)</h3>
 				<table class="table table-striped table-bordered no-select-all">
 					<thead>
 						<tr>
 							<th></th>
-							<th>Package(s)</th>
+							<th>Platforms(s)</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -43,6 +42,13 @@
 								<button type="submit" class="btn btn-default btn-sm">Update</button>
 							</div>
 						</div>
+					</dd>
+					<dt>This action will:</dt>
+					<dd>
+						<ul>
+						<li>Replace the platform for all TIPPs currently associated with the selected platforms</li>
+						<li>Set the status of selected platforms to "Retired." </li>
+						</ul>
 					</dd>
 				</dl>
 			</div>
