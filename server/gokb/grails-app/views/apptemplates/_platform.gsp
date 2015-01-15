@@ -32,9 +32,9 @@
 				config='KBComponent.EditStatus' />
 		</dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="territories">Territories</g:annotatedLabel></dt>
+    <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd>
-       <g:render template="territories" contextPath="../apptemplates" model="${[d:d]}" />
+       <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
     </dd>
 
 

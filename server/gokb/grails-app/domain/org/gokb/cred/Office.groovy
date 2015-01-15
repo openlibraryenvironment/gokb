@@ -21,7 +21,7 @@ class Office extends KBComponent {
   ]
 
   static manyByCombo = [
-	territories : Territory
+	curatoryGroups : CuratoryGroup
   ]
   
   static mapping = {

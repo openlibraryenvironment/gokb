@@ -23,7 +23,7 @@ class Platform extends KBComponent {
   static manyByCombo = [
 	hostedTipps : TitleInstancePackagePlatform,
 	linkedTipps : TitleInstancePackagePlatform,
-	territories	: Territory
+	curatoryGroups	: CuratoryGroup
   ]
 
   static mapping = {

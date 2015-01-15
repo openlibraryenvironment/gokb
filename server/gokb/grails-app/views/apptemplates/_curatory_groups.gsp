@@ -1,6 +1,6 @@
 <table class="table table-bordered">
   <thead>
-    <tr><th>Territory</th><th>Actions</th></tr>
+    <tr><th>Curatory Group</th><th>Actions</th></tr>
   </thead>
   <tbody>
   	<g:if test="${ d.territories?.size() > 0 }" >
@@ -13,12 +13,12 @@
     </g:if>
     <g:else>
     	<tr>
-    		<td colspan="2">There are currently no linked territories</td>
+    		<td colspan="2">There are currently no linked Curatory Groups</td>
     	</tr>
     </g:else>
     <g:if test="${d.isEditable()}">
     <tr>
-    	<th colspan="2">Link a Territory</th>
+    	<th colspan="2">Link a Curatory Group</th>
     </tr>
     <tr>
       <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
@@ -26,12 +26,12 @@
 					<input type="hidden" name="__context" value="${d.getClassName()}:${d.id}"/>
 					<input type="hidden" name="__property" value="territories"/>
         	<div class="input-group" >
-        		<g:simpleReferenceTypedown class="form-control" name="__relatedObject" baseClass="org.gokb.cred.Territory" />
+        		<g:simpleReferenceTypedown class="form-control" name="__relatedObject" baseClass="org.gokb.cred.CuratoryGroup" />
         		<div class="input-group-btn" >
         			<button type="submit" class="btn btn-default btn-sm ">Link</button>
         		</div>
         	</div>
-        	<p><g:link controller="create" params="${["tmpl": "org.gokb.cred.Territory"]}">New Territory</g:link></p>
+        	<p><g:link controller="create" params="${["tmpl": "org.gokb.cred.CuratoryGroup"]}">New Curatory Group</g:link></p>
         </td>
       </g:form>
     </tr>

@@ -21,14 +21,14 @@ class User {
   boolean accountLocked
   boolean passwordExpired
   Long defaultPageSize = new Long(10)
-//  Set<Territory> territories
+  Set<CuratoryGroup> curatoryGroups
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
     
-//  static hasMany = [
-//    territories : Territory
-//  ]
+  static hasMany = [
+    curatoryGroups : CuratoryGroup
+  ]
 
   static constraints = {
     username blank: false, unique: true
@@ -132,14 +132,6 @@ class User {
         }
       }
     }
-    
-//    if (showInfoIcon?.value) {
-//      userPrefs["showInfoIcon"] = showInfoIcon.value?.equalsIgnoreCase("Yes") ? true : false
-//    }
-//    
-//    if (showQuickView?.value) {
-//      userPrefs["showQuickView"] = showQuickView?.value?.equalsIgnoreCase("Yes") ? true : false
-//    }
     
     // Return the prefs.
     userPrefs
