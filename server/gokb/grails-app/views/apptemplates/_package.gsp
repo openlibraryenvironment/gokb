@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" />  
+<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" />
   <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
@@ -66,13 +66,10 @@
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
       <li><a href="#titledetails" data-toggle="tab">Titles <span class="badge badge-warning"> ${d.tipps?.size()} </span></a></li>
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size()} </span></a></li>
-
-      <g:if test="${ editable }">
-         <li><a href="#altnames" data-toggle="tab">Alternate Names 
-           <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
-         </a></li>
-      </g:if>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size()} </span></a></li>      
+      <li><a href="#altnames" data-toggle="tab">Alternate Names 
+        <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
+      </a></li>
     </ul>
 
     <div id="my-tab-content" class="tab-content">

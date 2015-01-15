@@ -1,3 +1,4 @@
+<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" />
 <div class="tab-pane" id="altnames">
 	<g:if test="${d.id != null}">
 		<dl>
@@ -29,7 +30,7 @@
 										config='KBComponentVariantName.VariantType' /></td>
 								<td><g:xEditableRefData owner="${v}" field="locale"
 										config='KBComponentVariantName.Locale' /></td>
-								<g:if test="${ d.isEditable() && showActions }">
+								<g:if test="${ editable && showActions }">
 								<td>
 			                        <g:link controller="workflow" action="AuthorizeVariant"
 			                          id="${v.id}">Make Authorized</g:link>,
@@ -43,7 +44,7 @@
 					</tbody>
 				</table>
 
-				<g:if test="${d.isEditable()}">
+				<g:if test="${editable}">
 					<h4>
 						<g:annotatedLabel owner="${d}" property="addVariantName">Add Variant Name</g:annotatedLabel>
 					</h4>
