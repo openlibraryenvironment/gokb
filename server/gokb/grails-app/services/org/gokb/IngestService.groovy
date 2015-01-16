@@ -43,7 +43,7 @@ class IngestService {
 
   /** Field prefixes ***/
   public static final String IDENTIFIER_PREFIX = 'title.identifier.'
-  public static final String TI_FIELD_PREFIX = 'gokb.ti.'
+  public static final String TI_FIELD_PREFIX = 'gokb.title.'
   public static final String TIPP_FIELD_PREFIX = 'gokb.tipp.'
 
   /*** Supported field names ***/
