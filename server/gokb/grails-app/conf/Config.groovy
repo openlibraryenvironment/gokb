@@ -302,10 +302,16 @@ validation.rules = [
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         "TitleInstance.OAStatus"
-        
-//        ["Yes", "No", "Hybrid", "Delayed", "Unknown"]
-//        ["No OA", "Full OA", "Hybrid OA", "Delayed OA", "Unknown"]
       ]
+    ]
+  ],
+
+  "${IngestService.TITLE_IMPRINT}" : [
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [
+      type: LookedUpValue,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: [ org.gokb.cred.Imprint ]
     ]
   ],
 
@@ -315,7 +321,6 @@ validation.rules = [
       type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-//        ["Yes", "No"]
         "TitleInstancePackagePlatform.Primary"
       ]
     ]
@@ -328,7 +333,6 @@ validation.rules = [
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         "TitleInstancePackagePlatform.PaymentType"
-//        ["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
       ]
     ]
   ],
@@ -340,7 +344,6 @@ validation.rules = [
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         "${KBComponent.RD_STATUS}"
-//        ["Current", "Retired", "Expected"]
       ]
     ]
   ],
