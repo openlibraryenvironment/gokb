@@ -301,6 +301,15 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
     );
   }
   
+  public JSONObject getCurrentUser() {
+    try {
+      return apiJSON ("userData");
+      
+    } catch (Exception e) {
+      return null;
+    }
+  }
+  
   private JSONObject apiJSON (String apiMethod) throws JSONException, IOException, FileUploadException {
     return URLConenectionUtils.getJSONObjectFromStream( callAPI (apiMethod).getInputStream() );
   }

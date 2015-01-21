@@ -17,6 +17,7 @@ import javax.servlet.ServletConfig;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections.ExtendedProperties;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,19 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
   public static String getCurrentUserDetails() {
     return userDetails;
+  }
+  
+  static JSONObject currentUser = null;
+  public JSONObject getCurrentUser() {
+    if (currentUser == null) {
+      currentUser = getCurrentService().getCurrentUser();
+    }
+    
+    return currentUser;
+  }
+  
+  public GOKbService getCurrentService() {
+    return workspaces[currentWorkspaceId].getService();
   }
 
   public static File getTemporaryDirectory() {
@@ -235,7 +249,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   }
 
   public String getCurrentWorkspaceURL() {
-    return workspaces[currentWorkspaceId].getService().getURL();
+    return getCurrentService().getURL();
   }
 
   public GOKbService[] getServices() {
@@ -476,24 +490,24 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
     // This is the set of data returned by .
     writer.object()
-    .key("notification-stacks").object()
-    .key("system");
+      .key("notification-stacks").object()
+        .key("system");
+  
+          NotificationStack.getSystemStack().write(writer, options);
+      
+       writer.endObject()
+      .key("workspaces").array();
 
-    NotificationStack.getSystemStack().write(writer, options);
+        // Add all the workspaces.
+        for (RefineWorkspace w : workspaces) {
+          w.write(writer, options);
+        }
 
-    writer
-    .endObject()
-    .key("workspaces").array()
-    ;
-
-    // Add all the workspaces.
-    for (RefineWorkspace w : workspaces) {
-      w.write(writer, options);
-    }
-
-    writer
-    .endArray()
-    .key("current").value(getCurrentWorkspaceId())
+      writer.endArray()
+      .key("current").value(getCurrentWorkspaceId())
+      
+      // Add the current user.
+      .key("current-user").value(getCurrentUser())
     .endObject();
   }
 
