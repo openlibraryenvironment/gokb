@@ -48,7 +48,7 @@ class ApiController {
       "name"              : proj.name,
       "description"       : proj.description,
       "projectStatus"     : proj.projectStatus,
-      "lastCheckedOutBy"  : TRANSFORMER_USER (proj.lastCheckedOutBy),
+      "lastCheckedOutBy"  : ApiController.TRANSFORMER_USER (proj.lastCheckedOutBy),
       "progress"          : proj.progress,
       "modified"          : proj.modified
     ]
