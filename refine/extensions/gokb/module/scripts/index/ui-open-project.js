@@ -30,7 +30,7 @@ GOKb.ui.projects = function (elmt) {
                   onDone : function (data) {
                     
                     if ("result" in data && data.result.length > 0) {
-                      var head = ["", "Name", "Description", "State", "Last&nbsp;modified"];
+                      var head = ["", "Name", "Description", "State", "Last&nbsp;modified", "Creator"];
                       var body = [];
                       
                       // Add each project to the projects screen.
@@ -71,11 +71,12 @@ GOKb.ui.projects = function (elmt) {
                         
                         // Add the row.
                         var row = [
-                          self.getProjectControls(this),
-                          name,
+                          $("<div />").append(self.getProjectControls(this)).html(),
+                          $("<div />").append(name).html(),
                           this.description,
-                          status,
-                          formatRelativeDate(this.modified)
+                          $("<div />").append(status).html(),
+                          formatRelativeDate(this.modified),
+                          this.createdBy
                         ];
                         
                         // Push the row to the body.
@@ -84,20 +85,33 @@ GOKb.ui.projects = function (elmt) {
                       
                       // Clear the container.
                       self._elmts.projects.html(self._defaultContent);
+                      
+                      var tabs = $('#gokb-project-tabs', self._elmts.projects);
+                      
                       var all_proj = $('#gokb-all-projects', self._elmts.projects);
                       all_proj.css("height", (self._elmts.projects.height() - 50) + "px");
                       
-                      // Now we have the data create the table.
-                      var table = GOKb.toDataTable(all_proj, head, body, {
+                      // Table defaults.
+                      var tab_defaults = {
                         "order"       : [ 1, 'asc' ],
                         "columnDefs"  : [
                           {"searchable": false, "targets": [0,4]},
                           {"orderable": false, "targets": [0,4]},
+                          
+                          // User rendering.
+                          {
+                            "targets": 5,
+                            "render" : {
+                              "filter"  : "displayName",
+                              "display" : "displayName",
+                              "order"   : "displayName"
+                            }
+                          }
                         ]
-                      });
-
-                      // Add show/hide to controls on the table to help with rows added when the set size is changed.
-                      $(table).mouseover(function(e){
+                      };
+                      
+                      // The mouse over function...
+                      var m_over = function(e){
                         
                         // The mouseover target.
                         var me = $(e.target);
@@ -127,10 +141,39 @@ GOKb.ui.projects = function (elmt) {
                         // Kill the bubble.
                         e.stopPropagation();
                         e.preventDefault();
+                      };
+                      
+                      // Now we have the data create the table.
+                      var table = GOKb.toDataTable(all_proj, head, body, tab_defaults);
+
+                      // Add show/hide to controls on the table to help with rows added when the set size is changed.
+                      $(table).mouseover(m_over);
+                      
+                      // Add each defined filter as a tab.
+                      $.each(GOKb.projectFilters, function () {
+                        
+                        // The container.
+                        var container = $('<div id="gokb-' + this.name + '" />').css("height", (self._elmts.projects.height() - 50) + "px");
+                        
+                        // Add a tab.
+                        $('ul', tabs)
+                          .prepend($('<li><a href="#gokb-' + this.name + '" >' + this.title + '</a></li>'))
+                          .after(container);
+                        
+                        // Filtered data.
+                        var dt = table.DataTable();
+                        var filteredData = dt
+                          .rows()
+                          .data()
+                          .filter( this.filter );
+                        
+                        // Now add the table, and mouseover...
+                        GOKb.toDataTable(container, head, filteredData, tab_defaults)
+                          .mouseover(m_over);
                       });
                       
                       // Add the tabs.
-                      $('#gokb-project-tabs', self._elmts.projects).tabs();
+                      tabs.tabs();
 
                       // Default to this action area.
                       Refine.selectActionArea("gokb");
