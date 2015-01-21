@@ -27,20 +27,19 @@ class ApiController {
   RefineService refineService
   SecureRandom rand = new SecureRandom()
   UploadAnalysisService uploadAnalysisService
+  
+  private static final Closure TRANSFORMER_USER = {User u ->
+    [
+      "id"      : "${u.id}",
+      "email"     : "${u.email}",
+      "displayName"   : "${u.displayName ?: u.username}"
+    ]
+  }
 
   private static final Closure TRANSFORMER_PROJECT = {
 
     // Treat as refine project.
     RefineProject proj = it as RefineProject
-    
-    // Closure to format user.
-    def formatUser = { u ->
-      [
-        "id"      : "${u.id}",
-        "email"     : "${u.email}",
-        "displayName"   : "${u.displayName}"
-      ]
-    }
 
     // Populate the map manually instead of excluding more and more.
     TreeMap props = [
@@ -49,7 +48,7 @@ class ApiController {
       "name"              : proj.name,
       "description"       : proj.description,
       "projectStatus"     : proj.projectStatus,
-      "lastCheckedOutBy"  : formatUser (proj.lastCheckedOutBy),
+      "lastCheckedOutBy"  : TRANSFORMER_USER (proj.lastCheckedOutBy),
       "progress"          : proj.progress,
       "modified"          : proj.modified
     ]
@@ -251,6 +250,11 @@ class ApiController {
     }
 
     apiReturn( null, "Succesfully saved the operations.")
+  }
+  
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def userData() {
+    apiReturn ( TRANSFORMER_USER( springSecurityService.currentUser ) )
   }
 
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
