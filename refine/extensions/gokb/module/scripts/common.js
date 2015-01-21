@@ -514,6 +514,99 @@ GOKb.toTable = function (header, data, addStripe) {
 };
 
 /**
+ * Return a data-table jQuery object using the datatables jQuery plugin.
+ */
+GOKb.toDataTable = function (parent, header, data, extraConf) {
+  
+  // Defaults.
+  extraConf = extraConf || {};
+  
+  // Also set defaults.
+  extraConf = $.extend ({
+    "scrollY"         : ($(parent).height() - 100) + "px",
+    "scrollCollapse"  : false,
+    "paginate"        : true,
+    "lengthMenu"    : [[25, 50, 100, -1],["25", "50", "100", "All"]],
+    
+  }, extraConf);
+  
+  // DT expects columns defs to be objects.
+  var columns = [];
+  
+  $.each(header, function() {
+
+    // The column.
+    var col = {};
+    
+    if (this instanceof String || typeof this === 'string') {
+      col["title"] = this.toString();
+      
+    } else {
+      // Append each element
+      if (this instanceof jQuery || this instanceof Array) {
+        var valContainer = $("<div />");
+        $.each(this, function() {
+          valContainer.append(this);
+        });
+        col["title"] = valContainer.html().toString();
+      }
+    }
+    
+    columns.push(col);
+  });
+  
+  var body = [];
+  $.each(data, function() {
+    
+    // Row...
+    var row = [];
+    
+    // Examine first row for types.
+    $.each(this, function() {
+      
+      // Append element.
+      var valContainer = $("<div />");
+      
+      if (this instanceof String || typeof this === 'string') {
+        valContainer.html(this.toString());
+        
+      } else {
+        // Append each element
+        if (this instanceof jQuery || this instanceof Array) {
+          $.each(this, function() {
+            valContainer.append(this);
+          });
+        }
+      }
+      
+      // Now get the HTML to set the contents.
+      row.push(valContainer.html());
+    });
+    
+    // Push the row.
+    body.push(row);
+  });
+    
+  // Create the table object and return.
+  var table = $('<table class="dt-data-table" cellpadding="0" cellspacing="0" border="0" />');
+  
+  // We need the parent here as the initialisation below sets widths based on the target container.
+  parent.append(table);
+  
+  // Merge the configuration.
+  var config = $.extend({}, extraConf, {
+    "columns" : columns,
+    "data"    : body,
+  });
+  
+  // Initialise the data table.
+  table.dataTable(config);
+  
+  // Return the table object.
+  return table;
+};
+
+/**
  * Return an object with parameters of the project set. Including the custom ones.
  */
 GOKb.projectDataAsParams = function (project) {
