@@ -50,7 +50,8 @@ class ApiController {
       "projectStatus"     : proj.projectStatus,
       "lastCheckedOutBy"  : ApiController.TRANSFORMER_USER (proj.lastCheckedOutBy),
       "progress"          : proj.progress,
-      "modified"          : proj.modified
+      "modified"          : proj.modified,
+      "createdBy"         : ApiController.TRANSFORMER_USER (proj.createdBy),
     ]
 
     return props
@@ -252,8 +253,10 @@ class ApiController {
     apiReturn( null, "Succesfully saved the operations.")
   }
   
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def userData() {
+    if (!springSecurityService.currentUser) {
+      return
+    }
     apiReturn ( TRANSFORMER_USER( springSecurityService.currentUser ) )
   }
 

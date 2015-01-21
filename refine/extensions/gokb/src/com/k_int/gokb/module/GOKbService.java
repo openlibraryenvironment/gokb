@@ -302,12 +302,26 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
   }
   
   public JSONObject getCurrentUser() {
+    JSONObject res;
     try {
-      return apiJSON ("userData");
-      
-    } catch (Exception e) {
-      return null;
+      res = URLConenectionUtils.getJSONObjectFromStream(
+        callSecureAPI(
+          "userData",
+          URLConenectionUtils.METHOD_TYPE.GET,
+          null
+        ).getInputStream()
+      );
+      if ("success".equalsIgnoreCase(res.getString("code"))) {
+        
+        res = res.getJSONObject("result");
+      } else {
+        res = null;
+      }
+    } catch (Exception e) { 
+      res = null;
     }
+    
+    return res;
   }
   
   private JSONObject apiJSON (String apiMethod) throws JSONException, IOException, FileUploadException {
@@ -340,6 +354,29 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
     
     // Open the connection.
     HttpURLConnection connection = URLConenectionUtils.getAPIConnection(methodType, url);
+      
+    // If we are posting then parameters should be written to the stream.
+    if (methodType == URLConenectionUtils.METHOD_TYPE.POST) {
+      URLConenectionUtils.postFilesAndParams(connection, params, null);
+    }
+
+    return connection;
+  }
+  
+  private HttpURLConnection callSecureAPI (String apiMethod, URLConenectionUtils.METHOD_TYPE methodType, Map<String, String[]> params) throws FileUploadException, IOException {
+
+    String urlString = URL + apiMethod;
+
+    // If get then append the param string here.
+    if (methodType == URLConenectionUtils.METHOD_TYPE.GET) {
+      urlString += URLConenectionUtils.paramString(params);
+    }
+
+    // Create a URL object.
+    URL url = new URL(urlString);
+    
+    // Open the connection with the .
+    HttpURLConnection connection = URLConenectionUtils.getAPIConnection(methodType, url, GOKbModuleImpl.getCurrentUserDetails());
       
     // If we are posting then parameters should be written to the stream.
     if (methodType == URLConenectionUtils.METHOD_TYPE.POST) {
