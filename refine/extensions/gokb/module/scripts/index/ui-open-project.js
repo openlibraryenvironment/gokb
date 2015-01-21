@@ -7,6 +7,8 @@ GOKb.ui.projects = function (elmt) {
   this._elmts = DOM.bind(elmt);
   this._localProjects = {};
   
+  this._defaultContent = "<div id='gokb-project-tabs' ><ul><li><a href='#gokb-all-projects' >All Projects</a></li></ul><div id='gokb-all-projects' class='tab-content' ></div></div>";
+  
   $(document).ready(function(){
     
     GOKb.getCoreData().done(function(){
@@ -80,18 +82,55 @@ GOKb.ui.projects = function (elmt) {
                         body.push(row);
                       });
                       
+                      // Clear the container.
+                      self._elmts.projects.html(self._defaultContent);
+                      var all_proj = $('#gokb-all-projects', self._elmts.projects);
+                      all_proj.css("height", (self._elmts.projects.height() - 50) + "px");
+                      
                       // Now we have the data create the table.
-                      var table = GOKb.toTable(head, body, false);
+                      var table = GOKb.toDataTable(all_proj, head, body, {
+                        "order"       : [ 1, 'asc' ],
+                        "columnDefs"  : [
+                          {"searchable": false, "targets": [0,4]},
+                          {"orderable": false, "targets": [0,4]},
+                        ]
+                      });
 
-                      // Add show/hide to controls.
-                      $("tr", table).mouseenter(function() {
-                        $('.control', this).css("visibility", "visible");
-                      }).mouseleave(function() {
-                        $('.control', this).css("visibility", "hidden");
+                      // Add show/hide to controls on the table to help with rows added when the set size is changed.
+                      $(table).mouseover(function(e){
+                        
+                        // The mouseover target.
+                        var me = $(e.target);
+                        
+                        // Find the closest "tr" if there is one.
+                        var tr = me.closest('tr');
+                        if (tr.length > 0) {
+                          // Then let's show the content.
+                          $(".control", tr).css('visibility', 'visible');
+                          
+                          // Grab the already attached events.
+                          var events = (tr.data("events") || $._data(tr[0], "events"));
+                          
+                          if (!events || events['mouseout'] === undefined) {
+                          
+                            // Bind the mouseleave
+                            tr.mouseleave(function(){
+                              $(".control", this).css('visibility', 'hidden');
+    
+                              // Kill the bubble.
+                              e.stopPropagation();
+                              e.preventDefault();
+                            });
+                          }
+                        }
+
+                        // Kill the bubble.
+                        e.stopPropagation();
+                        e.preventDefault();
                       });
                       
-                      // Write the table as the contents of the main window.
-                      self._elmts.projects.html(table);
+                      // Add the tabs.
+                      $('#gokb-project-tabs', self._elmts.projects).tabs();
 
                       // Default to this action area.
                       Refine.selectActionArea("gokb");

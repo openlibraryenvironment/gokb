@@ -14,3 +14,9 @@ GOKb.api.getProjects = function (params, callbacks) {
     callbacks
   );
 };
+
+/**
+ * Predefined filters that will render as tabs.
+ */
+GOKb.projectFilters = {
+};
