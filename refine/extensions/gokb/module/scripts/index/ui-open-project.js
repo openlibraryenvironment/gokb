@@ -104,7 +104,7 @@ GOKb.ui.projects = function (elmt) {
                             "render" : {
                               "filter"  : "displayName",
                               "display" : "displayName",
-                              "order"   : "displayName"
+                              "sort"    : "displayName"
                             }
                           }
                         ]

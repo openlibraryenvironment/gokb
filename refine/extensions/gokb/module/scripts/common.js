@@ -554,41 +554,9 @@ GOKb.toDataTable = function (parent, header, data, extraConf) {
     
     columns.push(col);
   });
-  
-//  var body = [];
-//  $.each(data, function() {
-//    
-//    // Row...
-//    var row = [];
-//    
-//    // Examine first row for types.
-//    $.each(this, function() {
-//      
-//      // Append element.
-//      var valContainer = $("<div />");
-//      
-//      if (this instanceof String || typeof this === 'string') {
-//        valContainer.html(this.toString());
-//        
-//      } else {
-//        // Append each element
-//        if (this instanceof jQuery || this instanceof Array) {
-//          $.each(this, function() {
-//            valContainer.append(this);
-//          }); 
-//        }
-//      }
-//      
-//      // Now get the HTML to set the contents.
-//      row.push(valContainer.html());
-//    });
-//    
-//    // Push the row.
-//    body.push(row);
-//  });
     
   // Create the table object and return.
-  var table = $('<table class="dt-data-table" cellpadding="0" cellspacing="0" border="0" />');
+  var table = $('<table class="dt-data-table row-border stripe" cellpadding="0" cellspacing="0" border="0" />');
   
   // We need the parent here as the initialisation below sets widths based on the target container.
   parent.append(table);
