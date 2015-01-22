@@ -94,6 +94,7 @@ GOKb.ui.projects = function (elmt) {
                       // Table defaults.
                       var tab_defaults = {
                         "order"       : [ 1, 'asc' ],
+                        "lengthMenu"    : [[25, 50, 100, -1],["25", "50", "100", "Show all"]],
                         "columnDefs"  : [
                           {"searchable": false, "targets": [0,4]},
                           {"orderable": false, "targets": [0,4]},

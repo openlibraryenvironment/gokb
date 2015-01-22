@@ -556,7 +556,7 @@ GOKb.toDataTable = function (parent, header, data, extraConf) {
   });
     
   // Create the table object and return.
-  var table = $('<table class="dt-data-table row-border stripe" cellpadding="0" cellspacing="0" border="0" />');
+  var table = $('<table class="dt-data-table cell-border stripe" cellpadding="0" cellspacing="0" border="0" />');
   
   // We need the parent here as the initialisation below sets widths based on the target container.
   parent.append(table);
