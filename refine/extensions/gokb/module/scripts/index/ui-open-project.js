@@ -26,6 +26,7 @@ GOKb.ui.projects = function (elmt) {
               // Set the appropriate handler for the data based on the servers capabilities.
               var callback = null;
               if (GOKb.hasFeature("project-mamangement")) {
+                
                 callback = function (data) {
 
                   if ("result" in data && data.result.length > 0) {
@@ -180,6 +181,10 @@ GOKb.ui.projects = function (elmt) {
                   }
                 };
               } else {
+                
+                // Add extra class to projects.
+                self._elmts.projects.addClass("scroll-needed");
+                
                 callback = function (data) {
                   
                   if ("result" in data && data.result.length > 0) {

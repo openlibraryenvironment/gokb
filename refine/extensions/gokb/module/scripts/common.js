@@ -912,19 +912,19 @@ GOKb.timer = function() {
     // If the versions are wrong then the default error callback will be fired and the,
     // version missmatch reported to the user.
       
-      // Grab the core data.
-      GOKb.fetchCoreData().done(function(data){
-        
-        // Resolve the listener so that anything waiting on this to finish can then execute anything they need.
-        listener.resolve(GOKb);
-        
-        // Check again in 30 seconds if not called before.
-        GOKb.timer_id = setTimeout(function(){
-          GOKb.timer().done(GOKb.preCoreUpdate);
-        }, 30000);
-      });
+    // Grab the core data.
+    GOKb.fetchCoreData().done(function(data){
       
-      return listener;
+      // Resolve the listener so that anything waiting on this to finish can then execute anything they need.
+      listener.resolve(GOKb);
+      
+      // Check again in 30 seconds if not called before.
+      GOKb.timer_id = setTimeout(function(){
+        GOKb.timer().done(GOKb.preCoreUpdate);
+      }, 30000);
+    });
+    
+    return listener;
   }
   
   // If we get here then we have a version error and should reject.

@@ -40,6 +40,8 @@ class BootStrap {
 
     log.debug("Init")
     
+    cleanUpMissingDomains ()
+    
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass()
     
@@ -108,6 +110,20 @@ class BootStrap {
     }
     
     defaultSortKeys ()
+  }
+  
+  def cleanUpMissingDomains () {
+    
+    def domains = KBDomainInfo.createCriteria().list { ilike ('dcName', 'org.gokb%') }.each { d ->
+      try {
+        
+        // Just try reading the class.
+        Class.forName(d.dcName)
+      } catch (ClassNotFoundException e) {
+        d.delete(flush:true)
+        log.info ("Deleted domain object for ${d.dcName} as the Class could not be found." )
+      }
+    }
   }
   
   def failAnyIngestingProjects() {
