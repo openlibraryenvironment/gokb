@@ -69,7 +69,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -960,4 +960,12 @@ class ApiController {
     resultrows
   }
 
+  private static final def CAPABILITIES = [
+    "core"                : true,
+    "project-mamangement" : true
+  ]
+  
+  def capabilities () {
+    render (CAPABILITIES as JSON)
+  }
 }

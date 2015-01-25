@@ -954,3 +954,7 @@ GOKb.updateSystemNotifications = function (data) {
   });
 };
 
+GOKb.hasFeature = function (featureName) {
+  var capable = GOKb.core.workspace.service.capabilities[featureName] || false
+  return capable;
+}
