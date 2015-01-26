@@ -1,3 +1,4 @@
+<%@ page import="org.gokb.cred.RefdataCategory" %>
 <!DOCTYPE html>
 <!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
 <!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
@@ -6,7 +7,6 @@
 <!--[if (gt IE 9)|!(IE)]><!-->
 <html lang="en" class="no-js">
 <!--<![endif]-->
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -137,10 +137,17 @@
 
                   <ul class="nav nav-second-level">
                     <li><g:link controller="search" action="index"
-                        params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">
+                        params="${[
+                          qbe:'g:reviewRequests',
+                          qp_allocatedto:'org.gokb.cred.User:'+request.user.id,
+                          qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open').id))
+                        ]}">
                         <i class="fa fa-angle-double-right fa-fw"></i> My ToDos</g:link></li>
                     <li><g:link controller="search" action="index"
-                        params="${[qbe:'g:reviewRequests']}"><i class="fa fa-angle-double-right fa-fw"></i>
+                        params="${[
+                          qbe:'g:reviewRequests',
+                          qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open').id))
+                        ]}"><i class="fa fa-angle-double-right fa-fw"></i>
                         Data Review</g:link></li>
                   </ul>
               </li>
