@@ -37,7 +37,7 @@ class ColNameMustMatchRefdataValue extends A_ValidationRule implements I_ColumnV
   }
 
   @Override
-  public boolean validate (final result, final columnDefinitions) {
+  public boolean validate (final result, final columnDefinitions, final originalDefinitions) {
     if (!valid) {
 
       // Add an error message.
