@@ -12,7 +12,6 @@
 	
 	  <dt><g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel></dt>
 	  <dd><g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /></dd>
-	  ${ d.users }
 	  <dt><g:annotatedLabel owner="${d}" property="users">Members</g:annotatedLabel></dt>
 	  <dd>
 	    <g:if test="${ d.users }" >
