@@ -73,7 +73,7 @@ class Validation {
     }
 
     // Check the rules for the column context.
-    checkColumnRules (result, col_positions)
+    checkColumnRules (result, col_positions, project_data.columnDefinitions)
 
     // Row-level checks.
     checkRowRules (result, col_positions, project_data)
@@ -207,7 +207,7 @@ class Validation {
     valid
   }
 
-  private boolean checkColumnRules (final result, final col_positions) {
+  private boolean checkColumnRules (final result, final col_positions, final original_data) {
     
     // The boolean validity value. Defaults to true and only errors can force this to false.
     // Warnings do not count as failures.
@@ -236,7 +236,7 @@ class Validation {
           I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(inst_params as Object[])
   
           // Execute the rule.
-          valid = (rule.validate(result, col_positions) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
+          valid = (rule.validate(result, col_positions, original_data) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
         }
       } else {
       
@@ -244,7 +244,7 @@ class Validation {
         I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(conf)
 
         // Execute the rule.
-        valid = (rule.validate(result, col_positions) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
+        valid = (rule.validate(result, col_positions, original_data) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
       }
     }
     

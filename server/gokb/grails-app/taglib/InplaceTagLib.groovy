@@ -1,5 +1,8 @@
+import java.net.Authenticator.RequestorType;
+
 import com.k_int.kbplus.*
 import com.k_int.ClassUtils
+
 import org.hibernate.proxy.HibernateProxy
 
 class InplaceTagLib {
@@ -11,8 +14,12 @@ class InplaceTagLib {
     // See if there is an owner attribute on the request - owner will be the domain object asking to be edited.
     def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
     
-    boolean tl_editable = true
-    if (owner?.respondsTo("isEditable")) {
+    boolean cur = request.curator != null ? request.curator.size() > 0 : true
+    
+    // Default editable value.
+    boolean tl_editable = cur  || (params.curationOverride == "true")
+    
+    if (tl_editable && owner?.respondsTo("isEditable")) {
       tl_editable = owner.isEditable()
     }
     

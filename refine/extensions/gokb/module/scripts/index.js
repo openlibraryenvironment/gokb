@@ -14,3 +14,16 @@ GOKb.api.getProjects = function (params, callbacks) {
     callbacks
   );
 };
+
+/**
+ * Predefined filters that will render as tabs.
+ */
+GOKb.projectFilters = [
+  {
+    "name"    : "my-projects",
+    "title"   : "My Projects",
+    "filter"  : function (value, index) {
+      return value[5].id == GOKb['core']['current-user']['id'];
+    }
+  }
+];

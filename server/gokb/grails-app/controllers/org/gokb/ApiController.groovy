@@ -27,20 +27,19 @@ class ApiController {
   RefineService refineService
   SecureRandom rand = new SecureRandom()
   UploadAnalysisService uploadAnalysisService
+  
+  private static final Closure TRANSFORMER_USER = {User u ->
+    [
+      "id"      : "${u.id}",
+      "email"     : "${u.email}",
+      "displayName"   : "${u.displayName ?: u.username}"
+    ]
+  }
 
   private static final Closure TRANSFORMER_PROJECT = {
 
     // Treat as refine project.
     RefineProject proj = it as RefineProject
-    
-    // Closure to format user.
-    def formatUser = { u ->
-      [
-        "id"      : "${u.id}",
-        "email"     : "${u.email}",
-        "displayName"   : "${u.displayName}"
-      ]
-    }
 
     // Populate the map manually instead of excluding more and more.
     TreeMap props = [
@@ -49,9 +48,10 @@ class ApiController {
       "name"              : proj.name,
       "description"       : proj.description,
       "projectStatus"     : proj.projectStatus,
-      "lastCheckedOutBy"  : formatUser (proj.lastCheckedOutBy),
+      "lastCheckedOutBy"  : ApiController.TRANSFORMER_USER (proj.lastCheckedOutBy),
       "progress"          : proj.progress,
-      "modified"          : proj.modified
+      "modified"          : proj.modified,
+      "createdBy"         : ApiController.TRANSFORMER_USER (proj.createdBy),
     ]
 
     return props
@@ -69,7 +69,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -251,6 +251,13 @@ class ApiController {
     }
 
     apiReturn( null, "Succesfully saved the operations.")
+  }
+  
+  def userData() {
+    if (!springSecurityService.currentUser) {
+      return
+    }
+    apiReturn ( TRANSFORMER_USER( springSecurityService.currentUser ) )
   }
 
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
@@ -953,4 +960,12 @@ class ApiController {
     resultrows
   }
 
+  private static final def CAPABILITIES = [
+    "core"                : true,
+    "project-mamangement" : true
+  ]
+  
+  def capabilities () {
+    render (CAPABILITIES as JSON)
+  }
 }

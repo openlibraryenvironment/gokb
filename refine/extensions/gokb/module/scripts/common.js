@@ -514,6 +514,67 @@ GOKb.toTable = function (header, data, addStripe) {
 };
 
 /**
+ * Return a data-table jQuery object using the datatables jQuery plugin.
+ */
+GOKb.toDataTable = function (parent, header, data, extraConf) {
+  
+  // Defaults.
+  extraConf = extraConf || {};
+  
+  // Also set defaults.
+  extraConf = $.extend ({
+    "scrollY"         : ($(parent).height() - 100) + "px",
+    "scrollCollapse"  : false,
+    "paginate"        : true,
+    "lengthMenu"    : [[25, 50, 100, -1],["25", "50", "100", "All"]],
+    
+  }, extraConf);
+  
+  // DT expects columns defs to be objects.
+  var columns = [];
+  
+  $.each(header, function() {
+
+    // The column.
+    var col = {};
+    
+    if (this instanceof String || typeof this === 'string') {
+      col["title"] = this.toString();
+      
+    } else {
+      // Append each element
+      if (this instanceof jQuery || this instanceof Array) {
+        var valContainer = $("<div />");
+        $.each(this, function() {
+          valContainer.append(this);
+        });
+        col["title"] = valContainer.html().toString();
+      }
+    }
+    
+    columns.push(col);
+  });
+    
+  // Create the table object and return.
+  var table = $('<table class="dt-data-table cell-border stripe" cellpadding="0" cellspacing="0" border="0" />');
+  
+  // We need the parent here as the initialisation below sets widths based on the target container.
+  parent.append(table);
+  
+  // Merge the configuration.
+  var config = $.extend({}, extraConf, {
+    "columns" : columns,
+    "data"    : data,
+  });
+  
+  // Initialise the data table.
+  table.dataTable(config);
+  
+  // Return the table object.
+  return table;
+};
+
+/**
  * Return an object with parameters of the project set. Including the custom ones.
  */
 GOKb.projectDataAsParams = function (project) {
@@ -851,19 +912,19 @@ GOKb.timer = function() {
     // If the versions are wrong then the default error callback will be fired and the,
     // version missmatch reported to the user.
       
-      // Grab the core data.
-      GOKb.fetchCoreData().done(function(data){
-        
-        // Resolve the listener so that anything waiting on this to finish can then execute anything they need.
-        listener.resolve(GOKb);
-        
-        // Check again in 30 seconds if not called before.
-        GOKb.timer_id = setTimeout(function(){
-          GOKb.timer().done(GOKb.preCoreUpdate);
-        }, 30000);
-      });
+    // Grab the core data.
+    GOKb.fetchCoreData().done(function(data){
       
-      return listener;
+      // Resolve the listener so that anything waiting on this to finish can then execute anything they need.
+      listener.resolve(GOKb);
+      
+      // Check again in 30 seconds if not called before.
+      GOKb.timer_id = setTimeout(function(){
+        GOKb.timer().done(GOKb.preCoreUpdate);
+      }, 30000);
+    });
+    
+    return listener;
   }
   
   // If we get here then we have a version error and should reject.
@@ -893,3 +954,7 @@ GOKb.updateSystemNotifications = function (data) {
   });
 };
 
+GOKb.hasFeature = function (featureName) {
+  var capable = GOKb.core.workspace.service.capabilities[featureName] || false
+  return capable;
+}

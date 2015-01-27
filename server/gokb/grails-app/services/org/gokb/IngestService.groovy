@@ -43,7 +43,7 @@ class IngestService {
 
   /** Field prefixes ***/
   public static final String IDENTIFIER_PREFIX = 'title.identifier.'
-  public static final String TI_FIELD_PREFIX = 'gokb.ti.'
+  public static final String TI_FIELD_PREFIX = 'gokb.title.'
   public static final String TIPP_FIELD_PREFIX = 'gokb.tipp.'
 
   /*** Supported field names ***/
@@ -77,6 +77,7 @@ class IngestService {
   public static final String TIPP_PAYMENT = "TIPPPayment"
   public static final String TIPP_STATUS = "TIPPStatus"
   public static final String TITLE_OA_STATUS = "title.oastatus"
+  public static final String TITLE_IMPRINT = "title.imprint"
 
   /**
    *  Validate a parsed project. 
@@ -390,6 +391,16 @@ class IngestService {
                 title_info.OAStatus = RefdataCategory.lookupOrCreate('TitleInstance.OAStatus', title_oa_status)
               }
             }
+            
+            // Handle the imprint.
+            def imprint = componentLookupService.lookupComponent(
+              getRowValue(datarow,col_positions,TITLE_IMPRINT)
+            )
+            
+            if ( imprint != null && (title_info.imprint == null || title_info.imprint.id != imprint.id )) {
+              // Add/Modify the imprint.
+              title_info.imprint = imprint
+            } 
 
             // Additional TI properties.
             for (apd in gokb_additional_ti_props) {

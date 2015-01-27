@@ -16,7 +16,7 @@ class ColumnMissing extends A_ValidationRule implements I_ColumnValidationRule {
   }
 
   @Override
-  public boolean validate (final result, final columnDefinitions) {
+  public boolean validate (final result, final columnDefinitions, final originalDefinitions) {
     if (columnDefinitions[columnName] == null) {
 
       // Add an error message.

@@ -195,11 +195,13 @@ validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
     [ type: ColumnMissing     , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty      , severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   // All platforms
   "platform.*.*" : [
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: ColNameMustMatchRefdataValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -212,6 +214,7 @@ validation.rules = [
 
   "${IngestService.HOST_PLATFORM_URL}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: CellMatches,
@@ -226,6 +229,7 @@ validation.rules = [
 
   "${IngestService.HOST_PLATFORM_NAME}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: LookedUpValue,
@@ -236,12 +240,14 @@ validation.rules = [
 
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_WARNING ],
     [ type: EnsureDate    ,severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ 
       type: EnsureDate,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -251,6 +257,7 @@ validation.rules = [
 
   "${IngestService.PACKAGE_NAME}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: LookedUpValue,
@@ -261,6 +268,7 @@ validation.rules = [
 
   "${IngestService.PUBLISHER_NAME}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_WARNING ],
     [
       type: LookedUpValue,
@@ -271,6 +279,7 @@ validation.rules = [
 
   "${IngestService.EMBARGO_INFO}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: CellMatches,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -284,6 +293,7 @@ validation.rules = [
 
   "${IngestService.COVERAGE_DEPTH}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: CellMatches,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -297,25 +307,33 @@ validation.rules = [
 
   "${IngestService.TITLE_OA_STATUS}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         "TitleInstance.OAStatus"
-        
-//        ["Yes", "No", "Hybrid", "Delayed", "Unknown"]
-//        ["No OA", "Full OA", "Hybrid OA", "Delayed OA", "Unknown"]
       ]
+    ]
+  ],
+
+  "${IngestService.TITLE_IMPRINT}" : [
+    [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
+    [
+      type: LookedUpValue,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: [ org.gokb.cred.Imprint ]
     ]
   ],
 
   "${IngestService.PRIMARY_TIPP}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
-//        ["Yes", "No"]
         "TitleInstancePackagePlatform.Primary"
       ]
     ]
@@ -323,31 +341,32 @@ validation.rules = [
 
   "${IngestService.TIPP_PAYMENT}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         "TitleInstancePackagePlatform.PaymentType"
-//        ["Complimentary", "Limited Promotion", "Paid", "Opt Out Promotion", "Uncharged", "Unknown"]
       ]
     ]
   ],
 
   "${IngestService.TIPP_STATUS}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [
       type: IsOneOfRefdata,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: [
         "${KBComponent.RD_STATUS}"
-//        ["Current", "Retired", "Expected"]
       ]
     ]
   ],
 
   // All Identifiers
   "${IngestService.IDENTIFIER_PREFIX}*" : [
-    [ type: HasDuplicates , severity: A_ValidationRule.SEVERITY_WARNING ]
+    [ type: HasDuplicates , severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   // ISSN
@@ -399,18 +418,22 @@ validation.rules = [
   // Other columns we know about that need warnings if not present.
   "${IngestService.VOLUME_FIRST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
   ],
 
   "${IngestService.VOLUME_LAST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
   ],
 
   "${IngestService.NUMBER_FIRST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
   ],
 
   "${IngestService.NUMBER_LAST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
   ],
 ]
 
@@ -801,16 +824,16 @@ globalSearchTemplates = [
       ]
     ]
   ],
-  'Territories':[
-    baseclass:'org.gokb.cred.Territory',
-    title:'Territories',
+  'CuratoryGroups':[
+    baseclass:'org.gokb.cred.CuratoryGroup',
+    title:'Curatory Groups',
     group:'Secondary',
     qbeConfig:[
       qbeForm:[
         [
           prompt:'Name or Title',
           qparam:'qp_name',
-          placeholder:'Name of Territory',
+          placeholder:'Name of Curatory Group',
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
         ],
       ],
@@ -994,7 +1017,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
   'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ],
   'org.gokb.cred.Office': [ type:'staticgsp', rendername:'office' ],
-  'org.gokb.cred.Territory': [ type:'staticgsp', rendername:'territory' ],
+  'org.gokb.cred.CuratoryGroup': [ type:'staticgsp', rendername:'curatory_group' ],
   'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
   'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],

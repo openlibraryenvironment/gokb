@@ -97,6 +97,7 @@ function init() {
 	     "scripts/plugins/jquery.uniform.min.js",
 	     "scripts/plugins/jquery.ui-lookup.js",
 	     "scripts/plugins/pnotify.custom.min.js",
+       "scripts/plugins/jquery.dataTables.min.js",
 	     "scripts/common.js",
 	     "scripts/common-notifications.js",
 	     "scripts/init.js",
@@ -116,6 +117,7 @@ function init() {
      "styles/pnotify.custom.min.css",
      "styles/common.less",
      "styles/index.less",
+     "styles/jquery.dataTables.min.css",
     ]
   );
 
@@ -131,6 +133,7 @@ function init() {
      "scripts/plugins/jquery.ui-lookup.js",
      "scripts/plugins/select2.min.js",
      "scripts/plugins/pnotify.custom.min.js",
+     "scripts/plugins/jquery.dataTables.min.js",
      "scripts/common.js",
      "scripts/common-notifications.js",
      "scripts/init.js",
@@ -155,6 +158,7 @@ function init() {
       "styles/select2.css",
       "styles/pnotify.custom.min.css",
       "styles/common.less",
+      "styles/jquery.dataTables.min.css",
     ]
   );
 }

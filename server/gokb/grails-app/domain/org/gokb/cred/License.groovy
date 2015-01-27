@@ -22,7 +22,7 @@ class License extends KBComponent {
   
   static manyByCombo = [
     modelledLicenses  : License,
-    territories      : Territory
+    curatoryGroups      : CuratoryGroup
   ]
   
   static mappedByCombo = [
