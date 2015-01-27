@@ -965,11 +965,11 @@ class WorkflowController {
         }
         def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant_name).save(flush:true);
 
-        variant.owner.name = variant.variantName
-        variant.owner.save(flush:true);
       }else{
           log.debug("Found existing variant name: ${current_name_as_variant}")
       }
+      variant.owner.name = variant.variantName
+      variant.owner.save(flush:true);
     }
     redirect(url: result.ref)
   }
