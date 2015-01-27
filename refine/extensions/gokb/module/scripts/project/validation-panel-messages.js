@@ -23,6 +23,15 @@ ValidationPanel.messages.getActions = function (message, elem) {
 	  });
 	}
 	
+	// Add a menu item to signify empty...
+	if (menu.length == 0) {
+	  menu.push({
+      "id" : "message-no-items",
+      label: "No available actions",
+      click : false
+    });
+	}
+	
 	// Do the actual menu creation.
 	MenuSystem.createAndShowStandardMenu(
 	  menu,
