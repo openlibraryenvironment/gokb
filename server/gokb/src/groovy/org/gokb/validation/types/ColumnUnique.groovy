@@ -18,23 +18,19 @@ class ColumnUnique extends A_ValidationRule implements I_ColumnValidationRule {
   @Override
   public boolean validate (final result, final columnDefinitions, final originalDefinitions) {
     
-    // Create a set to house the column names.
-    Set<String> colnames = []
+    // Matched columns.
+    int match = 0
     
     for (String key_name : originalDefinitions."name") {
-      
-      // Case-insensitively match.
-      String ikey_name = (key_name ?: "").toLowerCase()
-      
-      if (colnames.contains(ikey_name)) {
+      if (columnName.equalsIgnoreCase(key_name)) {
+        if (match > 0) {
+          // Add an error message.
+          addError(result)
+          return false;
+        }
         
-        // Add an error message.
-        addError(result)
-        return false;
+        match ++;
       }
-      
-      // Add to the set.
-      colnames << ikey_name
     }
     
     return true

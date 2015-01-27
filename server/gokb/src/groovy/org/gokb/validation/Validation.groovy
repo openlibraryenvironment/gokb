@@ -223,7 +223,7 @@ class Validation {
       
       // Check whether this rule matches using wilcards.
       if (conf[0] =~ /\*/) {
-        List<String> wild_matches = checkWildcards (conf[0], col_positions, original_data)
+        List<String> wild_matches = checkWildcards (conf[0], col_positions)
         
         // Go through each wild_match
         wild_matches.each { String wild_match ->
