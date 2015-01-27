@@ -2,13 +2,13 @@ package org.gokb.cred
 
 class CuratoryGroup extends KBComponent {
   
-  Set<User> users
   
+  static belongsTo = User
   static hasMany = [
     users: User,
   ]
   
-  static belongsTo = [ User ]
+  static mappedBy = [users: "curatoryGroups"]
   
   static manyByCombo = [
   	licenses 	: License,

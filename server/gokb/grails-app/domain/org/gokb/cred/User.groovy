@@ -21,7 +21,6 @@ class User {
   boolean accountLocked
   boolean passwordExpired
   Long defaultPageSize = new Long(10)
-  Set<CuratoryGroup> curatoryGroups
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
@@ -29,6 +28,8 @@ class User {
   static hasMany = [
     curatoryGroups : CuratoryGroup
   ]
+  
+  static mappedBy = [curatoryGroups: "users"]
 
   static constraints = {
     username blank: false, unique: true

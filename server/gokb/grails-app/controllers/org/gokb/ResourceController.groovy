@@ -36,9 +36,12 @@ class ResourceController {
         
         // Need to figure out whether the current user has curatorial rights (or is an admin).
         // Defaults to true as not all components have curatorial groups defined.
-        if (result.displayobj.respondsTo("getCuratoryGroups")) {
+        if (result.displayobj.respondsTo("getCuratoryGroups") && result.displayobj.curatoryGroups) {
+          
           def cur = user.curatoryGroups?.id.intersect(result.displayobj.curatoryGroups?.id) ?: []
           request.curator = cur
+        } else {
+          request.curator = null
         }
 
         def new_history_entry = new History(controller:params.controller,

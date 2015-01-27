@@ -14,12 +14,12 @@
 	<div id="mainarea" class="panel panel-default">
 		<div class="panel-body">
 			<g:if test="${displayobj != null}">
-			  <g:if test="${ !displayobj.respondsTo("isEditable") || (displayobj.respondsTo("isEditable") && displayobj.isEditable()) }" >
+			  <g:if test="${ (!displayobj.respondsTo("isEditable")) || displayobj.isEditable() }" >
 				  <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" >
 				    <div class="col-xs-3 pull-right well">
 				      <div class="alert alert-warning">
                 <h4>Warning</h4>
-                <p>You are not a curator of this component. To edit this component irrespective of this, please confirm using the button below.</p>
+                <p>You are not a curator of this component. You can still edit it, but please contact a curator before making major changes.</p>
                 <p><g:link class="btn btn-danger" controller="${ params.controller }" action="${ params.action }" id="${ displayobj.className }:${ displayobj.id }" params="${ (request.param ?: [:]) + ["curationOverride" : true] }" >Confirm and switch to edit mode</g:link></p>
               </div>
             </div>
