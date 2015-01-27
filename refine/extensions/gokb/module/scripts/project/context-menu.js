@@ -86,6 +86,18 @@ GOKb.contextMenu.options = function () {
               );
             },
           },
+          "gokb-lookup-imprint" : {
+            name: "Imprint",
+            callback: function () {
+              GOKb.handlers.lookup (
+                GOKb.contextMenu.getTarget(),
+                "imprint",
+                ["variantNames.variantName"],
+                ["variantNames.variantName"],
+                "Lookup Imprint"
+              );
+            },
+          },
         },
       },
   //  "cut": {name: "Cut", icon: "cut"},
