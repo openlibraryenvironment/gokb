@@ -30,7 +30,7 @@ GOKb.ui.projects = function (elmt) {
                 callback = function (data) {
 
                   if ("result" in data && data.result.length > 0) {
-                    var head = ["", "Name", "Description", "State", "Last&nbsp;modified", "Creator"];
+                    var head = ["", "Name", "Description", "State", "Last modified", "Creator"];
                     var body = [];
 
                     // Add each project to the projects screen.
@@ -75,7 +75,7 @@ GOKb.ui.projects = function (elmt) {
                         $("<div />").append(name).html(),
                         this.description,
                         $("<div />").append(status).html(),
-                        formatRelativeDate(this.modified),
+                        this.modified,
                         this.createdBy
                       ];
 
@@ -93,12 +93,24 @@ GOKb.ui.projects = function (elmt) {
 
                     // Table defaults.
                     var tab_defaults = {
-                      "order"       : [ 1, 'asc' ],
+                      "order"       : [ 4, 'desc' ],
                       "lengthMenu"    : [[25, 50, 100, -1],["25", "50", "100", "Show all"]],
                       "columnDefs"  : [
-                        {"searchable": false, "targets": [0,4]},
-                        {"orderable": false, "targets": [0,4]},
+                        {"searchable": false, "orderable": false, "targets": [0]},
 
+                        // Date rendering.
+                        {
+                          "targets": 4,
+                          "render": function ( data, type, full, meta ) {
+                            switch (type) {
+                              case "display" :
+                                return formatRelativeDate(data);
+                                break;
+                              default: return data;
+                            }
+                          },
+                        },
+                        
                         // User rendering.
                         {
                           "targets": 5,
@@ -146,7 +158,7 @@ GOKb.ui.projects = function (elmt) {
 
                     // Now we have the data create the table.
                     var table = GOKb.toDataTable(all_proj, head, body, tab_defaults);
-
+                    
                     // Add show/hide to controls on the table to help with rows added when the set size is changed.
                     $(table).mouseover(m_over);
 
@@ -521,7 +533,8 @@ GOKb.ui.projects.prototype.resize = function() {
   .css("width", (width - DOM.getHPaddings(this._elmts.controls)) + "px");
 
   this._elmts.projects
-  .css("height", (height - controlsHeight - DOM.getVPaddings(this._elmts.projects)) + "px");
+  .css("height", (height - controlsHeight - DOM.getVPaddings(this._elmts.projects)) + "px")
+  .css("width", "100%");
 };
 
 //Push the to the action areas.

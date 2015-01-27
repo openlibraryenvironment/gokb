@@ -554,12 +554,17 @@ GOKb.toDataTable = function (parent, header, data, extraConf) {
     
     columns.push(col);
   });
-    
+  
   // Create the table object and return.
   var table = $('<table class="dt-data-table cell-border stripe" cellpadding="0" cellspacing="0" border="0" />');
   
+  // Add a wrapper to ensure padding added to the parent does not effect the render of the header.
+  var wrapper = $('<div class="gokb-dt-wrapper" />').append(table);
+  
+  wrapper.css("width", (parent.innerWidth() - 26));
+  
   // We need the parent here as the initialisation below sets widths based on the target container.
-  parent.append(table);
+  parent.append(wrapper);
   
   // Merge the configuration.
   var config = $.extend({}, extraConf, {
