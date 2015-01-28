@@ -112,7 +112,17 @@
   
     // Add the double click listener to the HTML. All double clicks will bubble up to here so we need
     // to be selective on how we respond.
-    $('html').dblclick(function(e) {
+    $('html').click(function(e){
+      
+      // Get the element that was double-clicked.
+      var me = $(e.target);
+      
+      // Editable annotation.
+      if (!me.hasClass('annotation-editable')) {
+        $('.annotated').popover('hide');
+      }
+      
+    }).dblclick(function(e) {
       
       // Get the element that was double-clicked.
       var me = $(e.target);
@@ -141,6 +151,10 @@
           // Shift the element.
           refreshAnnotationPos (the_popover.prev('.annotated'), the_popover);
         }
+        
+        // Ensure we stop this even bubbling here so it doesn't trigger the on click,
+        // event registered on the HTML.
+        e.stopPropagation();
       }
     });
     
@@ -189,7 +203,7 @@
           var current = $(this);
           current.popover('toggle');
           
-          // Close the other pop-overs.
+          // Close open ones here too.
           $('.annotated').each(function(){
             if ($(this).object != current.object) {
               $(this).popover('hide');
