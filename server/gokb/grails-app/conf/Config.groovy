@@ -516,7 +516,7 @@ globalSearchTemplates = [
           prompt:'Name of Package',
           qparam:'qp_name',
           placeholder:'Package Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B', normalise:false]
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'normname', 'wildcard':'B', normalise:true]
         ]
       ],
       qbeGlobals:[
