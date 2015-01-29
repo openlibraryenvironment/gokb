@@ -888,7 +888,7 @@ class WorkflowController {
   }
 
   def processPackageReplacement() {
-    def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
     def result = [:]
     result['old'] = []
     result['new'] = ''
@@ -908,7 +908,7 @@ class WorkflowController {
            result['count'] += updates_count
            result['old'] += old_platform.name
            result['new'] = new_platform.name
-           old_platform.status = deleted_status
+           old_platform.status = retired_status
            old_platform.save(flush:true)
          }
          catch ( Exception e ) {
