@@ -58,20 +58,35 @@ class ReviewRequest {
     refineProject(nullable:true, blank:true)
   }
 
-  public static ReviewRequest raise (KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, refineProject = null) {
+  public static ReviewRequest raise (Map args) {
+    
+    // Check for necessary args in map.
+    if (args?.keySet().intersect(["forComponent", "reviewRequest"]).size() < 2)
+      throw new IllegalArgumentException("You must suplpy at least the forComponent and reviewRequest arguments.")
+      
+    // Now let's add any defaults.
+    def arguments = [
+      status  : RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
+      "allocatedTo" : args['raisedBy'],
+    ] + args
+    
+    // Create a review request from a map.
+    ReviewRequest req = new ReviewRequest(arguments)
+    
+    // Add to the list of requests for the component.
+    args['forComponent'].addToReviewRequests( req )
+  }
+  
+  public static ReviewRequest raise (KBComponent forComponent, String reviewRequest, String descriptionOfCause = null, User raisedBy = null, refineProject = null) {
 
     // Create a request.
-    ReviewRequest req = new ReviewRequest (
-        status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
-        raisedBy : (raisedBy),
-        allocatedTo : (raisedBy),
-        descriptionOfCause : (cause),
-        reviewRequest : (actionRequired),
-        refineProject: (refineProject)
-        )
-
-    // Add to the list of requests for the component.
-    forComponent.addToReviewRequests( req )
+    ReviewRequest req = raise (
+      "forComponent"  : forComponent,
+      "reviewRequest" : (reviewRequest),
+      "descriptionOfCause" : (descriptionOfCause),
+      "raisedBy" : (raisedBy),
+      "refineProject" : (refineProject)
+    )
 
     // Just return the request.
     req
