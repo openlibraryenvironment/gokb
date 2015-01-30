@@ -288,8 +288,7 @@ class AjaxSupportController {
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
     if ( contextObj ) {
-      def method = "addTo${GrailsNameUtils.getClassName(params.__property)}"
-      contextObj."${method}" (resolveOID2(params.__relatedObject))
+      contextObj["${params.__property}"].add (resolveOID2(params.__relatedObject))
       contextObj.save(flush:true)
     }
     redirect(url: request.getHeader('referer'))
