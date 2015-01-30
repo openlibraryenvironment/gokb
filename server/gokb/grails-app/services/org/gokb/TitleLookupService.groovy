@@ -1,6 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.*
+
 import com.k_int.ClassUtils
 
 class TitleLookupService {
@@ -16,13 +17,15 @@ class TitleLookupService {
 
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
+    def xcheck = grailsApplication.config.identifiers.cross_checks
 
     // Return the list of class 1 identifiers we have found or created, as well as the
     // list of matches
     def result = [
-      "class_one" 	: false,
-      "ids"			: [],
-      "matches"		: [] as Set
+      "class_one"         : false,
+      "ids"			          : [],
+      "matches"           : [] as Set,
+      "x_check_matches"   : [] as Set
     ]
 
     // Go through each of the class_one_ids and look for a match.
@@ -43,6 +46,9 @@ class TitleLookupService {
           // Flag class one is present.
           result['class_one'] = true
 
+          // Flag for title match
+          boolean title_match = false
+          
           // If we find an ID then lookup the components.
           Set<KBComponent> comp = the_id.identifiedComponents
           comp.each { KBComponent c ->
@@ -52,7 +58,57 @@ class TitleLookupService {
 
             // Only add if it's a title.
             if ( dproxied instanceof TitleInstance ) {
+              title_match = true
               result['matches'] << (dproxied as TitleInstance)
+            }
+          }
+          
+          // Did the ID yield a Title match?
+          if (!title_match) {
+            
+            log.debug ("No class one ti match.")
+            
+            // We should see if the current ID namespace should be cross checked with another.
+            def other_ns = null
+            for (int i=0; i<xcheck.size() && (!(other_ns)); i++) {
+              Set<String> test = xcheck[i]
+              
+              if (test.contains(id_def.type)) {
+                
+                // Create the set then remove the matched instance to test teh remaining ones.
+                other_ns = new HashSet<String>(test)                
+                log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
+                
+                Identifier xc_id = null
+                for (int j=0; j<other_ns.size() && (!xc_id?.identifiedComponents?.size() > 0); j++) {
+                  
+                  String ns = other_ns[j]
+                  
+                  // Lookup the identifier namespace.
+                  xc_id = Identifier.findByShortcode("${ns}:${id_def.value}")
+                  
+                  comp = xc_id?.identifiedComponents
+                  
+                  comp?.each { KBComponent c ->
+        
+                    // Ensure we're not looking at a Hibernate Proxy class representation of the class
+                    KBComponent dproxied = ClassUtils.deproxy(c);
+        
+                    // Only add if it's a title.
+                    if ( dproxied instanceof TitleInstance ) {
+                      
+                      log.debug ("Found ${id_def.value} in ${ns} namespace.")
+                      
+                      // Save details here so we can raise a review request, only if a single title was matched.
+                      result['x_check_matches'] << [
+                        "suppliedNS"  : id_def.type,
+                        "foundNS"     : ns
+                      ]
+                      result['matches'] << (dproxied as TitleInstance)
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -80,10 +136,10 @@ class TitleLookupService {
 
     switch (matches.size()) {
       case 0 :
-      // No match behaviour.
+        // No match behaviour.
         log.debug ("Title class one identifier lookup yielded no matches.")
 
-      // Check for presence of class one ID
+        // Check for presence of class one ID
         if (results['class_one']) {
           log.debug ("One or more class 1 IDs supplied so must be a new TI.")
 
@@ -129,34 +185,46 @@ class TitleLookupService {
         }
         break;
       case 1 :
-      // Single component match.
+        // Single component match.
         log.debug ("Title class one identifier lookup yielded a single match.")
-
+        
+        // We should raise a review request here if the match was made by cross checking
+        // different identifier namespaces.
+        if (results['x_check_matches'].size() == 1) {
+          
+          def data = results['x_check_matches'][0]
+          
+          // Fire the review request.
+          ReviewRequest.raise(
+            matches[0],
+            "Identifier type mismatch.",
+            "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
+            user,
+            project
+          )
+        }
+        
+        // Now we can examine the text of the title.
         the_title = singleTIMatch(title, norm_title, matches[0], user, project)
 
         break;
       default :
-      // Multiple matches.
+        // Multiple matches.
         log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
         break;
     }
 
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
+      
+      // The current IDs of the title
+      def current_ids = the_title.getIds()
 
       // Add the publisher.
       addPublisher(publisher_name, the_title, user, project)
-
-
-      // II: Changed the following - I think/worry it causes DB row churn.
-      // Add all the identifiers.
-      // LinkedHashSet id_set = []
-      // id_set.addAll(the_title.getIds())
-      // id_set.addAll(results['ids'])
-      // the_title.setIds(id_set)
       results['ids'].each {
-        if ( ! the_title.getIds().contains(it) ) {
-          the_title.getIds().add(it);
+        if ( ! current_ids.contains(it) ) {
+          current_ids.add(it);
         }
       }
 
