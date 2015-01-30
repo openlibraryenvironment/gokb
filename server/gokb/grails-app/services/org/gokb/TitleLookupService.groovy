@@ -76,35 +76,44 @@ class TitleLookupService {
               if (test.contains(id_def.type)) {
                 
                 // Create the set then remove the matched instance to test teh remaining ones.
-                other_ns = new HashSet<String>(test)                
+                other_ns = new HashSet<String>(test)
+                
+                // Remove the current namespace.
+                other_ns.remove(id_def.type)
                 log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
                 
                 Identifier xc_id = null
-                for (int j=0; j<other_ns.size() && (!xc_id?.identifiedComponents?.size() > 0); j++) {
+                for (int j=0; j<other_ns.size() && !(xc_id); j++) {
                   
                   String ns = other_ns[j]
                   
-                  // Lookup the identifier namespace.
-                  xc_id = Identifier.findByShortcode("${ns}:${id_def.value}")
+                  IdentifierNamespace namespace = IdentifierNamespace.findByValue(ns)
                   
-                  comp = xc_id?.identifiedComponents
+                  if (namespace) {
                   
-                  comp?.each { KBComponent c ->
-        
-                    // Ensure we're not looking at a Hibernate Proxy class representation of the class
-                    KBComponent dproxied = ClassUtils.deproxy(c);
-        
-                    // Only add if it's a title.
-                    if ( dproxied instanceof TitleInstance ) {
-                      
-                      log.debug ("Found ${id_def.value} in ${ns} namespace.")
-                      
-                      // Save details here so we can raise a review request, only if a single title was matched.
-                      result['x_check_matches'] << [
-                        "suppliedNS"  : id_def.type,
-                        "foundNS"     : ns
-                      ]
-                      result['matches'] << (dproxied as TitleInstance)
+                    // Lookup the identifier namespace.
+                    xc_id = Identifier.findByNamespaceAndValue(namespace, id_def.value)                  
+                    log.debug ("Looking up ${ns}:${id_def.value} returned ${xc_id}.")
+                    
+                    comp = xc_id?.identifiedComponents
+                    
+                    comp?.each { KBComponent c ->
+          
+                      // Ensure we're not looking at a Hibernate Proxy class representation of the class
+                      KBComponent dproxied = ClassUtils.deproxy(c);
+          
+                      // Only add if it's a title.
+                      if ( dproxied instanceof TitleInstance ) {
+                        
+                        log.debug ("Found ${id_def.value} in ${ns} namespace.")
+                        
+                        // Save details here so we can raise a review request, only if a single title was matched.
+                        result['x_check_matches'] << [
+                          "suppliedNS"  : id_def.type,
+                          "foundNS"     : ns
+                        ]
+                        result['matches'] << (dproxied as TitleInstance)
+                      }
                     }
                   }
                 }
