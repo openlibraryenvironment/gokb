@@ -3,11 +3,13 @@ package org.gokb.cred
 class RefdataCategory {
 
   String desc
+  String label
   Set values
 
   static mapping = {
          id column:'rdc_id'
     version column:'rdc_version'
+      label column:'rdc_label'
        desc column:'rdc_description', index:'rdc_description_idx'
      values sort:'value', order:'asc'
 
@@ -22,6 +24,7 @@ class RefdataCategory {
   ]
 
   static constraints = {
+    label(nullable:true, blank:true)
   }
 
   static RefdataValue lookupOrCreate(category_name, value) {
