@@ -9,6 +9,7 @@ import org.hibernate.proxy.HibernateProxy
 class InplaceTagLib {
 
   def genericOIDService
+  def springSecurityService
   
   private boolean checkEditable (attrs, body, out) {
     
@@ -110,6 +111,7 @@ class InplaceTagLib {
 
   def xEditableRefData = { attrs, body ->
 
+    User user = springSecurityService.currentUser
     boolean isAdmin = user.getAuthorities().find { Role role ->
       "ROLE_ADMIN".equalsIgnoreCase(role.authority)
     }
@@ -152,7 +154,7 @@ class InplaceTagLib {
     if ( isAdmin ) {
       RefdataCategory rdc = RefdataCategory.findByDesc(attrs.config)
       if ( rdc ) {
-        out << '&nbsp;<a href="'+createLink(controller:'resource', action: 'show', id:'org.gokb.cred.RefdataCategory:'+rdc.id)+'">Refdata Values</a><br/>'
+        out << '&nbsp;<a href="'+createLink(controller:'resource', action: 'show', id:'org.gokb.cred.RefdataCategory:'+rdc.id)+'">Refdata</a><br/>'
       }
     }
 
