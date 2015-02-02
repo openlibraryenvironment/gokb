@@ -195,7 +195,8 @@ class WorkflowController {
               startIssue:tipp.startIssue,
               endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
               endVolume:tipp.endVolume,
-              endIssue:tipp.endIssue
+              endIssue:tipp.endIssue,
+              url:tipp.url
             ],
             newtipps:[]
           ]
@@ -211,6 +212,7 @@ class WorkflowController {
                                  startIssue:tipp.startIssue,
                                  endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
                                  endVolume:tipp.endVolume,
+                                 url:tipp.url,
                                  endIssue:tipp.endIssue]
             titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
           }
@@ -288,7 +290,8 @@ class WorkflowController {
                   startIssue:tipp.startIssue,
                   endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
                   endVolume:tipp.endVolume,
-                  endIssue:tipp.endIssue
+                  endIssue:tipp.endIssue,
+                  url:tipp.url
                 ],
                 newtipps:[]
               ]
@@ -397,7 +400,8 @@ class WorkflowController {
                                         startIssue:old_tipp.startIssue,
                                         endDate:old_tipp.endDate? sdf.format(old_tipp.endDate) : null,
                                         endVolume:old_tipp.endVolume,
-                                        endIssue:old_tipp.endIssue]
+                                        endIssue:old_tipp.endIssue,
+                                        url:old_tipp.url]
                 log.debug("new_tipp_info :: ${new_tipp_info}");
                 tipp_info.newtipps.add(new_tipp_info);
               }
@@ -491,7 +495,8 @@ class WorkflowController {
                         startIssue:tipp_info.value.oldTippValue?.startIssue,
                         endDate:tipp_info.value.oldTippValue?.endDate,
                         endVolume:tipp_info.value.oldTippValue?.endVolume,
-                        endIssue:tipp_info.value.oldTippValue?.endIssue
+                        endIssue:tipp_info.value.oldTippValue?.endIssue,
+                        url:tipp_info.value.oldTippValue?.url
                         ])
       int seq=0;  
       // .value because tipp_info is a map...
@@ -510,6 +515,7 @@ class WorkflowController {
                           endVolume:newtipp_info.endVolume,
                           endIssue:newtipp_info.endIssue,
                           review:newtipp_info.review,
+                          url:newtipp_info.url
                           ])
       }
     }
@@ -635,7 +641,8 @@ class WorkflowController {
                         startIssue:tipp_info.value.oldTippValue?.startIssue,
                         endDate:tipp_info.value.oldTippValue?.endDate,
                         endVolume:tipp_info.value.oldTippValue?.endVolume,
-                        endIssue:tipp_info.value.oldTippValue?.endIssue
+                        endIssue:tipp_info.value.oldTippValue?.endIssue,
+                        url:tipp_info.value.oldTippValue?.url
                         ])
       int seq=0;
       tipp_info.value.newtipps.each { newtipp_info ->
@@ -653,6 +660,7 @@ class WorkflowController {
                           endVolume:newtipp_info.endVolume,
                           endIssue:newtipp_info.endIssue,
                           review:newtipp_info.review,
+                          url:newtipp_info.url
                           ])
       }
     }
@@ -698,7 +706,9 @@ class WorkflowController {
                                    startIssue:newtipp.startIssue,
                                    endDate: parsed_end_date,
                                    endVolume:newtipp.endVolume,
-                                   endIssue:newtipp.endIssue]).save()
+                                   endIssue:newtipp.endIssue,
+                                   url:newtipp.url,
+                                   ]).save()
 
         if ( newtipp.review == 'on' ) {
           ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
@@ -840,7 +850,9 @@ class WorkflowController {
                                    startIssue:newtipp.startIssue,
                                    endDate: parsed_end_date,
                                    endVolume:newtipp.endVolume,
-                                   endIssue:newtipp.endIssue]).save()
+                                   endIssue:newtipp.endIssue,
+                                   url:newtipp.url
+                                ]).save()
 
         if ( newtipp.review == 'on' ) {
           log.debug("User requested a review request be generated for this new tipp");
