@@ -74,7 +74,7 @@
                   <td> <input name="_tippdata:${tipp.parent}:${tipp.seq}:review" type="checkbox" ${tipp.review=='on'?'checked':''} /></td>
                 </tr>
                 <tr>
-                  <td colspan="11"> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:url" value="${tipp.url}"/></td>
+                  <td colspan="11"> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:url" value="${tipp.url}"/> </td>
                 </tr>
               </g:else>
             </g:each>
@@ -94,6 +94,12 @@
   <pre>
     ${d.activityData}
   </pre>
+  <ul>
+  <g:each in="${tipps}" var="tipp">
+    <li>${tipp}</li>
+  </g:each>
+  </ul>
+
 </body>
 </html>
 
