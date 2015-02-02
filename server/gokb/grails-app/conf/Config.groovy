@@ -993,6 +993,8 @@ globalSearchTemplates = [
   'imprints':[
     baseclass:'org.gokb.cred.Imprint',
     title:'Imprints',
+    defaultSort:'name',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
