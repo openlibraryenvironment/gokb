@@ -39,7 +39,7 @@
       <table class="table table-bordered no-select-all">
         <thead>
           <tr>
-            <th>Select</th>
+            <th rowspan="2">Select</th>
             <th>Type</th>
             <th>Title</th>
             <th>Package</th>
@@ -53,12 +53,15 @@
             <th>Retire</th>
             <th>Review</th>
           </tr>
+          <tr>
+            <th colspan="12">URL</th>
+          </tr>
         </thead>
         <tbody>
           <g:each in="${tipps}" var="tipp">
           <g:if test="${tipp.type=='CURRENT'}">
             <tr style="background-color: #FF4D4D;">
-              <td> <input name="addto-${tipp.id}" type="checkbox" value="on"/> </td>
+              <td rowspan="2"> <input name="addto-${tipp.id}" type="checkbox" value="on"/> </td>
               <td> ${tipp.type} </td>
               <td> ${tipp.title.name} </td>
               <td> ${tipp.pkg.name} </td>
@@ -74,10 +77,13 @@
               <td> <input name="oldtipp_close:${tipp.id}" type="checkbox" value="on" ${params["oldtipp_close:${tipp.id}"]=='on'?'checked':''} /></td>
               <td> <input name="oldtipp_review:${tipp.id}" type="checkbox" value="on"  ${params["oldtipp_review:${tipp.id}"]=='on'?'checked':''} /></td>
             </tr>
+            <tr style="background-color: #FF4D4D;">
+              <td colspan="12">${tipp.url?:'URL Not specified'}</th>
+            </tr>
           </g:if>
           <g:else>
             <tr style="background-color: #4DFF4D;">
-              <td> </td>
+              <td rowspan="2"> </td>
               <td> ${tipp.type} </td>
               <td> ${tipp.title.name} </td>
               <td> ${tipp.pkg.name} </td>
@@ -90,6 +96,9 @@
               <td> <input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:endIssue" value="${tipp.endIssue}" style="width:40px;"/> </td>
               <td> <button type="submit" name="remove" value="${tipp.parent}:${tipp.seq}" class="btn btn-warn">Remove</button></td>
               <td> <input name="_tippdata:${tipp.parent}:${tipp.seq}:review" type="checkbox" value="on" ${tipp.review=='on'?'checked':''} /></td>
+            </tr>
+            <tr style="background-color: #4DFF4D;">
+              <td colspan="12"><input type="text" name="_tippdata:${tipp.parent}:${tipp.seq}:url" value="${tipp.url}" /> </td>
             </tr>
           </g:else>
           </g:each>

@@ -1,6 +1,7 @@
 import java.net.Authenticator.RequestorType;
 
 import com.k_int.kbplus.*
+import org.gokb.cred.*;
 import com.k_int.ClassUtils
 
 import org.hibernate.proxy.HibernateProxy
@@ -8,6 +9,7 @@ import org.hibernate.proxy.HibernateProxy
 class InplaceTagLib {
 
   def genericOIDService
+  def springSecurityService
   
   private boolean checkEditable (attrs, body, out) {
     
@@ -108,6 +110,11 @@ class InplaceTagLib {
   }
 
   def xEditableRefData = { attrs, body ->
+
+    User user = springSecurityService.currentUser
+    boolean isAdmin = user.getAuthorities().find { Role role ->
+      "ROLE_ADMIN".equalsIgnoreCase(role.authority)
+    }
     
     // The check editable should output the read only version so we should just exit
     // if read only.
@@ -139,7 +146,19 @@ class InplaceTagLib {
     // outputting a span containing an icon for refdata fields.
     out << renderObjectValue(owner[attrs.field])
 
-    out << "</span></span>"
+    out << "</span>"
+
+    // If the caller specified an rdc attribute then they are describing a refdata category.
+    // We want to add a link to the category edit page IF the annotation is editable.
+
+    if ( isAdmin ) {
+      RefdataCategory rdc = RefdataCategory.findByDesc(attrs.config)
+      if ( rdc ) {
+        out << '&nbsp;<a href="'+createLink(controller:'resource', action: 'show', id:'org.gokb.cred.RefdataCategory:'+rdc.id)+'">Refdata</a><br/>'
+      }
+    }
+
+    out << "</span>"
   }
 
   /**
@@ -320,6 +339,16 @@ class InplaceTagLib {
       out << " >"
       out << body()
       out << "</a>"
+    }
+  }
+
+  def rdcLabel = { Map attrs, body ->
+    def rdc = RefdataCategory.findByDesc(attrs.cat)
+    if ( ( rdc ) && ( rdc.label ) ) {
+      out << rdc.label
+    }
+    else {
+      out << attrs.default
     }
   }
 }

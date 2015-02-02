@@ -14,13 +14,20 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
   "file:${userHome}/.grails/${appName}-config.properties",
   "file:${userHome}/.grails/${appName}-config.groovy"]
 
-identifiers.class_ones = [
-  "issn",
-  "eissn",
-  "doi",
-  "isbn"
-] as Set
-
+identifiers = [
+  "class_ones" : [
+    "issn",
+    "eissn",
+    "doi",
+    "isbn"
+  ],
+  
+  // Class ones that need to be cross-checked. If an Identifier supplied as an ISSN,
+  // is found against a title but as an eISSN we still treat this as a match
+  "cross_checks" : [
+    ["issn", "eissn"]
+  ]
+]
 // if (System.properties["${appName}.config.location"]) {
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
@@ -562,6 +569,8 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.Platform',
     title:'Platforms',
     group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
@@ -984,6 +993,8 @@ globalSearchTemplates = [
   'imprints':[
     baseclass:'org.gokb.cred.Imprint',
     title:'Imprints',
+    defaultSort:'name',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [

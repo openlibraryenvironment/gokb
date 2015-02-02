@@ -4,6 +4,7 @@ import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
 import org.codehaus.groovy.grails.web.pages.GroovyPage
 import org.gokb.cred.Role
 import org.gokb.cred.User
+import org.gokb.cred.RefdataCategory
 
 import com.k_int.ClassUtils
 
@@ -124,7 +125,11 @@ class AnnotationTagLib {
         p_value.join(" ")
         out << " ${p_name}=\"${p_value.join(' ')}\""
       }
-      out << ">${annotation.value ?: 'Empty'}</div>"
+      out << ">"
+
+      out << "${annotation.value ?: 'Empty'}"
+
+      out << "</div>"
     }
   }
 }
