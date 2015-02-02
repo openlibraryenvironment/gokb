@@ -35,14 +35,29 @@ class FTUpdateService {
     org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
 
     updateES(esclient, org.gokb.cred.KBComponent.class) { kbc ->
-      def result = [:]
-      result._id = "${kbc.class.name}:${kbc.id}"
-      result.name = kbc.name
-      result.altname = []
-      kbc.variantNames.each { vn ->
-        result.altname.add(vn.variantName)
+
+      def result
+
+      if ( kbc instanceof org.gokb.cred.Identifier ) {
+        // Don't do anything for identifiers - they are a part of everything else indexed
       }
-      result.componentType=kbc.class.simpleName
+      else {
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.name = kbc.name
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.identifiers = []
+        kbc.ids.each { identifier ->
+          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        }
+  
+        result.componentType=kbc.class.simpleName
+
+      }
 
       result
     }
@@ -84,11 +99,13 @@ class FTUpdateService {
         Object r = results.get(0);
         def idx_record = recgen_closure(r)
 
-        def future = esclient.index {
-          index "gokb"
-          type "component"
-          id idx_record['_id']
-          source idx_record
+        if ( idx_record != null ) {
+          def future = esclient.index {
+            index "gokb"
+            type "component"
+            id idx_record['_id']
+            source idx_record
+          }
         }
 
         latest_ft_record.lastTimestamp = r.lastUpdated?.getTime()
@@ -177,6 +194,10 @@ class FTUpdateService {
               }
             }
             componentType : [ type:"string", analyzer:'not_analyzed' ]
+            identifiers : {
+              namespace : [ type:"string", analyzer:'not_analyzed' ]
+              value : [ type:"string", analyzer:'not_analyzed' ]
+            }
           }
         }
       }
