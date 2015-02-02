@@ -70,7 +70,7 @@
       <table class="table table-striped table-bordered">
         <thead>
           <tr>
-            <th>Date</th>
+            <th>Event Date</th>
             <th>Before</th>
             <th>After</th>
             <th>Actions</th>
