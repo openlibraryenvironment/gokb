@@ -14,6 +14,7 @@
 						<th>Filetype</th>
 						<th>Size</th>
 						<th>Type</th>
+						<th>Action</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -31,6 +32,10 @@
 							</td>
 							<td>
 								${f.doctype}
+							</td>
+							<td>
+			        	<g:link controller="ajaxSupport" action="unlinkManyToMany" params="${["__context": "${d.getClassName()}:${d.id}","__property":"fileAttachments","__itemToRemove":"${f.getClassName()}:${f.id}"]}">Delete</g:link>
+
 							</td>
 						</tr>
 					</g:each>

@@ -26,6 +26,9 @@
         <dd> ${d.filesize} </dd>
         <dt> <g:annotatedLabel owner="${d}" property="doctype">Doctype</g:annotatedLabel> </dt>
         <dd> ${d.doctype} </dd>
+        <dt> <g:annotatedLabel owner="${d}" property="fileData">File</g:annotatedLabel> </dt>
+        <dd> <g:link controller="workflow" action="download" id="${d.guid}">  Download file </g:link></dd>
+
         <dt> <g:annotatedLabel owner="${d}" property="attachedTo">Attached To</g:annotatedLabel> </dt>
         <dd>
           <table class="table table-striped table-bordered">
