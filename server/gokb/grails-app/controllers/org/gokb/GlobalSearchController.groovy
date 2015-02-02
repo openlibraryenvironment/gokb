@@ -16,7 +16,9 @@ class GlobalSearchController {
 
       if ( params.q && params.q.length() > 0) {
 
-        params.q = params.q.replace('"',"'")
+        // Comment out replacement of ' by " so we can do exact string searching on identifiers - not sure what the use case
+        // was for this anyway. Pls document in comment and re-add if needed.
+        // params.q = params.q.replace('"',"'")
         params.q = params.q.replace('[',"(")
         params.q = params.q.replace(']',")")
 
