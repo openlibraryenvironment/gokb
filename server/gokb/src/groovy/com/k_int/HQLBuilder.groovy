@@ -262,7 +262,7 @@ public class HQLBuilder {
               hql_builder_context.bindvars[crit.defn.qparam] = Long.parseLong(crit.value)
               break;
             default:
-              hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toString();
+              hql_builder_context.bindvars[crit.defn.qparam] = crit.value.toString().trim();
               break;
           }
         }
@@ -270,7 +270,7 @@ public class HQLBuilder {
 
       case 'ilike':
         hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}lower(${scoped_property}) like :${crit.defn.qparam}");
-        def base_value = crit.value.toLowerCase()
+        def base_value = crit.value.toLowerCase().trim()
         if ( crit.defn.contextTree.normalise == true ) {
           base_value = org.gokb.GOKbTextUtils.normaliseString(base_value)
         }
