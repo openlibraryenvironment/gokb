@@ -569,6 +569,8 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.Platform',
     title:'Platforms',
     group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
