@@ -99,6 +99,8 @@ class BootStrap {
     
     failAnyIngestingProjects()
 
+    migrateDiskFilesToDatabase()
+    
     KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
       KBComponent.withNewTransaction {
         KBComponent kbc = KBComponent.get(kbc_id)
@@ -112,6 +114,31 @@ class BootStrap {
     defaultSortKeys ()
   }
   
+  def migrateDiskFilesToDatabase() {
+    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+
+    DataFile.findAll().each{ df ->
+      if(df.fileData == null){
+
+          def sub1 = df.guid.substring(0,2);
+          def sub2 = df.guid.substring(2,4);
+          def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${df.guid}";
+          try{
+            def source_file = new File(temp_file_name);
+            df.fileData = source_file.getBytes()
+            if(df.save(flush:true)){
+              //success
+              source_file.delete()
+            }else{
+              log.debug(df.errors)
+            }
+          }catch(Exception e){
+            log.error("Exception while migrating files to database. File ${temp_file_name}",e)
+          }
+      }
+    }
+  }
+
   def cleanUpMissingDomains () {
     
     def domains = KBDomainInfo.createCriteria().list { ilike ('dcName', 'org.gokb%') }.each { d ->

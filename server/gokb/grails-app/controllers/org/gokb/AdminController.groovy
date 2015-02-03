@@ -73,31 +73,72 @@ class AdminController {
   }
 
   def reSummariseLicenses() {
-    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
 
     DataFile.executeQuery("select d from DataFile as d where d.doctype=?",['http://www.editeur.org/onix-pl:PublicationsLicenseExpression']).each { df ->
       log.debug(df);
       df.incomingCombos.each { ic ->
         log.debug(ic);
         if ( ic.fromComponent instanceof License ) {
+          def source_file
           try {
             log.debug("Regenerate license for ${ic.fromComponent.id}");
-
-            def sub1 = df.guid.substring(0,2);
-            def sub2 = df.guid.substring(2,4);
-            def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${df.guid}";
-            def source_file = new File(temp_file_name);
-            ic.fromComponent.summaryStatement = uploadAnalysisService.generateSummary(source_file);
-            ic.fromComponent.save(flush:true);
-            log.debug("Completed regeneration... size is ${ic.fromComponent.summaryStatement?.length()}");
+            if(df.fileData){
+              source_file = copyUploadedFile(df.fileData,df.guid)
+              ic.fromComponent.summaryStatement = uploadAnalysisService.generateSummary(source_file);
+              ic.fromComponent.save(flush:true);
+              log.debug("Completed regeneration... size is ${ic.fromComponent.summaryStatement?.length()}");
+            }else{
+              log.error("No file data attached to DataFile ${df.guid}")
+            }
           }
           catch ( Exception e ) {
             log.error("Problem",e);
+          }finally{
+            source_file?.delete()
           }
         }
       }
     }
     redirect(url: request.getHeader('referer'))
+  }
+
+ def copyUploadedFile(inputfile, deposit_token) {
+
+   def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+
+    log.debug("copyUploadedFile...");
+    def sub1 = deposit_token.substring(0,2);
+    def sub2 = deposit_token.substring(2,4);
+    validateUploadDir("${baseUploadDir}");
+    validateUploadDir("${baseUploadDir}/${sub1}");
+    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
+    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
+    def temp_file = new File(temp_file_name)
+
+     OutputStream outStream = null;  
+     ByteArrayOutputStream byteOutStream = null;  
+     try {  
+       outStream = new FileOutputStream(temp_file);  
+       byteOutStream = new ByteArrayOutputStream();  
+       // writing bytes in to byte output stream  
+       byteOutStream.write(inputfile); //data  
+       byteOutStream.writeTo(outStream);  
+     } catch (IOException e) {  
+       e.printStackTrace();  
+     } finally {  
+       outStream.close();  
+     }  
+    log.debug("Created temp_file ${temp_file.size()}")
+
+    temp_file
+  }
+
+  private def validateUploadDir(path) {
+    File f = new File(path);
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
+    }
   }
 
   def updateTextIndexes() {

@@ -8,6 +8,7 @@ class DataFile extends KBComponent {
   String uploadMimeType
   String filesize
   String doctype
+  byte[] fileData
 
   static constraints = {
     guid (nullable:false, blank:false)
@@ -16,6 +17,7 @@ class DataFile extends KBComponent {
     uploadMimeType (nullable:true, blank:false)
     filesize (nullable:true, blank:false)
     doctype (nullable:true, blank:false)
+    fileData(nullable:true,blank:false,maxSize: 1024 * 1024 * 2)
   }
 
   static mapping = {
@@ -25,6 +27,7 @@ class DataFile extends KBComponent {
     uploadMimeType column:'df_mime_type'
     filesize column:'df_filesize'
     doctype column:'df_doctype'
+    fileData column:'df_file_data'
   }
 
   static manyByCombo = [

@@ -28,44 +28,6 @@
 		<li><a href="#lists" data-toggle="tab">Files</a></li>
 	</ul>
 
-	<div id="my-tab-content" class="tab-content">
-		<div class="tab-pane active" id="licsummary">
-			<g:if
-				test="${((d.summaryStatement != null) && (d.summaryStatement.length() > 0 ) )}">
-				<h4>Summary Of License</h4>
-				${d.summaryStatement}
-			</g:if>
-		</div>
-		<div class="tab-pane" id="lists">
-			<table class="table table-bordered">
-				<thead>
-					<tr>
-						<th>Filename</th>
-						<th>Filetype</th>
-						<th>Size</th>
-						<th>Type</th>
-					</tr>
-				</thead>
-				<tbody>
-					<g:each in="${d.fileAttachments}" var="f">
-						<tr>
-							<td><g:link controller="workflow" action="download"
-									id="${f.guid}">
-									${f.uploadName}
-								</g:link></td>
-							<td>
-								${f.uploadMimeType}
-							</td>
-							<td>
-								${f.filesize}
-							</td>
-							<td>
-								${f.doctype}
-							</td>
-						</tr>
-					</g:each>
-				</tbody>
-			</table>
-		</div>
-	</div>
+	<g:render template="showDataFiles" contextPath="../tabTemplates" model="${[d:displayobj]}" />
+
 </g:if>
