@@ -8,6 +8,9 @@ class Platform extends KBComponent {
   RefdataValue authentication
   RefdataValue software
   RefdataValue service
+  RefdataValue ipAuthentication
+  RefdataValue shibbolethAuthentication
+  RefdataValue passwordAuthenitcation
 
   static hasMany = [roles: RefdataValue]
   
@@ -17,7 +20,7 @@ class Platform extends KBComponent {
   
   private static refdataDefaults = [
 	"authentication"	: "Unknown",
-	"roles"				: ["Host"]
+	"roles"			: ["Host"]
   ]
   
   static manyByCombo = [
@@ -29,6 +32,9 @@ class Platform extends KBComponent {
   static mapping = {
         primaryUrl column:'plat_primary_url'
     authentication column:'plat_authentication_fk_rv'
+    ipAuthentication column:'plat_auth_by_ip_fk_rv'
+    shibbolethAuthentication column:'plat_auth_by_shib_fk_rv'
+    passwordAuthenitcation column:'plat_auth_by_pass_fk_rv'
 //             tipps sort: 'title.name', order: 'asc'
   }
 
@@ -36,6 +42,9 @@ class Platform extends KBComponent {
   //  impId(nullable:true, blank:false)
     primaryUrl		(nullable:true, blank:false)
     authentication	(nullable:true, blank:false)
+    ipAuthentication	(nullable:true, blank:false)
+    shibbolethAuthentication	(nullable:true, blank:false)
+    passwordAuthenitcation	(nullable:true, blank:false)
   }
 
 //  @Transient
