@@ -25,9 +25,31 @@
 	<ul id="tabs" class="nav nav-tabs">
 		<li class="active"><a href="#licsummary" data-toggle="tab">License
 				Summary</a></li>
-		<li><a href="#lists" data-toggle="tab">Files</a></li>
+		<li><a href="#files" data-toggle="tab">Files</a></li>
 	</ul>
+	<div id="my-tab-content" class="tab-content">
+		<div class="tab-pane active" id="licsummary">
+			<g:if
+				test="${((d.summaryStatement != null) && (d.summaryStatement.length() > 0 ) )}">
+				<h4>Summary Of License</h4>
+				${d.summaryStatement}
+			</g:if>
+		</div>
 
-	<g:render template="showDataFiles" contextPath="../tabTemplates" model="${[d:displayobj,allowEdit:true]}" />
+		<g:render template="showDataFiles" contextPath="../tabTemplates" model="${[d:displayobj,allowEdit:true]}" />
+	</div>
+	<script>
+	function showHidden(ident){
+		console.log($("#agent-N1009B"));
+		$("#agent-N1009B").removeClass('hidden');
+		console.log($("#agent-N1009B"));
 
+	}
+	function Tip(text){
+		//TODO: Show annotation
+	}
+	function UnTip(){
+		//TODO: hide annotation
+	}
+	</script>
 </g:if>
