@@ -28,6 +28,6 @@
 		<li><a href="#lists" data-toggle="tab">Files</a></li>
 	</ul>
 
-	<g:render template="showDataFiles" contextPath="../tabTemplates" model="${[d:displayobj,allowEdit:false]}" />
+	<g:render template="showDataFiles" contextPath="../tabTemplates" model="${[d:displayobj,allowEdit:true]}" />
 
 </g:if>

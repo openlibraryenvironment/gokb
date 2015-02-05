@@ -9,7 +9,8 @@ class DataFile extends KBComponent {
   String filesize
   String doctype
   byte[] fileData
-
+  RefdataValue canEdit
+  
   static constraints = {
     guid (nullable:false, blank:false)
     md5 (nullable:false, blank:false)
@@ -18,6 +19,7 @@ class DataFile extends KBComponent {
     filesize (nullable:true, blank:false)
     doctype (nullable:true, blank:false)
     fileData(nullable:true,blank:false,maxSize: 1024 * 1024 * 2)
+    canEdit(nullable:true, blank:false)
   }
 
   static mapping = {
@@ -28,6 +30,7 @@ class DataFile extends KBComponent {
     filesize column:'df_filesize'
     doctype column:'df_doctype'
     fileData column:'df_file_data'
+    canEdit column:'df_canEdit'
   }
 
   static manyByCombo = [
@@ -37,5 +40,25 @@ class DataFile extends KBComponent {
   static mappedByCombo = [
     attachedToComponents : 'fileAttachments'
   ]
+
+    /**
+   *  Override so that we only return DataFiles that are editable on the 
+   * typedown searches
+   */
+  @Override
+  static def refdataFind(params) {
+    def result = [];
+    def ql = null;
+    def editable = RefdataCategory.lookupOrCreate('YN', 'Yes').save()
+
+    ql = DataFile.findAllByNameIlikeAndCanEdit("${params.q}%",editable,params)
+    if ( ql ) {
+      ql.each { t ->
+        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+      }
+    }
+
+    result
+  }
 
 }

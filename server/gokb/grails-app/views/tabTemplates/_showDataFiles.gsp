@@ -34,7 +34,7 @@
 								${f.doctype}
 							</td>
 							<td>
-							<g:if test="${allowEdit}">
+							<g:if test="${allowEdit && f.canEdit?.value=='Yes'}">
 			        	<g:link controller="ajaxSupport" action="unlinkManyToMany" params="${["__context": "${d.getClassName()}:${d.id}","__property":"fileAttachments","__itemToRemove":"${f.getClassName()}:${f.id}"]}">Delete</g:link>
 			        		</g:if>
 							</td>

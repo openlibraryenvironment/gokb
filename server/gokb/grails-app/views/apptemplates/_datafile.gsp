@@ -14,6 +14,8 @@
       <dl class="dl-horizontal">
         <dt> <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel> </dt>
         <dd> <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' /> </dd>
+        <dt> <g:annotatedLabel owner="${d}" property="canEdit">Editable</g:annotatedLabel> </dt>
+        <dd> <g:xEditableRefData owner="${d}" field="canEdit" config='YN' /> </dd>
         <dt> <g:annotatedLabel owner="${d}" property="guid">GUID</g:annotatedLabel> </dt>
         <dd> ${d.guid} </dd>
         <dt> <g:annotatedLabel owner="${d}" property="md5">MD5</g:annotatedLabel> </dt>

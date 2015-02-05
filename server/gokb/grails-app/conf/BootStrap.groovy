@@ -117,25 +117,24 @@ class BootStrap {
   def migrateDiskFilesToDatabase() {
     def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
 
-    DataFile.findAll().each{ df ->
-      if(df.fileData == null){
-
-          def sub1 = df.guid.substring(0,2);
-          def sub2 = df.guid.substring(2,4);
-          def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${df.guid}";
-          try{
-            def source_file = new File(temp_file_name);
-            df.fileData = source_file.getBytes()
-            if(df.save(flush:true)){
-              //success
-              source_file.delete()
-            }else{
-              log.debug(df.errors)
-            }
-          }catch(Exception e){
-            log.error("Exception while migrating files to database. File ${temp_file_name}",e)
+    DataFile.findAll("from DataFile as df where df.fileData is null").each{ df ->
+        log.debug("Migrating files for ${df.uploadName}::${df.guid}")
+        def sub1 = df.guid.substring(0,2);
+        def sub2 = df.guid.substring(2,4);
+        def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${df.guid}";
+        try{
+          def source_file = new File(temp_file_name);
+          df.fileData = source_file.getBytes()
+          if(df.save(flush:true)){
+            //success
+            source_file.delete()
+          }else{
+            log.debug("Errors while trying to save DataFile fileData:")
+            log.debug(df.errors)
           }
-      }
+        }catch(Exception e){
+          log.error("Exception while migrating files to database. File ${temp_file_name}",e)
+        }
     }
   }
 
