@@ -22,9 +22,9 @@
     </DisplayOptions>
   </xsl:variable>
   <xsl:variable name="tooltip" select="'http://gokb.k-int.com/wz_tooltip.js'"/>
-  <xsl:variable name="info.char" select="'&#x24d8;'"/>
-  <xsl:variable name="tick.char" select="'&#x2714;'"/>
-  <xsl:variable name="cross.char" select="'&#x2718;'"/>
+  <xsl:variable name="info.char"><i class="fa fa-info-circle"></i></xsl:variable>
+  <xsl:variable name="tick.char"><i class="fa fa-check"></i></xsl:variable>
+  <xsl:variable name="cross.char"><i class="fa fa-times"></i></xsl:variable>
   <xsl:variable name="code-lists-url" select="'http://gokb.k-int.com/ONIX_PublicationsLicense_CodeLists.rng'"/>
   <xsl:variable name="code-lists" select="document($code-lists-url)"/>
   <xsl:variable name="apos">'</xsl:variable>
@@ -314,7 +314,7 @@
               <tr valign="top">
                 <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                   <xsl:attribute name="class">trigger</xsl:attribute>
-                  <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$licensor-id"/>')</xsl:attribute>
+                  <xsl:attribute name="link-id"><xsl:value-of select="$licensor-id"/></xsl:attribute>
                 </xsl:if>
                 <td>&#xA0;</td>
                 <td colspan="2">
@@ -325,11 +325,11 @@
                 </td>
                 <td>
                   <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
-                    <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                    <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                   </xsl:if>
                 </td>
                 <td>
-                  <div class="hidden" id="{$licensor-id}">
+                  <div style="display: none" id="{$licensor-id}">
                     <xsl:for-each select="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                       <div class="license-extract">
                         <xsl:call-template name="text-extract"/>
@@ -356,7 +356,7 @@
               <tr valign="top">
                 <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                   <xsl:attribute name="class">trigger</xsl:attribute>
-                  <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$licensee-id"/>')</xsl:attribute>
+                  <xsl:attribute name="link-id"><xsl:value-of select="$licensee-id"/></xsl:attribute>
                 </xsl:if>
                 <td>&#xA0;</td>
                 <td colspan="2">
@@ -367,11 +367,11 @@
                 </td>
                 <td>
                   <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
-                    <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                    <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                   </xsl:if>
                 </td>
                 <td>
-                  <div class="hidden" id="{$licensee-id}">
+                  <div style="display: none" id="{$licensee-id}">
                     <xsl:for-each select="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                       <div class="license-extract">
                         <xsl:call-template name="text-extract"/>
@@ -407,7 +407,7 @@
               <tr valign="top">
                 <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                   <xsl:attribute name="class">trigger</xsl:attribute>
-                  <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$agent-id"/>')</xsl:attribute>
+                  <xsl:attribute name="link-id"><xsl:value-of select="$agent-id"/></xsl:attribute>
                 </xsl:if>
                 <td>&#xA0;</td>
                 <td colspan="2">
@@ -420,11 +420,11 @@
                 </td>
                 <td>
                   <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
-                    <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                    <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                   </xsl:if>
                 </td>
                 <td>
-                  <div class="hidden" id="{$agent-id}">
+                  <div style="display: none" id="{$agent-id}">
                     <xsl:for-each select="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                       <div class="license-extract">
                         <xsl:call-template name="text-extract"/>
@@ -451,7 +451,7 @@
               <tr valign="top">
                 <xsl:if test="//onix:ResourceDefinition[onix:ResourceLabel=current()][1]/onix:LicenseTextLink">
                   <xsl:attribute name="class">trigger</xsl:attribute>
-                  <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$content-id"/>')</xsl:attribute>
+                  <xsl:attribute name="link-id"><xsl:value-of select="$content-id"/></xsl:attribute>
                 </xsl:if>
                 <td>&#xA0;</td>
                 <td colspan="2">
@@ -474,11 +474,11 @@
                 </td>
                 <td>
                   <xsl:if test="//onix:ResourceDefinition[onix:ResourceLabel=current()][1]/onix:LicenseTextLink">
-                    <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                    <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                   </xsl:if>
                 </td>
                 <td>
-                  <div class="hidden" id="{$content-id}">
+                  <div style="display: none" id="{$content-id}">
                     <xsl:for-each select="//onix:ResourceDefinition[onix:ResourceLabel=current()][1]/onix:LicenseTextLink">
                       <div class="license-extract">
                         <xsl:call-template name="text-extract"/>
@@ -505,7 +505,7 @@
               <tr valign="top">
                 <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                   <xsl:attribute name="class">trigger</xsl:attribute>
-                  <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$users-id"/>')</xsl:attribute>
+                  <xsl:attribute name="link-id"><xsl:value-of select="$users-id"/></xsl:attribute>
                 </xsl:if>
                 <td>&#xA0;</td>
                 <td colspan="2">
@@ -536,11 +536,11 @@
                 </td>
                 <td>
                   <xsl:if test="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
-                    <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                    <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                   </xsl:if>
                 </td>
                 <td>
-                  <div class="hidden" id="{$users-id}">
+                  <div style="display: none" id="{$users-id}">
                     <xsl:for-each select="//onix:AgentDefinition[onix:AgentLabel=current()][1]/onix:LicenseTextLink">
                       <div class="license-extract">
                         <xsl:call-template name="text-extract"/>
@@ -583,11 +583,11 @@
                 <tr valign="top">
                   <xsl:if test="onix:LicenseTextLink">
                     <xsl:attribute name="class">trigger</xsl:attribute>
-                    <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                    <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                   </xsl:if>
                   <td>
                     <div>
-                      <span class="tick"><xsl:value-of select="$tick.char"/></span>
+                      <span class="tick"><xsl:copy-of select="$tick.char"/></span>
                     </div>
                   </td>
                   <td colspan="2">
@@ -599,11 +599,11 @@
                   </td>
                   <td>
                     <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                      <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                      <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                     </xsl:if>
                   </td>
                   <td>
-                    <div class="hidden" id="{$usage-id}">
+                    <div style="display: none" id="{$usage-id}">
                       <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                         <div class="license-extract">
                           <xsl:call-template name="text-extract"/>
@@ -645,11 +645,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="tick"><xsl:value-of select="$tick.char"/></span>
+                        <span class="tick"><xsl:copy-of select="$tick.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -661,11 +661,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -700,11 +700,11 @@
                 <tr valign="top">
                   <xsl:if test="onix:LicenseTextLink">
                     <xsl:attribute name="class">trigger</xsl:attribute>
-                    <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                    <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                   </xsl:if>
                   <td>
                     <div>
-                      <span class="tick"><xsl:value-of select="$tick.char"/></span>
+                      <span class="tick"><xsl:copy-of select="$tick.char"/></span>
                     </div>
                   </td>
                   <td colspan="2">
@@ -716,11 +716,11 @@
                   </td>
                   <td>
                     <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                      <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                      <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                     </xsl:if>
                   </td>
                   <td>
-                    <div class="hidden" id="{$usage-id}">
+                    <div style="display: none" id="{$usage-id}">
                       <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                         <div class="license-extract">
                           <xsl:call-template name="text-extract"/>
@@ -762,11 +762,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="tick"><xsl:value-of select="$tick.char"/></span>
+                        <span class="tick"><xsl:copy-of select="$tick.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -778,11 +778,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -823,11 +823,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="tick"><xsl:value-of select="$tick.char"/></span>
+                        <span class="tick"><xsl:copy-of select="$tick.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -839,11 +839,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -884,11 +884,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="tick"><xsl:value-of select="$tick.char"/></span>
+                        <span class="tick"><xsl:copy-of select="$tick.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -900,11 +900,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -949,11 +949,11 @@
                 <tr valign="top">
                   <xsl:if test="onix:LicenseTextLink">
                     <xsl:attribute name="class">trigger</xsl:attribute>
-                    <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                    <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                   </xsl:if>
                   <td>
                     <div>
-                      <span class="cross"><xsl:value-of select="$cross.char"/></span>
+                      <span class="cross"><xsl:copy-of select="$cross.char"/></span>
                     </div>
                   </td>
                   <td colspan="2">
@@ -965,11 +965,11 @@
                   </td>
                   <td>
                     <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                      <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                      <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                     </xsl:if>
                   </td>
                   <td>
-                    <div class="hidden" id="{$usage-id}">
+                    <div style="display: none" id="{$usage-id}">
                       <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                         <div class="license-extract">
                           <xsl:call-template name="text-extract"/>
@@ -1011,11 +1011,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="cross"><xsl:value-of select="$cross.char"/></span>
+                        <span class="cross"><xsl:copy-of select="$cross.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -1027,11 +1027,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -1066,11 +1066,11 @@
                 <tr valign="top">
                   <xsl:if test="onix:LicenseTextLink">
                     <xsl:attribute name="class">trigger</xsl:attribute>
-                    <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                    <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                   </xsl:if>
                   <td>
                     <div>
-                      <span class="cross"><xsl:value-of select="$cross.char"/></span>
+                      <span class="cross"><xsl:copy-of select="$cross.char"/></span>
                     </div>
                   </td>
                   <td colspan="2">
@@ -1082,11 +1082,11 @@
                   </td>
                   <td>
                     <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                      <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                      <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                     </xsl:if>
                   </td>
                   <td>
-                    <div class="hidden" id="{$usage-id}">
+                    <div style="display: none" id="{$usage-id}">
                       <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                         <div class="license-extract">
                           <xsl:call-template name="text-extract"/>
@@ -1128,11 +1128,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="cross"><xsl:value-of select="$cross.char"/></span>
+                        <span class="cross"><xsl:copy-of select="$cross.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -1144,11 +1144,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -1189,11 +1189,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="cross"><xsl:value-of select="$cross.char"/></span>
+                        <span class="cross"><xsl:copy-of select="$cross.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -1205,11 +1205,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info trigger"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info trigger"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -1252,11 +1252,11 @@
                   <tr valign="top">
                     <xsl:if test="onix:LicenseTextLink">
                       <xsl:attribute name="class">trigger</xsl:attribute>
-                      <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$usage-id"/>')</xsl:attribute>
+                      <xsl:attribute name="link-id"><xsl:value-of select="$usage-id"/></xsl:attribute>
                     </xsl:if>
                     <td>
                       <div>
-                        <span class="cross"><xsl:value-of select="$cross.char"/></span>
+                        <span class="cross"><xsl:copy-of select="$cross.char"/></span>
                       </div>
                     </td>
                     <td colspan="2">
@@ -1268,11 +1268,11 @@
                     </td>
                     <td>
                       <xsl:if test="onix:LicenseTextLink or onix:UsageException/onix:LicenseTextLink">
-                        <div class="more-info trigger"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+                        <div class="more-info trigger"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
                       </xsl:if>
                     </td>
                     <td>
-                      <div class="hidden" id="{$usage-id}">
+                      <div style="display: none" id="{$usage-id}">
                         <xsl:for-each select="onix:LicenseTextLink | onix:UsageException/onix:LicenseTextLink">
                           <div class="license-extract">
                             <xsl:call-template name="text-extract"/>
@@ -2169,7 +2169,7 @@
     <tr valign="top">
       <xsl:if test="onix:LicenseTextLink">
         <xsl:attribute name="class">trigger</xsl:attribute>
-        <xsl:attribute name="onclick">showHidden('<xsl:value-of select="$term-id"/>')</xsl:attribute>
+        <xsl:attribute name="link-id"><xsl:value-of select="$term-id"/></xsl:attribute>
       </xsl:if>
       <td>&#xA0;</td>
       <td colspan="2">
@@ -2424,11 +2424,11 @@
       </td>
       <td>
         <xsl:if test="onix:LicenseTextLink">
-          <div class="more-info"><span class="info"><xsl:value-of select="$info.char"/></span></div>
+          <div class="more-info"><span class="info"><xsl:copy-of select="$info.char"/></span></div>
         </xsl:if>
       </td>
       <td>
-        <div class="hidden" id="{$term-id}">
+        <div style="display: none" id="{$term-id}">
           <xsl:for-each select="onix:LicenseTextLink">
             <div class="license-extract">
               <xsl:call-template name="text-extract"/>
