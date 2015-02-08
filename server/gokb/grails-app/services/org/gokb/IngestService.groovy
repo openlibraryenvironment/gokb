@@ -18,6 +18,7 @@ import org.gokb.validation.types.A_ValidationRule
 import org.hibernate.Session
 import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
+import org.apache.commons.logging.LogFactory
 
 class IngestService {
 
@@ -430,6 +431,8 @@ class IngestService {
 
             // Set the propvider of the package to that on the project.
             Org provider = project.provider
+            provider.refresh();
+            provider.lock();
             pkg.setProvider (provider)
             
             // Set the source.
@@ -519,6 +522,7 @@ class IngestService {
                   )
             }
 
+            log.debug("Save tipp");
             // Need to ensure everything is saved.
             tipp.save(failOnError:true, flush:true)
 
@@ -1158,6 +1162,7 @@ class IngestService {
 
     // If it's null then we haven't initialised it yet.
     if (tipps == null) {
+      LogFactory.getLog(this).debug("Loading tipps for package ${pkgName} from db and caching locally");
       tipps = []
       for (def tipp: pkg.getTipps()) {
         tipps << tipp.id
