@@ -430,16 +430,21 @@ class IngestService {
                 );
 
             // Set the propvider of the package to that on the project.
-            Org provider = project.provider
-            provider.refresh();
-            provider.lock();
-            pkg.setProvider (provider)
+            // only try and set the package provider if it's different to what we have in our hand
+            if ( pkg.provider != project.provider ) {
+              Org provider = Org.lock(project.provider.id)
+              pkg.setProvider (provider)
+            }
             
             // Set the source.
-            pkg.setSource(project.getSource())
+            if ( pkg.source != project.getSource() ) {
+              pkg.setSource(project.getSource())
+            }
 
             // Set the latest project.
-            pkg.setLastProject(project)
+            if ( pkg.lastProject != project ) {
+              pkg.setLastProject(project)
+            }
 
             // Save the Package changes.
             pkg.save(failOnError:true, flush:true)
