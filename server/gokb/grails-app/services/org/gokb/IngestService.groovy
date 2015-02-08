@@ -414,9 +414,8 @@ class IngestService {
             title_info.save(failOnError:true, flush:true)
 
             // Platforms must already exist in GOKb, so just to the lookup.
-            Platform platform_info = componentLookupService.lookupComponent(
-                getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
-                )
+            
+            Platform platform_info = componentLookupService.lookupComponent( getRowValue(datarow,col_positions,HOST_PLATFORM_NAME),true)
             if (platform_info == null) {
               throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
             }

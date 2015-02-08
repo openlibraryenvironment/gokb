@@ -51,6 +51,10 @@ class ComponentLookupService {
 //  }
   
   private <T extends KBComponent> T lookupComponent (String comp_name_string) {
+    return lookupComponent(comp_name_string,false)
+  }
+
+  private <T extends KBComponent> T lookupComponent (String comp_name_string, boolean lock) {
 
     // The Component
     T comp = null
@@ -77,7 +81,12 @@ class ComponentLookupService {
           if (the_id > 0) {
   
             // Try and get the component.
-            comp = c.get(the_id)
+            if ( lock ) {
+              comp = c.lock(the_id)
+            }
+            else {
+              comp = c.get(the_id)
+            }
   
             if (!c) log.debug ("No component with that ID. Return null.")
           } else {
