@@ -38,6 +38,7 @@ class User {
     showQuickView blank: true, nullable:true
     email blank: true, nullable:true
     defaultPageSize blank: true, nullable:true
+    curatoryGroups blank: true, nullable:true
   }
 
   static mapping = {
