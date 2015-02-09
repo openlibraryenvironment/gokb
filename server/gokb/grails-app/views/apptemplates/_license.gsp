@@ -38,18 +38,21 @@
 
 		<g:render template="showDataFiles" contextPath="../tabTemplates" model="${[d:displayobj,allowEdit:true]}" />
 	</div>
-	<script>
-	function showHidden(ident){
-		console.log($("#agent-N1009B"));
-		$("#agent-N1009B").removeClass('hidden');
-		console.log($("#agent-N1009B"));
+	<g:javascript>
+	$('.trigger').each(function(){
+		var me = $(this);
+		var showEl = jq((me.attr('link-id')));
 
+		me.click(function(){
+			$(showEl).toggle();
+		});
+	});
+	function jq( myid ) {
+	    return "#" + myid.replace( /(:|\.|\[|\]|,)/g, "\\$1" );
 	}
-	function Tip(text){
-		//TODO: Show annotation
+	function Tip(desc){
+		// console.log(desc)
 	}
-	function UnTip(){
-		//TODO: hide annotation
-	}
-	</script>
+	function UnTip(){}
+	</g:javascript>
 </g:if>
