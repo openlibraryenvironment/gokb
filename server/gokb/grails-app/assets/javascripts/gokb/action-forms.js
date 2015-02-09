@@ -7,16 +7,12 @@ if (typeof jQuery !== 'undefined') {
     function setActionFormStatus(status) {
 
       // The drop down.
-      var dd = $('select#selectedBulkAction');
+      var dd = $('ul.actions');
 
-      // Prepend the default option.
-      dd.prepend($('<option />', { 
-        "value" : "",
-        "text"  : status ? "-- Select an action to perform --" : "-- No actions available --"
-      }).prop("selected", true));
-
+      var link = $("<a>", { text:"-- No actions available --",class:"selectedAction", href: "#"  });
+      var listItem = $("<li>").append(link);
+      dd.append(listItem);
       // Enable or disable the elements.
-      $('select,input', $('#bulkActionControls')).prop('disabled', !status);
     }
 
     /**
@@ -52,19 +48,20 @@ if (typeof jQuery !== 'undefined') {
       });
 
       // Edit the form button and list depending on availability of actions.  
-      var opts = $('select#selectedBulkAction').prop("options");
-      opts.length = 0;
-
+      var opts = $('ul.actions')
+      opts.empty()
       // Disable/enable the form elements depending on the actions available
       if (allActionsAvailable.length > 0) {
 
         // Add the options to the dropdown.
         $.each(allActionsAvailable, function (index, action) {
-          opts[index] = new Option(action.label, action.code);
+           var link = $("<a>", { bulkaction:action.code,text:action.label,class:"selectedAction", href: "#"  });
+           var listItem = $("<li>").append(link);
+           $('ul.actions').append(listItem);
         });
 
         // Enable controls.
-        setActionFormStatus(true);
+        // setActionFormStatus(true);
 
       } else {
         // Disable controls.
@@ -77,58 +74,47 @@ if (typeof jQuery !== 'undefined') {
 
       // Add the submit handler to the "action" form to prompt for confirmation
       // On certain types of action.
-      $("#bulkActionControls button[type='submit'],#actionControls button[type='submit']").click(function(event) {
-
+      $("ul.actions").click(function(event) {
         // The button.
-        var button = $(this);
+
+        var link = $(event.target).closest("a.selectedAction");
+
 
         // Prevent the click bubbling through to eventually submitting the form.
         event.preventDefault();
+        event.stopImmediatePropagation();
+        
+        if(link.length > 0){
 
-        // Selected option.
-        var opt = $('#selectedBulkAction option:selected, #selectedAction option:selected');
+          var text = link.text();
+          // Selected option.
+          // We need to confirm these actions.
+          // Confirm.
+          gokb.confirm (
+            function() {
+              // Submit the form that is attached to the dropdown.
+              var form = link.closest("form")
+              var workflowValue = $('<input>',{type:'hidden',name:'selectedBulkAction',value:link.attr('bulkaction')})
+              workflowValue.appendTo(form);
+              form.submit();
+            },
+            "Are you sure you with to perform the action " + link.text() + " for the selected resource(s)?",
+            "Yes I am"
+          );
 
-        // We need to confirm these actions.
-        var text = opt.text();
-
-        // Confirm.
-        gokb.confirm (
-          function() {
-            // Submit the form that is attached to the dropdown.
-            button.closest("form").submit();
-          },
-          "Are you sure you with to perform the action " + opt.text() + " for the selected resource(s)?",
-          "Yes I am"
-        );
-
-        // Return false.
-        return false;
+          // Return false.
+          return false;
+        }
       });
 
       // On page load we need to update available actions.
-      if ( $('select#selectedBulkAction').length > 0 ) {
+      if ( $('ul.actions').length > 0 ) {
         updateAvailableActions ();
       }
 
       // Also bind the method to the change method. 
       $('input.obj-action-ck-box').change( updateAvailableActions );
 
-      // Need to bind onchange listener to list.
-      $('select#selectedBulkAction,select#selectedAction')
-      .change(function() {
-
-        // The dropdown.
-        var dd = $(this);
-
-        // The selected index.
-        var selected = this.selectedIndex;
-
-        // Disable all buttons if the first option is the one selected. 
-        dd.parent().find('button').prop('disabled', (selected < 1));
-      })
-
-      // Also disable sibling buttons.
-      .parent().find('button').prop('disabled', true);
     });
 
   })(jQuery);

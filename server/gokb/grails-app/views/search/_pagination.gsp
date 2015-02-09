@@ -24,21 +24,12 @@
 						</ul>
 					</li>
 				</g:if>
-				<g:if test="${qbetemplate.qbeConfig.actions != null}">
-					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown">Actions <b class="caret"></b>
-					</a>
-						<ul class="dropdown-menu">
-							<g:each in="${qbetemplate.qbeConfig.actions}" var="a">
-								<li><i class="${a.iconClass}"></i> <g:link
-										controller="workflow" action="action"
-										params="${[selectedBulkAction:a.code,('bulk:'+qbetemplate.baseclass):'true']}">
-										${a.name}
-									</g:link></li>
-							</g:each>
-						</ul></li>
-					<li class="divider-vertical"></li>
-				</g:if>
+<!-- see grails-app/assets/javascripts/gokb/action-forms.js for code relating to bulk actions -->
+				<li class="dropdown"><a href="#" class="dropdown-toggle"
+						data-toggle="dropdown">Actions <b class="caret"></b></a>
+						<ul class="dropdown-menu actions"></ul>
+				</li>
+				<li class="divider-vertical"></li>
 				<g:if test="${ page == 1 }">
 					<li class='disabled'><a class='disabled' href='#'><i
 							class="glyphicon glyphicon-chevron-left"></i></a></li>
