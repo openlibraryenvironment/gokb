@@ -935,8 +935,9 @@ class WorkflowController {
 
     DataFile df = DataFile.findByGuid(params.id)
     if ( df != null ) {
-      response.setContentType(df.uploadMimeType)
-      response.addHeader("content-disposition", "attachment; filename=\"${df.uploadName}\"")
+      //HTML is causing problems, browser thinks it should render something, other way around this?
+      response.setContentType("application/octet-stream");
+      response.addHeader("Content-Disposition", "attachment; filename=\"${df.uploadName}\"")
       response.outputStream << df.fileData    
     }
   }
