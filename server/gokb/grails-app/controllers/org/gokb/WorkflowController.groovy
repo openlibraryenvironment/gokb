@@ -35,7 +35,6 @@ class WorkflowController {
     def action_config = actionConfig[params.selectedBulkAction];
 
     if ( action_config ) {
-
       result.objects_to_action = []
 
       if ( params.batch_on == 'all' ) {

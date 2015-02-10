@@ -9,27 +9,27 @@
 			</div>
 			<ul class="nav navbar-nav navbar-right">
 				<g:if test="${ !request.isAjax() }">
-					<li class="dropdown page-jump${ dropup ? ' dropup' : ''}"><a
-							href="#" class="dropdown-toggle" data-toggle="dropdown">Page
-								${page} of ${page_max} <span class="caret"></span>
-						</a>
-						<ul class="dropdown-menu dropdown-menu-scroll" role="menu">
-							<g:each var="p" in="${ 1..page_max }">
-								<li><g:link title="Previous Page" controller="search"
-										action="index"
-										params="${params+[offset:((p.toInteger() - 1) * max.toInteger()),det:null]}">
-									Page ${p}
-									</g:link></li>
-							</g:each>
-						</ul>
-					</li>
-				</g:if>
+
 <!-- see grails-app/assets/javascripts/gokb/action-forms.js for code relating to bulk actions -->
 				<li class="dropdown"><a href="#" class="dropdown-toggle"
 						data-toggle="dropdown">Actions <b class="caret"></b></a>
 						<ul class="dropdown-menu actions"></ul>
 				</li>
 				<li class="divider-vertical"></li>
+				<li class="dropdown page-jump${ dropup ? ' dropup' : ''}"><a
+						href="#" class="dropdown-toggle" data-toggle="dropdown">Page
+							${page} of ${page_max} <span class="caret"></span></a>
+					<ul class="dropdown-menu dropdown-menu-scroll" role="menu">
+						<g:each var="p" in="${ 1..page_max }">
+							<li><g:link title="Previous Page" controller="search"
+									action="index"
+									params="${params+[offset:((p.toInteger() - 1) * max.toInteger()),det:null]}">
+								Page ${p}
+								</g:link></li>
+						</g:each>
+					</ul>
+				</li>
+				</g:if>
 				<g:if test="${ page == 1 }">
 					<li class='disabled'><a class='disabled' href='#'><i
 							class="glyphicon glyphicon-chevron-left"></i></a></li>
