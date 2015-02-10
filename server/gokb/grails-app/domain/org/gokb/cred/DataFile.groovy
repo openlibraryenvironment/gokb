@@ -8,6 +8,8 @@ class DataFile extends KBComponent {
   String uploadMimeType
   String filesize
   String doctype
+
+  // II: This NEEDS to be a java.sql.Blob and not a byte[] - See Doc in KBPlus for example
   byte[] fileData
   RefdataValue canEdit
   

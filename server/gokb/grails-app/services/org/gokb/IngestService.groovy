@@ -18,6 +18,7 @@ import org.gokb.validation.types.A_ValidationRule
 import org.hibernate.Session
 import org.joda.time.format.*
 import org.springframework.transaction.TransactionStatus
+import org.apache.commons.logging.LogFactory
 
 class IngestService {
 
@@ -413,9 +414,8 @@ class IngestService {
             title_info.save(failOnError:true, flush:true)
 
             // Platforms must already exist in GOKb, so just to the lookup.
-            Platform platform_info = componentLookupService.lookupComponent(
-                getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
-                )
+            
+            Platform platform_info = componentLookupService.lookupComponent( getRowValue(datarow,col_positions,HOST_PLATFORM_NAME),true)
             if (platform_info == null) {
               throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
             }
@@ -429,14 +429,21 @@ class IngestService {
                 );
 
             // Set the propvider of the package to that on the project.
-            Org provider = project.provider
-            pkg.setProvider (provider)
+            // only try and set the package provider if it's different to what we have in our hand
+            if ( pkg.provider != project.provider ) {
+              Org provider = Org.lock(project.provider.id)
+              pkg.setProvider (provider)
+            }
             
             // Set the source.
-            pkg.setSource(project.getSource())
+            if ( pkg.source != project.getSource() ) {
+              pkg.setSource(project.getSource())
+            }
 
             // Set the latest project.
-            pkg.setLastProject(project)
+            if ( pkg.lastProject != project ) {
+              pkg.setLastProject(project)
+            }
 
             // Save the Package changes.
             pkg.save(failOnError:true, flush:true)
@@ -519,6 +526,7 @@ class IngestService {
                   )
             }
 
+            log.debug("Save tipp");
             // Need to ensure everything is saved.
             tipp.save(failOnError:true, flush:true)
 
@@ -1158,6 +1166,7 @@ class IngestService {
 
     // If it's null then we haven't initialised it yet.
     if (tipps == null) {
+      LogFactory.getLog(this).debug("Loading tipps for package ${pkgName} from db and caching locally");
       tipps = []
       for (def tipp: pkg.getTipps()) {
         tipps << tipp.id
