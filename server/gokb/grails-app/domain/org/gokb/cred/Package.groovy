@@ -44,7 +44,7 @@ class Package extends KBComponent {
   static manyByCombo = [
     tipps         : TitleInstancePackagePlatform,
     children      : Package,
-    curatoryGroups      : CuratoryGroup
+    curatoryGroups: CuratoryGroup
   ]
   
   static hasByCombo = [
