@@ -217,9 +217,9 @@ class TitleInstance extends KBComponent {
   @Transient
   def toGoKBXml(builder, attr) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    def tids = getIds() ?: []
 
     try {
+      def tids = getIds() ?: []
       def tipps = getTipps()
       def theIssuer = getIssuer()
       def thePublisher = getPublisher()
