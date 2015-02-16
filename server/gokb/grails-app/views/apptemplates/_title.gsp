@@ -156,7 +156,7 @@
       </span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
-          ${d.getCombosByPropertyName('publisher')?.size()}
+          ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size()}
       </span></a></li>
     <li><a href="#availability" data-toggle="tab">Availability <span
         class="badge badge-warning">
@@ -330,7 +330,13 @@
       <dt>
         <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
       </dt>
-      <dd>
+      <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers"
+ params="${params.findAll{k, v -> k != 'publisher_status'}}">
+               
+       Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
+      </g:form>
+
+     <dd>
         <table class="table table-striped table-bordered">
           <thead>
             <tr>
@@ -341,7 +347,7 @@
             </tr>
           </thead>
           <tbody>
-            <g:each in="${d.getCombosByPropertyName('publisher')}" var="p">
+            <g:each in="${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)}" var="p">
               <tr>
                 <td><g:link controller="resource" action="show"
                     id="${p.toComponent.class.name}:${p.toComponent.id}">
@@ -395,6 +401,13 @@
 
 
 <asset:script type="text/javascript">
+
+  $("select[name='publisher_status']").change(function(event) {
+  console.log("In here")
+    var form =$(event.target).closest("form")
+    form.submit();
+  });
+
   function SelectMoveRows(SS1,SS2) {
     var SelID='';
     var SelText='';

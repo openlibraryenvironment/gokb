@@ -619,29 +619,40 @@ abstract class KBComponent {
    *  Return the combos pertaining to a specific property (Rather than the components linked).
    *  Needed for editing start/end dates. Initially on publisher, but probably on other things too later on.
    */
-  @Transient getCombosByPropertyName(propertyName) {
+  @Transient
+   public List<Combo> getCombosByPropertyName(propertyName) {
+
+    return getCombosByPropertyNameAndStatus(propertyName,null)
+  }
+
+  @Transient 
+  public List<Combo> getCombosByPropertyNameAndStatus(propertyName,status) {
+    log.debug("KBComponent::getCombosByPropertyNameAndStatus::${propertyName}|${status}")
+
     def combos
+    def status_ref
+    def hql_query 
+    def hql_params = []
+
     if ( this.id != null ) {
       // Unsaved components can't have combo relations
       RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue(propertyName))
-
+      if(status && status!="null") status_ref = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, status);
+      hql_query = "from Combo where type=? " 
+      hql_params += type
       if (isComboReverse(propertyName)) {
-        combos = Combo.createCriteria().list {
-          and {
-            eq ("type", (type))
-            eq ("toComponent", (this))
-          }
-        }
+        hql_query += " and toComponent=?"
+        hql_params += this
       } else {
-        combos = Combo.createCriteria().list {
-          and {
-            eq ("type", (type))
-            eq ("fromComponent", (this))
-          }
-        }
+        hql_query += " and fromComponent=?"
+        hql_params += this
       }
+      if(status_ref){
+        hql_query += " and status=?"
+        hql_params += status_ref
+      }
+      combos = Combo.executeQuery(hql_query,hql_params)
     }
-
     return combos
   }
 
