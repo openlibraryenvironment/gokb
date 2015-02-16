@@ -88,6 +88,17 @@
         <welcome-file>index.gsp</welcome-file>
     </welcome-file-list>
 
+    <!--
+
+    This does not play well with apache and mod_proxy. Use an apache httpd rewrite rule like
+
+       # Rewrite any non https requests as https
+       # RewriteEngine On
+       # RewriteCond %{HTTP:X-Forwarded-Proto} !https
+       # RewriteRule !/status https://%{SERVER_NAME}%{REQUEST_URI} [L,R]
+
+     to force https, rather than this.
+
     <security-constraint>
       <web-resource-collection>
          <web-resource-name>GoKB</web-resource-name>
@@ -97,5 +108,6 @@
          <transport-guarantee>CONFIDENTIAL</transport-guarantee>
       </user-data-constraint>
     </security-constraint> 
+    -->
 
 </web-app>
