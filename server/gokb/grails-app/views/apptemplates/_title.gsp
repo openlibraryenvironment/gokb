@@ -90,14 +90,18 @@
                         <g:link controller="resource" action="show"
                           id="${ft?.class.name}:${ft.id}">
                           ${ft.name}
-                        </g:link> (
+                        </g:link> 
 
-                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
-
-                        <em>To</em>
-                        <g:formatDate
-                          format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedTo}" /> ) 
+                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
+                         (
+                          <g:formatDate 
+                          format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
+                          <em>To</em>
+                          <g:formatDate
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
+                          )
+                        </g:if> 
+                        
                         <g:if test="${ft.id == d.id}"></b></g:if>
                       </g:if> <g:else>From title not present</g:else>
                     </li>
@@ -113,14 +117,16 @@
                         <g:link controller="resource" action="show"
                           id="${ft.class.name}:${ft.id}">
                           ${ft.name}
-                        </g:link> (
-                        <g:formatDate
-                          format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedFrom}" />
-                        <em>To</em>
-                        <g:formatDate
-                          format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedTo}" /> )
+                        </g:link> 
+                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
+                          (
+                          <g:formatDate
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
+                          <em>To</em>
+                          <g:formatDate
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
+                          )
+                        </g:if>
                         <g:if test="${ft.id == d.id}"></b></g:if>
 	                    </g:if>
 	                    <g:else>From title not present</g:else>
