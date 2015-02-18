@@ -245,12 +245,14 @@
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
                       baseClass="org.gokb.cred.TitleInstance" /> <br />
                     <button type="button"
-                      onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
+                      onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
+                    <button type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
                   <td></td>
                   <td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
                       baseClass="org.gokb.cred.TitleInstance" /> <br />
                     <button type="button"
-                      onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
+                      onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
+                    <button type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
                 </tr>
               </table>
             </dd>
@@ -439,6 +441,9 @@
             }
         }
     }
+  }
+  function removeTitle(selectName) {
+    $("select[name='"+selectName+"']").find(":selected").remove()
   }
 
   function AddTitle(titleIdHidden,ss) {
