@@ -611,17 +611,25 @@ globalSearchTemplates = [
           qparam:'qp_pub',
           placeholder:'Publisher',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
-          hide:true
+          hide:false
         ],
         [
           type:'lookup',
           baseClass:'org.gokb.cred.Org',
-          prompt:'Content Provider',
+          prompt:'Publisher',
           qparam:'qp_prov_id',
           placeholder:'Content Provider',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider'],
           hide:true
         ],
+        // In order for this to work as users expect, we're going to need a unique clause at the root context, or we get
+        // repeated rows where a wildcard matches multiple titles. [That or this clause needs to be an "exists" caluse]
+        // [
+        //   prompt:'Identifier',
+        //   qparam:'qp_identifier',
+        //   placeholder:'Any identifier',
+        //   contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'ids.value','wildcard':'B']
+        // ],
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
