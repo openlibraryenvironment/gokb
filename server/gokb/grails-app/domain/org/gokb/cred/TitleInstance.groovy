@@ -342,7 +342,7 @@ class TitleInstance extends KBComponent {
       def to_titles = he.participants.findAll { it.participantRole == 'out' };
 
       def hint = "unknown"
-      if ( ( from_titles?.size() == 1 ) && ( to_titles?.size() == 1 ) && ( from_titles[0].participant.id != to_titles[0].participant.id ) ) {
+      if ( ( from_titles?.size() == 1 ) && ( to_titles?.size() == 1 ) && ( from_titles[0].participant?.id != to_titles[0].participant?.id ) ) {
         hint="Rename"
       }
 

@@ -129,7 +129,7 @@
                         </g:if>
                         <g:if test="${ft.id == d.id}"></b></g:if>
 	                    </g:if>
-	                    <g:else>From title not present</g:else>
+	                    <g:else>To title not present</g:else>
                     </li>
                   </g:each>
                 </ul>
