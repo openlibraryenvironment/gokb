@@ -272,24 +272,28 @@ class TitleInstance extends KBComponent {
               builder.historyEvent(['id':he.id]) {
                 "date"(he.date)
                 he.from.each { hti ->
-                  "from" {
-                    title(hti.name)
-                    internalId(hti.id)
-                    "identifiers" {
-                      hti.getIds()?.each { tid ->
-                        builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                  if(hti){
+                    "from" {
+                      title(hti.name)
+                      internalId(hti.id)
+                      "identifiers" {
+                        hti.getIds()?.each { tid ->
+                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                        }
+                      
                       }
-                    
                     }
                   }
                 }
                 he.to.each { hti ->
-                  "to" {
-                    title(hti.name)
-                    internalId(hti.id)
-                    "identifiers" {
-                      hti.getIds()?.each { tid ->
-                        builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                  if(hti){
+                    "to" {
+                      title(hti.name)
+                      internalId(hti.id)
+                      "identifiers" {
+                        hti.getIds()?.each { tid ->
+                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                        }
                       }
                     }
                   }
