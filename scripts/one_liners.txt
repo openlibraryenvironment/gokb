@@ -1,5 +1,5 @@
 # Export the current refdata into groovy statements for inclusion in bootstrap.
-mysql -N -uroot -p -e "SELECT CONCAT(RefdataCategory.lookupOrCreate(\"', rdc_description, '\",\"', rdv_value,'\").save()') FROM refdata_value INNER JOIN refdata_category ON rdc_id=rdv_owner;" GoKB > ~/bootstrap_refdata.txt
+mysql -N -uroot -p -e "SELECT CONCAT('RefdataCategory.lookupOrCreate(\"', rdc_description, '\",\"', rdv_value,'\").save()') FROM refdata_value INNER JOIN refdata_category ON rdc_id=rdv_owner;" GoKB > ~/bootstrap_refdata.txt
 
 ALTER TABLE kbcomponent MODIFY COLUMN summary_txt longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL;
 
