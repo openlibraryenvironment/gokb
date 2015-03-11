@@ -35,3 +35,4 @@ alter table user_role CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 
 update combo set combo_type_rv_fk = 90 where combo_type_rv_fk = 82;
 
+ALTER TABLE rule CHANGE COLUMN rule_description rule_description LONGTEXT CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL ;
