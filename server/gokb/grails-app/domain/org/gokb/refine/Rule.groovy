@@ -19,4 +19,9 @@ public class Rule {
     fingerprint column:'rule_fp', index:'doc_fp_contents'
        ruleJson column:'rule_json', type:'text'
   }
+
+  static constraints = {
+    description type:'text'
+    ruleJson type:'text'    
+  }
 }

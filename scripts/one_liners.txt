@@ -1,5 +1,5 @@
 # Export the current refdata into groovy statements for inclusion in bootstrap.
-mysql -N -uroot -p -e "SELECT CONCAT('RefdataCategory.lookupOrCreate(\"', rdc_description, '\",\"', rdv_value,'\").save()') FROM refdata_value INNER JOIN refdata_category ON rdc_id=rdv_owner;" GoKB > ~/bootstrap_refdata.txt
+mysql -N -uroot -p -e "SELECT CONCAT(RefdataCategory.lookupOrCreate(\"', rdc_description, '\",\"', rdv_value,'\").save()') FROM refdata_value INNER JOIN refdata_category ON rdc_id=rdv_owner;" GoKB > ~/bootstrap_refdata.txt
 
 ALTER TABLE kbcomponent MODIFY COLUMN summary_txt longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL;
 
@@ -35,3 +35,4 @@ alter table user_role CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 
 update combo set combo_type_rv_fk = 90 where combo_type_rv_fk = 82;
 
+ALTER TABLE rule CHANGE COLUMN rule_description rule_description LONGTEXT CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL ;
