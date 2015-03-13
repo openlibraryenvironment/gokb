@@ -5,6 +5,10 @@
 /**
  * Create our notification object to help us with showing all kinds of notifications.
  */
+var notifya = function(instance){
+  console.log(instance.text_container)
+  alert(instance.text_container.text())
+}
 Notification = function () {    
   this._stacks = {
     "system" : {
@@ -23,9 +27,11 @@ Notification = function () {
       _notification_defaults : {
         hide    : false,
         buttons: {
-          closer   : false,
+          closer   : true,
+          closer_hover: false,
           sticker  : false,
-        }
+        },
+        before_close: notifya,
       },
     },
   };
@@ -64,7 +70,8 @@ Notification.prototype.getStack = function (stack_name) {
 };
 
 /**
- * Show the notification, adding it to the supplied stack, or the default stack if one isn't supplied.
+ * Show the notification, a
+ dding it to the supplied stack, or the default stack if one isn't supplied.
  * @param notification
  * @param stack_name
  * @returns {PNotify} The PNotify instance for the notification.
