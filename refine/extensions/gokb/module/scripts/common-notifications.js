@@ -5,9 +5,15 @@
 /**
  * Create our notification object to help us with showing all kinds of notifications.
  */
-var notifya = function(instance){
-  console.log(instance.text_container)
-  alert(instance.text_container.text())
+var hide_warning = function(instance){
+  var text = instance.text_container.text()
+  GOKb.postProcess(
+    "clear-warning", 
+    {"validation_message": text},
+    null,
+    {cellsChanged: false}
+  );
+
 }
 Notification = function () {    
   this._stacks = {
@@ -31,7 +37,7 @@ Notification = function () {
           closer_hover: false,
           sticker  : false,
         },
-        before_close: notifya,
+        before_close: hide_warning,
       },
     },
   };

@@ -22,7 +22,7 @@ import com.k_int.gokb.refine.RefineAPICallback;
 import com.k_int.gokb.refine.RefineUtil;
 import com.k_int.gokb.refine.ValidationMessage;
 import com.k_int.gokb.refine.notifications.NotificationStack;
-
+import com.k_int.gokb.refine.notifications.Notification;
 
 public class ValidateData extends A_RefineAPIBridge {
   final static Logger logger = LoggerFactory.getLogger("GOKb-validate-data_command");
@@ -64,7 +64,7 @@ public class ValidateData extends A_RefineAPIBridge {
           
             // Add messages to the correct stack.
             NotificationStack stack = NotificationStack.get("validation");
-            
+            NotificationStack hidden_stack = NotificationStack.get("validation_hidden");
             // Clear the data as validation messages are always preserved.
             stack.clear();
             
@@ -76,16 +76,27 @@ public class ValidateData extends A_RefineAPIBridge {
               .getJSONObject("result")
               .getJSONArray("messages")
             ;
-            
+            System.out.println("Hidden stack: " + hidden_stack.size());
+
             // Go through each message and try and push a notification for each message.
             for (int i=0; i<messages.length(); i++) {
+
               ValidationMessage n = ValidationMessage.fromJSON(messages.getJSONObject(i).toString(), ValidationMessage.class);
-              
+              boolean isHidden = false;
+              for( Notification hidden_msg : hidden_stack){
+                if (hidden_msg.getText().equals(n.getText())){
+                  System.out.println("MATCH "+hidden_msg.getText());
+                  isHidden = true;
+                  break;
+                }
+              }
               // We need to make sure it doesn't automatically hide itself.
-              n.setHide(false);
-              
-              // Add to the stack.
-              stack.add(n);
+              n.setHide(isHidden);
+              if(!isHidden){        
+                // Add to the stack.
+                System.out.println("Add to stack with hidden: "+isHidden);
+                stack.add(n);              
+              }
             }
             
             // Proxy through the api response to the client.
