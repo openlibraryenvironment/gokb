@@ -10,6 +10,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONWriter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +25,7 @@ import com.k_int.gokb.refine.RefineUtil;
 import com.k_int.gokb.refine.ValidationMessage;
 import com.k_int.gokb.refine.notifications.NotificationStack;
 import com.k_int.gokb.refine.notifications.Notification;
+import java.io.StringWriter;
 
 public class ValidateData extends A_RefineAPIBridge {
   final static Logger logger = LoggerFactory.getLogger("GOKb-validate-data_command");
@@ -67,16 +70,18 @@ public class ValidateData extends A_RefineAPIBridge {
             NotificationStack hidden_stack = NotificationStack.get("validation_hidden");
             // Clear the data as validation messages are always preserved.
             stack.clear();
-            
             // The data.
             JSONObject data = URLConenectionUtils.getJSONObjectFromStream(result);
-            
-            // Grab the messages.
+ 
+             // Grab the messages.
             JSONArray messages = data
               .getJSONObject("result")
               .getJSONArray("messages")
             ;
-            System.out.println("Hidden stack: " + hidden_stack.size());
+            String json_code = data.get("code").toString();
+            Boolean json_status = (Boolean)data.getJSONObject("result").get("status");
+            String json_message = data.get("message").toString();
+
 
             // Go through each message and try and push a notification for each message.
             for (int i=0; i<messages.length(); i++) {
@@ -85,7 +90,6 @@ public class ValidateData extends A_RefineAPIBridge {
               boolean isHidden = false;
               for( Notification hidden_msg : hidden_stack){
                 if (hidden_msg.getText().equals(n.getText())){
-                  System.out.println("MATCH "+hidden_msg.getText());
                   isHidden = true;
                   break;
                 }
@@ -94,13 +98,21 @@ public class ValidateData extends A_RefineAPIBridge {
               n.setHide(isHidden);
               if(!isHidden){        
                 // Add to the stack.
-                System.out.println("Add to stack with hidden: "+isHidden);
                 stack.add(n);              
               }
             }
-            
+ 
+            StringWriter jsonString = new StringWriter();
+            JSONWriter writer = new JSONWriter(jsonString);
+            writer.object().key("message").value(json_message).key("code").value(json_code);
+            writer.key("result");
+            writer.object().key("status").value(json_status);
+            writer.key("messages");
+            stack.write(writer,null);
+            writer.endObject();
+            writer.endObject();
             // Proxy through the api response to the client.
-            respond (response, data.toString());
+            respond (response, jsonString.toString());
         }
     });
 

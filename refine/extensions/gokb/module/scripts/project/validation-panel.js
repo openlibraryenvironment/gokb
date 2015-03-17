@@ -144,7 +144,6 @@ ValidationPanel.prototype._render = function() {
   
   // Check the data
   var data = self.data;
-  
   if ("md5Check" in data && "hashCheck" && data.md5Check) {
     if (data.md5Check.hashCheck == false) {
       self.showMessage({
