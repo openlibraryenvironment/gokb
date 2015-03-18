@@ -7,9 +7,10 @@
  */
 var hide_warning = function(instance){
   var text = instance.text_container.text()
+  var title = instance.title_container.text()
   GOKb.postProcess(
     "clear-warning", 
-    {"validation_message": text},
+    {"text": text,"title":title},
     null,
     {cellsChanged: false}
   );
@@ -33,7 +34,7 @@ Notification = function () {
       _notification_defaults : {
         hide    : false,
         buttons: {
-          closer   : true,
+          closer   : false,
           closer_hover: false,
           sticker  : false,
         },

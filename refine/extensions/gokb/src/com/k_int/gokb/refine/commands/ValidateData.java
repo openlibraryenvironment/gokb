@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.json.JSONException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,22 +79,28 @@ public class ValidateData extends A_RefineAPIBridge {
               .getJSONObject("result")
               .getJSONArray("messages")
             ;
-            String json_code = data.get("code").toString();
-            Boolean json_status = (Boolean)data.getJSONObject("result").get("status");
-            String json_message = data.get("message").toString();
 
+            Notification show_hidden_msg = createHiddenMsgNotification(hidden_stack.size());
+            for(int i=0;i<hidden_stack.size();i++){
+              Notification notif = hidden_stack.get(i);
+              if(notif.getTitle().equals(show_hidden_msg.getTitle())){
+                  hidden_stack.clear();               
+              }
+            }
 
             // Go through each message and try and push a notification for each message.
             for (int i=0; i<messages.length(); i++) {
 
               ValidationMessage n = ValidationMessage.fromJSON(messages.getJSONObject(i).toString(), ValidationMessage.class);
               boolean isHidden = false;
+
               for( Notification hidden_msg : hidden_stack){
                 if (hidden_msg.getText().equals(n.getText())){
                   isHidden = true;
                   break;
                 }
-              }
+              }              
+
               // We need to make sure it doesn't automatically hide itself.
               n.setHide(isHidden);
               if(!isHidden){        
@@ -101,18 +108,16 @@ public class ValidateData extends A_RefineAPIBridge {
                 stack.add(n);              
               }
             }
+            //If we have hidden messages, create message to make them visible again.
+            if (hidden_stack.size() > 0){
+               boolean added = stack.add(show_hidden_msg);
+            }
  
-            StringWriter jsonString = new StringWriter();
-            JSONWriter writer = new JSONWriter(jsonString);
-            writer.object().key("message").value(json_message).key("code").value(json_code);
-            writer.key("result");
-            writer.object().key("status").value(json_status);
-            writer.key("messages");
-            stack.write(writer,null);
-            writer.endObject();
-            writer.endObject();
+            //Get the stack in the format that JS expects it
+            String jsonStack = generateJSONFromStack(stack,data);
+
             // Proxy through the api response to the client.
-            respond (response, jsonString.toString());
+            respond (response, jsonStack);
         }
     });
 
@@ -125,5 +130,31 @@ public class ValidateData extends A_RefineAPIBridge {
       // Make sure we clear the busy flag.
       pm.setBusy(false);
     }
+  }
+
+  private Notification createHiddenMsgNotification(int hidden_stack_size) throws JSONException{
+    String msgText = String.format("There are %d hidden messages. To display them close this message and refresh.",hidden_stack_size);
+    StringWriter jsonString = new StringWriter();
+    JSONWriter writer = new JSONWriter(jsonString);
+    writer.object().key("text").value(msgText).key("title").value("show.hidden").key("hide").value(false).endObject();
+    Notification n =  Notification.fromJSON(jsonString.toString(), Notification.class);
+    
+    return n;
+  }
+
+  private String generateJSONFromStack( NotificationStack stack, JSONObject data) throws JSONException{
+      String json_code = data.get("code").toString();
+      Boolean json_status = (Boolean)data.getJSONObject("result").get("status");
+      String json_message = data.get("message").toString();
+      StringWriter jsonString = new StringWriter();
+      JSONWriter writer = new JSONWriter(jsonString);
+      writer.object().key("message").value(json_message).key("code").value(json_code);
+      writer.key("result");
+      writer.object().key("status").value(json_status);
+      writer.key("messages");
+      stack.write(writer,null);
+      writer.endObject().endObject();
+
+      return jsonString.toString();
   }
 }
