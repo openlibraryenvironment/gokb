@@ -150,7 +150,7 @@ class Org extends KBComponent {
         if (identifiers) {
           builder.'identifiers' {
             identifiers.each { tid ->
-              builder.'identifier' (['namespace':tid.namespace.value], tid.value) 
+              builder.'identifier' (['namespace':tid.namespace.value, 'datatype':tid.namespace.datatype?.value], tid.value) 
             }
           }
         }
