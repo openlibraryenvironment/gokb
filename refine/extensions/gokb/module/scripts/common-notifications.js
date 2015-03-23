@@ -8,9 +8,9 @@
 var hide_warning = function(instance){
   var text = instance.text_container.text()
   var title = instance.title_container.text()
-  GOKb.postProcess(
+  GOKb.doCommand(
     "clear-warning", 
-    {"text": text,"title":title},
+    {"text": text,"title":title,"project" : theProject.id},
     null,
     {cellsChanged: false}
   );

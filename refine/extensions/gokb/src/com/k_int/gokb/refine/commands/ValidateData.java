@@ -27,6 +27,7 @@ import com.k_int.gokb.refine.ValidationMessage;
 import com.k_int.gokb.refine.notifications.NotificationStack;
 import com.k_int.gokb.refine.notifications.Notification;
 import java.io.StringWriter;
+import com.k_int.gokb.module.GOKbModuleImpl;
 
 public class ValidateData extends A_RefineAPIBridge {
   final static Logger logger = LoggerFactory.getLogger("GOKb-validate-data_command");
@@ -68,7 +69,9 @@ public class ValidateData extends A_RefineAPIBridge {
           
             // Add messages to the correct stack.
             NotificationStack stack = NotificationStack.get("validation");
-            NotificationStack hidden_stack = NotificationStack.get("validation_hidden");
+            String currentUser =(String) GOKbModuleImpl.singleton.getCurrentUser().get("id");
+            String hidden_stack_key = project.id+currentUser+"-hidden";
+            NotificationStack hidden_stack = NotificationStack.get(hidden_stack_key);
             // Clear the data as validation messages are always preserved.
             stack.clear();
             // The data.

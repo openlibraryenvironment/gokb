@@ -155,7 +155,7 @@ ValidationPanel.prototype._render = function() {
   }
     
   var errors = 0, warnings = 0;
-  console.log(data)
+
   if ("dataCheck" in data) {
     if ("messages" in data.dataCheck) {
       
