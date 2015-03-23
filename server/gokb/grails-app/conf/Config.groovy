@@ -1012,6 +1012,27 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'Namespaces':[
+    baseclass:'org.gokb.cred.IdentifierNamespace',
+    title:'Namespaces',
+    group:'Tertiary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Namespace',
+          qparam:'qp_value',
+          placeholder:'value',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'value', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'RDF Datatype', property:'datatype?.value'],
+      ]
+    ]
+  ],
 ]
 
 
@@ -1034,7 +1055,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
   'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
   'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
-  'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ]
+  'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ],
+  'org.gokb.cred.IdentifierNamespace': [ type:'staticgsp', rendername:'identifier_namespace' ]
 ]
 
 permNames = [

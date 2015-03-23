@@ -689,5 +689,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Source.DataFormat', 'KBART').save()
     RefdataCategory.lookupOrCreate('Source.DataFormat', 'Proprietary').save()
 
+    RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save()
+    RefdataCategory.lookupOrCreate('RDFDataType', 'string').save()
+
   }
 }

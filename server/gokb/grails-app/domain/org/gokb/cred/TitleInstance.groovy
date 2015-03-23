@@ -278,7 +278,7 @@ class TitleInstance extends KBComponent {
                       internalId(hti.id)
                       "identifiers" {
                         hti.getIds()?.each { tid ->
-                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                         }
                       
                       }
