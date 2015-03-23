@@ -30,16 +30,16 @@ public class ClearWarning extends Command{
     * This should be enough for scenarios where we have many users / projects on same instance.
     **/
   	private void hide_notification(String json_mock,Long projectId){
-      String currentUser = "0";
+
       try{
-        currentUser =(String) GOKbModuleImpl.singleton.getCurrentUser().get("id");
+        String currentUser =(String) GOKbModuleImpl.singleton.getCurrentUser().get("id");
+        String stackKey = projectId + currentUser + "-hidden";
+        NotificationStack stack = NotificationStack.get(stackKey);
+        Notification n= Notification.fromJSON(json_mock, Notification.class);
+        stack.add(n);
       }catch(Exception e){
         logger.error("Failed to retrieve current user from GOKbModuleImpl.",e);        
       }
-      String stackKey = projectId + currentUser + "-hidden";
-      NotificationStack stack = NotificationStack.get(stackKey);
-      Notification n= Notification.fromJSON(json_mock, Notification.class);
-      stack.add(n);
 
   	}
 }
