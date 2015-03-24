@@ -99,9 +99,11 @@ class UserDetailsFilters {
           // Get user curatorial groups
           if ( ! session.curatorialGroups ) {
             session.curatorialGroups = [];
-            user.curatoryGroups.each { cg ->
-              session.curatorialGroups.add({id:cg.id, name:cg.name});
+            request.user.curatoryGroups.each { cg ->
+              session.curatorialGroups.add([id:cg.id, name:cg.name]);
             }
+          }
+          else {
           }
 
           if ( session.userPereferences == null ) {
