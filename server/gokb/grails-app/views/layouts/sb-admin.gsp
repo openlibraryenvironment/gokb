@@ -152,6 +152,17 @@
                   </ul>
               </li>
               </g:if>
+
+              <g:if test="${session.curatorialGroups && ( session.curatorialGroups.size() > 0 ) }">
+                <li><a href="#"><i class="fa fa-search fa-fw"></i>My Groups<span class="fa arrow"></span></a>
+                  <ul class="nav nav-second-level">
+                    <g:each in="${session.curatorialGroups}" var="cg">
+                      <li><a href="">${cg.name}</a></li>
+                    </g:each>
+                  </ul>
+                </li>
+              </g:if>
+
               <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
               <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 
