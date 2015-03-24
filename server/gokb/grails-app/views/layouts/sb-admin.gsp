@@ -157,7 +157,7 @@
                 <li><a href="#"><i class="fa fa-search fa-fw"></i>My Groups<span class="fa arrow"></span></a>
                   <ul class="nav nav-second-level">
                     <g:each in="${session.curatorialGroups}" var="cg">
-                      <li><a href="">${cg.name}</a></li>
+                      <li><g:link controller="group" action="index" id="${cg.id}">${cg.name}</g:link></li>
                     </g:each>
                   </ul>
                 </li>
