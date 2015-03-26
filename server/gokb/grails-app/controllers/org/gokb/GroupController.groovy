@@ -46,14 +46,14 @@ class GroupController {
 
 
       def pkg_sort= params.pkg_sort?:'name'
-      def pkg_sort_order = params.pkg_sort_order?:'desc'
+      def pkg_sort_order = params.pkg_sort_order?:'asc'
 
 
       def cg_packages_hql = " from Package as p where exists ( select c from p.outgoingCombos as c where c.toComponent = ? and c.type.value = 'Package.CuratoryGroups')"
 
       result.package_count = Package.executeQuery('select count(p) '+cg_packages_hql,[result.group])[0];
-      result.packages = Package.executeQuery('select p '+cg_packages_hql,[result.group],
-        [max:result.max,offset:result.pkg_offset,sort:pkg_sort,order:pkg_sort_order]);
+      result.packages = Package.executeQuery('select p '+cg_packages_hql + " order by ${pkg_sort} ${pkg_sort_order}",[result.group],
+        [max:result.max,offset:result.pkg_offset]);
 
       result.pkg_page_max = Math.round(result.package_count / result.max) > 0 ?Math.round(result.package_count / result.max) :1
       result.pkg_page = (result.pkg_offset / result.max) + 1

@@ -14,7 +14,11 @@
       <thead>
         <tr class="inline-nav">
           <th>
+            <g:link params="${params+[pkg_sort:'name',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
               Package Name 
+              <i class="glyphicon glyphicon-sort"></i>
+            </g:link>
+              
           </th>
           <th>Status</th>
           <th>List verified by</th>
@@ -55,7 +59,12 @@
     <table class="table table-striped table-condensed table-bordered">
       <thead>
         <tr>
-          <th>Allocated to</th>
+          <th>
+            <g:link params="${params+[rr_sort:'displayName',rr_sort_order:('desc'== params.rr_sort_order?'asc':'desc')]}">
+              Allocated To
+              <i class="glyphicon glyphicon-sort"></i>
+            </g:link>
+          </th>
           <th>Component</th>
           <th>Cause</th>
           <th>Review Request</th>
