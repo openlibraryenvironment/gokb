@@ -1,4 +1,5 @@
 <g:if test="${recset != null}">
+<g:set var="custom_offset" value="${offset_param?:'offset'}"/>
 	<nav class="navbar navbar-inverse">
 		<div class="container-fluid">
 			<div class="navbar-header">
@@ -11,11 +12,13 @@
 				<g:if test="${ !request.isAjax() }">
 
 <!-- see grails-app/assets/javascripts/gokb/action-forms.js for code relating to bulk actions -->
-				<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown">Actions <b class="caret"></b></a>
-						<ul class="dropdown-menu actions"></ul>
-				</li>
-				<li class="divider-vertical"></li>
+				<g:if test="${!hideActions}">
+					<li class="dropdown"><a href="#" class="dropdown-toggle"
+							data-toggle="dropdown">Actions <b class="caret"></b></a>
+							<ul class="dropdown-menu actions"></ul>
+					</li>
+					<li class="divider-vertical"></li>
+				</g:if>
 				<li class="dropdown page-jump${ dropup ? ' dropup' : ''}"><a
 						href="#" class="dropdown-toggle" data-toggle="dropdown">Page
 							${page} of ${page_max} <span class="caret"></span></a>
@@ -23,7 +26,7 @@
 						<g:each var="p" in="${ 1..page_max }">
 							<li><g:link title="Previous Page" controller="search"
 									action="index"
-									params="${params+[offset:((p.toInteger() - 1) * max.toInteger()),det:null]}">
+									params="${params+["${custom_offset}":((p.toInteger() - 1) * max.toInteger()),det:null]}">
 								Page ${p}
 								</g:link></li>
 						</g:each>
@@ -37,7 +40,7 @@
 				<g:else>
 					<li><g:link title="Previous Page" controller="search"
 							action="index"
-							params="${params+[offset:(offset.toInteger() - max.toInteger()),det:null]}">
+							params="${params+["${custom_offset}":(offset.toInteger() - max.toInteger()),det:null]}">
 							<i class="glyphicon glyphicon-chevron-left"></i>
 						</g:link></li>
 				</g:else>
@@ -48,7 +51,7 @@
 				<g:else>
 					<li><g:link title="Next Page" controller="search"
 							action="index"
-							params="${params+[offset:(offset.toInteger() + max.toInteger()),det:null]}">
+							params="${params+["${custom_offset}":(offset.toInteger() + max.toInteger()),det:null]}">
 							<i class="glyphicon glyphicon-chevron-right"></i>
 						</g:link></li>
 				</g:else>
