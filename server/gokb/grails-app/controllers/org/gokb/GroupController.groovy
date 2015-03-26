@@ -29,23 +29,31 @@ class GroupController {
 
 
 
+      def rr_sort= params.rr_sort?:'displayName'
+      def rr_sort_order = params.rr_sort_order?:'desc'
+
       def closedStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
       def delStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted')
-      // get review tasks for users attached to this CG [max 20]
-      // def cg_review_tasks_hql = " from ReviewRequest as rr where exists ( select g from CuratoryGroup as cg where 
+   
+
       def cg_review_tasks_hql = " from ReviewRequest as rr where allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = ? ) and rr.status!=? and rr.status!=? "
       result.rr_count = Package.executeQuery('select count(rr) '+cg_review_tasks_hql,[result.group,closedStat,delStat])[0];
-      result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql,[result.group,closedStat,delStat],[max:result.max,offset: (result.rr_offset< result.rr_count)? result.rr_offset :(result.rr_count - result.max)]);
+      result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql,[result.group,closedStat,delStat],[max:result.max,offset:result.rr_offset,sort:rr_sort,order:rr_sort_order]);
 
 
       result.rr_page_max = Math.round(result.rr_count / result.max) > 0 ? Math.round(result.rr_count / result.max) :1
       result.rr_page = (result.rr_offset / result.max) + 1
 
-      // get packages for this CG [max 20]
+
+      def pkg_sort= params.pkg_sort?:'name'
+      def pkg_sort_order = params.pkg_sort_order?:'desc'
+
+
       def cg_packages_hql = " from Package as p where exists ( select c from p.outgoingCombos as c where c.toComponent = ? and c.type.value = 'Package.CuratoryGroups')"
 
       result.package_count = Package.executeQuery('select count(p) '+cg_packages_hql,[result.group])[0];
-      result.packages = Package.executeQuery('select p '+cg_packages_hql,[result.group],[max:result.max,offset: (result.pkg_offset< result.package_count)?result.pkg_offset : (result.package_count - result.max)]);
+      result.packages = Package.executeQuery('select p '+cg_packages_hql,[result.group],
+        [max:result.max,offset:result.pkg_offset,sort:pkg_sort,order:pkg_sort_order]);
 
       result.pkg_page_max = Math.round(result.package_count / result.max) > 0 ?Math.round(result.package_count / result.max) :1
       result.pkg_page = (result.pkg_offset / result.max) + 1

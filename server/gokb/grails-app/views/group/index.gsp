@@ -13,14 +13,16 @@
     <table class="table table-striped table-condensed table-bordered">
       <thead>
         <tr class="inline-nav">
-          <td><b>Package Name</b></td>
-          <td><b>Status</b></td>
-          <td><b>List verified by</b></td>
-          <td><b>List verified date</b></td>
-          <td><b>Last Modified</b></td>
-          <td><b>Scope</b></td>
-          <td><b>ListStatus</b></td>
-          <td><b>Number of Titles</b></td>
+          <th>
+              Package Name 
+          </th>
+          <th>Status</th>
+          <th>List verified by</th>
+          <th>List verified date</th>
+          <th>Last Modified</th>
+          <th>Scope</th>
+          <th>ListStatus</th>
+          <th>Number of Titles</th>
         </tr>
       </thead>
       <tbody>
@@ -53,12 +55,12 @@
     <table class="table table-striped table-condensed table-bordered">
       <thead>
         <tr>
-          <td><b>Allocated to</b></td>
-          <td><b>Component</b></td>
-          <td><b>Cause</b></td>
-          <td><b>Review Request</b></td>
-          <td><b>Request Status</b></td>
-          <td><b>Days open</b></td>
+          <th>Allocated to</th>
+          <th>Component</th>
+          <th>Cause</th>
+          <th>Review Request</th>
+          <th>Request Status</th>
+          <th>Days open</th>
         </tr>
       </thead>
       <tbody>
