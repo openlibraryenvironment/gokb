@@ -4,13 +4,16 @@ import com.k_int.ClassUtils
 class IdentifierNamespace {
 
   String value
+  RefdataValue  datatype
 
   static mapping = {
     value column:'idns_value'
+    datatype column:'idns_datatype'
   }
 
   static constraints = {
     value (nullable:true, blank:false)
+    datatype (nullable:true, blank:false)
   }
 
   @Override
