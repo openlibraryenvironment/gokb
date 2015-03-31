@@ -145,7 +145,7 @@ class CreateController {
             log.debug("Saving..");
             if ( !result.newobj.save(flush:true) ) {
               log.error("Problem saving new object")
-              flash = "Problem saving new object"
+              flash.error = "Problem saving new object"
               
               // render view: 'index', model: [d: result.newobj]
               result.newobj.errors.allErrors.each { e ->
