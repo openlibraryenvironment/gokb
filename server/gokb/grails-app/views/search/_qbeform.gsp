@@ -65,3 +65,18 @@
 
 
 </g:form>
+
+<asset:script type="text/javascript">
+(function($) {
+  // When DOM is ready.
+  $(document).ready(function(){
+
+    $("#savePopupForm").click(function(e) {
+      e.stopPropagation();
+      // $('#savePopupForm').toggle();
+    });
+
+  });
+})(jQuery);
+</asset:script>
+
