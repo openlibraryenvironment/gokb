@@ -46,7 +46,18 @@
           </select>
         </g:if>
       </g:each>
-      <button type="submit" class="btn btn-success btn-sm pull-right">Search</button>
+      <div class="btn-group pull-right" role="group" aria-label="Search Buttons">
+        <div class="btn-group" role="group">
+          <button type="submit" class="btn btn-success btn-sm" data-toggle="dropdown">Save <span class="caret"></span></button>
+          <ul class="dropdown-menu pull-right well" role="menu" style="width: 400px;">
+            <li>
+              <input type="text" name="Search Name"/>
+              <input type="submit"/>
+            </li>
+          </ul>
+        </div>
+        <button type="submit" class="btn btn-success btn-sm">Search</button>
+      </div>
     </div>
   </div>
 
