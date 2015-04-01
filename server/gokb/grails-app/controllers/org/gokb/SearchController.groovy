@@ -19,7 +19,7 @@ class SearchController {
   def index() {
     User user = springSecurityService.currentUser
 
-    // log.debug("Entering SearchController:index");
+    log.debug("Entering SearchController:index ${params}");
 
     def result = [:]
 
@@ -27,6 +27,10 @@ class SearchController {
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
     
     result.hide = params.list("hide") ?: []
+
+    if ( params.searchAction == 'save' ) {
+      log.debug("Saving query... ${params.searchName}");
+    }
 
     if ( params.det )
       result.det = Integer.parseInt(params.det)
