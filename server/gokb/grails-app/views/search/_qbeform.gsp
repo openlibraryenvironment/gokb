@@ -48,8 +48,10 @@
       </g:each>
       <div class="btn-group pull-right" role="group" aria-label="Search Buttons">
         <div class="btn-group" role="group">
-          <button type="submit" class="btn btn-success btn-sm" data-toggle="dropdown">Save <span class="caret"></span></button>
-          <ul class="dropdown-menu pull-right well" role="menu" style="width: 400px;">
+          <button type="submit" 
+                  class="btn btn-success btn-sm" 
+                  data-toggle="dropdown" >Save <span class="caret"></span></button>
+          <ul id="savePopupForm" class="dropdown-menu pull-right well" role="menu" style="width: 400px;">
             <li>
               <input type="text" name="Search Name"/>
               <input type="submit"/>
