@@ -15,6 +15,13 @@
         config="KBComponent.Status" />
     </dd>
     <dt>
+      <g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel>
+    </dt>
+    <dd>
+      <g:xEditableRefData owner="${d}" field="provider"
+        config="Platform.Provider" />
+    </dd>
+    <dt>
       <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
     </dt>
     <dd>
