@@ -154,6 +154,8 @@ grails.project.dependency.resolution = {
       compile ':rest:0.7'
       compile ":twitter-bootstrap:3.2.0.2"
 
+      compile ":gson:1.1.4"
+
       // compile ":profiler:0.5"
       test ":spock:0.7", {
         exclude "spock-grails-support"

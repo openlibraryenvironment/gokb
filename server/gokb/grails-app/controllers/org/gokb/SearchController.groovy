@@ -7,6 +7,8 @@ import grails.plugins.springsecurity.Secured
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.gokb.cred.*
 
+import grails.plugin.gson.converters.GSON
+
 class SearchController {
 
   def genericOIDService
@@ -30,6 +32,18 @@ class SearchController {
 
     if ( params.searchAction == 'save' ) {
       log.debug("Saving query... ${params.searchName}");
+      def defn = [:]
+      defn.params = params
+
+      try {
+        log.debug("Saving..");
+        def saved_search = new SavedSearch(name:params.searchName,owner:user,searchDescriptor:(defn as GSON).toString())
+        saved_search.save(flush:true, failOnError:true)
+        log.debug("Saved.. ${saved_search.id}");
+      }
+      catch ( Exception e ) {
+        log.error("Problem",e);
+      }
     }
 
     if ( params.det )

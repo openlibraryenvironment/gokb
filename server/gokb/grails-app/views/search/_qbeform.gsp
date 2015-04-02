@@ -47,17 +47,17 @@
         </g:if>
       </g:each>
       <div class="btn-group pull-right" role="group" aria-label="Search Buttons">
+        <button name="searchAction" type="submit" class="btn btn-success btn-sm" value="search">Search</button>
         <div class="btn-group" role="group">
           <button class="btn btn-success btn-sm" 
                   data-toggle="dropdown" >Save <span class="caret"></span></button>
           <ul id="savePopupForm" class="dropdown-menu pull-right well" role="menu" style="width: 400px;">
             <li>
-              <input type="text" name="searchName"/>
-              <input type="submit" name="searchAction" value="save"/>
+              <h5>Save Search</h5>
+              Save As : <input type="text" name="searchName"/> <input class="btn btn-success btn-sm" type="submit" name="searchAction" value="save"/>
             </li>
           </ul>
         </div>
-        <button name="searchAction" type="submit" class="btn btn-success btn-sm" value="search">Search</button>
       </div>
     </div>
   </div>
