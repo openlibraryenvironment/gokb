@@ -268,6 +268,11 @@ window.gokb = {
         }
       }
     });
+
+    $('#savedItemsPopup').on('show.bs.dropdown', function () {
+      // do something…
+      alert("Fred");
+    });
   });
   
 })(jQuery);
