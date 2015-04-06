@@ -165,7 +165,7 @@
 
               <li id="savedItemsPopup"><a href="#" data-toggle="dropdown" class="dropdown-toggle"><i class="fa fa-folder fa-fw"></i> Saved Items <span class="fa arrow"></span></a>
                 <ul id="folderBox" class="dropdown-menu dropdown-menu-left well" role="menu" style="width: 400px;">
-                  <li></li>
+                  <li id="savedItemsContent"></li>
                 </ul>
               </li>
 

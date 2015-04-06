@@ -271,7 +271,7 @@ window.gokb = {
 
     $('#savedItemsPopup').on('show.bs.dropdown', function () {
       // do something…
-      alert("Fred");
+      $('#savedItemsContent').load('/gokb/savedItems/index?folder=userHome');
     });
   });
   
