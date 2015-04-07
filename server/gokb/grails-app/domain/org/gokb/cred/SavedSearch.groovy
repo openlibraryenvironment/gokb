@@ -1,5 +1,9 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+import grails.plugin.gson.converters.GSON
+import com.google.gson.*
+
 class SavedSearch {
 
   String name
@@ -19,4 +23,10 @@ class SavedSearch {
     searchDescriptor column: 'ss_search_descriptor', type:'text'
   }
 
+  @Transient
+  def toParams() {
+    Gson gson = new Gson();
+    Map jsonObject = (Map) gson.fromJson(searchDescriptor, Object.class);
+    return jsonObject
+  }
 }

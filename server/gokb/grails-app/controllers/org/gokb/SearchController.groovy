@@ -32,8 +32,8 @@ class SearchController {
 
     if ( params.searchAction == 'save' ) {
       log.debug("Saving query... ${params.searchName}");
-      def defn = [:]
-      defn.params = params
+      def defn = [:] << params
+      defn.remove('searchAction')
 
       try {
         log.debug("Saving..");
