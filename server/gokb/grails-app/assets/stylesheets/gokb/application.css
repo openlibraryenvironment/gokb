@@ -14,3 +14,7 @@
 *= require morris
 *= encoding UTF-8
 */
+
+.threeColGrid > div:nth-child(4n+5) {
+    clear: left;
+}
