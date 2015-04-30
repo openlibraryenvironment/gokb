@@ -611,7 +611,14 @@ globalSearchTemplates = [
           qparam:'qp_pub',
           placeholder:'Publisher',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
-          hide:true
+          hide:false
+        ],
+       [
+          prompt:'Identifier',
+          qparam:'qp_identifier',
+          placeholder:'Identifier Value',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value'],
+          hide:false
         ],
         [
           type:'lookup',
