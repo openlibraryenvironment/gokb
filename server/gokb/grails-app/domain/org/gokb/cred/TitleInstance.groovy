@@ -102,18 +102,25 @@ class TitleInstance extends KBComponent {
   public Org getCurrentPublisher() {
     def result = null;
     def publisher_combos = getCombosByPropertyName('publisher')
+    def highest_end_date = null;
+
     publisher_combos.each { Combo pc ->
-      if ( pc.endDate == null ) {
+      if ( ( pc.endDate == null ) ||
+           ( highest_end_date == null) ||
+           ( pc.endDate > highest_end_date ) ) {
+
         if (isComboReverse('publisher')) {
           if ( pc.fromComponent.status?.value == 'Deleted' ) {
           }
           else {
+            highest_end_date = pc.endDate
             result = pc.fromComponent
           }
         } else {
           if ( pc.toComponent.status?.value == 'Deleted' ) {
           }
           else {
+            highest_end_date = pc.endDate
             result = pc.toComponent
           }
         }
