@@ -284,6 +284,13 @@ class InplaceTagLib {
     def oid = attrs.owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
+
+    def follow_link = null;
+    if ( owner != null && owner[attrs.field] != null ) {
+      follow_link = createLink(controller:'resource', action: 'show')
+      follow_link = follow_link + '/' + owner[attrs.field].class.name + ':' + owner[attrs.field].id;
+    }
+
     out << "<a href=\"#\" data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "
 
     if ( ( attrs.filter1 != null ) && ( attrs.filter1.length() > 0 ) ) {
@@ -296,6 +303,8 @@ class InplaceTagLib {
     out << "data-type=\"select2\" data-name=\"${attrs.field}\" data-url=\"${update_link}\" >"
     out << body()
     out << "</a>";
+
+    out << ' &nbsp; <a href="'+follow_link+'">Follow Link</a>'
   }
 
   def manyToOneReferenceTypedownOld = { attrs, body ->
