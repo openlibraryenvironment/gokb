@@ -110,6 +110,8 @@
 						<dd>
 							<g:render template="comboList" contextPath="../apptemplates"
 								model="${[d:d, property:'ids', cols:[[expr:'namespace.value',colhead:'Namespace'],[expr:'value',colhead:'Identifier']]]}" />
+                                                        <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d]}"/>
+
 						</dd>
 
 						<g:if test="${d.parent != null}">
