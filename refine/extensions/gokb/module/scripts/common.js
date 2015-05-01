@@ -83,7 +83,8 @@ GOKb.defaultError = function (data) {
     
     // Authentication error, do not show the error but instead show the login box.
     var login = GOKb.createDialog("Login to " + GOKb.core.workspace.name, "form_login");
-    
+  
+    GOKb.ui.projects.prototype.populateWorkspaces(login.bindings)
     // Add the message if there is one.
     if ("message" in data && data.message && data.message != "") {
       $("fieldset", login.bindings.form).prepend (

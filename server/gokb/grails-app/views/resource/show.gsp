@@ -8,6 +8,30 @@
 </title>
 </head>
 <body>
+<br/>
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <span class="navbar-brand">${displayobj?.getNiceName() ?: 'Component'} : ${displayobj?.id}
+                                    <g:if test="${ displayobj?.respondsTo('getDisplayName') && displayobj.getDisplayName()}"> - ${displayobj.getDisplayName()}</g:if>
+
+      </span>
+    </div>
+
+    <ul class="nav navbar-nav navbar-right">
+      <li><a data-toggle="modal" data-cache="false"
+             title="Show History"
+             data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>'
+             data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
+
+      <li><a data-toggle="modal" data-cache="false"
+             title="Show Notes"
+             data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>'
+             data-target="#modal"><i class="glyphicon glyphicon-comment"></i></a></li>
+    </ul>
+  </div>
+</nav>
+
 	<h1 class="page-header">
 		<g:render template="component_heading" contextPath="../apptemplates" model="${[d:displayobj]}" />
 	</h1>
@@ -62,5 +86,21 @@
 			</g:else>
 		</div>
 	</div>
+
+  <div id="modal" class="qmodal modal fade modal-wide" role="dialog">
+                <div class="modal-dialog">
+                        <div class="modal-content">
+                                <div class="modal-header">
+                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                                        <h3 class="modal-title">Modal header</h3>
+                                </div>
+                                <div class="modal-body"></div>
+                                <div class="modal-footer">
+                                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                </div>
+                        </div>
+                </div>
+        </div>
+
 </body>
 </html>

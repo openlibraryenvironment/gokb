@@ -28,4 +28,22 @@ class IdentifierNamespace {
     }
     return false
   }
+
+  static def refdataFind(params) {
+    def result = [];
+    def ql = null;
+    // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
+    // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
+    ql = TitleInstance.executeQuery("select t.id, t.value from IdentifierNamespace as t where lower(t.value) like ?", ["${params.q?.toLowerCase()}%"],[max:20]);
+
+    if ( ql ) {
+      ql.each { t ->
+        result.add([id:"org.gokb.cred.IdentifierNamespace:${t[0]}",text:"${t[1]} "])
+      }
+    }
+
+    result
+  }
+
+
 }

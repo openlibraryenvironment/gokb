@@ -475,4 +475,25 @@ class AjaxSupportController {
     }
     result;
   }
+
+  def addIdentifier() {
+    log.debug(params);
+    // Check identifier namespace present, and identifier value valid for that namespace
+    if ( ( params.identifierNamespace?.length() > 0 ) && 
+         ( params.identifierValue?.length() > 0 ) &&
+         ( params.__context?.length() > 0 ) ) {
+      def ns = genericOIDService.resolveOID(params.identifierNamespace)
+      def owner = genericOIDService.resolveOID(params.__context)
+      if ( ( ns != null ) && ( owner != null ) ) {
+        // Lookup or create Identifier
+        def identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
+
+        // Link if not existing
+        owner.ids.add(identifier_instance);
+
+        owner.save();
+      }
+    }
+    redirect(url: request.getHeader('referer'))
+  }
 }

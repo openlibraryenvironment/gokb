@@ -268,6 +268,11 @@ window.gokb = {
         }
       }
     });
+
+    $('#savedItemsPopup').on('show.bs.dropdown', function () {
+      // do something…
+      $('#savedItemsContent').load('/gokb/savedItems/index?folder=userHome');
+    });
   });
   
 })(jQuery);
