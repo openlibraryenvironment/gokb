@@ -390,6 +390,9 @@
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+
+      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d]}"/>
+
     </div>
 
     <div class="tab-pane" id="addprops">
