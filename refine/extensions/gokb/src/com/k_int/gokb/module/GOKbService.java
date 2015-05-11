@@ -211,6 +211,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    */
   private void initialise() throws JSONException, FileUploadException {
     try {
+
       capabilities = getSettings("capabilities");
       doScheduledUpdates ();
       
@@ -404,6 +405,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
       }
     } catch (IOException e ) {
       // Service gone...
+      logger.debug("Exception while doScheduledUpdates" + e.getMessage(),e);
       alive = false;
     }
   }
