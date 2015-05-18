@@ -248,7 +248,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
                 builder.'name' (tipp[1]?.trim())
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
-                    builder.'identifier'('namespace':tid[0], 'value':tid[1])
+                    builder.'identifier'('namespace':tid[0], 'value':tid[1], 'datatype':tid[2])
                   }
                 }
               }
@@ -279,7 +279,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
   @Transient
   private static getTitleIds(Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
-    def result = Identifier.executeQuery("select i.namespace.value, i.value from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value from Identifier as i, Combo as c left join i.namespace.datatype as datatype where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
     result
   }
 

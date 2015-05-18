@@ -1,4 +1,5 @@
 <%@page import="org.gokb.cred.TitleInstancePackagePlatform"%>
+
 <g:if test="${d?.id != null}">
   ${d?.getNiceName() ?: 'Component'}:
 

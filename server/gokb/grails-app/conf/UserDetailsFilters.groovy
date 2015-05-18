@@ -96,6 +96,16 @@ class UserDetailsFilters {
             }
           }
 
+          // Get user curatorial groups
+          if ( ! session.curatorialGroups ) {
+            session.curatorialGroups = [];
+            request.user.curatoryGroups.each { cg ->
+              session.curatorialGroups.add([id:cg.id, name:cg.name]);
+            }
+          }
+          else {
+          }
+
           if ( session.userPereferences == null ) {
             //log.debug("Set up user prefs");
             session.userPereferences = request.user.getUserPreferences()

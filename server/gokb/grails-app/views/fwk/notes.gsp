@@ -26,17 +26,20 @@
   <hr/>
   <h4>Add a note</h4>
   <dl class="dl-horizontal">
-    <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+    <g:form controller="ajaxSupport" action="addToCollection" role="form" class="form ">
       <input type="hidden" name="__context" value="${ownerClass}:${ownerId}"/>
       <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Note"/>
       <input type="hidden" name="ownerClass" value="${ownerClass}"/>
       <input type="hidden" name="ownerId" value="${ownerId}"/>
       <input type="hidden" name="creator" value="org.gokb.cred.User:${user.id}"/>
-      <dt>Note Text</dt><dd><textarea name="note"></textarea></dd>
-      <dt></dt><dd><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></dd>
+      <dt>Note Text</dt><dd><textarea rows="5" cols="78" class="input-xxlarge" name="note"></textarea></dd><br/>
+      <button type="submit" class="btn btn-default btn-primary btn-sm pull-right">Add</button>
     </g:form>
   </dl>
 </div>
+&nbsp;
+<span class="clearfix"/>
+
 <div class="modal-footer">
 	<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 </div>

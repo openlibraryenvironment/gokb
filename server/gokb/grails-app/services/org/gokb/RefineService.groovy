@@ -57,12 +57,13 @@ class RefineService {
 
       // Get a list of all GOKb extension zips.
       String[] extensions = folder.list(filter)
+      if(extensions){
+        // Sort the results.
+        Arrays.sort(extensions, comp)
 
-      // Sort the results.
-      Arrays.sort(extensions, comp)
-
-      // Now we should have a sorted array. Take the last element.
-      return extensions[extensions.length - 1].replaceFirst(FILENAME_REGEX, "\$1")
+        // Now we should have a sorted array. Take the last element.
+        return extensions[extensions.length - 1].replaceFirst(FILENAME_REGEX, "\$1")
+      }
     }
 
     // Null if none could be found.

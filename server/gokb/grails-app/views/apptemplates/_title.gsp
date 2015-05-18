@@ -90,14 +90,18 @@
                         <g:link controller="resource" action="show"
                           id="${ft?.class.name}:${ft.id}">
                           ${ft.name}
-                        </g:link> (
+                        </g:link> 
 
-                        <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
-
-                        <em>To</em>
-                        <g:formatDate
-                          format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedTo}" /> ) 
+                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
+                         (
+                          <g:formatDate 
+                          format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
+                          <em>To</em>
+                          <g:formatDate
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
+                          )
+                        </g:if> 
+                        
                         <g:if test="${ft.id == d.id}"></b></g:if>
                       </g:if> <g:else>From title not present</g:else>
                     </li>
@@ -113,17 +117,19 @@
                         <g:link controller="resource" action="show"
                           id="${ft.class.name}:${ft.id}">
                           ${ft.name}
-                        </g:link> (
-                        <g:formatDate
-                          format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedFrom}" />
-                        <em>To</em>
-                        <g:formatDate
-                          format="${session.sessionPreferences?.globalDateFormat}"
-                          date="${ft.publishedTo}" /> )
+                        </g:link> 
+                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
+                          (
+                          <g:formatDate
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
+                          <em>To</em>
+                          <g:formatDate
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
+                          )
+                        </g:if>
                         <g:if test="${ft.id == d.id}"></b></g:if>
 	                    </g:if>
-	                    <g:else>From title not present</g:else>
+	                    <g:else>To title not present</g:else>
                     </li>
                   </g:each>
                 </ul>
@@ -156,7 +162,7 @@
       </span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
-          ${d.getCombosByPropertyName('publisher')?.size()}
+          ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size()}
       </span></a></li>
     <li><a href="#availability" data-toggle="tab">Availability <span
         class="badge badge-warning">
@@ -244,12 +250,14 @@
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
                       baseClass="org.gokb.cred.TitleInstance" /> <br />
                     <button type="button"
-                      onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
+                      onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
+                    <button type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
                   <td></td>
                   <td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
                       baseClass="org.gokb.cred.TitleInstance" /> <br />
                     <button type="button"
-                      onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
+                      onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
+                    <button type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
                 </tr>
               </table>
             </dd>
@@ -329,7 +337,13 @@
       <dt>
         <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
       </dt>
-      <dd>
+      <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers"
+ params="${params.findAll{k, v -> k != 'publisher_status'}}">
+               
+       Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
+      </g:form>
+
+     <dd>
         <table class="table table-striped table-bordered">
           <thead>
             <tr>
@@ -340,7 +354,7 @@
             </tr>
           </thead>
           <tbody>
-            <g:each in="${d.getCombosByPropertyName('publisher')}" var="p">
+            <g:each in="${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)}" var="p">
               <tr>
                 <td><g:link controller="resource" action="show"
                     id="${p.toComponent.class.name}:${p.toComponent.id}">
@@ -375,6 +389,9 @@
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+
+      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d, hash:'#identifiers']}"/>
+
     </div>
 
     <div class="tab-pane" id="addprops">
@@ -394,6 +411,13 @@
 
 
 <asset:script type="text/javascript">
+
+  $("select[name='publisher_status']").change(function(event) {
+  console.log("In here")
+    var form =$(event.target).closest("form")
+    form.submit();
+  });
+
   function SelectMoveRows(SS1,SS2) {
     var SelID='';
     var SelText='';
@@ -425,6 +449,9 @@
             }
         }
     }
+  }
+  function removeTitle(selectName) {
+    $("select[name='"+selectName+"']").find(":selected").remove()
   }
 
   function AddTitle(titleIdHidden,ss) {

@@ -123,7 +123,7 @@ public class HQLBuilder {
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
-    log.debug("Got count result: ${result.reccount}");
+    // log.debug("Got count result: ${result.reccount}");
 
     def query_params = [:]
     if ( result.max )

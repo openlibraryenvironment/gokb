@@ -152,6 +152,24 @@
                   </ul>
               </li>
               </g:if>
+
+              <g:if test="${session.curatorialGroups && ( session.curatorialGroups.size() > 0 ) }">
+                <li><a href="#"><i class="fa fa-search fa-fw"></i> My Groups<span class="fa arrow"></span></a>
+                  <ul class="nav nav-second-level">
+                    <g:each in="${session.curatorialGroups}" var="cg">
+                      <li><g:link controller="group" action="index" id="${cg.id}">${cg.name}</g:link></li>
+                    </g:each>
+                  </ul>
+                </li>
+              </g:if>
+
+              <li id="savedItemsPopup"><a href="#" data-toggle="dropdown" class="dropdown-toggle"><i class="fa fa-folder fa-fw"></i> Saved Items <span class="fa arrow"></span></a>
+                <ul id="folderBox" class="dropdown-menu dropdown-menu-left well" role="menu" style="width: 700;">
+                  <li id="savedItemsContent"></li>
+                </ul>
+              </li>
+
+
               <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
               <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 

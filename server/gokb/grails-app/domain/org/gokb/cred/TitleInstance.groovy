@@ -102,18 +102,25 @@ class TitleInstance extends KBComponent {
   public Org getCurrentPublisher() {
     def result = null;
     def publisher_combos = getCombosByPropertyName('publisher')
+    def highest_end_date = null;
+
     publisher_combos.each { Combo pc ->
-      if ( pc.endDate == null ) {
+      if ( ( pc.endDate == null ) ||
+           ( highest_end_date == null) ||
+           ( pc.endDate > highest_end_date ) ) {
+
         if (isComboReverse('publisher')) {
           if ( pc.fromComponent.status?.value == 'Deleted' ) {
           }
           else {
+            highest_end_date = pc.endDate
             result = pc.fromComponent
           }
         } else {
           if ( pc.toComponent.status?.value == 'Deleted' ) {
           }
           else {
+            highest_end_date = pc.endDate
             result = pc.toComponent
           }
         }
@@ -182,7 +189,7 @@ class TitleInstance extends KBComponent {
     def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
-    ql = TitleInstance.executeQuery("select t.id, t.name from TitleInstance as t where lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) )", ["${params.q}%","${params.q}%"],[max:20]);
+    ql = TitleInstance.executeQuery("select t.id, t.name from TitleInstance as t where lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) )", ["${params.q?.toLowerCase()}%","${params.q}%"],[max:20]);
 
     if ( ql ) {
       ql.each { t ->
@@ -272,24 +279,28 @@ class TitleInstance extends KBComponent {
               builder.historyEvent(['id':he.id]) {
                 "date"(he.date)
                 he.from.each { hti ->
-                  "from" {
-                    title(hti.name)
-                    internalId(hti.id)
-                    "identifiers" {
-                      hti.getIds()?.each { tid ->
-                        builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                  if(hti){
+                    "from" {
+                      title(hti.name)
+                      internalId(hti.id)
+                      "identifiers" {
+                        hti.getIds()?.each { tid ->
+                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
+                        }
+                      
                       }
-                    
                     }
                   }
                 }
                 he.to.each { hti ->
-                  "to" {
-                    title(hti.name)
-                    internalId(hti.id)
-                    "identifiers" {
-                      hti.getIds()?.each { tid ->
-                        builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                  if(hti){
+                    "to" {
+                      title(hti.name)
+                      internalId(hti.id)
+                      "identifiers" {
+                        hti.getIds()?.each { tid ->
+                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                        }
                       }
                     }
                   }
@@ -342,7 +353,7 @@ class TitleInstance extends KBComponent {
       def to_titles = he.participants.findAll { it.participantRole == 'out' };
 
       def hint = "unknown"
-      if ( ( from_titles?.size() == 1 ) && ( to_titles?.size() == 1 ) && ( from_titles[0].participant.id != to_titles[0].participant.id ) ) {
+      if ( ( from_titles?.size() == 1 ) && ( to_titles?.size() == 1 ) && ( from_titles[0].participant?.id != to_titles[0].participant?.id ) ) {
         hint="Rename"
       }
 

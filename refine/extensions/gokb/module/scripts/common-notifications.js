@@ -5,6 +5,17 @@
 /**
  * Create our notification object to help us with showing all kinds of notifications.
  */
+var hide_warning = function(instance){
+  var text = instance.text_container.text()
+  var title = instance.title_container.text()
+  GOKb.doCommand(
+    "clear-warning", 
+    {"text": text,"title":title,"project" : theProject.id},
+    null,
+    {cellsChanged: false}
+  );
+
+}
 Notification = function () {    
   this._stacks = {
     "system" : {
@@ -24,8 +35,10 @@ Notification = function () {
         hide    : false,
         buttons: {
           closer   : false,
+          closer_hover: false,
           sticker  : false,
-        }
+        },
+        before_close: hide_warning,
       },
     },
   };
@@ -64,7 +77,8 @@ Notification.prototype.getStack = function (stack_name) {
 };
 
 /**
- * Show the notification, adding it to the supplied stack, or the default stack if one isn't supplied.
+ * Show the notification, a
+ dding it to the supplied stack, or the default stack if one isn't supplied.
  * @param notification
  * @param stack_name
  * @returns {PNotify} The PNotify instance for the notification.

@@ -22,6 +22,7 @@ function registerCommands() {
   RS.registerCommand(module, "datastore-save", new Packages.com.k_int.gokb.refine.commands.SaveDatastore());
   RS.registerCommand(module, "login", new Packages.com.k_int.gokb.refine.commands.Login());
   RS.registerCommand(module, "lookup", new Packages.com.k_int.gokb.refine.commands.Lookup());
+  RS.registerCommand(module, "clear-warning",new Packages.com.k_int.gokb.refine.commands.ClearWarning());
   Packages.java.lang.System.out.println("done");
 }
 

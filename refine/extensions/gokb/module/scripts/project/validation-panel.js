@@ -144,7 +144,6 @@ ValidationPanel.prototype._render = function() {
   
   // Check the data
   var data = self.data;
-  
   if ("md5Check" in data && "hashCheck" && data.md5Check) {
     if (data.md5Check.hashCheck == false) {
       self.showMessage({
@@ -156,7 +155,7 @@ ValidationPanel.prototype._render = function() {
   }
     
   var errors = 0, warnings = 0;
-  
+
   if ("dataCheck" in data) {
     if ("messages" in data.dataCheck) {
       
@@ -228,19 +227,19 @@ ValidationPanel.prototype._render = function() {
       $.each(data.dataCheck.messages, function() {
         
         // Push to the stack.
-//        if (this.type != 'error') {
-//          self.showMessage($.extend(this, {
-//            buttons: {
-//              closer    : true,
-//              sticker   : false,
-//            }
-//          }));
-//        }
+       if (this.type != 'error') {
+         self.showMessage($.extend(this, {
+           buttons: {
+             closer    : true,
+             sticker   : false,
+           }
+         }));
+         warnings ++;
+       }
         
-        if (this.type != 'error') {
-          self.showMessage(this);
-          warnings ++;
-        }
+        // if (this.type != 'error') {
+        //   self.showMessage(this);
+        // }
       });
     }
   }
