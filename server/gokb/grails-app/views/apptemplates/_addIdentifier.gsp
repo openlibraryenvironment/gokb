@@ -3,6 +3,7 @@
 
 <dl class="dl-horizontal">
   <g:form controller="ajaxSupport" action="addIdentifier" class="form-inline">
+    <input type="hidden" name="hash" value="${hash}"/>
 
     <input type="hidden" name="__context" value="${ctxoid}" />
 
