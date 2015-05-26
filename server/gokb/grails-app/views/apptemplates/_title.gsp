@@ -211,8 +211,7 @@
       </g:if>
     </div>
 
-    <g:render template="showVariantnames" contextPath="../tabTemplates"
-      model="${[d:displayobj, showActions:true]}" />
+    <g:render template="showVariantnames" contextPath="../tabTemplates" model="${[d:displayobj, showActions:true]}" />
 
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
@@ -391,7 +390,7 @@
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
 
-      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d]}"/>
+      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d, hash:'#identifiers']}"/>
 
     </div>
 

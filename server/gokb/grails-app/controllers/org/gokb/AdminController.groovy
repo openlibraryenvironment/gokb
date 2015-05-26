@@ -9,6 +9,7 @@ class AdminController {
   def packageService
   def grailsCacheAdminService
   def refineService
+  def titleAugmentService
 
   def tidyOrgData() {
 
@@ -166,5 +167,10 @@ class AdminController {
   
   def buildExtension() {
     refineService.buildExtension()
+  }
+
+  def triggerEnrichments() {
+    log.debug("manually trigger enrichment service");
+    titleAugmentService.doEnrichment();
   }
 }

@@ -10,6 +10,10 @@
 	</dt>
 	<dd>
 		<g:xEditable class="ipe" owner="${d}" field="website" />
+                <g:if test="${d.website}">
+                  &nbsp; <a href="${d.website}" target="new">Follow Link</a>
+                </g:if>
+
 	</dd>
 	<dt>
 		<g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel>

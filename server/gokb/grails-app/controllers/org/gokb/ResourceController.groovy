@@ -59,8 +59,13 @@ class ResourceController {
         result.displayobjclassname_short = result.displayobj.class.simpleName
 
         result.isComponent = (result.displayobj instanceof KBComponent)
-
         result.acl = gokbAclService.readAclSilently(result.displayobj)
+
+        def oid_components = params.id.split(':');
+        def qry_params = [oid_components[0],Long.parseLong(oid_components[1])];
+        result.ownerClass = oid_components[0]
+        result.ownerId = oid_components[1]
+        result.num_notes = KBComponent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];
       }
       else {
         log.debug("unable to resolve object");

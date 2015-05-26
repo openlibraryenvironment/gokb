@@ -494,6 +494,7 @@ class AjaxSupportController {
         owner.save();
       }
     }
-    redirect(url: request.getHeader('referer'))
+    log.debug("Redirecting to referer: ${request.getHeader('referer')}");
+    redirect(url: (request.getHeader('referer')+params.hash?:''))
   }
 }
