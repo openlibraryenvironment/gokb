@@ -6,7 +6,8 @@ public class ValidationMessage extends Notification {
   private String severity;
   private String type;
   private String col;
-  
+  private String sub_type;
+
   public String getSeverity () {
     return severity;
   }
@@ -30,5 +31,12 @@ public class ValidationMessage extends Notification {
   }
   public void setCol (String col) {
     this.col = col;
+  }
+  public void setSub_type(String stype) {
+    this.sub_type = stype;
+  }
+
+  public String getSub_type(){
+    return sub_type;
   }
 }
