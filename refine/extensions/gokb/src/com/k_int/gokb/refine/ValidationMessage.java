@@ -7,6 +7,9 @@ public class ValidationMessage extends Notification {
   private String type;
   private String col;
   private String sub_type;
+  private String facetValue;
+  private String transformation;
+  private String facetName;
 
   public String getSeverity () {
     return severity;
@@ -38,5 +41,24 @@ public class ValidationMessage extends Notification {
 
   public String getSub_type(){
     return sub_type;
+  }
+
+  public String getFacetValue(){
+    return facetValue;
+  }
+  public void setFacetValue(String val){
+    this.facetValue = val;
+  }
+  public String getFacetName(){
+    return facetName;
+  }
+  public void setFacetName(String val){
+    this.facetName = val;
+  }
+  public String getTransformation(){
+    return transformation;
+  }
+  public void setTransformation(String val){
+    this.transformation = val;
   }
 }
