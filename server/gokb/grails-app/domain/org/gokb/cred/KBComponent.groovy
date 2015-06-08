@@ -592,7 +592,6 @@ abstract class KBComponent {
     save(failOnError:true)
   }
 
-  @Override
   public void retire () {
     log.debug("KBComponent::retire");
     // Set the status to deleted.
@@ -656,7 +655,6 @@ abstract class KBComponent {
     return combos
   }
 
-  @Override
   @Transient 
   public String getDerivedName() {
     return name;
@@ -911,7 +909,6 @@ abstract class KBComponent {
     result
   }
 
-  @Override
   @Transient
   public String getDisplayName() {
     return name
