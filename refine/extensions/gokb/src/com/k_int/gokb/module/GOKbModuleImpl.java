@@ -446,6 +446,9 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     // We should now set the new workspace.
     ProjectManager.singleton.dispose();
     ProjectManager.singleton = null;
+    
+    // We should also reset the the current user too so as to trigger a reload on workspace change.
+    currentUser = null;
 
     // Set the id. 
     currentWorkspaceId = workspace_id;
