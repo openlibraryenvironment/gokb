@@ -1,17 +1,18 @@
 package com.k_int.gokb.refine.commands;
-import com.google.refine.commands.Command;
+import java.io.IOException;
+
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
-import java.io.IOException;
-import com.k_int.gokb.refine.notifications.NotificationStack;
-import com.k_int.gokb.refine.notifications.Notification;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.k_int.gokb.module.GOKbModuleImpl;
-import com.google.refine.ProjectManager;
-import org.json.JSONObject;
+
+import com.google.refine.commands.Command;
 import com.google.refine.model.Project;
+import com.k_int.gokb.module.GOKbModuleImpl;
+import com.k_int.gokb.refine.notifications.Notification;
+import com.k_int.gokb.refine.notifications.NotificationStack;
 
 public class ClearWarning extends Command{
     final static Logger logger = LoggerFactory.getLogger("GOKb-clear-warning_command");
