@@ -113,7 +113,7 @@ public class ValidateData extends A_RefineAPIBridge {
             }
             //If we have hidden messages, create message to make them visible again.
             if (hidden_stack.size() > 0){
-               boolean added = stack.add(show_hidden_msg);
+               stack.add(show_hidden_msg);
             }
  
             //Get the stack in the format that JS expects it
