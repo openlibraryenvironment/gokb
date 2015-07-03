@@ -38,20 +38,23 @@ refine_min_version = "3.0.0"
 
 // Config for the refine extension build process.
 refine = [
-  refineRepoURL       : "https://github.com/OpenRefine/OpenRefine.git",
-  refineRepoBranch    : "master",
-  refineRepoTagPattern: /\Q2.6-beta.1\E/,
-  refineRepoPath      : "gokb-build/refine",
-  gokbRepoURL         : "https://github.com/k-int/gokb-phase1.git",
-  gokbRepoBranch      : "release",
-  gokbRepoTagPattern  : /\QCLIENT_\E(.*)/,
-  extensionRepoPath   : "gokb-build/extension",
-  gokbExtensionPath   : "refine/extensions/gokb",
-  gokbExtensionTarget : "extensions/gokb/",
-  refineBuildFile     : "build.xml",
-  refineBuildTarget   : null,
-  extensionBuildFile  : "build.xml",
-  extensionBuildTarget: "dist",
+  refineRepoURL           : "https://github.com/OpenRefine/OpenRefine.git",
+  refineRepoBranch        : "master",
+  refineRepoTagPattern    : /\Q2.6-beta.1\E/,
+  refineRepoPath          : "gokb-build/refine",
+  gokbRepoURL             : "https://github.com/k-int/gokb-phase1.git",
+  gokbRepoBranch          : "release",
+  gokbRepoTagPattern      : /\QCLIENT_\E(.*)/,
+  gokbRepoTestURL         : "https://github.com/k-int/gokb-phase1.git",
+  gokbRepoTestBranch      : "release",
+  gokbRepoTestTagPattern  : /\QCLIENT-TEST_\E(.*)/,
+  extensionRepoPath       : "gokb-build/extension",
+  gokbExtensionPath       : "refine/extensions/gokb",
+  gokbExtensionTarget     : "extensions/gokb/",
+  refineBuildFile         : "build.xml",
+  refineBuildTarget       : null,
+  extensionBuildFile      : "build.xml",
+  extensionBuildTarget    : "dist",
 ]
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination

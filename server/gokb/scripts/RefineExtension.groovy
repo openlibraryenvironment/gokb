@@ -52,7 +52,7 @@ target(packageExtension : "Package up the extension and add to the app directory
   // Ensure the extension is built.
   depends(buildExtension)
   
-  RefineUtils.copyZip(ant, "${refine_package}", "${basedir}/web-app/refine")
+  RefineUtils.copyZip(ant, "${refine_package}", "${basedir}/web-app/refine", false)
 }
 
 /**
@@ -79,6 +79,22 @@ target(buildExtension:"Build Extension") {
   
   // Create a monitor for this long process.
   def monitor = classLoader.loadClass("com.k_int.grgit.GConsoleMonitor").newInstance(grailsConsole)
+  
+  // Build the test version of the client for bleeding edge testing.
+  RefineUtils.buildGOKbRefineExtension(
+    config.refine.gokbRepoURL,
+    extension_repo,
+    refine_extension_bxml,
+    config.refine.extensionBuildTarget,
+    refine_repo,
+    gokb_extension_path,
+    gokb_extension_target,
+    config.refine.gokbRepoTestTagPattern,
+    ant,
+    config.refine.gokbRepoTestBranch,
+    config.refine.gokbRepoTestTagPattern,
+    monitor
+  )
   
   def entries = RefineUtils.buildGOKbRefineExtension(
     config.refine.gokbRepoURL,
