@@ -23,6 +23,8 @@ class GitUtils {
    */
   public static String tryGettingBranch (Grgit git, String branchName) {
     
+    log.debug ("Looking for branch ${branchName}.")
+    
     if (branchName) {
     
       // Grab the branches.
@@ -31,7 +33,9 @@ class GitUtils {
       }
       
       // Search for a matching branch
-      Branch the_branch = branches.find { it.getName() == branchName }
+      Branch the_branch = branches.find { Branch it ->
+        it.getName().replaceAll(/^[^\/]+\//, "") == branchName
+      }
       
       if (the_branch) {
         

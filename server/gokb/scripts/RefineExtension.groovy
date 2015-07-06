@@ -52,7 +52,7 @@ target(packageExtension : "Package up the extension and add to the app directory
   // Ensure the extension is built.
   depends(buildExtension)
   
-  RefineUtils.copyZip(ant, "${refine_package}", "${basedir}/web-app/refine", false)
+  RefineUtils.copyZip(ant, refine_package, "${basedir}/web-app/refine")
 }
 
 /**
@@ -80,8 +80,11 @@ target(buildExtension:"Build Extension") {
   // Create a monitor for this long process.
   def monitor = classLoader.loadClass("com.k_int.grgit.GConsoleMonitor").newInstance(grailsConsole)
   
+  // Multiple builds now.
+  def entries = []
+  
   // Build the test version of the client for bleeding edge testing.
-  RefineUtils.buildGOKbRefineExtension(
+  entries << RefineUtils.buildGOKbRefineExtension(
     config.refine.gokbRepoURL,
     extension_repo,
     refine_extension_bxml,
@@ -96,7 +99,7 @@ target(buildExtension:"Build Extension") {
     monitor
   )
   
-  def entries = RefineUtils.buildGOKbRefineExtension(
+  entries << RefineUtils.buildGOKbRefineExtension(
     config.refine.gokbRepoURL,
     extension_repo,
     refine_extension_bxml,
@@ -114,10 +117,15 @@ target(buildExtension:"Build Extension") {
   // Add to the metadata.
   if (entries) {
     
-    // Set the location of the built zip file that contains the extension.
-    refine_package = entries.remove("refine_package")
+    refine_package = []
     
-    updateMetadata(entries)
+    // Set the location of the built zip file that contains the extension.
+    entries.each {
+      refine_package << it.remove("refine_package")
+    }
+    
+    // Last one...
+    updateMetadata(entries[entries.size() - 1])
   }
 }
 

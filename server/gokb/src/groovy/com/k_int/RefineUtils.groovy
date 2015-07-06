@@ -28,9 +28,13 @@ class RefineUtils {
       log.debug ("Get OpenRefine")
       git = GitUtils.getOrCreateRepo(local_repo, remote_uri, monitor)
       
-      // Get the branch.
-      String branch_name = GitUtils.tryGettingBranch (git, branch)
+      // Try getting the tag.
       String tag_name = GitUtils.tryGettingTag(git, tag)
+      
+      if (!tag_name) {
+        // Get the branch.
+        String branch_name = GitUtils.tryGettingBranch (git, branch)
+      }
 
       // Build it.
       log.debug ("Attempt refine build from ${bxml} using target ${b_target}")
@@ -165,7 +169,7 @@ class RefineUtils {
    * @param target_dir
    * @return
    */
-  public static void copyZip (AntBuilder ant, String zip, String target_dir, boolean clear_target = true) {
+  public static void copyZip (AntBuilder ant, def zips, String target_dir, boolean clear_target = true) {
     
     // Make the directory if necessary.
     ant.mkdir (dir:"${target_dir}")
@@ -181,7 +185,9 @@ class RefineUtils {
       }
     }
     
-    ant.copy (todir:"${target_dir}", overwrite:true, file:"${zip}")
-    log.debug ("Copied zip found at ${zip} to ${target_dir}")
+    zips.each { String zip ->
+      ant.copy (todir:"${target_dir}", overwrite:true, file:"${zip}")
+      log.debug ("Copied zip found at ${zip} to ${target_dir}")
+    }
   }
 }
