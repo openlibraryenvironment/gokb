@@ -1,7 +1,9 @@
 package org.gokb
 
-import org.gokb.cred.*;
+import org.gokb.cred.*
+import grails.plugins.springsecurity.Secured
 
+@Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
 class AdminController {
 
   def uploadAnalysisService
