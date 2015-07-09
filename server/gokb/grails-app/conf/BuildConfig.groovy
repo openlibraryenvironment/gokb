@@ -119,6 +119,8 @@ grails.project.dependency.resolution = {
       // runtime ':hibernate:3.6.10.14' - this pukes forme
       runtime ':database-migration:1.4.0'
       
+      compile ":file-viewer:0.3"
+      
       /*************************************/
       
       runtime ":jquery:1.11.1"

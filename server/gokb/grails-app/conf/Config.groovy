@@ -4,10 +4,11 @@
 
 
 
+import org.apache.log4j.DailyRollingFileAppender
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
-import org.gokb.validation.types.*
 import org.gokb.cred.KBComponent
+import org.gokb.validation.types.*
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
   "classpath:${appName}-config.groovy",
@@ -130,6 +131,18 @@ log4j = {
   //}
   appenders {
     console name: "stdout", threshold: org.apache.log4j.Level.ALL
+    
+    appender new DailyRollingFileAppender(
+        name: 'dailyAppender',
+        datePattern: "'.'yyyy-MM-dd",  // See the API for all patterns.
+        fileName: "logs/gokb.log",
+        layout: pattern(conversionPattern:'%d [%t] %-5p %c{2} %x - %m%n')
+    )
+
+  }
+  
+  root {
+    error 'stdout', 'dailyAppender'
   }
 
   error  'org.codehaus.groovy.grails.web.servlet',        // controllers
@@ -1168,6 +1181,13 @@ waiting {
   retryInterval = 0.5
 }
 
+grails {
+  fileViewer {
+    locations = [new File('logs').getCanonicalPath()]
+    linesCount = 500
+    areDoubleDotsAllowedInFilePath = false
+  }
+}
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'
