@@ -13,6 +13,8 @@
       
       // Selector of the sub=part of the page to pull in.
       var desired_selector = link.attr("data-content-selector");
+      var auto_refresh = link.attr("data-auto-refresh");
+      
       if (!desired_selector) desired_selector = "#mainarea";
       
       // The function to refresh content of the target element from the url.
@@ -101,6 +103,16 @@
       
       // Then swap out the link for the new content.
       link.replaceWith(content);
+      
+      // Automatically update the content
+      if (auto_refresh && !isNaN(auto_refresh)) {
+        auto_refresh = parseInt(auto_refresh)
+        
+        // Add an autorefresh method.
+        setInterval(function() { 
+          refreshContent( content, href );
+        }, auto_refresh);
+      }
     });
   });
   

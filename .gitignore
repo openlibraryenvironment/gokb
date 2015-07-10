@@ -15,6 +15,7 @@ Servers
 *.directory
 *.project
 debug
+server/gokb/logs/
 /openrefine
 *.class
 /*.zip

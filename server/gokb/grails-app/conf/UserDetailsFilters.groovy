@@ -103,8 +103,6 @@ class UserDetailsFilters {
               session.curatorialGroups.add([id:cg.id, name:cg.name]);
             }
           }
-          else {
-          }
 
           if ( session.userPereferences == null ) {
             //log.debug("Set up user prefs");

@@ -5,6 +5,7 @@
 
 
 import org.apache.log4j.DailyRollingFileAppender
+import org.apache.log4j.RollingFileAppender
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
 import org.gokb.cred.KBComponent
@@ -121,6 +122,25 @@ environments {
   }
 }
 
+// Log directory/created in current working dir if tomcat var not found.
+def logDir = "logs"
+
+// First lets see if we have a log file present.
+def base = System.getProperty("catalina.base")
+if (base) {
+   def logFolder = new File ("${base}/${logDir}")
+   if (logFolder.exists() && logFolder.isDirectory()) {
+     logDir = logFolder.getCanonicalPath()
+   } else {
+     base = false;
+   }
+}
+
+// Log file variable.
+def logFile = logDir + (base ? "/catalina.out" : "/gokb.log")
+
+// Also add it as config value too.
+log_location = logFile
 
 // log4j configuration
 log4j = {
@@ -129,20 +149,24 @@ log4j = {
   //appenders {
   //    console name:'stdout', layout:pattern(conversionPattern: '%c{2} %m%n')
   //}
+  
   appenders {
     console name: "stdout", threshold: org.apache.log4j.Level.ALL
-    
-    appender new DailyRollingFileAppender(
-        name: 'dailyAppender',
-        datePattern: "'.'yyyy-MM-dd",  // See the API for all patterns.
-        fileName: "logs/gokb.log",
-        layout: pattern(conversionPattern:'%d [%t] %-5p %c{2} %x - %m%n')
-    )
-
+    if (!base) {
+      appender new RollingFileAppender(
+          name: 'dailyAppender',
+          fileName: (logFile),
+          layout: pattern(conversionPattern:'%d [%t] %-5p %c{2} %x - %m%n')
+      )
+    }
   }
   
   root {
-    error 'stdout', 'dailyAppender'
+    if (!base) {
+      error 'stdout', 'dailyAppender'
+    } else {
+      error 'stdout'
+    }
   }
 
   error  'org.codehaus.groovy.grails.web.servlet',        // controllers
@@ -180,6 +204,14 @@ log4j = {
 
 }
 
+grails{ 
+  fileViewer {
+    locations = [new File(logDir).getCanonicalPath()]
+    linesCount = 1000
+    areDoubleDotsAllowedInFilePath = false
+  }
+}
+
 // Added by the Spring Security Core plugin:
 grails.plugins.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.User'
 grails.plugins.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
@@ -192,6 +224,11 @@ grails.plugins.springsecurity.basic.realmName = "GOKb API Authentication Require
 grails.plugins.springsecurity.filterChain.chainMap = [
   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
+]
+
+grails.plugin.springsecurity.controllerAnnotations.staticRules = [
+  '/admin/**': ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/file/**': ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']
 ]
 
 
@@ -1179,14 +1216,6 @@ gokb.theme = "yeti"
 waiting {
   timeout = 60
   retryInterval = 0.5
-}
-
-grails {
-  fileViewer {
-    locations = [new File('logs').getCanonicalPath()]
-    linesCount = 500
-    areDoubleDotsAllowedInFilePath = false
-  }
 }
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']

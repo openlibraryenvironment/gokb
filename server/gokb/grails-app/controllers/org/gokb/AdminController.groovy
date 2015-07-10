@@ -1,9 +1,6 @@
 package org.gokb
 
 import org.gokb.cred.*
-import grails.plugins.springsecurity.Secured
-
-@Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
 class AdminController {
 
   def uploadAnalysisService
@@ -12,6 +9,7 @@ class AdminController {
   def grailsCacheAdminService
   def refineService
   def titleAugmentService
+  def concurrencyManagerService
 
   def tidyOrgData() {
 
@@ -74,6 +72,12 @@ class AdminController {
 
     redirect(url: request.getHeader('referer'))
   }
+  
+  def logViewer() {
+    def f = new File ("${grailsApplication.config.log_location}")
+    
+    return [file: "${f.canonicalPath}"]
+  }
 
   def reSummariseLicenses() {
 
@@ -105,7 +109,7 @@ class AdminController {
     redirect(url: request.getHeader('referer'))
   }
 
- def copyUploadedFile(inputfile, deposit_token) {
+  def copyUploadedFile(inputfile, deposit_token) {
 
    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
 
@@ -165,14 +169,22 @@ class AdminController {
   def clearBlockCache() {
     // clear the cache used by the blocks tag…
     grailsCacheAdminService.clearBlocksCache()
+    render(view: "logViewer", model: logViewer())
   }
   
   def buildExtension() {
-    refineService.buildExtension()
+    
+    // Run the task in the background so we can show the logs in this thread without having to wait
+    // for the task to finish.
+    concurrencyManagerService.createJob {
+      refineService.buildExtension()
+    }.startOrQueue()
+    render(view: "logViewer", model: logViewer())
   }
 
   def triggerEnrichments() {
     log.debug("manually trigger enrichment service");
     titleAugmentService.doEnrichment();
+    render(view: "logViewer", model: logViewer())
   }
 }
