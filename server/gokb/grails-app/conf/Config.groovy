@@ -123,21 +123,28 @@ environments {
 }
 
 // Log directory/created in current working dir if tomcat var not found.
-def logDir = "logs"
+def logWatchFile
 
 // First lets see if we have a log file present.
 def base = System.getProperty("catalina.base")
 if (base) {
-   def logFolder = new File ("${base}/${logDir}")
-   if (logFolder.exists() && logFolder.isDirectory()) {
-     logDir = logFolder.getCanonicalPath()
-   } else {
+   logWatchFile = new File ("${base}/logs/catalina.out")
+   
+   if (!logWatchFile.exists()) {
+     
+     // Need to create one in current context.
      base = false;
    }
 }
 
+if (!base) {
+  logWatchFile = new File("logs/gokb.log")
+}
+
 // Log file variable.
-def logFile = logDir + (base ? "/catalina.out" : "/gokb.log")
+def logFile = logWatchFile.canonicalPath
+
+log.info("Using log file location: ${logFile}")
 
 // Also add it as config value too.
 log_location = logFile
@@ -206,8 +213,8 @@ log4j = {
 
 grails{ 
   fileViewer {
-    locations = [new File(logDir).getCanonicalPath()]
-    linesCount = 1000
+    locations = [logFile]
+    linesCount = 250
     areDoubleDotsAllowedInFilePath = false
   }
 }

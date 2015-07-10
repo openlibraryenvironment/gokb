@@ -75,7 +75,6 @@ class AdminController {
   
   def logViewer() {
     def f = new File ("${grailsApplication.config.log_location}")
-    
     return [file: "${f.canonicalPath}"]
   }
 

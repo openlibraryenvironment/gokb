@@ -183,6 +183,8 @@
                     <li><g:link controller="admin" action="masterListUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Force Master List Update</g:link></li>
                     <li><g:link controller="admin" action="clearBlockCache"><i class="fa fa-angle-double-right fa-fw"></i> Clear Block Cache (eg Stats)</g:link></li>
                     <li><g:link controller="admin" action="triggerEnrichments"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
+                    <li><g:link controller="admin" action="buildExtension"><i class="fa fa-angle-double-right fa-fw"></i> Build Refine Extensions</g:link></li>
+                    <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
                     <li><g:link controller="user" action="search"><i class="fa fa-angle-double-right fa-fw"></i> User Management Console</g:link></li>
                     <li class="divider"></li>
                     <li><g:link controller="integration"><i class="fa fa-database fa-fw"></i> Integration API</g:link></li>
