@@ -226,7 +226,7 @@ grails.plugins.springsecurity.filterChain.chainMap = [
   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
 ]
 
-grails.plugin.springsecurity.controllerAnnotations.staticRules = [
+grails.plugins.springsecurity.controllerAnnotations.staticRules = [
   '/admin/**': ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/file/**': ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']
 ]
