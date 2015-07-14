@@ -60,6 +60,12 @@ class GitUtils {
       }
     }
     
+    // Should reset...
+    git.reset {
+      
+      mode = ResetOp.Mode.HARD
+    }
+    
     // Return the name of the current branch.
     git.branch.current.getName()
   }

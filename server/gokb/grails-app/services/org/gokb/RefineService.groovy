@@ -16,8 +16,7 @@ class RefineService {
   
   private static final String EXTENSION_PREFIX = "gokb-release-"
   private static final String EXTENSION_SUFFIX = ".zip"
-  private static final String VERSIONING_REGEX = "(\\d+(\\.\\d)*)"
-  private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${VERSIONING_REGEX}"
+  private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${TextUtils.VERSION_REGEX}"
   private static final String FILENAME_REGEX = "${NAMING_REGEX}\\Q${EXTENSION_SUFFIX}\\E"
 
   GrailsApplication grailsApplication
@@ -97,7 +96,7 @@ class RefineService {
     } else if (current_local_version) {
       
       // Handle the fact that previous refine versions will report incorrectly formatted version values here.
-      if (current_version ==~ VERSIONING_REGEX) {
+      if (current_version ==~ TextUtils.VERSION_REGEX) {
         update = (comp.compare(current_local_version, current_version) > 0)
       } else {
         update = true;
@@ -116,7 +115,7 @@ class RefineService {
       version_required = getLatestCurrentLocalExtension()
     }
     
-    if (version_required ==~ VERSIONING_REGEX) {
+    if (version_required ==~ TextUtils.VERSION_REGEX) {
       
       // Return file uri if the file exists.
       File f = new File (refineFolder, "${EXTENSION_PREFIX}${version_required}${EXTENSION_SUFFIX}")
@@ -139,9 +138,12 @@ class RefineService {
     // Now build the extension.
     def results = buildGOKbRefineExtension (gant)
     
+    // Grab the zip locations.
+    def zips = results*.remove("refine_package")
+    
     // Deploy the extension.
-    if (results?.containsKey("refine_package")) {
-      RefineUtils.copyZip(gant, "${results.remove('refine_package')}", "${refineFolder}")
+    if (zips) {
+      RefineUtils.copyZip(gant, zips, "${refineFolder}")
     }
     
     results
@@ -189,7 +191,8 @@ class RefineService {
     // The build.xml for the GOKb extension.
     File refine_extension_bxml = new File (gokb_extension_target, "${config.refine.extensionBuildFile}")
     
-    def info = RefineUtils.buildGOKbRefineExtension(
+    def info = []
+    info << RefineUtils.buildGOKbRefineExtension(
       config.refine.gokbRepoURL,
       extension_repo,
       refine_extension_bxml,
@@ -201,6 +204,20 @@ class RefineService {
       ant,
       config.refine.gokbRepoBranch,
       config.refine.gokbRepoTagPattern
+    )
+    
+    info << RefineUtils.buildGOKbRefineExtension(
+      config.refine.gokbRepoURL,
+      extension_repo,
+      refine_extension_bxml,
+      config.refine.extensionBuildTarget,
+      refine_repo,
+      gokb_extension_path,
+      gokb_extension_target,
+      config.refine.gokbRepoTestTagPattern,
+      ant,
+      config.refine.gokbRepoTestBranch,
+      config.refine.gokbRepoTestTagPattern
     )
     
     info

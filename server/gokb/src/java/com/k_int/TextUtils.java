@@ -9,7 +9,7 @@ public class TextUtils {
   // Group 1 = Version number
   // Group 4 = Start letter of versioning word.
   // Group 5 = end versioning number
-	public static final String VERSION_REGEX = "^((\\d+\\.?)+)(\\-([a-z])[a-z]*(\\d*))?$";
+	public static final String VERSION_REGEX = "((\\d+\\.?)+)(\\-([a-z])[a-z]*(\\d*))?";
 
   /**
    * Compares two version strings. 
@@ -34,7 +34,7 @@ public class TextUtils {
     
     // We may have a version with a hyphenated word too. (i.e. 1.x-alpha/beta)
     // We should break the word into sections and test each region.
-    Pattern p = Pattern.compile(VERSION_REGEX);
+    Pattern p = Pattern.compile("^" + VERSION_REGEX + "$");
     
     // Create the matchers.
     Matcher m1 = p.matcher(str1);
