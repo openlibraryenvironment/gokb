@@ -9,7 +9,10 @@ public class TextUtils {
   // Group 1 = Version number
   // Group 4 = Start letter of versioning word.
   // Group 5 = end versioning number
-	public static final String VERSION_REGEX = "((\\d+\\.?)+)(\\-([a-z])[a-z]*(\\d*))?";
+  public static final String VERSION_REGEX = "((\\d+\\.?)+)(\\-([a-z])[a-z]*(\\d*))?";
+  
+  // None alaphabetic version. 
+  public static final String NONE_ALPHA_VERSION_REGEX = "((\\d+\\.?)+)";
 
   /**
    * Compares two version strings. 
@@ -65,6 +68,10 @@ public class TextUtils {
   }
   
   public static Integer versionNumberCompare(String str1, String str2, boolean ignore_trailing_zero) {
+    
+    if (!(str1.matches(NONE_ALPHA_VERSION_REGEX) && str2.matches(NONE_ALPHA_VERSION_REGEX))) {
+      throw new IllegalArgumentException("Version strings must be in the format 0.0.0");
+    }
     
     // If we require trailing zeros to be ignored i.e. Should 1.2 == 1.2.0 == 1.2.0.0?
     if (ignore_trailing_zero) {

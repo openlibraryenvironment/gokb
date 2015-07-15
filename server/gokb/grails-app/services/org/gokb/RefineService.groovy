@@ -13,10 +13,10 @@ import com.k_int.TextUtils
 class RefineService {
   static scope = "singleton"
   
-  
   private static final String EXTENSION_PREFIX = "gokb-release-"
   private static final String EXTENSION_SUFFIX = ".zip"
   private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${TextUtils.VERSION_REGEX}"
+  private static final String STABLE_RELEASE_NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${TextUtils.NONE_ALPHA_VERSION_REGEX}"
   private static final String FILENAME_REGEX = "${NAMING_REGEX}\\Q${EXTENSION_SUFFIX}\\E"
 
   GrailsApplication grailsApplication
@@ -27,6 +27,12 @@ class RefineService {
   private static FilenameFilter filter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name ==~ FILENAME_REGEX
+    }
+  };
+
+  private static FilenameFilter stableFilter = new FilenameFilter() {
+    public boolean accept(File dir, String name) {
+      return name ==~ STABLE_RELEASE_NAMING_REGEX
     }
   };
 
@@ -46,7 +52,7 @@ class RefineService {
     refineFolderSingleton
   }
 
-  private String getLatestCurrentLocalExtension () {
+  private String getLatestCurrentLocalExtension (boolean betaTester = false) {
 
     // Open the webapp_dir
     File folder = new File(refineFolder)
@@ -55,7 +61,7 @@ class RefineService {
     if (folder.isDirectory()) {
 
       // Get a list of all GOKb extension zips.
-      String[] extensions = folder.list(filter)
+      String[] extensions = folder.list(betaTester ? filter : stableFilter)
       if(extensions){
         // Sort the results.
         Arrays.sort(extensions, comp)
@@ -76,13 +82,13 @@ class RefineService {
    * @param current_version The user's current refine version.
    * @return
    */
-  def checkUpdate (String current_version) {
+  def checkUpdate (String current_version, boolean betaTester = false) {
     
     // Update available
     boolean update = false;
     
     // Get the latest local version
-    String current_local_version = getLatestCurrentLocalExtension()
+    String current_local_version = getLatestCurrentLocalExtension(betaTester)
 
     def data = [
       "latest-version" : current_local_version?.replaceFirst(FILENAME_REGEX, "\$1"),

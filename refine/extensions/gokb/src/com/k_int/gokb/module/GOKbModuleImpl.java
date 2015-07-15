@@ -165,7 +165,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     // Load the list from the properties file.
     List<String> apis = properties.getList("api.entry");
 
-    // Include local?
+    // Include local overrides?
     if (properties.containsKey("apis")) {
 
       // Add any passed in via command line too. We add these as priorities.

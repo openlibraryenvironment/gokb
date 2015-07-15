@@ -157,6 +157,9 @@ grails.project.dependency.resolution = {
       compile ":twitter-bootstrap:3.2.0.2"
 
       compile ":gson:1.1.4"
+      
+      // Advanced caching control.
+      compile ":cache-headers:1.1.7"
 
       // compile ":profiler:0.5"
       test ":spock:0.7", {

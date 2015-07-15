@@ -277,8 +277,18 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    */
   private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
     
+    JSONObject res;
+    // If this is a bleeding-edge tester then we should check for a beta version?
+    if (GOKbModuleImpl.properties.getBoolean("beta-tester", false)) {
+      Map<String, String[]> params = new HashMap<String, String[]>(1,1);
+      params.put("beta-tester", new String[]{"true"});
+      res = apiJSON("checkUpdate", URLConenectionUtils.METHOD_TYPE.GET, params);
+      
+      
+    }
+    
     // Get the current version we are using to send for comparison.
-    JSONObject res = apiJSON("checkUpdate");
+    res = apiJSON("checkUpdate");
     if ("success".equalsIgnoreCase(res.getString("code"))) {
       
       res = res.getJSONObject("result");
@@ -327,6 +337,10 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
   
   private JSONObject apiJSON (String apiMethod) throws JSONException, IOException, FileUploadException {
     return URLConenectionUtils.getJSONObjectFromStream( callAPI (apiMethod).getInputStream() );
+  }
+  
+  private JSONObject apiJSON (String apiMethod, URLConenectionUtils.METHOD_TYPE methodType, Map<String, String[]> params) throws JSONException, IOException, FileUploadException {
+    return URLConenectionUtils.getJSONObjectFromStream( callAPI (apiMethod, methodType, params).getInputStream() );
   }
   
   private HttpURLConnection callAPI (String apiMethod) throws IOException, FileUploadException {
