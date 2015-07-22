@@ -1,5 +1,7 @@
 (function($) {
   
+  var modCache = {};
+  
   $(document).ready(function() {
     
     // Find every inline link.
@@ -20,16 +22,29 @@
       // The function to refresh content of the target element from the url.
       var refreshContent = function (target, url, type, the_data) {
         
-        // Default data.
-        if (the_data == undefined) the_data = {};
+        var key = "mod-" + url;
         
-        // Default type
-        if (type == undefined) type = "get";
-        
-        if (type == "get") {
+        // Grab the data.
+        var grabContent = function() {
           
-          // Do the get.
-          $.get(url, the_data, function(data, textStatus, jqXHR) {
+          console.log("Updated grabbing contents");
+          
+          // Default data.
+          if (the_data == undefined) the_data = {};
+          
+          // Default type
+          if (type == undefined) {
+            type = "get";
+            
+          } else if (type != "get") {
+            
+            // Make it a post.
+            type = "post";
+          }
+          $[type](url, the_data, function(data, textStatus, xhr) {
+            
+            console.log("comparing mine "+ modCache[key] + " to "+ xhr.getResponseHeader("Last-Modified"));
+            modCache[key] = xhr.getResponseHeader("Last-Modified");
             
             // The returned data.
             var dataDom = $("<div>" + data + "</div>");
@@ -37,23 +52,21 @@
             if (desired_content.length == 1) {
               target.html(desired_content.html());
             } else {
-              target.html(dataDom.html())
+              target.html(dataDom.html());
             }
           });
-        } else {
-          // Assume post.
-          $.post(url, the_data, function(data, textStatus, jqXHR) {
-            
-            // The returned data.
-            var dataDom = $("<div>" + data + "</div>");
-            var desired_content = dataDom.find(desired_selector);
-            if (desired_content.length == 1) {
-              target.html(desired_content.html());
-            } else {
-              target.html(dataDom.html())
+        };
+        
+        if(modCache[key]) {
+          $.ajax({
+            url:url,
+            type:"head",
+            success:function(res,code,xhr) {
+              if(modCache[key] != xhr.getResponseHeader("Last-Modified")) grabContent();
             }
           });
-        }
+
+        } else grabContent();
         
         // Return the target.
         return target;
@@ -109,7 +122,7 @@
         auto_refresh = parseInt(auto_refresh)
         
         // Add an autorefresh method.
-        setInterval(function() { 
+        setInterval(function() {
           refreshContent( content, href );
         }, auto_refresh);
       }

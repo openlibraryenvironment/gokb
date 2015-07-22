@@ -7,6 +7,7 @@ class UserDetailsFilters {
   def springSecurityService
   def aclUtilService
   def gokbAclService
+  def cacheHeadersService
 
   // grailsApplication.config.appDefaultPrefs
 
@@ -14,10 +15,11 @@ class UserDetailsFilters {
     
     // DO not allow any pages to be served from browser cache.
     noCacheFilter(controller:'*', action:'*') {
-       after = {
-           response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
-           response.setHeader("Pragma", "no-cache") // HTTP 1.0.
-           response.setDateHeader("Expires", -1)
+       before = {
+         
+         // Use the caching service to set no caches before the action is executed.
+         // This should allow us to override within the action.
+         cacheHeadersService.cache (response, false)
        }
     }
     
