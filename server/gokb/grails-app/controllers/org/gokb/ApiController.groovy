@@ -962,7 +962,8 @@ class ApiController {
 
   private static final def CAPABILITIES = [
     "core"                : true,
-    "project-mamangement" : true
+    "project-mamangement" : true,
+    "cell-level-edits"    : true
   ]
   
   def capabilities () {
