@@ -1,4 +1,7 @@
 package org.gokb
+
+import org.grails.plugins.fileviewer.FileViewerUtils
+
 class FileController {
 
   def fileLocations
@@ -6,21 +9,22 @@ class FileController {
   def index() {
     
     Map model = [locations: fileLocations.locations]    
-    def path = params.filepath;
-    def modified = null
+    def path = params.filePath;
+    Long modified = null
     File f = null
     if (path && fileLocations.isValidPath(path)) {
       
       // Check the file exists!
-      file = new File(path)
-      if (file.exists() && file.isFile()) {
-        modified = file.lastModified()
+      f = new File(path)
+      if (f.exists() && f.isFile()) {
+        modified = f.lastModified()
       }
     }
     
-    withCacheHeaders { file ->
+    // Curry vars as there are issues with accessing the variables from this scope.
+    withCacheHeaders ({ File file, Long mod ->
       delegate.lastModified {
-        modified
+        mod
       }
       
       generate {
@@ -34,16 +38,14 @@ class FileController {
             List locations = getSubFiles(file)
             model = [locations: locations]
           }
-          if (!fl.locations.contains(file.absolutePath)) {
+          if (!model.locations.contains(file.absolutePath)) {
             model['prevLocation'] = file.getParentFile()?.absolutePath
           }
           model['showBackLink'] = true
-        } else {
-          model.errorMessage = message(code: 'default.path.invalid.message')
           render(view: "/file/fileList", model: model, plugin: 'fileViewer')
         }
       }
-    }.curry(f)
+    }.curry(f, modified))
   }
 
   def downloadFile () {

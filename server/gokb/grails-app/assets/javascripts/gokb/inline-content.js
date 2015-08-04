@@ -42,8 +42,6 @@
             type = "post";
           }
           $[type](url, the_data, function(data, textStatus, xhr) {
-            
-            console.log("comparing mine "+ modCache[key] + " to "+ xhr.getResponseHeader("Last-Modified"));
             modCache[key] = xhr.getResponseHeader("Last-Modified");
             
             // The returned data.
@@ -62,7 +60,10 @@
             url:url,
             type:"head",
             success:function(res,code,xhr) {
-              if(modCache[key] != xhr.getResponseHeader("Last-Modified")) grabContent();
+              if(modCache[key] != xhr.getResponseHeader("Last-Modified")) {
+                // Get the content.
+                grabContent();
+              } else { /* Content hasn't changed so let's leave it alone */ }
             }
           });
 

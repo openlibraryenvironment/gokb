@@ -149,6 +149,14 @@ log.info("Using log file location: ${logFile}")
 // Also add it as config value too.
 log_location = logFile
 
+grails {
+  fileViewer {
+    locations = ["${logFile}"]
+    linesCount = 250
+    areDoubleDotsAllowedInFilePath = false
+  }
+}
+
 // log4j configuration
 log4j = {
   // Example of changing the log pattern for the default console appender:
@@ -209,14 +217,6 @@ log4j = {
   //   trace 'org.hibernate.type'
   //   debug 'org.hibernate.SQL'
 
-}
-
-grails{ 
-  fileViewer {
-    locations = [logFile]
-    linesCount = 250
-    areDoubleDotsAllowedInFilePath = false
-  }
 }
 
 // Added by the Spring Security Core plugin:
