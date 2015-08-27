@@ -967,6 +967,29 @@ class ApiController {
   ]
   
   def capabilities () {
-    render (CAPABILITIES as JSON)
+    
+    if (!CAPABILITIES."app") {
+      CAPABILITIES."app" = [:]
+      
+      grailsApplication.metadata.each { String k, v ->
+        if ( k.startsWith ("app.") ) {
+          
+          String prop_name = "${k.substring(4)}"
+          if (!prop_name.contains('.')) {
+            CAPABILITIES."app"."${prop_name}" = v
+          }
+        }
+      }
+    }
+    
+    // If etag matches then we can just return the 304 to denote that the resource is unchanged.    
+    withCacheHeaders {
+      etag {
+        "${CAPABILITIES.app.version}:${CAPABILITIES.app.buildProfile}:${CAPABILITIES.app.buildNumber}"
+      }
+      generate {
+        render (CAPABILITIES as JSON)
+      }
+    }
   }
 }

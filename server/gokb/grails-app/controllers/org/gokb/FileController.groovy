@@ -42,8 +42,8 @@ class FileController {
             model['prevLocation'] = file.getParentFile()?.absolutePath
           }
           model['showBackLink'] = true
-          render(view: "/file/fileList", model: model, plugin: 'fileViewer')
         }
+        render(view: "/file/fileList", model: model, plugin: 'fileViewer')
       }
     }.curry(f, modified))
   }

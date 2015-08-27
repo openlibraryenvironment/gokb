@@ -75,7 +75,7 @@ class AdminController {
   }
   
   def logViewer() {
-    cache "until_changed";
+    cache "until_changed"
     def f = new File ("${grailsApplication.config.log_location}")
     return [file: "${f.canonicalPath}"]
   }
