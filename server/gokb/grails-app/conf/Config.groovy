@@ -4,6 +4,7 @@
 
 
 
+import com.k_int.TextUtils
 import org.apache.log4j.DailyRollingFileAppender
 import org.apache.log4j.RollingFileAppender
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
@@ -46,10 +47,10 @@ refine = [
   refineRepoPath          : "gokb-build/refine",
   gokbRepoURL             : "https://github.com/k-int/gokb-phase1.git",
   gokbRepoBranch          : "release",
-  gokbRepoTagPattern      : /\QCLIENT_\E(.*)/,
+  gokbRepoTagPattern      : "\\QCLIENT_\\E(${TextUtils.VERSION_REGEX})",
   gokbRepoTestURL         : "https://github.com/k-int/gokb-phase1.git",
   gokbRepoTestBranch      : "test",
-  gokbRepoTestTagPattern  : /\QCL_\E(.*)/,
+  gokbRepoTestTagPattern  : "\\QTEST_CLIENT_\\E(${TextUtils.VERSION_REGEX})",
   extensionRepoPath       : "gokb-build/extension",
   gokbExtensionPath       : "refine/extensions/gokb",
   gokbExtensionTarget     : "extensions/gokb/",
