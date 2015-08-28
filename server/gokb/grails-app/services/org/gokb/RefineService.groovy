@@ -87,6 +87,11 @@ class RefineService {
     // Update available
     boolean update = false;
     
+    def data = [
+      "latest-version" : null,
+      "file-name"      : null
+    ]
+    
     // If this is the developer version of the tool then always report no update.
     if (current_version != 'development') {
       
@@ -95,7 +100,7 @@ class RefineService {
       
       if (current_local_version) {
   
-        def data = [
+        data += [
           "latest-version" : current_local_version?.replaceFirst(FILENAME_REGEX, "\$1\$3"),
           "file-name"       : current_local_version
         ]

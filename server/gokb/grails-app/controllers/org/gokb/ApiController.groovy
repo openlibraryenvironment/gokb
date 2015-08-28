@@ -985,7 +985,9 @@ class ApiController {
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.    
     withCacheHeaders {
       etag {
-        "${CAPABILITIES.app.version}:${CAPABILITIES.app.buildProfile}:${CAPABILITIES.app.buildNumber}"
+        // ETag DSL must return a String and not a GString due to GStringImpl.equals(String) failing even if their character sequences are equal.
+        // See: https://jira.grails.org/browse/GPCACHEHEADERS-14
+        "${CAPABILITIES.app.version}:${CAPABILITIES.app.buildProfile}:${CAPABILITIES.app.buildNumber}".toString()
       }
       generate {
         render (CAPABILITIES as JSON)
