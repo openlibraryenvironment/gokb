@@ -278,14 +278,14 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
   private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
     
     JSONObject res;
+    
+    Map<String, String[]> params = new HashMap<String, String[]>(1,1);
+    
     // If this is a bleeding-edge tester then we should check for a beta version?
     if (GOKbModuleImpl.properties.getBoolean("beta-tester", false)) {
-      Map<String, String[]> params = new HashMap<String, String[]>(1,1);
       params.put("beta-tester", new String[]{"true"});
-      res = apiJSON("checkUpdate", URLConenectionUtils.METHOD_TYPE.GET, params);
-      
-      
     }
+    res = apiJSON("checkUpdate", URLConenectionUtils.METHOD_TYPE.GET, params);
     
     // Get the current version we are using to send for comparison.
     res = apiJSON("checkUpdate");

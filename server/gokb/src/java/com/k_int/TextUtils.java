@@ -7,9 +7,9 @@ public class TextUtils {
   
 	// For string matching.
   // Group 1 = Version number
-  // Group 4 = Start letter of versioning word.
-  // Group 5 = end versioning number
-  public static final String VERSION_REGEX = "((\\d+\\.?)+)(\\-([a-z])[a-z]*(\\d*))?";
+  // Group 5 = Start letter of versioning word.
+  // Group 6 = end versioning number
+  public static final String VERSION_REGEX = "((\\d+\\.?)+)((\\-([a-z]))[a-z]*(\\d*))?";
   
   // None alaphabetic version. 
   public static final String NONE_ALPHA_VERSION_REGEX = "((\\d+\\.?)+)";
@@ -44,7 +44,7 @@ public class TextUtils {
     Matcher m2 = p.matcher(str2);
     
     if (!(m1.matches() && m2.matches())) {
-      throw new IllegalArgumentException("Version strings must be in the format 0.0.0-a0.");
+      throw new IllegalArgumentException("Version strings must be in the format 0.0.0-a[lpha]0.");
     }
     
     // Lets check the first numeric part of the version...
@@ -59,8 +59,8 @@ public class TextUtils {
     
     // Both strings are primarily equal and both declare secondary versions. 
     if (result == 0) {
-      // Concatinate groups 4 and 5 and compare them aplhanumerically.
-      result = Integer.signum((m1.group(4) + m1.group(5)).compareTo(m2.group(4) + m2.group(5)));
+      // Concatinate groups 5 and 6 and compare them aplhanumerically.
+      result = Integer.signum((m1.group(5) + m1.group(6)).compareTo(m2.group(5) + m2.group(6)));
     }
     
     // Return the result.

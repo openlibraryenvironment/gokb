@@ -881,7 +881,7 @@ class ApiController {
   }
   
   def checkUpdate () {
-    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), params."beta-tester" ?: false)
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), (params."beta-tester" == "true" ?: false) as boolean)
     apiReturn (result)
   }
   

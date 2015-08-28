@@ -40,7 +40,7 @@ class RefineService {
     public int compare(String s1, String s2) {
 
       // Now we have the versions we can compare them.
-      return TextUtils.versionCompare(s1.replaceFirst(NAMING_REGEX, "\$1"), s2.replaceFirst(NAMING_REGEX, "\$1"));
+      return TextUtils.versionCompare(s1.replaceFirst(FILENAME_REGEX, "\$1\$4\$6"), s2.replaceFirst(FILENAME_REGEX, "\$1\$4\$6"));
     }
   }
 
@@ -67,7 +67,7 @@ class RefineService {
         Arrays.sort(extensions, comp)
 
         // Now we should have a sorted array. Take the last element.
-        return extensions[extensions.length - 1].replaceFirst(FILENAME_REGEX, "\$1")
+        return extensions[extensions.length - 1].replaceFirst(FILENAME_REGEX, "\$1\$3")
       }
     }
 
@@ -87,29 +87,26 @@ class RefineService {
     // Update available
     boolean update = false;
     
-    // Get the latest local version
-    String current_local_version = getLatestCurrentLocalExtension(betaTester)
-
-    def data = [
-      "latest-version" : current_local_version?.replaceFirst(FILENAME_REGEX, "\$1"),
-      "file-name"       : current_local_version
-    ]
-    
     // If this is the developer version of the tool then always report no update.
-    if (current_version == 'development') {
-      update = false;
+    if (current_version != 'development') {
       
-    } else if (current_local_version) {
+      // Get the latest local version
+      String current_local_version = getLatestCurrentLocalExtension(betaTester)
       
-      // Handle the fact that previous refine versions will report incorrectly formatted version values here.
-      if (current_version ==~ TextUtils.VERSION_REGEX) {
-        update = (comp.compare(current_local_version, current_version) > 0)
-      } else {
-        update = true;
+      if (current_local_version) {
+  
+        def data = [
+          "latest-version" : current_local_version?.replaceFirst(FILENAME_REGEX, "\$1\$3"),
+          "file-name"       : current_local_version
+        ]
+        
+        // Handle the fact that previous refine versions will report incorrectly formatted version values here.
+        if (current_version ==~ TextUtils.VERSION_REGEX) {
+          update = (comp.compare(current_local_version, current_version) > 0)
+        } else {
+          update = true;
+        }
       }
-
-    } else {
-      update = false
     }
     
     data += ['update-available' : (update)]  
