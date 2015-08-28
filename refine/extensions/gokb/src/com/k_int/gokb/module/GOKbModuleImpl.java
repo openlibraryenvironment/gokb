@@ -28,7 +28,6 @@ import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 import com.k_int.gokb.refine.notifications.Notification;
 import com.k_int.gokb.refine.notifications.NotificationStack;
-
 import com.google.refine.Jsonizable;
 import com.google.refine.ProjectManager;
 import com.google.refine.RefineServlet;
@@ -276,7 +275,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
     // Perform our extended initialisation...
     extendModuleProperties();
-    swapImportControllers();
+    extendCoreModule();
 
     // Add our proxied Commands from the config file.
     addProxiedCommands();
@@ -468,11 +467,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     _logger.info("User login details reset to force login on workspace change.");
   }
 
-  private void swapImportControllers() {
+  private void extendCoreModule() throws Exception {
     // Get the core module.
     ButterflyModule coreMod = getModule("core");
     String controllerName = "default-importing-controller";
-
+    
+    // Also add extended template engine 
+    coreMod.setTemplateEngine(new ExtendedTemplateEngine (coreMod.getTemplateEngine()));
+    
     // Remove default controller.
     ImportingManager.controllers.remove(
         coreMod.getName() + "/" + controllerName
@@ -483,8 +485,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         coreMod,
         controllerName,
         new GOKbImportingController()
-        );
-
+        );    
   }
 
   @Override
