@@ -650,7 +650,7 @@ class ApiController {
         f.transferTo(temp_data_zipfile)
         def parsed_project_file = [:]
         ingestService.extractRefineDataZip (temp_data_zipfile, parsed_project_file)
-        rules = suggestRulesFromParsedData ( parsed_projpossibleRulesStringect_file, provider )
+        rules = suggestRulesFromParsedData ( parsed_project_file, provider )
 
       } finally {
         if ( temp_data_zipfile ) {
