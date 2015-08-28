@@ -143,7 +143,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
           suppliedEtag = (suppliedEtag != null ? suppliedEtag : "0");
   
           // Now create the JSON from the text.
-          return new JSONObject ("{\"etag\":" + suppliedEtag + ",\"data\": " + str.toString() + "}");
+          return new JSONObject ("{\"etag\":\"" + suppliedEtag + "\",\"data\": " + str.toString() + "}");
         } finally {
           if (in != null) in.close();
         }
