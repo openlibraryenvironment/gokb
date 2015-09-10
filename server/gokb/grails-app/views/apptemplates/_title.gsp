@@ -172,10 +172,9 @@
         class="badge badge-warning">
           ${d.additionalProperties?.size()}
       </span></a></li>
-    <li><a href="#review" data-toggle="tab">Review Tasks <span
-        class="badge badge-warning">
-          ${d.reviewRequests?.size()}
-      </span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size()} </span></a></li>
+
+    <li><a href="#fullTitleHistory" data-toggle="tab">Full TH </a></li>
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
@@ -404,9 +403,13 @@
         model="${[d:d]}" />
     </div>
 
+    <div class="tab-pane" id="fullTitleHistory">
+      <g:render template="fullth" contextPath="../apptemplates"
+        model="${[d:d]}" />
+    </div>
+
   </div>
-  <g:render template="componentStatus" contextPath="../apptemplates"
-    model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 
 

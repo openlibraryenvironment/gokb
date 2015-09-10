@@ -362,5 +362,11 @@ class TitleInstance extends KBComponent {
     return result;
   }
 
+  @Transient
+  def getFullTitleHistory() {
+    def result = []
+    result.add("Dummy");
+    result;
+  }
 
 }
