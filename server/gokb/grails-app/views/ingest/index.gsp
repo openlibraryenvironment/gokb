@@ -13,12 +13,18 @@
     		<div class="panel-body">
           <table class="table table-striped table-bordered">
             <thead>
-              <tr><th>Profile name</th></tr>
+              <tr>
+                <th>Package name</th>
+                <th>Ingest Profile name</th>
+                <th>Source name</th>
+                <th>Platform Url</th>
+                <th>Package Type</th>
+              </tr>
             </thead>
             <tbody>
               <g:each in="${existingProfiles}" var="p">
                 <tr>
-                  <td>${p.packageName}</td>
+                  <td><g:link controller="ingest" action="profile" id="${p.id}">${p.packageName}</g:link></td>
                   <td>${p.name}</td>
                   <td>${p.source}</td>
                   <td>${p.platformUrl}</td>

@@ -50,4 +50,13 @@ class IngestController {
 
     redirect(action:'index')
   }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def profile() {
+    log.debug("profile")
+    def result = [:]
+    result.ip = IngestionProfile.get(params.id);
+    result
+  }
+
 }
