@@ -12,6 +12,21 @@
       // Extend the protoype of the CellUI and add a new method for capturing the cell level edits.
       DataTableCellUI.prototype._extendEdit = function(elmt) {
         
+        // Create a table of columns that have required rules in the GOKb server.
+        var DTData = [["title"]];
+  
+        // Create the Table.
+        var table = GOKb.toTable (
+          ["Column Name"],
+          DTData
+        );
+  
+        // Add selection checkboxes
+        table.selectableRows();
+        
+        // Wrap in a table element.
+        table = $('<div class="col-table" />').append(table).hide();
+        
         // Grab the editor and add the extra checkbox.
         var editor = $(".data-table-cell-editor")
           .append(
@@ -19,6 +34,7 @@
               .append($('<input bind="captureCheck" type="checkbox" name="capture-edit" id="capture-edit" value="true" />'))
               .append($('<label for="capture-edit" />').text("Capture Edit"))
               .append($('<div class="data-table-cell-editor-key" bind="or_views_ctrl1">Ctrl+1</div>'))
+              .append(table)
           )
         ;
         
@@ -36,6 +52,9 @@
           
           // Checked value.
           capture = me.prop("checked");
+          
+          // Change the visibility of the table.
+          table.toggle();
         });
         
         elmts.okButton.prependEvent ('click', function(e) {          
