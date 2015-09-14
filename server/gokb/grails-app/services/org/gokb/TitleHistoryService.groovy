@@ -30,9 +30,11 @@ class TitleHistoryService {
     events.each {
       log.debug("Process ${it}");
       // Step 1 - Find all titles in this revised title history
-      def participants = findParticipatingTitles(it);
+      def th_graph = findGraphOfEvents(it);
       // Step 2 - Remove any title histories involved
+      def histories = getHistories(th_graph);
       // Step 3 - create a new one.
+
     }
   }
 
@@ -54,5 +56,8 @@ class TitleHistoryService {
         th_graph.add(the);
       }
     }
+  }
+
+  def getHistories(th_graph) {   
   }
 }
