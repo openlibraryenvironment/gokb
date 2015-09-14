@@ -56,6 +56,12 @@ class IngestController {
     log.debug("profile")
     def result = [:]
     result.ip = IngestionProfile.get(params.id);
+    if ( request.method=='POST' ) {
+      log.debug("Form post")
+    }
+    else {
+      log.debug("get")      
+    }
     result
   }
 
