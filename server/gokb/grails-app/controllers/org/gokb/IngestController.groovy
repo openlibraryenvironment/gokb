@@ -7,6 +7,7 @@ class IngestController {
 
   def index() {
     def result=[:]
+    result.existingProfiles = IngestionProfile.findAll()
     result
   }
 }
