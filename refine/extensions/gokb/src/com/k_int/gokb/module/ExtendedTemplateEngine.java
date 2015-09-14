@@ -141,10 +141,19 @@ public class ExtendedTemplateEngine extends VelocityEngine {
       // Get the value.
       Object value = context.get(key);
       if (value instanceof String) {
-
+        
+        // Grab the module version.
+        String version = GOKbModuleImpl.getVersion();
+        
+        // If the version is development then we should use the timestamp. This will prevent bundles being cached during development,
+        // but will also add an extra overhead as the resources will be rebuilt every time.
+        if ("development".equals(version)) {
+          version = "" + System.currentTimeMillis();
+        }
+        
         // Replace the text and write the value back.
         String val = (String)value;
-        val = val.replaceAll(REPLACEMENT_REGEX, "$1?gokb=" + GOKbModuleImpl.getVersion() + "$4");
+        val = val.replaceAll(REPLACEMENT_REGEX, "$1?gokb=" + version + "$4");
         context.put(key, val);
       }
     }
