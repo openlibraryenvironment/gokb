@@ -10,6 +10,7 @@ class IngestController {
 
   def concurrencyManagerService
   def genericOIDService
+  def TSVIngestionService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -59,6 +60,7 @@ class IngestController {
     log.debug("profile")
     def result = [:]
     result.ip = IngestionProfile.get(params.id);
+    def ingestion_profile = result.ip
     if ( request.method=='POST' && result.ip ) {
       log.debug("Form post")
       def upload_mime_type = request.getFile("submissionFile")?.contentType
@@ -90,8 +92,15 @@ class IngestController {
         log.debug("Saved file on database ")
         Job background_job = concurrencyManagerService.createJob { Job job ->
           // Create a new session to run the ingest.
-          TSVIngestionService.ingest(ingestion_profile, new_datafile, job)
-          log.debug ("Async Data insert complete")
+          try {
+            TSVIngestionService.ingest(ingestion_profile, new_datafile, job)
+          }
+          catch ( Exception e ) {
+            log.error("Problem",e)
+          }
+          finally {
+            log.debug ("Async Data insert complete")            
+          }
         }
         .startOrQueue()
 

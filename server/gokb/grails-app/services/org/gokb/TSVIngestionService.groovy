@@ -45,7 +45,6 @@ class TSVIngestionService {
 
   def grailsApplication
   def titleLookupService
-  def componentLookupService
   def refdataCategory
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
@@ -245,7 +244,7 @@ class TSVIngestionService {
   //for now, we can only do authors. (kbart limitation)
   def TitleInstance addPerson (person_name, role, ti, user=null, project = null) {
     if (person_name) {
-      def person = componentLookupService.findComponents('org.gokb.cred.Person', person_name)
+      def person = org.gokb.cred.Person.findAllByName(person_name)
     log.debug("this was found for person: ${person}");
     switch(person.size()) {
       case 0:
@@ -335,7 +334,7 @@ class TSVIngestionService {
 
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
     if ( publisher_name != null ) {
-    def publisher = componentLookupService.findComponents('org.gokb.cred.Org',publisher_name)
+    def publisher = org.gokb.cred.Org.findAllByName(publisher_name)
     log.debug("this was found for publisher: ${publisher}");
     // Found a publisher.
     switch (publisher.size()) {
@@ -465,7 +464,7 @@ class TSVIngestionService {
   //these are now ingestions of profiles.
   def ingest(the_profile, datafile, subtype='journals', job=null) {
 
-     def start_time = System.currentTimeMillis();
+   def start_time = System.currentTimeMillis();
 
     log.debug("TSV ingestion called")
 
@@ -697,9 +696,9 @@ class TSVIngestionService {
 
     log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
-      the_datafile.tipps << tipp
-    }
+    //if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
+    //  the_datafile.tipps << tipp
+    //}
     the_datafile.save(flush:true)
     log.debug("processTIPPS returning")
   }
@@ -768,7 +767,7 @@ class TSVIngestionService {
     //def ctb = new CsvToBean<KBartRecord>()
     //def hcnms = new HeaderColumnNameMappingStrategy<KBartRecord>()
     //hcnms.type = KBartRecord
-    def csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(the_data.fileData)),'\t' as char)
+    def csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(the_data.fileData)),'\t' as char,'\0' as char)
     //results=ctb.parse(hcnms, csv)
     //quick check that results aren't null...
 
@@ -829,7 +828,7 @@ class TSVIngestionService {
       throw new Exception("couldn't find file rules for ${the_profile.packageType}")
     }
     //can you read a tsv file?
-    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData)),'\t' as char)
+    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData)),'\t' as char, '\0' as char)
         Map col_positions=[:]
     fileRules.each { fileRule ->
       col_positions[fileRule.field]=-1;
@@ -841,6 +840,7 @@ class TSVIngestionService {
         }
     String [] nl = csv.readNext()
     while ( nl != null ) {
+      log.debug("Process line ${nl}")
       KBartRecord result = new KBartRecord()
       fileRules.each { fileRule ->
         boolean done=false
