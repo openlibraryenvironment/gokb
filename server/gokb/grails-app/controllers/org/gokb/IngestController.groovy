@@ -56,12 +56,100 @@ class IngestController {
     log.debug("profile")
     def result = [:]
     result.ip = IngestionProfile.get(params.id);
-    if ( request.method=='POST' ) {
+    if ( request.method=='POST' && result.ip ) {
       log.debug("Form post")
+      def upload_mime_type = request.getFile("submissionFile")?.contentType
+      def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
+      def deposit_token = java.util.UUID.randomUUID().toString();
+      temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
+      def info = analyse(temp_file);
+      log.debug("Got file with md5 ${info.md5sumHex}.. lookup");
+      def existing_file = DataFile.findByMd5(info.md5sumHex);
+      if ( existing_file != null ) {
+        log.debug("Found a match !")
+        redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+      }
+      else {
+        def new_datafile = new DataFile(
+                                        guid:deposit_token,
+                                        md5:info.md5sumHex,
+                                        uploadName:upload_filename,
+                                        name:upload_filename,
+                                        filesize:info.filesize,
+                                        uploadMimeType:upload_mime_type).save(flush:true)
+        new_datafile.fileData = temp_file.getBytes()
+        if (!ingestion_profile.ingestions) {
+                 ingestion_profile.ingestions=[]
+        }
+        ingestion_profile.ingestions << new ComponentIngestionSource(profile:ingestion_profile, component:new_datafile)
+        new_datafile.save(flush:true)
+        ingestion_profile.save(flush:true)
+        log.debug("Saved file on database ")
+        Job background_job = concurrencyManagerService.createJob { Job job ->
+          // Create a new session to run the ingest.
+          TSVIngestionService.ingest(ingestion_profile, new_datafile, job)
+          log.debug ("Async Data insert complete")
+        }
+        .startOrQueue()
+
+        redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
+      }
+
+
     }
     else {
-      log.debug("get")      
+      log.debug("get")
     }
+    result
+  }
+
+
+  def copyUploadedFile(inputfile, deposit_token) {
+    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+    log.debug("copyUploadedFile...");
+    def sub1 = deposit_token.substring(0,2);
+    def sub2 = deposit_token.substring(2,4);
+    validateUploadDir("${baseUploadDir}");
+    validateUploadDir("${baseUploadDir}/${sub1}");
+    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
+    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
+    def temp_file = new File(temp_file_name);
+
+    // Copy the upload file to a temporary space
+    inputfile.transferTo(temp_file);
+
+    temp_file
+  }
+
+  private def validateUploadDir(path) {
+    File f = new File(path);
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
+    }
+  }
+
+  def analyse(temp_file) {
+
+    def result=[:]
+    result.filesize = 0;
+
+    log.debug("analyze...");
+
+    // Create a checksum for the file..
+    MessageDigest md5_digest = MessageDigest.getInstance("MD5");
+    InputStream md5_is = new FileInputStream(temp_file);
+    byte[] md5_buffer = new byte[8192];
+    int md5_read = 0;
+    while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
+      md5_digest.update(md5_buffer, 0, md5_read);
+      result.filesize += md5_read
+    }
+    md5_is.close();
+    byte[] md5sum = md5_digest.digest();
+    result.md5sumHex = new BigInteger(1, md5sum).toString(16);
+
+    log.debug("MD5 is ${result.md5sumHex}");
     result
   }
 
