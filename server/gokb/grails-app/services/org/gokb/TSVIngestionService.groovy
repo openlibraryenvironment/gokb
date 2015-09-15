@@ -462,7 +462,7 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile, datafile, subtype='journals', job=null) {
+  def ingest(the_profile, datafile, subtype='journal', job=null) {
 
    def start_time = System.currentTimeMillis();
 
@@ -491,7 +491,7 @@ class TSVIngestionService {
       for (int x=0; x<kbart_beans.size;x++) {
         log.debug("Ingesting ${x} of ${kbart_beans.size}")
         TitleInstance.withNewTransaction {
-          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date )
+          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, subtype )
           if ( x % 50 == 0 ) {
             cleanUpGorm();
           }
@@ -540,7 +540,7 @@ class TSVIngestionService {
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date) {
+  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, subtype) {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
@@ -553,9 +553,17 @@ class TSVIngestionService {
       if (the_package!=null) {
         log.debug(the_kbart.online_identifier)
         def identifiers = []
-        identifiers << [type:'isbn', value:the_kbart.online_identifier]
+        def id_type = isbn;
+        if ( subtype == 'journal' ) {
+          id_type = 'issn'
+        }
+        if ( the_kbart.online_identifier )
+          identifiers << [type:'e'+id_type, value:the_kbart.online_identifier]
+        if ( the_kbart.print_identifier )
+        identifiers << [type:id_type, value:the_kbart.print_identifier]
+
         the_kbart.additional_isbns.each { identifier ->
-          identifiers << [type: 'isbn', value:identifier]
+          identifiers << [type: id_type, value:identifier]
         }
         if ( identifiers.size() > 0 ) {
           log.debug("looking for book using these identifiers: ${identifiers}")
