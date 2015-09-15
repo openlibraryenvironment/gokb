@@ -35,6 +35,8 @@ import org.gokb.cred.TitleInstancePackagePlatform;
 import org.gokb.cred.User;
 
 import java.security.MessageDigest
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
 
 
 @Transactional
