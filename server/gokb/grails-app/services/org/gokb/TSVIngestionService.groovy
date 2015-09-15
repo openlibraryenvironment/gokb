@@ -34,6 +34,9 @@ import org.gokb.cred.TitleInstance;
 import org.gokb.cred.TitleInstancePackagePlatform;
 import org.gokb.cred.User;
 
+import java.security.MessageDigest
+
+
 @Transactional
 class TSVIngestionService {
 
