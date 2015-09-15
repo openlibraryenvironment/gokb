@@ -695,6 +695,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('ingest.filetype','kbart2').save()
     RefdataCategory.lookupOrCreate('ingest.filetype','ingram').save()
     RefdataCategory.lookupOrCreate('ingest.filetype','ybp').save()
+    RefdataCategory.lookupOrCreate('ingest.filetype','cufts').save()
 
     def ybp_source = Source.findByName('YBP') ?: new Source(name:'YBP').save(flush:true, failOnError:true);
     def cup_source = Source.findByName('CUP') ?: new Source(name:'CUP').save(flush:true, failOnError:true);

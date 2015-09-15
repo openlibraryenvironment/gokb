@@ -462,7 +462,7 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile, datafile, job=null) {
+  def ingest(the_profile, datafile, subtype='journals', job=null) {
 
      def start_time = System.currentTimeMillis();
 
@@ -480,9 +480,9 @@ class TSVIngestionService {
 
       //we kind of assume that we need to convert to kbart
       if ("${the_profile.packageType}"!='kbart2') {
-        kbart_beans = convertToKbart(the_profile, datafile)
+        kbart_beans = convertToKbart(the_profile, datafile, subtype)
       } else {
-        kbart_beans = getKbartBeansFromKBartFile(datafile)
+        kbart_beans = getKbartBeansFromKBartFile(datafile, subtype)
       }
 
 
