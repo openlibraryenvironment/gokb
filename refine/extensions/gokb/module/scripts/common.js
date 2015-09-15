@@ -964,3 +964,8 @@ GOKb.hasFeature = function (featureName) {
   var capable = GOKb.core.workspace.service.capabilities[featureName] || false
   return capable;
 }
+
+GOKb.serverInfo = function (featureName) {
+  var info = GOKb.core.workspace.service.capabilities['app'];
+  return info;
+}

@@ -24,7 +24,7 @@
   	    	    	
   	    	    	// Check/uncheck all boxes.
   	    	    	var cb = $(this);
-  	    	    	$("td.cb-cell input", table).attr("checked", cb.is(":checked"));
+  	    	    	$("td.cb-cell input[type=checkbox]", table).attr("checked", cb.is(":checked"));
   	    	    })
   	    	  );
   	    	}
@@ -36,8 +36,8 @@
   	    		// Add the onclick to every cell currently in this row
   	    		$("td", this).click(function() {
   	    			// Add an onClick listener to toggle current row checkbox
-  	    			var cb = $(".cb-cell input", $(this).parent());
-  	    			cb.attr("checked", !cb.is(":checked"));
+  	    			var cb = $(".cb-cell input[type=checkbox]", $(this).parent());
+  	    			cb.trigger('click');
   	    		});
   	    		
   	    		$(this).prepend(
@@ -54,7 +54,7 @@
   		// Return the values of each selected item within this table
   		getSelected	: function( options ) {
 				var indexes = [];
-				$(".cb-cell input:checked", this).each(function() {
+				$(".cb-cell input[type=checkbox]:checked", this).each(function() {
 					indexes.push($(this).val());
 				});
 				

@@ -3,6 +3,7 @@ package org.gokb.validation
 import org.apache.commons.collections.map.CaseInsensitiveMap
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
+import org.gokb.validation.types.ColumnMissing
 import org.gokb.validation.types.I_ColumnValidationRule
 import org.gokb.validation.types.I_DeferredRowValidationRule
 import org.gokb.validation.types.A_ValidationRule
@@ -15,6 +16,38 @@ class Validation {
   private static final String CONTEXT_COLUMN = "context-column"
   private static final String CONTEXT_ROW = "context-row"
   private static final Log log = LogFactory.getLog(this)
+  
+  private static String[] requiredColumns = null
+  public static String[] getRequiredColumns () {
+    
+    if (requiredColumns == null) {
+      
+      HashSet<String> rc = [] 
+      
+      // Grab the column rules.
+      validationRules[CONTEXT_COLUMN].each { def rd ->
+        
+        // The item at position 0 should be the rule type class.
+        Class<A_ValidationRule> rule = rd[0]
+        
+        if (rule.isAssignableFrom(ColumnMissing.class)) {
+          
+          // Severity must be error.
+          if ( A_ValidationRule.SEVERITY_ERROR == rd[1][1]) {
+          
+            // Element 1 is an object array for the arguments passed to the rule class.
+            // The object at position 0 in this array should be the name of the column.
+            rc << rd[1][0]
+          }
+        }
+      }
+      
+      // Convert to an array.
+      requiredColumns = rc.sort().toArray(new String[0])
+    }
+    
+    requiredColumns
+  }
 
   public static addRule (Class <? extends A_ValidationRule> ruleClass, Object... args) {
 
