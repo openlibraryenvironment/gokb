@@ -64,7 +64,7 @@ class IngestController {
       def upload_mime_type = request.getFile("submissionFile")?.contentType
       def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
       def deposit_token = java.util.UUID.randomUUID().toString();
-      temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
+      def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
       def info = analyse(temp_file);
       log.debug("Got file with md5 ${info.md5sumHex}.. lookup");
       def existing_file = DataFile.findByMd5(info.md5sumHex);
@@ -97,8 +97,6 @@ class IngestController {
 
         redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
       }
-
-
     }
     else {
       log.debug("get")

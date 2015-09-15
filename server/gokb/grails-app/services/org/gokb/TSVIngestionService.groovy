@@ -37,6 +37,7 @@ import org.gokb.cred.User;
 import java.security.MessageDigest
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
+import org.gokb.dto.KBartRecord
 
 
 @Transactional
@@ -761,7 +762,7 @@ class TSVIngestionService {
   }
 
   //note- don't do the additional fields just yet, these will need to be mapped in
-  def getKbartBeansFromKBartFile(the_data) {
+  def getKbartBeansFromKBartFile(the_data, subtype) {
     log.debug("kbart2 file, so use CSV to Bean") //except that this doesn't always work :(
     def results=[]
     //def ctb = new CsvToBean<KBartRecord>()
@@ -814,7 +815,7 @@ class TSVIngestionService {
     results
   }
 
-  def convertToKbart(the_profile, data_file) {
+  def convertToKbart(the_profile, data_file, subtype) {
     def results = []
     log.debug("in convert to Kbart2")
     log.debug("file package type is ${the_profile.packageType}")
