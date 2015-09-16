@@ -31,7 +31,7 @@
   	    	
   	    	// Add a checkbox to each column of our table
   	    	var count = 0;
-  	    	$("tbody tr", table).each(function() {
+  	    	$("tbody tr", table).each(function(i) {
   	    		
   	    		// Add the onclick to every cell currently in this row
   	    		$("td", this).click(function() {
@@ -40,12 +40,15 @@
   	    			cb.trigger('click');
   	    		});
   	    		
+  	    		var cb = $('<input type="checkbox" />').val(count);
   	    		$(this).prepend(
   	    		  // Prepend the checkbox
-  	    		  $('<td class="cb-cell" />').append(
-  	    		     $('<input type="checkbox" />').val(count)
-  	    		  )
-  	    		)
+  	    		  $('<td class="cb-cell" />').append( cb )
+  	    		);
+  	    		
+  	    		if ("selected" in settings && $.inArray(i, settings.selected) > -1) {
+  	    		  cb.prop('checked', true);
+  	    		}
   	    		count++;
   	    	});
   	    });
