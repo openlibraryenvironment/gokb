@@ -493,7 +493,7 @@ class TSVIngestionService {
         log.debug("Ingesting ${x} of ${kbart_beans.size}")
         TitleInstance.withNewTransaction {
           writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, subtype )
-          if ( x % 50 == 0 ) {
+          if ( x % 200 == 0 ) {
             cleanUpGorm();
           }
         }
