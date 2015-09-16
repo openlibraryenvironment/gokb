@@ -26,7 +26,7 @@ class TitleInstance extends KBComponent {
   ]
 
   public void addVariantTitle (String title, String locale = "EN-us") {
-    
+
     // Check that the variant is not equal to the name of this title first.
     if (!title.equalsIgnoreCase(this.name)) {
 
@@ -34,14 +34,14 @@ class TitleInstance extends KBComponent {
       // we are going to compare certain attributes here.
       RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
       RefdataValue locale_rd = RefdataCategory.lookupOrCreate("KBComponentVariantName.Locale", (locale))
-      
+
       // Each of the variants...
       def existing = variantNames.find {
         KBComponentVariantName name = it
         return (name.locale == locale_rd && name.variantType == title_type
         && name.getVariantName().equalsIgnoreCase(title))
       }
-  
+
       if (!existing) {
         addToVariantNames(
             new KBComponentVariantName([
@@ -54,7 +54,7 @@ class TitleInstance extends KBComponent {
       } else {
         log.debug ("Not adding variant title as it is the same as an existing variant.")
       }
-      
+
     } else {
       log.debug ("Not adding variant title as it is the same as the actual title.")
     }
@@ -91,7 +91,7 @@ class TitleInstance extends KBComponent {
     [ [code:'method::deleteSoft', label:'Delete'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
-      // [code:'title::reconcile', label:'Title Reconcile'] 
+      // [code:'title::reconcile', label:'Title Reconcile']
     ]
   }
 
@@ -166,7 +166,7 @@ class TitleInstance extends KBComponent {
           combo.toComponent = new_publisher
           addToOutgoingCombos(combo)
         }
-        
+
         new_publisher.save()
         save()
 
@@ -199,7 +199,7 @@ class TitleInstance extends KBComponent {
 
     result
   }
-  
+
   @Transient
   static def oaiConfig = [
     id:'titles',
@@ -230,12 +230,12 @@ class TitleInstance extends KBComponent {
       def tipps = getTipps()
       def theIssuer = getIssuer()
       def thePublisher = getPublisher()
-  
+
       def history = getTitleHistory()
-      
+
       builder.'gokb' (attr) {
         builder.'title' (['id':(id)]) {
-  
+
           builder.'name' (name)
           builder.'imprint' (imprint?.name)
           builder.'medium' (medium?.value)
@@ -244,7 +244,7 @@ class TitleInstance extends KBComponent {
           builder.'publishedFrom' (publishedFrom)
           builder.'publishedTo' (publishedTo)
           builder.'issuer' (issuer?.name)
-  
+
           builder.'identifiers' {
             tids?.each { tid ->
               builder.'identifier' ('namespace':tid?.namespace?.value, 'value':tid?.value)
@@ -253,7 +253,7 @@ class TitleInstance extends KBComponent {
               builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.TitleInstance:${id}")
             }
           }
-          
+
           if ( variantNames ) {
             builder.'variantNames' {
               variantNames.each { vn ->
@@ -261,19 +261,19 @@ class TitleInstance extends KBComponent {
               }
             }
           }
-  
+
           if (thePublisher) {
             builder."publisher" (['id': thePublisher?.id]) {
               "name" (thePublisher?.name)
             }
           }
-          
+
           if (theIssuer) {
             builder."issuer" (['id': theIssuer.id]) {
               "name" (theIssuer.name)
             }
           }
-          
+
           builder.history() {
             history.each { he ->
               builder.historyEvent(['id':he.id]) {
@@ -287,7 +287,7 @@ class TitleInstance extends KBComponent {
                         hti.getIds()?.each { tid ->
                           builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                         }
-                      
+
                       }
                     }
                   }
@@ -308,21 +308,21 @@ class TitleInstance extends KBComponent {
               }
             }
           }
-  
+
           builder.'TIPPs' (count:tipps?.size()) {
             tipps?.each { tipp ->
               builder.'TIPP' (['id':tipp.id]) {
-                
+
                 def pkg = tipp.pkg
                 builder.'package' (['id':pkg?.id]) {
                   builder.'name' (pkg?.name)
                 }
-                
+
                 def platform = tipp.hostPlatform
                 builder.'platform'(['id':platform?.id]) {
                   builder.'name' (platform?.name)
                 }
-                
+
                 builder.'coverage'(
                   startDate:(tipp.startDate ? sdf.format(tipp.startDate):null),
                   startVolume:tipp.startVolume,
@@ -364,9 +364,24 @@ class TitleInstance extends KBComponent {
 
   @Transient
   def getFullTitleHistory() {
-    def result = []
-    result.add("Dummy");
+    def result = [:]
+    result.th = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = ? and ehp.event = eh ) order by eh.eventDate',[this])
     result;
+  }
+
+  def getPrecedingTitleId() {
+    log.debug('getPrecedingTitleId')
+    def preceeding_titles = []
+    // Work through title history, see if there is a preceeding title...
+    def ths = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = ? and ehp.participantRole=? and ehp.event = eh ) order by eh.eventDate desc',[this, 'out'])
+    if ( ths.size() > 0 ) {
+      ths[0].participants.each { p ->
+        if ( p.participantRole == 'in') {
+          preceeding_titles.add(p.participant.id)
+        }
+      }
+    }
+    return preceeding_titles.join(', ')
   }
 
 }

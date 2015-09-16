@@ -490,7 +490,8 @@ class TSVIngestionService {
       log.debug("Ingesting ${kbart_beans.size} rows")
       //now its converted, ingest it into the database.
       for (int x=0; x<kbart_beans.size;x++) {
-        log.debug("Ingesting ${x} of ${kbart_beans.size}")
+        def elapsed = System.currentTimeMillis() - start_time
+        log.debug("Ingesting ${x} of ${kbart_beans.size} elapsed=${elapsed} avg=${elapsed/(x+1)}")
         TitleInstance.withNewTransaction {
           writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, subtype )
           if ( x % 200 == 0 ) {
