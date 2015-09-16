@@ -33,12 +33,12 @@ class Validation {
         if (rule.isAssignableFrom(ColumnMissing.class)) {
           
           // Severity must be error.
-          if ( A_ValidationRule.SEVERITY_ERROR == rd[1][1]) {
+//          if ( A_ValidationRule.SEVERITY_ERROR == rd[1][1]) {
           
             // Element 1 is an object array for the arguments passed to the rule class.
             // The object at position 0 in this array should be the name of the column.
             rc << rd[1][0]
-          }
+//          }
         }
       }
       
