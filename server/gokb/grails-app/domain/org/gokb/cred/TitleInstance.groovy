@@ -362,10 +362,30 @@ class TitleInstance extends KBComponent {
     return result;
   }
 
+  def addTitlesToHistory(title, final_list, depth) {
+    def result = false;
+    if ( final_list.contains(title) ) {
+      return;
+    }
+    else {
+      // Find all history events relating to this title, and for each title related, add it to the final_list if it's not already in the list
+      final_list.add(title)
+      def all_related_history_events = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = ? and ehp.event = eh ) order by eh.eventDate',title)
+      all_related_history_events.each { the ->
+        the.participants.each { p ->
+          addTitlesToHistory(p.participant, final_list, depth+1)
+        }
+      }
+    }
+    result;
+  }
+
   @Transient
   def getFullTitleHistory() {
     def result = [:]
-    result.th = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant = ? and ehp.event = eh ) order by eh.eventDate',[this])
+    def il = []
+    addTitlesToHistory(this,il,0)
+    result.fh = ComponentHistoryEvent.executeQuery('select eh from ComponentHistoryEvent as eh where exists ( select ehp from ComponentHistoryEventParticipant as ehp where ehp.participant in (:titleList) and ehp.event = eh ) order by eh.eventDate asc',[titleList:il])
     result;
   }
 
