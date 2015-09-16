@@ -11,6 +11,7 @@ import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
 import org.gokb.cred.KBComponent
 import org.gokb.validation.types.*
+import java.text.SimpleDateFormat
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
   "classpath:${appName}-config.groovy",
@@ -66,6 +67,15 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 kbart2.personCategory='SPR'
 kbart2.authorRole='Author'
 kbart2.editorRole='Editor'
+
+
+possible_date_formats = [
+    new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('dd/MM/yyyy'),
+    new SimpleDateFormat('dd/MM/yy'),
+    new SimpleDateFormat('yyyy/MM'),
+    new SimpleDateFormat('yyyy')
+];
 
 
 identifiers = [
