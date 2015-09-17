@@ -883,8 +883,6 @@ class ApiController {
   }
   
   def checkUpdate () {
-    
-    log.debug("CheckUpdate parameters ${params}")
     def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), (params."tester" == "true" ?: false) as boolean)
     
     // Add the api version to the result. We will actually use this to circumvent a degrade taking place in the refine client.
