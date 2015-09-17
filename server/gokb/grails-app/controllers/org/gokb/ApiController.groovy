@@ -883,14 +883,14 @@ class ApiController {
   }
   
   def checkUpdate () {
-    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), (params."beta-tester" == "true" ?: false) as boolean)
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), (params."tester" == "true" ?: false) as boolean)
     apiReturn (result)
   }
   
   def downloadUpdate () {
     
     // Grab the download.
-    def file = refineService.extensionDownloadFile (params."requested-version")
+    def file = refineService.extensionDownloadFile (params."requested-version", (params."tester" == "true" ?: false) as boolean)
     if (file) {
       // Send the file.
       response.setContentType("application/x-gzip")

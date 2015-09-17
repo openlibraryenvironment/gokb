@@ -282,8 +282,8 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
     Map<String, String[]> params = new HashMap<String, String[]>(1,1);
     
     // If this is a bleeding-edge tester then we should check for a beta version?
-    if (GOKbModuleImpl.properties.getBoolean("beta-tester", false)) {
-      params.put("beta-tester", new String[]{"true"});
+    if (GOKbModuleImpl.properties.getBoolean("tester", false)) {
+      params.put("tester", new String[]{"true"});
     }
     res = apiJSON("checkUpdate", URLConenectionUtils.METHOD_TYPE.GET, params);
     
