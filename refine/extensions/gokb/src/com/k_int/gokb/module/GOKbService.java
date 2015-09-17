@@ -277,15 +277,13 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    */
   private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
     
-    JSONObject res;
-    
-    Map<String, String[]> params = new HashMap<String, String[]>(1,1);
-    
-    // If this is a bleeding-edge tester then we should check for a beta version?
-    if (GOKbModuleImpl.properties.getBoolean("tester", false)) {
-      params.put("tester", new String[]{"true"});
-    }
-    res = apiJSON("checkUpdate", URLConenectionUtils.METHOD_TYPE.GET, params);
+    JSONObject res = apiJSON(
+      "checkUpdate",
+      URLConenectionUtils.METHOD_TYPE.GET,
+      URLConenectionUtils.paramStringMap(
+        "tester=" + GOKbModuleImpl.properties.getBoolean("tester", false)
+      )
+    );
     
     // Get the current version we are using to send for comparison.
     res = apiJSON("checkUpdate");
@@ -295,9 +293,14 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
       
       // Set the available version.
       availableModuleVersion = res.getString("latest-version");
+      
+      // SO: Temporary fix to stop old server versions forcing a downgrade of test versions of the module.
+      String apiVersion = res.optString("api-version", null);
+      if (apiVersion != null) {
 
-      // Return whether there is an update.
-      return res.getBoolean("update-available");
+        // Return whether there is an update.
+        return res.getBoolean("update-available");
+      }
     }
     return false;
   }
