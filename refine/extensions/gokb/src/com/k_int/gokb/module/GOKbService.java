@@ -286,7 +286,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
     );
     
     // Get the current version we are using to send for comparison.
-    res = apiJSON("checkUpdate");
+//    res = apiJSON("checkUpdate");
     if ("success".equalsIgnoreCase(res.getString("code"))) {
       
       res = res.getJSONObject("result");
