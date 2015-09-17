@@ -1008,6 +1008,6 @@ class ApiController {
     
     // ETag DSL must return a String and not a GString due to GStringImpl.equals(String) failing even if their character sequences are equal.
     // See: https://jira.grails.org/browse/GPCACHEHEADERS-14
-    "${capabilities.app.version}:${capabilities.app.buildProfile}:${capabilities.app.buildNumber}".toString()
+    "${capabilities.app.version}${capabilities.app.buildNumber}".toString()
   }
 }

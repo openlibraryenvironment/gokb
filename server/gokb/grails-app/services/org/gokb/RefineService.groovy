@@ -18,6 +18,7 @@ class RefineService {
   private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${TextUtils.VERSION_REGEX}"
   private static final String STABLE_RELEASE_NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${TextUtils.NONE_ALPHA_VERSION_REGEX}"
   private static final String FILENAME_REGEX = "${NAMING_REGEX}\\Q${EXTENSION_SUFFIX}\\E"
+  private static final String STABLE_FILENAME_REGEX = "${STABLE_RELEASE_NAMING_REGEX}\\Q${EXTENSION_SUFFIX}\\E"
 
   GrailsApplication grailsApplication
 
@@ -32,7 +33,7 @@ class RefineService {
 
   private static FilenameFilter stableFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
-      return name ==~ STABLE_RELEASE_NAMING_REGEX
+      return name ==~ STABLE_FILENAME_REGEX
     }
   };
 
@@ -117,10 +118,10 @@ class RefineService {
     data += ['update-available' : (update)]  
   }
   
-  File extensionDownloadFile (String version_required = null) {
+  File extensionDownloadFile (String version_required = null, boolean betaTester = false) {
     
     if (version_required == null) {
-      version_required = getLatestCurrentLocalExtension()
+      version_required = getLatestCurrentLocalExtension(betaTester)
     }
     
     if (version_required ==~ TextUtils.VERSION_REGEX) {
