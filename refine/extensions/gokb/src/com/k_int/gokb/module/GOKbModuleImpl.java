@@ -3,7 +3,9 @@ package com.k_int.gokb.module;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -22,19 +24,18 @@ import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.k_int.gokb.module.util.TextUtils;
-import com.k_int.gokb.refine.RefineWorkspace;
-import com.k_int.gokb.refine.commands.GerericProxiedCommand;
-import com.k_int.gokb.refine.functions.GenericMatchRegex;
-import com.k_int.gokb.refine.notifications.Notification;
-import com.k_int.gokb.refine.notifications.NotificationStack;
-
 import com.google.refine.Jsonizable;
 import com.google.refine.ProjectManager;
 import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 import com.google.refine.io.FileProjectManager;
+import com.k_int.gokb.module.util.TextUtils;
+import com.k_int.gokb.refine.RefineWorkspace;
+import com.k_int.gokb.refine.commands.GerericProxiedCommand;
+import com.k_int.gokb.refine.functions.GenericMatchRegex;
+import com.k_int.gokb.refine.notifications.Notification;
+import com.k_int.gokb.refine.notifications.NotificationStack;
 
 import edu.mit.simile.butterfly.ButterflyClassLoader;
 import edu.mit.simile.butterfly.ButterflyModule;
@@ -276,7 +277,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
     // Perform our extended initialisation...
     extendModuleProperties();
-    swapImportControllers();
+    extendCoreModule();
 
     // Add our proxied Commands from the config file.
     addProxiedCommands();
@@ -308,6 +309,50 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       }
 
     }, 1, 60, TimeUnit.SECONDS);
+    
+    // Need to import the features list.
+    importFeatures ();
+  }
+  
+  /**
+   * Automatically add any js files in side the features folder.
+   */
+  private static final String REGEX_JS_FILENAME = "^.+\\.feature\\.js$";
+  private static final FilenameFilter FEATURE_FILTER = new FilenameFilter() {
+    public boolean accept(File dir, String name) {
+      return name.matches(REGEX_JS_FILENAME);
+    }
+  };
+  
+  // Folder filter.
+  private static final FilenameFilter sub_folders = new FilenameFilter() {
+    @Override
+    public boolean accept(File current, String name) {
+      return new File(current, name).isDirectory();
+    }
+  };
+  
+  private void importFeatures () throws IOException {
+    
+    // Features folder
+    final String features_subfolder = "scripts/features/";
+    final File feature_path = new File(getPath(), features_subfolder);
+    
+    // The bundles are represented by sub-folders in the features directory.
+    String[] bundles = feature_path.list(sub_folders);
+    
+    // Add files for each bundle.
+    for (String bundle : bundles) {
+      
+      // Step into the bundle dir and get features.
+      final File bundle_path = new File(feature_path, bundle);
+      final String[] featureFiles = bundle_path.list(FEATURE_FILTER);
+      List<String> paths = new ArrayList<String>();
+      for (String featureFile : featureFiles) {
+        paths.add(features_subfolder + bundle + "/" + featureFile);
+      }
+     ExtendedResourceManager.addPaths(bundle + "/scripts", this, paths.toArray(new String[0]));
+    }
   }
 
   /**
@@ -387,7 +432,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         Notification n = Notification.fromJSON("{"
             + "id:'module-update',"
             + "text:'A system update (version " + updateService.getAvailableModuleVersion() + ") has been donwloaded from the service at \\'"
-                + updateService.getURL() + "\\'. Refine has now been shutdown, and you will now need to restart refine and clear your browser caches to continue working.',"
+                + updateService.getURL() + "\\'. Refine has now been shutdown, and you will now need to restart refine to continue working.',"
             + "title:'GOKb Update',"
             + "block:true,"
             + "hide:false}"
@@ -468,11 +513,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     _logger.info("User login details reset to force login on workspace change.");
   }
 
-  private void swapImportControllers() {
+  private void extendCoreModule() throws Exception {
     // Get the core module.
     ButterflyModule coreMod = getModule("core");
     String controllerName = "default-importing-controller";
-
+    
+    // Also add extended template engine 
+    coreMod.setTemplateEngine(new ExtendedTemplateEngine (coreMod.getTemplateEngine()));
+    
     // Remove default controller.
     ImportingManager.controllers.remove(
         coreMod.getName() + "/" + controllerName
@@ -484,7 +532,6 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         controllerName,
         new GOKbImportingController()
         );
-
   }
 
   @Override

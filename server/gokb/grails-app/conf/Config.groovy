@@ -271,7 +271,8 @@ log4j = {
       'com.k_int.asset.pipeline.groovy',
       'asset.pipeline.less.compilers',
       'com.k_int.RefineUtils',
-      'com.k_int.grgit.GitUtils'
+      'com.k_int.grgit.GitUtils',
+      'org.gokb.RefineService'
 
   //   debug  'org.gokb.DomainClassExtender'
 

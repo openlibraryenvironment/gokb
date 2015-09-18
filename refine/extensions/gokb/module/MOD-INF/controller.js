@@ -135,6 +135,7 @@ function init() {
      "scripts/plugins/select2.min.js",
      "scripts/plugins/pnotify.custom.min.js",
      "scripts/plugins/jquery.dataTables.min.js",
+     "scripts/plugins/jquery-prepend-event.js",
      "scripts/common.js",
      "scripts/common-notifications.js",
      "scripts/init.js",

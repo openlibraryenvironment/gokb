@@ -53,13 +53,21 @@ public class TextUtils {
     // Work out the group counts.
     if ( result == 0 ) {
       
+      int diff = m1.groupCount() - m2.groupCount();
+      
+      // We already know the number portion is equal so if any of the values is a number portion only we should invert the number.
+      // This ensures that 4.0.1 is considered greater than 4.0.1-a etc.
+      if (m1.groupCount() == 2 || m2.groupCount() == 2) {
+        diff = (diff * -1); 
+      }
+      
       // If a version declares a secondary version then it is higher if the primary strings are equal.
-      result = Integer.signum(m1.groupCount() - m2.groupCount());
+      result = Integer.signum(diff);
     }
     
     // Both strings are primarily equal and both declare secondary versions. 
     if (result == 0) {
-      // Concatinate groups 5 and 6 and compare them aplhanumerically.
+      // Concatenate groups 5 and 6 and compare them aplhanumerically.
       result = Integer.signum((m1.group(5) + m1.group(6)).compareTo(m2.group(5) + m2.group(6)));
     }
     
