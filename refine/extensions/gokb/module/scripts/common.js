@@ -10,7 +10,8 @@ var GOKb = {
   refine:{},
   lockdown : false,
   hijacked : [],
-  timer_id : false
+  timer_id : false,
+  enabledFeatures : [],
 };
 
 /**
@@ -960,12 +961,56 @@ GOKb.updateSystemNotifications = function (data) {
   });
 };
 
-GOKb.hasFeature = function (featureName) {
-  var capable = GOKb.core.workspace.service.capabilities[featureName] || false
+GOKb.isCapable = function (capability) {
+  var capable = GOKb.core.workspace.service.capabilities[capability] || false;
   return capable;
-}
+};
 
-GOKb.serverInfo = function (featureName) {
+GOKb.serverInfo = function () {
   var info = GOKb.core.workspace.service.capabilities['app'];
   return info;
-}
+};
+
+GOKb.registerFeature = function (featureName) {
+  var config;
+  
+  // Second argument is config (optional).
+  if (arguments.length > 2) {
+    config = arguments[1];
+  }
+  
+  // Last option is feature.
+  var feature = arguments[arguments.length - 1];
+  
+  // Only register functions
+  if (featureName && typeof feature === 'function') {
+  
+    // Extend the config defaults.
+    config = jQuery.extend (true, {
+      "require" : ['core'],
+    }, config);
+    
+    // Create a method to scope this function and execute it agains GOKb.
+    (function($) {
+        
+      // Wrap in a getCoreData call to ensure that we have the data to test if the
+      // feature exists on the server we are connected to.
+      this.getCoreData().done(function(){
+        
+        // We should only load if the server supports all the requirements.
+        var enable = true;
+        for (var i=0; enable && i<config.require.length; i++) {
+          enable = GOKb.isCapable(config.require[i]);
+        }
+        
+        if (enable === true) {
+          feature.apply(GOKb, [jQuery]);
+          
+          // Also add the name to the list of enabled Features.
+          GOKb.enabledFeatures.push(featureName);
+        }
+      });
+      
+    }).apply(GOKb, [jQuery]);
+  }
+};
