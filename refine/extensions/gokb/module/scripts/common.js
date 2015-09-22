@@ -1,4 +1,5 @@
 var GOKb = {
+  name: 'gokb',
   messageBusy : "Contacting GOKb",
   timeout : 6000000, // 10 minute.
   handlers: {},
@@ -12,6 +13,7 @@ var GOKb = {
   hijacked : [],
   timer_id : false,
   enabledFeatures : [],
+  loadedScripts : [],
 };
 
 /**
@@ -971,6 +973,34 @@ GOKb.serverInfo = function () {
   return info;
 };
 
+GOKb.lazyLoadScript = function (path) {
+  
+  // Create a listener.
+  var listener = $.Deferred();
+  
+  // Piece together the path of teh resource.
+  var fullPath = (ModuleWirings[GOKb.name] + path).substring(1);
+  
+  if (!(fullPath in GOKb.loadedScripts)) {
+    
+    listener = $.getScript( fullPath )
+      .done(function() {
+        console.log( "Loaded " + fullPath );
+        GOKb.loadedScripts[fullPath] = true;
+      })
+      .fail(function( jqxhr, settings, exception ) {
+        console.log( "Error while loading " + fullPath );
+      });
+    
+  } else {
+    
+    // Just immediately return the script.
+    console.log( "Already loaded " + fullPath );
+    listener.resolve();
+  }
+  return listener;
+};
+
 GOKb.registerFeature = function (featureName) {
   var config;
   
@@ -992,10 +1022,18 @@ GOKb.registerFeature = function (featureName) {
     
     // Create a method to scope this function and execute it agains GOKb.
     (function($) {
+      
+      // Create an array of ajax calls to be passed to the when method.
+      var includes = [GOKb.getCoreData()];
+      if ("include" in config) {
+        $.each (config.include, function(){
+          includes.push(GOKb.lazyLoadScript(this));
+        });
+      }
         
       // Wrap in a getCoreData call to ensure that we have the data to test if the
       // feature exists on the server we are connected to.
-      this.getCoreData().done(function(){
+      $.when.apply($, includes).done(function(){
         
         // We should only load if the server supports all the requirements.
         var enable = true;

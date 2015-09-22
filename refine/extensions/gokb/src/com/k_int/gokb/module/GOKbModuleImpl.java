@@ -30,12 +30,14 @@ import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 import com.google.refine.io.FileProjectManager;
+import com.google.refine.model.recon.ReconConfig;
 import com.k_int.gokb.module.util.TextUtils;
 import com.k_int.gokb.refine.RefineWorkspace;
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 import com.k_int.gokb.refine.notifications.Notification;
 import com.k_int.gokb.refine.notifications.NotificationStack;
+import com.k_int.refine.es_recon.model.ESReconcileConfig;
 
 import edu.mit.simile.butterfly.ButterflyClassLoader;
 import edu.mit.simile.butterfly.ButterflyModule;
@@ -312,8 +314,20 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     
     // Need to import the features list.
     importFeatures ();
+    
+    // Import recon configs.
+    importReconConfigs();
   }
   
+  /**
+   * Register the config.
+   * 
+   * We can do this within the controller.js file and when we come to move this into its own module we may do that.
+   */
+  private void importReconConfigs () {
+    ReconConfig.registerReconConfig(this, "ElasticSearch", ESReconcileConfig.class);
+  }
+
   /**
    * Automatically add any js files in side the features folder.
    */
@@ -349,6 +363,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       final String[] featureFiles = bundle_path.list(FEATURE_FILTER);
       List<String> paths = new ArrayList<String>();
       for (String featureFile : featureFiles) {
+        
+        _logger.info("Adding feature from file {}.", featureFile);
         paths.add(features_subfolder + bundle + "/" + featureFile);
       }
      ExtendedResourceManager.addPaths(bundle + "/scripts", this, paths.toArray(new String[0]));

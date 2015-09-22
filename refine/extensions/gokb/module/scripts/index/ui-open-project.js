@@ -25,7 +25,7 @@ GOKb.ui.projects = function (elmt) {
 
               // Set the appropriate handler for the data based on the servers capabilities.
               var callback = null;
-              if (GOKb.hasFeature("project-mamangement")) {
+              if (GOKb.isCapable("project-mamangement")) {
                 
                 callback = function (data) {
 
