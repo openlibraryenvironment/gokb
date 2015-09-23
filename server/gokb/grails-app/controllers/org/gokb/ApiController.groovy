@@ -1006,6 +1006,26 @@ class ApiController {
     }
   }
   
+  private static ES_CONFIG = null
+  private static getESConfig() {
+    
+    if (!ES_CONFIG) {
+      
+      // Default cluster...
+      ES_CONFIG = [
+        "cluster" : Holders.grailsApplication.config.gokb.es.cluster ?: "gokb"
+      ]
+      
+      // Also add the config params.
+      ES_CONFIG << Holders.grailsApplication.config.globalSearch
+    }
+  }
+  
+  
+  def esconfig () {
+    getESConfig()
+  }
+  
   private static final Closure SERVER_VERSION_ETAG_DSL = {
     def capabilities = getCapabilities()
     
