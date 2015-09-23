@@ -27,7 +27,7 @@ class WorkflowController {
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def action() { 
+  def action() {
     log.debug("WorkflowController::action(${params})");
     def result = [:]
     result.ref=request.getHeader('referer')
@@ -77,15 +77,15 @@ class WorkflowController {
 
       switch ( action_config.actionType ) {
         case 'simple':
-          
+
           def method_config = params.selectedBulkAction.split(/\:\:/) as List
-          
+
           switch (method_config[0]) {
-            
-            case "method" : 
+
+            case "method" :
 
               def context = [ user:request.user, params:params ]
-          
+
               // Everything after the first 2 "parts" are args for the method.
               def method_params = []
 
@@ -97,20 +97,20 @@ class WorkflowController {
 
               // We should just call the method on the targets.
               result.objects_to_action.each {def target ->
-                
+
                 log.debug ("Attempting to fire method ${method_config[1]} (${method_params})")
-                
+
                 // Wrap in a transaction.
                 KBComponent.withNewTransaction {def trans_status ->
                   try {
-                    
+
                     // Just try and fire the method.
                     target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
-                    
+
                     // Save the object.
                     target.save(failOnError:true)
                   } catch (Throwable t) {
-                  
+
                     // Rollback and log error.
                     trans_status.setRollbackOnly()
                     t.printStackTrace()
@@ -199,7 +199,7 @@ class WorkflowController {
             ],
             newtipps:[]
           ]
-  
+
           params.list('afterTitles').each { new_title_oid ->
             def new_title_obj = genericOIDService.resolveOID2(new_title_oid)
             def new_tipp_info = [
@@ -226,11 +226,11 @@ class WorkflowController {
                                     activityName:"Title Change ${sw.toString()}",
                                     activityData:builder.toString(),
                                     owner:request.user,
-                                    status:active_status, 
+                                    status:active_status,
                                     type:transfer_type).save()
 
     log.debug("redirect to edit activity (Really title) ${builder.toString()}");
-    
+
     // if ( first_title )
     //   redirect(controller:'resource', action:'show', id:first_title);
     // else
@@ -274,7 +274,7 @@ class WorkflowController {
           sw.write(title_instance.name);
           def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
 
-          result.titles.add(title_instance) 
+          result.titles.add(title_instance)
           titleTransferData.title_ids.add(title_instance.id)
           title_instance.tipps.each { tipp ->
             if ( ( tipp.status?.value != 'Deleted' ) && ( tipp.pkg.scope?.value != 'GOKb Master' ) ) {
@@ -322,9 +322,9 @@ class WorkflowController {
                                     activityName:"Title transfer ${sw.toString()} to ${result.newPublisher.name}",
                                     activityData:builder.toString(),
                                     owner:user,
-                                    status:active_status, 
+                                    status:active_status,
                                     type:transfer_type).save()
-    
+
     log.debug("Redirect to edit title transfer activity");
     redirect(action:'editTitleTransfer',id:new_activity.id)
   }
@@ -391,8 +391,8 @@ class WorkflowController {
                   tipp_info.newtipps = [:]
 
                 def new_tipp_info = [
-                                        title_id:old_tipp.title.id, 
-                                        package_id:new_tipp_package.id, 
+                                        title_id:old_tipp.title.id,
+                                        package_id:new_tipp_package.id,
                                         platform_id:new_tipp_platform.id,
                                         startDate:old_tipp.startDate ? sdf.format(old_tipp.startDate) : null,
                                         startVolume:old_tipp.startVolume,
@@ -486,8 +486,8 @@ class WorkflowController {
       result.tipps.add([
                         id:tipp_object.id,
                         type:'CURRENT',
-                        title:tipp_object.title, 
-                        pkg:tipp_object.pkg, 
+                        title:tipp_object.title,
+                        pkg:tipp_object.pkg,
                         hostPlatform:tipp_object.hostPlatform,
                         startDate: tipp_info.value.oldTippValue?.startDate,
                         startVolume:tipp_info.value.oldTippValue?.startVolume,
@@ -497,7 +497,7 @@ class WorkflowController {
                         endIssue:tipp_info.value.oldTippValue?.endIssue,
                         url:tipp_info.value.oldTippValue?.url
                         ])
-      int seq=0;  
+      int seq=0;
       // .value because tipp_info is a map...
       tipp_info.value.newtipps.each { newtipp_info ->
         result.tipps.add([
@@ -632,8 +632,8 @@ class WorkflowController {
       result.tipps.add([
                         id:tipp_object.id,
                         type:'CURRENT',
-                        title:tipp_object.title, 
-                        pkg:tipp_object.pkg, 
+                        title:tipp_object.title,
+                        pkg:tipp_object.pkg,
                         hostPlatform:tipp_object.hostPlatform,
                         startDate: tipp_info.value.oldTippValue?.startDate,
                         startVolume:tipp_info.value.oldTippValue?.startVolume,
@@ -816,7 +816,7 @@ class WorkflowController {
           current_tipp.startIssue = tipp_map_entry.value.oldTippValue?.startIssue
 
         if ( tipp_map_entry.value.oldTippValue?.endDate ) {
-          try { 
+          try {
             current_tipp.endDate = sdf.parse(tipp_map_entry.value.oldTippValue?.endDate)
           }
           catch ( Exception e ) {
@@ -829,7 +829,7 @@ class WorkflowController {
 
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
- 
+
         def parsed_start_date = null;
         def parsed_end_date = null;
         try {
@@ -904,7 +904,7 @@ class WorkflowController {
     result['old'] = []
     result['new'] = ''
     result['count'] = 0
-    
+
     params.each { p ->
       log.debug("Testing ${p.key}");
       if ( ( p.key.startsWith('tt') ) && ( p.value ) && ( p.value instanceof String ) ) {
@@ -938,7 +938,7 @@ class WorkflowController {
       //HTML is causing problems, browser thinks it should render something, other way around this?
       response.setContentType("application/octet-stream");
       response.addHeader("Content-Disposition", "attachment; filename=\"${df.uploadName}\"")
-      response.outputStream << df.fileData    
+      response.outputStream << df.fileData
     }
   }
 
@@ -959,7 +959,7 @@ class WorkflowController {
         }else if (variant.owner?.respondsTo('getDisplayName') && variant.owner.getDisplayName()){
           variant_name = variant.owner.getDisplayName()?.trim()
         }else if(variant.owner?.respondsTo('getName') ) {
-           variant_name = variant.owner?.getName()?.trim()  
+           variant_name = variant.owner?.getName()?.trim()
         }
         def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant_name).save(flush:true);
 
@@ -999,7 +999,7 @@ class WorkflowController {
         webook_endpoint = genericOIDService.resolveOID2(params.existingHook)
       }
       else {
-        webook_endpoint = new WebHookEndpoint(name:params.newHookName, 
+        webook_endpoint = new WebHookEndpoint(name:params.newHookName,
                                               url:params.newHookUrl,
                                               authmethod:Long.parseLong(params.newHookAuth),
                                               principal:params.newHookPrin,
@@ -1056,34 +1056,46 @@ class WorkflowController {
 
   def createTitleHistoryEvent() {
 
+    log.debug("createTitleHistoryEvent")
+
     def result=[:]
 
-    if ( ( params.afterTitles != null ) && ( params.beforeTitles != null ) ) {
-    
-      if ( params.afterTitles instanceof java.lang.String ) {
-        params.afterTitles = [ params.afterTitles ]
+    try {
+      if ( ( params.afterTitles != null ) && ( params.beforeTitles != null ) ) {
+
+        if ( params.afterTitles instanceof java.lang.String ) {
+          params.afterTitles = [ params.afterTitles ]
+        }
+
+        if ( params.beforeTitles instanceof java.lang.String ) {
+          params.beforeTitles = [ params.beforeTitles ]
+        }
+
+        def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:params.date('EventDate', 'yyyy-MM-dd')).save()
+
+        params.afterTitles?.each { at ->
+          def component = genericOIDService.resolveOID2(at)
+          def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                        participant:component,
+                                                                        participantRole:'out').save()
+        }
+
+        params.beforeTitles?.each { bt ->
+          def component = genericOIDService.resolveOID2(bt)
+          def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
+                                                                        participant:component,
+                                                                        participantRole:'in').save()
+        }
       }
-  
-      if ( params.beforeTitles instanceof java.lang.String ) {
-        params.beforeTitles = [ params.beforeTitles ]
-      }
-  
-      def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:params.date('EventDate', 'yyyy-MM-dd')).save()
-  
-      params.afterTitles?.each { at ->
-        def component = genericOIDService.resolveOID2(at)
-        def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
-                                                                      participant:component,
-                                                                      participantRole:'out').save()
-      }
-  
-      params.beforeTitles?.each { bt ->
-        def component = genericOIDService.resolveOID2(bt)
-        def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
-                                                                      participant:component,
-                                                                      participantRole:'in').save()
-      }
+
     }
+    catch ( Exception e ) {
+      log.error("problem creating title history event",e)
+    }
+    finally{
+      log.debug("Completed createTitleHistoryEvent")
+    }
+
     result.ref=request.getHeader('referer')
     redirect(url: result.ref)
   }
@@ -1103,7 +1115,7 @@ class WorkflowController {
   private def packageKBartExport(packages_to_export) {
     def filename = null;
 
-    if ( packages_to_export.size() == 0 ) 
+    if ( packages_to_export.size() == 0 )
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
@@ -1123,13 +1135,14 @@ class WorkflowController {
 
       def out = response.outputStream
       out.withWriter { writer ->
-        
+
         def sanitize = { it ? "${it}".trim() : "" }
 
         packages_to_export.each { pkg ->
 
           // As per spec header at top of file / section
-          writer.write('publication_title	print_identifier	online_identifier	date_first_issue_online	num_first_vol_online	num_first_issue_online	date_last_issue_online	num_last_vol_online	num_last_issue_online	title_url	first_author	title_id	embargo_info	coverage_depth	coverage_notes	publisher_name\n');
+          // II: Need to add in preceding_publication_title_id
+          writer.write('publication_title\tprint_identifier\tonline_identifier\tdate_first_issue_online\tnum_first_vol_online\tnum_first_issue_online\tdate_last_issue_online\tnum_last_vol_online\tnum_last_issue_online\ttitle_url\tfirst_author\ttitle_id\tembargo_info\tcoverage_depth\tcoverage_notes\tpublisher_name\tpreceding_publication_title_id\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
@@ -1139,23 +1152,24 @@ class WorkflowController {
 
           tipps.each { tipp_id ->
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-            writer.write( 
+            writer.write(
                           sanitize( tipp.title.name ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
-                          sanitize( tipp.startDate ) + '\t' + 
-                          sanitize( tipp.startVolume ) + '\t' + 
-                          sanitize( tipp.startIssue ) + '\t' + 
+                          sanitize( tipp.startDate ) + '\t' +
+                          sanitize( tipp.startVolume ) + '\t' +
+                          sanitize( tipp.startIssue ) + '\t' +
                           sanitize( tipp.endDate ) + '\t' +
-                          sanitize( tipp.endVolume ) + '\t' + 
-                          sanitize( tipp.endIssue ) + '\t' + 
-                          sanitize( tipp.url ) + '\t' + 
+                          sanitize( tipp.endVolume ) + '\t' +
+                          sanitize( tipp.endIssue ) + '\t' +
+                          sanitize( tipp.url ) + '\t' +
                           '\t'+
-                          sanitize( tipp.title.id ) + '\t' + 
-                          sanitize( tipp.embargo ) + '\t' + 
-                          sanitize( tipp.coverageDepth ) + '\t' + 
-                          sanitize( tipp.coverageNote ) + '\t' + 
-                          sanitize( tipp.title.getCurrentPublisher()?.name ) +
+                          sanitize( tipp.title.id ) + '\t' +
+                          sanitize( tipp.embargo ) + '\t' +
+                          sanitize( tipp.coverageDepth ) + '\t' +
+                          sanitize( tipp.coverageNote ) + '\t' +
+                          sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
+                          sanitize( tipp.title.getPrecedingTitleId() )+
                           '\n');
             tipp.discard();
           }
@@ -1175,7 +1189,7 @@ class WorkflowController {
   private def packageTSVExport(packages_to_export) {
     def filename = null;
 
-    if ( packages_to_export.size() == 0 ) 
+    if ( packages_to_export.size() == 0 )
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
@@ -1195,7 +1209,7 @@ class WorkflowController {
 
       def out = response.outputStream
       out.withWriter { writer ->
-        
+
         def sanitize = { it ? "${it}".trim() : "" }
 
         packages_to_export.each { pkg ->
@@ -1220,7 +1234,7 @@ class WorkflowController {
             writer.write( sanitize( tipp.id ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.id ) + '\t' + sanitize( tipp.title.name ) + '\t' +
                           sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
                           sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
-                          sanitize( tipp.title.continuingSeries?.value ) + '\t' + 
+                          sanitize( tipp.title.continuingSeries?.value ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
                           sanitize( pkg.name ) + '\t' + sanitize( pkg.id ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +

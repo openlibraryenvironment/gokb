@@ -8,13 +8,8 @@
   (function($){
     $(document).ready(function(){
       var availableSpace = $( window ).innerHeight();
-      window.console.log("availableSpace:" + availableSpace);
       availableSpace = availableSpace - $("h1.page-header").outerHeight(true);
-      window.console.log("availableSpace:" + availableSpace);
       availableSpace = availableSpace - $('#page-wrapper').siblings('.navbar').outerHeight(true);
-      window.console.log("availableSpace:" + availableSpace);
-      
-      window.console.log("availableSpace:" + $('#page-wrapper').siblings('.navbar'));
       $('#log-wrapper')
         .css('height', (availableSpace -10) + 'px');
         

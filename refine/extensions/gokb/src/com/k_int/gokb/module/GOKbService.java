@@ -143,7 +143,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
           suppliedEtag = (suppliedEtag != null ? suppliedEtag : "0");
   
           // Now create the JSON from the text.
-          return new JSONObject ("{\"etag\":" + suppliedEtag + ",\"data\": " + str.toString() + "}");
+          return new JSONObject ("{\"etag\":\"" + suppliedEtag + "\",\"data\": " + str.toString() + "}");
         } finally {
           if (in != null) in.close();
         }
@@ -277,27 +277,30 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    */
   private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
     
-    JSONObject res;
-    // If this is a bleeding-edge tester then we should check for a beta version?
-    if (GOKbModuleImpl.properties.getBoolean("beta-tester", false)) {
-      Map<String, String[]> params = new HashMap<String, String[]>(1,1);
-      params.put("beta-tester", new String[]{"true"});
-      res = apiJSON("checkUpdate", URLConenectionUtils.METHOD_TYPE.GET, params);
-      
-      
-    }
+    JSONObject res = apiJSON(
+      "checkUpdate",
+      URLConenectionUtils.METHOD_TYPE.GET,
+      URLConenectionUtils.paramStringMap(
+        "tester=" + GOKbModuleImpl.properties.getBoolean("tester", false)
+      )
+    );
     
     // Get the current version we are using to send for comparison.
-    res = apiJSON("checkUpdate");
+//    res = apiJSON("checkUpdate");
     if ("success".equalsIgnoreCase(res.getString("code"))) {
       
       res = res.getJSONObject("result");
       
       // Set the available version.
       availableModuleVersion = res.getString("latest-version");
+      
+      // SO: Temporary fix to stop old server versions forcing a downgrade of test versions of the module.
+      String apiVersion = res.optString("api-version", null);
+      if (apiVersion != null) {
 
-      // Return whether there is an update.
-      return res.getBoolean("update-available");
+        // Return whether there is an update.
+        return res.getBoolean("update-available");
+      }
     }
     return false;
   }

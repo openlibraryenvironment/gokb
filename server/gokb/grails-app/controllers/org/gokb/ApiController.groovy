@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
+import grails.util.Holders
 
 import java.security.SecureRandom
 
@@ -11,6 +12,7 @@ import org.apache.commons.codec.binary.Base64
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
+import org.gokb.validation.Validation
 
 import com.k_int.ConcurrencyManagerService
 import com.k_int.TextUtils
@@ -650,7 +652,7 @@ class ApiController {
         f.transferTo(temp_data_zipfile)
         def parsed_project_file = [:]
         ingestService.extractRefineDataZip (temp_data_zipfile, parsed_project_file)
-        rules = suggestRulesFromParsedData ( parsed_projpossibleRulesStringect_file, provider )
+        rules = suggestRulesFromParsedData ( parsed_project_file, provider )
 
       } finally {
         if ( temp_data_zipfile ) {
@@ -881,14 +883,17 @@ class ApiController {
   }
   
   def checkUpdate () {
-    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), params."beta-tester" ?: false)
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), (params."tester" == "true" ?: false) as boolean)
+    
+    // Add the api version to the result. We will actually use this to circumvent a degrade taking place in the refine client.
+    result."api-version" = getCapabilities()."app"."version"
     apiReturn (result)
   }
   
   def downloadUpdate () {
     
     // Grab the download.
-    def file = refineService.extensionDownloadFile (params."requested-version")
+    def file = refineService.extensionDownloadFile (params."requested-version", (params."tester" == "true" ?: false) as boolean)
     if (file) {
       // Send the file.
       response.setContentType("application/x-gzip")
@@ -962,10 +967,50 @@ class ApiController {
 
   private static final def CAPABILITIES = [
     "core"                : true,
-    "project-mamangement" : true
+    "project-mamangement" : true,
+    "cell-level-edits"    : true,
   ]
   
+  private static def getCapabilities() {
+    
+    if (!CAPABILITIES."app") {
+      CAPABILITIES."app" = [:]
+      
+      Holders.grailsApplication.metadata.each { String k, v ->
+        if ( k.startsWith ("app.") ) {
+          
+          String prop_name = "${k.substring(4)}"
+          if (!prop_name.contains('.')) {
+            CAPABILITIES."app"."${prop_name}" = v
+          }
+        }
+      }
+      
+      // Also add the required columns here.
+      CAPABILITIES."app"."required-cols" = Validation.getRequiredColumns()
+    }
+    
+    CAPABILITIES
+  }
+  
   def capabilities () {
-    render (CAPABILITIES as JSON)
+    
+    def capabilities = getCapabilities()
+    
+    // If etag matches then we can just return the 304 to denote that the resource is unchanged.    
+    withCacheHeaders {
+      etag ( SERVER_VERSION_ETAG_DSL )
+      generate {
+        render (getCapabilities() as JSON)
+      }
+    }
+  }
+  
+  private static final Closure SERVER_VERSION_ETAG_DSL = {
+    def capabilities = getCapabilities()
+    
+    // ETag DSL must return a String and not a GString due to GStringImpl.equals(String) failing even if their character sequences are equal.
+    // See: https://jira.grails.org/browse/GPCACHEHEADERS-14
+    "${capabilities.app.version}${capabilities.app.buildNumber}".toString()
   }
 }

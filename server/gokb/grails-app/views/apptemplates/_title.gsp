@@ -90,18 +90,18 @@
                         <g:link controller="resource" action="show"
                           id="${ft?.class.name}:${ft.id}">
                           ${ft.name}
-                        </g:link> 
+                        </g:link>
 
                         <g:if test="${ft.publishedFrom ||ft.publishedTo }">
                          (
-                          <g:formatDate 
+                          <g:formatDate
                           format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
                           <em>To</em>
                           <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" />
                           )
-                        </g:if> 
-                        
+                        </g:if>
+
                         <g:if test="${ft.id == d.id}"></b></g:if>
                       </g:if> <g:else>From title not present</g:else>
                     </li>
@@ -117,14 +117,14 @@
                         <g:link controller="resource" action="show"
                           id="${ft.class.name}:${ft.id}">
                           ${ft.name}
-                        </g:link> 
+                        </g:link>
                         <g:if test="${ft.publishedFrom ||ft.publishedTo }">
                           (
                           <g:formatDate
                             format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
                           <em>To</em>
                           <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
+                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" />
                           )
                         </g:if>
                         <g:if test="${ft.id == d.id}"></b></g:if>
@@ -148,10 +148,10 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title
         Details</a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names 
+    <li><a href="#altnames" data-toggle="tab">Alternate Names
       <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
     </a></li>
-        
+
     <g:if test="${ d.isEditable() }">
       <li><a href="#history" data-toggle="tab">Add to Title
           History</a></li>
@@ -172,10 +172,9 @@
         class="badge badge-warning">
           ${d.additionalProperties?.size()}
       </span></a></li>
-    <li><a href="#review" data-toggle="tab">Review Tasks <span
-        class="badge badge-warning">
-          ${d.reviewRequests?.size()}
-      </span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size()} </span></a></li>
+
+    <li><a href="#fullTitleHistory" data-toggle="tab">Full TH </a></li>
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
@@ -339,7 +338,7 @@
       </dt>
       <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers"
  params="${params.findAll{k, v -> k != 'publisher_status'}}">
-               
+
        Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
       </g:form>
 
@@ -404,9 +403,12 @@
         model="${[d:d]}" />
     </div>
 
+    <div class="tab-pane" id="fullTitleHistory">
+      <g:render template="fullth" contextPath="../apptemplates"  model="${[d:d]}" />
+    </div>
+
   </div>
-  <g:render template="componentStatus" contextPath="../apptemplates"
-    model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 
 
