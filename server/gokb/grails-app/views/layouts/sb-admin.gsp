@@ -13,10 +13,10 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title><g:layoutTitle default="GOKb" /></title>
-  
+
   <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
   <g:layoutHead />
-  
+
   <asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
@@ -25,17 +25,17 @@
 	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/extras/modernizr-custom.js"></asset:script>
 	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/polyfiller.js"></asset:script>
 	<asset:script type="text/javascript" src="//assets.zendesk.com/external/zenbox/v2.6/zenbox.js"></asset:script>
-	
+
 	<asset:script>
 	  webshims.setOptions('waitReady', false);
 	  webshims.setOptions('forms-ext', {types: 'date'});
 	  webshims.polyfill('forms forms-ext');
 	</asset:script>
-	
+
 	<style type="text/css" media="screen, projection">
 	  @import url(//assets.zendesk.com/external/zenbox/v2.6/zenbox.css);
 	</style>
-  
+
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesnt work if you view the page via file:// -->
   <!--[if lt IE 9]>
@@ -86,7 +86,7 @@
         </ul>
         <!-- /.navbar-top-links -->
       </sec:ifLoggedIn>
-      
+
       <div class="navbar-default sidebar" role="navigation">
         <div class="sidebar-nav navbar-collapse">
           <ul class="nav" id="side-menu">
@@ -122,7 +122,7 @@
               <g:if test="${session.menus?.create}">
 			        <li class="${params?.controller == "create" ? 'active' : ''}"><a href="#"><i class="fa fa-plus fa-fw"></i> Create<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
-                
+
                   <g:each in="${session.menus?.create}" var="type,items" status="counter">
                     <g:if test="${ counter > 0 }" >
                       <li class="divider">${type}</li>
@@ -171,6 +171,9 @@
 
 
               <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
+
+              <li class="${params?.controller == "ingest" ? 'active' : ''}" ><g:link controller="ingest" action="index"><i class="fa fa-upload fa-fw"></i> Direct Ingest</g:link></li>
+
               <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 
               <sec:ifAnyGranted roles="ROLE_ADMIN">
@@ -232,7 +235,7 @@
 	    });
 	  }
 	</asset:script>
-  
+
   <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
     <asset:script type="text/javascript">
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

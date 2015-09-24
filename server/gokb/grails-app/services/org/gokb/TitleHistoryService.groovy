@@ -38,8 +38,8 @@ class TitleHistoryService {
     }
   }
 
-  def findGraphOfEvents(thevent) {
-    def title_history_events_to_expand = []
+  def findParticipatingTitles(thevent) {
+    def title_history_events_to_expand = [thevent]
     def th_graph=[]
 
     while ( title_history_events_to_expand.size() > 0 ) {
@@ -48,6 +48,14 @@ class TitleHistoryService {
   }
 
   def followTitleHistory(title_history_events_to_expand, th_graph) {
+    title_history_events_to_expand.each { the ->
+      if ( th_graph.contains( the ) ) {
+        // Identified event is already in the graph - may be a cycle - don't add it again
+      }
+      else {
+        th_graph.add(the);
+      }
+    }
   }
 
   def getHistories(th_graph) {   

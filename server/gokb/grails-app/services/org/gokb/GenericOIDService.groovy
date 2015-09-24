@@ -38,7 +38,7 @@ class GenericOIDService {
     def oid_components = oid.split(':');
     def result = null;
 
-    clazz = classCache[oid_components[0]]
+    def clazz = classCache[oid_components[0]]
 
     if ( clazz == null ) {
       def domain_class=null;
@@ -64,4 +64,3 @@ class GenericOIDService {
     result
   }
 }
-

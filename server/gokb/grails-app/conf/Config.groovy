@@ -11,11 +11,72 @@ import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
 import org.gokb.cred.KBComponent
 import org.gokb.validation.types.*
+import java.text.SimpleDateFormat
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
   "classpath:${appName}-config.groovy",
   "file:${userHome}/.grails/${appName}-config.properties",
   "file:${userHome}/.grails/${appName}-config.groovy"]
+
+  kbart2.mappings= [
+    ingram : [
+                [field: 'Title', kbart: 'publication_title'],
+                [field: 'Title ID', kbart: 'print_identifier'],
+                [field: 'Authors', kbart: 'first_author', separator: ';', additional: 'additional_authors'],
+                [field: 'Hardcover EAN ISBN', additional: 'additional_isbns'],  //another ISBN
+                [field: 'Paper EAN ISBN', additional: 'additional_isbns'],   //another ISBN
+                [field: 'Pub EAN ISBN', kbart: 'online_identifier'],
+                [field: 'MIL EAN ISBN', additional: 'additional_isbns'],  //another ISBN
+                [field: 'Publisher', kbart: 'publisher_name'],
+                [field: 'URL', kbart: 'title_url'],
+                [field: 'PubDate', kbart: 'date_monograph_published_online'],
+         ],
+     ybp : [
+                [field: 'Title', kbart: 'publication_title'],
+                [field: 'ISBN', kbart: 'online_identifier'],
+                [field: 'Author', kbart: 'first_author'],
+                [field: 'Editor', kbart: 'first_editor'],
+                [field: 'Publisher', kbart: 'publisher_name'],
+                [field: 'Pub_Year', kbart: 'date_monograph_published_online'],
+                [field: 'Edition', kbart: 'monograph_edition'],
+                [field: 'LC/NLM/Dewey_Class', additional: 'subjects']
+     ],
+     cufts:[
+                [field: 'title', kbart: 'publication_title'],
+                [field: 'issn', kbart: 'print_identifier'],
+                [field: 'e_issn', kbart: 'online_identifier'],
+                [field: 'ft_start_date', kbart: 'date_first_issue_online'],
+                [field: 'ft_end_date', kbart: 'date_last_issue_online'],
+                //[field: 'cit_start_date', kbart: ''],
+                //[field: 'cit_end_date', kbart: ''],
+                [field: 'vol_ft_start', kbart: 'num_first_vol_online'],
+                [field: 'vol_ft_end', kbart: 'num_last_vol_online'],
+                [field: 'iss_ft_start', kbart: 'num_first_issue_online'],
+                [field: 'iss_ft_end', kbart: 'num_last_issue_online'],
+                [field: 'db_identifier', kbart: 'title_id'],
+                [field: 'journal_url', kbart: 'title_url'],
+                [field: 'embargo_days', kbart: 'embargo_info'],
+                [field: 'embargo_months', kbart: 'embargo_info'],
+                [field: 'publisher', kbart: 'publisher_name'],
+                //[field: 'abbreviation', kbart: ''],
+                //[field: 'current_months', kbart: ''],
+     ]
+
+]
+
+kbart2.personCategory='SPR'
+kbart2.authorRole='Author'
+kbart2.editorRole='Editor'
+
+
+possible_date_formats = [
+    new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('dd/MM/yyyy'),
+    new SimpleDateFormat('dd/MM/yy'),
+    new SimpleDateFormat('yyyy/MM'),
+    new SimpleDateFormat('yyyy')
+];
+
 
 identifiers = [
   "class_ones" : [
@@ -24,7 +85,7 @@ identifiers = [
     "doi",
     "isbn"
   ],
-  
+
   // Class ones that need to be cross-checked. If an Identifier supplied as an ISSN,
   // is found against a title but as an eISSN we still treat this as a match
   "cross_checks" : [
@@ -130,9 +191,9 @@ def logWatchFile
 def base = System.getProperty("catalina.base")
 if (base) {
    logWatchFile = new File ("${base}/logs/catalina.out")
-   
+
    if (!logWatchFile.exists()) {
-     
+
      // Need to create one in current context.
      base = false;
    }
@@ -165,7 +226,7 @@ log4j = {
   //appenders {
   //    console name:'stdout', layout:pattern(conversionPattern: '%c{2} %m%n')
   //}
-  
+
   appenders {
     console name: "stdout", threshold: org.apache.log4j.Level.ALL
     if (!base) {
@@ -176,7 +237,7 @@ log4j = {
       )
     }
   }
-  
+
   root {
     if (!base) {
       error 'stdout', 'dailyAppender'
@@ -210,7 +271,8 @@ log4j = {
       'com.k_int.asset.pipeline.groovy',
       'asset.pipeline.less.compilers',
       'com.k_int.RefineUtils',
-      'com.k_int.grgit.GitUtils'
+      'com.k_int.grgit.GitUtils',
+      'org.gokb.RefineService'
 
   //   debug  'org.gokb.DomainClassExtender'
 
@@ -316,7 +378,7 @@ validation.rules = [
   "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
     [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
-    [ 
+    [
       type: EnsureDate,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: ["value.gokbDateCeiling()"]
@@ -550,7 +612,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -576,7 +638,7 @@ globalSearchTemplates = [
         ]
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -605,7 +667,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -630,7 +692,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -688,7 +750,7 @@ globalSearchTemplates = [
         // ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -786,7 +848,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -860,7 +922,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -888,7 +950,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -933,7 +995,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -977,7 +1039,7 @@ globalSearchTemplates = [
         ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
@@ -1225,7 +1287,7 @@ cache.headers.presets = [
 
 // Uncomment and edit the following lines to start using Grails encoding & escaping improvements
 
-/* remove this line 
+/* remove this line
  // GSP settings
  grails {
  views {

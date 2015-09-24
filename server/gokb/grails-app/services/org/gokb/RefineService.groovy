@@ -18,6 +18,7 @@ class RefineService {
   private static final String NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${TextUtils.VERSION_REGEX}"
   private static final String STABLE_RELEASE_NAMING_REGEX = "\\Q${EXTENSION_PREFIX}\\E${TextUtils.NONE_ALPHA_VERSION_REGEX}"
   private static final String FILENAME_REGEX = "${NAMING_REGEX}\\Q${EXTENSION_SUFFIX}\\E"
+  private static final String STABLE_FILENAME_REGEX = "${STABLE_RELEASE_NAMING_REGEX}\\Q${EXTENSION_SUFFIX}\\E"
 
   GrailsApplication grailsApplication
 
@@ -32,7 +33,7 @@ class RefineService {
 
   private static FilenameFilter stableFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
-      return name ==~ STABLE_RELEASE_NAMING_REGEX
+      return name ==~ STABLE_FILENAME_REGEX
     }
   };
 
@@ -52,7 +53,7 @@ class RefineService {
     refineFolderSingleton
   }
 
-  private String getLatestCurrentLocalExtension (boolean betaTester = false) {
+  private String getLatestCurrentLocalExtension (boolean tester = false) {
 
     // Open the webapp_dir
     File folder = new File(refineFolder)
@@ -61,7 +62,7 @@ class RefineService {
     if (folder.isDirectory()) {
 
       // Get a list of all GOKb extension zips.
-      String[] extensions = folder.list(betaTester ? filter : stableFilter)
+      String[] extensions = folder.list(tester ? filter : stableFilter)
       if(extensions){
         // Sort the results.
         Arrays.sort(extensions, comp)
@@ -82,7 +83,9 @@ class RefineService {
    * @param current_version The user's current refine version.
    * @return
    */
-  def checkUpdate (String current_version, boolean betaTester = false) {
+  def checkUpdate (String current_version, boolean tester = false) {
+    
+    log.debug("Checking for update for ${current_version} ${(tester ? 'including' : 'excluding')} test versions.")
     
     // Update available
     boolean update = false;
@@ -96,7 +99,9 @@ class RefineService {
     if (current_version != 'development') {
       
       // Get the latest local version
-      String current_local_version = getLatestCurrentLocalExtension(betaTester)
+      String current_local_version = getLatestCurrentLocalExtension(tester)
+      
+      log.debug("Found current version is ${current_local_version}")
       
       if (current_local_version) {
   
@@ -107,20 +112,28 @@ class RefineService {
         
         // Handle the fact that previous refine versions will report incorrectly formatted version values here.
         if (current_version ==~ TextUtils.VERSION_REGEX) {
+          
+          log.debug ("Current version matches the regex ${TextUtils.VERSION_REGEX}")
           update = (comp.compare(current_local_version, current_version) > 0)
+          log.debug ("Update has returned ${update}")
+          
         } else {
           update = true;
         }
       }
     }
     
-    data += ['update-available' : (update)]  
+    data += ['update-available' : (update)]
+    
+    log.debug("returning ${data}")
+    
+    return data
   }
   
-  File extensionDownloadFile (String version_required = null) {
+  File extensionDownloadFile (String version_required = null, boolean tester = false) {
     
     if (version_required == null) {
-      version_required = getLatestCurrentLocalExtension()
+      version_required = getLatestCurrentLocalExtension(tester)
     }
     
     if (version_required ==~ TextUtils.VERSION_REGEX) {

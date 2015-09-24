@@ -16,7 +16,7 @@ class AjaxSupportController {
 
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def edit() { 
+  def edit() {
     // edit [name:name, value:project:12, pk:org.gokb.cred.Package:2950, action:edit, controller:ajaxSupport]
     log.debug("edit ${params}");
     def result = [:]
@@ -54,7 +54,7 @@ class AjaxSupportController {
     def result = [:]
 
     def config = refdata_config[params.id]
-	
+
 	if (!config) {
 	  // Use generic config.
 	  config = [
@@ -66,7 +66,7 @@ class AjaxSupportController {
 		format:'simple'
 	  ]
 	}
-	
+
     if ( config ) {
       def query_params = []
       config.qryParams.each { qp ->
@@ -161,7 +161,7 @@ class AjaxSupportController {
    * @param __recip : Optional - If set, then new_object.recip will point to __context
    * @param __addToColl : The name of the local set to which the new object should be added
    * @param All other parameters are taken to be property names on newObjectClass and used to init the new instance.
-   */ 
+   */
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
@@ -206,7 +206,7 @@ class AjaxSupportController {
             }
           }
         }
- 
+
         // Need to do the right thing depending on who owns the relationship. If new obj
         // BelongsTo other, should be added to recip collection.
         if ( params.__recip ) {
@@ -243,7 +243,7 @@ class AjaxSupportController {
               log.debug("Problem ${e}");
             }
           }
-        } 
+        }
         else {
           // Stand alone object.. Save it!
           log.debug("Saving stand along reference object");
@@ -258,7 +258,7 @@ class AjaxSupportController {
         }
 
         // Special combo processing
-        if ( ( new_obj != null ) && 
+        if ( ( new_obj != null ) &&
              ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
           log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
           new_obj.hasByCombo.keySet().each { hbc ->
@@ -326,7 +326,7 @@ class AjaxSupportController {
     else {
       log.error("Unable to resolve context obj : ${params.__context}");
     }
-   
+
     def redirect_to = request.getHeader('referer')
 
     if ( params.redirect ) {
@@ -430,12 +430,12 @@ class AjaxSupportController {
         if ( params.resultProp ) {
           result = value ? value[params.resultProp] : ''
         }
-        
+
         // We should clear the session values for a user if this is a user to force reload of the,
         // parameters.
         if (target instanceof User) {
           session.userPereferences = null
-        } 
+        }
         else {
           if ( value ) {
             result = renderObjectValue(value);
@@ -479,7 +479,7 @@ class AjaxSupportController {
   def addIdentifier() {
     log.debug(params);
     // Check identifier namespace present, and identifier value valid for that namespace
-    if ( ( params.identifierNamespace?.length() > 0 ) && 
+    if ( ( params.identifierNamespace?.length() > 0 ) &&
          ( params.identifierValue?.length() > 0 ) &&
          ( params.__context?.length() > 0 ) ) {
       def ns = genericOIDService.resolveOID(params.identifierNamespace)
