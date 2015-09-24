@@ -49,18 +49,24 @@
           }
         });
   
-        // Create the Table.
-        var table = GOKb.toTable (
-          ["Column", "Equal to"],
-          DTData
-        );
-  
-        // Add selection checkboxes
-        table.selectableRows({selected : defaults, checkAll: false});
+        var table;
+        if (DTData.length === 0) {
+          table = $("<p>There are currently no selectable columns. Please make sure you have fixed any column naming issues and retry.</p>")
+        } else {
+        
+          // Create the Table.
+          table = GOKb.toTable (
+            ["Column", "Equal to"],
+            DTData
+          );
+    
+          // Add selection checkboxes
+          table.selectableRows({selected : defaults, checkAll: false});
+        }
         
         // Wrap in a table element.
         table = $('<div class="col-table" />')
-          .append("<p>Select the columns to use as the conditions for this edit.<br /><strong>Note:</strong> The edit will be applied to all rows that match the criteria selected and not just this cell.</p>")
+          .append("<p>Select the columns to use as the conditions for this edit.</p><p><strong>Note:</strong> The edit will be applied to all rows that match the criteria selected and not just this cell.</p>")
           .append(table)
           .hide()
         ;
