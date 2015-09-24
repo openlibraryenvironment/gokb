@@ -255,18 +255,22 @@ GOKb.forms.bindDataLookup = function (elem, def) {
   // Make this element a Select2.
   var conf = {
     placeholder         : (def.create ? "Add/" : "") + "Select a " + def.label,
-    minimumInputLength  : 1,
-    selectOnBlur        : true,
-    escapeMarkup        : function (m) { return m; },
-    id                  : function (object) { return object.value; },
-    nextSearchTerm      : function (selectedObject, currentSearchTerm) {
-      return currentSearchTerm;
-    },
   };
   
   // If not a select then add a query lookup, else we need to fetch all the results first and add them all.
   var type = elem.prop('tagName');
   if (type != "SELECT") {
+    
+    // Add extra config options.
+    $.extend ( conf, {
+      minimumInputLength  : 1,
+      selectOnBlur        : true,
+      escapeMarkup        : function (m) { return m; },
+      id                  : function (object) { return object.value; },
+      nextSearchTerm      : function (selectedObject, currentSearchTerm) {
+        return currentSearchTerm;
+      },
+    });
     
     // Result formatter.
     var formatResult = function(result, label, query) {
@@ -389,6 +393,12 @@ GOKb.forms.bindDataLookup = function (elem, def) {
       onDone : function (data) {
         if ("result" in data && "datalist" in data.result) {
           
+          // Need to default to blank if one isn't selected.
+          if (typeof def.currentValue === 'undefined') {
+            
+            elem.html("<option></option>");
+          }
+          
           // Add each element.
           $.each(data.result.datalist, function () {
             var op = this;
@@ -408,7 +418,7 @@ GOKb.forms.bindDataLookup = function (elem, def) {
           });
           
           // Add the select2 once we have finished.
-          elem.select2();
+          elem.select2(conf);
         }
       }
     });
