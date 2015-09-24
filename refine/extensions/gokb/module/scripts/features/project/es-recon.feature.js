@@ -4,7 +4,8 @@
 GOKb.registerFeature (
   'ES Recon',
   {
-    "include" : ['scripts/features/project/es_recon/es-recon-panel.js']
+    "include" : ['scripts/features/project/es_recon/es-recon-panel.js'],
+    "require" : ['es-recon']
   }, 
   function($) {
     ReconciliationManager.customServices.push({

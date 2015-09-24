@@ -1288,7 +1288,8 @@ cache.headers.presets = [
 globalSearch = [
   'indices'     : 'gokb',
   'types'       : 'component',
-  'typingField' : 'componentType'
+  'typingField' : 'componentType',
+  'port'        : 9300
 ]
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']

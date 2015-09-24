@@ -1,22 +1,26 @@
 function ReconESPanel(column, service, container) {
+  
+  // The full column def.
   this._column = column;
+  
+  // The service as defined when registering.
   this._service = service;
+  
+  // The dom element that is the container for the panel.
   this._container = container;
-
-//  this._constructUI();
-  alert ("Loaded our panel.");
 }
 
 ReconESPanel.prototype.activate = function() {
-  alert ("Activate");
+
+  //this._constructUI();
 };
 
 ReconESPanel.prototype.deactivate = function() {
-  alert ("Deactivate");
+  
 };
 
 ReconESPanel.prototype.dispose = function() {
-  alert ("Dispose");
+  
 };
 
 //ReconFreebaseQueryPanel.prototype.activate = function() {

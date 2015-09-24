@@ -37,6 +37,7 @@ import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 import com.k_int.gokb.refine.notifications.Notification;
 import com.k_int.gokb.refine.notifications.NotificationStack;
+import com.k_int.refine.es_recon.ESReconService;
 import com.k_int.refine.es_recon.model.ESReconcileConfig;
 
 import edu.mit.simile.butterfly.ButterflyClassLoader;
@@ -114,6 +115,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   private GOKbService[] services = null;
 
   private RefineWorkspace[] workspaces;
+  
+  private static ESReconService reconService = null;
 
   private void addProxiedCommands() {
 
@@ -160,7 +163,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     }
   }
   @SuppressWarnings("unchecked")
-  private void addWorkspaces () throws IOException {
+  private void addWorkspaces () throws IOException, JSONException {
 
     // Get the file-based project manager.
     File current_ws = ((FileProjectManager)FileProjectManager.singleton).getWorkspaceDir();
@@ -502,7 +505,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     return p;
   }
 
-  public void setActiveWorkspace(int workspace_id) {
+  public void setActiveWorkspace(int workspace_id) throws IOException, JSONException {
 
     // We should now set the new workspace.
     ProjectManager.singleton.dispose();
@@ -523,6 +526,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     _logger.info(
         "Now using workspace '" + newWorkspace.getName() + "' at URL '" +
             newWorkspace.getService().getURL() + "'");
+    
+    // Using the settings provided from the API we are connected too try and add
+    // an ES reconciliation point.
+    ESReconService ess = null;
+    if (newWorkspace.getService().isCabable("es-recon")) {
+      JSONObject esc = newWorkspace.getService().getSettings("esconfig");
+      
+    }
 
     // Need to clear login information too.
     userDetails = null;
@@ -576,9 +587,18 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       .key("current-user").value(getCurrentUser())
     .endObject();
   }
+  
+  private static void setReconService(ESReconService eservice) throws Exception {
+    if (reconService != null) {
+      reconService.destroy();
+    }
+    
+    reconService = eservice;
+  }
 
   @Override
   public void destroy () throws Exception {
+    setReconService (null);
     this.scheduler.shutdown();
     super.destroy();
   }

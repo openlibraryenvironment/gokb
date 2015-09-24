@@ -84,7 +84,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
         } else {
 
           // We create a new JSONObject with null data and save.
-          settings = new JSONObject("{\"etag\" : 0,\"data\" : {\"core\" : true}}");
+          settings = new JSONObject("{\"etag\" : \"0\",\"data\" : {\"core\" : true}}");
           FileUtils.writeStringToFile(jsonFile, settings.toString());
         }
 
@@ -191,7 +191,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    * @throws JSONException
    * @throws IOException
    */
-  private JSONObject getSettings(String name) throws IOException, JSONException {
+  public JSONObject getSettings(String name) throws IOException, JSONException {
     logger.debug("Trying to get settings named '" + name + "'");
     return settings.get( getURL() + name );
   }

@@ -969,6 +969,7 @@ class ApiController {
     "core"                : true,
     "project-mamangement" : true,
     "cell-level-edits"    : true,
+    "es-recon"            : true,
   ]
   
   private static def getCapabilities() {
