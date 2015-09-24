@@ -8,7 +8,7 @@
   <h1 class="page-header">${group?.name}</h1>
   <div id="mainarea" class="panel panel-default">
 
-    <g:render template="/search/pagination" model="${[offset_param:"pkg_offset",offset:pkg_offset,records:packages,page:pkg_page,page_max:pkg_page_max,lasthit:(pkg_offset.toInteger() + packages.size()),recset:"something",max:max,params:params,reccount:package_count,hideActions:true]}"/>
+    <g:render template="/search/pagination" model="${[s_controller:"group",offset_param:"pkg_offset",offset:pkg_offset,records:packages,page:pkg_page,page_max:pkg_page_max,lasthit:(pkg_offset.toInteger() + packages.size()),recset:"something",max:max,params:params,reccount:package_count,hideActions:true]}"/>
 
     <table class="table table-striped table-condensed table-bordered">
       <thead>
@@ -42,7 +42,7 @@
             <g:link controller="resource" action="show" id="${pkg?.userListVerifier?.getClassName()+':'+pkg?.userListVerifier?.id}">${pkg.userListVerifier?.displayName} </g:link>
          </td>
             <td>${pkg.listVerifiedDate}</td>
-            <td>${pkg.lastModified}</td>
+            <td>${pkg.lastUpdated}</td>
             <td>${pkg.scope?.value}</td>
             <td>${pkg.listStatus?.value}</td>
             <td>${pkg.tipps.size()}</td>
@@ -54,7 +54,8 @@
 
   <h1 class="page-header">${group?.name} Review Tasks</h1>
   <div id="mainarea" class="panel panel-default">
-    <g:render template="/search/pagination" model="${[offset_param:"rr_offset",offset:rr_offset,records:rrs,page:rr_page,page_max:rr_page_max,lasthit:(rr_offset.toInteger() + rrs.size()),recset:"something",max:max,params:params,reccount:rr_count,hideActions:true]}"/>
+
+    <g:render template="/search/pagination" model="${[s_controller:"group",offset_param:"rr_offset",offset:rr_offset,records:rrs,page:rr_page,page_max:rr_page_max,lasthit:(rr_offset.toInteger() + rrs.size()),recset:"something",max:max,params:params,reccount:rr_count,hideActions:true]}"/>
 
     <table class="table table-striped table-condensed table-bordered">
       <thead>
