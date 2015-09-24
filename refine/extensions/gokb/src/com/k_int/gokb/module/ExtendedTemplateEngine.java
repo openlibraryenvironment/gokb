@@ -133,28 +133,25 @@ public class ExtendedTemplateEngine extends VelocityEngine {
   private static final String REPLACEMENT_REGEX = "(\\<(script|link).*(src|href)\\s*\\=\\s*[\\\"\\'][^\\\"\\']+)([\\\"\\'][^\\>]*\\>)";
 
   private static void addModuleVersionToResources (Context context) {
-
-    // Go through each option and append the <link> and <script> locations with the module version. 
-    for (Object k : context.getKeys()) {
-      String key = (String)k;
-
-      // Get the value.
-      Object value = context.get(key);
-      if (value instanceof String) {
-        
-        // Grab the module version.
-        String version = GOKbModuleImpl.getVersion();
-        
-        // If the version is development then we should use the timestamp. This will prevent bundles being cached during development,
-        // but will also add an extra overhead as the resources will be rebuilt every time.
-        if ("development".equals(version)) {
-          version = "" + System.currentTimeMillis();
+    
+    // Grab the module version.
+    String version = GOKbModuleImpl.getVersion();
+    
+    if (!"development".equals(version)) {
+    
+      // Go through each option and append the <link> and <script> locations with the module version. 
+      for (Object k : context.getKeys()) {
+        String key = (String)k;
+  
+        // Get the value.
+        Object value = context.get(key);
+        if (value instanceof String) {
+          
+          // Replace the text and write the value back.
+          String val = (String)value;
+          val = val.replaceAll(REPLACEMENT_REGEX, "$1?gokb=" + version + "$4");
+          context.put(key, val);
         }
-        
-        // Replace the text and write the value back.
-        String val = (String)value;
-        val = val.replaceAll(REPLACEMENT_REGEX, "$1?gokb=" + version + "$4");
-        context.put(key, val);
       }
     }
   }

@@ -387,3 +387,109 @@ GOKb.handlers.createBlankColumn = function (col_name) {
 	  { modelsChanged: true }
 	);
 };
+
+GOKb.handlers.createNewPackage = function (callback, target_el) {
+  
+  // Create a new dialog window.
+  var dialog = GOKb.createDialog('Create new package');
+  
+  var form = GOKb.forms.build (
+    "qc-package-create", 
+    [
+      {
+        type : "fieldset",
+        children : [
+          {
+            type      : 'legend',
+            text      : 'Construct a package name'
+          },
+          {
+            label:  'Provider',
+            type:   'select',
+            source: 'RefData:org',
+            name:   'package_provider',
+          },
+          {
+            label:  'Name',
+            type:   'text',
+            name:   'package_name',
+          },
+        ],
+      },
+    ],
+    function() {
+      // Close the dialog.
+      dialog.close();
+      
+      // Construct the value from the submitted data.
+      var theForm = dialog.bindings.form;
+      var vals = GOKb.forms.values (theForm);
+      var val = $("#package_provider option[value='" + vals['package_provider'] + "']", theForm).text() + ': ' + vals['package_name'];
+      
+      // Try and create the new item.
+      GOKb.doCommand(
+        "quickCreate",
+        {},
+        {
+          "qq_type" : 'package',
+          "name": val
+        },
+        {
+          "onDone" : function (data) {
+            // Run the callback and then close the dialog.
+            callback({"label": data.result, "value": data.result}, target_el);
+            
+            // Close the lookup.
+            GOKb.lookup.close();
+          }
+        }
+      );
+      // Don't allow the submit afterwards.
+      return false;
+    },
+    null,
+    function (theForm) {
+      
+      var valid = true;
+      
+      // We should check the data.
+      var val = GOKb.forms.values (theForm);
+      
+      var addError = function (compName, message) {
+        $('*[name="' + compName + '"]', theForm).parent().after(
+          $("<p />")
+            .attr("class", "error message")
+            .html(message)
+        );
+        
+        valid = false;
+      };
+      
+      // Clear all previous messages.
+      $('p.error.message').remove();
+      
+      if (typeof val['package_provider'] === 'undefined' || val['package_provider'].trim() === "") {
+        addError ('package_provider', "Please select a provider for the package.");
+      }
+      if (typeof val['package_name'] === 'undefined' || val['package_name'].trim() === "") {
+        addError ('package_name', "Please enter a name for the package.");
+      }
+      
+      return valid;
+    },
+    false // Do not remember these values.
+  );
+  
+  // Bind the form.
+  dialog.bindings.dialogContent.append(form);
+  $.extend(dialog.bindings, {"form" : form});
+  
+  // Change the submit button text to be rename
+  dialog.bindings.form.bindings.submit.attr("value", "Add Package");
+  
+  // Rename close button to cancel.
+  dialog.bindings.closeButton.text("Cancel");
+  
+  // Show the form.
+  return GOKb.showDialog(dialog);
+}

@@ -550,6 +550,17 @@ class ApiController {
           result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
         }
         break;
+        
+      case 'org' :
+        def oq = Org.createCriteria()
+        def orgs = oq.listDistinct {
+          order("name", "asc")
+        }
+        result.datalist=new java.util.ArrayList()
+        orgs.each { o ->
+          result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
+        }
+        break;
       default:
         break;
     }
