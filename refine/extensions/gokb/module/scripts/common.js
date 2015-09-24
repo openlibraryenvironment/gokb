@@ -707,8 +707,8 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
       this._lookup._open();
       
       if (quickCreate != false) {
-      	
-      	if (this._quickCreate == null) {
+        
+        if (this._quickCreate == null) {
       		
       		var _self = this;
       		
@@ -720,34 +720,43 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
 		  			.prop('disabled', true)
       		  .text ("Create New")
       		  .click(function(){
-      	  		var val = ac.val();
-      	  		
-      	  		if (val && val != "") {
-	      	  		// On click we need to confirm the creation.
-	      	  		var r=confirm("Are you sure you wish to create \"" + val + "\"");
-	      	  		if (r==true) {
-	      	  		  // Try and create the new item.
-	      	  		  GOKb.doCommand(
-	      	  		    "quickCreate",
-	      	  		    {},
-	      	  		    {
-	      	  		      "qq_type" : quickCreate,
-	      	  		      "name": val
-	      	  		    },
-	      	  		    {
-	      	  		      "onDone" : function (data) {
-	      	  		        // Run the callback and then close the dialog.
-	      	  		        callback({"label": data.result, "value": data.result}, _self._el);
-	      	  		        
-	      	  		        // Close the lookup.
-	      	  		        GOKb.lookup.close();
-	      	  		      }
-	      	  		    }
-	      	  		  );
-	      	  		}
-
-	      	  		// Just do nothing.
-      	  		}
+      		    
+      		    if (quickCreate === 'package') {
+                // We need to close this lookup and offload to a stand-alone handler.
+                _self.close();
+                GOKb.handlers.createNewPackage(callback, _self._el);
+                
+              } else {
+      		    
+        	  		var val = ac.val();
+        	  		
+        	  		if (val && val != "") {
+  	      	  		// On click we need to confirm the creation.
+  	      	  		var r=confirm("Are you sure you wish to create \"" + val + "\"");
+  	      	  		if (r==true) {
+  	      	  		  // Try and create the new item.
+  	      	  		  GOKb.doCommand(
+  	      	  		    "quickCreate",
+  	      	  		    {},
+  	      	  		    {
+  	      	  		      "qq_type" : quickCreate,
+  	      	  		      "name": val
+  	      	  		    },
+  	      	  		    {
+  	      	  		      "onDone" : function (data) {
+  	      	  		        // Run the callback and then close the dialog.
+  	      	  		        callback({"label": data.result, "value": data.result}, _self._el);
+  	      	  		        
+  	      	  		        // Close the lookup.
+  	      	  		        GOKb.lookup.close();
+  	      	  		      }
+  	      	  		    }
+  	      	  		  );
+  	      	  		}
+  
+  	      	  		// Just do nothing.
+        	  		}
+              }
 	      	  });
       		
       		ac.on('input', function() {
@@ -942,7 +951,6 @@ GOKb.timer = function() {
   // Return the listener.
   return listener;
 };
-
 
 /**
  * Method to run after core update.

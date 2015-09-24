@@ -38,6 +38,9 @@ ValidationPanel.messages.getActions = function (message, elem) {
 	  elem,
 	  { width: "120px", horizontal: true }
 	);
+	
+	// Add a class.
+	GOKb._lastRefineMenu.addClass('qr-menu-container');
 };
 
 /**

@@ -1,6 +1,7 @@
 /**
  * Cell Level Edits feature.
  */
+
 GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, function($) {
   var settings = {
     defaultColumns : ['publicationtitle']
@@ -42,14 +43,20 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
       }
     });
 
-    // Create the Table.
-    var table = GOKb.toTable (
-      ["Column", "Equal to"],
-      DTData
-    );
+    var table;
+    if (DTData.length == 0) {
+      table = $("<p>There are currently no selectable columns. Please make sure you have fixed any column naming issues and retry.</p>")
+    } else {
+    
+      // Create the Table.
+      table = GOKb.toTable (
+        ["Column", "Equal to"],
+        DTData
+      );
 
-    // Add selection checkboxes
-    table.selectableRows({selected : defaults, checkAll: false});
+      // Add selection checkboxes
+      table.selectableRows({selected : defaults, checkAll: false});
+    }
     
     // Wrap in a table element.
     table = $('<div class="col-table" />')

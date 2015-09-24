@@ -201,3 +201,43 @@ GOKb.hijackFunction (
     document.title = document.title + " using " + GOKb.core.workspace.name;
   }
 );
+
+// Need to increase the dialog start level.
+GOKb.hijackFunction (
+  'DialogSystem.showDialog',
+  function(elmt, onCancel, oldFunction) {
+
+    // Run the original.
+    var layers = oldFunction.apply(this, arguments);
+    
+    // Ensure we move the dialogs higher up the z axis.
+    $('.dialog-overlay').each(function(){
+      var overl = $(this);
+      var zIndex = overl.css("z-index");
+      
+      if (zIndex < 1101) {
+
+        overl.css("z-index", (parseInt(overl.css("z-index"), 10) + 1000));
+        
+        // Increase the indices.
+        var cont = $('.dialog-container');
+        cont.css("z-index", (parseInt(cont.css("z-index"), 10) + 1000));
+      }
+    });
+    
+    return layers;
+  }
+);
+
+// Just record the last menu added so we can alter it directly after.
+GOKb._lastRefineMenu = null; 
+GOKb.hijackFunction (
+  'MenuSystem.showMenu',
+  function(elmt, onDismiss, oldFunction) {
+    
+    // Run the original.
+    var layers = oldFunction.apply(this, arguments);
+    GOKb._lastRefineMenu = elmt;
+    return layers;
+  }
+);
