@@ -5,15 +5,12 @@
 
 
 import com.k_int.TextUtils
-
 import org.apache.log4j.DailyRollingFileAppender
 import org.apache.log4j.RollingFileAppender
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
-import org.gokb.GlobalSearchController;
 import org.gokb.IngestService
 import org.gokb.cred.KBComponent
 import org.gokb.validation.types.*
-
 import java.text.SimpleDateFormat
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
@@ -1282,14 +1279,6 @@ waiting {
 cache.headers.presets = [
   "none": false,
   "until_changed": [shared:true, validFor: (3600 * 12)] // cache content for 12 hours.
-]
-
-
-globalSearch = [
-  'indices'     : 'gokb',
-  'types'       : 'component',
-  'typingField' : 'componentType',
-  'port'        : 9300
 ]
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
