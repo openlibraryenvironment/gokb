@@ -1142,7 +1142,7 @@ class WorkflowController {
 
           // As per spec header at top of file / section
           // II: Need to add in preceding_publication_title_id
-          writer.write('publication_title\tprint_identifier\tonline_identifier\tdate_first_issue_online\tnum_first_vol_online\tnum_first_issue_online\tdate_last_issue_online\tnum_last_vol_online\tnum_last_issue_online\ttitle_url\tfirst_author\ttitle_id\tembargo_info\tcoverage_depth\tcoverage_notes\tpublisher_name\tpreceding_publication_title_id\tdate_monograph_published_print\tdate_monograph_published_online\tmonograph_volume\tmonograph_edition\tfirst_editor\tparent_publication_title_id\n');
+          writer.write('publication_title\tprint_identifier\tonline_identifier\tdate_first_issue_online\tnum_first_vol_online\tnum_first_issue_online\tdate_last_issue_online\tnum_last_vol_online\tnum_last_issue_online\ttitle_url\tfirst_author\ttitle_id\tembargo_info\tcoverage_depth\tcoverage_notes\tpublisher_name\tpreceding_publication_title_id\tdate_monograph_published_print\tdate_monograph_published_online\tmonograph_volume\tmonograph_edition\tfirst_editor\tparent_publication_title_id\tpublication_type\taccess_type\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
@@ -1176,6 +1176,8 @@ class WorkflowController {
                           '\t' +  // monograph_edition
                           '\t' +  // first_editor
                           '\t' +  // parent_publication_title_id
+                          sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
+                          sanitize( tipp.paymentType?.value ) +  // access_type
                           '\n');
             tipp.discard();
           }
