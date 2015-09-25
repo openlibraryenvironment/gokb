@@ -410,7 +410,7 @@ GOKb.handlers.createNewPackage = function (callback, target_el) {
             name:   'package_provider',
           },
           {
-            label:  'Name',
+            label:  'Package Name',
             type:   'text',
             name:   'package_name',
           },
