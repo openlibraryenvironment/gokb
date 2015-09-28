@@ -1281,6 +1281,13 @@ cache.headers.presets = [
   "until_changed": [shared:true, validFor: (3600 * 12)] // cache content for 12 hours.
 ]
 
+globalSearch = [
+  'indices'     : 'gokb',
+  'types'       : 'component',
+  'typingField' : 'componentType',
+  'port'        : 9300
+]
+
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'
 //     'My-Custom-Header': 'some value'
