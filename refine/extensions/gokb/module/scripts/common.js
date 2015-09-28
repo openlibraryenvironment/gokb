@@ -952,6 +952,18 @@ GOKb.timer = function() {
   return listener;
 };
 
+GOKb.rowIndexToRow = function (rowIndex) {
+  var rows = theProject.rowModel.rows;
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    if (row.i === rowIndex) {
+      return row;
+    }
+  }
+  
+  return null;
+}
+
 /**
  * Method to run after core update.
  * data will be the full GOKb object.

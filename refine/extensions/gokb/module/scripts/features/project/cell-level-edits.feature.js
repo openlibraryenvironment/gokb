@@ -6,8 +6,8 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
   var settings = {
     defaultColumns : ['publicationtitle']
   };
-  
-  //Extend the protoype of the CellUI and add a new method for capturing the cell level edits.
+      
+  // Extend the protoype of the CellUI and add a new method for capturing the cell level edits.
   DataTableCellUI.prototype._extendEdit = function(elmt) {
     
     var _self = this;
@@ -29,7 +29,7 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
       var localCol = Refine.columnNameToColumn (localName);
       
       if (localCol != null) {
-        var localCell = theProject.rowModel.rows[self._rowIndex].cells[localCol.cellIndex];
+        var localCell = GOKb.rowIndexToRow(self._rowIndex).cells[localCol.cellIndex];
         var localValue = localCell != null ? localCell.v : "";
         var lcLocalName = localName.toLowerCase()
         
@@ -44,7 +44,7 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
     });
 
     var table;
-    if (DTData.length == 0) {
+    if (DTData.length === 0) {
       table = $("<p>There are currently no selectable columns. Please make sure you have fixed any column naming issues and retry.</p>")
     } else {
     
@@ -60,7 +60,7 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
     
     // Wrap in a table element.
     table = $('<div class="col-table" />')
-      .append("<p>Select the columns to use as the conditions for this edit.<br /><strong>Note:</strong> The edit will be applied to all rows that match the criteria selected and not just this cell.</p>")
+      .append("<p>Select the columns to use as the conditions for this edit.</p><p><strong>Note:</strong> The edit will be applied to all rows that match the criteria selected and not just this cell.</p>")
       .append(table)
       .hide()
     ;
@@ -192,7 +192,12 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
               repeatCount: 0
             },
             null,
-            { cellsChanged: true }
+            { columnStatsChanged: true },
+            { "onDone" : function(){
+              
+              // Need to refresh the view to the current page.
+              ui.dataTableView._showRows (theProject.rowModel.start);
+            }}
           );
         } else {
           // No selection made.
