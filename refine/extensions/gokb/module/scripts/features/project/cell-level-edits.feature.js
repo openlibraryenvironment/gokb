@@ -35,7 +35,7 @@
           var localCol = Refine.columnNameToColumn (localName);
           
           if (localCol != null) {
-            var localCell = theProject.rowModel.rows[self._rowIndex].cells[localCol.cellIndex];
+            var localCell = GOKb.rowIndexToRow(self._rowIndex).cells[localCol.cellIndex];
             var localValue = localCell != null ? localCell.v : "";
             var lcLocalName = localName.toLowerCase()
             
@@ -198,7 +198,12 @@
                   repeatCount: 0
                 },
                 null,
-                { cellsChanged: true }
+                { columnStatsChanged: true },
+                { "onDone" : function(){
+                  
+                  // Need to refresh the view to the current page.
+                  ui.dataTableView._showRows (theProject.rowModel.start);
+                }}
               );
             } else {
               // No selection made.
