@@ -243,12 +243,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    * @throws JSONException 
    */
   public boolean isCabable(String of) {
-    try {
-      return capabilities.has(of) && capabilities.getBoolean(of);
-    } catch (JSONException e) {
-      logger.error("Exception when testing capability '" + of + "'", e);
-    }
-    return false;
+      return capabilities.optBoolean(of, false);
   }
 
   /**

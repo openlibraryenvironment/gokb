@@ -45,6 +45,8 @@ import edu.mit.simile.butterfly.ButterflyModule;
 import edu.mit.simile.butterfly.ButterflyModuleImpl;
 
 public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
+  
+  public static final String REGEX_HOST = "^(.*\\:\\/\\/)?([^\\/|\\:]*).*";
 
   final static Logger _logger = LoggerFactory.getLogger("GOKb-ModuleImpl");
   
@@ -522,17 +524,23 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
     // Now we re-init the project manager, with our new directory.
     FileProjectManager.initialize(newWorkspace.getWsFolder());
+    
+    String theUrl = newWorkspace.getService().getURL();
 
     _logger.info(
-        "Now using workspace '" + newWorkspace.getName() + "' at URL '" +
-            newWorkspace.getService().getURL() + "'");
+        "Now using workspace '" + newWorkspace.getName() + "' at URL '" + theUrl + "'");
     
     // Using the settings provided from the API we are connected too try and add
     // an ES reconciliation point.
-    ESReconService ess = null;
     if (newWorkspace.getService().isCabable("es-recon")) {
       JSONObject esc = newWorkspace.getService().getSettings("esconfig");
+      String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
+      _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " cluster: " + esc.getString("cluster") + " index: " + esc.getString("indices"));
+      reconService = new ESReconService(host, esc.getInt("port"), esc.getString("indices"), ESReconService.config()
+        .put("cluster.name", esc.getString("cluster"))
+      .build());
       
+      reconService.getAllIndexDetails();
     }
 
     // Need to clear login information too.

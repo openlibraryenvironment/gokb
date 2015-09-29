@@ -23,6 +23,23 @@ ReconESPanel.prototype.dispose = function() {
   
 };
 
+ReconESPanel.prototype.start = function() {
+    bodyParams = {
+      columnName: this._column.name,
+      config: JSON.stringify({
+        mode: "gokb/ElasticSearch"
+      })
+    };
+  }
+
+  Refine.postCoreProcess(
+    "reconcile",
+    {},
+    bodyParams,
+    { cellsChanged: true, columnStatsChanged: true }
+  );
+};
+
 //ReconFreebaseQueryPanel.prototype.activate = function() {
 //  this._panel.show();
 //};
