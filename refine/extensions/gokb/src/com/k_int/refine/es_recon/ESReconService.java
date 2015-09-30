@@ -1,5 +1,9 @@
 package com.k_int.refine.es_recon;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
@@ -11,7 +15,12 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.ImmutableSettings.Builder;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.facet.FacetBuilders;
+import org.elasticsearch.search.facet.terms.TermsFacet;
+import org.json.JSONException;
 
+@SuppressWarnings("deprecation")
 public class ESReconService {
   TransportClient client;
   private static final int DEFAULT_PORT = 9300;
@@ -72,6 +81,30 @@ public class ESReconService {
         System.out.println( key + " = " + val.source().toString());
       }
     }
+  }
+  
+  public String[] getUniqueValues (String index, String field) throws JSONException, IOException {
+    String [] vals = new String [0];
+    if (field != null) {
+      // Get the values using a facet.
+      TermsFacet typeFacet = (TermsFacet) client.prepareSearch()
+          .setQuery(QueryBuilders.matchAllQuery())
+          .addFacet(FacetBuilders.termsFacet("types")
+              .field(field)
+              .allTerms(true)
+              )
+              .execute().actionGet().getFacets().facetsAsMap().get("types");
+
+      if ( typeFacet != null ) {
+        List<String> valsList = new ArrayList<String> ();
+        for (TermsFacet.Entry f : typeFacet) {
+          valsList.add(f.getTerm().string());
+        }
+        vals = valsList.toArray(vals);
+      }
+    }
+    
+    return vals;
   }
   
   public void destroy () throws Exception {

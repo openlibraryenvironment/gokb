@@ -4,12 +4,15 @@
 GOKb.registerFeature (
   'ES Recon',
   {
-    "include" : ['scripts/features/project/es_recon/es-recon-panel.js'],
+    "include" : [
+      'scripts/features/project/es_recon/es-recon.js',
+      'scripts/features/project/es_recon/es-recon-panel.js',
+    ],
     "require" : ['es-recon']
   }, 
   function($) {
     ReconciliationManager.customServices.push({
-      "name" : "Elastic Search",
+      "name" : "GOKb",
       "ui" : { "handler" : "ReconESPanel" }
     });
   }

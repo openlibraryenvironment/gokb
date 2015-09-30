@@ -3,10 +3,13 @@
  */
 
 var ESRecon = (function($) {
-  
   return {
-    getTypes : function () {
-      
+    getTypes : function() {
+      return GOKb.doCommand(
+        "es-get-types",
+        {},
+        {}
+      ); 
     }
   };
   

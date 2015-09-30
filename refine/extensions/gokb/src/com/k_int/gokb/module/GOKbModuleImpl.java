@@ -541,11 +541,26 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       .build());
       
       reconService.getAllIndexDetails();
+      reconService.getUniqueValues("gokb", esc.getString("typingField"));
     }
 
     // Need to clear login information too.
     userDetails = null;
     _logger.info("User login details reset to force login on workspace change.");
+  }
+  
+  public JSONObject getESConfig() throws IOException, JSONException {
+    return getCurrentService().getSettings("esconfig");
+  }
+  
+  public String[] getESTypes () throws JSONException, IOException {
+    
+    JSONObject esc = getESConfig();
+    if (reconService != null) {
+      return reconService.getUniqueValues("gokb", esc.getString("typingField"));
+    }
+    
+    return new String[0];
   }
 
   private void extendCoreModule() throws Exception {
@@ -602,6 +617,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     }
     
     reconService = eservice;
+  }
+
+  public ESReconService getReconService () {
+    return reconService;
   }
 
   @Override

@@ -439,7 +439,7 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
             
             window.location.href = dataR.redirect;
             
-          } else if ("onDone" in callbacks) {
+          } else if (callbacks && "onDone" in callbacks && typeof callbacks.onDone === 'function') {
             try {
               callbacks.onDone(dataR);
             } catch (e) {

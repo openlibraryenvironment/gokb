@@ -1,5 +1,8 @@
 package com.k_int.refine.es_recon.model;
 
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
+import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 
@@ -16,8 +19,15 @@ import com.google.refine.model.recon.ReconConfig;
 import com.google.refine.model.recon.ReconJob;
 
 public class ESReconcileConfig extends ReconConfig {
+  private String typeID;
 
-  private String testString;
+  public String getTypeID () {
+    return typeID;
+  }
+
+  public void setTypeID (String typeID) {
+    this.typeID = typeID;
+  }
 
   static public ReconConfig reconstruct(JSONObject obj) throws Exception {
 
@@ -44,14 +54,22 @@ public class ESReconcileConfig extends ReconConfig {
 
   @Override
   public String getBriefDescription (Project project, String columnName) {
-    // TODO Auto-generated method stub
-    return null;
+    return "Reconcile cells in column " + columnName + " to type " + getTypeID();
   }
 
   @Override
   public ReconJob createJob (Project project, int rowIndex, Row row, String columnName, Cell cell) {
-    // TODO Auto-generated method stub
-    return null;
+    ESReconJob job = new ESReconJob();
+    try {
+      job.code = jsonBuilder().startObject()
+        .field("query", cell.value.toString())
+        .field("type", typeID)
+      .endObject().string();
+    } catch (IOException e) {
+      // The code will remain unset.
+    }
+    
+    return job;
   }
 
   @Override
@@ -65,12 +83,12 @@ public class ESReconcileConfig extends ReconConfig {
     // TODO Auto-generated method stub
     return null;
   }
-
-  public String getTestString () {
-    return testString;
-  }
-
-  public void setTestString (String testString) {
-    this.testString = testString;
+  static protected class ESReconJob extends ReconJob {
+    String code;
+    
+    @Override
+    public int getKey() {
+        return code.hashCode();
+    }
   }
 }
