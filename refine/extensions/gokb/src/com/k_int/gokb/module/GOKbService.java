@@ -20,10 +20,9 @@ import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.refine.Jsonizable;
 import com.k_int.gokb.module.util.ConditionalDownloader;
 import com.k_int.gokb.module.util.URLConenectionUtils;
-
-import com.google.refine.Jsonizable;
 
 /**
  * Represents a remote GOKb web service.
@@ -277,16 +276,8 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    */
   private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
     
-    JSONObject res = apiJSON(
-      "checkUpdate",
-      URLConenectionUtils.METHOD_TYPE.GET,
-      URLConenectionUtils.paramStringMap(
-        "tester=" + GOKbModuleImpl.properties.getBoolean("tester", false)
-      )
-    );
-    
     // Get the current version we are using to send for comparison.
-//    res = apiJSON("checkUpdate");
+    JSONObject res = apiJSON("checkUpdate");
     if ("success".equalsIgnoreCase(res.getString("code"))) {
       
       res = res.getJSONObject("result");
@@ -366,8 +357,14 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
     // Create a URL object.
     URL url = new URL(urlString);
     
+    // Add authentication if this is the current service.
+    String userAuth = null;
+    if (GOKbModuleImpl.singleton.getCurrentWorkspaceId() > -1 && this.equals(GOKbModuleImpl.singleton.getCurrentService())) {
+      userAuth = GOKbModuleImpl.getCurrentUserDetails();
+    }
+    
     // Open the connection.
-    HttpURLConnection connection = URLConenectionUtils.getAPIConnection(methodType, url);
+    HttpURLConnection connection = URLConenectionUtils.getAPIConnection(methodType, url, userAuth);
       
     // If we are posting then parameters should be written to the stream.
     if (methodType == URLConenectionUtils.METHOD_TYPE.POST) {

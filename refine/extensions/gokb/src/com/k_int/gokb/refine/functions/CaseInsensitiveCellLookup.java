@@ -1,6 +1,5 @@
 package com.k_int.gokb.refine.functions;
 
-import java.util.List;
 import java.util.Properties;
 
 import org.json.JSONException;
@@ -8,6 +7,7 @@ import org.json.JSONWriter;
 
 import com.google.refine.grel.Function;
 import com.google.refine.model.Project;
+import com.k_int.gokb.module.util.ProjectUtils;
 
 public class CaseInsensitiveCellLookup implements Function {
 
@@ -24,22 +24,8 @@ public class CaseInsensitiveCellLookup implements Function {
                 String columnName = (String)columnNameObj;
                 
                 Project project = (Project) bindings.get("project");
-                List<String> cols = project.columnModel.getColumnNames();
-                String actualName = null;
-                for (int i=0; i<cols.size() && (actualName == null); i++) {
-                    
-                  // Get the current name
-                  String col = cols.get(i);
-                  
-                  // Get each column name and check for case-insensitive match.
-                  if (columnName.equalsIgnoreCase(col)) {
-
-                    // Set the actual name
-                    actualName = col;
-                  }
-                }
                 
-                return actualName;
+                ret = ProjectUtils.caseInsensitiveColumnName(project, columnName);
             }
         }
 
