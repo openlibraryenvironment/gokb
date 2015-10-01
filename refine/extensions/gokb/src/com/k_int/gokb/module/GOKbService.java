@@ -277,13 +277,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    */
   private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
     
-    JSONObject res = apiJSON(
-      "checkUpdate",
-      URLConenectionUtils.METHOD_TYPE.GET,
-      URLConenectionUtils.paramStringMap(
-        "tester=" + GOKbModuleImpl.properties.getBoolean("tester", false)
-      )
-    );
+    JSONObject res = apiJSON("checkUpdate");
     
     // Get the current version we are using to send for comparison.
 //    res = apiJSON("checkUpdate");
