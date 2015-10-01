@@ -359,7 +359,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
    * This is the entry point that runs all registered scheduled updates.
    * @throws Throwable
    */
-  private synchronized void scheduledTasks() throws Throwable {
+  public synchronized void scheduledTasks() throws Throwable {
     _logger.debug("Running scheduled tasks.");
 
     // Run all scheduled updates.

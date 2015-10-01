@@ -255,6 +255,11 @@ class ApiController {
     apiReturn( null, "Succesfully saved the operations.")
   }
   
+  @Secured(['IS_AUTHENTICATED_FULLY'])
+  def checkLogin() {
+    apiReturn(["login": true])
+  }
+  
   def userData() {
     if (!springSecurityService.currentUser) {
       return

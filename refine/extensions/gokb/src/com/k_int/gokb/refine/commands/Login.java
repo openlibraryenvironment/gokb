@@ -53,7 +53,12 @@ public class Login extends A_RefineAPIBridge {
         @Override
         protected void onSuccess(InputStream result, int responseCode) throws Exception {
 
-          /* Do nothing */
+          // Lets fire another update check...
+          try {
+            GOKbModuleImpl.singleton.scheduledTasks();
+          } catch (Throwable e) {
+            throw (Exception)e;
+          }
         }
 
         @Override
