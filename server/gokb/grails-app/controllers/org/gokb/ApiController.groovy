@@ -894,7 +894,8 @@ class ApiController {
   }
   
   def checkUpdate () {
-    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), (params."tester" == "true" ?: false) as boolean)
+    
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
     
     // Add the api version to the result. We will actually use this to circumvent a degrade taking place in the refine client.
     result."api-version" = getCapabilities()."app"."version"
@@ -902,9 +903,13 @@ class ApiController {
   }
   
   def downloadUpdate () {
+    return downloadUpdateFile (springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
+  }
+    
+  private def downloadUpdateFile(boolean tester = false) {
     
     // Grab the download.
-    def file = refineService.extensionDownloadFile (params."requested-version", (params."tester" == "true" ?: false) as boolean)
+    def file = refineService.extensionDownloadFile (params."requested-version", tester)
     if (file) {
       // Send the file.
       response.setContentType("application/x-gzip")
