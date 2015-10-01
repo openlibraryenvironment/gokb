@@ -23,10 +23,18 @@ function registerCommands() {
   RS.registerCommand(module, "login", new Packages.com.k_int.gokb.refine.commands.Login());
   RS.registerCommand(module, "lookup", new Packages.com.k_int.gokb.refine.commands.Lookup());
   RS.registerCommand(module, "clear-warning",new Packages.com.k_int.gokb.refine.commands.ClearWarning());
-  
-  // New Elastic search recon commands.
+  RS.registerCommand(module, "capture-edit",new Packages.com.k_int.gokb.refine.commands.CapturedEditCommand());
+	
+	// New Elastic search recon commands.
   RS.registerCommand(module, "es-get-types", new Packages.com.k_int.refine.es_recon.commands.GetTypes());
   Packages.java.lang.System.out.println("done");
+}
+
+function registerOperations() {
+  var OR = Packages.com.google.refine.operations.OperationRegistry;
+  OR.registerOperation(module, "data-addrows", Packages.com.k_int.gokb.refine.operations.AddRowsOperation);
+  OR.registerOperation(module, "data-trimws", Packages.com.k_int.gokb.refine.operations.TrimWhitespaceOperation);
+  OR.registerOperation(module, "capture-edit", Packages.com.k_int.gokb.refine.operations.CapturedEditOperation);
 }
 
 /*
@@ -56,7 +64,9 @@ function init() {
   Packages.java.lang.System.out.println("Initializing GOKb...");
   Packages.java.lang.System.out.println(module.getMountPoint());
   registerCommands();
+  registerOperations();
   registerFunctions();
+  
   
   // Remove jQuery version 1.4.x - 1.7.x and replace with jQuery 1.8.
   // Latest OpenRefine code now uses jQuery 1.9. To keep compatibility with older,

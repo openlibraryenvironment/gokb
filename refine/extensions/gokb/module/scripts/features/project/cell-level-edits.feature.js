@@ -7,7 +7,6 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
     defaultColumns : ['publicationtitle']
   };
       
-  // Extend the protoype of the CellUI and add a new method for capturing the cell level edits.
   DataTableCellUI.prototype._extendEdit = function(elmt) {
     
     var _self = this;

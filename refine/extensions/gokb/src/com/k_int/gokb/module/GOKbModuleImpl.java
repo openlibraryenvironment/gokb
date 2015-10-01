@@ -112,7 +112,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
   }
 
-  private int currentWorkspaceId;
+  private int currentWorkspaceId = -1;
 
   private GOKbService[] services = null;
 
@@ -380,7 +380,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
    * This is the entry point that runs all registered scheduled updates.
    * @throws Throwable
    */
-  private synchronized void scheduledTasks() throws Throwable {
+  public synchronized void scheduledTasks() throws Throwable {
     _logger.debug("Running scheduled tasks.");
 
     // Run all scheduled updates.
