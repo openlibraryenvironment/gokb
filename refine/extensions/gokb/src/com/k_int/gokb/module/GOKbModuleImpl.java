@@ -107,7 +107,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
   }
 
-  private int currentWorkspaceId;
+  private int currentWorkspaceId = -1;
 
   private GOKbService[] services = null;
 
