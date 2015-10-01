@@ -34,15 +34,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.k_int.gokb.refine.operations;
 
 import java.util.List;
+import java.util.Properties;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONWriter;
 
 import com.google.refine.model.AbstractOperation;
 import com.google.refine.model.Column;
 import com.google.refine.model.Project;
 import com.google.refine.model.changes.CellChange;
 import com.google.refine.operations.OnError;
+import com.google.refine.operations.OperationRegistry;
 import com.google.refine.operations.cell.TextTransformOperation;
 
 public class CapturedEditOperation extends TextTransformOperation {
@@ -96,11 +100,34 @@ public class CapturedEditOperation extends TextTransformOperation {
       List<CellChange> cellChanges) {
 
     String desc = "Captured edit setting " + cellChanges.size() + 
-        " cells in column " + column.getName() + " to " + val + " based on values in columns " + "'" + cols[0] + "'";
+        " cells in column " + column.getName() + " to '" + val + "' based on values in columns " + "'" + cols[0] + "'";
     
     for (int i=1; i<cols.length; i++) {
       desc += ((i == (cols.length - 1)) ? " and " : ", ") + "'" + cols[i] + "'"; 
     }
     return desc;
+  }
+
+  @Override
+  public void write(JSONWriter writer, Properties options)
+          throws JSONException {
+      
+      writer.object();
+      writer.key("op"); writer.value(OperationRegistry.s_opClassToName.get(this.getClass()));
+      writer.key("description"); writer.value(getBriefDescription(null));
+      writer.key("engineConfig"); writer.value(getEngineConfig());
+      writer.key("columnName"); writer.value(_columnName);
+      writer.key("expression"); writer.value(_expression);
+      writer.key("onError"); writer.value(onErrorToString(_onError));
+      writer.key("repeat"); writer.value(_repeat);
+      writer.key("repeatCount"); writer.value(_repeatCount);
+      writer.key("basedOn")
+        .array();
+        for (String col : cols) {
+          writer.value(col);
+        }
+      writer.endArray();
+      writer.key("value").value(val);
+      writer.endObject();
   }
 }
