@@ -106,8 +106,13 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
         cache.put(key, settings);
       }
 
+      JSONObject data = settings.optJSONObject("data");
+      if (data == null) {
+        data = new JSONObject("{}");
+      }
+       
       // Only return the data element of the object.
-      return settings.getJSONObject("data");
+      return data;
     }
 
     /**

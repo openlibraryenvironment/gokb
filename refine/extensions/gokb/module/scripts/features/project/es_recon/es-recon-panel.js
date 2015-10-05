@@ -32,19 +32,16 @@ ReconESPanel.prototype.dispose = function() {
 };
 
 ReconESPanel.prototype.start = function() {
-  bodyParams = {
-    columnName: this._column.name,
-    config: JSON.stringify({
-      mode: "gokb/ElasticSearch"
-    })
-  };
-
-  Refine.postCoreProcess(
-    "reconcile",
-    {},
-    bodyParams,
-    { cellsChanged: true, columnStatsChanged: true }
-  );
+  var self = this;
+  
+  // Build up the values to pass to the job.
+  var theType = $('input[type="radio"]:checked', self._elmts.type_select).val();
+  
+  ESRecon.recon(this._column.name, {
+    /** Extra params **/
+    service: self._service,
+    type: theType
+  });
 };
 
 ReconESPanel.prototype._constructUI = function() {

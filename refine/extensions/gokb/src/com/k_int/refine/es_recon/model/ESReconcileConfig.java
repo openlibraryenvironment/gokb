@@ -1,9 +1,7 @@
 package com.k_int.refine.es_recon.model;
 
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-
-import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.json.JSONException;
@@ -17,34 +15,43 @@ import com.google.refine.model.Recon;
 import com.google.refine.model.Row;
 import com.google.refine.model.recon.ReconConfig;
 import com.google.refine.model.recon.ReconJob;
+import com.k_int.gokb.module.GOKbModuleImpl;
+import com.k_int.refine.es_recon.ESReconJob;
+import com.k_int.refine.es_recon.ESReconService;
 
 public class ESReconcileConfig extends ReconConfig {
-  private String typeID;
-
-  public String getTypeID () {
-    return typeID;
-  }
-
-  public void setTypeID (String typeID) {
-    this.typeID = typeID;
-  }
-
   static public ReconConfig reconstruct(JSONObject obj) throws Exception {
+    // Just use GSON.
+    Gson gson = new Gson();
 
     // Just use the Gson lib to create a new object.
-    Gson gson = new Gson();
     return gson.fromJson(obj.toString(), ESReconcileConfig.class);
+  }
+  
+  private String type;
+  private Map<String, Object> service;
+
+  @Override
+  public List<Recon> batchRecon (List<ReconJob> jobs, long historyEntryID) {    
+    // Lets build up a multi query
+    ESReconService recon = GOKbModuleImpl.singleton.getReconService();
+    return recon.recon(this, historyEntryID, jobs);
   }
 
   @Override
-  public void write (JSONWriter writer, Properties options)
-      throws JSONException {
-    writer.value(this);
+  public ReconJob createJob (Project project, int rowIndex, Row row, String columnName, Cell cell) {
+    ESReconJob job = new ESReconJob();
+    job
+      .setQuery(cell.value.toString())
+      .setType(type)
+      .setRow(rowIndex)
+    ;
+    return job;
   }
 
-  public String toJSONString() {
-    Gson gson = new Gson();
-    return gson.toJson(this);
+  @Override
+  public Recon createNewRecon (long historyEntryID) {
+    return GOKbModuleImpl.singleton.getReconService().createRecon(this, historyEntryID);
   }
 
   @Override
@@ -54,41 +61,33 @@ public class ESReconcileConfig extends ReconConfig {
 
   @Override
   public String getBriefDescription (Project project, String columnName) {
-    return "Reconcile cells in column " + columnName + " to type " + getTypeID();
+    return "Reconcile cells in column " + columnName + " to type " + getType() + " using " + service.get("name");
+  }
+
+  public Map<String, Object> getService () {
+    return service;
+  }
+
+  public String getType () {
+    return type;
+  }
+
+  public void setService (Map<String, Object> service) {
+    this.service = service;
+  }
+
+  public void setType (String type) {
+    this.type = type;
   }
 
   @Override
-  public ReconJob createJob (Project project, int rowIndex, Row row, String columnName, Cell cell) {
-    ESReconJob job = new ESReconJob();
-    try {
-      job.code = jsonBuilder().startObject()
-        .field("query", cell.value.toString())
-        .field("type", typeID)
-      .endObject().string();
-    } catch (IOException e) {
-      // The code will remain unset.
-    }
+  public void write (JSONWriter writer, Properties options)
+      throws JSONException {
+    Gson gson = new Gson();
     
-    return job;
-  }
-
-  @Override
-  public List<Recon> batchRecon (List<ReconJob> jobs, long historyEntryID) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public Recon createNewRecon (long historyEntryID) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-  static protected class ESReconJob extends ReconJob {
-    String code;
-    
-    @Override
-    public int getKey() {
-        return code.hashCode();
-    }
+    writer.object()
+      .key("type").value("")
+      .key("service").value(gson.toJson(service))
+    .endObject();
   }
 }

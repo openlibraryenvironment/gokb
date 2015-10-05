@@ -533,15 +533,22 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     // Using the settings provided from the API we are connected too try and add
     // an ES reconciliation point.
     if (newWorkspace.getService().isCabable("es-recon")) {
-      JSONObject esc = newWorkspace.getService().getSettings("esconfig");
-      String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
-      _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " cluster: " + esc.getString("cluster") + " index: " + esc.getString("indices"));
-      reconService = new ESReconService(host, esc.getInt("port"), esc.getString("indices"), ESReconService.config()
-        .put("cluster.name", esc.getString("cluster"))
-      .build());
+      try {
+        JSONObject esc = newWorkspace.getService().getSettings("esconfig");
+        String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
+        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " cluster: " + esc.getString("cluster") + " index: " + esc.getString("indices"));
+        
+        setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices"), ESReconService.config()
+          .put("cluster.name", esc.getString("cluster"))
+        .build()));
       
-      reconService.getAllIndexDetails();
-      reconService.getUniqueValues("gokb", esc.getString("typingField"));
+        getReconService().getAllIndexDetails();
+        getReconService().getUniqueValues("gokb", esc.getString("typingField"));
+      } catch (Exception e) {
+        // Failed to set the recon service.
+        // Lets change the capability to false in our config to stop things being enabled.
+        newWorkspace.getService().getCapabilities().put("es-recon", false);
+      }
     }
 
     // Need to clear login information too.
@@ -556,8 +563,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   public String[] getESTypes () throws JSONException, IOException {
     
     JSONObject esc = getESConfig();
-    if (reconService != null) {
-      return reconService.getUniqueValues("gokb", esc.getString("typingField"));
+    if (getReconService() != null) {
+      return getReconService().getUniqueValues("gokb", esc.getString("typingField"));
     }
     
     return new String[0];
