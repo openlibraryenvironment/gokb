@@ -6,14 +6,20 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
 
   private static final String ERROR_TYPE = "data_invalid"
   public static final def REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
+  
+  public static final def ID_REGEX_TEMPLATE = ["^\\Q", "\\E\\:(\\d+)\$"]
 
   private String regex
   private Class<? extends KBComponent> the_class
+  private String id_regex
 
   public LookedUpValue(String columnName, String severity, Class<? extends KBComponent> the_class) {
     super(columnName, severity)
-
+    
     regex = "${REGEX_TEMPLATE[0] + the_class.getSimpleName() + REGEX_TEMPLATE[1]}"
+    
+    // New ID regex
+    id_regex = "${ID_REGEX_TEMPLATE[0] + the_class.getName() + ID_REGEX_TEMPLATE[1]}"
     this.the_class = the_class
 
     if (!(columnName instanceof String)) {
@@ -57,7 +63,7 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
   private Set<String> invalid_vals = []
 
   @Override
-  public void process(final col_positions, final rowNum, final datarow) {
+  public void process(final col_positions, final rowNum, final datarow, final reconData) {
 
     // First check should be to see if an error has already been triggered by this rule,
     // we don't want to fill the error messages with repeats.
