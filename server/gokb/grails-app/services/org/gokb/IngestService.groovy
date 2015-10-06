@@ -424,7 +424,7 @@ class IngestService {
             }
 
             // The package.
-            String pkg_name = getRowValue(datarow,col_positions,PACKAGE_NAME)
+            String pkg_name = getRowValue(datarow,col_positions,PACKAGE_NAME, recon_data)
             Package pkg = packageService.findCorrectPackage(
                 retire_packages,
                 pkg_name,
