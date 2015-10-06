@@ -1008,8 +1008,10 @@ GOKb.lazyLoadScript = function (path) {
         console.log( "Loaded " + fullPath );
         GOKb.loadedScripts[fullPath] = true;
       })
-      .fail(function( jqxhr, settings, exception ) {
+      .fail(function( jqxhr, settings, e ) {
+        // Log the object message.
         console.log( "Error while loading " + fullPath );
+        throw (e);
       });
     
   } else {

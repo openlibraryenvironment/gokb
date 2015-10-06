@@ -15,7 +15,7 @@ GOKb.registerFeature (
       var view_uri = "resource/show/"
 
       ReconciliationManager.registerService({
-        "name" : "GOKb",
+        "name" : ESRecon.name,
         "ui" : { "handler" : "ReconESPanel" },
         "url" : GOKb.core.workspace.base_url,
         "view" : {
