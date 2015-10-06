@@ -56,7 +56,13 @@ ReconESPanel.prototype._constructUI = function() {
       
       // Clear the contents
       self._elmts.type_select.html("");
-      $.each(data.types, function(i){
+      
+      // Let's filter the list here to only contain allowed reconcile types.
+      var dataTypes = $.grep(data.types, function(item){
+        return ($.inArray(item, ESRecon.exclTypes) > -1);
+      }, true);
+      
+      $.each(dataTypes, function(i){
         
         // Add each option.
         var cb_label = $('<label for="type_' + i + '" />').text(this);

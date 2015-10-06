@@ -5,6 +5,7 @@ var ESRecon = (function($) {
   
   // Declare any local vars.
   var name = "GOKb";
+  var exclTypes = ['titleinstance', 'titleinstancepackageplatform', 'titleinstanceplatform', 'refineproject', 'datafile', 'source', 'license'];
   
   // Setup work here.
   GOKb.hijackFunction (
@@ -36,6 +37,8 @@ var ESRecon = (function($) {
   // Public API...
   return {
     "name" : (name),
+    "exclTypes" : (exclTypes),
+    
     getTypes : function() {
       
       return GOKb.doCommand(
