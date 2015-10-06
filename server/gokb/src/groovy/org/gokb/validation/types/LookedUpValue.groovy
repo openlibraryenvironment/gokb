@@ -93,7 +93,7 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
               long the_id = Long.parseLong(match[0][1])
 
               // Ensure the item actually exists.
-              if (the_class.get(the_id)) {
+              if (the_class.read(the_id)) {
                 // All is fine.
                 valid = true
               }

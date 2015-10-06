@@ -91,6 +91,7 @@ abstract class A_ValidationRule {
           
           if (result) {
             result = "gokb::{${result}}"
+            return result
           }
         }
       }
