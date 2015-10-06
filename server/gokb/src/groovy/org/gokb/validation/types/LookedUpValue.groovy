@@ -7,7 +7,7 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
   private static final String ERROR_TYPE = "data_invalid"
   public static final def REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
   
-  public static final def ID_REGEX_TEMPLATE = ["^gokb::\\{\\Q", "\\E\\:(\\d+)\\}\$"]
+  public static final def ID_REGEX_TEMPLATE = ["^gokb::\\{", "\\:(\\d+)\\}\$"]
 
   private String regex
   private Class<? extends KBComponent> the_class
@@ -19,7 +19,7 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
     regex = "${REGEX_TEMPLATE[0] + the_class.getSimpleName() + REGEX_TEMPLATE[1]}"
     
     // New ID regex
-    id_regex = "${ID_REGEX_TEMPLATE[0] + the_class.getName() + ID_REGEX_TEMPLATE[1]}"
+    id_regex = ID_REGEX_TEMPLATE[0] + "\\Q${the_class.getName()}\\E" + ID_REGEX_TEMPLATE[1]
     this.the_class = the_class
 
     if (!(columnName instanceof String)) {

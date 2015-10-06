@@ -1,6 +1,7 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService
+import com.k_int.RefineUtils
 import grails.converters.JSON
 import groovy.json.JsonSlurper
 
@@ -109,6 +110,8 @@ class IngestService {
    */
   def estimateChanges(project_data, project_id = null, boolean incremental) {
 
+    final def recon_data = project_data.recon
+    
     // The current component status value.
     RefdataValue current = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
 
@@ -201,7 +204,7 @@ class IngestService {
             platformNames << host_platform_name
 
             // Package ID
-            def pkg_id	= getRowValue(datarow,col_positions,PACKAGE_NAME)
+            def pkg_id	= getRowValue(datarow,col_positions,PACKAGE_NAME, recon_data)
             pkg_id = pkg_id?.trim()
             if (!pkg_id || pkg_id == "") {
               pkg_id = default_pkg_identifier
@@ -210,7 +213,7 @@ class IngestService {
             packageIdentifiers << pkg_id.toString()
 
             // Lookup a publisher ID if present.
-            def pub = comps["${getRowValue(datarow,col_positions,PUBLISHER_NAME)}"]
+            def pub = comps["${getRowValue(datarow,col_positions,PUBLISHER_NAME, recon_data)}"]
             if (pub) publisher_orgs << pub
 
             // Each identifier type.
@@ -351,7 +354,7 @@ class IngestService {
     }
   }
 
-  private boolean addDatatRow(result, long project_id, boolean incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, final old_tipps, retire_packages, skipped_titles, user) {
+  private boolean addDatatRow(result, long project_id, boolean incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, final old_tipps, retire_packages, skipped_titles, user, final recon_data) {
 
     // Transaction for each row.
     RefineProject.withNewTransaction { TransactionStatus status ->
@@ -395,7 +398,7 @@ class IngestService {
             
             // Handle the imprint.
             def imprint = componentLookupService.lookupComponent(
-              getRowValue(datarow,col_positions,TITLE_IMPRINT)
+              getRowValue(datarow,col_positions,TITLE_IMPRINT, recon_data)
             )
             
             if ( imprint != null && (title_info.imprint == null || title_info.imprint.id != imprint.id )) {
@@ -415,7 +418,7 @@ class IngestService {
 
             // Platforms must already exist in GOKb, so just to the lookup.
             
-            Platform platform_info = componentLookupService.lookupComponent( getRowValue(datarow,col_positions,HOST_PLATFORM_NAME),true)
+            Platform platform_info = componentLookupService.lookupComponent( getRowValue(datarow,col_positions,HOST_PLATFORM_NAME, recon_data),true)
             if (platform_info == null) {
               throw new Exception("Host platform could not be found. This should not happen, as all platforms must pre-exist in GOKb. Datarow was ${datarow}");
             }
@@ -570,6 +573,8 @@ class IngestService {
       "status"    : (project_data ? true : false),
       "messages"  : []
     ]
+    
+    final def recon_data = project_data?.recon
 
     // Skipped titles.
     Set<String> skipped_titles = []
@@ -656,7 +661,7 @@ class IngestService {
           RefineProject.withNewSession { ses ->
             // Add each row to the database.
             log.debug("Row ${ctr} ${datarow}")
-            if ( !addDatatRow(result, project_id, incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, old_tipps, retire_packages, skipped_titles, user) ) {
+            if ( !addDatatRow(result, project_id, incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, old_tipps, retire_packages, skipped_titles, user, recon_data) ) {
               log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
             }
           }
@@ -729,24 +734,12 @@ class IngestService {
     RefdataCategory.lookupOrCreate(ref_cat, value)
   }
 
-  def getRowValue(datarow, col_positions, colname) {
-    def result = null
-    if ( col_positions[colname] != null ) {
-      result = jsonv(datarow.cells[col_positions[colname]])
-    }
-    result
+  def getRowValue(datarow, col_positions, colname, recon_data = null) {
+    RefineUtils.getRowValue(datarow, col_positions, colname, recon_data)
   }
 
-  def jsonv(v) {
-    def result = null
-
-    // Thoroughly check for nulls.
-    if (v && !(v.equals(null) || JSONObject.NULL.equals(v) ) ) {
-      if (v.v && !JSONObject.NULL.equals(v.v)) {
-        result = "${v.v}"
-      }
-    }
-    result
+  def jsonv(v, recon_data = null) {
+    RefineUtils.jsonv(v, recon_data)
   }
 
   /**
