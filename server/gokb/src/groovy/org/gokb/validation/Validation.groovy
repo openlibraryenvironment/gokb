@@ -216,7 +216,7 @@ class Validation {
         if (rule instanceof I_DeferredRowValidationRule) {
 
           // Call the process method.
-          (rule as I_DeferredRowValidationRule).process(col_positions, rowNum, datarow)
+          (rule as I_DeferredRowValidationRule).process(col_positions, rowNum, datarow, project_data.recon)
         } else {
 
           // Call the validate method.

@@ -7,7 +7,7 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
   private static final String ERROR_TYPE = "data_invalid"
   public static final def REGEX_TEMPLATE = [".*\\:\\:\\{","\\:(\\d+)\\}\$"]
   
-  public static final def ID_REGEX_TEMPLATE = ["^\\Q", "\\E\\:(\\d+)\$"]
+  public static final def ID_REGEX_TEMPLATE = ["^gokb::\\{\\Q", "\\E\\:(\\d+)\\}\$"]
 
   private String regex
   private Class<? extends KBComponent> the_class
@@ -76,16 +76,17 @@ class LookedUpValue extends A_ValidationRule implements I_DeferredRowValidationR
       if (pos != null) {
 
         // Get the value.
-        def value = getRowValue(datarow, col_positions, columnName)
+        def value = getRowValue(datarow, col_positions, columnName, reconData)
 
         if ( (value != null) && ( value.length() > 0 ) ) {
 
           // Default to invalid.
           boolean valid = false
-
-          // Check the value matches the regex first of all..
-          def match = value =~ regex
-          if (match) {
+          
+          // We should check the id_regex first
+          def match
+          
+          if ((match = value =~ id_regex) || (match = value =~ regex)) {
 
             // Matches so let's do a lookup to ensure it exists.
             try {

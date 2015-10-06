@@ -21,15 +21,19 @@ import com.k_int.refine.es_recon.ESReconService;
 
 public class ESReconcileConfig extends ReconConfig {
   static public ReconConfig reconstruct(JSONObject obj) throws Exception {
+    
+    String json = obj.toString();
+    
     // Just use GSON.
     Gson gson = new Gson();
 
     // Just use the Gson lib to create a new object.
-    return gson.fromJson(obj.toString(), ESReconcileConfig.class);
+    return gson.fromJson(json, ESReconcileConfig.class);
   }
   
   private String type;
   private Map<String, Object> service;
+  public static final String MODE_KEY = "ElasticSearch";
 
   @Override
   public List<Recon> batchRecon (List<ReconJob> jobs, long historyEntryID) {    
@@ -86,8 +90,9 @@ public class ESReconcileConfig extends ReconConfig {
     Gson gson = new Gson();
     
     writer.object()
-      .key("type").value("")
-      .key("service").value(gson.toJson(service))
+      .key("mode").value(GOKbModuleImpl.singleton.getName() + "/" + MODE_KEY)
+      .key("type").value(type)
+      .key("service").value(new JSONObject(gson.toJson(service)))
     .endObject();
   }
 }

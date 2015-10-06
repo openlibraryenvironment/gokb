@@ -851,7 +851,7 @@ class IngestService {
           processData(result, zf.getInputStream(ze));
           
           // Now we should try and get any pool data also.
-          ze = zf.getEntry('recon.txt')
+          ze = zf.getEntry('pool.txt')
           if (ze) {
             processReconData(result, zf.getInputStream(ze));
           } else {

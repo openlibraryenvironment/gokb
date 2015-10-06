@@ -38,14 +38,11 @@ public class ESReconService {
   private static final int DEFAULT_PORT = 9300;
   private String[] indices;
   
-  private String host;
-  
   @SuppressWarnings("resource")
   public ESReconService (String host, int port, String indices, Settings settings) {
     client = new TransportClient(settings)
       .addTransportAddress(new InetSocketTransportAddress(host, port));
     this.indices = indices.split("\\,");
-    this.host = host;
   }
   
   public ESReconService (String host, String indices, Settings settings) {
@@ -157,7 +154,7 @@ public class ESReconService {
   }
   
   public Recon createRecon (ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry) {
-    Recon recon =  new Recon(judgmentHistoryEntry, null, "http://" + host + "/resource/show/object.id");
+    Recon recon =  new Recon(judgmentHistoryEntry, "GOKb", "GOKb");
     recon.service = (String)esReconcileConfig.getService().get("url");
     return recon;
   }

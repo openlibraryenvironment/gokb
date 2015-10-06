@@ -330,7 +330,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
    * We can do this within the controller.js file and when we come to move this into its own module we may do that.
    */
   private void importReconConfigs () {
-    ReconConfig.registerReconConfig(this, "ElasticSearch", ESReconcileConfig.class);
+    ReconConfig.registerReconConfig(this, ESReconcileConfig.MODE_KEY, ESReconcileConfig.class);
   }
 
   /**
