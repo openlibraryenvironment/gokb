@@ -83,7 +83,7 @@ class IsSimilar extends A_ValidationRule implements I_DeferredRowValidationRule 
   private Set allVals = []
 
   @Override
-  public void process(final col_positions, final rowNum, final datarow) {
+  public void process(final col_positions, final rowNum, final datarow, final reconData) {
 
     // Get the index for the column.
     def pos = col_positions[columnName]

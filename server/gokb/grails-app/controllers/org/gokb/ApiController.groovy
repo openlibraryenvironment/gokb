@@ -71,7 +71,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -990,6 +990,7 @@ class ApiController {
     "core"                : true,
     "project-mamangement" : true,
     "cell-level-edits"    : true,
+    "es-recon"            : true,
   ]
   
   private static def getCapabilities() {
@@ -1016,13 +1017,38 @@ class ApiController {
   
   def capabilities () {
     
-    def capabilities = getCapabilities()
-    
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.    
     withCacheHeaders {
       etag ( SERVER_VERSION_ETAG_DSL )
       generate {
         render (getCapabilities() as JSON)
+      }
+    }
+  }
+  
+  private static ES_CONFIG = null
+  private static getESConfig() {
+    
+    if (!ES_CONFIG) {
+      
+      // Default cluster...
+      ES_CONFIG = [
+        "cluster" : Holders.grailsApplication.config.gokb.es.cluster ?: "gokb"
+      ]
+      
+      // Also add the config params.
+      ES_CONFIG << Holders.grailsApplication.config.globalSearch
+    }
+  }
+  
+  
+  def esconfig () {
+    
+    // If etag matches then we can just return the 304 to denote that the resource is unchanged.
+    withCacheHeaders {
+      etag ( SERVER_VERSION_ETAG_DSL )
+      generate {
+        render (getESConfig() as JSON)
       }
     }
   }

@@ -24,6 +24,9 @@ function registerCommands() {
   RS.registerCommand(module, "lookup", new Packages.com.k_int.gokb.refine.commands.Lookup());
   RS.registerCommand(module, "clear-warning",new Packages.com.k_int.gokb.refine.commands.ClearWarning());
   RS.registerCommand(module, "capture-edit",new Packages.com.k_int.gokb.refine.commands.CapturedEditCommand());
+	
+	// New Elastic search recon commands.
+  RS.registerCommand(module, "es-get-types", new Packages.com.k_int.refine.es_recon.commands.GetTypes());
   Packages.java.lang.System.out.println("done");
 }
 

@@ -1,5 +1,6 @@
 package org.gokb.validation.types
 
+import com.k_int.RefineUtils
 import org.codehaus.groovy.grails.web.json.JSONObject
 
 abstract class A_ValidationRule {
@@ -61,24 +62,11 @@ abstract class A_ValidationRule {
     flagErrorTriggered()
   }
 
-  protected String getRowValue(datarow, col_positions, colname) {
-
-    String result = null
-    if ( col_positions[colname] != null ) {
-      result = jsonv(datarow.cells[col_positions[colname]])
-    }
-    result
+  protected String getRowValue(datarow, col_positions, colname, recon_data = null) {
+    RefineUtils.getRowValue(datarow, col_positions, colname, recon_data)
   }
 
-  protected def jsonv(v) {
-    def result = null
-    
-    // Thoroughly check for nulls.
-    if (v && !(v.equals(null) || JSONObject.NULL.equals(v) ) ) {
-      if (v.v != null && !JSONObject.NULL.equals(v.v)) {
-        result = "${v.v}"
-      }
-    }
-    result
+  protected def jsonv(v, recon_data = null) {
+    RefineUtils.jsonv(v, recon_data)
   }
 }
