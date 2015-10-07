@@ -89,5 +89,6 @@
 	<classpathentry kind="lib" path="extensions/gokb/module/MOD-INF/lib/lucene-core-4.9.0.jar"/>
 	<classpathentry kind="lib" path="extensions/gokb/module/MOD-INF/lib/lucene-analyzers-common-4.9.0.jar"/>
 	<classpathentry kind="lib" path="extensions/gokb/module/MOD-INF/lib/lucene-codecs-4.9.0.jar"/>
+	<classpathentry kind="lib" path="extensions/gokb/module/MOD-INF/lib/jest-0.1.7.jar"/>
 	<classpathentry kind="output" path="main/webapp/WEB-INF/classes"/>
 </classpath>
