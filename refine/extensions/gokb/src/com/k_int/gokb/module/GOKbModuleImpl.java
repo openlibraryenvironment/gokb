@@ -538,11 +538,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
         _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " cluster: " + esc.getString("cluster") + " index: " + esc.getString("indices"));
         
-        setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices"), ESReconService.config()
-          .put("cluster.name", esc.getString("cluster"))
-        .build()));
-      
-        getReconService().getAllIndexDetails();
+        setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices")));
         getReconService().getUniqueValues("gokb", esc.getString("typingField"));
       } catch (Exception e) {
         // Failed to set the recon service.

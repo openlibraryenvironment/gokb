@@ -1031,13 +1031,8 @@ class ApiController {
     
     if (!ES_CONFIG) {
       
-      // Default cluster...
-      ES_CONFIG = [
-        "cluster" : Holders.grailsApplication.config.gokb.es.cluster ?: "gokb"
-      ]
-      
       // Also add the config params.
-      ES_CONFIG << Holders.grailsApplication.config.globalSearch
+      ES_CONFIG << Holders.grailsApplication.config.searchApi
     }
   }
   

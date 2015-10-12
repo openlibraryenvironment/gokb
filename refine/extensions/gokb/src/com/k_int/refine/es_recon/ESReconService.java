@@ -1,68 +1,48 @@
 package com.k_int.refine.es_recon;
 
-import io.searchbox.client.AbstractJestClient;
-import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.client.http.JestHttpClient;
 import io.searchbox.core.MultiSearch;
 import io.searchbox.core.Search;
-import io.searchbox.core.SearchResult;
-import io.searchbox.core.SearchResult.Hit;
 import io.searchbox.core.search.aggregation.TermsAggregation;
 import io.searchbox.core.search.aggregation.TermsAggregation.Entry;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.action.search.MultiSearchRequestBuilder;
-import org.elasticsearch.action.search.MultiSearchResponse.Item;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.cluster.ClusterState;
-import org.elasticsearch.cluster.metadata.IndexMetaData;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.cluster.metadata.MetaData;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.hppc.cursors.ObjectObjectCursor;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.ImmutableSettings.Builder;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.facet.FacetBuilders;
-import org.elasticsearch.search.facet.terms.TermsFacet;
 import org.json.JSONException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.beust.jcommander.internal.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.refine.model.Recon;
 import com.google.refine.model.ReconCandidate;
 import com.google.refine.model.recon.ReconJob;
 import com.k_int.refine.es_recon.model.ESReconcileConfig;
 
-@SuppressWarnings("deprecation")
 public class ESReconService {
   JestHttpClient client;
   private static final int DEFAULT_PORT = 9300;
   private final List<String> indices;
   protected final Gson gson = new GsonBuilder().setDateFormat(JestHttpClient.ELASTIC_SEARCH_DATE_FORMAT).create();
+  Logger log = LoggerFactory.getLogger("ES-Recon Service");
 
-  @SuppressWarnings("resource")
   public ESReconService (String host, int port, String indices) {
     
     HttpClientConfig clientConfig = new HttpClientConfig.Builder(host + ":" + port).multiThreaded(true).build();
@@ -135,29 +115,31 @@ public class ESReconService {
       multi.addSearch(buildReconSearch((ESReconJob)jobs.get(count)));
     }
    
-    JestResult es_response = client.execute(multi.build());
-    JsonArray responses = es_response.getJsonObject().getAsJsonArray("responses");
-    
-    // We should receive a responses key with all the search responses in there.
-    // We should build a search response from each.
-    for (int i=0; i<responses.size(); i++) {
+    JestResult es_response;
+    try {
+      es_response = client.execute(multi.build());
+      JsonArray responses = es_response.getJsonObject().getAsJsonArray("responses");
       
-      // Create the search result from the multi response.
-      JsonObject obj = responses.get(i).getAsJsonObject();
-      SearchResult res = new SearchResult (gson);
-      res.setResponseCode(es_response.getResponseCode());
-      res.setJsonString(obj.toString());
-      res.setJsonObject(obj);
-      res.setPathToResult(es_response.getPathToResult() + "[" + i + "]");
-      
-      // Matching Job.
-      ESReconJob currentJob = (ESReconJob) jobs.get(i);
-      
-      if (res.isSucceeded()){  
-        results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), res) );
-      } else {
-        results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), null) );
+      // We should receive a responses key with all the search responses in there.
+      // We should build a search response from each.
+      for (int i=0; i<responses.size(); i++) {
+        
+        // Create the search result from the multi response.
+        JsonObject obj = responses.get(i).getAsJsonObject();
+        
+        // Matching Job.
+        ESReconJob currentJob = (ESReconJob) jobs.get(i);
+        
+        if (!obj.get("error").getAsBoolean()){  
+          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), obj) );
+        } else {
+          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), null) );
+        }
       }
+    } catch (IOException e) {
+      // Just log the error and return an empty list to be safe.
+      log.error("Error while reconciling.", e);
+      return Collections.emptyList();
     }
 
     return results;
@@ -169,27 +151,27 @@ public class ESReconService {
     return recon;
   }
 
-  private Recon buildRecon(ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry, String text, SearchResult res) {
+  private Recon buildRecon(ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry, String text, JsonObject res) {
     Recon recon = createRecon(esReconcileConfig, judgmentHistoryEntry);
 
     if (res != null) {
-      HashMap<String, Object> source;
-      List<?> hits = res.getHits(source.getClass());
+
+      JsonArray hits = res.getAsJsonObject("hits").getAsJsonArray("hits");
       
       for (int i = 0; i<hits.size(); i++) {
         
-        Hit<?,?> hit = (Hit<?, ?>)hits.get(i);
+        JsonObject hit = hits.get(i).getAsJsonObject();
 
-        String type = hit.type();
-        source = (HashMap<String, Object>) hit.source;
+        String type = hit.get("_type").getAsString();
+        JsonObject source = hit.getAsJsonObject("_source");
 
         // Create a recon candidate.
         ReconCandidate candidate = new ReconCandidate(
-            hit.id(),
-            (String) source.get("name"),
+            hit.get("_id").getAsString(),
+            source.get("name").getAsString(),
             new String[]{ type },
-            hit.score()
-            );
+            hit.get("_score").getAsDouble()
+        );
 
         // Add the candidate for this row.
         recon.addCandidate(candidate);
