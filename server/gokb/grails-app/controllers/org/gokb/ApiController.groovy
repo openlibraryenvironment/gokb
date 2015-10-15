@@ -100,7 +100,7 @@ class ApiController {
   }
 
   // Internal API return object that ensures consistent formatting of API return objects
-  private def apiReturn = {result, String message = "", String status = "success" ->
+  private def apiReturn = {result, String message = "", String status = (result instanceof Throwable) ? "error" : "success" ->
     
     // If the status is error then we should log an entry.
     if (status == 'error') {
@@ -857,14 +857,24 @@ class ApiController {
       )
       
       // Try and create a new instance passing in the supplied parameters.
-      def comp = c.newInstance(params)
+      def comp = c.newInstance()
       
       // Set all the parameters passed in.
       params.each { prop, value ->
         // Only set the property if we have a value.
         if (value != null && value != "") {
           try {
-            comp."${prop}" = value
+            
+            // We may get a component ID here now. Just run it through the component
+            // lookup service. If it isn't the correct format it will return quickly.
+            KBComponent com = componentLookupService.lookupComponent(value)
+            if (com) {
+              // Set to the component value.
+              comp."${prop}" = com
+            } else {
+              comp."${prop}" = value
+            }
+            
           } catch (Throwable t) {
             /* Suppress the error */
           }
@@ -875,13 +885,15 @@ class ApiController {
         
         case Package : 
         
-          // We also need to create a review request against Packages created here.
-          ReviewRequest.raise (
-            comp,
-            "Review and set provider of this package.",
-            "Package created in refine without a provider.",
-            springSecurityService.currentUser
-          )
+          // We may also need to create a review request against Packages created here.
+          if ( !comp.provider ) {
+            ReviewRequest.raise (
+              comp,
+              "Review and set provider of this package.",
+              "Package created in refine without a provider.",
+              springSecurityService.currentUser
+            )
+          }
           break;
       }
       
@@ -892,9 +904,7 @@ class ApiController {
       apiReturn("${comp.name}::{${c.getSimpleName()}:${comp.id}}")
       
     } catch (Throwable t) {
-      /* Just return an empty list. */
-      (t)
-      apiReturn (null, "There was an error creating a new Component of ${type}")
+      apiReturn (t, "There was an error creating a new Component of ${type}")
     }
   }
   
