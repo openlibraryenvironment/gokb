@@ -82,7 +82,7 @@ GOKb.hijackFunction = function(functionName, replacement) {
  */
 GOKb.defaultError = function (data) {
   
-  if (!GOKb.lockdown && "result" in data && "errorType" in data.result && data.result.errorType == "authError") {
+  if (!GOKb.lockdown && data && "result" in data && data.result && "errorType" in data.result && data.result.errorType == "authError") {
     
     // Authentication error, do not show the error but instead show the login box.
     var login = GOKb.createDialog("Login to " + GOKb.core.workspace.name, "form_login");
@@ -108,7 +108,7 @@ GOKb.defaultError = function (data) {
     // Show the login box.
     return login;
     
-  } else if (! ("result" in data && "errorType" in data.result && data.result.errorType == "authError")){
+  } else if (! (data && "result" in data && data.result && "errorType" in data.result && data.result.errorType == "authError")){
   
 //    var error = GOKb.createErrorDialog("Error");
     var msg;
@@ -121,7 +121,7 @@ GOKb.defaultError = function (data) {
     }
     
     // Check for the special case version error.
-    if ("result" in data && "errorType" in data.result)
+    if (data && "result" in data && data.result && "errorType" in data.result)
       if (data.result.errorType == "versionError" || data.result.errorType == "permError") {
         
       // Remove close button.
@@ -817,7 +817,9 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
     },
     close : function () {
       // Destroy the lookup and set to null for recreation.
-      GOKb.lookup._lookup.destroy();
+      if (GOKb.lookup._lookup) {
+        GOKb.lookup._lookup.destroy(); 
+      }
       GOKb.lookup._lookup = null;
     },
     setCallback : function (cb) {
