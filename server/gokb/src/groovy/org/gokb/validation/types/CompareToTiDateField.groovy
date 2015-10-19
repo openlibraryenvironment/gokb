@@ -118,7 +118,7 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
   private def id_pos = null
 
   @Override
-  public void process(final col_positions, final rowNum, final datarow) {
+  public void process(final col_positions, final rowNum, final datarow, final reconData) {
 
     // First check should be to see if an error has already been triggered by this rule,
     // we don't want to fill the error messages with repeats.
