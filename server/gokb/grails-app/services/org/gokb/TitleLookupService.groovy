@@ -369,4 +369,45 @@ class TitleLookupService {
     ti
   }
 
+  
+  /**
+   * @param ids should be a list of maps containing at least an ns and value key. 
+   * @return
+   */
+  public def matchClassOnes (def ids) {
+    def result = [] as Set
+    
+    // Get the class 1 identifier namespaces.
+    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
+    
+    ids.each { def id_def ->
+      // Class ones only.
+      if (id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) {
+      
+        def identifiers = Identifier.createCriteria().list {
+          and { 
+            namespace {
+              inList "value", id_def.ns
+            }
+            
+            eq "value", id_def.value
+          }
+        }
+        
+        // Examine the identified components.
+        identifiers?.each {
+          it?.identifiedComponents.each {
+            KBComponent comp = it.deproxy()
+            if (comp instanceof TitleInstance) {
+              
+              // Add to the set.
+              result << (TitleInstance)comp
+            }
+          }
+        }
+      }
+    }
+    
+    result
+  }
 }
