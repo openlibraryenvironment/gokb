@@ -1,9 +1,11 @@
 package org.gokb.validation.types
 
-import org.gokb.cred.KBComponent
+import groovy.json.JsonOutput;
 
+import org.gokb.cred.KBComponent
 import org.joda.time.DateTime
 import org.joda.time.format.*
+import org.apache.taglibs.standard.tag.common.fmt.FormatDateSupport;
 import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 
@@ -101,6 +103,9 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
     
     message += " the matched title ${ti_field_name}"
     
+    // List of statements to set the broken values to the values from the title.
+    def quick_fix = []
+    
     // Facet string.
     String facet_string = ""
     
@@ -108,14 +113,22 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
     invalid.eachWithIndex { def row, def row_num ->
       // Create the facet string.
       String row_entry
+      String quick_fix_value
       row.eachWithIndex { def entry, def index ->
         
         if (index > 0) {
           row_entry = "and( cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value=='${entry.value}', ${row_entry} )"
         } else {
           row_entry = "cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value==toDate('${entry.value}')"
+          
+          // First entry contains the extra details we need.
+          quick_fix_value = entry.ti_field_value
         }
       }
+      
+      // Let's add the quickfix string for the built facet string.
+      quick_fix << "if ( ${row_entry}, '${quick_fix_value}'.toDate(), value)"
+      
       
       // We need to add all to an or.
       if (row_num > 0) {
@@ -127,10 +140,11 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
 
     // The extra info to be sent with each error message.
     return [
-      col      : columnName,
-      text      : message,
-      facetValue  : facet_string,
-      facetName    : "${facetName} TI"
+      col             : columnName,
+      text            : message,
+      facetValue      : facet_string,
+      facetName       : "${facetName} TI",
+      transformation  : quick_fix
     ];
   }
 
@@ -249,7 +263,7 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
               "col_name"        : columnName,
               "value"           : raw_val,
               "ti_field_name"   : ti_field_name,
-              "ti_field_value"  : ti_date
+              "ti_field_value"  : formatDate( ti_date )
             ])
             conditions.addAll(id_maps)
             
