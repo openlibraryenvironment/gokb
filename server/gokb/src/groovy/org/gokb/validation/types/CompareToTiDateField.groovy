@@ -1,6 +1,9 @@
 package org.gokb.validation.types
 
 import org.gokb.cred.KBComponent
+
+import org.joda.time.DateTime
+import org.joda.time.format.*
 import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 
@@ -18,7 +21,7 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
   private final Map<String,String> class_one_cols
   
   private final def titleLookupService
-  private final def ingestService
+  private static final DateTimeFormatter ISODateParser = ISODateTimeFormat.dateTimeParser()
   
   public CompareToTiDateField(String columnName, String severity, Map<String,String> class_one_cols, String ti_field_name, String operator) {
     super(columnName, severity)
@@ -28,12 +31,43 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
     
     def appContext = SCH.servletContext.getAttribute(GA.APPLICATION_CONTEXT)
     this.titleLookupService = appContext."titleLookupService"
-    this.ingestService = appContext."ingestService"
+
+    DateTimeFormatter ISODateFormatter = ISODateTimeFormat.basicDateTime()
+    ISODateFormatter.prin
 
     if (!(severity && class_one_cols && ti_field_name && operator)) {
       throw new IllegalArgumentException ("CompareToTiDateField rule expects ags: String severity, Map<String,String> class_one_cols, String ti_field_name, String operator.")
     }
   }
+  
+  private Date parseDate (String iso_string) {
+    // Parse the date.
+    Date the_date = null
+
+    if (iso_string && iso_string.trim() != "") {
+      try {
+        the_date = ISODateParser.parseDateTime(iso_string).toDate()
+
+      } catch (Throwable t) {
+
+        // Ensure null date.
+        the_date = null
+      }
+    }
+
+    the_date
+  }
+  
+  private String formatDate ( Date the_date ) {
+    String iso_string = null
+    
+    if (the_date) {
+      DateTime dt = new DateTime(the_date)
+      iso_string = ISODateParser.print(dt)
+    }
+    
+    iso_string
+  }  
 
   @Override
   protected String getType() {
@@ -174,14 +208,14 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
 
           // Default valid to true.
           boolean valid = true
-          
+          Date ti_date
           if (results.size() == 1) {
             
             // We can only reliably check if there is only one TI ID'd by all the identifiers.
-            Date ti_date = results[0]."${ti_field_name}"
+            ti_date = results[0]."${ti_field_name}"
             
             if (ti_date) {
-              Date date_val = ingestService.parseDate( raw_val )
+              Date date_val = parseDate( raw_val )
               
               if (date_val) {
                 
@@ -212,9 +246,11 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
             // Value in the compared column too.
             def conditions = []
             conditions.add([
-              "col_name" : columnName,
-              "value" : raw_val
-            ]) 
+              "col_name"        : columnName,
+              "value"           : raw_val,
+              "ti_field_name"   : ti_field_name,
+              "ti_field_value"  : ti_date
+            ])
             conditions.addAll(id_maps)
             
             // Add the conditions.
