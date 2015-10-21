@@ -1,4 +1,7 @@
 <g:if test="${recset != null}">
+<g:set var="s_action" value="${s_action?:'index'}"/>
+<g:set var="s_controller" value="${s_controller?:'search'}"/>
+
 <g:set var="custom_offset" value="${offset_param?:'offset'}"/>
 	<nav class="navbar navbar-inverse">
 		<div class="container-fluid">
@@ -24,8 +27,8 @@
 							${page} of ${page_max} <span class="caret"></span></a>
 					<ul class="dropdown-menu dropdown-menu-scroll" role="menu">
 						<g:each var="p" in="${ 1..page_max }">
-							<li><g:link title="Previous Page" controller="search"
-									action="index"
+							<li><g:link title="Previous Page" controller="${s_controller}"
+									action="${s_action}"
 									params="${params+["${custom_offset}":((p.toInteger() - 1) * max.toInteger()),det:null]}">
 								Page ${p}
 								</g:link></li>
@@ -38,8 +41,8 @@
 							class="glyphicon glyphicon-chevron-left"></i></a></li>
 				</g:if>
 				<g:else>
-					<li><g:link title="Previous Page" controller="search"
-							action="index"
+					<li><g:link title="Previous Page" controller="${s_controller}"
+							action="${s_action}"
 							params="${params+["${custom_offset}":(offset.toInteger() - max.toInteger()),det:null]}">
 							<i class="glyphicon glyphicon-chevron-left"></i>
 						</g:link></li>
@@ -49,8 +52,8 @@
 							class="glyphicon glyphicon-chevron-right"></i></a></li>
 				</g:if>
 				<g:else>
-					<li><g:link title="Next Page" controller="search"
-							action="index"
+					<li><g:link title="Next Page" controller="${s_controller}"
+							action="${s_action}"
 							params="${params+["${custom_offset}":(offset.toInteger() + max.toInteger()),det:null]}">
 							<i class="glyphicon glyphicon-chevron-right"></i>
 						</g:link></li>

@@ -71,7 +71,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -100,7 +100,7 @@ class ApiController {
   }
 
   // Internal API return object that ensures consistent formatting of API return objects
-  private def apiReturn = {result, String message = "", String status = "success" ->
+  private def apiReturn = {result, String message = "", String status = (result instanceof Throwable) ? "error" : "success" ->
     
     // If the status is error then we should log an entry.
     if (status == 'error') {
@@ -253,6 +253,11 @@ class ApiController {
     }
 
     apiReturn( null, "Succesfully saved the operations.")
+  }
+  
+  @Secured(['IS_AUTHENTICATED_FULLY'])
+  def checkLogin() {
+    apiReturn(["login": true])
   }
   
   def userData() {
@@ -543,6 +548,17 @@ class ApiController {
             }
             eq('value','Content Provider');
           }
+          order("name", "asc")
+        }
+        result.datalist=new java.util.ArrayList()
+        orgs.each { o ->
+          result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
+        }
+        break;
+        
+      case 'org' :
+        def oq = Org.createCriteria()
+        def orgs = oq.listDistinct {
           order("name", "asc")
         }
         result.datalist=new java.util.ArrayList()
@@ -841,14 +857,24 @@ class ApiController {
       )
       
       // Try and create a new instance passing in the supplied parameters.
-      def comp = c.newInstance(params)
+      def comp = c.newInstance()
       
       // Set all the parameters passed in.
       params.each { prop, value ->
         // Only set the property if we have a value.
         if (value != null && value != "") {
           try {
-            comp."${prop}" = value
+            
+            // We may get a component ID here now. Just run it through the component
+            // lookup service. If it isn't the correct format it will return quickly.
+            KBComponent com = componentLookupService.lookupComponent(value)
+            if (com) {
+              // Set to the component value.
+              comp."${prop}" = com
+            } else {
+              comp."${prop}" = value
+            }
+            
           } catch (Throwable t) {
             /* Suppress the error */
           }
@@ -859,13 +885,15 @@ class ApiController {
         
         case Package : 
         
-          // We also need to create a review request against Packages created here.
-          ReviewRequest.raise (
-            comp,
-            "Review and set provider of this package.",
-            "Package created in refine without a provider.",
-            springSecurityService.currentUser
-          )
+          // We may also need to create a review request against Packages created here.
+          if ( !comp.provider ) {
+            ReviewRequest.raise (
+              comp,
+              "Review and set provider of this package.",
+              "Package created in refine without a provider.",
+              springSecurityService.currentUser
+            )
+          }
           break;
       }
       
@@ -876,14 +904,13 @@ class ApiController {
       apiReturn("${comp.name}::{${c.getSimpleName()}:${comp.id}}")
       
     } catch (Throwable t) {
-      /* Just return an empty list. */
-      (t)
-      apiReturn (null, "There was an error creating a new Component of ${type}")
+      apiReturn (t, "There was an error creating a new Component of ${type}")
     }
   }
   
   def checkUpdate () {
-    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), (params."tester" == "true" ?: false) as boolean)
+    
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
     
     // Add the api version to the result. We will actually use this to circumvent a degrade taking place in the refine client.
     result."api-version" = getCapabilities()."app"."version"
@@ -891,9 +918,13 @@ class ApiController {
   }
   
   def downloadUpdate () {
+    return downloadUpdateFile (springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
+  }
+    
+  private def downloadUpdateFile(boolean tester = false) {
     
     // Grab the download.
-    def file = refineService.extensionDownloadFile (params."requested-version", (params."tester" == "true" ?: false) as boolean)
+    def file = refineService.extensionDownloadFile (params."requested-version", tester)
     if (file) {
       // Send the file.
       response.setContentType("application/x-gzip")
@@ -969,6 +1000,7 @@ class ApiController {
     "core"                : true,
     "project-mamangement" : true,
     "cell-level-edits"    : true,
+    "es-recon"            : true,
   ]
   
   private static def getCapabilities() {
@@ -995,13 +1027,38 @@ class ApiController {
   
   def capabilities () {
     
-    def capabilities = getCapabilities()
-    
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.    
     withCacheHeaders {
       etag ( SERVER_VERSION_ETAG_DSL )
       generate {
         render (getCapabilities() as JSON)
+      }
+    }
+  }
+  
+  private static ES_CONFIG = null
+  private static getESConfig() {
+    
+    if (!ES_CONFIG) {
+      
+      // Default cluster...
+      ES_CONFIG = [
+        "cluster" : Holders.grailsApplication.config.gokb.es.cluster ?: "gokb"
+      ]
+      
+      // Also add the config params.
+      ES_CONFIG << Holders.grailsApplication.config.globalSearch
+    }
+  }
+  
+  
+  def esconfig () {
+    
+    // If etag matches then we can just return the 304 to denote that the resource is unchanged.
+    withCacheHeaders {
+      etag ( SERVER_VERSION_ETAG_DSL )
+      generate {
+        render (getESConfig() as JSON)
       }
     }
   }

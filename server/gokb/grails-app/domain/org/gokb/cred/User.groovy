@@ -2,8 +2,11 @@ package org.gokb.cred
 
 import grails.plugins.springsecurity.SpringSecurityService
 import groovy.util.logging.Log4j;
+
 import java.lang.reflect.Field
+
 import javax.persistence.Transient
+
 import org.hibernate.proxy.HibernateProxy
 
 @Log4j
@@ -47,6 +50,20 @@ class User {
 
   Set<Role> getAuthorities() {
     UserRole.findAllByUser(this).collect { it.role } as Set
+  }
+  
+  public transient boolean hasRole (String roleName) {
+    
+    Role role = Role.findByAuthority("${roleName}")
+    
+    if (role != null) {
+      return getAuthorities().contains(role)
+    } else {
+      log.error( "Error loading admin role (${role})" )
+    }
+
+    // Default to false.
+    false
   }
   
   transient boolean isAdmin() {

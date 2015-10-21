@@ -41,7 +41,7 @@ class GroupController {
       result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql,[result.group,closedStat,delStat],[max:result.max,offset:result.rr_offset,sort:rr_sort,order:rr_sort_order]);
 
 
-      result.rr_page_max = Math.round(result.rr_count / result.max) > 0 ? Math.round(result.rr_count / result.max) :1
+      result.rr_page_max = (result.rr_count / result.max).toInteger() + (result.rr_count % result.max > 0 ? 1 : 0)
       result.rr_page = (result.rr_offset / result.max) + 1
 
 
@@ -55,7 +55,8 @@ class GroupController {
       result.packages = Package.executeQuery('select p '+cg_packages_hql + " order by ${pkg_sort} ${pkg_sort_order}",[result.group],
         [max:result.max,offset:result.pkg_offset]);
 
-      result.pkg_page_max = Math.round(result.package_count / result.max) > 0 ?Math.round(result.package_count / result.max) :1
+      result.pkg_page_max = (result.package_count / result.max).toInteger() + (result.package_count % result.max > 0 ? 1 : 0)
+
       result.pkg_page = (result.pkg_offset / result.max) + 1
     }
     return result

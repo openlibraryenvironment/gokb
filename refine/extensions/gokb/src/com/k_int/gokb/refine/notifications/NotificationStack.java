@@ -1,10 +1,10 @@
 package com.k_int.gokb.refine.notifications;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
@@ -12,18 +12,18 @@ import org.json.JSONWriter;
 import com.google.refine.Jsonizable;
 
 
-public class NotificationStack extends ArrayList<Notification> implements Jsonizable {
+public class NotificationStack extends CopyOnWriteArrayList<Notification> implements Jsonizable {
   private static final String STACK_SYSTEM = "system";
   private static final long serialVersionUID = -7538591755046789121L;
   
-  private static Map<String, NotificationStack> stacks = new HashMap<String, NotificationStack> ();
-  private Map<String, Notification> byId = new HashMap<String, Notification> ();
+  private static Map<String, NotificationStack> stacks = new ConcurrentHashMap<String, NotificationStack> ();
+  private Map<String, Notification> byId = new ConcurrentHashMap<String, Notification> ();
   
-  public static NotificationStack getSystemStack() {
+  public static synchronized NotificationStack getSystemStack() {
     return NotificationStack.get(STACK_SYSTEM);
   }
   
-  public static NotificationStack get(String id) {
+  public static synchronized NotificationStack get(String id) {
     NotificationStack stack = stacks.get(id);
     if (stack == null) {
       
@@ -37,7 +37,7 @@ public class NotificationStack extends ArrayList<Notification> implements Jsoniz
     return stack;
   }
   
-  public Notification get (int pos) {
+  public synchronized Notification get (int pos) {
     
     // Grab the message.
     Notification message = super.get(pos);
@@ -45,7 +45,7 @@ public class NotificationStack extends ArrayList<Notification> implements Jsoniz
   }
 
   @Override
-  public boolean contains (Object o) {
+  public synchronized boolean contains (Object o) {
     if (o instanceof Notification) {
       
       Notification n = (Notification) o;
@@ -60,13 +60,13 @@ public class NotificationStack extends ArrayList<Notification> implements Jsoniz
   }
 
   @Override
-  public boolean add (Notification n) {
+  public synchronized boolean add (Notification n) {
     add(size(), n);
     return true;
   }
 
   @Override
-  public void add (int index, Notification n) {
+  public synchronized void add (int index, Notification n) {
     String id = n.getId();
     
     // Only add if not already here.
@@ -80,12 +80,12 @@ public class NotificationStack extends ArrayList<Notification> implements Jsoniz
   }
 
   @Override
-  public boolean addAll (Collection<? extends Notification> c) {
+  public synchronized boolean addAll (Collection<? extends Notification> c) {
     return addAll(size(), c);
   }
 
   @Override
-  public boolean containsAll (Collection<?> c) {
+  public synchronized boolean containsAll (Collection<?> c) {
     boolean all = true;
     for (int i=0; all && i<c.size(); i++) {
       all = contains(c);
@@ -94,7 +94,7 @@ public class NotificationStack extends ArrayList<Notification> implements Jsoniz
   }
 
   @Override
-  public boolean addAll (int index, Collection<? extends Notification> c) {
+  public synchronized boolean addAll (int index, Collection<? extends Notification> c) {
     int count = 0;
     for (Notification n : c) {
       add(index + count, n);
@@ -104,7 +104,7 @@ public class NotificationStack extends ArrayList<Notification> implements Jsoniz
   }
   
   @Override
-  public void write (JSONWriter writer, Properties options)
+  public synchronized void write (JSONWriter writer, Properties options)
       throws JSONException {
     
     // JSONize this list.

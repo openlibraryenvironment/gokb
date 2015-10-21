@@ -20,10 +20,9 @@ import org.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.refine.Jsonizable;
 import com.k_int.gokb.module.util.ConditionalDownloader;
 import com.k_int.gokb.module.util.URLConenectionUtils;
-
-import com.google.refine.Jsonizable;
 
 /**
  * Represents a remote GOKb web service.
@@ -84,7 +83,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
         } else {
 
           // We create a new JSONObject with null data and save.
-          settings = new JSONObject("{\"etag\" : 0,\"data\" : {\"core\" : true}}");
+          settings = new JSONObject("{\"etag\" : \"0\",\"data\" : {\"core\" : true}}");
           FileUtils.writeStringToFile(jsonFile, settings.toString());
         }
 
@@ -107,8 +106,13 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
         cache.put(key, settings);
       }
 
+      JSONObject data = settings.optJSONObject("data");
+      if (data == null) {
+        data = new JSONObject("{}");
+      }
+       
       // Only return the data element of the object.
-      return settings.getJSONObject("data");
+      return data;
     }
 
     /**
@@ -191,7 +195,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    * @throws JSONException
    * @throws IOException
    */
-  private JSONObject getSettings(String name) throws IOException, JSONException {
+  public JSONObject getSettings(String name) throws IOException, JSONException {
     logger.debug("Trying to get settings named '" + name + "'");
     return settings.get( getURL() + name );
   }
@@ -243,12 +247,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    * @throws JSONException 
    */
   public boolean isCabable(String of) {
-    try {
-      return capabilities.has(of) && capabilities.getBoolean(of);
-    } catch (JSONException e) {
-      logger.error("Exception when testing capability '" + of + "'", e);
-    }
-    return false;
+      return capabilities.optBoolean(of, false);
   }
 
   /**
@@ -277,16 +276,8 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    */
   private boolean checkUpdate() throws IOException, JSONException, FileUploadException {
     
-    JSONObject res = apiJSON(
-      "checkUpdate",
-      URLConenectionUtils.METHOD_TYPE.GET,
-      URLConenectionUtils.paramStringMap(
-        "tester=" + GOKbModuleImpl.properties.getBoolean("tester", false)
-      )
-    );
-    
     // Get the current version we are using to send for comparison.
-//    res = apiJSON("checkUpdate");
+    JSONObject res = apiJSON("checkUpdate");
     if ("success".equalsIgnoreCase(res.getString("code"))) {
       
       res = res.getJSONObject("result");
@@ -366,8 +357,14 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
     // Create a URL object.
     URL url = new URL(urlString);
     
+    // Add authentication if this is the current service.
+    String userAuth = null;
+    if (GOKbModuleImpl.singleton.getCurrentWorkspaceId() > -1 && this.equals(GOKbModuleImpl.singleton.getCurrentService())) {
+      userAuth = GOKbModuleImpl.getCurrentUserDetails();
+    }
+    
     // Open the connection.
-    HttpURLConnection connection = URLConenectionUtils.getAPIConnection(methodType, url);
+    HttpURLConnection connection = URLConenectionUtils.getAPIConnection(methodType, url, userAuth);
       
     // If we are posting then parameters should be written to the stream.
     if (methodType == URLConenectionUtils.METHOD_TYPE.POST) {

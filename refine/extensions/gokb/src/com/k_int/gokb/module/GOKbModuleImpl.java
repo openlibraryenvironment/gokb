@@ -30,18 +30,23 @@ import com.google.refine.RefineServlet;
 import com.google.refine.grel.ControlFunctionRegistry;
 import com.google.refine.importing.ImportingManager;
 import com.google.refine.io.FileProjectManager;
+import com.google.refine.model.recon.ReconConfig;
 import com.k_int.gokb.module.util.TextUtils;
 import com.k_int.gokb.refine.RefineWorkspace;
 import com.k_int.gokb.refine.commands.GerericProxiedCommand;
 import com.k_int.gokb.refine.functions.GenericMatchRegex;
 import com.k_int.gokb.refine.notifications.Notification;
 import com.k_int.gokb.refine.notifications.NotificationStack;
+import com.k_int.refine.es_recon.ESReconService;
+import com.k_int.refine.es_recon.model.ESReconcileConfig;
 
 import edu.mit.simile.butterfly.ButterflyClassLoader;
 import edu.mit.simile.butterfly.ButterflyModule;
 import edu.mit.simile.butterfly.ButterflyModuleImpl;
 
 public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
+  
+  public static final String REGEX_HOST = "^(.*\\:\\/\\/)?([^\\/|\\:]*).*";
 
   final static Logger _logger = LoggerFactory.getLogger("GOKb-ModuleImpl");
   
@@ -107,11 +112,13 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     userDetails = Base64.encodeBase64String((username + ":" + password).getBytes());
   }
 
-  private int currentWorkspaceId;
+  private int currentWorkspaceId = -1;
 
   private GOKbService[] services = null;
 
   private RefineWorkspace[] workspaces;
+  
+  private static ESReconService reconService = null;
 
   private void addProxiedCommands() {
 
@@ -158,7 +165,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     }
   }
   @SuppressWarnings("unchecked")
-  private void addWorkspaces () throws IOException {
+  private void addWorkspaces () throws IOException, JSONException {
 
     // Get the file-based project manager.
     File current_ws = ((FileProjectManager)FileProjectManager.singleton).getWorkspaceDir();
@@ -312,8 +319,20 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     
     // Need to import the features list.
     importFeatures ();
+    
+    // Import recon configs.
+    importReconConfigs();
   }
   
+  /**
+   * Register the config.
+   * 
+   * We can do this within the controller.js file and when we come to move this into its own module we may do that.
+   */
+  private void importReconConfigs () {
+    ReconConfig.registerReconConfig(this, ESReconcileConfig.MODE_KEY, ESReconcileConfig.class);
+  }
+
   /**
    * Automatically add any js files in side the features folder.
    */
@@ -349,6 +368,8 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       final String[] featureFiles = bundle_path.list(FEATURE_FILTER);
       List<String> paths = new ArrayList<String>();
       for (String featureFile : featureFiles) {
+        
+        _logger.info("Adding feature from file {}.", featureFile);
         paths.add(features_subfolder + bundle + "/" + featureFile);
       }
      ExtendedResourceManager.addPaths(bundle + "/scripts", this, paths.toArray(new String[0]));
@@ -359,7 +380,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
    * This is the entry point that runs all registered scheduled updates.
    * @throws Throwable
    */
-  private synchronized void scheduledTasks() throws Throwable {
+  public synchronized void scheduledTasks() throws Throwable {
     _logger.debug("Running scheduled tasks.");
 
     // Run all scheduled updates.
@@ -486,7 +507,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     return p;
   }
 
-  public void setActiveWorkspace(int workspace_id) {
+  public void setActiveWorkspace(int workspace_id) throws IOException, JSONException {
 
     // We should now set the new workspace.
     ProjectManager.singleton.dispose();
@@ -503,14 +524,50 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
     // Now we re-init the project manager, with our new directory.
     FileProjectManager.initialize(newWorkspace.getWsFolder());
+    
+    String theUrl = newWorkspace.getService().getURL();
 
     _logger.info(
-        "Now using workspace '" + newWorkspace.getName() + "' at URL '" +
-            newWorkspace.getService().getURL() + "'");
+        "Now using workspace '" + newWorkspace.getName() + "' at URL '" + theUrl + "'");
+    
+    // Using the settings provided from the API we are connected too try and add
+    // an ES reconciliation point.
+    if (newWorkspace.getService().isCabable("es-recon")) {
+      try {
+        JSONObject esc = newWorkspace.getService().getSettings("esconfig");
+        String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
+        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " cluster: " + esc.getString("cluster") + " index: " + esc.getString("indices"));
+        
+        setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices"), ESReconService.config()
+          .put("cluster.name", esc.getString("cluster"))
+        .build()));
+      
+        getReconService().getAllIndexDetails();
+        getReconService().getUniqueValues("gokb", esc.getString("typingField"));
+      } catch (Exception e) {
+        // Failed to set the recon service.
+        // Lets change the capability to false in our config to stop things being enabled.
+        newWorkspace.getService().getCapabilities().put("es-recon", false);
+      }
+    }
 
     // Need to clear login information too.
     userDetails = null;
     _logger.info("User login details reset to force login on workspace change.");
+  }
+  
+  public JSONObject getESConfig() throws IOException, JSONException {
+    return getCurrentService().getSettings("esconfig");
+  }
+  
+  public String[] getESTypes () throws JSONException, IOException {
+    
+    JSONObject esc = getESConfig();
+    if (getReconService() != null) {
+      return getReconService().getUniqueValues("gokb", esc.getString("typingField"));
+    }
+    
+    return new String[0];
   }
 
   private void extendCoreModule() throws Exception {
@@ -560,9 +617,22 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       .key("current-user").value(getCurrentUser())
     .endObject();
   }
+  
+  private static void setReconService(ESReconService eservice) throws Exception {
+    if (reconService != null) {
+      reconService.destroy();
+    }
+    
+    reconService = eservice;
+  }
+
+  public ESReconService getReconService () {
+    return reconService;
+  }
 
   @Override
   public void destroy () throws Exception {
+    setReconService (null);
     this.scheduler.shutdown();
     super.destroy();
   }

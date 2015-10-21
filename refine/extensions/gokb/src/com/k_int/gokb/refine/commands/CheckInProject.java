@@ -46,15 +46,21 @@ public class CheckInProject extends A_RefineAPIBridge {
     pm.setBusy(true);
     try {
       // Get the project.
-      final Project project = getProject(request);
+      Project p;
+      try {
+        p = getProject(request);
+      } catch (Exception e) {
+        p = null;
+      }
+      
+      final Project project = p;
 
       // Get files sent to this method.
       Map<String, Object> files = files(request);
-
       Map<String, String[]> params = params(request);
 
       // Should the changes made to this project be sent back up to the server?
-      if ("true".equalsIgnoreCase(request.getParameter("update"))) {
+      if (project != null && "true".equalsIgnoreCase(request.getParameter("update"))) {
 
         // Set the special-case name param first.
         String name;
@@ -108,7 +114,7 @@ public class CheckInProject extends A_RefineAPIBridge {
           IOUtils.closeQuietly(tgzout);
         }
       }
-
+      
       // Now we need to pass the data to the API.
       postToAPI(response, "projectCheckin", params, files, new RefineAPICallback() {
 
@@ -117,7 +123,9 @@ public class CheckInProject extends A_RefineAPIBridge {
             throws Exception {
 
           // Remove the project from refine.
-          pm.deleteProject(project);
+          if (project != null) {
+            pm.deleteProject(project);
+          }
 
           try {
             
