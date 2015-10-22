@@ -4,6 +4,7 @@ import groovy.json.JsonOutput;
 
 import org.gokb.cred.KBComponent
 import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
 import org.joda.time.format.*
 import org.apache.taglibs.standard.tag.common.fmt.FormatDateSupport;
 import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
@@ -11,7 +12,7 @@ import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 
 class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowValidationRule {
 
-  private static final String ERROR_TYPE = "data_invalid"
+  private static final String ERROR_TYPE = "ti_date_invalid"
   public static final String GTE = "gte"
   public static final String GT = "gt"
   public static final String LT = "lt"
@@ -24,7 +25,7 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
   
   private final def titleLookupService
   private static final DateTimeFormatter ISODateParser = ISODateTimeFormat.dateTimeParser()
-  
+  private static final DateTimeFormatter ISODatePrinter = ISODateTimeFormat.dateTime()  
   public CompareToTiDateField(String columnName, String severity, Map<String,String> class_one_cols, String ti_field_name, String operator) {
     super(columnName, severity)
     this.ti_field_name = ti_field_name
@@ -33,9 +34,6 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
     
     def appContext = SCH.servletContext.getAttribute(GA.APPLICATION_CONTEXT)
     this.titleLookupService = appContext."titleLookupService"
-
-    DateTimeFormatter ISODateFormatter = ISODateTimeFormat.basicDateTime()
-    ISODateFormatter.prin
 
     if (!(severity && class_one_cols && ti_field_name && operator)) {
       throw new IllegalArgumentException ("CompareToTiDateField rule expects ags: String severity, Map<String,String> class_one_cols, String ti_field_name, String operator.")
@@ -48,7 +46,7 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
 
     if (iso_string && iso_string.trim() != "") {
       try {
-        the_date = ISODateParser.parseDateTime(iso_string).toDate()
+        the_date = ISODateParser.parseLocalDateTime(iso_string).toDate()
 
       } catch (Throwable t) {
 
@@ -62,10 +60,10 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
   
   private String formatDate ( Date the_date ) {
     String iso_string = null
-    
+    DateTimeZone g;
     if (the_date) {
-      DateTime dt = new DateTime(the_date)
-      iso_string = ISODateParser.print(dt)
+      DateTime dt = new DateTime(the_date, DateTimeZone.UTC)
+      iso_string = ISODatePrinter.print(dt)
     }
     
     iso_string
@@ -117,9 +115,14 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
       row.eachWithIndex { def entry, def index ->
         
         if (index > 0) {
-          row_entry = "and( cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value=='${entry.value}', ${row_entry} )"
+          String val = entry.value?.trim()
+          if (val && val != "") {
+            row_entry = "and( if (isNonBlank(cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')]) , cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value=='${entry.value}', false) , ${row_entry} )"
+          } else {
+            row_entry = "and( if (isNonBlank( cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')], isBlank( cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')], false ) , ${row_entry} )"
+          }
         } else {
-          row_entry = "cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value==toDate('${entry.value}')"
+          row_entry = "if ( isNonBlank(cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')]), cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value==toDate('${entry.value}'), false )"
           
           // First entry contains the extra details we need.
           quick_fix_value = entry.ti_field_value
@@ -128,7 +131,6 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
       
       // Let's add the quickfix string for the built facet string.
       quick_fix << "if ( ${row_entry}, '${quick_fix_value}'.toDate(), value)"
-      
       
       // We need to add all to an or.
       if (row_num > 0) {
@@ -140,11 +142,12 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
 
     // The extra info to be sent with each error message.
     return [
-      col             : columnName,
-      text            : message,
-      facetValue      : facet_string,
-      facetName       : "${facetName} TI",
-      transformation  : quick_fix
+      'compared_field'  : ti_field_name,
+      'col'             : columnName,
+      'text'            : message,
+      'facetValue'      : facet_string,
+      'facetName'       : "${facetName} TI",
+      'transformations' : quick_fix
     ];
   }
 
@@ -262,7 +265,6 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
             conditions.add([
               "col_name"        : columnName,
               "value"           : raw_val,
-              "ti_field_name"   : ti_field_name,
               "ti_field_value"  : formatDate( ti_date )
             ])
             conditions.addAll(id_maps)

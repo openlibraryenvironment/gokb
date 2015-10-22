@@ -412,7 +412,7 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
   
   if (!GOKb.lockdown) {
   
-    var ajaxObj = $.extend(ajaxOpts, {
+    $.extend(ajaxOpts, {
       cache      : false,
       url        : url, 
       data       : data,
@@ -420,7 +420,7 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
       dataType   : "json",
       success  : function (dataR) {
         if (dataR.code == "error") {
-          if ("onError" in callbacks) {
+          if (callbacks && "onError" in callbacks) {
             try {
               callbacks.onError(dataR);
             } catch (e) {
@@ -436,7 +436,7 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
             
             window.location.href = dataR.redirect;
             
-          } else if ("onDone" in callbacks) {
+          } else if (callbacks && "onDone" in callbacks) {
             try {
               callbacks.onDone(dataR);
             } catch (e) {
@@ -448,8 +448,41 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
     });
     
     // Show default waiting message
-    return GOKb.ajaxWaiting (ajaxObj);
+    return GOKb.ajaxWaiting (ajaxOpts);
   }
+};
+
+
+
+/**
+ * New method for batching multiple tasks together and firing one ondone.
+ * Uses promises.
+ */
+GOKb.batchAjax = function (data_array, callbacks) {
+  var requests = [];
+  
+  $.each(data_array, function(index){
+    
+    // Go through each entry and send through the usual method but do not send callbacks.
+    // This is because we only need one done callback call at the end of all the options completeing.
+    
+    requests.push ( GOKb.doAjaxRequest(this.url, this.params, this.data, null, this.ajaxOpts) );
+  });
+  
+  // Now we should have an array of requests which we can use to supply a single promise.
+  var batch = $.when.apply($, requests);
+  
+  if (callbacks) {
+    if ("onError" in callbacks && typeof callbacks.onError == 'function') {
+      batch.fail(callbacks.onError);
+    } 
+    
+    if ("onDone" in callbacks && typeof callbacks.onDone == 'function') {
+      batch.done(callbacks.onDone);
+    }
+  }
+  
+  return batch;
 };
 
 /**
