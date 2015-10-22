@@ -1020,7 +1020,7 @@ class IngestService {
 
       log.debug ("Trying to parse date from ${datestr}")
       try {
-        the_date = ISODateParser.parseDateTime(datestr).toDate()
+        the_date = ISODateParser.parseLocalDateTime(datestr).toDate()
 
       } catch (Throwable t) {
 
