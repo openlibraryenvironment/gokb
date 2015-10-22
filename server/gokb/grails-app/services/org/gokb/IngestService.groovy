@@ -540,7 +540,7 @@ class IngestService {
             // If we have them we should compare TIPP dates with those of the TI.
             boolean date_diff
             Date tipp_date = tipp.startDate
-            Date ti_date = title_info.startDate
+            Date ti_date = title_info.publishedTo
             if (tipp_date != null && ti_date != null) {
               int diff = ti_date.compareTo(tipp_date)
               date_diff = (diff > 0)
@@ -548,7 +548,7 @@ class IngestService {
             }
             
             tipp_date = tipp.endDate
-            ti_date = title_info.endDate
+            ti_date = title_info.publishedFrom
             if (tipp_date != null && ti_date != null) {
               int diff = ti_date.compareTo(tipp_date)
               date_diff = (diff < 0)
@@ -1060,7 +1060,7 @@ class IngestService {
 
       log.debug ("Trying to parse date from ${datestr}")
       try {
-        the_date = ISODateParser.parseDateTime(datestr).toDate()
+        the_date = ISODateParser.parseLocalDateTime(datestr).toDate()
 
       } catch (Throwable t) {
 
