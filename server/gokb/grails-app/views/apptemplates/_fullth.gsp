@@ -11,7 +11,7 @@
     <g:set var="fth" value="${d?.fullTitleHistory?.fh}"/>
 
     <g:each in="${fth}" var="theevent" status="i1">
-      <tr class="${i1>1?'collapsed throws':'throws'}">
+      <tr class="${i1>1?'collapse throws':'throws'}">
         <td><g:formatDate date="${theevent.eventDate}" format="yyyy-MM-dd"/></td>
         <td>
           <ul>
