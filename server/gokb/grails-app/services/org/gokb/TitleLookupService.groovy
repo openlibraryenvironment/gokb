@@ -397,7 +397,7 @@ class TitleLookupService {
         // Examine the identified components.
         identifiers?.each {
           it?.identifiedComponents.each {
-            KBComponent comp = it.deproxy()
+            KBComponent comp = KBComponent.deproxy(it)
             if (comp instanceof TitleInstance) {
               
               // Add to the set.
