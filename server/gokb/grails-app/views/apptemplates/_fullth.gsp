@@ -32,7 +32,6 @@
               </g:if>
             </g:each>
           </ul>
-          <g:each in="${theevent.participants}" var="p" status="i2">
         </td>
         <td>
           <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent.id}">Delete</g:link>
