@@ -8,25 +8,44 @@
     </tr>
   </thead>
   <tbody>
-    <g:each in="${d?.fullTitleHistory?.fh}" var="theevent" status="i1">
-      <tr>
+    <g:set var="fth" value="${d?.fullTitleHistory?.fh}"/>
+
+    <g:each in="${fth}" var="theevent" status="i1">
+      <tr class="${i1>1?'collapse throws':'throws'}">
         <td><g:formatDate date="${theevent.eventDate}" format="yyyy-MM-dd"/></td>
         <td>
-          <g:each in="${theevent.participants}" var="p">
-            <g:if test="${p.participantRole=='in'}">
-              <g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link> &nbsp;
-            </g:if>
-          </g:each>
+          <ul>
+            <g:each in="${theevent.participants}" var="p">
+              <g:if test="${p.participantRole=='in'}">
+                <g:if test="${p.participant.id == d.id}"><b></g:if>
+                  <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
+                <g:if test="${p.participant.id == d.id}"></b></g:if>
+              </g:if>
+            </g:each>
+          </ul>
         </td>
         <td>
-          <g:each in="${theevent.participants}" var="p" status="i2">
-            <g:if test="${p.participantRole=='out'}">
-              <g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link> &nbsp;
-            </g:if>
-          </g:each>
+          <ul>
+            <g:each in="${theevent.participants}" var="p" status="i2">
+              <g:if test="${p.participantRole=='out'}">
+                <g:if test="${p.participant.id == d.id}"><b></g:if>
+                  <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
+                <g:if test="${p.participant.id == d.id}"></b></g:if>
+              </g:if>
+            </g:each>
+          </ul>
         </td>
-
+        <td>
+          <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent.id}">Delete</g:link>
+        </td>
       </tr>
     </g:each>
+    <g:if test="${fth.size()>1}">
+      <tr>
+        <td colspan="4">
+          <button data-toggle="collapse" data-target=".throws">Show Hidden</button>
+        </td>
+      </tr>
+    </g:if>
   </tbody>
 </table>

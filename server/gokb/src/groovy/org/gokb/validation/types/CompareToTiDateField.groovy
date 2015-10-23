@@ -1,14 +1,10 @@
 package org.gokb.validation.types
 
-import groovy.json.JsonOutput;
+import java.text.SimpleDateFormat
 
-import org.gokb.cred.KBComponent
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
-import org.joda.time.format.*
-import org.apache.taglibs.standard.tag.common.fmt.FormatDateSupport;
 import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
+import org.joda.time.format.*
 
 class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowValidationRule {
 
@@ -25,7 +21,8 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
   
   private final def titleLookupService
   private static final DateTimeFormatter ISODateParser = ISODateTimeFormat.dateTimeParser()
-  private static final DateTimeFormatter ISODatePrinter = ISODateTimeFormat.dateTime()  
+  private static final String DATE_FORMAT = "yyyy-MM-dd"
+  private static final SimpleDateFormat datePrinter = new SimpleDateFormat (DATE_FORMAT)  
   public CompareToTiDateField(String columnName, String severity, Map<String,String> class_one_cols, String ti_field_name, String operator) {
     super(columnName, severity)
     this.ti_field_name = ti_field_name
@@ -60,14 +57,12 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
   
   private String formatDate ( Date the_date ) {
     String iso_string = null
-    DateTimeZone g;
     if (the_date) {
-      DateTime dt = new DateTime(the_date, DateTimeZone.UTC)
-      iso_string = ISODatePrinter.print(dt)
+      iso_string = datePrinter.format(the_date)
     }
     
     iso_string
-  }  
+  }
 
   @Override
   protected String getType() {

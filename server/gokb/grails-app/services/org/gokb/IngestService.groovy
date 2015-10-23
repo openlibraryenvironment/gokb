@@ -552,7 +552,7 @@ class IngestService {
             if (tipp_date != null && ti_date != null) {
               int diff = ti_date.compareTo(tipp_date)
               date_diff = (diff < 0)
-              preDates = (date_diff ? tipp.id : -1)
+              postDates = (date_diff ? tipp.id : -1)
             }
 
           } else {

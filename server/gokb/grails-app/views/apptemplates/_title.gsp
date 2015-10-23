@@ -67,79 +67,8 @@
       <g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel>
     </dt>
     <dd>
-      <table class="table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th>Event Date</th>
-            <th>Before</th>
-            <th>After</th>
-            <th>Actions</th>
-          <tr>
-        </thead>
-        <tbody>
-          <g:each in="${d.titleHistory}" var="he">
-            <tr>
-              <td><g:formatDate
-                  format="${session.sessionPreferences?.globalDateFormat}"
-                  date="${he.date}" /></td>
-              <td>
-                <ul>
-                  <g:each in="${he.from}" var="ft">
-                    <li><g:if test="${ft != null}">
-                        <g:if test="${ft.id == d.id}"><b></g:if>
-                        <g:link controller="resource" action="show"
-                          id="${ft?.class.name}:${ft.id}">
-                          ${ft.name}
-                        </g:link>
 
-                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
-                         (
-                          <g:formatDate
-                          format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
-                          <em>To</em>
-                          <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" />
-                          )
-                        </g:if>
-
-                        <g:if test="${ft.id == d.id}"></b></g:if>
-                      </g:if> <g:else>From title not present</g:else>
-                    </li>
-                  </g:each>
-                </ul>
-              </td>
-              <td>
-                <ul>
-                  <g:each in="${he.to}" var="ft">
-                    <li>
-                    	<g:if test="${ft != null}">
-                        <g:if test="${ft.id == d.id}"><b></g:if>
-                        <g:link controller="resource" action="show"
-                          id="${ft.class.name}:${ft.id}">
-                          ${ft.name}
-                        </g:link>
-                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
-                          (
-                          <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
-                          <em>To</em>
-                          <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" />
-                          )
-                        </g:if>
-                        <g:if test="${ft.id == d.id}"></b></g:if>
-	                    </g:if>
-	                    <g:else>To title not present</g:else>
-                    </li>
-                  </g:each>
-                </ul>
-              </td>
-              <td><g:link controller="workflow"
-                  action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${he.id}">Delete</g:link></td>
-            </tr>
-          </g:each>
-        </tbody>
-      </table>
+      <g:render template="fullth" contextPath="../apptemplates"  model="${[d:d]}" />
     </dd>
   </g:if>
 </dl>
@@ -174,7 +103,6 @@
       </span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size()} </span></a></li>
 
-    <li><a href="#fullTitleHistory" data-toggle="tab">Full TH </a></li>
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
@@ -403,9 +331,6 @@
         model="${[d:d]}" />
     </div>
 
-    <div class="tab-pane" id="fullTitleHistory">
-      <g:render template="fullth" contextPath="../apptemplates"  model="${[d:d]}" />
-    </div>
 
   </div>
   <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
