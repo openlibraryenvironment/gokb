@@ -11,7 +11,7 @@
     <g:set var="fth" value="${d?.fullTitleHistory?.fh}"/>
 
     <g:each in="${fth}" var="theevent" status="i1">
-      <tr class="${i1>1?'collapse throws':'throws'}">
+      <tr class="${i1>1?'collapse throws':''}">
         <td><g:formatDate date="${theevent.eventDate}" format="yyyy-MM-dd"/></td>
         <td>
           <ul>
@@ -43,7 +43,7 @@
     <g:if test="${fth.size()>1}">
       <tr>
         <td colspan="4">
-          <button data-toggle="collapse" data-target=".throws">Show Hidden</button>
+          <button data-toggle="collapse" data-target=".throws">Show More</button>
         </td>
       </tr>
     </g:if>
