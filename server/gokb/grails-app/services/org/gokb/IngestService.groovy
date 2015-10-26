@@ -358,6 +358,9 @@ class IngestService {
 
     // Transaction for each row.
     RefineProject.withNewTransaction { TransactionStatus status ->
+      
+      int preDates = -1
+      int postDates = -1
 
       RefineProject project = RefineProject.get(project_id)
       if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE) ) {
@@ -530,8 +533,27 @@ class IngestService {
             }
 
             log.debug("Save tipp");
+            
             // Need to ensure everything is saved.
             tipp.save(failOnError:true, flush:true)
+            
+            // If we have them we should compare TIPP dates with those of the TI.
+            boolean date_diff
+            Date tipp_date = tipp.startDate
+            Date ti_date = title_info.publishedTo
+            if (tipp_date != null && ti_date != null) {
+              int diff = ti_date.compareTo(tipp_date)
+              date_diff = (diff > 0)
+              preDates = (date_diff ? tipp.id : -1)
+            }
+            
+            tipp_date = tipp.endDate
+            ti_date = title_info.publishedFrom
+            if (tipp_date != null && ti_date != null) {
+              int diff = ti_date.compareTo(tipp_date)
+              date_diff = (diff < 0)
+              postDates = (date_diff ? tipp.id : -1)
+            }
 
           } else {
 
@@ -558,7 +580,28 @@ class IngestService {
           return false
         }
       }
+      
+      if (preDates > -1) {
+        // Raise end date conflict.
+        ReviewRequest.raise(
+          TitleInstancePackagePlatform.get(preDates),
+          "TIPP start date pre-dates that of the related Title",
+          "The TIPP declares a start date that occurs before the start date of its title. Please review the dates.",
+          user, project
+        )
+      }
+      
+      if (postDates > -1) {
+        ReviewRequest.raise(
+          TitleInstancePackagePlatform.get(postDates),
+          "TIPP end date post-dates that of the related Title",
+          "The TIPP declares an end date that occurs after the end date of its title. Please review the dates.",
+          user, project
+        )
+        
+      }
     }
+    
     true
   }
 
@@ -1017,7 +1060,7 @@ class IngestService {
 
       log.debug ("Trying to parse date from ${datestr}")
       try {
-        the_date = ISODateParser.parseDateTime(datestr).toDate()
+        the_date = ISODateParser.parseLocalDateTime(datestr).toDate()
 
       } catch (Throwable t) {
 
