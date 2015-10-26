@@ -1142,7 +1142,31 @@ class WorkflowController {
 
           // As per spec header at top of file / section
           // II: Need to add in preceding_publication_title_id
-          writer.write('publication_title\tprint_identifier\tonline_identifier\tdate_first_issue_online\tnum_first_vol_online\tnum_first_issue_online\tdate_last_issue_online\tnum_last_vol_online\tnum_last_issue_online\ttitle_url\tfirst_author\ttitle_id\tembargo_info\tcoverage_depth\tcoverage_notes\tpublisher_name\tpreceding_publication_title_id\tdate_monograph_published_print\tdate_monograph_published_online\tmonograph_volume\tmonograph_edition\tfirst_editor\tparent_publication_title_id\tpublication_type\taccess_type\n');
+          writer.write('publication_title\t'+
+                       'print_identifier\t'+
+                       'online_identifier\t'+
+                       'date_first_issue_online\t'+
+                       'num_first_vol_online\t'+
+                       'num_first_issue_online\t'+
+                       'date_last_issue_online\t'+
+                       'num_last_vol_online\t'+
+                       'num_last_issue_online\t'+
+                       'title_url\t'+
+                       'first_author\t'+
+                       'title_id\t'+
+                       'embargo_info\t'+
+                       'coverage_depth\t'+
+                       'coverage_notes\t'+
+                       'publisher_name\t'+
+                       'preceding_publication_title_id\t'+
+                       'date_monograph_published_print\t'+
+                       'date_monograph_published_online\t'+
+                       'monograph_volume\t'+
+                       'monograph_edition\t'+
+                       'first_editor\t'+
+                       'parent_publication_title_id\t'+
+                       'publication_type\t'+
+                       'access_type\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
@@ -1163,13 +1187,13 @@ class WorkflowController {
                           sanitize( tipp.endVolume ) + '\t' +
                           sanitize( tipp.endIssue ) + '\t' +
                           sanitize( tipp.url ) + '\t' +
-                          '\t'+
+                          '\t'+  // First Author
                           sanitize( tipp.title.id ) + '\t' +
                           sanitize( tipp.embargo ) + '\t' +
                           sanitize( tipp.coverageDepth ) + '\t' +
                           sanitize( tipp.coverageNote ) + '\t' +
                           sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
-                          sanitize( tipp.title.getPrecedingTitleId() + '\t' )+
+                          sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
                           '\t' +  // date_monograph_published_print
                           '\t' +  // date_monograph_published_online
                           '\t' +  // monograph_volume
