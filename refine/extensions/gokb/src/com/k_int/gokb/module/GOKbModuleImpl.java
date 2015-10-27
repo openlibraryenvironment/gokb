@@ -536,13 +536,14 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       try {
         JSONObject esc = newWorkspace.getService().getSettings("esconfig");
         String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
-        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " cluster: " + esc.getString("cluster") + " index: " + esc.getString("indices"));
+        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " indices: " + esc.getString("indices"));
         
         setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices")));
         getReconService().getUniqueValues("gokb", esc.getString("typingField"));
       } catch (Exception e) {
         // Failed to set the recon service.
         // Lets change the capability to false in our config to stop things being enabled.
+        _logger.error("Error initialising the ES Recon service. Disabling feature.", e);
         newWorkspace.getService().getCapabilities().put("es-recon", false);
       }
     }

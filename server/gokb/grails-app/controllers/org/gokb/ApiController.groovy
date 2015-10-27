@@ -1042,6 +1042,7 @@ class ApiController {
     if (!ES_CONFIG) {
       
       // Also add the config params.
+      ES_CONFIG = [:]
       ES_CONFIG << Holders.grailsApplication.config.searchApi
     }
   }
