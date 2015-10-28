@@ -43,8 +43,7 @@
     <g:if test="${fth.size()>1}">
       <tr>
         <td colspan="4">
-          <span class="throws collapse in"><button data-toggle="collapse" data-target=".throws">Show More</button></span>
-          <span class="throws collapse"><button data-toggle="collapse" data-target=".throws">Show Less</button></span>
+          <button data-target=".throws" data-toggle="collapse">Show More</button>
         </td>
       </tr>
     </g:if>
