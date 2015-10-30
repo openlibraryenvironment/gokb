@@ -10,6 +10,7 @@
 //=require bootstrap-editable.min
 //=require select2
 //=require metisMenu.min
+//=require show-more
 //=require sb-admin-2
 //=require inline-content
 //=require summernote.min
@@ -274,6 +275,15 @@ window.gokb = {
       // do something…
       $('#savedItemsContent').load('/gokb/savedItems/index?folder=userHome');
     });
+    
+    // Add show mores...
+    $('.show-more').each(function() {
+      var me = $(this);
+      me.showMore();
+      var button = me.showMore('getButton');
+      button.addClass('btn btn-default');
+    });
+    
   });
   
 })(jQuery);

@@ -1,5 +1,5 @@
 
-<table class="table table-bordered table-striped">
+<table class="table table-bordered table-striped show-more" data-show-more-rows='2' >
   <thead>
     <tr>
       <th>On this date</th>
@@ -11,7 +11,7 @@
     <g:set var="fth" value="${d?.fullTitleHistory?.fh}"/>
 
     <g:each in="${fth}" var="theevent" status="i1">
-      <tr class="${i1>1?'collapse throws':''}">
+      <tr>
         <td><g:formatDate date="${theevent.eventDate}" format="yyyy-MM-dd"/></td>
         <td>
           <ul>
@@ -40,12 +40,5 @@
         </td>
       </tr>
     </g:each>
-    <g:if test="${fth.size()>1}">
-      <tr>
-        <td colspan="4">
-          <button data-target=".throws" data-toggle="collapse">Show More</button>
-        </td>
-      </tr>
-    </g:if>
   </tbody>
 </table>
