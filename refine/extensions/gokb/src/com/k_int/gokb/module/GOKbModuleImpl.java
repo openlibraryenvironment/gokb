@@ -535,7 +535,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     if (newWorkspace.getService().isCabable("es-recon")) {
       try {
         JSONObject esc = newWorkspace.getService().getSettings("esconfig");
-        String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
+        String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$1$2"));
         _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " indices: " + esc.getString("indices"));
         
         setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices")));

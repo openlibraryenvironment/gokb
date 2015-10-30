@@ -111,13 +111,18 @@ public class ESReconService {
     
     // Use the first to build the multi query.
     MultiSearch.Builder multi = buildMultiSearch ( buildReconSearch((ESReconJob)jobs.get(count)) );
-    while (count++ < jobs.size()) {
+    do {
+      count++;
       multi.addSearch(buildReconSearch((ESReconJob)jobs.get(count)));
-    }
+    } while (count < (jobs.size() - 1));
    
     JestResult es_response;
     try {
-      es_response = client.execute(multi.build());
+      
+      MultiSearch ms = multi.build();
+      System.out.println(ms.getData(null).toString().trim());
+      
+      es_response = client.execute(ms);
       JsonArray responses = es_response.getJsonObject().getAsJsonArray("responses");
       
       // We should receive a responses key with all the search responses in there.
@@ -236,7 +241,6 @@ public class ESReconService {
           )
       ).toString()
     );
-
   }
 
   public void destroy () throws Exception {
