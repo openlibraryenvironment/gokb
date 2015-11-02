@@ -1,4 +1,5 @@
 var GOKb = {
+  name: 'gokb',
   messageBusy : "Contacting GOKb",
   timeout : 6000000, // 10 minute.
   handlers: {},
@@ -10,7 +11,9 @@ var GOKb = {
   refine:{},
   lockdown : false,
   hijacked : [],
-  timer_id : false
+  timer_id : false,
+  enabledFeatures : [],
+  loadedScripts : [],
 };
 
 /**
@@ -79,7 +82,7 @@ GOKb.hijackFunction = function(functionName, replacement) {
  */
 GOKb.defaultError = function (data) {
   
-  if (!GOKb.lockdown && "result" in data && "errorType" in data.result && data.result.errorType == "authError") {
+  if (!GOKb.lockdown && data && "result" in data && data.result && "errorType" in data.result && data.result.errorType == "authError") {
     
     // Authentication error, do not show the error but instead show the login box.
     var login = GOKb.createDialog("Login to " + GOKb.core.workspace.name, "form_login");
@@ -105,7 +108,7 @@ GOKb.defaultError = function (data) {
     // Show the login box.
     return login;
     
-  } else if (! ("result" in data && "errorType" in data.result && data.result.errorType == "authError")){
+  } else if (! (data && "result" in data && data.result && "errorType" in data.result && data.result.errorType == "authError")){
   
 //    var error = GOKb.createErrorDialog("Error");
     var msg;
@@ -118,7 +121,7 @@ GOKb.defaultError = function (data) {
     }
     
     // Check for the special case version error.
-    if ("result" in data && "errorType" in data.result)
+    if (data && "result" in data && data.result && "errorType" in data.result)
       if (data.result.errorType == "versionError" || data.result.errorType == "permError") {
         
       // Remove close button.
@@ -412,7 +415,7 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
   
   if (!GOKb.lockdown) {
   
-    var ajaxObj = $.extend(ajaxOpts, {
+    $.extend(ajaxOpts, {
       cache      : false,
       url        : url, 
       data       : data,
@@ -420,7 +423,7 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
       dataType   : "json",
       success  : function (dataR) {
         if (dataR.code == "error") {
-          if ("onError" in callbacks) {
+          if (callbacks && "onError" in callbacks) {
             try {
               callbacks.onError(dataR);
             } catch (e) {
@@ -436,7 +439,7 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
             
             window.location.href = dataR.redirect;
             
-          } else if ("onDone" in callbacks) {
+          } else if (callbacks && "onDone" in callbacks && typeof callbacks.onDone === 'function') {
             try {
               callbacks.onDone(dataR);
             } catch (e) {
@@ -448,8 +451,41 @@ GOKb.doAjaxRequest = function (url, params, data, callbacks, ajaxOpts) {
     });
     
     // Show default waiting message
-    return GOKb.ajaxWaiting (ajaxObj);
+    return GOKb.ajaxWaiting (ajaxOpts);
   }
+};
+
+
+
+/**
+ * New method for batching multiple tasks together and firing one ondone.
+ * Uses promises.
+ */
+GOKb.batchAjax = function (data_array, callbacks) {
+  var requests = [];
+  
+  $.each(data_array, function(index){
+    
+    // Go through each entry and send through the usual method but do not send callbacks.
+    // This is because we only need one done callback call at the end of all the options completeing.
+    
+    requests.push ( GOKb.doAjaxRequest(this.url, this.params, this.data, null, this.ajaxOpts) );
+  });
+  
+  // Now we should have an array of requests which we can use to supply a single promise.
+  var batch = $.when.apply($, requests);
+  
+  if (callbacks) {
+    if ("onError" in callbacks && typeof callbacks.onError == 'function') {
+      batch.fail(callbacks.onError);
+    } 
+    
+    if ("onDone" in callbacks && typeof callbacks.onDone == 'function') {
+      batch.done(callbacks.onDone);
+    }
+  }
+  
+  return batch;
 };
 
 /**
@@ -814,7 +850,9 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
     },
     close : function () {
       // Destroy the lookup and set to null for recreation.
-      GOKb.lookup._lookup.destroy();
+      if (GOKb.lookup._lookup) {
+        GOKb.lookup._lookup.destroy(); 
+      }
       GOKb.lookup._lookup = null;
     },
     setCallback : function (cb) {
@@ -980,12 +1018,94 @@ GOKb.updateSystemNotifications = function (data) {
   });
 };
 
-GOKb.hasFeature = function (featureName) {
-  var capable = GOKb.core.workspace.service.capabilities[featureName] || false
+GOKb.isCapable = function (capability) {
+  var capable = GOKb.core.workspace.service.capabilities[capability] || false;
   return capable;
-}
+};
 
-GOKb.serverInfo = function (featureName) {
+GOKb.serverInfo = function () {
   var info = GOKb.core.workspace.service.capabilities['app'];
   return info;
-}
+};
+
+GOKb.lazyLoadScript = function (path) {
+  
+  // Create a listener.
+  var listener = $.Deferred();
+  
+  // Piece together the path of teh resource.
+  var fullPath = (ModuleWirings[GOKb.name] + path).substring(1);
+  
+  if (!(fullPath in GOKb.loadedScripts)) {
+    
+    listener = $.getScript( fullPath )
+      .done(function() {
+        console.log( "Loaded " + fullPath );
+        GOKb.loadedScripts[fullPath] = true;
+      })
+      .fail(function( jqxhr, settings, e ) {
+        // Log the object message.
+        console.log( "Error while loading " + fullPath );
+        throw (e);
+      });
+    
+  } else {
+    
+    // Just immediately return the script.
+    console.log( "Already loaded " + fullPath );
+    listener.resolve();
+  }
+  return listener;
+};
+
+GOKb.registerFeature = function (featureName) {
+  var config;
+  
+  // Second argument is config (optional).
+  if (arguments.length > 2) {
+    config = arguments[1];
+  }
+  
+  // Last option is feature.
+  var feature = arguments[arguments.length - 1];
+  
+  // Only register functions
+  if (featureName && typeof feature === 'function') {
+  
+    // Extend the config defaults.
+    config = jQuery.extend (true, {
+      "require" : ['core'],
+    }, config);
+    
+    // Create a method to scope this function and execute it agains GOKb.
+    (function($) {
+      
+      // Create an array of ajax calls to be passed to the when method.
+      var includes = [GOKb.getCoreData()];
+      if ("include" in config) {
+        $.each (config.include, function(){
+          includes.push(GOKb.lazyLoadScript(this));
+        });
+      }
+        
+      // Wrap in a getCoreData call to ensure that we have the data to test if the
+      // feature exists on the server we are connected to.
+      $.when.apply($, includes).done(function(){
+        
+        // We should only load if the server supports all the requirements.
+        var enable = true;
+        for (var i=0; enable && i<config.require.length; i++) {
+          enable = GOKb.isCapable(config.require[i]);
+        }
+        
+        if (enable === true) {
+          feature.apply(GOKb, [jQuery]);
+          
+          // Also add the name to the list of enabled Features.
+          GOKb.enabledFeatures.push(featureName);
+        }
+      });
+      
+    }).apply(GOKb, [jQuery]);
+  }
+};

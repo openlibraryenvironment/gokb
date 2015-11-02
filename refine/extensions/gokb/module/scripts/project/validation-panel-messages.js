@@ -109,8 +109,36 @@ ValidationPanel.messages.quickRes.options = function (message) {
 			  		  ValidationPanel.messages.quickRes.transform(message);
 			  	  }
 			    },
+          {
+            id    : message.sub_type + "facet",
+            label : "Create facet",
+            click : function() {
+              ValidationPanel.messages.quickRes.addFacet(message);
+            }
+          },
 			  ]
 			);
+			break;
+		case 'ti_date_invalid' :
+		  opts = opts.concat (
+        [
+          {
+            id    : message.sub_type + "convert",
+            label : "Attempt automatic adjustment",
+            click : function() {
+              ValidationPanel.messages.quickRes.transform(message);
+            }
+          },
+          {
+            id    : message.sub_type + "facet",
+            label : "Create facet",
+            click : function() {
+              ValidationPanel.messages.quickRes.addFacet(message);
+            }
+          },
+        ]
+      );
+		  break;
 		case 'data_invalid' :
 			opts = opts.concat (
 			  [
@@ -158,18 +186,52 @@ ValidationPanel.messages.quickRes.removeColumn = function (message) {
  * Transform the data in this column using the data supplied.
  */
 ValidationPanel.messages.quickRes.transform = function (message) {
-	Refine.postCoreProcess(
-	  "text-transform",
-	  {
-	  	columnName: GOKb.caseInsensitiveColumnName(message.col),
-	  	expression: message.transformation,
-	  	onError: 'keep-original',
-	  	repeat: false,
-	  	repeatCount: 0
-	  },
-	  null,
-	  { cellsChanged: true }
-	);
+  
+  if (message.transformations && $.isArray(message.transformations)) {
+    // We need to batch update these.
+    var batchParams = [];
+    
+    $.each(message.transformations, function(){
+      batchParams.push({
+        url: "command/core/text-transform",
+        data: {
+          columnName: GOKb.caseInsensitiveColumnName(message.col),
+          expression: this,
+          onError: 'keep-original',
+          repeat: false,
+          repeatCount: 0
+        },
+        params: {
+          project: theProject.id
+        },
+        ajaxOpts: {
+          type: "POST"
+        }
+      });
+    });
+    
+    // We do this so refine only updates once.
+    GOKb.batchAjax (batchParams, {
+      onDone: function () {
+        Refine.update({ cellsChanged: true });
+      }
+    });
+    
+  } else {
+  
+  	Refine.postCoreProcess(
+  	  "text-transform",
+  	  {
+  	  	columnName: GOKb.caseInsensitiveColumnName(message.col),
+  	  	expression: message.transformation,
+  	  	onError: 'keep-original',
+  	  	repeat: false,
+  	  	repeatCount: 0
+  	  },
+  	  null,
+  	  { cellsChanged: true }
+  	);
+  }
 };
 
 

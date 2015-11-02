@@ -83,7 +83,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
         } else {
 
           // We create a new JSONObject with null data and save.
-          settings = new JSONObject("{\"etag\" : 0,\"data\" : {\"core\" : true}}");
+          settings = new JSONObject("{\"etag\" : \"0\",\"data\" : {\"core\" : true}}");
           FileUtils.writeStringToFile(jsonFile, settings.toString());
         }
 
@@ -106,8 +106,13 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
         cache.put(key, settings);
       }
 
+      JSONObject data = settings.optJSONObject("data");
+      if (data == null) {
+        data = new JSONObject("{}");
+      }
+       
       // Only return the data element of the object.
-      return settings.getJSONObject("data");
+      return data;
     }
 
     /**
@@ -190,7 +195,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    * @throws JSONException
    * @throws IOException
    */
-  private JSONObject getSettings(String name) throws IOException, JSONException {
+  public JSONObject getSettings(String name) throws IOException, JSONException {
     logger.debug("Trying to get settings named '" + name + "'");
     return settings.get( getURL() + name );
   }
@@ -242,12 +247,7 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
    * @throws JSONException 
    */
   public boolean isCabable(String of) {
-    try {
-      return capabilities.has(of) && capabilities.getBoolean(of);
-    } catch (JSONException e) {
-      logger.error("Exception when testing capability '" + of + "'", e);
-    }
-    return false;
+      return capabilities.optBoolean(of, false);
   }
 
   /**

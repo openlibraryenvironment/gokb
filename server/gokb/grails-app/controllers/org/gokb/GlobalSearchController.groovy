@@ -7,6 +7,7 @@ class GlobalSearchController {
 
 
   def ESWrapperService
+  def grailsApplication
 
   def index() { 
     def result = [:]
@@ -29,9 +30,9 @@ class GlobalSearchController {
 
         log.debug("Searching for ${query_str}");
 
-        def search = esclient.search{
-                       indices "gokb"
-                       types "component"
+        def search = esclient.search {
+                       indices grailsApplication.config.globalSearch.indices
+                       types grailsApplication.config.globalSearch.types
                        source {
                          from = result.offset
                          size = result.max
@@ -41,7 +42,7 @@ class GlobalSearchController {
                          facets {
                            'Component Type' {
                              terms {
-                               field = 'componentType'
+                               field = grailsApplication.config.globalSearch.typingField
                              }
                            }
                          }

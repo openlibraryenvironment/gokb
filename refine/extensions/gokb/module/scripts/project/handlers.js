@@ -424,15 +424,17 @@ GOKb.handlers.createNewPackage = function (callback, target_el) {
       // Construct the value from the submitted data.
       var theForm = dialog.bindings.form;
       var vals = GOKb.forms.values (theForm);
-      var val = $("#package_provider option[value='" + vals['package_provider'] + "']", theForm).text() + ': ' + vals['package_name'];
+      var org = $("#package_provider option[value='" + vals['package_provider'] + "']", theForm);
+      var val = org.text() + ': ' + vals['package_name'];
       
       // Try and create the new item.
       GOKb.doCommand(
         "quickCreate",
         {},
         {
-          "qq_type" : 'package',
-          "name": val
+          "qq_type"   : 'package',
+          "name"      : val,
+          "provider"  : org.text() + "::{Org:" + org.val() + "}"
         },
         {
           "onDone" : function (data) {

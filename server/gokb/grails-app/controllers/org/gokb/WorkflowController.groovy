@@ -1169,7 +1169,7 @@ class WorkflowController {
                           sanitize( tipp.coverageDepth ) + '\t' +
                           sanitize( tipp.coverageNote ) + '\t' +
                           sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
-                          sanitize( tipp.title.getPrecedingTitleId() + '\t' )+
+                          sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
                           '\t' +  // date_monograph_published_print
                           '\t' +  // date_monograph_published_online
                           '\t' +  // monograph_volume
