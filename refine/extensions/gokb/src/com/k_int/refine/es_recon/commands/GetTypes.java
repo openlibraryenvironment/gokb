@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.refine.commands.Command;
 import com.k_int.gokb.module.GOKbModuleImpl;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 public class GetTypes extends Command {
@@ -47,7 +48,7 @@ public class GetTypes extends Command {
         writer.endArray();
       writer.endObject();
       
-    } catch (JSONException e) {
+    } catch (JSONException | UnirestException e) {
       respondException(response, e);
     }
   }

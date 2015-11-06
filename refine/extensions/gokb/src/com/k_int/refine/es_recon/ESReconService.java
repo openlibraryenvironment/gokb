@@ -1,78 +1,96 @@
 package com.k_int.refine.es_recon;
 
-import io.searchbox.client.JestClientFactory;
-import io.searchbox.client.JestResult;
-import io.searchbox.client.config.HttpClientConfig;
-import io.searchbox.client.http.JestHttpClient;
-import io.searchbox.core.MultiSearch;
-import io.searchbox.core.Search;
-import io.searchbox.core.search.aggregation.TermsAggregation;
-import io.searchbox.core.search.aggregation.TermsAggregation.Entry;
-
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.ImmutableSettings.Builder;
-import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.action.search.MultiSearchResponse;
+import org.elasticsearch.action.search.MultiSearchResponse.Item;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.io.stream.InputStreamStreamInput;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.refine.model.Recon;
 import com.google.refine.model.ReconCandidate;
 import com.google.refine.model.recon.ReconJob;
 import com.k_int.refine.es_recon.model.ESReconcileConfig;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class ESReconService {
-  JestHttpClient client;
   private static final int DEFAULT_PORT = 9300;
   private final List<String> indices;
-  protected final Gson gson = new GsonBuilder().setDateFormat(JestHttpClient.ELASTIC_SEARCH_DATE_FORMAT).create();
+  
   Logger log = LoggerFactory.getLogger("ES-Recon Service");
-
+  
+  private final String baseUrl;
+  
   public ESReconService (String host, int port, String indices) {
-    
-    HttpClientConfig clientConfig = new HttpClientConfig.Builder(host + ":" + port).multiThreaded(true).build();
-    JestClientFactory factory = new JestClientFactory();
-    factory.setHttpClientConfig(clientConfig);
-    client = (JestHttpClient) factory.getObject();
+    this.baseUrl = host + ":" + port + "/" + indices + "/";
     this.indices = Arrays.asList(indices.split("\\,"));
-  }
-
-  public ESReconService (String host, String indices, Settings settings) {
-    this(host, DEFAULT_PORT, indices);
   }
 
   public ESReconService (String host, String indices) {
     this(host, DEFAULT_PORT, indices);
   }
 
-  public static Builder config () {
-    return ImmutableSettings.builder(); 
-  }
-
   public List<String> getIndexNames() {
     return indices;
   }
-
-  private Search buildSearch (String searchSource) {
-    return new Search.Builder(searchSource).addIndex(getIndexNames()).build();
+  
+  private SearchResponse doSearch(SearchSourceBuilder search) throws UnirestException, IOException {
+    final String searchBody = search.toString();
+    final String url = baseUrl + "_search";
+    log.debug("Posting to {} values {}", url, searchBody );
+    return getSearchResponse (
+      Unirest
+        .post(url)
+        .body(searchBody)
+      .asJson().getRawBody()
+    );
   }
   
-  public String[] getUniqueValues (String index, String field) throws JSONException, IOException {
+  private SearchResponse getSearchResponse (InputStream is) throws IOException {
+    SearchResponse sr = new SearchResponse();
+    sr.readFrom(new InputStreamStreamInput ( is ));
+    return sr;
+  }
+  
+  private MultiSearchResponse getMultiSearchResponse (InputStream is) throws IOException {
+    MultiSearchResponse msr = new MultiSearchResponse(null);
+    msr.readFrom(new InputStreamStreamInput ( is ));
+    return msr;
+  }
+  
+  private MultiSearchResponse doMultiSearch(Collection<SearchSourceBuilder> searches) throws IOException, UnirestException {
+    final String url = baseUrl + "_msearch";
+    final StringBuilder searchBody = new StringBuilder();
+    for (SearchSourceBuilder search : searches) {
+      searchBody.append(search.toString() + "\n");
+    }
+    log.debug("Posting to {} values {}", url, searchBody.toString() );
+    return getMultiSearchResponse(Unirest
+        .post(url)
+        .body(searchBody.toString())
+        .asJson().getRawBody());
+  }
+  
+  public String[] getUniqueValues (String field) throws JSONException, IOException, UnirestException {
     String [] vals = new String [0];
     
     // Use the original elastic search libs to create the search source.
@@ -82,15 +100,15 @@ public class ESReconService {
         AggregationBuilders.terms("types").field(field)
       )
     ;
+    
+    // Now we should query
 
     // Create the Jest type search.
-    TermsAggregation typeAgg = client.execute(buildSearch(searchQuery.toString())).getAggregations().getTermsAggregation("types");
-    
-    // Now let's add each result.
-    if ( typeAgg != null ) {
+    Terms types = doSearch(searchQuery).getAggregations().get("types");
+    if ( types != null ) {
       List<String> valsList = new ArrayList<String> ();
-      for (Entry f : typeAgg.getBuckets()) {
-        valsList.add(f.getKey());
+      for (Terms.Bucket entry : types.getBuckets()) {
+        valsList.add(entry.getKey());
       }
       vals = valsList.toArray(vals);
     }
@@ -98,56 +116,44 @@ public class ESReconService {
     return vals;
   }
 
-  public MultiSearch.Builder buildMultiSearch(Search search) {
-    return new MultiSearch.Builder(search);
-  }
-
   public List<Recon> recon(ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry, List<ReconJob> jobs) {
     // Lets Build up the queries.
     List<Recon> results = new ArrayList<Recon>();
-
-    // Set the count to 0.
-    int count = 0;
     
     // Use the first to build the multi query.
-    MultiSearch.Builder multi = buildMultiSearch ( buildReconSearch((ESReconJob)jobs.get(count)) );
-    do {
-      count++;
-      multi.addSearch(buildReconSearch((ESReconJob)jobs.get(count)));
-    } while (count < (jobs.size() - 1));
+    List<SearchSourceBuilder> searches = new ArrayList<SearchSourceBuilder> ();
+    for (ReconJob job : jobs) {
+      searches.add(buildReconSearch((ESReconJob)job));
+    }
    
-    JestResult es_response;
+    MultiSearchResponse es_response;
     try {
       
-      MultiSearch ms = multi.build();
-      System.out.println(ms.getData(null).toString().trim());
+      es_response = doMultiSearch(searches);
       
-      es_response = client.execute(ms);
-      JsonArray responses = es_response.getJsonObject().getAsJsonArray("responses");
+      Item[] query_results = es_response.getResponses();
       
-      // We should receive a responses key with all the search responses in there.
-      // We should build a search response from each.
-      for (int i=0; i<responses.size(); i++) {
+   // Each response needs examining in turn.
+      for (int i=0; i<query_results.length; i++ ) {
         
-        // Create the search result from the multi response.
-        JsonObject obj = responses.get(i).getAsJsonObject();
+        // This is a single set of hits for a single job (row).
+        Item item = query_results[i];
         
         // Matching Job.
         ESReconJob currentJob = (ESReconJob) jobs.get(i);
-        
-        if (!obj.get("error").getAsBoolean()){  
-          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), obj ) );
+        if (!item.isFailure()){  
+          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), item.getResponse().getHits()) );
         } else {
-          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), null ) );
+          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), null) );
         }
       }
-    } catch (IOException e) {
+      
+      return results;
+    } catch (Exception e) {
       // Just log the error and return an empty list to be safe.
       log.error("Error while reconciling.", e);
       return Collections.emptyList();
     }
-
-    return results;
   }
 
   public Recon createRecon (ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry) {
@@ -156,57 +162,52 @@ public class ESReconService {
     return recon;
   }
 
-  private Recon buildRecon(ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry, String text, JsonObject res) {
+  private Recon buildRecon(ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry, String text, SearchHits searchHits) {
     Recon recon = createRecon(esReconcileConfig, judgmentHistoryEntry);
-
-    if (res != null) {
-
-      JsonArray hits = res.getAsJsonObject("hits").getAsJsonArray("hits");
-      
-      // Grab the max score here.
-      final float max_score = res.getAsJsonObject("hits").get("max_score").getAsFloat();
-      
-      for (int i = 0; i<hits.size(); i++) {
+    
+    final float maxScore = searchHits.getMaxScore();
+    
+    if (searchHits.getTotalHits() > 0) {
+      SearchHit[] hits = searchHits.hits();
+      for (int i = 0; i<hits.length; i++) {
         
-        JsonObject hit = hits.get(i).getAsJsonObject();
-
-        String type = hit.get("_type").getAsString();
-        JsonObject source = hit.getAsJsonObject("_source");
+        SearchHit hit = hits[i];
         
-        // The resource name.
-        String name = source.get("name").getAsString();
+        String type = hit.type();
+        Map<String, Object> source = hit.getSource();
         
-        // The Levenshtein distance.
-        int l_distance = StringUtils.getLevenshteinDistance(StringUtils.lowerCase(text), StringUtils.lowerCase(name));
-
+        final float score = hit.score();
+        final String name = (String) source.get("name");
+        int lDistance = StringUtils.getLevenshteinDistance(StringUtils.lowerCase(text), StringUtils.lowerCase(name));
+        
         // Create a recon candidate.
         ReconCandidate candidate = new ReconCandidate(
-            hit.get("_id").getAsString(),
-            name,
-            new String[]{ type },
-            compatibleScore (max_score, hit.get("_score").getAsFloat(), l_distance)
+          hit.id(),
+          name,
+          new String[]{ type },
+          compatibleScore(maxScore, score, lDistance)
         );
-
+        
         // Add the candidate for this row.
         recon.addCandidate(candidate);
-
+        
         if (i == 0) {
           // First object is the BEST match.
-          recon.setFeature(Recon.Feature_nameMatch, text.equalsIgnoreCase(candidate.name));
-          recon.setFeature(Recon.Feature_nameLevenshtein, l_distance);
-
+          recon.setFeature(Recon.Feature_nameMatch, text.equalsIgnoreCase(name));
+          recon.setFeature(Recon.Feature_nameLevenshtein, lDistance);
+  
           // TODO: SO - For now the type is always supplied and therefore filtered and will always be matched. 
           recon.setFeature(Recon.Feature_typeMatch, true);
         }
       }
     }
-
-
-    //    recon.match = candidate;
-    //    recon.matchRank = 0;
-    //    recon.judgment = Judgment.Matched;
-    //    recon.judgmentAction = "auto";
-
+    
+    
+//    recon.match = candidate;
+//    recon.matchRank = 0;
+//    recon.judgment = Judgment.Matched;
+//    recon.judgmentAction = "auto";
+    
     return recon;
   }
   
@@ -232,20 +233,15 @@ public class ESReconService {
     return (new_score * 100f);
   }
 
-  private Search buildReconSearch (ESReconJob rj) {
-    return buildSearch(
-      new SearchSourceBuilder().query(
-          QueryBuilders.filteredQuery(
-              QueryBuilders.queryString("name:" + rj.getQuery() + " OR altname:" + rj.getQuery()),
-              FilterBuilders.termFilter("componentType", rj.getType())
-          )
-      ).toString()
-    );
+  private SearchSourceBuilder buildReconSearch (ESReconJob rj) {
+    return new SearchSourceBuilder()
+        .query(QueryBuilders.filteredQuery(
+            QueryBuilders.queryString("name:" + rj.getQuery() + " OR altname:" + rj.getQuery()),
+            FilterBuilders.termFilter("componentType", rj.getType())))
+      ;
   }
 
   public void destroy () throws Exception {
-    if (client != null) {
-      client.shutdownClient();
-    }
+    Unirest.shutdown();
   }
 }

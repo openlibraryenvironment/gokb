@@ -39,6 +39,7 @@ import com.k_int.gokb.refine.notifications.Notification;
 import com.k_int.gokb.refine.notifications.NotificationStack;
 import com.k_int.refine.es_recon.ESReconService;
 import com.k_int.refine.es_recon.model.ESReconcileConfig;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 import edu.mit.simile.butterfly.ButterflyClassLoader;
 import edu.mit.simile.butterfly.ButterflyModule;
@@ -539,7 +540,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " indices: " + esc.getString("indices"));
         
         setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices")));
-        getReconService().getUniqueValues("gokb", esc.getString("typingField"));
+        getReconService().getUniqueValues(esc.getString("typingField"));
       } catch (Exception e) {
         // Failed to set the recon service.
         // Lets change the capability to false in our config to stop things being enabled.
@@ -557,11 +558,11 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     return getCurrentService().getSettings("esconfig");
   }
   
-  public String[] getESTypes () throws JSONException, IOException {
+  public String[] getESTypes () throws JSONException, IOException, UnirestException {
     
     JSONObject esc = getESConfig();
     if (getReconService() != null) {
-      return getReconService().getUniqueValues("gokb", esc.getString("typingField"));
+      return getReconService().getUniqueValues(esc.getString("typingField"));
     }
     
     return new String[0];
