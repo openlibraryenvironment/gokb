@@ -20,6 +20,9 @@ GOKb.registerFeature (
         "url" : GOKb.core.workspace.base_url,
         "view" : {
           "url" : GOKb.core.workspace.base_url + view_uri + "{{id}}"
+        },
+        "preview" : {
+          "url" : GOKb.core.workspace.base_url + view_uri + "{{id}}"
         }
       });
     }

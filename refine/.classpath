@@ -5,7 +5,7 @@
 	<classpathentry kind="src" path="extensions/pc-axis/src"/>
 	<classpathentry kind="src" output="extensions/gokb/module/MOD-INF/classes" path="extensions/gokb/src"/>
 	<classpathentry kind="src" path="extensions/gokb/module/scripts"/>
-	<classpathentry kind="src" path="main/webapp/modules/core"/>
+	<classpathentry kind="src" path="main/webapp/modules/core/scripts"/>
 	<classpathentry exported="true" kind="lib" path="main/webapp/WEB-INF/lib/ant-tools-1.8.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="main/webapp/WEB-INF/lib/arithcode-1.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="main/webapp/WEB-INF/lib/butterfly-1.0.1.jar" sourcepath="main/webapp/WEB-INF/lib-src/butterfly-1.0.1-sources.jar"/>

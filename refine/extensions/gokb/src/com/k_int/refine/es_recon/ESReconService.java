@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -12,6 +13,7 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.MultiMatchQueryBuilder.Type;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -52,12 +54,10 @@ public class ESReconService {
   private JSONObject doSearch(SearchSourceBuilder search) throws UnirestException, IOException {
     final String searchBody = search.toXContent(XContentFactory.contentBuilder(XContentType.JSON), ToXContent.EMPTY_PARAMS).string();
     final String url = baseUrl + "_search";
-    
     JSONObject res = Unirest
       .post(url)
       .body(searchBody)
     .asJson().getBody().getObject();
-    
     return res;
   }
   
@@ -65,6 +65,9 @@ public class ESReconService {
     final String url = baseUrl + "_msearch";
     final StringBuilder searchBody = new StringBuilder();
     for (SearchSourceBuilder search : searches) {
+      // Add an empty header to allow the search URL to control the indeces.
+      searchBody.append("{}\n");
+      
       // Do the conversion manually to avoid the pretty print, as the bulk actions in ES use
       // the \n character as the delimiter.
       searchBody.append(search.toXContent(XContentFactory.contentBuilder(XContentType.JSON), ToXContent.EMPTY_PARAMS).string() + "\n");
@@ -168,27 +171,17 @@ public class ESReconService {
         
         final float score = (float) hit.getDouble("_score");
         final String name = source.getString("name");
-        int lDistance = StringUtils.getLevenshteinDistance(StringUtils.lowerCase(text), StringUtils.lowerCase(name));
         
-        // Create a recon candidate.
-        ReconCandidate candidate = new ReconCandidate(
+        // Add the candidate for this row.
+        recon.addCandidate(buildReconCandidate(
           hit.getString("_id"),
           name,
           new String[]{ type },
-          compatibleScore(maxScore, score, lDistance)
-        );
-        
-        // Add the candidate for this row.
-        recon.addCandidate(candidate);
-        
-        if (i == 0) {
-          // First object is the BEST match.
-          recon.setFeature(Recon.Feature_nameMatch, text.equalsIgnoreCase(name));
-          recon.setFeature(Recon.Feature_nameLevenshtein, lDistance);
-  
-          // TODO: SO - For now the type is always supplied and therefore filtered and will always be matched. 
-          recon.setFeature(Recon.Feature_typeMatch, true);
-        }
+          score,
+          maxScore,
+          text,
+          source.getJSONArray("altname")
+        ));
       }
     }
     
@@ -198,11 +191,91 @@ public class ESReconService {
 //    recon.judgment = Judgment.Matched;
 //    recon.judgmentAction = "auto";
     
+    // Order the recon candidates again.
+    if (recon.candidates != null && recon.candidates.size() > 0) {
+      Collections.sort(recon.candidates, Collections.reverseOrder(new Comparator<ReconCandidate>() {
+        @Override
+        public int compare (ReconCandidate o1, ReconCandidate o2) {
+          if (o1 == null) {
+            if (o2 == null) {
+              return 0;
+            }
+            return 1;
+          } else if (o2 == null) {
+            return 1;
+          }
+          
+          return Double.compare(o1.score, o2.score);
+        }
+      }));
+
+      // Get the first item
+      ReconCandidate candidate = recon.candidates.get(0);
+      
+      // First object is the BEST match.
+      recon.setFeature(Recon.Feature_nameMatch, text.equalsIgnoreCase(candidate.name));
+      recon.setFeature(Recon.Feature_nameLevenshtein, StringUtils.getLevenshteinDistance(StringUtils.lowerCase(text), StringUtils.lowerCase(candidate.name)));
+
+      // TODO: SO - For now the type is always supplied and therefore filtered and will always be matched. 
+      recon.setFeature(Recon.Feature_typeMatch, true);
+    }
+    
     return recon;
+  }
+
+  private SearchSourceBuilder buildReconSearch (ESReconJob rj) {
+    return new SearchSourceBuilder()
+        .query(QueryBuilders.filteredQuery(
+            QueryBuilders.multiMatchQuery(
+                rj.getQuery(), 
+                "name", "altname")
+                .type(Type.BEST_FIELDS),
+            FilterBuilders.termFilter("componentType", rj.getType())
+        ))
+        .highlight(SearchSourceBuilder.highlight()
+            .field("name")
+            .field("altname")
+        )
+      ;
+  }
+
+  public void destroy () throws Exception {
+    Unirest.shutdown();
+  }
+  
+  public ReconCandidate buildReconCandidate (String id, String name, String[] types, float score, float max_score, String search_text, JSONArray alt_names) {
+        
+    // Now we should manipulate the data so we return the value that was matched.    
+    final String text = StringUtils.lowerCase(search_text);
+    
+    // Find the lowest Levenshtein Distance.
+    int lDistance = StringUtils.getLevenshteinDistance(text, StringUtils.lowerCase(name));
+    for (int i=0; i<alt_names.length() && lDistance>0; i++) {
+      
+      // Grab this field value.
+      final String val = alt_names.optString(i);
+      
+      int new_distance = StringUtils.getLevenshteinDistance(text, StringUtils.lowerCase(val));
+      if ( new_distance < lDistance) {
+        
+        // Set this as the lowest.
+        lDistance = new_distance;
+        
+        // Now we should set the name field to the field matched against.
+        name = val;
+      }
+    }
+    
+    return new ReconCandidate(
+      id,
+      name,
+      types,
+      compatibleScore(max_score, score, lDistance)
+    );
   }
   
   private float compatibleScore (float es_max_score, float es_doc_score, int levenshtein_distance) {
-        
+    
     // Default to the doc score over the max.
     float new_score = (es_doc_score/es_max_score);
     
@@ -221,22 +294,5 @@ public class ESReconService {
     
     // The new elastic search score
     return (new_score * 100f);
-  }
-
-  private SearchSourceBuilder buildReconSearch (ESReconJob rj) {
-    return new SearchSourceBuilder()
-        .query(QueryBuilders.filteredQuery(
-            QueryBuilders.queryString("name:" + rj.getQuery() + " OR altname:" + rj.getQuery()),
-            FilterBuilders.termFilter("componentType", rj.getType())
-        ))
-        .highlight(SearchSourceBuilder.highlight()
-            .field("name")
-            .field("altname")
-        )
-      ;
-  }
-
-  public void destroy () throws Exception {
-    Unirest.shutdown();
   }
 }
