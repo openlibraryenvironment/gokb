@@ -50,16 +50,13 @@ public class ESReconService {
   }
   
   private JSONObject doSearch(SearchSourceBuilder search) throws UnirestException, IOException {
-    final String searchBody = search.toString();
+    final String searchBody = search.toXContent(XContentFactory.contentBuilder(XContentType.JSON), ToXContent.EMPTY_PARAMS).string();
     final String url = baseUrl + "_search";
-    log.info("Posting to {} values {}", url, searchBody );
     
     JSONObject res = Unirest
       .post(url)
       .body(searchBody)
     .asJson().getBody().getObject();
-    
-    log.info("ES returned: {}", res.toString());
     
     return res;
   }
@@ -72,13 +69,12 @@ public class ESReconService {
       // the \n character as the delimiter.
       searchBody.append(search.toXContent(XContentFactory.contentBuilder(XContentType.JSON), ToXContent.EMPTY_PARAMS).string() + "\n");
     }
-    log.info("Posting to {} values {}", url, searchBody.toString() );
+    
     JSONObject res = Unirest
       .post(url)
       .body(searchBody.toString())
     .asJson().getBody().getObject();
-      
-      log.info("ES returned: {}", res.toString());
+    
     return res;
   }
   
@@ -92,8 +88,6 @@ public class ESReconService {
         AggregationBuilders.terms("types").field(field)
       )
     ;
-    
-    // Now we should query
 
     // Create the Jest type search.
     JSONObject types = doSearch(searchQuery).getJSONObject("aggregations").getJSONObject("types");
@@ -233,7 +227,12 @@ public class ESReconService {
     return new SearchSourceBuilder()
         .query(QueryBuilders.filteredQuery(
             QueryBuilders.queryString("name:" + rj.getQuery() + " OR altname:" + rj.getQuery()),
-            FilterBuilders.termFilter("componentType", rj.getType())))
+            FilterBuilders.termFilter("componentType", rj.getType())
+        ))
+        .highlight(SearchSourceBuilder.highlight()
+            .field("name")
+            .field("altname")
+        )
       ;
   }
 
