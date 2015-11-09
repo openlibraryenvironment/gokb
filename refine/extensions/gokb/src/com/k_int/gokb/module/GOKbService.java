@@ -333,10 +333,6 @@ public class GOKbService extends A_ScheduledUpdates implements Jsonizable {
     return URLConenectionUtils.getJSONObjectFromStream( callAPI (apiMethod).getInputStream() );
   }
   
-  private JSONObject apiJSON (String apiMethod, URLConenectionUtils.METHOD_TYPE methodType, Map<String, String[]> params) throws JSONException, IOException, FileUploadException {
-    return URLConenectionUtils.getJSONObjectFromStream( callAPI (apiMethod, methodType, params).getInputStream() );
-  }
-  
   private HttpURLConnection callAPI (String apiMethod) throws IOException, FileUploadException {
     return callAPI (apiMethod, URLConenectionUtils.METHOD_TYPE.GET);
   }

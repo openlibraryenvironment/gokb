@@ -1,27 +1,23 @@
 package com.k_int.refine.es_recon;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.action.search.MultiSearchResponse;
-import org.elasticsearch.action.search.MultiSearchResponse.Item;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.io.stream.InputStreamStreamInput;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,41 +49,37 @@ public class ESReconService {
     return indices;
   }
   
-  private SearchResponse doSearch(SearchSourceBuilder search) throws UnirestException, IOException {
+  private JSONObject doSearch(SearchSourceBuilder search) throws UnirestException, IOException {
     final String searchBody = search.toString();
     final String url = baseUrl + "_search";
-    log.debug("Posting to {} values {}", url, searchBody );
-    return getSearchResponse (
-      Unirest
-        .post(url)
-        .body(searchBody)
-      .asJson().getRawBody()
-    );
+    log.info("Posting to {} values {}", url, searchBody );
+    
+    JSONObject res = Unirest
+      .post(url)
+      .body(searchBody)
+    .asJson().getBody().getObject();
+    
+    log.info("ES returned: {}", res.toString());
+    
+    return res;
   }
   
-  private SearchResponse getSearchResponse (InputStream is) throws IOException {
-    SearchResponse sr = new SearchResponse();
-    sr.readFrom(new InputStreamStreamInput ( is ));
-    return sr;
-  }
-  
-  private MultiSearchResponse getMultiSearchResponse (InputStream is) throws IOException {
-    MultiSearchResponse msr = new MultiSearchResponse(null);
-    msr.readFrom(new InputStreamStreamInput ( is ));
-    return msr;
-  }
-  
-  private MultiSearchResponse doMultiSearch(Collection<SearchSourceBuilder> searches) throws IOException, UnirestException {
+  private JSONObject doMultiSearch(Collection<SearchSourceBuilder> searches) throws IOException, UnirestException {
     final String url = baseUrl + "_msearch";
     final StringBuilder searchBody = new StringBuilder();
     for (SearchSourceBuilder search : searches) {
-      searchBody.append(search.toString() + "\n");
+      // Do the conversion manually to avoid the pretty print, as the bulk actions in ES use
+      // the \n character as the delimiter.
+      searchBody.append(search.toXContent(XContentFactory.contentBuilder(XContentType.JSON), ToXContent.EMPTY_PARAMS).string() + "\n");
     }
-    log.debug("Posting to {} values {}", url, searchBody.toString() );
-    return getMultiSearchResponse(Unirest
-        .post(url)
-        .body(searchBody.toString())
-        .asJson().getRawBody());
+    log.info("Posting to {} values {}", url, searchBody.toString() );
+    JSONObject res = Unirest
+      .post(url)
+      .body(searchBody.toString())
+    .asJson().getBody().getObject();
+      
+      log.info("ES returned: {}", res.toString());
+    return res;
   }
   
   public String[] getUniqueValues (String field) throws JSONException, IOException, UnirestException {
@@ -104,11 +96,13 @@ public class ESReconService {
     // Now we should query
 
     // Create the Jest type search.
-    Terms types = doSearch(searchQuery).getAggregations().get("types");
+    JSONObject types = doSearch(searchQuery).getJSONObject("aggregations").getJSONObject("types");
     if ( types != null ) {
       List<String> valsList = new ArrayList<String> ();
-      for (Terms.Bucket entry : types.getBuckets()) {
-        valsList.add(entry.getKey());
+      JSONArray buckets = types.getJSONArray("buckets");
+      for ( int i=0; i<buckets.length();i++) {
+        JSONObject entry = buckets.getJSONObject(i);
+        valsList.add(entry.getString("key"));
       }
       vals = valsList.toArray(vals);
     }
@@ -126,24 +120,26 @@ public class ESReconService {
       searches.add(buildReconSearch((ESReconJob)job));
     }
    
-    MultiSearchResponse es_response;
+    JSONObject es_response;
     try {
       
       es_response = doMultiSearch(searches);
       
-      Item[] query_results = es_response.getResponses();
+      JSONArray query_results = es_response.getJSONArray("responses");
       
-   // Each response needs examining in turn.
-      for (int i=0; i<query_results.length; i++ ) {
+      // Each response needs examining in turn.
+      for (int i=0; i<query_results.length(); i++ ) {
         
         // This is a single set of hits for a single job (row).
-        Item item = query_results[i];
+        JSONObject item = query_results.getJSONObject(i);
         
         // Matching Job.
         ESReconJob currentJob = (ESReconJob) jobs.get(i);
-        if (!item.isFailure()){  
-          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), item.getResponse().getHits()) );
+        String error = item.optString("error", null);
+        if (error == null){
+          results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), item.getJSONObject("hits")) );
         } else {
+          log.error(error);
           results.add( buildRecon(esReconcileConfig, judgmentHistoryEntry, currentJob.getQuery(), null) );
         }
       }
@@ -162,27 +158,27 @@ public class ESReconService {
     return recon;
   }
 
-  private Recon buildRecon(ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry, String text, SearchHits searchHits) {
+  private Recon buildRecon(ESReconcileConfig esReconcileConfig, long judgmentHistoryEntry, String text, JSONObject searchHits) throws JSONException {
     Recon recon = createRecon(esReconcileConfig, judgmentHistoryEntry);
     
-    final float maxScore = searchHits.getMaxScore();
+    final float maxScore = (float)searchHits.optDouble("max_score");
     
-    if (searchHits.getTotalHits() > 0) {
-      SearchHit[] hits = searchHits.hits();
-      for (int i = 0; i<hits.length; i++) {
+    if (searchHits.optInt("total") > 0) {
+      JSONArray hits = searchHits.getJSONArray("hits");
+      for (int i = 0; i<hits.length(); i++) {
         
-        SearchHit hit = hits[i];
+        JSONObject hit = hits.getJSONObject(i);
         
-        String type = hit.type();
-        Map<String, Object> source = hit.getSource();
+        String type = hit.getString("_type");
+        JSONObject source = hit.getJSONObject("_source");
         
-        final float score = hit.score();
-        final String name = (String) source.get("name");
+        final float score = (float) hit.getDouble("_score");
+        final String name = source.getString("name");
         int lDistance = StringUtils.getLevenshteinDistance(StringUtils.lowerCase(text), StringUtils.lowerCase(name));
         
         // Create a recon candidate.
         ReconCandidate candidate = new ReconCandidate(
-          hit.id(),
+          hit.getString("_id"),
           name,
           new String[]{ type },
           compatibleScore(maxScore, score, lDistance)
