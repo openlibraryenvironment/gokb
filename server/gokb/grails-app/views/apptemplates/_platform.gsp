@@ -15,23 +15,8 @@
         config="KBComponent.Status" />
     </dd>
 
-<<<<<<< HEAD
-    <dt>
-      <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:manyToOneReferenceTypedown owner="${d}" field="source"
-        baseClass="org.gokb.cred.Source">
-        ${d.source?.name}
-      </g:manyToOneReferenceTypedown>
-    </dd>
-=======
     <dt> <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel> </dt>
     <dd> <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"> ${d.source?.name} </g:manyToOneReferenceTypedown> </dd>
-
-    <dt> <g:annotatedLabel owner="${d}" property="source">Provider</g:annotatedLabel> </dt>
-    <dd> <g:manyToOneReferenceTypedown owner="${d}" field="provider" baseClass="org.gokb.cred.Org"> ${d.provider?.name} </g:manyToOneReferenceTypedown> </dd>
->>>>>>> test
 
     <dt> <g:annotatedLabel owner="${d}" property="source">Provider</g:annotatedLabel> </dt>
     <dd> <g:manyToOneReferenceTypedown owner="${d}" field="provider" baseClass="org.gokb.cred.Org"> ${d.provider?.name} </g:manyToOneReferenceTypedown> </dd>

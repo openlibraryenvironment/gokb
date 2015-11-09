@@ -15,22 +15,28 @@ var ESRecon = (function($) {
       // Run the original.
       oldFunction.apply(this, arguments);
       
-      // Grab the cell.
-      var cell = this._cell;
+      // Grab all the recon candidates in this cell.
+      var candidates = $('.data-table-recon-candidate', this._td);
       
-      // Grab the Cell and check to see if it is a recon value.
-      if (cell && "v" in cell && cell.v !== null && cell.r) {
-        
-        // Grab the service that was used to create the Recon values.
-        var r = cell.r;
-        var service = (r.service) ? ReconciliationManager.getServiceFromUrl(r.service) : null;
-        
-        // If this is a Recon from our module then we should remove the create new link.
-        if (service && "name" in service && service.name === name) {
-          var create_new = $('.data-table-cell-content > .data-table-recon-candidates > .data-table-recon-candidate:last-child', this._td);
-          create_new.remove();
-        }
-      }
+      // 
+      
+//      
+//      // Grab the cell.
+//      var cell = this._cell;
+//      
+//      // Grab the Cell and check to see if it is a recon value.
+//      if (cell && "v" in cell && cell.v !== null && cell.r) {
+//        
+//        // Grab the service that was used to create the Recon values.
+//        var r = cell.r;
+//        var service = (r.service) ? ReconciliationManager.getServiceFromUrl(r.service) : null;
+//        
+//        // If this is a Recon from our module then we should remove the create new link.
+//        if (service && "name" in service && service.name === name) {
+//          var create_new = $('.data-table-cell-content > .data-table-recon-candidates > .data-table-recon-candidate:last-child', this._td);
+//          create_new.remove();
+//        }
+//      }
     }
   );
   
