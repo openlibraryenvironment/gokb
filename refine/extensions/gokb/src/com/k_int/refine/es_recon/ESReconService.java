@@ -31,7 +31,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class ESReconService {
-  private static final int DEFAULT_PORT = 9300;
+  public static final int DEFAULT_PORT = 9200;
   private final List<String> indices;
   
   Logger log = LoggerFactory.getLogger("ES-Recon Service");
@@ -41,6 +41,9 @@ public class ESReconService {
   public ESReconService (String host, int port, String indices) {
     this.baseUrl = host + ":" + port + "/" + indices + "/";
     this.indices = Arrays.asList(indices.split("\\,"));
+    
+    // Set UniREST defaults here.
+    Unirest.setTimeouts(10000, 30000);
   }
 
   public ESReconService (String host, String indices) {
@@ -239,8 +242,13 @@ public class ESReconService {
       ;
   }
 
-  public void destroy () throws Exception {
-    Unirest.shutdown();
+  public void destroy () {
+    try {
+      Unirest.shutdown();
+    } catch (IOException e) {
+      log.error("Error attempting to shutdown unirest.", e);
+      e.printStackTrace();
+    }
   }
   
   public ReconCandidate buildReconCandidate (String id, String name, String[] types, float score, float max_score, String search_text, JSONArray alt_names) {

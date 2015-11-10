@@ -509,7 +509,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   }
 
   public void setActiveWorkspace(int workspace_id) throws IOException, JSONException {
-
+    
     // We should now set the new workspace.
     ProjectManager.singleton.dispose();
     ProjectManager.singleton = null;
@@ -537,16 +537,19 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       try {
         JSONObject esc = newWorkspace.getService().getSettings("esconfig");
         String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$1$2"));
-        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " indices: " + esc.getString("indices"));
+        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.optInt("port", ESReconService.DEFAULT_PORT) + " indices: " + esc.getString("indices"));
         
         setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices")));
         getReconService().getUniqueValues(esc.getString("typingField"));
       } catch (Exception e) {
-        // Failed to set the recon service.
-        // Lets change the capability to false in our config to stop things being enabled.
         _logger.error("Error initialising the ES Recon service. Disabling feature.", e);
         newWorkspace.getService().getCapabilities().put("es-recon", false);
       }
+    } else {
+      // Server does not support ES Recon.
+      // Just shutdown the recon service.
+      _logger.info("Server does not provide an ES Recon service. Shutting down.");
+      shutdownReconService();
     }
 
     // Need to clear login information too.
@@ -617,15 +620,19 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   }
   
   private static void setReconService(ESReconService eservice) throws Exception {
-    if (reconService != null) {
-      reconService.destroy();
-    }
-    
+    shutdownReconService ();
     reconService = eservice;
   }
 
   public ESReconService getReconService () {
     return reconService;
+  }
+
+  private static void shutdownReconService () {
+    if (reconService != null) {
+      reconService.destroy();
+      reconService = null;
+    }
   }
 
   @Override

@@ -1288,6 +1288,13 @@ globalSearch = [
   'port'        : 9300
 ]
 
+searchApi = [
+  'indices'     : 'gokb',
+  'types'       : 'component',
+  'typingField' : 'componentType',
+  'port'        : 9200
+]
+
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'
 //     'My-Custom-Header': 'some value'
