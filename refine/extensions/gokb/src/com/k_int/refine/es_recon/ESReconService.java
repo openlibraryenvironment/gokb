@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -32,24 +33,22 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class ESReconService {
   public static final int DEFAULT_PORT = 9200;
+  public static final String DEFAULT_PATH = "/";
   private final List<String> indices;
   
   Logger log = LoggerFactory.getLogger("ES-Recon Service");
   
   private final String baseUrl;
   
-  public ESReconService (String host, int port, String indices) {
-    this.baseUrl = host + ":" + port + "/" + indices + "/";
+  public ESReconService (String host, int port, String path, String indices) {
+    this.baseUrl = host + ":" + port + path + indices + "/";
     this.indices = Arrays.asList(indices.split("\\,"));
     
     // Set UniREST defaults here.
     Unirest.setTimeouts(10000, 30000);
+    Unirest.setDefaultHeader("Authorization", "Basic Z29rYlJlZmluZUVkaXRvcjpIZXdhak1vb3No");
   }
-
-  public ESReconService (String host, String indices) {
-    this(host, DEFAULT_PORT, indices);
-  }
-
+  
   public List<String> getIndexNames() {
     return indices;
   }

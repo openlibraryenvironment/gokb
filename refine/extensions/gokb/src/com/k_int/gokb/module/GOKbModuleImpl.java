@@ -533,24 +533,30 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     
     // Using the settings provided from the API we are connected too try and add
     // an ES reconciliation point.
+    ESReconService recon = null;
     if (newWorkspace.getService().isCabable("es-recon")) {
       try {
         JSONObject esc = newWorkspace.getService().getSettings("esconfig");
         String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$1$2"));
-        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.optInt("port", ESReconService.DEFAULT_PORT) + " indices: " + esc.getString("indices"));
+        int port = esc.optInt("port", ESReconService.DEFAULT_PORT);
+        String path = esc.optString("path", ESReconService.DEFAULT_PATH);
+        String indices = esc.optString("indices", "gokb");
         
-        setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices")));
-        getReconService().getUniqueValues(esc.getString("typingField"));
+        _logger.info("Connecting to ElasticSearch at " + host + ":" + port + path + indices);
+        
+        recon = new ESReconService(host, port, path, indices);
       } catch (Exception e) {
         _logger.error("Error initialising the ES Recon service. Disabling feature.", e);
         newWorkspace.getService().getCapabilities().put("es-recon", false);
+        recon = null;
       }
     } else {
       // Server does not support ES Recon.
-      // Just shutdown the recon service.
-      _logger.info("Server does not provide an ES Recon service. Shutting down.");
-      shutdownReconService();
+      // Setting to null will shutdown the old service.
+      _logger.info("Server does not provide an ES Recon service.");
     }
+    
+    setReconService(recon);
 
     // Need to clear login information too.
     userDetails = null;
@@ -619,20 +625,17 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     .endObject();
   }
   
-  private static void setReconService(ESReconService eservice) throws Exception {
-    shutdownReconService ();
+  private static void setReconService(ESReconService eservice) {
+    if (reconService != null) {
+      _logger.info("Shutting down previous ES service first...");
+      reconService.destroy();
+      reconService = null;
+    }
     reconService = eservice;
   }
 
   public ESReconService getReconService () {
     return reconService;
-  }
-
-  private static void shutdownReconService () {
-    if (reconService != null) {
-      reconService.destroy();
-      reconService = null;
-    }
   }
 
   @Override
