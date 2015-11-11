@@ -1036,17 +1036,6 @@ class ApiController {
     }
   }
   
-  private static ES_CONFIG = null
-  private static getESConfig() {
-    
-    if (!ES_CONFIG) {
-      
-      // Also add the config params.
-      ES_CONFIG = [:]
-      ES_CONFIG << Holders.grailsApplication.config.searchApi
-    }
-  }
-  
   
   def esconfig () {
     
@@ -1054,7 +1043,7 @@ class ApiController {
     withCacheHeaders {
       etag ( SERVER_VERSION_ETAG_DSL )
       generate {
-        render (getESConfig() as JSON)
+        render (grailsApplication.config.searchApi as JSON)
       }
     }
   }
