@@ -12,10 +12,10 @@
 
     <g:each in="${fth}" var="theevent" status="i1">
       <tr>
-        <td><g:formatDate date="${theevent.eventDate}" format="yyyy-MM-dd"/></td>
+        <td><g:formatDate date="${theevent?.eventDate}" format="yyyy-MM-dd"/></td>
         <td>
           <ul>
-            <g:each in="${theevent.participants}" var="p">
+            <g:each in="${theevent?.participants}" var="p">
               <g:if test="${p.participantRole=='in'}">
                 <g:if test="${p.participant.id == d.id}"><b></g:if>
                   <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
@@ -26,7 +26,7 @@
         </td>
         <td>
           <ul>
-            <g:each in="${theevent.participants}" var="p" status="i2">
+            <g:each in="${theevent?.participants}" var="p" status="i2">
               <g:if test="${p.participantRole=='out'}">
                 <g:if test="${p.participant.id == d.id}"><b></g:if>
                   <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
@@ -36,7 +36,7 @@
           </ul>
         </td>
         <td>
-          <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent.id}">Delete</g:link>
+          <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent?.id}">Delete</g:link>
         </td>
       </tr>
     </g:each>

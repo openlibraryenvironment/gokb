@@ -62,7 +62,7 @@
     <g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" />
   </dd>
 
-  <g:if test="${d.id != null}">
+  <g:if test="${d?.id != null}">
     <dt>
       <g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel>
     </dt>
