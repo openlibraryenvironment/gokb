@@ -18,6 +18,7 @@ import javax.servlet.ServletConfig;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections.ExtendedProperties;
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
@@ -542,11 +543,17 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         String path = esc.optString("path", ESReconService.DEFAULT_PATH);
         String indices = esc.optString("indices", "gokb");
         
-        _logger.info("Connecting to ElasticSearch at " + host + ":" + port + path + indices);
+        _logger.info("Connecting to ElasticSearch at {}:{}{}{}", new String[]{host, port + "", path, indices});
         
         recon = new ESReconService(host, port, path, indices);
+        
+        // Grab the types... This will error if the feature isn't available and should enable us to
+        // disable the feature.
+        String[] types = recon.getUniqueValues(esc.getString("typingField"));
+        
+        _logger.info("Found types {}", StringUtils.join(types, " ,"));
       } catch (Exception e) {
-        _logger.error("Error initialising the ES Recon service. Disabling feature.", e);
+        _logger.info("Unable to initialize the ES Recon service. Disabling feature.", e);
         newWorkspace.getService().getCapabilities().put("es-recon", false);
         recon = null;
       }
