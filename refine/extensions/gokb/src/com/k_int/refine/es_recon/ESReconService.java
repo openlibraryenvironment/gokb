@@ -9,14 +9,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.MultiMatchQueryBuilder.Type;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -52,33 +44,38 @@ public class ESReconService {
     return indices;
   }
   
-  private JSONObject doSearch(SearchSourceBuilder search) throws UnirestException, IOException {
-    final String searchBody = search.toXContent(XContentFactory.contentBuilder(XContentType.JSON), ToXContent.EMPTY_PARAMS).string();
+  private JSONObject doSearch(JSONObject search) throws UnirestException, IOException {
+    final String searchBody = search.toString();
     final String url = baseUrl + "_search";
+    log.debug("REQUEST: {}", searchBody.toString());
     JSONObject res = Unirest
       .post(url)
       .body(searchBody)
     .asJson().getBody().getObject();
+    log.debug("RESPONSE: {}", res.toString());
     return res;
   }
   
-  private JSONObject doMultiSearch(Collection<SearchSourceBuilder> searches) throws IOException, UnirestException {
+  private JSONObject doMultiSearch(Collection<JSONObject> searches) throws IOException, UnirestException {
     final String url = baseUrl + "_msearch";
     final StringBuilder searchBody = new StringBuilder();
-    for (SearchSourceBuilder search : searches) {
+    for (JSONObject search : searches) {
       // Add an empty header to allow the search URL to control the indeces.
       searchBody.append("{}\n");
       
       // Do the conversion manually to avoid the pretty print, as the bulk actions in ES use
       // the \n character as the delimiter.
-      searchBody.append(search.toXContent(XContentFactory.contentBuilder(XContentType.JSON), ToXContent.EMPTY_PARAMS).string() + "\n");
+      searchBody.append(search.toString() + "\n");
     }
+    
+    log.debug("REQUEST: {}", searchBody.toString());
     
     JSONObject res = Unirest
       .post(url)
       .body(searchBody.toString())
     .asJson().getBody().getObject();
-    
+
+    log.debug("RESPONSE: {}", res.toString());
     return res;
   }
   
@@ -86,12 +83,15 @@ public class ESReconService {
     String [] vals = new String [0];
     
     // Use the original elastic search libs to create the search source.
-    SearchSourceBuilder searchQuery = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery())
-      .aggregation(
-        AggregationBuilders.terms("types").field(field)
+    JSONObject searchQuery = new JSONObject().put(
+      "aggs", new JSONObject().put(
+        "types", new JSONObject().put(
+          "terms", new JSONObject().put(
+            "field", field
+          )
+        )
       )
-    ;
+    );
 
     // Create the Jest type search.
     JSONObject types = doSearch(searchQuery).getJSONObject("aggregations").getJSONObject("types");
@@ -113,13 +113,13 @@ public class ESReconService {
     List<Recon> results = new ArrayList<Recon>();
     
     // Use the first to build the multi query.
-    List<SearchSourceBuilder> searches = new ArrayList<SearchSourceBuilder> ();
-    for (ReconJob job : jobs) {
-      searches.add(buildReconSearch((ESReconJob)job));
-    }
-   
+    List<JSONObject> searches = new ArrayList<JSONObject> ();   
     JSONObject es_response;
     try {
+
+      for (ReconJob job : jobs) {
+        searches.add(buildReconSearch((ESReconJob)job));
+      }
       
       es_response = doMultiSearch(searches);
       
@@ -224,20 +224,27 @@ public class ESReconService {
     return recon;
   }
 
-  private SearchSourceBuilder buildReconSearch (ESReconJob rj) {
-    return new SearchSourceBuilder()
-        .query(QueryBuilders.filteredQuery(
-            QueryBuilders.multiMatchQuery(
-                rj.getQuery(), 
-                "name", "altname")
-                .type(Type.BEST_FIELDS),
-            FilterBuilders.termFilter("componentType", rj.getType())
-        ))
-        .highlight(SearchSourceBuilder.highlight()
-            .field("name")
-            .field("altname")
+  private JSONObject buildReconSearch (ESReconJob rj) throws JSONException {
+    
+    JSONObject term_filter = new JSONObject().put(
+      "term", new JSONObject().put("componentType", rj.getType())        
+    );
+    
+    // Create the search and put the filter.
+    JSONObject search = new JSONObject().put("filter", term_filter);
+    
+    // We now need to build the query.
+    search.put(
+      "query", new JSONObject().put(
+        "multi_match", new JSONObject().put(
+          "type", "best_fields").put(
+          "query",  rj.getQuery()).put(
+          "fields", new JSONArray(new String[]{ "name", "altname" })
         )
-      ;
+      )
+    );
+    
+    return search;
   }
 
   public void destroy () {
