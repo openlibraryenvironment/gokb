@@ -17,9 +17,9 @@
           <ul>
             <g:each in="${theevent?.participants}" var="p">
               <g:if test="${p.participantRole=='in'}">
-                <g:if test="${p.participant.id == d.id}"><b></g:if>
-                  <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
-                <g:if test="${p.participant.id == d.id}"></b></g:if>
+                <g:if test="${p.participant?.id == d?.id}"><b></g:if>
+                  <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant?.id}">${p.participant?.name}</g:link></li>
+                <g:if test="${p.participant?.id == d?.id}"></b></g:if>
               </g:if>
             </g:each>
           </ul>
@@ -28,9 +28,9 @@
           <ul>
             <g:each in="${theevent?.participants}" var="p" status="i2">
               <g:if test="${p.participantRole=='out'}">
-                <g:if test="${p.participant.id == d.id}"><b></g:if>
-                  <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
-                <g:if test="${p.participant.id == d.id}"></b></g:if>
+                <g:if test="${p.participant?.id == d?.id}"><b></g:if>
+                  <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant?.id}">${p.participant?.name}</g:link></li>
+                <g:if test="${p.participant?.id == d?.id}"></b></g:if>
               </g:if>
             </g:each>
           </ul>
