@@ -1,5 +1,5 @@
 
-<table class="table table-bordered table-striped">
+<table class="table table-bordered table-striped show-more" data-show-more-rows='2' >
   <thead>
     <tr>
       <th>On this date</th>
@@ -11,11 +11,11 @@
     <g:set var="fth" value="${d?.fullTitleHistory?.fh}"/>
 
     <g:each in="${fth}" var="theevent" status="i1">
-      <tr class="${i1>1?'collapse throws':''}">
-        <td><g:formatDate date="${theevent.eventDate}" format="yyyy-MM-dd"/></td>
+      <tr>
+        <td><g:formatDate date="${theevent?.eventDate}" format="yyyy-MM-dd"/></td>
         <td>
           <ul>
-            <g:each in="${theevent.participants}" var="p">
+            <g:each in="${theevent?.participants}" var="p">
               <g:if test="${p.participantRole=='in'}">
                 <g:if test="${p.participant.id == d.id}"><b></g:if>
                   <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
@@ -26,7 +26,7 @@
         </td>
         <td>
           <ul>
-            <g:each in="${theevent.participants}" var="p" status="i2">
+            <g:each in="${theevent?.participants}" var="p" status="i2">
               <g:if test="${p.participantRole=='out'}">
                 <g:if test="${p.participant.id == d.id}"><b></g:if>
                   <li><g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${p.participant.id}">${p.participant.name}</g:link></li>
@@ -36,16 +36,9 @@
           </ul>
         </td>
         <td>
-          <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent.id}">Delete</g:link>
+          <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent?.id}">Delete</g:link>
         </td>
       </tr>
     </g:each>
-    <g:if test="${fth.size()>1}">
-      <tr>
-        <td colspan="4">
-          <button data-toggle="collapse" data-target=".throws">Show More</button>
-        </td>
-      </tr>
-    </g:if>
   </tbody>
 </table>

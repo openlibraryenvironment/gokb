@@ -18,6 +18,7 @@ import javax.servlet.ServletConfig;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections.ExtendedProperties;
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
@@ -39,6 +40,7 @@ import com.k_int.gokb.refine.notifications.Notification;
 import com.k_int.gokb.refine.notifications.NotificationStack;
 import com.k_int.refine.es_recon.ESReconService;
 import com.k_int.refine.es_recon.model.ESReconcileConfig;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 import edu.mit.simile.butterfly.ButterflyClassLoader;
 import edu.mit.simile.butterfly.ButterflyModule;
@@ -508,7 +510,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   }
 
   public void setActiveWorkspace(int workspace_id) throws IOException, JSONException {
-
+    
     // We should now set the new workspace.
     ProjectManager.singleton.dispose();
     ProjectManager.singleton = null;
@@ -532,24 +534,36 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     
     // Using the settings provided from the API we are connected too try and add
     // an ES reconciliation point.
+    ESReconService recon = null;
     if (newWorkspace.getService().isCabable("es-recon")) {
       try {
         JSONObject esc = newWorkspace.getService().getSettings("esconfig");
-        String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$2"));
-        _logger.info("Connecting to ElasticSearch at " + host + ":" + esc.getInt("port") + " cluster: " + esc.getString("cluster") + " index: " + esc.getString("indices"));
+        String host = esc.optString("host", theUrl.replaceAll(REGEX_HOST, "$1$2"));
+        int port = esc.optInt("port", ESReconService.DEFAULT_PORT);
+        String path = esc.optString("path", ESReconService.DEFAULT_PATH);
+        String indices = esc.optString("indices", "gokb");
         
-        setReconService(new ESReconService(host, esc.getInt("port"), esc.getString("indices"), ESReconService.config()
-          .put("cluster.name", esc.getString("cluster"))
-        .build()));
-      
-        getReconService().getAllIndexDetails();
-        getReconService().getUniqueValues("gokb", esc.getString("typingField"));
+        _logger.info("Connecting to ElasticSearch at {}:{}{}{}", new String[]{host, port + "", path, indices});
+        
+        recon = new ESReconService(host, port, path, indices);
+        
+        // Grab the types... This will error if the feature isn't available and should enable us to
+        // disable the feature.
+        String[] types = recon.getUniqueValues(esc.getString("typingField"));
+        
+        _logger.info("Found types {}", StringUtils.join(types, " ,"));
       } catch (Exception e) {
-        // Failed to set the recon service.
-        // Lets change the capability to false in our config to stop things being enabled.
+        _logger.info("Unable to initialize the ES Recon service. Disabling feature.", e);
         newWorkspace.getService().getCapabilities().put("es-recon", false);
+        recon = null;
       }
+    } else {
+      // Server does not support ES Recon.
+      // Setting to null will shutdown the old service.
+      _logger.info("Server does not provide an ES Recon service.");
     }
+    
+    setReconService(recon);
 
     // Need to clear login information too.
     userDetails = null;
@@ -560,11 +574,11 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     return getCurrentService().getSettings("esconfig");
   }
   
-  public String[] getESTypes () throws JSONException, IOException {
+  public String[] getESTypes () throws JSONException, IOException, UnirestException {
     
     JSONObject esc = getESConfig();
     if (getReconService() != null) {
-      return getReconService().getUniqueValues("gokb", esc.getString("typingField"));
+      return getReconService().getUniqueValues(esc.getString("typingField"));
     }
     
     return new String[0];
@@ -618,11 +632,12 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     .endObject();
   }
   
-  private static void setReconService(ESReconService eservice) throws Exception {
+  private static void setReconService(ESReconService eservice) {
     if (reconService != null) {
+      _logger.info("Shutting down previous ES service first...");
       reconService.destroy();
+      reconService = null;
     }
-    
     reconService = eservice;
   }
 
