@@ -58,7 +58,7 @@ class SecurityApi <T> extends A_Api<T> {
       if (component.id == null) 
         return isCreatable (component, defaultTo)
     
-      boolean allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
+      allowed = !(component.respondsTo('isSystemComponent') && component.isSystemComponent())
       if (allowed) {
         allowed = SecurityApi.isTypeEditable (component.getClass(), defaultTo)
       }
