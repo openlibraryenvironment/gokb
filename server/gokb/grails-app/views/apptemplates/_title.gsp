@@ -75,15 +75,11 @@
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
-    <li class="active"><a href="#titledetails" data-toggle="tab">Title
-        Details</a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names
-      <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
-    </a></li>
+    <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size()}</span> </a></li>
 
     <g:if test="${ d.isEditable() }">
-      <li><a href="#history" data-toggle="tab">Add to Title
-          History</a></li>
+      <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     </g:if>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span
         class="badge badge-warning">
