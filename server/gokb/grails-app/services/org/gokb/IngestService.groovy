@@ -360,7 +360,7 @@ class IngestService {
     RefineProject.withNewTransaction { TransactionStatus status ->
 
       RefineProject project = RefineProject.get(project_id)
-      if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE) ) {
+      if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE,recon_data) ) {
         try {
           def ids = []
           for (ai in identifiers) {
@@ -376,8 +376,8 @@ class IngestService {
 
           // Lookup the title.
           TitleInstance title_info = titleLookupService.find(
-            getRowValue(datarow,col_positions,PUBLICATION_TITLE),
-            getRowValue(datarow,col_positions,PUBLISHER_NAME),
+            getRowValue(datarow,col_positions,PUBLICATION_TITLE,recon_data),
+            getRowValue(datarow,col_positions,PUBLISHER_NAME,recon_data),
             ids,
             user,
             project
@@ -388,7 +388,7 @@ class IngestService {
 
             // Set TITLE OA STATUS if it's not null and different to the current value.. This might cause title OA status
             // to oscillate between different values - raised as a concern but dismissed as unlikely in weekly calls.
-            def title_oa_status = getRowValue(datarow,col_positions,TITLE_OA_STATUS)
+            def title_oa_status = getRowValue(datarow,col_positions,TITLE_OA_STATUS,recon_data)
             if ( title_oa_status != null ) {
               if ( title_info.OAStatus?.value != title_oa_status ) {
                 //titleOAStatus:getRowRefdataValue('TitleInstance.OAStatus', datarow, col_positions, TITLE_OA_STATUS)
@@ -456,15 +456,15 @@ class IngestService {
               title:title_info,
               pkg:pkg,
               hostPlatform:platform_info,
-              startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE)),
-              startVolume:getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE),
-              startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE),
-              endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE)),
-              endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE),
-              endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE),
-              embargo:getRowValue(datarow,col_positions,EMBARGO_INFO),
+              startDate:parseDate(getRowValue(datarow,col_positions,DATE_FIRST_PACKAGE_ISSUE,recon_data)),
+              startVolume:getRowValue(datarow,col_positions,VOLUME_FIRST_PACKAGE_ISSUE,recon_data),
+              startIssue:getRowValue(datarow,col_positions,NUMBER_FIRST_PACKAGE_ISSUE,recon_data),
+              endDate:parseDate(getRowValue(datarow,col_positions,DATE_LAST_PACKAGE_ISSUE,recon_data)),
+              endVolume:getRowValue(datarow,col_positions,VOLUME_LAST_PACKAGE_ISSUE,recon_data),
+              endIssue:getRowValue(datarow,col_positions,NUMBER_LAST_PACKAGE_ISSUE,recon_data),
+              embargo:getRowValue(datarow,col_positions,EMBARGO_INFO,recon_data),
               coverageDepth:getRowRefdataValue("TitleInstancePackagePlatform.CoverageDepth", datarow, col_positions, COVERAGE_DEPTH),
-              coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES),
+              coverageNote:getRowValue(datarow,col_positions,COVERAGE_NOTES,recon_data),
               url:getRowValue(datarow,col_positions,HOST_PLATFORM_URL),
 //              delayedOA:getRowRefdataValue("TitleInstancePackagePlatform.DelayedOA", datarow, col_positions, DELAYED_OA),
 //              delayedOAEmbargo:getRowValue(datarow, col_positions, DELAYED_OA_EMBARGO),
