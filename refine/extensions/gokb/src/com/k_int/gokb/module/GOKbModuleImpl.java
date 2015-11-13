@@ -394,13 +394,15 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
     updateCoreData();
   }
   
+  private Updater upd = null;
+  
   /**
    * Update the core module data
    * @throws Throwable
    */
   private synchronized void updateCoreData() throws Throwable {
     
-    if (!updated) {
+    if (!updated && upd == null) {
     
       // Now we can see if we have any module updates available.
       GOKbService updateService = null;
@@ -422,55 +424,73 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
         }
       }
   
-      // If we have an update then we should add a system message.
+      // If we have an update then we should download first before we initialise the update process..
       if (updateService != null) {
         
-        // Let's update...
-        final File module_path = getPath().getParentFile().getParentFile();
+        upd = new Updater(updateService, getPath().getParentFile().getParentFile(), (ButterflyClassLoader) _classLoader);
+        final Updater updater = upd;
         
-        // Final references so they can be passed across threads.
-        final GOKbService s = updateService;
-        
-        // Because of how jars are locked on the windows platform, we need to update after we release all resources. To do
-        // this we add a shutdown hook which will fire as the VM shuts down.
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        // FIre up a background thread and start the download.
+        Thread t = new Thread() {
           
           @Override
           public void run() {
             
             // Construct the updater.
-            Updater updt = new Updater(s, module_path, (ButterflyClassLoader) _classLoader);
 
             try {
-              // Do the update.
-              updt.update();
+              // Download.
+              updater.download();
             } catch (Exception e) {
               // Any error here will mean that the file needs to be manually downloaded.
-              _logger.error("An error occured while updating the file. You should re-download the file fully and replace it manually.");
+              _logger.error("An error occured while downloading the file. You should re-download the module fully and replace it manually.");
             }
           }
-        });
+        };
         
-        // Now lets raise a notification.
-        Notification n = Notification.fromJSON("{"
-            + "id:'module-update',"
-            + "text:'A system update (version " + updateService.getAvailableModuleVersion() + ") has been donwloaded from the service at \\'"
-                + updateService.getURL() + "\\'. Refine has now been shutdown, and you will now need to restart refine to continue working.',"
-            + "title:'GOKb Update',"
-            + "block:true,"
-            + "hide:false}"
-        );
-  
-        // Remove the buttons.
-        n.getButtons().put("closer", false);
-        n.getButtons().put("sticker", false);
-  
-        // Add to the system notification stack.
-        NotificationStack.getSystemStack().add(n);
-        
-        // Flag that this has run already... No need to keep downloading updates.
-        updated = true;
+        t.start();
       }
+    } else if (upd.hasDownloaded()) {
+      
+      // Because of how jars are locked on the windows platform, we need to update after we release all resources. To do
+      // this we add a shutdown hook which will fire as the VM shuts down.
+      final Updater updater = upd;
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        
+        @Override
+        public void run() {
+          
+          // Construct the updater.
+
+          try {
+            // Do the update.
+//            updater.install();
+          } catch (Exception e) {
+            // Any error here will mean that the file needs to be manually downloaded.
+            _logger.error("An error occured while installing the update file. You should re-download the file fully and replace it manually.");
+          }
+        }
+      });
+      
+      // Now lets raise a notification.
+      Notification n = Notification.fromJSON("{"
+          + "id:'module-update',"
+          + "text:'A system update (version " + updater.getService().getAvailableModuleVersion() + ") has been donwloaded from the service at \\'"
+              + upd.getService().getURL() + "\\'. Refine has now been shutdown, and you will now need to restart refine to continue working.',"
+          + "title:'GOKb Update',"
+          + "block:true,"
+          + "hide:false}"
+      );
+
+      // Remove the buttons.
+      n.getButtons().put("closer", false);
+      n.getButtons().put("sticker", false);
+
+      // Add to the system notification stack.
+      NotificationStack.getSystemStack().add(n);
+      
+      // Flag that this has run already... No need to keep downloading updates.
+      updated = true;
     }
   }
 

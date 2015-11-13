@@ -26,40 +26,80 @@ public class Updater {
   
   final static Logger _logger = LoggerFactory.getLogger("GOKb-Updater");
 
-  private GOKbService service;
-  private File destination;
   private ButterflyClassLoader cl;
+  private File destination;
+  private boolean downloaded = false;
 
+  private boolean downloading = false;
+  
+  private GOKbService service;
   public Updater (GOKbService service, File destination, ButterflyClassLoader cl) {
     this.service = service;
     this.destination = destination;
     this.cl = cl;
   }
+  
+  private Path dl = null;
+  
+  public synchronized Path download() throws IOException, FileUploadException {
+    downloading = true;
+    downloaded = false;
+    InputStream is = null;
+    
+    try {
+    
+      // Create a temporary file for the zip file.
+      dl = Files.createTempFile("gokb_mod_update", "zip");
+      
+      // Get the update.
+      _logger.info("Starting download of new GOKb module from {}", service.getURL() );
+      is = service.getUpdatePackage().getInputStream();
+   
+      // Write to the temp file.
+      Files.copy(is, dl, StandardCopyOption.REPLACE_EXISTING);
+      _logger.info("Download of new module complete." );
+      
+      // Flag as not downloaded to ensure 
+      downloaded = true;
+      
+    } finally {
 
+      // Close the input stream.
+      IOUtils.closeQuietly(is);
+    }
+    
+    // Flag we are no longer downloading.
+    downloading = false;
+    return dl;
+  }
+
+  public GOKbService getService () {
+    return service;
+  }
+  
+  public synchronized boolean hasDownloaded() {
+    return downloaded;
+  }
+  
   /**
-   * Download and extract the update for the module. We May need to restart the application too.
+   * Extract the update for the module. We May need to restart the application too.
    * @throws IOException 
    * @throws FileUploadException 
    */
-  public void update () throws IOException, FileUploadException {
-
-    // Create a temporary file for the zip file.
-    Path dl = Files.createTempFile("gokb_mod_update", "zip");
-    
-    // Get the update.
-    InputStream is = service.getUpdatePackage().getInputStream();
- 
-    // Write to the temp file.
-    Files.copy(is, dl, StandardCopyOption.REPLACE_EXISTING);
-    
-    // Close the input stream.
-    IOUtils.closeQuietly(is);
+  public synchronized void install () throws IOException {
 
     // Now we have the file let's try and extract the contents.
+    _logger.info("Installing new GOKb module..." );
     unzip(dl, destination);
+    
+    dl = null;
   }
 
-  private void unzip (Path from, File to_folder) throws IOException {
+  public synchronized boolean isDownloading() {
+    return downloading;
+  }
+
+  private synchronized void unzip (Path from, File to_folder) throws IOException {
 
     // Simplify the path.
     to_folder = to_folder.getCanonicalFile();
@@ -70,7 +110,7 @@ public class Updater {
     // Create zip file entry.
     ZipFile zipFile = null;
     
-    _logger.info("Extracting files from {} to {}", from.toString(), temp_dir.getAbsolutePath() );
+    _logger.info("\tExtracting files from {} to {}", from.toString(), temp_dir.getAbsolutePath() );
     
     try {
       zipFile = new ZipFile(from.toFile());
@@ -108,7 +148,7 @@ public class Updater {
       if (zipFile != null) zipFile.close();
     }
         
-    _logger.info("Moving files from {} to {}", temp_dir.getAbsolutePath(), to_folder.getAbsolutePath() );
+    _logger.info("\tMoving files from {} to {}", temp_dir.getAbsolutePath(), to_folder.getAbsolutePath() );
     
     // Close the class loader here...
     cl.close();
