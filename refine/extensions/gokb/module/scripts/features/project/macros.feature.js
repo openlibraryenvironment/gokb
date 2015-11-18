@@ -3,8 +3,6 @@
  */
 
 GOKb.registerFeature ('Macros', { 'require' : ['macros'] }, function($) {
-  
-  alert("Loaded");
   var macro_text = $("<span />");
   
   GOKb.contextMenu.addConfig({
