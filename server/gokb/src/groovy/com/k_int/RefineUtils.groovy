@@ -105,16 +105,22 @@ class RefineUtils {
       log.debug ("Get OpenRefine GOKb extension")
       git = GitUtils.getOrCreateRepo(local_repo, remote_uri, monitor)
 
-      // Default to this branch.
-      String branch_name = GitUtils.tryGettingBranch (git, branch)
+      // Try getting the tag.
       String tag_name = GitUtils.tryGettingTag(git, tag)
+      String branch_name = null
 
+      if (!tag_name) {
+        // Get the branch.
+        branch_name = GitUtils.tryGettingBranch (git, branch)
+      }
+      
       // Move the extension into the correct openrefine directory.
       log.debug ("Copying downloaded extension into built refine modules directory.")
+      FileUtils.deleteQuietly(target_ext_folder)
       FileUtils.copyDirectory(
-          ext_folder,
-          target_ext_folder
-          )
+        ext_folder,
+        target_ext_folder
+      )
 
       // Attempt the build.
       log.debug ("Attempting to build the extension")
@@ -126,7 +132,6 @@ class RefineUtils {
       // Create application config entries.
       entries << [
         "extension.build.date": "${now}",
-        "extension.build.branch": "${branch_name}"
       ]
       if (tag_name) {
         entries['extension.build.tag'] = tag_name
@@ -140,6 +145,7 @@ class RefineUtils {
       } else {
         // Use the timestamp.
         ver += "-${now}"
+        entries["extension.build.branch"] = "${branch_name}"
       }
 
       String zip_name = "gokb-release-${ver}".toLowerCase()

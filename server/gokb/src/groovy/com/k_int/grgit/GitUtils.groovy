@@ -26,44 +26,59 @@ class GitUtils {
     log.debug ("Looking for branch ${branchName}.")
     
     if (branchName) {
+      
+      discardAll(git)
     
       // Grab the branches.
       List<Branch> branches = git.branch.list {
         mode = BranchListOp.Mode.REMOTE
       }
       
-      // Search for a matching branch
-      Branch the_branch = branches.find { Branch it ->
-        it.getName().replaceAll(/^[^\/]+\//, "") == branchName
+      List<Branch> local_branches = git.branch.list {
+        mode = BranchListOp.Mode.LOCAL
       }
       
-      if (the_branch) {
+      // Local Branch
+      Branch local_branch = local_branches.find { Branch it ->
+        it.name == branchName
+      }
+      
+      // Search for a matching remote branch
+      Branch the_branch = branches.find { Branch it ->
+        it.name.replaceAll(/^[^\/]+\//, "") == branchName
+      }
+      
+      if (local_branch) {
+        git.checkout { 
+          branch = branchName
+        }
         
-        // Checkout the branch.
+        log.debug ("Found and checked out local branch ${git.branch.current}")
+      } else if (the_branch) {
+        
+        // Checkout the remote branch.
         git.checkout {
-          branch = (the_branch.fullName)
+          branch = branchName
+          startPoint = the_branch.fullName
           createBranch = true
         }
         
         // The branch isn't configured to track a remote branch.
-        if (!the_branch.trackingBranch) {
-          
-          // Add the tracking here.
-          git.branch.change {
-            name = git.branch.current.name
-            startPoint = "${the_branch.fullName}"
-            mode = BranchChangeOp.Mode.TRACK
-          }
-        }
+//        if (!the_branch.trackingBranch) {
+//          
+//          // Add the tracking here.
+//          git.branch.change {
+//            name = git.branch.current.name
+//            startPoint = "${the_branch.fullName}"
+//            mode = BranchChangeOp.Mode.TRACK
+//          }
+//        }
         
-        log.debug ("Found and checked out branch ${git.branch.current}")
+        log.debug ("Found and checked out remote branch ${git.branch.current}")
+        
+        discardAll ( git )
+        getChanges( git )
       }
-    }
-    
-    // Should reset...
-    git.reset {
-      
-      mode = ResetOp.Mode.HARD
     }
     
     // Return the name of the current branch.
@@ -102,13 +117,15 @@ class GitUtils {
         found_tag = release.getName()
         
         // Found the correct tag.
-        log.debug ("Found tag ${found_tag}")
+        log.debug ("Found tag ${found_tag}")        
         
         // Reset to this tag.
         git.reset {
           mode = ResetOp.Mode.HARD
           commit = release.fullName
         }
+        
+        clean(git)
       }
     }
     
@@ -145,51 +162,22 @@ class GitUtils {
       git = com.k_int.grgit.MonitoredGit.cloneMonitored(dir: loc, uri: (uri))
     }
     
-    // Now fetch everything from the remote and ensure the local is in sync.
-    log.debug ("Fetching all branches.")
+    // Reset
+    discardAll( git )
     
+    // Now fetch everything from the remote and ensure the local is in sync.
+    log.debug ("Fetching all refs.")
     git.fetch {
       tagMode = FetchOp.TagMode.ALL
       prune   = true
       refSpecs = ["*:*"]
     }
     
-    // Clean to remove all none-tracked changes.
-    log.debug ("Cleaning none trackable changes.")
-    try {
-      git.clean {
-        directories = true
-        ignore = false
-      }
-    } catch (JGitInternalException e) {
-      // SO: Suppressing this exception here. The reason is that if there are directories
-      // that have come from another repository we can get an error thrown as it attempts to
-      // remove the directory. Even though the error is reported the delete operation still
-      // succeeds. This obviously isn't ideal, but is the only way I could see around it.
-      // Rerunning the method after the exception doesn't seem to throw an exception the second
-      // time.
-      if (e.getCause() instanceof IOException) {
-        // Retry.
-        git.clean {
-          directories = true
-          ignore = false
-        }
-      } else {
-        throw e
-      }
-    }
-    
-    // Reset the repo now that it has been cleaned.
-    log.debug ("Reseting now..")
-    git.reset {
-      mode = ResetOp.Mode.HARD
-    }
-    
     try {
       
       // Try pulling latest changes.
       log.debug ("Pull changes now..")
-      git.pull()
+      getChanges( git )
       
     } catch( Exception e )  {
     
@@ -215,10 +203,52 @@ class GitUtils {
   }
   
   /**
-   * Pull all changes donw from the upstream repo.
+   * Pull all changes from the upstream repo.
    */
   public static Grgit getChanges( Grgit git ) {
     git.pull()
     git
+  }
+  
+  public static clean( Grgit git ) {
+    // Clean to remove all none-tracked changes.
+    log.debug ("Cleaning none tracked and ignored changes.")
+    try {
+      git.clean {
+        directories = true
+        ignore = false
+      }
+    } catch (JGitInternalException e) {
+      // SO: Suppressing this exception here. The reason is that if there are directories
+      // that have come from another repository we can get an error thrown as it attempts to
+      // remove the directory. Even though the error is reported the delete operation still
+      // succeeds. This obviously isn't ideal, but is the only way I could see around it.
+      // Rerunning the method after the exception doesn't seem to throw an exception the second
+      // time.
+      if (e.getCause() instanceof IOException) {
+        // Retry.
+        git.clean {
+          directories = true
+          ignore = false
+        }
+      } else {
+        throw e
+      }
+    }
+    
+    git
+  }
+  
+  /**
+   * Reset everything to the head commit.
+   */
+  public static Grgit discardAll( Grgit git ) {
+    
+    log.debug ("Resetting head and working tree...")
+    git.reset {
+      mode = ResetOp.Mode.HARD
+    }
+    
+    clean (git)
   }
 }

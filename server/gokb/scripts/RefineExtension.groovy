@@ -83,22 +83,7 @@ target(buildExtension:"Build Extension") {
   // Multiple builds now.
   def entries = []
   
-  // Build the test version of the client for bleeding edge testing.
-  entries << RefineUtils.buildGOKbRefineExtension(
-    config.refine.gokbRepoURL,
-    extension_repo,
-    refine_extension_bxml,
-    config.refine.extensionBuildTarget,
-    refine_repo,
-    gokb_extension_path,
-    gokb_extension_target,
-    config.refine.gokbRepoTestTagPattern,
-    ant,
-    config.refine.gokbRepoTestBranch,
-    config.refine.gokbRepoTestTagPattern,
-    monitor
-  )
-  
+  // Build the test version of the client for bleeding edge testing.  
   entries << RefineUtils.buildGOKbRefineExtension(
     config.refine.gokbRepoURL,
     extension_repo,
@@ -111,6 +96,21 @@ target(buildExtension:"Build Extension") {
     ant,
     config.refine.gokbRepoBranch,
     config.refine.gokbRepoTagPattern,
+    monitor
+  )
+  
+  entries << RefineUtils.buildGOKbRefineExtension(
+    config.refine.gokbRepoURL,
+    extension_repo,
+    refine_extension_bxml,
+    config.refine.extensionBuildTarget,
+    refine_repo,
+    gokb_extension_path,
+    gokb_extension_target,
+    config.refine.gokbRepoTestTagPattern,
+    ant,
+    config.refine.gokbRepoTestBranch,
+    config.refine.gokbRepoTestTagPattern,
     monitor
   )
   
