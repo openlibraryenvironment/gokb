@@ -28,6 +28,8 @@ ValidationPanel.prototype.resize = function() {
  * @param onDoneFunc
  */
 ValidationPanel.prototype.update = function(onDoneFunc) {
+  GOKb.ui.validationPanelRunnning = true;
+  
   var self = this;
   
   // Clear the data.
@@ -139,6 +141,8 @@ ValidationPanel.prototype._render = function() {
   // Clear it down.
   elmts.validationContent.html("");
   
+  GOKb.notify.clearStack('validation');
+  
   // Modify the context of the element.
   GOKb.notify.getStack('validation').context = elmts.validationContent;
   
@@ -246,6 +250,7 @@ ValidationPanel.prototype._render = function() {
   
   // Add the counters.
   $("#gokb-validation-tab .count").html("<span class='error'>" + errors + "</span>/<span class='warning'>" + warnings + "</span>");
+  GOKb.ui.validationPanelRunnning = false;
 };
 
 /**

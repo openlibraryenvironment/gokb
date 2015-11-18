@@ -26,7 +26,13 @@ includeTargets << new File("${basedir}/scripts/RefineExtension.groovy")
  */
 eventPackagingEnd = {
   
-  // After the app has been packaged for deployment we need to package the extension, so that
-  // it is included in our .war file.
-  packageExtension()
+  if ("${argsMap['refine_module']}" != "false") {
+    println ("Building Refine module...")
+  
+    // After the app has been packaged for deployment we need to package the extension, so that
+    // it is included in our .war file.
+    packageExtension()
+  } else {
+    println ("Skipping refine build due to command line arg...")
+  }
 }

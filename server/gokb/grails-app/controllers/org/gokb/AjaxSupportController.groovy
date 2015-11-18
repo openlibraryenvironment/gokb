@@ -55,17 +55,17 @@ class AjaxSupportController {
 
     def config = refdata_config[params.id]
 
-	if (!config) {
-	  // Use generic config.
-	  config = [
-		domain:'RefdataValue',
-		countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
-		rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}' order by rdv.sortKey asc, rdv.description asc",
-		qryParams:[],
-		cols:['value'],
-		format:'simple'
-	  ]
-	}
+  	if (!config) {
+  	  // Use generic config.
+  	  config = [
+  		domain:'RefdataValue',
+  		countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
+  		rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}' order by rdv.sortKey asc, rdv.description asc",
+  		qryParams:[],
+  		cols:['value'],
+  		format:'simple'
+  	  ]
+  	}
 
     if ( config ) {
       def query_params = []

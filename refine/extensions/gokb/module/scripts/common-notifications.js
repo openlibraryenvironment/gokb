@@ -69,11 +69,24 @@ Notification.prototype.getStack = function (stack_name) {
     // Just return it.
     return this._stacks[stack_name];
   }
+};
 
-  // Create a new stack.
-  var s = {};
-  this._stacks[stack_name] = s;
-  return s;
+/**
+ * Clear the named stack.
+ * @param stack_name
+ */
+Notification.prototype.clearStack = function (stack_name) {
+  
+  // If the stack already exists...
+  if (stack_name && stack_name in this._stacks) {
+    
+    // We should remove all notifications.
+    $.each(PNotify.notices, function(){
+      if ("stack" in this && this['stack']==stack_name && this.remove) {
+        this.remove(false);
+      }
+    });
+  }
 };
 
 /**

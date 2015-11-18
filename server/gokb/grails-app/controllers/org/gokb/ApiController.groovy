@@ -136,7 +136,7 @@ class ApiController {
     ]
 
     def json = data as JSON
-    // log.debug (json)
+     log.debug (json)
     render json
     //    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
@@ -713,9 +713,13 @@ class ApiController {
     match_in += params.list("match")
     match_in += params.list("match[]")
     
+    // Trim any display entities.
+    match_in = match_in.collect { "${it}".split("\\:")[0] }
+    
     // Attributes to return.
     def attr = ["label"]
     attr += params.list("attr")
+    attr += params.list("attr[]")
     
     def page = params.int("page")
 
@@ -800,22 +804,43 @@ class ApiController {
         
         // Go through the list.
         attr.each { String attribute_name ->
-          if (attribute_name == "label") {
-            item["${attribute_name}"] = comp.name
+          
+          // We may have supplied a nice name for the property.
+          String[] names = attribute_name.split("\\:")
+          String niceName
+          if (names.length > 1) {
+            niceName = names[1]
+          } else {
+            niceName = names[0]
+          }
+          
+          if (names[0] == "label") {
+            item["${niceName}"] = comp.name
           } else {
           
             // Support deep properties using dot notation.
-            String[] props = "${attribute_name}".split(/\./)
+            String[] props = "${names[0]}".split(/\./)
             
             def target = comp
             
             // Each property.
             props.each { String prop ->
-              target = target?."${prop}"
+              if (target instanceof Collection) {
+                
+                List col = []
+                target?.each {
+                  def val = it?."${prop}"
+                  if (val) {
+                    col << val
+                  }
+                }
+                target = col
+              } else {
+                target = target?."${prop}"
+              }
             }
-            
             // Once here we have the final target.
-            item["${attribute_name}"] = target
+            item["${niceName}"] = target
           }
         }
         
@@ -1001,6 +1026,7 @@ class ApiController {
     "project-mamangement" : true,
     "cell-level-edits"    : true,
     "es-recon"            : true,
+    "macros"              : true,
   ]
   
   private static def getCapabilities() {

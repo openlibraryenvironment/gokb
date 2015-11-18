@@ -77,6 +77,17 @@ class RefdataValue {
 
     result
   }
+  
+  static def refdataCreate(String... obj_def) {
+    if (obj_def.length == 4) {
+      String type = obj_def[2]
+      String val = obj_def[3]
+      
+      return RefdataCategory.lookupOrCreate(obj_def[2], obj_def[3])
+    }
+    
+    return null
+  }
 
   //  def availableActions() {
   //    [ [ code:'object::delete' , label: 'Delete' ] ]

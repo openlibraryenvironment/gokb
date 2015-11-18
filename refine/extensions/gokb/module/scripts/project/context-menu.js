@@ -31,82 +31,94 @@ GOKb.contextMenu = {
     
     return true;
   },
+  
+  /**
+   * Menu options used to build the menu.
+   */
+  option_lists : [{
+    "gokb-lookup": {
+      name  : "GOKb Lookup", 
+      disabled: function() {
+        return GOKb.contextMenu.disabledCallback([
+          "INPUT",
+          "TEXTAREA"
+        ]);
+      },
+      items : {
+        "gokb-lookup-org" : {
+          name: "Organisation",
+          callback: function () {
+            GOKb.handlers.lookup (
+              GOKb.contextMenu.getTarget(),
+              "org",
+              ["variantNames.variantName:Variant"],
+              ["variantNames.variantName:Variant"],
+              "Lookup Organisation"
+            );
+          }
+        },
+        "gokb-lookup-package" : {
+          name: "Package",
+          callback: function () {
+            GOKb.handlers.lookup (
+              GOKb.contextMenu.getTarget(),
+              "package",
+              ["variantNames.variantName:Variant"],
+              ["variantNames.variantName:Variant"],
+              "Lookup Package",
+              true
+            );
+          }
+        },
+        "gokb-lookup-platform" : {
+          name: "Platform",
+          callback: function () {
+            GOKb.handlers.lookup (
+              GOKb.contextMenu.getTarget(),
+              "platform",
+              ["variantNames.variantName:Variant"],
+              ["variantNames.variantName:Variant"],
+              "Lookup Platform"
+            );
+          },
+        },
+        "gokb-lookup-imprint" : {
+          name: "Imprint",
+          callback: function () {
+            GOKb.handlers.lookup (
+              GOKb.contextMenu.getTarget(),
+              "imprint",
+              ["variantNames.variantName:Variant"],
+              ["variantNames.variantName:Variant"],
+              "Lookup Imprint"
+            );
+          },
+        },
+      },
+    },
+  }],
+  
+  /**
+   * Method to push new options.
+   */
+  addConfig : function (opts) {
+    this.option_lists.push(opts);
+  }
 };
 
 /**
  * The options object used to populate the menu and add callback functions.
+ * This is the default item list.
  */
 GOKb.contextMenu.options = function () {
   
+  var opts = {};
+  $.each(GOKb.contextMenu.option_lists, function(){
+    $.extend(true, opts, this);
+  });
+  
   return {
-    items: {
-      "gokb-lookup": {
-        name  : "GOKb Lookup", 
-        disabled: function() {
-          return GOKb.contextMenu.disabledCallback([
-            "INPUT",
-            "TEXTAREA"
-          ]);
-        },
-        items : {
-          "gokb-lookup-org" : {
-            name: "Organisation",
-            callback: function () {
-              GOKb.handlers.lookup (
-                GOKb.contextMenu.getTarget(),
-                "org",
-                ["variantNames.variantName"],
-                ["variantNames.variantName"],
-                "Lookup Organisation"
-              );
-            }
-          },
-          "gokb-lookup-package" : {
-            name: "Package",
-            callback: function () {
-              GOKb.handlers.lookup (
-                GOKb.contextMenu.getTarget(),
-                "package",
-                ["variantNames.variantName"],
-                ["variantNames.variantName"],
-                "Lookup Package",
-                true
-              );
-            }
-          },
-          "gokb-lookup-platform" : {
-            name: "Platform",
-            callback: function () {
-              GOKb.handlers.lookup (
-                GOKb.contextMenu.getTarget(),
-                "platform",
-                ["variantNames.variantName"],
-                ["variantNames.variantName"],
-                "Lookup Platform"
-              );
-            },
-          },
-          "gokb-lookup-imprint" : {
-            name: "Imprint",
-            callback: function () {
-              GOKb.handlers.lookup (
-                GOKb.contextMenu.getTarget(),
-                "imprint",
-                ["variantNames.variantName"],
-                ["variantNames.variantName"],
-                "Lookup Imprint"
-              );
-            },
-          },
-        },
-      },
-  //  "cut": {name: "Cut", icon: "cut"},
-  //  "copy": {name: "Copy", icon: "copy"},
-  //  "paste": {name: "Paste", icon: "paste"},
-  //  "delete": {name: "Delete", icon: "delete"},
-  //  "sep1": "---------",
-  //  "quit": {name: "Quit", icon: "quit"}
-    },
+    items: opts
   };
 };
 

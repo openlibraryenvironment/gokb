@@ -296,6 +296,15 @@ GOKb.handlers.lookup = function(element, namespace, match, attr, title, quickCre
       )
     ;
     
+    // Include in display the attributes only where the term was searched for.
+    var include = function (key) {
+      var found = false;
+      for (var i=0; !found && i<m.length; i++) {
+        found = (key == m[i] || m[i].endsWith(":" + key));
+      }
+      return found;
+    };
+    
     // The method to append attributes.
     var appendAttribute = function (target, key, val, highlight) {
       
@@ -303,7 +312,7 @@ GOKb.handlers.lookup = function(element, namespace, match, attr, title, quickCre
       var removeParents = /^(.+\.)*(.+)$/;
       
       // Just append the field.
-      if (val.match(highlight)) {
+      if (include(key) && val.match(highlight)) {
         target.append(
           "<br /><span class='item-sub-title'>" + key.replace(removeParents, "$2") + ":</span> " +
           "<span class='item-sub-value'>" +
@@ -336,6 +345,8 @@ GOKb.handlers.lookup = function(element, namespace, match, attr, title, quickCre
       .appendTo( ul )
     ;
   });
+  
+  return lookup;
 };
 
 /**
