@@ -308,6 +308,10 @@ GOKb.handlers.lookup = function(element, namespace, match, attr, title, quickCre
     // The method to append attributes.
     var appendAttribute = function (target, key, val, highlight) {
       
+      if (val == null) {
+        val = "";
+      }
+      
       // Regex for field names.
       var removeParents = /^(.+\.)*(.+)$/;
       
