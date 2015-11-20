@@ -1,4 +1,4 @@
-package gokb
+package org.gokb
 
 import grails.converters.*
 import org.springframework.security.acls.model.NotFoundException
