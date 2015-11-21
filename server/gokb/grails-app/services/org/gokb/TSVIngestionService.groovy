@@ -257,7 +257,7 @@ class TSVIngestionService {
   //for now, we can only do authors. (kbart limitation)
   def TitleInstance addPerson (person_name, role, ti, user=null, project = null) {
     if (person_name) {
-      def person = componentLookupService.findComponents('org.gokb.cred.Person', person_name)
+      def person = org.gokb.cred.Person.findAllByName(person_name)
       log.debug("this was found for person: ${person}");
       switch(person.size()) {
         case 0:
@@ -348,59 +348,54 @@ class TSVIngestionService {
 
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
     if ( publisher_name != null ) {
-    def publisher = componentLookupService.findComponents('org.gokb.cred.Org',publisher_name)
-    log.debug("this was found for publisher: ${publisher}");
-    // Found a publisher.
-    switch (publisher.size()) {
-      case 0:
-      log.debug ("Publisher lookup yielded no matches.")
-      def the_publisher = new Org(name:publisher_name)
-      if (the_publisher.save(failOnError:true, flush:true)) {
-        log.debug("saved ${the_publisher.name}")
-        publisher << the_publisher
-        ReviewRequest.raise(
-          ti,
-          "'${the_publisher}' added as a publisher of '${ti.name}'.",
-           "This publisher did not exist before, so has been newly created",
-          user, project)
-      } else {
-        the_publisher.errors.each { error ->
-          log.error("problem saving ${the_publisher.name}:${error}")
-      }
-      }
-
-      //carry on...
-      case 1:
-        log.debug("found a publisher")
-        def orgs = ti.getPublisher()
-        log.debug("ti.getPublisher ${orgs}")
-        // Has the publisher ever existed in the list against this title.
-        if (!orgs.contains(publisher[0])) {
-        log.debug("orgs did not contain this puboisher")
-        // First publisher added?
-        boolean not_first = orgs.size() > 0
-        // Added a publisher?
-        log.debug("calling changepublisher")
-        boolean added = ti.changePublisher (
-        publisher[0],
-        true
-        )
-        log.debug(not_first)
-        log.debug(added)
-        // Raise a review request, if needed.
-        if (not_first && added) {
+      def publisher = org.gokb.cred.Org.findAllByName(publisher_name)
+      log.debug("this was found for publisher: ${publisher}");
+      // Found a publisher.
+      switch (publisher.size()) {
+        case 0:
+        log.debug ("Publisher lookup yielded no matches.")
+        def the_publisher = new Org(name:publisher_name)
+        if (the_publisher.save(failOnError:true, flush:true)) {
+          log.debug("saved ${the_publisher.name}")
+          publisher << the_publisher
           ReviewRequest.raise(
-          ti,
-          "Added '${publisher.name}' as a publisher on '${ti.name}'.",
-          "Publisher supplied in ingested file is different to any already present on TI.",
-          user, project)
+            ti,
+            "'${the_publisher}' added as a publisher of '${ti.name}'.",
+             "This publisher did not exist before, so has been newly created",
+            user, project)
+        } else {
+          the_publisher.errors.each { error ->
+            log.error("problem saving ${the_publisher.name}:${error}")
+          }
         }
-        } //!orgs.contains(publisher)
+
+        //carry on...
+        case 1:
+          log.debug("found a publisher")
+          def orgs = ti.getPublisher()
+          log.debug("ti.getPublisher ${orgs}")
+          // Has the publisher ever existed in the list against this title.
+
+          if (!orgs.contains(publisher[0])) {
+            log.debug("orgs did not contain this publisher")
+            // First publisher added?
+            boolean not_first = orgs.size() > 0
+            // Added a publisher?
+            log.debug("calling changepublisher")
+            boolean added = ti.changePublisher ( publisher[0], true)
+            log.debug(not_first)
+            log.debug(added)
+            // Raise a review request, if needed.
+            if (not_first && added) {
+              ReviewRequest.raise( ti, "Added '${publisher.name}' as a publisher on '${ti.name}'.",
+                  "Publisher supplied in ingested file is different to any already present on TI.", user, project)
+            }
+          } //!orgs.contains(publisher)
+          break
+        default:
+          log.debug ("Publisher lookup yielded ${publisher.size()} matches. Not really sure which publisher to use, so not using any.")
         break
-      default:
-        log.debug ("Publisher lookup yielded ${publisher.size()} matches. Not really sure which publisher to use, so not using any.")
-      break
-    }  //switch
+      }  //switch
     } //publisher_name !=null
     ti
   }
@@ -900,25 +895,45 @@ class TSVIngestionService {
     if (fileRules==null) {
       throw new Exception("couldn't find file rules for ${the_profile.packageType}")
     }
+
     //can you read a tsv file?
-    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData)),'\t' as char)
-        Map col_positions=[:]
+    def charset = 'ISO-8859-1' // 'UTF-8'
+    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData),
+                                                        java.nio.charset.Charset.forName(charset)),'\t' as char,'\0' as char)
+
+    Map col_positions=[:]
     fileRules.each { fileRule ->
       col_positions[fileRule.field]=-1;
     }
-        String [] header = csv.readNext()
-        int ctr = 0
+    String [] header = csv.readNext()
+
+    int ctr = 0
+
     header.each {
-          col_positions [ it ] = ctr++
-        }
+      log.debug("Column ${ctr} == ${it}");
+      col_positions [ it ] = ctr++
+    }
+
     String [] nl = csv.readNext()
+
+    long row_counter = 0
+
     while ( nl != null ) {
+
+      log.debug("Process row:${row_counter++} ${nl}");
+
       KBartRecord result = new KBartRecord()
       fileRules.each { fileRule ->
+
         boolean done=false
+
         log.debug(fileRule.field)
+
+
         String data = nl[col_positions[fileRule.field]];
-        log.debug(data)
+
+        // log.debug("${fileRule.field} ${col_positions[fileRule.field]} ${data}")
+
         if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
           def parts = data.split(fileRule.separator)
           data=parts[0]

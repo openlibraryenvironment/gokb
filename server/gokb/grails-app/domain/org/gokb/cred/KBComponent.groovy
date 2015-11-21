@@ -275,7 +275,8 @@ abstract class KBComponent {
   // Timestamps
   Date dateCreated
   Date lastUpdated
-  Date lastSeen
+
+  Long lastSeen
 
   // Read only flag should be honoured in the UI
   boolean systemComponent = false
@@ -918,7 +919,7 @@ abstract class KBComponent {
 
   @Transient
   def getNotes() {
-    return Notes.findAllByOwnerClassAndOwnerId(this.class.name, this.getId())
+    return Note.findAllByOwnerClassAndOwnerId(this.class.name, this.getId())
   }
 
 }
