@@ -174,6 +174,7 @@ class TSVIngestionService {
         // the_title = new BookInstance(name:title)
         the_title = ingest_cfg.defaultType.newInstance()
         the_title.name=title
+        the_title.ids=[]
       } else {
         // No class 1s supplied we should try and find a match on the title string.
         log.debug ("No class 1 ids supplied.")
@@ -195,6 +196,7 @@ class TSVIngestionService {
           // Could not match on title either.
           // Create a new TI but attach a Review request to it.
           the_title = ingest_cfg.defaultType.newInstance()
+          the_title.ids=[]
           the_title.name=title
           ReviewRequest.raise(
             the_title,
@@ -232,14 +234,9 @@ class TSVIngestionService {
 
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
-      // The current IDs of the title
-      def current_ids = the_title.getIds()
-
-      log.debug("Current ids: ${current_ids}");
-
       results['ids'].each {
-        if ( ! current_ids.contains(it) ) {
-          the_title.addToIds(canonical_identifier);
+        if ( ! the_title.ids.contains(it) ) {
+          the_title.ids.add(it);
         }
       }
 

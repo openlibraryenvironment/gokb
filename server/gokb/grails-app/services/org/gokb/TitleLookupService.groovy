@@ -153,7 +153,7 @@ class TitleLookupService {
           log.debug ("One or more class 1 IDs supplied so must be a new TI.")
 
           // Create the new TI.
-          the_title = new TitleInstance(name:title)
+          the_title = new TitleInstance(name:title, ids:[])
 
         } else {
 
@@ -183,7 +183,7 @@ class TitleLookupService {
 
             // Could not match on title either.
             // Create a new TI but attach a Review request to it.
-            the_title = new TitleInstance(name:title)
+            the_title = new TitleInstance(name:title, ids:[])
             ReviewRequest.raise(
                 the_title,
                 "New TI created.",
@@ -226,14 +226,11 @@ class TitleLookupService {
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
       
-      // The current IDs of the title
-      def current_ids = the_title.getIds() ?: []
-
       // Add the publisher.
       addPublisher(publisher_name, the_title, user, project)
 
       results['ids'].each {
-        if ( ! current_ids.contains(it) ) {
+        if ( ! the_title.ids.contains(it) ) {
           the_title.ids.add(it);
         }
       }
