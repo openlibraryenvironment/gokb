@@ -7,6 +7,7 @@ import au.com.bytecode.opencsv.CSVReader
 import au.com.bytecode.opencsv.bean.CsvToBean
 import au.com.bytecode.opencsv.bean.HeaderColumnNameMappingStrategy
 import au.com.bytecode.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
+import java.text.SimpleDateFormat
 
 import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
@@ -15,6 +16,7 @@ import com.k_int.ClassUtils
 import grails.transaction.Transactional
 
 import org.gokb.cred.TitleInstance
+import org.gokb.cred.BookInstance
 import org.gokb.cred.ComponentPerson
 import org.gokb.cred.ComponentSubject
 import org.gokb.cred.IngestionProfile
@@ -34,21 +36,25 @@ import org.gokb.cred.TitleInstance;
 import org.gokb.cred.TitleInstancePackagePlatform;
 import org.gokb.cred.User;
 
-import java.security.MessageDigest
-import com.k_int.ConcurrencyManagerService
-import com.k_int.ConcurrencyManagerService.Job
-import org.gokb.dto.KBartRecord
-import java.text.SimpleDateFormat
-
-
 @Transactional
 class TSVIngestionService {
 
   def grailsApplication
   def titleLookupService
+  def componentLookupService
   def refdataCategory
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+
+  def possible_date_formats = [
+    new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
+    new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('dd/MM/yyyy'),
+    new SimpleDateFormat('dd/MM/yy'),
+    new SimpleDateFormat('yyyy/MM'),
+    new SimpleDateFormat('yyyy')
+  ];
+
 
 
   /* This class is a BIG rip off of the TitleLookupService, it really should be
@@ -144,10 +150,10 @@ class TSVIngestionService {
     result
   }
 
-  def find (String title, def identifiers, def user = null, def project = null) {
+  def lookupOrCreateTitle (String title, def identifiers, ingest_cfg, def user = null, def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
-    log.debug("find ${title}")
+    log.debug("lookup or create title :: ${title}")
     if (title == null) return null
     // Create the normalised title.
     String norm_title = GOKbTextUtils.generateComparableKey(title)
@@ -158,45 +164,48 @@ class TSVIngestionService {
     switch (matches.size()) {
     case 0 :
       // No match behaviour.
-      //log.debug ("Title class one identifier lookup yielded no matches.")
+      log.debug ("Title class one identifier lookup yielded no matches.")
       // Check for presence of class one ID
       if (results['class_one']) {
-      //log.debug ("One or more class 1 IDs supplied so must be a new TI.")
-      // Create the new TI.
-      the_title = new TitleInstance(name:title)
+        log.debug ("One or more class 1 IDs supplied so must be a new TI.")
+        // Create the new TI.
+        // the_title = new BookInstance(name:title)
+        the_title = ingest_cfg.defaultType.newInstance()
+        the_title.name=title
       } else {
-      // No class 1s supplied we should try and find a match on the title string.
-      log.debug ("No class 1 ids supplied.")
-      // Lookup using title string match only.
-      the_title = attemptStringMatch (norm_title)
-      if (the_title) {
-        //log.debug("TI ${the_title} matched by name. Partial match")
-        // Add the variant.
-        the_title.addVariantTitle(title)
-        // Raise a review request
-        ReviewRequest.raise(
-          the_title,
-          "'${title}' added as a variant of '${the_title.name}'.",
-          "No 1st class ID supplied but reasonable match was made on the title name.",
-          user, project
+        // No class 1s supplied we should try and find a match on the title string.
+        log.debug ("No class 1 ids supplied.")
+        // Lookup using title string match only.
+        the_title = attemptStringMatch (norm_title)
+        if (the_title) {
+          log.debug("TI ${the_title} matched by name. Partial match")
+          // Add the variant.
+          the_title.addVariantTitle(title)
+          // Raise a review request
+          ReviewRequest.raise(
+            the_title,
+            "'${title}' added as a variant of '${the_title.name}'.",
+            "No 1st class ID supplied but reasonable match was made on the title name.",
+            user, project
+            )
+        } else {
+          log.debug("No TI could be matched by name. New TI, flag for review.")
+          // Could not match on title either.
+          // Create a new TI but attach a Review request to it.
+          the_title = ingest_cfg.defaultType.newInstance()
+          the_title.name=title
+          ReviewRequest.raise(
+            the_title,
+            "New TI created.",
+            "No 1st class ID supplied and no match could be made on title name.",
+            user, project
           )
-      } else {
-        //log.debug("No TI could be matched by name. New TI, flag for review.")
-        // Could not match on title either.
-        // Create a new TI but attach a Review request to it.
-        the_title = new TitleInstance(name:title)
-        ReviewRequest.raise(
-          the_title,
-          "New TI created.",
-          "No 1st class ID supplied and no match could be made on title name.",
-          user, project
-          )
-      }
+        }
       }
       break;
     case 1 :
       // Single component match.
-      //log.debug ("Title class one identifier lookup yielded a single match.")
+      log.debug ("Title class one identifier lookup yielded a single match.")
       // We should raise a review request here if the match was made by cross checking
       // different identifier namespaces.
       if (results['x_check_matches'].size() == 1) {
@@ -215,7 +224,7 @@ class TSVIngestionService {
       break;
     default :
       // Multiple matches.
-      log.warn ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
+      log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
       break;
     }
 
@@ -231,72 +240,76 @@ class TSVIngestionService {
     log.debug(the_title.getIds())
     // Try and save the result now.
     if ( the_title.save(failOnError:true, flush:true) ) {
-      log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
+      log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
     }
     else {
+      log.error("**PROBLEM SAVING TITLE**");
       the_title.errors.each { e ->
-      log.error("Problem saving title: ${e}");
+        log.error("Problem saving title: ${e}");
       }
     }
     }
+
+    log.debug("lookupOrCreateTitle(${title}.....) returning ${the_title?.id}");
     the_title
   }
 
   //for now, we can only do authors. (kbart limitation)
   def TitleInstance addPerson (person_name, role, ti, user=null, project = null) {
     if (person_name) {
-      def person = org.gokb.cred.Person.findAllByName(person_name)
-    //log.debug("this was found for person: ${person}");
-    switch(person.size()) {
-      case 0:
-        log.debug("Person lookup yielded no matches.")
-        def the_person = new Person(name:person_name)
-          if (the_person.save(failOnError:true, flush:true)) {
-          log.debug("saved ${the_person.name}")
-          person << the_person
-          ReviewRequest.raise(
-          ti,
-          "'${the_person}' added as ${role.value} of '${ti.name}'.",
-           "This person did not exist before, so has been newly created",
-          user, project)
-          } else {
-            the_person.errors.each { error ->
-          log.error("problem saving ${the_person.name}:${error}")
-          }
-          }
-      case 1:
-        def people = ti.getPeople()?:[]
-        //log.debug("ti.getPeople ${people}")
-        // Has the person ever existed in the list against this title.
-        boolean done=false;
-        for (cp in people) {
-          if (!done && (cp.person.id==person[0].id &&
-                  cp.role.id==role.id) ) {
-            done=true;
-            }
-        }
-        if (!done) {
-        def componentPerson = new ComponentPerson(component:ti,
-                                person:person,
-                              role:role)
-          //log.debug("people did not contain this person")
-          // First person added?
-          boolean not_first = people.size() > 0
-        boolean added = componentPerson.save(failOnError:true, flush:true);
-        if (!added) {
-          componentPerson.errors.each { error ->
-          //log.error("problem saving ${componentPerson}:${error}")
-          }
-        }
-          // Raise a review request, if needed.
-          if (not_first && added) {
-          ReviewRequest.raise(
+      def person = componentLookupService.findComponents('org.gokb.cred.Person', person_name)
+      log.debug("this was found for person: ${person}");
+      switch(person.size()) {
+        case 0:
+          log.debug("Person lookup yielded no matches.")
+          def the_person = new Person(name:person_name)
+            if (the_person.save(failOnError:true, flush:true)) {
+            log.debug("saved ${the_person.name}")
+            person << the_person
+            ReviewRequest.raise(
             ti,
-            "Added '${person.name}' as ${role.value} on '${ti.name}'.",
-            "Person supplied in ingested file is additional to any already present on BI.",
+            "'${the_person}' added as ${role.value} of '${ti.name}'.",
+             "This person did not exist before, so has been newly created",
             user, project)
-        }
-      }
+            } else {
+              the_person.errors.each { error ->
+                log.error("problem saving ${the_person.name}:${error}")
+              }
+            }
+        case 1:
+          def people = ti.getPeople()?:[]
+          log.debug("ti.getPeople ${people}")
+          // Has the person ever existed in the list against this title.
+          boolean done=false;
+          for (cp in people) {
+            if (!done && (cp.person.id==person[0].id && cp.role.id==role.id) ) {
+              done=true;
+            }
+          }
+
+          if (!done) {
+            def componentPerson = new ComponentPerson(component:ti, person:person, role:role)
+
+            log.debug("people did not contain this person")
+            // First person added?
+
+            boolean not_first = people.size() > 0
+            boolean added = componentPerson.save(failOnError:true, flush:true);
+
+            if (!added) {
+              componentPerson.errors.each { error ->
+              log.error("problem saving ${componentPerson}:${error}")
+              }
+            }
+
+            // Raise a review request, if needed.
+            if (not_first && added) {
+              ReviewRequest.raise( ti,
+                      "Added '${person.name}' as ${role.value} on '${ti.name}'.",
+                      "Person supplied in ingested file is additional to any already present on BI.",
+                      user, project)
+            }
+          }
       break
       default:
       log.debug ("Person lookup yielded ${person.size()} matches. Not really sure which person to use, so not using any.")
@@ -310,9 +323,9 @@ class TSVIngestionService {
     if (the_subjects) {
       for (the_subject in the_subjects) {
         def subject = Subject.findAllByNameIlike(the_subject) //no alt names for subjects
-        //log.debug("this was found for subject: ${subject}")
+        log.debug("this was found for subject: ${subject}")
         if (!subject) {
-          //log.debug("subject not found, creating a new one")
+          log.debug("subject not found, creating a new one")
           subject = new Subject(name:the_subject)
           subject.save()
         }
@@ -335,12 +348,12 @@ class TSVIngestionService {
 
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
     if ( publisher_name != null ) {
-    def publisher = org.gokb.cred.Org.findAllByName(publisher_name)
-    //log.debug("this was found for publisher: ${publisher}");
+    def publisher = componentLookupService.findComponents('org.gokb.cred.Org',publisher_name)
+    log.debug("this was found for publisher: ${publisher}");
     // Found a publisher.
     switch (publisher.size()) {
       case 0:
-      //log.debug ("Publisher lookup yielded no matches.")
+      log.debug ("Publisher lookup yielded no matches.")
       def the_publisher = new Org(name:publisher_name)
       if (the_publisher.save(failOnError:true, flush:true)) {
         log.debug("saved ${the_publisher.name}")
@@ -358,22 +371,22 @@ class TSVIngestionService {
 
       //carry on...
       case 1:
-        //log.debug("found a publisher")
+        log.debug("found a publisher")
         def orgs = ti.getPublisher()
-        //log.debug("ti.getPublisher ${orgs}")
+        log.debug("ti.getPublisher ${orgs}")
         // Has the publisher ever existed in the list against this title.
         if (!orgs.contains(publisher[0])) {
-        //log.debug("orgs did not contain this puboisher")
+        log.debug("orgs did not contain this puboisher")
         // First publisher added?
         boolean not_first = orgs.size() > 0
         // Added a publisher?
-        //log.debug("calling changepublisher")
+        log.debug("calling changepublisher")
         boolean added = ti.changePublisher (
         publisher[0],
         true
         )
-        //log.debug(not_first)
-        //log.debug(added)
+        log.debug(not_first)
+        log.debug(added)
         // Raise a review request, if needed.
         if (not_first && added) {
           ReviewRequest.raise(
@@ -463,15 +476,20 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile, datafile, subtype='journal', job=null) {
+  def ingest(the_profile, datafile, job=null, ip_id=null, ingest_cfg=null) {
 
-   def start_time = System.currentTimeMillis();
+    long start_time = System.currentTimeMillis();
+
+    if ( ingest_cfg == null ) {
+      ingest_cfg = [defaultType:org.gokb.cred.BookInstance.class]
+    }
 
     log.debug("TSV ingestion called")
 
     try {
 
-      def ingest_date = new Date();
+      def ingest_systime = start_time
+      def ingest_date = new java.sql.Timestamp(start_time);
       log.debug("Ingest date is ${ingest_date}")
 
       job?.setProgress(0)
@@ -481,41 +499,56 @@ class TSVIngestionService {
 
       //we kind of assume that we need to convert to kbart
       if ("${the_profile.packageType}"!='kbart2') {
-        kbart_beans = convertToKbart(the_profile, datafile, subtype)
+        kbart_beans = convertToKbart(the_profile, datafile)
       } else {
-        kbart_beans = getKbartBeansFromKBartFile(datafile, subtype)
+        kbart_beans = getKbartBeansFromKBartFile(datafile)
       }
 
+      def author_role = null;
+      def editor_role = null;
 
-      log.debug("Ingesting ${kbart_beans.size} rows")
+      def the_package=handlePackage(the_profile)
+
+      assert the_package != null
+
+      log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
       //now its converted, ingest it into the database.
       for (int x=0; x<kbart_beans.size;x++) {
-        def elapsed = System.currentTimeMillis() - start_time
-        log.debug("Ingesting ${x} of ${kbart_beans.size} elapsed=${elapsed} avg=${elapsed/(x+1)}")
+        log.debug("Ingesting ${x} of ${kbart_beans.size}")
         TitleInstance.withNewTransaction {
-          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, subtype )
-          if ( x % 200 == 0 ) {
+
+          if ( author_role == null ) 
+            author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+
+          if ( editor_role == null )
+            editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+         
+          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime, author_role, editor_role, the_package, ingest_cfg )
+
+          if ( x % 50 == 0 ) {
             cleanUpGorm();
+            // author_role = Role.get(author_role.id);
+            // editor_role = Role.get(editor_role.id)
+            // the_package = Package.get(the_package.id);
           }
         }
-        job?.setProgress( (x/kbart_beans.size()*100) as int)
+        job?.setProgress( (x / kbart_beans.size()*100) as int)
       }
 
       // the_profile.save(flush:true)
-      def the_package=handlePackage(the_profile)
 
       log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
-      try {
 
+      try {
         TitleInstancePackagePlatform.withNewTransaction {
           // Find all tipps in this package which have a lastSeen before the ingest date
           def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                            'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                           'where c.fromComponent=? and c.toComponent=tipp and tipp.lastSeen < ? and tipp.accessEndDate is null',
-                          [the_package,ingest_date]);
+                           'where c.fromComponent=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
+                          [pkg:the_package,dt:ingest_systime]);
 
           q.each { tipp ->
-            log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_date}");
+            log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
             // tipp.deleteSoft()
             tipp.accessEndDate = new Date();
             tipp.save()
@@ -542,45 +575,40 @@ class TSVIngestionService {
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, subtype) {
+  def writeToDB(the_kbart, 
+                the_profile, 
+                the_datafile, 
+                ingest_date, 
+                ingest_systime, 
+                author_role, 
+                editor_role, 
+                the_package,
+                ingest_cfg) {
+
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
     log.debug("TSVINgestionService:writeToDB")
+
     //first we need a platform:
     URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
     def platform = handlePlatform(platform_url.host, the_profile.source)
+
     if (platform!=null) {
-      def the_package=handlePackage(the_profile)
-      if (the_package!=null) {
+
         log.debug(the_kbart.online_identifier)
+
         def identifiers = []
-        def id_type = 'isbn';
-        if ( subtype == 'journal' ) {
-          id_type = 'issn'
-        }
-
-        if ( the_kbart.online_identifier )
-          identifiers << [type:'e'+id_type, value:normaliseISXN(the_kbart.online_identifier)]
-
-        if ( the_kbart.print_identifier )
-        identifiers << [type:id_type, value:normaliseISXN(the_kbart.print_identifier)]
-
+        identifiers << [type:'isbn', value:the_kbart.online_identifier]
         the_kbart.additional_isbns.each { identifier ->
-          identifiers << [type: id_type, value:normaliseISXN(identifier)]
+          identifiers << [type: 'isbn', value:identifier]
         }
-
-        log.debug("Identifier set: ${identifiers}")
 
         if ( identifiers.size() > 0 ) {
-          log.debug("looking for title using these identifiers: ${identifiers}")
-          def title = find(the_kbart.publication_title, identifiers)
+          log.debug("looking for book using these identifiers: ${identifiers}")
+          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
           title.source=the_profile.source
           log.debug("title found: for ${the_kbart.publication_title}:${title}")
-          def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
-                                      grailsApplication.config.kbart2.authorRole)
-          def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
-                                     grailsApplication.config.kbart2.editorRole)
 
           if (title) {
             addOtherFieldsToTitle(title, the_kbart)
@@ -591,7 +619,10 @@ class TSVIngestionService {
             the_kbart.additional_authors.each { author ->
               addPerson(author, author_role, title)
             }
-            processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date)
+            
+            def pre_create_tipp_time = System.currentTimeMillis();
+            createTIPP(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date, ingest_systime)
+            log.debug("create tipp took ${System.currentTimeMillis() - pre_create_tipp_time}");
           } else {
              log.warn("problem getting the title...")
           }
@@ -601,9 +632,6 @@ class TSVIngestionService {
           log.debug("Skipping row - no identifiers")
         }
 
-      } else {
-      log.warn("couldn't reslove package - title not added.");
-      }
     } else {
       log.warn("couldn't reslove platform - title not added.");
     }
@@ -620,21 +648,35 @@ class TSVIngestionService {
     log.debug("first online date set")
     title.volumeNumber=the_kbart.monograph_volume
     log.debug("save title")
-
-
     title.save()
 
   }
 
-  def processTIPPS(the_source,
-                   the_datafile,
-                   the_kbart,
-                   the_package,
-                   the_title,
-                   the_platform,
-                   ingest_date) {
+  Date parseDate(String datestr) {
+    def parsed_date = null;
+    if ( datestr && ( datestr.length() > 0 ) ) {
+      for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
+        try {
+          parsed_date = i.next().parse(datestr.replaceAll('-','/'));
+        }
+        catch ( Exception e ) {
+        }
+      }
+    }
+    parsed_date
+  }
 
-    log.debug("TSVIngestionService::processTIPPS with ${the_package}, ${the_title}, ${the_platform}")
+
+  def createTIPP(the_source,
+                 the_datafile,
+                 the_kbart,
+                 the_package,
+                 the_title,
+                 the_platform,
+                 ingest_date,
+                 ingest_systime) {
+
+    log.debug("TSVIngestionService::createTIPP with ${the_package}, ${the_title}, ${the_platform}, ${ingest_date}")
 
     //first, try to find the platform. all we have to go in the host of the url.
     def tipp_values = [
@@ -653,7 +695,7 @@ class TSVIngestionService {
       endIssue:the_kbart.num_last_issue_online,
       // source:the_source,
       accessStartDate:ingest_date,
-      lastSeen:ingest_date
+      lastSeen:ingest_systime
     ]
 
     def tipp=null
@@ -689,25 +731,28 @@ class TSVIngestionService {
 
       // Set all properties on the object.
       tipp_values.each { prop, value ->
-        // Only set the property if we have a value.
-        if (value != null && value != "") {
-          tipp."${prop}" = value
+        // Only update if we actually have a change to make
+        if ( tipp."${prop}" != value ) {
+          // Only set the property if we have a value.
+          if (value != null && value != "") {
+            tipp."${prop}" = value
+          }
         }
       }
     }
 
-    if ( ingest_date ) {
+    if ( ingest_systime ) {
       log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
-      tipp.lastSeen = ingest_date;
+      tipp.lastSeen = ingest_systime;
     }
 
     log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    //if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
-    //  the_datafile.tipps << tipp
-    //}
-    the_datafile.save(flush:true)
-    log.debug("processTIPPS returning")
+    // if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
+    //   the_datafile.tipps << tipp
+    // }
+    // the_datafile.save(flush:true)
+    log.debug("createTIPP returning")
   }
 
   //this is a lot more complex than this for journals. (which uses refine)
@@ -718,15 +763,21 @@ class TSVIngestionService {
     def packages=Package.findAllByNameIlike(the_profile.packageName);
     switch (packages.size()) {
       case 0:
-        //no match. create a new platform!
-        result = new Package(name:the_profile.packageName, source:the_profile.source)
-        if (result.save(flush:true, failOnError:true)) {
-          log.debug("saved new package: ${result}")
-        } else {
-          for (error in result.errors) {
-            log.error(error);
+        //no match. create a new package!
+        log.debug("Create new package");
+        Package.withNewTransaction {
+          result = new Package(name:the_profile.packageName, source:the_profile.source)
+          if (result.save(flush:true, failOnError:true)) {
+            log.debug("saved new package: ${result}")
+          } else {
+            for (error in result.errors) {
+              log.error(error);
+            }
           }
         }
+
+        // reload in this session
+        // result = Package.get(result.id);
         break;
       case 1:
         //found a match
@@ -737,6 +788,8 @@ class TSVIngestionService {
         log.error("found multiple packages when looking for ${the_profile.packageName}")
       break
     }
+
+    log.debug("handlePackage returns ${result}");
     result;
   }
 
@@ -768,7 +821,7 @@ class TSVIngestionService {
   }
 
   //note- don't do the additional fields just yet, these will need to be mapped in
-  def getKbartBeansFromKBartFile(the_data, subtype) {
+  def getKbartBeansFromKBartFile(the_data) {
     log.debug("kbart2 file, so use CSV to Bean") //except that this doesn't always work :(
     def results=[]
     //def ctb = new CsvToBean<KBartRecord>()
@@ -789,24 +842,35 @@ class TSVIngestionService {
     }
     log.debug("${col_positions}")
     String[] nl=csv.readNext()
+    int rownum = 0;
     while(nl!=null) {
       Map result=[:]
-      for (key in col_positions.keySet()) {
-        log.debug("Checking ${key}")
-        if ( key && key.length() > 0 ) {
-          //so, springer files seem to start with a dodgy character (int) 65279
-          if (((int)key.toCharArray()[0])==65279) {
-            def index=key.getAt(1..key.length()-1)
-            //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
-              result[index]=nl[col_positions[key]]
-            //}
-          } else {
-            //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
-              result[key]=nl[col_positions[key]]
-            //}
+      if ( nl.length > 0 ) {
+
+        for (key in col_positions.keySet()) {
+          log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
+          if ( key && key.length() > 0 ) {
+            //so, springer files seem to start with a dodgy character (int) 65279
+            if (((int)key.toCharArray()[0])==65279) {
+              def corrected_key=key.getAt(1..key.length()-1)
+              //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
+                result[corrected_key]=nl[col_positions[key]]
+              //}
+            } else {
+              //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
+                if ( ( col_positions[key] != null ) && ( col_positions[key] < nl.length ) ) {
+                  result[key]=nl[col_positions[key]]
+                }
+                else {
+                  log.error("Column references value not present in col ${col_positions[key]} row ${rownum}");
+                }
+              //}
+            }
           }
         }
-
+      }
+      else {
+        log.warn("Possible malformed last row");
       }
 
       log.debug(result)
@@ -817,12 +881,13 @@ class TSVIngestionService {
 
       results<<new KBartRecord(result)
       nl=csv.readNext()
+      rownum++
     }
     log.debug(results)
     results
   }
 
-  def convertToKbart(the_profile, data_file, subtype) {
+  def convertToKbart(the_profile, data_file) {
     def results = []
     log.debug("in convert to Kbart2")
     log.debug("file package type is ${the_profile.packageType}")
@@ -836,46 +901,38 @@ class TSVIngestionService {
       throw new Exception("couldn't find file rules for ${the_profile.packageType}")
     }
     //can you read a tsv file?
-    def charset = 'ISO-8859-1' // 'UTF-8'
-    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData), java.nio.charset.Charset.forName(charset)),'\t' as char, '\0' as char)
-
-    Map col_positions=[:]
-
-    // Initialise all col positions to be -1
+    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData)),'\t' as char)
+        Map col_positions=[:]
     fileRules.each { fileRule ->
       col_positions[fileRule.field]=-1;
     }
-
-    String [] header = csv.readNext()
-    int ctr = 0
+        String [] header = csv.readNext()
+        int ctr = 0
     header.each {
-      col_positions [ it ] = ctr++
-    }
+          col_positions [ it ] = ctr++
+        }
     String [] nl = csv.readNext()
     while ( nl != null ) {
-      log.debug("Process line ${nl}")
       KBartRecord result = new KBartRecord()
       fileRules.each { fileRule ->
         boolean done=false
-        log.debug("Process field "+fileRule.field+" At col position ${col_positions[fileRule.field]}")
-        if ( col_positions[fileRule.field] >= 0 ) {
-          String data = nl[col_positions[fileRule.field]];
-          log.debug(data)
-          if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
-            def parts = data.split(fileRule.separator)
-            data=parts[0]
-            if ( parts.size() > 1 && fileRule.additional!=null ) {
-              for (int x=1; x<parts.size(); x++)  {
-                result[fileRule.additional] << parts[x]
-              }
-              done=true
+        log.debug(fileRule.field)
+        String data = nl[col_positions[fileRule.field]];
+        log.debug(data)
+        if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
+          def parts = data.split(fileRule.separator)
+          data=parts[0]
+          if ( parts.size() > 1 && fileRule.additional!=null ) {
+            for (int x=1; x<parts.size(); x++) {
+              result[fileRule.additional] << parts[x]
             }
+            done=true
           }
-          if (fileRule.additional!=null && !done) {
-            result[fileRule.additional] << data
-          } else {
-            result[fileRule.kbart]=data
-          }
+        }
+        if (fileRule.additional!=null && !done) {
+          result[fileRule.additional] << data
+        } else {
+          result[fileRule.kbart]=data
         }
       }
       log.debug(result)
@@ -899,33 +956,5 @@ class TSVIngestionService {
     propertyInstanceMap.get().clear()
   }
 
-  def normaliseISXN(value) {
-    def result = null;
-    if ( value ) {
-      if ( value.length() == 8 ) {
-        result=value.substring(0,4)+'-'+value.substring(4,8)
-      }
-    }
-    result;
-  }
-
-  /**
-   * Dates from refine are no supplied in the ISO format.
-   * @param datestr
-   * @return standard java Date
-   */
-  Date parseDate(String datestr) {
-    def parsed_date = null;
-    if ( datestr && ( datestr.length() > 0 ) ) {
-      for(Iterator<SimpleDateFormat> i = grailsApplication.config.possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
-        try {
-              parsed_date = i.next().parse(datestr.replaceAll('-','/'));
-        }
-        catch ( Exception e ) {
-        }
-      }
-    }
-    parsed_date
-  }
 
 }
