@@ -30,6 +30,7 @@ import org.gokb.cred.Package;
 import org.gokb.cred.Person
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory;
+import org.gokb.cred.RefdataValue;
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.Subject
 import org.gokb.cred.TitleInstance;
@@ -507,12 +508,18 @@ class TSVIngestionService {
         kbart_beans = getKbartBeansFromKBartFile(datafile)
       }
 
-      def author_role = null;
-      def editor_role = null;
+      def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+      def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+      def author_role_id = author_role.id
+      def editor_role_id = editor_role.id
+
 
       def the_package=handlePackage(the_profile)
+      def the_package_id = the_package.id
 
       assert the_package != null
+
+      long startTime=System.currentTimeMillis()
 
       log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
       //now its converted, ingest it into the database.
@@ -522,21 +529,31 @@ class TSVIngestionService {
         log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
         TitleInstance.withNewTransaction {
+          long rowStartTime=System.currentTimeMillis()
 
-          if ( author_role == null ) 
-            author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+          log.debug("WriteToDb");
+          writeToDB(kbart_beans[x], 
+                    the_profile, 
+                    datafile, 
+                    ingest_date, 
+                    ingest_systime, 
+                    RefdataValue.get(author_role_id), 
+                    RefdataValue.get(editor_role_id), 
+                    the_package_id, 
+                    ingest_cfg )
 
-          if ( editor_role == null )
-            editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
-         
-          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime, author_role, editor_role, the_package, ingest_cfg )
 
-          if ( x % 50 == 0 ) {
-            cleanUpGorm();
-            // author_role = Role.get(author_role.id);
-            // editor_role = Role.get(editor_role.id)
-            // the_package = Package.get(the_package.id);
-          }
+          log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
+        }
+
+        if ( x % 200 == 0 ) {
+
+          the_package.save(flush:true, failOnError:true);
+          the_package = null;
+
+          log.debug("**CleanUpGorm** -- package id is ${the_package_id}");
+          cleanUpGorm();
+          the_package = Package.get(the_package_id);
         }
         job?.setProgress( (x / kbart_beans.size()*100) as int)
       }
@@ -588,7 +605,7 @@ class TSVIngestionService {
                 ingest_systime, 
                 author_role, 
                 editor_role, 
-                the_package,
+                the_package_id,
                 ingest_cfg) {
 
     //simplest method is to assume that everything is new.
@@ -599,6 +616,7 @@ class TSVIngestionService {
     //first we need a platform:
     URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
     def platform = handlePlatform(platform_url.host, the_profile.source)
+    def the_package = Package.get(the_package_id)
 
     if (platform!=null) {
 
@@ -770,14 +788,13 @@ class TSVIngestionService {
       case 0:
         //no match. create a new package!
         log.debug("Create new package");
-        Package.withNewTransaction {
-          result = new Package(name:the_profile.packageName, source:the_profile.source)
-          if (result.save(flush:true, failOnError:true)) {
-            log.debug("saved new package: ${result}")
-          } else {
-            for (error in result.errors) {
-              log.error(error);
-            }
+
+        result = new Package(name:the_profile.packageName, source:the_profile.source)
+        if (result.save(flush:true, failOnError:true)) {
+          log.debug("saved new package: ${result}")
+        } else {
+          for (error in result.errors) {
+            log.error(error);
           }
         }
 
