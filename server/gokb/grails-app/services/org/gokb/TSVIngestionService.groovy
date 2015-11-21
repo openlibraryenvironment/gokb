@@ -16,7 +16,7 @@ import com.k_int.ClassUtils
 import grails.transaction.Transactional
 
 import org.gokb.cred.TitleInstance
-import org.gokb.cred.BookInstance
+// Only in ebooks branch -- import org.gokb.cred.BookInstance
 import org.gokb.cred.ComponentPerson
 import org.gokb.cred.ComponentSubject
 import org.gokb.cred.IngestionProfile
@@ -481,7 +481,7 @@ class TSVIngestionService {
     long start_time = System.currentTimeMillis();
 
     if ( ingest_cfg == null ) {
-      ingest_cfg = [defaultType:org.gokb.cred.BookInstance.class]
+      ingest_cfg = [defaultType:org.gokb.cred.TitleInstance.class]
     }
 
     log.debug("TSV ingestion called")
