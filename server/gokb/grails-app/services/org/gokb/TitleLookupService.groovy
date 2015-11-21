@@ -227,13 +227,14 @@ class TitleLookupService {
     if (the_title) {
       
       // The current IDs of the title
-      def current_ids = the_title.getIds()
+      def current_ids = the_title.getIds() ?: []
 
       // Add the publisher.
       addPublisher(publisher_name, the_title, user, project)
+
       results['ids'].each {
         if ( ! current_ids.contains(it) ) {
-          current_ids.add(it);
+          the_title.ids.add(it);
         }
       }
 

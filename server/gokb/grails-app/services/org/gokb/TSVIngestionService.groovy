@@ -98,8 +98,8 @@ class TSVIngestionService {
         KBComponent dproxied = ClassUtils.deproxy(c);
         // Only add if it's a title.
         if ( dproxied instanceof TitleInstance ) {
-        title_match = true
-        result['matches'] << (dproxied as TitleInstance)
+          title_match = true
+          result['matches'] << (dproxied as TitleInstance)
         }
       }
       // Did the ID yield a Title match?
@@ -153,8 +153,10 @@ class TSVIngestionService {
   def lookupOrCreateTitle (String title, def identifiers, ingest_cfg, def user = null, def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
-    log.debug("lookup or create title :: ${title}")
+    log.debug("lookup or create title :: ${title}(${ingest_cfg})")
+
     if (title == null) return null
+
     // Create the normalised title.
     String norm_title = GOKbTextUtils.generateComparableKey(title)
     // Lookup any class 1 identifier matches
@@ -167,7 +169,7 @@ class TSVIngestionService {
       log.debug ("Title class one identifier lookup yielded no matches.")
       // Check for presence of class one ID
       if (results['class_one']) {
-        log.debug ("One or more class 1 IDs supplied so must be a new TI.")
+        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
         the_title = ingest_cfg.defaultType.newInstance()
@@ -230,24 +232,27 @@ class TSVIngestionService {
 
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
-    // The current IDs of the title
-    def current_ids = the_title.getIds()
-    results['ids'].each {
-      if ( ! current_ids.contains(it) ) {
-      current_ids.add(it);
+      // The current IDs of the title
+      def current_ids = the_title.getIds()
+
+      log.debug("Current ids: ${current_ids}");
+
+      results['ids'].each {
+        if ( ! current_ids.contains(it) ) {
+          the_title.addToIds(canonical_identifier);
+        }
       }
-    }
-    log.debug(the_title.getIds())
-    // Try and save the result now.
-    if ( the_title.save(failOnError:true, flush:true) ) {
-      log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
-    }
-    else {
-      log.error("**PROBLEM SAVING TITLE**");
-      the_title.errors.each { e ->
-        log.error("Problem saving title: ${e}");
+
+      // Try and save the result now.
+      if ( the_title.save(failOnError:true, flush:true) ) {
+        log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
       }
-    }
+      else {
+        log.error("**PROBLEM SAVING TITLE**");
+        the_title.errors.each { e ->
+          log.error("Problem saving title: ${e}");
+        }
+      }
     }
 
     log.debug("lookupOrCreateTitle(${title}.....) returning ${the_title?.id}");
@@ -476,7 +481,13 @@ class TSVIngestionService {
     long start_time = System.currentTimeMillis();
 
     if ( ingest_cfg == null ) {
-      ingest_cfg = [defaultType:org.gokb.cred.TitleInstance.class]
+      ingest_cfg = [
+                     defaultType:org.gokb.cred.TitleInstance.class,
+                     identifierMap:[
+                       'print_identifier':'issn',
+                       'online_identifier':'eissn',
+                     ]
+                   ]
     }
 
     log.debug("TSV ingestion called")
@@ -508,8 +519,11 @@ class TSVIngestionService {
 
       log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
       //now its converted, ingest it into the database.
+
       for (int x=0; x<kbart_beans.size;x++) {
-        log.debug("Ingesting ${x} of ${kbart_beans.size}")
+
+        log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
+
         TitleInstance.withNewTransaction {
 
           if ( author_role == null ) 
@@ -594,7 +608,12 @@ class TSVIngestionService {
         log.debug(the_kbart.online_identifier)
 
         def identifiers = []
-        identifiers << [type:'isbn', value:the_kbart.online_identifier]
+        if ( the_kbart.online_identifier )
+          identifiers << [type:ingest_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
+
+        if ( the_kbart.print_identifier )
+          identifiers << [type:ingest_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
+
         the_kbart.additional_isbns.each { identifier ->
           identifiers << [type: 'isbn', value:identifier]
         }
@@ -634,17 +653,11 @@ class TSVIngestionService {
 
   def addOtherFieldsToTitle(title, the_kbart) {
     title.medium=RefdataCategory.lookupOrCreate("TitleInstance.Medium", "eBook")
-    log.debug("title.medium set")
     title.editionNumber=the_kbart.monograph_edition
-    log.debug("title.editionNumber set")
     title.dateFirstInPrint=parseDate(the_kbart.date_monograph_published_print)
-    log.debug("first date in print set")
     title.dateFirstOnline=parseDate(the_kbart.date_monograph_published_online)
-    log.debug("first online date set")
     title.volumeNumber=the_kbart.monograph_volume
-    log.debug("save title")
     title.save()
-
   }
 
   Date parseDate(String datestr) {
@@ -920,34 +933,29 @@ class TSVIngestionService {
 
     while ( nl != null ) {
 
-      log.debug("Process row:${row_counter++} ${nl}");
+      log.debug("** Process row:${row_counter++} ${nl}");
 
       KBartRecord result = new KBartRecord()
       fileRules.each { fileRule ->
-
         boolean done=false
-
-        log.debug(fileRule.field)
-
-
         String data = nl[col_positions[fileRule.field]];
-
-        // log.debug("${fileRule.field} ${col_positions[fileRule.field]} ${data}")
-
-        if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
-          def parts = data.split(fileRule.separator)
-          data=parts[0]
-          if ( parts.size() > 1 && fileRule.additional!=null ) {
-            for (int x=1; x<parts.size(); x++) {
-              result[fileRule.additional] << parts[x]
+        if ( col_positions[fileRule.field] >= 0 ) {
+          log.debug("field : ${fileRule.field} ${col_positions[fileRule.field]} ${data}")
+          if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
+            def parts = data.split(fileRule.separator)
+            data=parts[0]
+            if ( parts.size() > 1 && fileRule.additional!=null ) {
+              for (int x=1; x<parts.size(); x++) {
+                result[fileRule.additional] << parts[x]
+              }
+              done=true
             }
-            done=true
           }
-        }
-        if (fileRule.additional!=null && !done) {
-          result[fileRule.additional] << data
-        } else {
-          result[fileRule.kbart]=data
+          if (fileRule.additional!=null && !done) {
+            result[fileRule.additional] << data
+          } else {
+            result[fileRule.kbart]=data
+          }
         }
       }
       log.debug(result)
