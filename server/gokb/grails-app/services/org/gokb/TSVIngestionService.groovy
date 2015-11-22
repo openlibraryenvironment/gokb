@@ -86,7 +86,6 @@ class TSVIngestionService {
       // We only treat a component as a match if the matching Identifer
       // is a class 1 identifier.
       if (class_one_ids.contains(id_def.type)) {
-      log.debug("class one contains")
       // Flag class one is present.
       result['class_one'] = true
       // Flag for title match
@@ -170,7 +169,6 @@ class TSVIngestionService {
     switch (matches.size()) {
     case 0 :
       // No match behaviour.
-      log.debug ("Title class one identifier lookup yielded no matches.")
       // Check for presence of class one ID
       if (results['class_one']) {
         log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
@@ -246,7 +244,7 @@ class TSVIngestionService {
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
-        log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
+        // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
       }
       else {
         log.error("**PROBLEM SAVING TITLE**");
@@ -264,10 +262,10 @@ class TSVIngestionService {
   def TitleInstance addPerson (person_name, role, ti, user=null, project = null) {
     if ( (person_name) && ( person_name.trim().length() > 0 ) ) {
       def person = org.gokb.cred.Person.findAllByName(person_name)
-      log.debug("this was found for person: ${person}");
+      // log.debug("this was found for person: ${person}");
       switch(person.size()) {
         case 0:
-          log.debug("Person lookup yielded no matches.")
+          // log.debug("Person lookup yielded no matches.")
           def the_person = new Person(name:person_name)
             if (the_person.save(failOnError:true, flush:true)) {
             log.debug("saved ${the_person.name}")
@@ -284,7 +282,7 @@ class TSVIngestionService {
             }
         case 1:
           def people = ti.getPeople()?:[]
-          log.debug("ti.getPeople ${people}")
+          // log.debug("ti.getPeople ${people}")
           // Has the person ever existed in the list against this title.
           boolean done=false;
           for (cp in people) {
@@ -296,7 +294,7 @@ class TSVIngestionService {
           if (!done) {
             def componentPerson = new ComponentPerson(component:ti, person:person, role:role)
 
-            log.debug("people did not contain this person")
+            // log.debug("people did not contain this person")
             // First person added?
 
             boolean not_first = people.size() > 0
@@ -318,7 +316,7 @@ class TSVIngestionService {
           }
       break
       default:
-      log.debug ("Person lookup yielded ${person.size()} matches. Not really sure which person to use, so not using any.")
+      // log.debug ("Person lookup yielded ${person.size()} matches. Not really sure which person to use, so not using any.")
       break
     }
     }
@@ -329,9 +327,9 @@ class TSVIngestionService {
     if (the_subjects) {
       for (the_subject in the_subjects) {
         def subject = Subject.findAllByNameIlike(the_subject) //no alt names for subjects
-        log.debug("this was found for subject: ${subject}")
+        // log.debug("this was found for subject: ${subject}")
         if (!subject) {
-          log.debug("subject not found, creating a new one")
+          // log.debug("subject not found, creating a new one")
           subject = new Subject(name:the_subject)
           subject.save(failOnError:true, flush:true)
         }
@@ -354,11 +352,11 @@ class TSVIngestionService {
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
     if ( publisher_name != null ) {
       def publisher = org.gokb.cred.Org.findAllByName(publisher_name)
-      log.debug("this was found for publisher: ${publisher}");
+      // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
-        log.debug ("Publisher lookup yielded no matches.")
+        // log.debug ("Publisher lookup yielded no matches.")
         def the_publisher = new Org(name:publisher_name)
         if (the_publisher.save(failOnError:true, flush:true)) {
           log.debug("saved ${the_publisher.name}")
@@ -376,17 +374,17 @@ class TSVIngestionService {
 
         //carry on...
         case 1:
-          log.debug("found a publisher")
+          // log.debug("found a publisher")
           def orgs = ti.getPublisher()
-          log.debug("ti.getPublisher ${orgs}")
+          // log.debug("ti.getPublisher ${orgs}")
           // Has the publisher ever existed in the list against this title.
 
           if (!orgs.contains(publisher[0])) {
-            log.debug("orgs did not contain this publisher")
+            // log.debug("orgs did not contain this publisher")
             // First publisher added?
             boolean not_first = orgs.size() > 0
             // Added a publisher?
-            log.debug("calling changepublisher")
+            // log.debug("calling changepublisher")
             boolean added = ti.changePublisher ( publisher[0], true)
             log.debug(not_first)
             log.debug(added)
@@ -445,7 +443,7 @@ class TSVIngestionService {
     switch (distance) {
     case 1 :
       // Do nothing just continue using the TI.
-      log.debug("Exact distance match for TI.")
+      // log.debug("Exact distance match for TI.")
       break
     case {
       ti.variantNames.find {alt ->
@@ -494,13 +492,15 @@ class TSVIngestionService {
                    ]
     }
 
-    log.debug("TSV ingestion called")
+    // log.debug("TSV ingestion called")
 
     try {
 
       def ingest_systime = start_time
       def ingest_date = new java.sql.Timestamp(start_time);
-      log.debug("Ingest date is ${ingest_date}")
+      // log.debug("Ingest date is ${ingest_date}")
+
+      the_profile.refresh()
 
       job?.setProgress(0)
       //not suer we need this totaslly...
@@ -523,23 +523,16 @@ class TSVIngestionService {
 
       long startTime=System.currentTimeMillis()
 
+
+
       log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
       //now its converted, ingest it into the database.
 
-      RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
-
       for (int x=0; x<kbart_beans.size;x++) {
-
-        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
-        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
-        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
 
         log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
         long rowStartTime=System.currentTimeMillis()
-
-        log.debug("WriteToDb ${x}");
-        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
 
         writeToDB(kbart_beans[x], 
                     the_profile, 
@@ -551,13 +544,9 @@ class TSVIngestionService {
                     the_package, 
                     ingest_cfg )
 
-        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
-
         log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
 
-        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
-
-        if ( x % 200 == 0 ) {
+        if ( x % 50 == 0 ) {
           log.debug("\n\n\n**** CleanUpGorm -- package id is ${the_package.id} ****\n\n\n");
           def the_package_id = the_package.id
 
@@ -571,9 +560,6 @@ class TSVIngestionService {
         }
 
         job?.setProgress( (x / kbart_beans.size()*100) as int)
-
-        log.debug("KBart bean completed - iterate");
-
       }
 
       the_profile.save(flush:true, failOnError:true)
@@ -651,7 +637,6 @@ class TSVIngestionService {
         }
 
         if ( identifiers.size() > 0 ) {
-          log.debug("looking for book using these identifiers: ${identifiers}")
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
           title.source=the_profile.source
           log.debug("title found: for ${the_kbart.publication_title}:${title}")
@@ -680,7 +665,6 @@ class TSVIngestionService {
                        platform, 
                        ingest_date, 
                        ingest_systime)
-            log.debug("create tipp took ${System.currentTimeMillis() - pre_create_tipp_time}");
           } else {
              log.warn("problem getting the title...")
           }
@@ -822,7 +806,6 @@ class TSVIngestionService {
 
         def newpkgid = null;
 
-        // Package.withTransaction { status ->
           def newpkg = new Package(name:the_profile.packageName, source:the_profile.source)
           if (newpkg.save(flush:true, failOnError:true)) {
             newpkgid = newpkg.id
@@ -831,7 +814,6 @@ class TSVIngestionService {
               log.error(error);
             }
           }
-        // }
 
         log.debug("Created new package : ${newpkgid} in current session");
         result = Package.get(newpkgid);
@@ -856,9 +838,6 @@ class TSVIngestionService {
     def platforms=Platform.findAllByPrimaryUrlIlike(host);
 
     
-    RefdataCategory.lookupOrCreate('Platform.Roles','Host')
-    RefdataCategory.lookupOrCreate('Platform.Roles','Host1')
-
     switch (platforms.size()) {
       case 0:
         //no match. create a new platform!
@@ -886,8 +865,6 @@ class TSVIngestionService {
         log.error("found multiple platforms when looking for ${host}")
       break
     }
-
-    RefdataCategory.lookupOrCreate('Platform.Roles','Host1')
 
     assert result != null
 

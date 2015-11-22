@@ -202,13 +202,13 @@ abstract class KBComponent {
                         if (values instanceof Collection) {
                           values.each { val ->
                             def v= RefdataCategory.lookupOrCreate(key, val)
-                            log.debug("lookupOrCreate-1(${key},${val}) - ${v.id}");
+                            // log.debug("lookupOrCreate-1(${key},${val}) - ${v.id}");
                             thisComponent."addTo${ucProp}" ( v )
                           }
                         } else {
                           // Set the default.
                           def v = RefdataCategory.lookupOrCreate(key, values)
-                          log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
+                          // log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
                           thisComponent."${property}" = v
                         }
                       // }

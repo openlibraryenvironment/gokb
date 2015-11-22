@@ -45,7 +45,7 @@ class RefdataCategory {
     // The category.
     // RefdataCategory.withTransaction { status ->
 
-      log.debug("Attempting to locate category ${category_name}");
+      // log.debug("Attempting to locate category ${category_name}");
 
       def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where c.desc = ?',category_name);
       def cat = null;
