@@ -546,7 +546,7 @@ class TSVIngestionService {
 
         log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
 
-        if ( x % 50 == 0 ) {
+        if ( x % 25 == 0 ) {
           log.debug("\n\n\n**** CleanUpGorm -- package id is ${the_package.id} ****\n\n\n");
           def the_package_id = the_package.id
 
