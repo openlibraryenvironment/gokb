@@ -1,5 +1,9 @@
 package org.gokb.cred
 
+
+import groovy.util.logging.*
+
+@Log4j
 class RefdataCategory {
 
   String desc
@@ -32,33 +36,45 @@ class RefdataCategory {
   }
 
   static RefdataValue lookupOrCreate(category_name, value, sortkey) {
-	
+  
     if ( value == null )
       throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");
 
+    def result = null
+
     // The category.
-    def cat = RefdataCategory.findByDesc(category_name);
-    if ( !cat ) {
-      cat = new RefdataCategory(desc:category_name)
-	  cat.save(failOnError:true)
-    }
+    // RefdataCategory.withTransaction { status ->
 
-    // II Commented out the following - Seems to clash with domain class extender!
-    def result = RefdataValue.findByOwnerAndValueIlike(cat, value)
-	
-    // SO: Changed this slightly to do a case-insensitive value match.
-    //def result = RefdataValue.findAllWhere (owner:cat).find { RefdataValue val ->
-    //	  val.getValue().equalsIgnoreCase(value)
-    //	}
+      log.debug("Attempting to locate category ${category_name}");
 
-    if ( !result ) {
-	  
-	  // Create and save a new refdata value.
-      result = new RefdataValue(owner:cat, value:value, sortKey:sortkey)
-      result.save(failOnError:true, flush:true)
-    }
+      def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where c.desc = ?',category_name);
+      def cat = null;
 
-	// return the refdata value.
+      if ( cats.size() == 0 ) {
+        cat = new RefdataCategory(desc:category_name)
+        cat.save(failOnError:true, flush:true)
+        log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
+      }
+      else if ( cats.size() == 1 ) {
+        cat = cats[0]
+        result = RefdataValue.findByOwnerAndValueIlike(cat, value)
+      }
+      else {
+        throw new RuntimeException("Multiple matching refdata category names");
+      }
+
+      if ( !result ) {
+        // Create and save a new refdata value.
+        result = new RefdataValue(owner:cat, value:value, sortKey:sortkey)
+        result.save(failOnError:true, flush:true)
+        result.refresh();
+        log.debug("Create new refdataValue(${category_name},${value},${sortkey}) = ${result.id}");
+      }
+    // }
+
+    assert result != null
+
+    // return the refdata value.
     result
   }
 

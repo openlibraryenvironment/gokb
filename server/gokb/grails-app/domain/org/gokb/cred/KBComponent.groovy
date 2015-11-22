@@ -107,102 +107,125 @@ abstract class KBComponent {
   @Transient
   private ensureDefaults () {
 
-    // Metaclass
-    ExpandoMetaClass mc = getMetaClass()
+    try {
 
-    // First get or build up the full static map of defaults
-    final Class rootClass = mc.getTheClass()
-    Map defaultsForThis = fullDefaultsForClass.get(rootClass.getName())
-    if (defaultsForThis == null) {
+      // Metaclass
+      ExpandoMetaClass metaclass_of_this_component = getMetaClass()
 
-      defaultsForThis = [:]
+      // First get or build up the full static map of defaults
+      final Class rootClass = metaclass_of_this_component.getTheClass()
+      Map defaultsForThis = fullDefaultsForClass.get(rootClass.getName())
 
-      // Default to the root.
-      Class theClass = rootClass
+      if (defaultsForThis == null) {
 
-      // Try and get the map.
-      Map classMap
-      while (theClass) {
+        defaultsForThis = [:]
 
-        try {
-          // Read the classMap
-          classMap = mc.getProperty(
-              rootClass,
-              theClass,
-              "refdataDefaults",
-              false,
-              true
-              )
-        } catch (MissingPropertyException e) {
-          // Catch the error and just set to null.
-          classMap = null
+        // Default to the root.
+        Class theClass = rootClass
+
+        // Try and get the map.
+        Map classMap
+        while (theClass) {
+
+          try {
+            // Read the classMap
+            classMap = metaclass_of_this_component.getProperty(
+                rootClass,
+                theClass,
+                "refdataDefaults",
+                false,
+                true
+                )
+          } catch (MissingPropertyException e) {
+            // Catch the error and just set to null.
+            log.error("MissingPropertyExceptiono - clearing out classMap",e);
+
+            classMap = null
+          }
+  
+          // If we have values then add.
+          if (classMap) {
+            // Add using the class simple name.
+            defaultsForThis[theClass.getSimpleName()] = classMap
+          }
+  
+          // Get the superclass.
+          theClass = theClass.getSuperclass()
         }
 
-        // If we have values then add.
-        if (classMap) {
-
-          // Add using the class simple name.
-          defaultsForThis[theClass.getSimpleName()] = classMap
-        }
-
-        // Get the superclass.
-        theClass = theClass.getSuperclass()
+        // Once we have added each map to our map add to the global map.
+        fullDefaultsForClass[rootClass.getName()] = defaultsForThis
       }
 
-      // Once we have added each map to our map add to the global map.
-      fullDefaultsForClass[rootClass.getName()] = defaultsForThis
-    }
+      // Check we have some defaults.
+      if (defaultsForThis) {
 
-    // Check we have some defaults.
-    if (defaultsForThis) {
+        // Create a pointer to this so that we can access within the closures below.
+        KBComponent thisComponent = this
 
-      // Create a pointer to this so that we can access within the closures below.
-      KBComponent thisComponent = this
+        // DomainClassArtefactHandler for this class
+        GrailsDomainClass dClass = thisComponent.domainClass
 
-      // DomainClassArtefactHandler for this class
-      GrailsDomainClass dClass = thisComponent.domainClass
+        defaultsForThis.each { String className, defaults ->
 
-      defaultsForThis.each { String className, defaults ->
+          // Add each property and value to the properties in the defaults.
+          defaults.each { String property, values ->
 
-        // Add each property and value to the properties in the defaults.
-        defaults.each {String property, values ->
+            if (thisComponent."${property}" == null) {
 
-          if (thisComponent."${property}" == null) {
-
-            // Get the type defined against the class.
-            GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
-            String propType = propertyDef?.getReferencedPropertyType()?.getName()
-
-            if (propType) {
-
-              switch (propType) {
-                case RefdataValue.class.getName() :
-
-                // Expecting refdata value. Do the lookup in a new session.
-                  KBComponent.withNewSession { session ->
-                    final String ucProp = GrailsNameUtils.getClassName(property);
-                    final String key = "${className}.${ucProp}"
-
-                    if (values instanceof Collection) {
-                      values.each { val ->
-                        thisComponent."addTo${ucProp}" ( RefdataCategory.lookupOrCreate(key, val) )
-                      }
-
-                    } else {
-                      // Set the default.
-                      thisComponent."${property}" = RefdataCategory.lookupOrCreate(key, values)
-                    }
-                  }
-                  break
-                default :
-                // Just treat as a normal prop
-                  thisComponent."${property}" = values
-                  break
+              // Get the type defined against the class.
+              GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
+              String propType = propertyDef?.getReferencedPropertyType()?.getName()
+  
+              if (propType) {
+  
+                switch (propType) {
+                  case RefdataValue.class.getName() :
+  
+                  // Expecting refdata value. Do the lookup in a new session.
+                  // Ian :: I'm going to try this with KBComponent.withTransaction instead of withNewSession
+                  // In some situations, the logically superior transaction (Whatever is creating the component
+                  // that will be defaulted in) can have a read-consistent view of the database which means that
+                  // this object may not be visible to the outer transaction when it's created in a new session.
+                  // Hopeing that withTransaction will meet the needs of having the Refdata looked up and or created
+                  // But also allow the object to be shared with the parent context 
+  
+                  // Note 2: withTransaction does not seem to work, revering to withNewSession, and going to try different isolation levels
+  
+                  // note 3 : withTransaction moved into RefdataCategory method itself as the safest place to correctly
+                  // assert transaction isolation.
+  
+                      // KBComponent.withSession { session ->
+                        final String ucProp = GrailsNameUtils.getClassName(property);
+                        final String key = "${className}.${ucProp}"
+    
+                        if (values instanceof Collection) {
+                          values.each { val ->
+                            def v= RefdataCategory.lookupOrCreate(key, val)
+                            log.debug("lookupOrCreate-1(${key},${val}) - ${v.id}");
+                            thisComponent."addTo${ucProp}" ( v )
+                          }
+                        } else {
+                          // Set the default.
+                          def v = RefdataCategory.lookupOrCreate(key, values)
+                          log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
+                          thisComponent."${property}" = v
+                        }
+                      // }
+                      break
+                  default :
+                    // Just treat as a normal prop
+                    thisComponent."${property}" = values
+                    break
+                }
               }
             }
           }
         }
       }
+    }
+    catch ( Exception e ) {
+      log.error("Problem initializing defaults",e);
     }
   }
 

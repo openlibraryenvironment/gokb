@@ -68,26 +68,33 @@ class IngestController {
       def deposit_token = java.util.UUID.randomUUID().toString();
       def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
       def info = analyse(temp_file);
-      log.debug("Got file with md5 ${info.md5sumHex}.. lookup");
+
+      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
       def existing_file = DataFile.findByMd5(info.md5sumHex);
+
       if ( existing_file != null ) {
         log.debug("Found a match !")
         redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
       }
       else {
+        log.debug("Create new datafile");
         def new_datafile = new DataFile(
                                         guid:deposit_token,
                                         md5:info.md5sumHex,
                                         uploadName:upload_filename,
                                         name:upload_filename,
                                         filesize:info.filesize,
-                                        uploadMimeType:upload_mime_type).save(flush:true)
+                                        uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
+
+        log.debug("Saved new datafile : ${new_datafile.id}");
         new_datafile.fileData = temp_file.getBytes()
+
         if (!ingestion_profile.ingestions) {
                  ingestion_profile.ingestions=[]
         }
         ingestion_profile.ingestions << new ComponentIngestionSource(profile:ingestion_profile, component:new_datafile)
-        new_datafile.save(flush:true)
+
+        new_datafile.save(failOnError:true,flush:true)
         ingestion_profile.save(flush:true)
         log.debug("Saved file on database ")
         Job background_job = concurrencyManagerService.createJob { Job job ->

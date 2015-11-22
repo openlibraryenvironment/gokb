@@ -267,6 +267,7 @@ log4j = {
       'grails.app.conf',
       'grails.app.jobs',
       'com.k_int',
+      'org.gokb.cred.RefdataCategory',
       'com.k_int.apis',
       'com.k_int.asset.pipeline.groovy',
       'asset.pipeline.less.compilers'

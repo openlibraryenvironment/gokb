@@ -30,7 +30,6 @@ import org.gokb.cred.Package;
 import org.gokb.cred.Person
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory;
-import org.gokb.cred.RefdataValue;
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.Subject
 import org.gokb.cred.TitleInstance;
@@ -151,7 +150,11 @@ class TSVIngestionService {
     result
   }
 
-  def lookupOrCreateTitle (String title, def identifiers, ingest_cfg, def user = null, def project = null) {
+  def lookupOrCreateTitle (String title, 
+                           def identifiers, 
+                           ingest_cfg, 
+                           def user = null, 
+                           def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
     log.debug("lookup or create title :: ${title}(${ingest_cfg})")
@@ -259,7 +262,7 @@ class TSVIngestionService {
 
   //for now, we can only do authors. (kbart limitation)
   def TitleInstance addPerson (person_name, role, ti, user=null, project = null) {
-    if (person_name) {
+    if ( (person_name) && ( person_name.trim().length() > 0 ) ) {
       def person = org.gokb.cred.Person.findAllByName(person_name)
       log.debug("this was found for person: ${person}");
       switch(person.size()) {
@@ -330,7 +333,7 @@ class TSVIngestionService {
         if (!subject) {
           log.debug("subject not found, creating a new one")
           subject = new Subject(name:the_subject)
-          subject.save()
+          subject.save(failOnError:true, flush:true)
         }
         boolean done=false
         def componentSubjects = the_title.subjects?:[]
@@ -340,9 +343,8 @@ class TSVIngestionService {
           }
         }
         if (!done) {
-          def cs = new ComponentSubject(component:the_title,
-                                      subject:subject);
-          cs.save()
+          def cs = new ComponentSubject(component:the_title, subject:subject);
+          cs.save(failOnError:true, flush:true)
         }
       }
     }
@@ -474,7 +476,11 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile, datafile, job=null, ip_id=null, ingest_cfg=null) {
+  def ingest(the_profile, 
+             datafile, 
+             job=null, 
+             ip_id=null, 
+             ingest_cfg=null) {
 
     long start_time = System.currentTimeMillis();
 
@@ -510,12 +516,8 @@ class TSVIngestionService {
 
       def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
       def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
-      def author_role_id = author_role.id
-      def editor_role_id = editor_role.id
-
 
       def the_package=handlePackage(the_profile)
-      def the_package_id = the_package.id
 
       assert the_package != null
 
@@ -524,46 +526,61 @@ class TSVIngestionService {
       log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
       //now its converted, ingest it into the database.
 
+      RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
+
       for (int x=0; x<kbart_beans.size;x++) {
+
+        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
+        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
+        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
 
         log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
-        TitleInstance.withNewTransaction {
-          long rowStartTime=System.currentTimeMillis()
+        long rowStartTime=System.currentTimeMillis()
 
-          log.debug("WriteToDb");
-          writeToDB(kbart_beans[x], 
+        log.debug("WriteToDb ${x}");
+        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
+
+        writeToDB(kbart_beans[x], 
                     the_profile, 
                     datafile, 
                     ingest_date, 
                     ingest_systime, 
-                    RefdataValue.get(author_role_id), 
-                    RefdataValue.get(editor_role_id), 
-                    the_package_id, 
+                    author_role, 
+                    editor_role, 
+                    the_package, 
                     ingest_cfg )
 
+        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
 
-          log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
-        }
+        log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
+
+        RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown')
 
         if ( x % 200 == 0 ) {
+          log.debug("\n\n\n**** CleanUpGorm -- package id is ${the_package.id} ****\n\n\n");
+          def the_package_id = the_package.id
 
           the_package.save(flush:true, failOnError:true);
           the_package = null;
-
-          log.debug("**CleanUpGorm** -- package id is ${the_package_id}");
           cleanUpGorm();
           the_package = Package.get(the_package_id);
         }
+        else {
+          log.debug("no cleanup - continue");
+        }
+
         job?.setProgress( (x / kbart_beans.size()*100) as int)
+
+        log.debug("KBart bean completed - iterate");
+
       }
 
-      // the_profile.save(flush:true)
+      the_profile.save(flush:true, failOnError:true)
 
       log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
 
       try {
-        TitleInstancePackagePlatform.withNewTransaction {
           // Find all tipps in this package which have a lastSeen before the ingest date
           def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                            'from TitleInstancePackagePlatform as tipp, Combo as c '+
@@ -574,10 +591,9 @@ class TSVIngestionService {
             log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
             // tipp.deleteSoft()
             tipp.accessEndDate = new Date();
-            tipp.save()
+            tipp.save(failOnError:true,flush:true)
           }
           log.debug("Completed tipp cleanup")
-        }
       }
       catch ( Exception e ) {
         log.error("Problem",e)
@@ -605,18 +621,19 @@ class TSVIngestionService {
                 ingest_systime, 
                 author_role, 
                 editor_role, 
-                the_package_id,
+                the_package,
                 ingest_cfg) {
 
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
-    log.debug("TSVINgestionService:writeToDB")
+    log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}")
 
     //first we need a platform:
     URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
     def platform = handlePlatform(platform_url.host, the_profile.source)
-    def the_package = Package.get(the_package_id)
+
+    assert the_package != null
 
     if (platform!=null) {
 
@@ -642,15 +659,27 @@ class TSVIngestionService {
           if (title) {
             addOtherFieldsToTitle(title, the_kbart)
             addPublisher(the_kbart.publisher_name, title)
-            addPerson(the_kbart.first_author, author_role, title);
-            addPerson(the_kbart.first_editor, editor_role, title);
+            if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
+              addPerson(the_kbart.first_author, author_role, title);
+
+            if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
+              addPerson(the_kbart.first_editor, editor_role, title);
+
             addSubjects(the_kbart.subjects, title)
+
             the_kbart.additional_authors.each { author ->
               addPerson(author, author_role, title)
             }
             
             def pre_create_tipp_time = System.currentTimeMillis();
-            createTIPP(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date, ingest_systime)
+            createTIPP(the_profile.source, 
+                       the_datafile, 
+                       the_kbart, 
+                       the_package, 
+                       title, 
+                       platform, 
+                       ingest_date, 
+                       ingest_systime)
             log.debug("create tipp took ${System.currentTimeMillis() - pre_create_tipp_time}");
           } else {
              log.warn("problem getting the title...")
@@ -672,7 +701,7 @@ class TSVIngestionService {
     title.dateFirstInPrint=parseDate(the_kbart.date_monograph_published_print)
     title.dateFirstOnline=parseDate(the_kbart.date_monograph_published_online)
     title.volumeNumber=the_kbart.monograph_volume
-    title.save()
+    title.save(failOnError:true,flush:true)
   }
 
   Date parseDate(String datestr) {
@@ -699,7 +728,9 @@ class TSVIngestionService {
                  ingest_date,
                  ingest_systime) {
 
-    log.debug("TSVIngestionService::createTIPP with ${the_package}, ${the_title}, ${the_platform}, ${ingest_date}")
+    log.debug("TSVIngestionService::createTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
+
+    assert the_package != null && the_title != null && the_platform != null
 
     //first, try to find the platform. all we have to go in the host of the url.
     def tipp_values = [
@@ -744,11 +775,11 @@ class TSVIngestionService {
       log.debug("create a new tipp as at ${ingest_date}");
 
       // These are immutable for a TIPP - only set at creation time
-      tipp_values.pkg = the_package;
-      tipp_values.title = the_title;
-      tipp_values.hostPlatform = the_platform;
-      tipp_values.source = the_source;
       tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
+
+      // because pkg is not a real property, but a hasByCombo, passing the value in the map constuctor
+      // won't actually get this set. So do it manually. Ditto the other fields
+      tipp.pkg = the_package;
     } else {
       log.debug("found a tipp to use")
 
@@ -789,17 +820,21 @@ class TSVIngestionService {
         //no match. create a new package!
         log.debug("Create new package");
 
-        result = new Package(name:the_profile.packageName, source:the_profile.source)
-        if (result.save(flush:true, failOnError:true)) {
-          log.debug("saved new package: ${result}")
-        } else {
-          for (error in result.errors) {
-            log.error(error);
-          }
-        }
+        def newpkgid = null;
 
-        // reload in this session
-        // result = Package.get(result.id);
+        // Package.withTransaction { status ->
+          def newpkg = new Package(name:the_profile.packageName, source:the_profile.source)
+          if (newpkg.save(flush:true, failOnError:true)) {
+            newpkgid = newpkg.id
+          } else {
+            for (error in result.errors) {
+              log.error(error);
+            }
+          }
+        // }
+
+        log.debug("Created new package : ${newpkgid} in current session");
+        result = Package.get(newpkgid);
         break;
       case 1:
         //found a match
@@ -816,15 +851,27 @@ class TSVIngestionService {
   }
 
   def handlePlatform(host, the_source) {
+    
     def result;
     def platforms=Platform.findAllByPrimaryUrlIlike(host);
+
+    
+    RefdataCategory.lookupOrCreate('Platform.Roles','Host')
+    RefdataCategory.lookupOrCreate('Platform.Roles','Host1')
+
     switch (platforms.size()) {
       case 0:
         //no match. create a new platform!
-        result = new Platform(name:host, primaryUrl:host, source:the_source)
+        log.debug("Create new platform ${host}, ${host}, ${the_source}");
+
+        result = new Platform(
+                              name:host, 
+                              primaryUrl:host, 
+                              source:the_source)
         if (result.save(flush:true, failOnError:true)) {
           log.debug("saved new platform: ${result}")
         } else {
+          log.error("problem creating platform");
           for (error in result.errors) {
             log.error(error);
           }
@@ -839,6 +886,11 @@ class TSVIngestionService {
         log.error("found multiple platforms when looking for ${host}")
       break
     }
+
+    RefdataCategory.lookupOrCreate('Platform.Roles','Host1')
+
+    assert result != null
+
     result;
   }
 
@@ -954,7 +1006,7 @@ class TSVIngestionService {
         boolean done=false
         String data = nl[col_positions[fileRule.field]];
         if ( col_positions[fileRule.field] >= 0 ) {
-          log.debug("field : ${fileRule.field} ${col_positions[fileRule.field]} ${data}")
+          // log.debug("field : ${fileRule.field} ${col_positions[fileRule.field]} ${data}")
           if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
             def parts = data.split(fileRule.separator)
             data=parts[0]
@@ -976,6 +1028,8 @@ class TSVIngestionService {
       results<<result;
       nl=csv.readNext()
     }
+
+    log.debug("\n\n Convert to KBart completed cleanly");
     results
   }
 

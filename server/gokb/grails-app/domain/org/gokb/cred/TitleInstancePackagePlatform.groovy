@@ -122,13 +122,15 @@ class TitleInstancePackagePlatform extends KBComponent {
    * Create a new TIPP being mindful of the need to create TIPLs
    */
   public static tiplAwareCreate(tipp_fields = [:]) {
+
     def result = new TitleInstancePackagePlatform(tipp_fields)
+    result.title = tipp_fields.title
+    result.hostPlatform = tipp_fields.hostPlatform
+    result.pkg = tipp_fields.pkg
     
     // See if there is a TIPL
-    TitleInstancePlatform.withNewTransaction { t ->
-    
-      TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
-    }
+    TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
+
     result
   }
 
