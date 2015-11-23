@@ -536,6 +536,7 @@ class TSVIngestionService {
 
       for (int x=0; x<kbart_beans.size;x++) {
 
+        Package.withTransaction {
 
           log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
@@ -553,6 +554,7 @@ class TSVIngestionService {
 
           log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
 
+        }
 
         if ( x % 25 == 0 ) {
           log.debug("\n\n\n**** CleanUpGorm -- package id is ${the_package.id} ****\n\n\n");
