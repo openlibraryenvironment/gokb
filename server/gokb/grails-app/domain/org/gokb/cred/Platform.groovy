@@ -42,6 +42,8 @@ class Platform extends KBComponent {
   //  impId(nullable:true, blank:false)
     primaryUrl		(nullable:true, blank:false)
     authentication	(nullable:true, blank:false)
+    software	(nullable:true, blank:false)
+    service	(nullable:true, blank:false)
     ipAuthentication	(nullable:true, blank:false)
     shibbolethAuthentication	(nullable:true, blank:false)
     passwordAuthenitcation	(nullable:true, blank:false)
