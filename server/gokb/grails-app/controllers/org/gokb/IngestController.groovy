@@ -58,65 +58,86 @@ class IngestController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def profile() {
     log.debug("profile")
+
     def result = [:]
+
     result.ip = IngestionProfile.get(params.id);
     def ingestion_profile = result.ip
+
+
     if ( request.method=='POST' && result.ip ) {
-      log.debug("Form post")
-      def upload_mime_type = request.getFile("submissionFile")?.contentType
-      def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
-      def deposit_token = java.util.UUID.randomUUID().toString();
-      def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
-      def info = analyse(temp_file);
 
-      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
-      def existing_file = DataFile.findByMd5(info.md5sumHex);
+      def ingestion_profile_id = params.id;
+      def new_datafile_id = null;
 
-      if ( existing_file != null ) {
-        log.debug("Found a match !")
-        redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
-      }
-      else {
-        log.debug("Create new datafile");
-        def new_datafile = new DataFile(
-                                        guid:deposit_token,
-                                        md5:info.md5sumHex,
-                                        uploadName:upload_filename,
-                                        name:upload_filename,
-                                        filesize:info.filesize,
-                                        uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
+      // Create a new transaction so we can commit it and have everything cleaned up by the time we
+      // either submit the job to a background task or wait for it to complete synchronously.
+      DataFile.withNewTransaction { status ->
 
-        log.debug("Saved new datafile : ${new_datafile.id}");
-        new_datafile.fileData = temp_file.getBytes()
-
-        if (!ingestion_profile.ingestions) {
-                 ingestion_profile.ingestions=[]
+        log.debug("Form post")
+        def upload_mime_type = request.getFile("submissionFile")?.contentType
+        def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
+        def deposit_token = java.util.UUID.randomUUID().toString();
+        def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
+        def info = analyse(temp_file);
+  
+        log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
+        def existing_file = DataFile.findByMd5(info.md5sumHex);
+  
+        if ( existing_file != null ) {
+          log.debug("Found a match !")
+          redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
         }
-        ingestion_profile.ingestions << new ComponentIngestionSource(profile:ingestion_profile, component:new_datafile)
-
-        new_datafile.save(failOnError:true,flush:true)
-        ingestion_profile.save(flush:true)
-        log.debug("Saved file on database ")
-        Job background_job = concurrencyManagerService.createJob { Job job ->
-          // Create a new session to run the ingest.
-          try {
-            TSVIngestionService.ingest(ingestion_profile, new_datafile, job)
+        else {
+          log.debug("Create new datafile");
+          def new_datafile = new DataFile(
+                                          guid:deposit_token,
+                                          md5:info.md5sumHex,
+                                          uploadName:upload_filename,
+                                          name:upload_filename,
+                                          filesize:info.filesize,
+                                          uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
+  
+          log.debug("Saved new datafile : ${new_datafile.id}");
+          new_datafile_id = new_datafile.id
+          new_datafile.fileData = temp_file.getBytes()
+  
+          if (!ingestion_profile.ingestions) {
+                   ingestion_profile.ingestions=[]
           }
-          catch ( Exception e ) {
-            log.error("Problem",e)
-          }
-          finally {
-            log.debug ("Async Data insert complete")            
-          }
+          ingestion_profile.ingestions << new ComponentIngestionSource(profile:ingestion_profile, component:new_datafile)
+  
+          new_datafile.save(failOnError:true,flush:true)
+          ingestion_profile.save(flush:true)
+          log.debug("Saved file on database ")
+  
+          redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
         }
-        .startOrQueue()
-
-        redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
+  
       }
+
+      log.debug("First transaction completed - datafile read and saved, move on to processing");
+
+      // Transactional part done. now queue the job
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        // Create a new session to run the ingest.
+        try {
+          TSVIngestionService.ingest(ingestion_profile_id, new_datafile_id, job)
+        }
+        catch ( Exception e ) {
+          log.error("Problem",e)
+        }
+        finally {
+          log.debug ("Async Data insert complete")            
+        }
+      }
+      
+      background_job.startOrQueue()
     }
     else {
       log.debug("get")
     }
+
     result
   }
 

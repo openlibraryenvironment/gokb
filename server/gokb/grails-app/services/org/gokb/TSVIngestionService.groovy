@@ -35,6 +35,9 @@ import org.gokb.cred.Subject
 import org.gokb.cred.TitleInstance;
 import org.gokb.cred.TitleInstancePackagePlatform;
 import org.gokb.cred.User;
+import org.gokb.cred.DataFile;
+import org.gokb.cred.IngestionProfile;
+
 
 @Transactional
 class TSVIngestionService {
@@ -474,13 +477,16 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile, 
-             datafile, 
+  def ingest(the_profile_id, 
+             datafile_id, 
              job=null, 
              ip_id=null, 
              ingest_cfg=null) {
 
     long start_time = System.currentTimeMillis();
+
+    def the_profile = IngestionProfile.get(the_profile_id)
+    def datafile = DataFile.get(datafile_id)
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
@@ -530,11 +536,12 @@ class TSVIngestionService {
 
       for (int x=0; x<kbart_beans.size;x++) {
 
-        log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
-        long rowStartTime=System.currentTimeMillis()
+          log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
-        writeToDB(kbart_beans[x], 
+          long rowStartTime=System.currentTimeMillis()
+
+          writeToDB(kbart_beans[x], 
                     the_profile, 
                     datafile, 
                     ingest_date, 
@@ -544,7 +551,8 @@ class TSVIngestionService {
                     the_package, 
                     ingest_cfg )
 
-        log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
+          log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
+
 
         if ( x % 25 == 0 ) {
           log.debug("\n\n\n**** CleanUpGorm -- package id is ${the_package.id} ****\n\n\n");
@@ -719,9 +727,9 @@ class TSVIngestionService {
     //first, try to find the platform. all we have to go in the host of the url.
     def tipp_values = [
       url:the_kbart.title_url?:'',
-      // pkg:the_package,
-      // title:the_title,
-      // hostPlatform:the_platform,
+      pkg:the_package,
+      title:the_title,
+      hostPlatform:the_platform,
       embargo:the_kbart.embargo_info?:'',
       coverageNote:the_kbart.coverage_depth?:'',
       notes:the_kbart.notes?:'',
@@ -731,7 +739,7 @@ class TSVIngestionService {
       endDate:parseDate(the_kbart.date_last_issue_online),
       endVolume:the_kbart.num_last_vol_online,
       endIssue:the_kbart.num_last_issue_online,
-      // source:the_source,
+      source:the_source,
       accessStartDate:ingest_date,
       lastSeen:ingest_systime
     ]
@@ -764,6 +772,9 @@ class TSVIngestionService {
       // because pkg is not a real property, but a hasByCombo, passing the value in the map constuctor
       // won't actually get this set. So do it manually. Ditto the other fields
       tipp.pkg = the_package;
+      tipp.title = the_title;
+      tipp.hostPlatform = the_platform;
+      tipp.source = the_source;
     } else {
       log.debug("found a tipp to use")
 
