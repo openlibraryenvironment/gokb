@@ -115,9 +115,9 @@ grails.project.dependency.resolution = {
         excludes 'less4j'
       }
       
-      runtime ':hibernate:3.6.10.16'
+      runtime ':hibernate:3.6.10.18'  // II trying .19 over .16
       // runtime ':hibernate:3.6.10.14' - this pukes forme
-      runtime ':database-migration:1.4.0'
+      runtime ':database-migration:1.4.1-SNAPSHOT'  // II: updated here due to ehCache problem - see https://github.com/grails-plugins/grails-spring-security-core/issues/152
       
       compile ":file-viewer:0.3"
       

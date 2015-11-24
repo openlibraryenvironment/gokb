@@ -15,45 +15,39 @@ class Platform extends KBComponent {
   static hasMany = [roles: RefdataValue]
   
   static hasByCombo = [
-	provider : Org
+    provider : Org
   ]
   
   private static refdataDefaults = [
-	"authentication"	: "Unknown",
-	"roles"			: ["Host"]
+    "authentication"  : "Unknown",
+    "roles"      : ["Host"]
   ]
   
   static manyByCombo = [
-	hostedTipps : TitleInstancePackagePlatform,
-	linkedTipps : TitleInstancePackagePlatform,
-	curatoryGroups	: CuratoryGroup
+    hostedTipps : TitleInstancePackagePlatform,
+    linkedTipps : TitleInstancePackagePlatform,
+    curatoryGroups  : CuratoryGroup
   ]
 
   static mapping = {
-        primaryUrl column:'plat_primary_url'
+    primaryUrl column:'plat_primary_url'
     authentication column:'plat_authentication_fk_rv'
+    software column:'plat_sw_fk_rv'
+    service column:'plat_svc_fk_rv'
     ipAuthentication column:'plat_auth_by_ip_fk_rv'
     shibbolethAuthentication column:'plat_auth_by_shib_fk_rv'
     passwordAuthenitcation column:'plat_auth_by_pass_fk_rv'
-//             tipps sort: 'title.name', order: 'asc'
   }
 
   static constraints = {
-  //  impId(nullable:true, blank:false)
-    primaryUrl		(nullable:true, blank:false)
-    authentication	(nullable:true, blank:false)
-    software	(nullable:true, blank:false)
-    service	(nullable:true, blank:false)
-    ipAuthentication	(nullable:true, blank:false)
-    shibbolethAuthentication	(nullable:true, blank:false)
-    passwordAuthenitcation	(nullable:true, blank:false)
+    primaryUrl    (nullable:true, blank:false)
+    authentication  (nullable:true, blank:false)
+    software  (nullable:true, blank:false)
+    service  (nullable:true, blank:false)
+    ipAuthentication  (nullable:true, blank:false)
+    shibbolethAuthentication  (nullable:true, blank:false)
+    passwordAuthenitcation  (nullable:true, blank:false)
   }
-
-//  @Transient
-//  def getPermissableCombos() {
-//    [
-//    ]
-//  }
 
   @Transient
   static def oaiConfig = [

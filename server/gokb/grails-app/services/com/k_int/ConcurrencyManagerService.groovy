@@ -84,6 +84,14 @@ class ConcurrencyManagerService {
     public synchronized def get(long time, TimeUnit unit) {
       task.get(time, unit)
     }
+
+    public synchronized def setProgress( progress, total) {
+      this.progress = ( progress.div(total) * 100 )
+    }
+
+    public synchronized def setProgress(int progress) {
+      this.progress = progress
+    }
   }
   
   // Store each job hashed by ID. ConcurrentHashMap is thread-safe and, with only one thread updating per entry,

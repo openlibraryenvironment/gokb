@@ -138,8 +138,7 @@ abstract class KBComponent {
                 )
           } catch (MissingPropertyException e) {
             // Catch the error and just set to null.
-            log.error("MissingPropertyExceptiono - clearing out classMap",e);
-
+            // log.error("MissingPropertyExceptiono - clearing out classMap",e);
             classMap = null
           }
   
@@ -195,7 +194,7 @@ abstract class KBComponent {
                   // note 3 : withTransaction moved into RefdataCategory method itself as the safest place to correctly
                   // assert transaction isolation.
   
-                      // KBComponent.withSession { session ->
+                      KBComponent.withNewSession { session ->
                         final String ucProp = GrailsNameUtils.getClassName(property);
                         final String key = "${className}.${ucProp}"
     
@@ -211,7 +210,7 @@ abstract class KBComponent {
                           // log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
                           thisComponent."${property}" = v
                         }
-                      // }
+                      }
                       break
                   default :
                     // Just treat as a normal prop

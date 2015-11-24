@@ -37,16 +37,25 @@ class IngestController {
       log.debug("Creating...1")
 
       def new_profile = new IngestionProfile(
-        source:pkg_source,
         name:params.profileName,
         packageName:params.packageName,
         packageType:package_type,
         platformUrl:params.platformUrl
       )
+      new_profile.source=pkg_source
+
       log.debug("Create2")
       log.debug("\n\nCreated ${new_profile} ${new_profile.packageName}- now save")
 
-      new_profile.save(flush:true, failOnError:true)
+      if ( new_profile.save(flush:true, failOnError:true) ) {
+        log.debug("Saved new profile ${new_profile}");
+      }
+      else {
+        log.error("Problem creating new profile");
+        new_profile.errors.each { 
+          log.error("Problem: ${it}");
+        }
+      }
     }
     else {
       log.debug("Missing source, type or package name")

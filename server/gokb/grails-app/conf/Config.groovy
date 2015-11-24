@@ -258,7 +258,7 @@ log4j = {
       'org.hibernate',
       'net.sf.ehcache.hibernate'
 
-  debug  'grails.app.controllers',
+  debug 'grails.app.controllers',
       'grails.app.service',
       'grails.app.services',
       'grails.app.domain',
@@ -272,11 +272,11 @@ log4j = {
       'com.k_int.asset.pipeline.groovy',
       'asset.pipeline.less.compilers'
 
-  //   debug  'org.gokb.DomainClassExtender'
+  // debug  'org.gokb.DomainClassExtender'
 
   // Enable Hibernate SQL logging with param values
-  //   trace 'org.hibernate.type'
-  //   debug 'org.hibernate.SQL'
+  // trace 'org.hibernate.type'
+  // debug 'org.hibernate.SQL'
 
 }
 

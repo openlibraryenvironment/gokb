@@ -504,12 +504,8 @@ class TSVIngestionService {
 
       def ingest_systime = start_time
       def ingest_date = new java.sql.Timestamp(start_time);
-      // log.debug("Ingest date is ${ingest_date}")
-
-      the_profile.refresh()
 
       job?.setProgress(0)
-      //not suer we need this totaslly...
 
       def kbart_beans=[]
 
@@ -520,63 +516,50 @@ class TSVIngestionService {
         kbart_beans = getKbartBeansFromKBartFile(datafile)
       }
 
-      def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
-      def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
-
-      def the_package=handlePackage(the_profile)
+      def the_package = null
+      Package.withNewTransaction() {
+        the_package=handlePackage(the_profile)
+      }
 
       assert the_package != null
 
       long startTime=System.currentTimeMillis()
-
-
 
       log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
       //now its converted, ingest it into the database.
 
       for (int x=0; x<kbart_beans.size;x++) {
 
-        Package.withTransaction {
+        Package.withNewTransaction {
+
+          def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+          def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
 
           log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
           long rowStartTime=System.currentTimeMillis()
 
           writeToDB(kbart_beans[x], 
-                    the_profile, 
-                    datafile, 
+                    IngestionProfile.get(the_profile_id),
+                    DataFile.get(datafile_id),
                     ingest_date, 
                     ingest_systime, 
                     author_role, 
                     editor_role, 
-                    the_package, 
+                    Package.get(the_package.id),
                     ingest_cfg )
 
           log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
 
         }
 
-        if ( x % 25 == 0 ) {
-          log.debug("\n\n\n**** CleanUpGorm -- package id is ${the_package.id} ****\n\n\n");
-          def the_package_id = the_package.id
-
-          the_package.save(flush:true, failOnError:true);
-          the_package = null;
-          cleanUpGorm();
-          the_package = Package.get(the_package_id);
-        }
-        else {
-          log.debug("no cleanup - continue");
-        }
-
-        job?.setProgress( (x / kbart_beans.size()*100) as int)
+        job?.setProgress( x , kbart_beans.size() )
       }
-
-      the_profile.save(flush:true, failOnError:true)
 
       log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
 
-      try {
+      TitleInstancePackagePlatform.withNewTransaction {
+        try {
           // Find all tipps in this package which have a lastSeen before the ingest date
           def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                            'from TitleInstancePackagePlatform as tipp, Combo as c '+
@@ -590,12 +573,13 @@ class TSVIngestionService {
             tipp.save(failOnError:true,flush:true)
           }
           log.debug("Completed tipp cleanup")
-      }
-      catch ( Exception e ) {
-        log.error("Problem",e)
-      }
-      finally {
-        log.debug("Done")
+        }
+        catch ( Exception e ) {
+          log.error("Problem",e)
+        }
+        finally {
+          log.debug("Done")
+        }
       }
     }
     catch ( Exception e ) {
@@ -623,11 +607,11 @@ class TSVIngestionService {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
-    log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}")
+    log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}, profile:${the_profile}")
 
     //first we need a platform:
     URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
-    def platform = handlePlatform(platform_url.host, the_profile.source)
+    def platform = handlePlatform(platform_url.host, the_profile?.source)
 
     assert the_package != null
 
@@ -853,6 +837,7 @@ class TSVIngestionService {
     
     switch (platforms.size()) {
       case 0:
+
         //no match. create a new platform!
         log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
@@ -860,13 +845,25 @@ class TSVIngestionService {
                               name:host, 
                               primaryUrl:host, 
                               source:the_source)
-        if (result.save(flush:true, failOnError:true)) {
-          log.debug("saved new platform: ${result}")
-        } else {
-          log.error("problem creating platform");
-          for (error in result.errors) {
-            log.error(error);
+
+        log.debug("Validate new platform");
+        result.validate();
+
+        if ( result ) {
+          if (result.save(flush:true, failOnError:true)) {
+            log.debug("saved new platform: ${result}")
+          } else {
+            log.error("problem creating platform");
+            for (error in result.errors) {
+              log.error(error);
+            }
           }
+        }
+        else {
+          result.errors.allErrors.each {
+            log.error("Problem creating platform : ${e}");
+          }
+          throw new RuntimeException('Error creating new platform')
         }
         break;
       case 1:

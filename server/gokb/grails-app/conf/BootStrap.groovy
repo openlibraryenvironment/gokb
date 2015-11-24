@@ -698,6 +698,13 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('ingest.filetype','ybp').save()
     RefdataCategory.lookupOrCreate('ingest.filetype','cufts').save()
 
+    RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown').save()
+
+    RefdataCategory.lookupOrCreate('Platform.Roles','Host').save()
+
+    RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids').save()
+
+
     def ybp_source = Source.findByName('YBP') ?: new Source(name:'YBP').save(flush:true, failOnError:true);
     def cup_source = Source.findByName('CUP') ?: new Source(name:'CUP').save(flush:true, failOnError:true);
     def wiley_source = Source.findByName('WILEY') ?: new Source(name:'WILEY').save(flush:true, failOnError:true);

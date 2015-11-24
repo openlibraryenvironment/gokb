@@ -23,6 +23,11 @@ class Source extends KBComponent {
 
   static constraints = {
     url(nullable:true, blank:true)
+    defaultAccessURL(nullable:true, blank:true)
+    explanationAtSource(nullable:true, blank:true)
+    contextualNotes(nullable:true, blank:true)
+    frequency(nullable:true, blank:true)
+
     defaultSupplyMethod(nullable:true, blank:true)
     defaultDataFormat(nullable:true, blank:true)
     responsibleParty(nullable:true, blank:true)

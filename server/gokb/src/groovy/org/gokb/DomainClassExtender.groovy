@@ -108,7 +108,7 @@ class DomainClassExtender {
     // Get the metaclass.
     final ExpandoMetaClass mc = domainClass.getMetaClass()
     mc.static.getAllComboPropertyNamesFor = { Class forClass ->
-      log.debug("getAllComboPropertyNamesFor called with args ${[forClass]}")
+      // log.debug("getAllComboPropertyNamesFor called with args ${[forClass]}")
 
       getAllComboPropertyDefinitionsFor(forClass).keySet()
     }
@@ -123,11 +123,11 @@ class DomainClassExtender {
       String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:all"
 
       // Check cache.
-      log.debug("Checking comboMappingCache for ${cacheKey}...")
+      // log.debug("Checking comboMappingCache for ${cacheKey}...")
       Map cProps = DomainClassExtender.comboMappingCache[cacheKey]
 
       if (cProps == null) {
-        log.debug("\t...not found doing lookup.")
+        // log.debug("\t...not found doing lookup.")
 
         // No cached value.
         cProps = [:]
@@ -137,7 +137,7 @@ class DomainClassExtender {
         // Cache it.
         DomainClassExtender.comboMappingCache[cacheKey] = cProps
       } else {
-        log.debug("\t...found and returning ${cProps}.")
+        // log.debug("\t...found and returning ${cProps}.")
       }
 
       cProps
@@ -944,12 +944,14 @@ class DomainClassExtender {
     mc.constructor = { Map args ->
       log.debug("MapConstructor called for new ${delegate} with args ${args}")
 
-      log.debug ("Calling original contructor for new ${delegate} with args ${args}.")
+      log.debug ("Calling original constructor for new ${delegate} with args ${args}.")
 
       // Instantiate the object and save...
       // We really need to save here so we can reference this object within the combos.
       def instance = oldConstructor.newInstance(args)
-      if (instance.save(failOnError:true)) {
+
+      // This call to save will cause defaults to be set
+      if ( instance.save(failOnError:true) ) {
 
         // Now that we have created our instance using the original constructor we can,
         // now set the combo props that were missed.
@@ -962,6 +964,13 @@ class DomainClassExtender {
           }
         }
       }
+      else {
+        log.error("FAILED TO SAVE INSTANCE..");
+        instance.errors.each {
+          log.error("Problem saving ${instance} : ${it}");
+        }
+      }
+
       instance
     }
   }
