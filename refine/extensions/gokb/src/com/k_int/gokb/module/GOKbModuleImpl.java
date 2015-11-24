@@ -464,7 +464,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
           try {
             // Do the update.
-//            updater.install();
+            updater.install();
           } catch (Exception e) {
             // Any error here will mean that the file needs to be manually downloaded.
             _logger.error("An error occured while installing the update file. You should re-download the file fully and replace it manually.");
