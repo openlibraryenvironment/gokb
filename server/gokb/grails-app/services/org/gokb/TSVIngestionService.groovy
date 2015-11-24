@@ -30,6 +30,7 @@ import org.gokb.cred.Package;
 import org.gokb.cred.Person
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory;
+import org.gokb.cred.RefdataValue;
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.Subject
 import org.gokb.cred.TitleInstance;
@@ -132,7 +133,7 @@ class TSVIngestionService {
             KBComponent dproxied = ClassUtils.deproxy(c);
             // Only add if it's a title.
             if ( dproxied instanceof TitleInstance ) {
-              log.debug ("Found ${id_def.value} in ${ns} namespace.")
+              // log.debug ("Found ${id_def.value} in ${ns} namespace.")
               // Save details here so we can raise a review request, only if a single title was matched.
               result['x_check_matches'] << [
               "suppliedNS"  : id_def.type,
@@ -517,8 +518,15 @@ class TSVIngestionService {
       }
 
       def the_package = null
+      def author_role_id = null;
+      def editor_role_id = null;
+
       Package.withNewTransaction() {
         the_package=handlePackage(the_profile)
+        def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+        author_role_id = author_role.id
+        def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+        editor_role_id = editor_role.id
       }
 
       assert the_package != null
@@ -532,8 +540,8 @@ class TSVIngestionService {
 
         Package.withNewTransaction {
 
-          def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
-          def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+          def author_role = RefdataValue.get(author_role_id)
+          def editor_role = RefdataValue.get(editor_role_id)
 
           log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
@@ -633,7 +641,7 @@ class TSVIngestionService {
         if ( identifiers.size() > 0 ) {
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
           title.source=the_profile.source
-          log.debug("title found: for ${the_kbart.publication_title}:${title}")
+          // log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
           if (title) {
             addOtherFieldsToTitle(title, the_kbart)
@@ -762,7 +770,7 @@ class TSVIngestionService {
       tipp.hostPlatform = the_platform;
       tipp.source = the_source;
     } else {
-      log.debug("found a tipp to use")
+      // log.debug("found a tipp to use")
 
       // Set all properties on the object.
       tipp_values.each { prop, value ->
@@ -839,15 +847,15 @@ class TSVIngestionService {
       case 0:
 
         //no match. create a new platform!
-        log.debug("Create new platform ${host}, ${host}, ${the_source}");
+        // log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
         result = new Platform(
                               name:host, 
                               primaryUrl:host, 
                               source:the_source)
 
-        log.debug("Validate new platform");
-        result.validate();
+        // log.debug("Validate new platform");
+        // result.validate();
 
         if ( result ) {
           if (result.save(flush:true, failOnError:true)) {
