@@ -46,10 +46,18 @@ h1.panel-title {
 .multiline .editable-inline textarea {
   line-height: 1.2em;
   height: auto;
+  width: 50em;
   white-space: normal;
   overflow-y: hidden;
   resize: both;
-  width: auto;
+}
+
+.preformatted .editable-inline textarea {
+  font-family: monospace;
+  white-space: pre;
+  height: 24em;
+  width: 50em;
+  overflow-y:scroll;
 }
 
 .dl-horizontal {

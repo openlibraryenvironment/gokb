@@ -9,7 +9,7 @@
 	  <dt>
 	    <g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel>
 	  </dt>
-	  <dd>
+	  <dd class="multiline" >
 	    <g:xEditable class="ipe" owner="${d}" field="description" />
 	  </dd>
 		<dt>
@@ -51,8 +51,8 @@
 		<dt>
 			<g:annotatedLabel owner="${d}" property="refineTransformations">Refine Transformations</g:annotatedLabel>
 		</dt>
-		<dd class="multiline json refine-transform" >
-			<g:xEditable class="ipe " owner="${d}" field="refineTransformations" />
+		<dd class="multiline json refine-transform preformatted" >
+			<g:xEditable class="ipe" owner="${d}" field="refineTransformations" data-tpl="tpl" />
 		</dd>
 	</g:if>
 </dl>
