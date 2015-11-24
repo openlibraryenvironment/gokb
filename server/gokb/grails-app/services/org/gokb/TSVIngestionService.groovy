@@ -486,9 +486,30 @@ class TSVIngestionService {
              ip_id=null, 
              ingest_cfg=null) {
 
+    def the_profile = IngestionProfile.get(the_profile_id)
+
+    ingest(the_profile.packageType,
+           the_profile.packageName,
+           the_profile.platformUrl,
+           the_profile.source,
+           datafile_id,
+           job,
+           ip_id,
+           ingest_cfg)
+  }
+
+
+  def ingest(packageType,
+             packageName,
+             platformUrl,
+             source,
+             datafile_id, 
+             job=null, 
+             ip_id=null, 
+             ingest_cfg=null) {
+
     long start_time = System.currentTimeMillis();
 
-    def the_profile = IngestionProfile.get(the_profile_id)
     def datafile = DataFile.get(datafile_id)
 
     if ( ingest_cfg == null ) {
@@ -501,8 +522,6 @@ class TSVIngestionService {
                    ]
     }
 
-    // log.debug("TSV ingestion called")
-
     try {
 
       def ingest_systime = start_time
@@ -513,8 +532,8 @@ class TSVIngestionService {
       def kbart_beans=[]
 
       //we kind of assume that we need to convert to kbart
-      if ("${the_profile.packageType}"!='kbart2') {
-        kbart_beans = convertToKbart(the_profile, datafile)
+      if ("${packageType}"!='kbart2') {
+        kbart_beans = convertToKbart(packageType, datafile)
       } else {
         kbart_beans = getKbartBeansFromKBartFile(datafile)
       }
@@ -524,7 +543,7 @@ class TSVIngestionService {
       def editor_role_id = null;
 
       Package.withNewTransaction() {
-        the_package=handlePackage(the_profile)
+        the_package=handlePackage(packageName,source)
         def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
         author_role_id = author_role.id
         def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
@@ -550,7 +569,8 @@ class TSVIngestionService {
           long rowStartTime=System.currentTimeMillis()
 
           writeToDB(kbart_beans[x], 
-                    IngestionProfile.get(the_profile_id),
+                    platformUrl,
+                    source,
                     DataFile.get(datafile_id),
                     ingest_date, 
                     ingest_systime, 
@@ -566,7 +586,7 @@ class TSVIngestionService {
         job?.setProgress( x , kbart_beans.size() )
       }
 
-      log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
+      log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${packageName}");
 
       TitleInstancePackagePlatform.withNewTransaction {
         try {
@@ -605,7 +625,8 @@ class TSVIngestionService {
 
   //this method does a lot of checking, and then tries to save the title to the DB.
   def writeToDB(the_kbart, 
-                the_profile, 
+                platform_url,
+                source,
                 the_datafile, 
                 ingest_date, 
                 ingest_systime, 
@@ -617,11 +638,11 @@ class TSVIngestionService {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
-    log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}, profile:${the_profile}")
+    log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}")
 
     //first we need a platform:
-    URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
-    def platform = handlePlatform(platform_url.host, the_profile?.source)
+    URL platform_url=new URL(the_kbart.title_url?:platformUrl)
+    def platform = handlePlatform(platform_url.host, source)
 
     assert the_package != null
 
@@ -642,7 +663,7 @@ class TSVIngestionService {
 
         if ( identifiers.size() > 0 ) {
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
-          title.source=the_profile.source
+          title.source=source
           // log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
           if (title) {
@@ -661,7 +682,7 @@ class TSVIngestionService {
             }
             
             def pre_create_tipp_time = System.currentTimeMillis();
-            createTIPP(the_profile.source, 
+            createTIPP(source, 
                        the_datafile, 
                        the_kbart, 
                        the_package, 
@@ -803,9 +824,9 @@ class TSVIngestionService {
   //this is a lot more complex than this for journals. (which uses refine)
   //theres no notion in here of retiring packages for example.
   //for this v1, I've made this very simple - probably too simple.
-  def handlePackage(the_profile) {
+  def handlePackage(packageName, source) {
     def result;
-    def packages=Package.findAllByNameIlike(the_profile.packageName);
+    def packages=Package.findAllByNameIlike(packageName);
     switch (packages.size()) {
       case 0:
         //no match. create a new package!
@@ -813,7 +834,7 @@ class TSVIngestionService {
 
         def newpkgid = null;
 
-          def newpkg = new Package(name:the_profile.packageName, source:the_profile.source)
+          def newpkg = new Package(name:packageName, source:source)
           if (newpkg.save(flush:true, failOnError:true)) {
             newpkgid = newpkg.id
           } else {
@@ -831,7 +852,7 @@ class TSVIngestionService {
         log.debug("match package found: ${result}")
       break
       default:
-        log.error("found multiple packages when looking for ${the_profile.packageName}")
+        log.error("found multiple packages when looking for ${packageName}")
       break
     }
 
@@ -958,18 +979,18 @@ class TSVIngestionService {
     results
   }
 
-  def convertToKbart(the_profile, data_file) {
+  def convertToKbart(packageType, data_file) {
     def results = []
     log.debug("in convert to Kbart2")
-    log.debug("file package type is ${the_profile.packageType}")
+    log.debug("file package type is ${packageType}")
 
     //need to know the file type, then we need to create a new data structure for it
     //in the config, need to map the fields from the formats we support into kbart.
 
-    def fileRules = grailsApplication.config.kbart2.mappings."${the_profile.packageType}"
+    def fileRules = grailsApplication.config.kbart2.mappings."${packageType}"
 
     if (fileRules==null) {
-      throw new Exception("couldn't find file rules for ${the_profile.packageType}")
+      throw new Exception("couldn't find file rules for ${packageType}")
     }
 
     //can you read a tsv file?

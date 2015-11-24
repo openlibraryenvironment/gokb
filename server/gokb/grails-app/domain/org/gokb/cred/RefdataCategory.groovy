@@ -62,7 +62,7 @@ class RefdataCategory {
           }
         }
 
-        log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
+        // log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
       }
       else if ( cats.size() == 1 ) {
         cat = cats[0]
@@ -74,10 +74,10 @@ class RefdataCategory {
 
       if ( !result ) {
         // Create and save a new refdata value.
-        log.debug("Attempt to create new refdataValue(${category_name},${value},${sortkey})");
+        // log.debug("Attempt to create new refdataValue(${category_name},${value},${sortkey})");
         result = new RefdataValue(owner:cat, value:value, sortKey:sortkey)
         if ( result.save(failOnError:true, flush:true) ) {
-          log.debug("result = ${result}");
+          // log.debug("result = ${result}");
         }
         else {
           log.debug("Problem saving new refdata item");

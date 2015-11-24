@@ -198,4 +198,9 @@ class AdminController {
     }.startOrQueue()
     render(view: "logViewer", model: logViewer())
   }
+
+  def jobs() {
+    def result=[:]
+    result
+  }
 }
