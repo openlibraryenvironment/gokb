@@ -584,6 +584,11 @@ class TSVIngestionService {
         }
 
         job?.setProgress( x , kbart_beans.size() )
+
+        if ( x % 25 == 0 ) {
+          cleanUpGorm()
+          the_package.refresh();
+        }
       }
 
       log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${packageName}");
@@ -785,6 +790,8 @@ class TSVIngestionService {
       // These are immutable for a TIPP - only set at creation time
       tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
 
+      log.debug("Created");
+
       // because pkg is not a real property, but a hasByCombo, passing the value in the map constuctor
       // won't actually get this set. So do it manually. Ditto the other fields
       tipp.pkg = the_package;
@@ -805,6 +812,8 @@ class TSVIngestionService {
         }
       }
     }
+
+    log.debug("Values updated, set lastSeen");
 
     if ( ingest_systime ) {
       log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
