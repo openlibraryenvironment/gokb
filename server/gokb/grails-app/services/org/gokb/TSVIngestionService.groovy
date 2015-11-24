@@ -488,7 +488,7 @@ class TSVIngestionService {
 
     def the_profile = IngestionProfile.get(the_profile_id)
 
-    ingest(the_profile.packageType,
+    ingest2(the_profile.packageType,
            the_profile.packageName,
            the_profile.platformUrl,
            the_profile.source,
@@ -499,7 +499,7 @@ class TSVIngestionService {
   }
 
 
-  def ingest(packageType,
+  def ingest2(packageType,
              packageName,
              platformUrl,
              source,
@@ -641,7 +641,6 @@ class TSVIngestionService {
     log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}")
 
     //first we need a platform:
-    URL platform_url=new URL(the_kbart.title_url?:platformUrl)
     def platform = handlePlatform(platform_url.host, source)
 
     assert the_package != null
