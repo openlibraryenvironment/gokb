@@ -86,7 +86,7 @@ class TSVIngestionService {
       Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
       // Add the id.
       result['ids'] << the_id
-      log.debug("${result['ids']}")
+      log.debug("class_one_match ids ${result['ids']}")
       // We only treat a component as a match if the matching Identifer
       // is a class 1 identifier.
       if (class_one_ids.contains(id_def.type)) {
@@ -390,8 +390,10 @@ class TSVIngestionService {
             // Added a publisher?
             // log.debug("calling changepublisher")
             boolean added = ti.changePublisher ( publisher[0], true)
-            log.debug(not_first)
-            log.debug(added)
+
+            log.debug("Not first : ${not_first}")
+            log.debug("Added: ${added}");
+
             // Raise a review request, if needed.
             if (not_first && added) {
               ReviewRequest.raise( ti, "Added '${publisher.name}' as a publisher on '${ti.name}'.",

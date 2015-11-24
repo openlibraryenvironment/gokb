@@ -31,6 +31,7 @@ environments {
             pooled = true
             // logSql = true
             // formatSql = true
+            configClass = 'com.k_int.KIGormConfiguration'
             properties {
                 maxActive = 500
                 minEvictableIdleTimeMillis=1800000
