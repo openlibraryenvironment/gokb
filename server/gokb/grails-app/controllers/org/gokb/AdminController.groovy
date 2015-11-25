@@ -1,6 +1,8 @@
 package org.gokb
 
 import org.gokb.cred.*
+import grails.converters.JSON
+
 class AdminController {
 
   def uploadAnalysisService
@@ -201,6 +203,12 @@ class AdminController {
 
   def jobs() {
     def result=[:]
+    result.jobs = concurrencyManagerService.jobs
+
+    if ( request.format == 'JSON' ) {
+      render result as JSON
+    }
+
     result
   }
 }

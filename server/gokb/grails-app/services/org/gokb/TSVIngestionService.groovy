@@ -265,7 +265,9 @@ class TSVIngestionService {
   //for now, we can only do authors. (kbart limitation)
   def TitleInstance addPerson (person_name, role, ti, user=null, project = null) {
     if ( (person_name) && ( person_name.trim().length() > 0 ) ) {
-      def person = org.gokb.cred.Person.findAllByName(person_name)
+
+      def norm_person_name = GOKbTextUtils.normaliseString(person_name)
+      def person = org.gokb.cred.Person.findAllByNormname(norm_person_name)
       // log.debug("this was found for person: ${person}");
       switch(person.size()) {
         case 0:
@@ -330,7 +332,9 @@ class TSVIngestionService {
   def TitleInstance addSubjects(the_subjects, the_title) {
     if (the_subjects) {
       for (the_subject in the_subjects) {
-        def subject = Subject.findAllByNameIlike(the_subject) //no alt names for subjects
+
+        def norm_subj_name = GOKbTextUtils.normaliseString(the_subject)
+        def subject = Subject.findAllByNormname(norm_subj_name) //no alt names for subjects
         // log.debug("this was found for subject: ${subject}")
         if (!subject) {
           // log.debug("subject not found, creating a new one")
@@ -355,7 +359,8 @@ class TSVIngestionService {
 
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
     if ( publisher_name != null ) {
-      def publisher = org.gokb.cred.Org.findAllByName(publisher_name)
+      def norm_pub_name = GOKbTextUtils.normaliseString(publisher_name)
+      def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
@@ -834,7 +839,8 @@ class TSVIngestionService {
   //for this v1, I've made this very simple - probably too simple.
   def handlePackage(packageName, source) {
     def result;
-    def packages=Package.findAllByNameIlike(packageName);
+    def norm_pkg_name = GOKbTextUtils.normaliseString(packageName)
+    def packages=Package.findAllByNormname(norm_pkg_name);
     switch (packages.size()) {
       case 0:
         //no match. create a new package!

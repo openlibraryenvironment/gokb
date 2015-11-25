@@ -207,3 +207,7 @@ footer p {
 .carousel .item img {
   width:100%;
 }
+
+.highlightRow {
+  border: 2px solid green;
+}

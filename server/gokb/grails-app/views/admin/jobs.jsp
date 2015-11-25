@@ -6,7 +6,7 @@
 </head>
 <body>
   <h1 class="page-header">Jobs</h1>
-  <table>
+  <table class="table table-bordered">
     <thead>
       <tr>
         <th>ID</th>
@@ -14,6 +14,15 @@
       </tr>
     </thead>
     <tbody>
+      <g:each in="jobs" var="k,v">
+        <tr class="${k==params.highlightJob?'highlightRow':''}">
+          <td>${k}</td>
+          <td>${v.description}</td>
+          <td>${v.begun}</td>
+          <td>${v.startTime}</td>
+          <td>${v.progress}</td>
+        </tr>
+      </g:each>
     </tbody>
   </table>
 </body>

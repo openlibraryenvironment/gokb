@@ -10,6 +10,8 @@ import org.springframework.web.multipart.MultipartHttpServletRequest
 import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
 import java.security.MessageDigest
+import grails.converters.JSON
+
 
 class PackagesController {
 
@@ -34,6 +36,7 @@ class PackagesController {
   def deposit() {
     def result = [:]
     log.debug("deposit::${params}")
+    def jobid = null;
 
     if ( request.method=='POST') {
       log.debug("Handling post")
@@ -108,9 +111,9 @@ class PackagesController {
             }
           }
 
+          background_job.description="Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
           background_job.startOrQueue()
-
-
+          jobid = background_job.id
         }
         else {
           log.error("Missing parameters :: ${params}");
@@ -118,7 +121,9 @@ class PackagesController {
       }
     }
     
-    result
+
+    // Redirect to list of jobs
+    redirect(controller:'admin', action:'jobs', params:[format:params.format, highlightJob:jobid]);
   }
 
   def copyUploadedFile(inputfile, deposit_token) {

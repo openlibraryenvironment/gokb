@@ -24,6 +24,7 @@ class ConcurrencyManagerService {
     Date startTime
     private Closure work
     boolean begun = false;
+    String description
     
     /**
      * Cancel the job.
@@ -98,6 +99,10 @@ class ConcurrencyManagerService {
   // should perform well enough.
   private Map<Integer, Job> map = new ConcurrentHashMap<Integer, Job>().withDefault { int the_id ->
     new Job (["id" : the_id])
+  }
+
+  public Map<Integer, Job> getJobs() {
+    return map;
   }
   
   /**
