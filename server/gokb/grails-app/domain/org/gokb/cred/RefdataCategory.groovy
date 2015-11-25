@@ -44,8 +44,8 @@ class RefdataCategory {
 
     def result = null
 
-      // The category.
-    // RefdataCategory.withTransaction { status ->
+    // The category.
+    RefdataCategory.withTransaction { status ->
 
 
       def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where c.desc = ?',category_name);
@@ -86,7 +86,7 @@ class RefdataCategory {
           }
         }
       }
-    // }
+    }
 
     assert result != null
 

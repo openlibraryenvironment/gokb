@@ -40,7 +40,9 @@ class BootStrap {
 
     log.debug("Init")
 
-    cleanUpMissingDomains ()
+    KBComponent.withTransaction() {
+      cleanUpMissingDomains ()
+    }
 
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass()
@@ -54,33 +56,36 @@ class BootStrap {
     }
 
     // Global System Roles
-    def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR') ?: new Role(authority: 'ROLE_CONTRIBUTOR', roleType:'global').save(failOnError: true)
-    def userRole = Role.findByAuthority('ROLE_USER') ?: new Role(authority: 'ROLE_USER', roleType:'global').save(failOnError: true)
-    def editorRole = Role.findByAuthority('ROLE_EDITOR') ?: new Role(authority: 'ROLE_EDITOR', roleType:'global').save(failOnError: true)
-    def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType:'global').save(failOnError: true)
-    def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType:'global').save(failOnError: true)
-    def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
-    def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
-    def refineTesterRole = Role.findByAuthority('ROLE_REFINETESTER') ?: new Role(authority: 'ROLE_REFINETESTER', roleType:'global').save(failOnError: true)
+    KBComponent.withTransaction() {
+      def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR') ?: new Role(authority: 'ROLE_CONTRIBUTOR', roleType:'global').save(failOnError: true)
+      def userRole = Role.findByAuthority('ROLE_USER') ?: new Role(authority: 'ROLE_USER', roleType:'global').save(failOnError: true)
+      def editorRole = Role.findByAuthority('ROLE_EDITOR') ?: new Role(authority: 'ROLE_EDITOR', roleType:'global').save(failOnError: true)
+      def adminRole = Role.findByAuthority('ROLE_ADMIN') ?: new Role(authority: 'ROLE_ADMIN', roleType:'global').save(failOnError: true)
+      def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType:'global').save(failOnError: true)
+      def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
+      def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
+      def refineTesterRole = Role.findByAuthority('ROLE_REFINETESTER') ?: new Role(authority: 'ROLE_REFINETESTER', roleType:'global').save(failOnError: true)
 
-    log.debug("Create admin user...");
-    def adminUser = User.findByUsername('admin')
-    if ( ! adminUser ) {
-      log.error("No admin user found, create")
-      adminUser = new User(
-          username: 'admin',
-          password: 'admin',
-          display: 'Admin',
-          email: 'admin@localhost',
-          enabled: true).save(failOnError: true)
-    }
+      log.debug("Create admin user...");
+      def adminUser = User.findByUsername('admin')
+      if ( ! adminUser ) {
+        log.error("No admin user found, create")
+        adminUser = new User(
+            username: 'admin',
+            password: 'admin',
+            display: 'Admin',
+            email: 'admin@localhost',
+            enabled: true).save(failOnError: true)
+      }
 
-    // Make sure admin user has all the system roles.
-    [contributorRole,userRole,editorRole,adminRole,apiRole,suRole,refineUserRole,refineTesterRole].each { role ->
-      if (!adminUser.authorities.contains(role)) {
-        UserRole.create adminUser, role
+      // Make sure admin user has all the system roles.
+      [contributorRole,userRole,editorRole,adminRole,apiRole,suRole,refineUserRole,refineTesterRole].each { role ->
+        if (!adminUser.authorities.contains(role)) {
+          UserRole.create adminUser, role
+        }
       }
     }
+
 
     String fs = grailsApplication.config.project_dir
     log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
@@ -92,27 +97,47 @@ class BootStrap {
       f.mkdirs()
     }
 
-    refdataCats()
+    
+    KBComponent.withTransaction() {
+      refdataCats()
+    }
 
-    registerDomainClasses()
+
+    KBComponent.withTransaction() {
+      registerDomainClasses()
+    }
 
     addValidationRules()
 
-    failAnyIngestingProjects()
+    KBComponent.withTransaction() {
+      failAnyIngestingProjects()
+    }
 
-    migrateDiskFilesToDatabase()
+    KBComponent.withTransaction() {
+      migrateDiskFilesToDatabase()
+    }
 
-    KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
-      KBComponent.withNewTransaction {
-        KBComponent kbc = KBComponent.get(kbc_id)
-        log.debug("Repair component with no normalised name.. ${kbc.id} ${kbc.name}");
-        kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
-        kbc.save();
-        kbc.discard()
+    
+    KBComponent.withTransaction() {
+      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
+        KBComponent.withNewTransaction {
+          KBComponent kbc = KBComponent.get(kbc_id)
+          log.debug("Repair component with no normalised name.. ${kbc.id} ${kbc.name}");
+          kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
+          kbc.save();
+          kbc.discard()
+        }
       }
     }
 
-    defaultSortKeys ()
+
+    KBComponent.withTransaction() {
+      defaultSortKeys ()
+    }
+
+    KBComponent.withTransaction() {
+      sourceObjects()
+    }
   }
 
   def migrateDiskFilesToDatabase() {
@@ -705,10 +730,12 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids').save()
 
 
+  }
+
+  def sorceObjects() {
     def ybp_source = Source.findByName('YBP') ?: new Source(name:'YBP').save(flush:true, failOnError:true);
     def cup_source = Source.findByName('CUP') ?: new Source(name:'CUP').save(flush:true, failOnError:true);
     def wiley_source = Source.findByName('WILEY') ?: new Source(name:'WILEY').save(flush:true, failOnError:true);
     def cufts_source = Source.findByName('CUFTS') ?: new Source(name:'CUFTS').save(flush:true, failOnError:true);
-
   }
 }
