@@ -545,22 +545,24 @@ class TSVIngestionService {
       }
 
       def the_package = null
+      def the_package_id = null
       def author_role_id = null;
       def editor_role_id = null;
 
       Package.withNewTransaction() {
         the_package=handlePackage(packageName,source)
+        assert the_package != null
+        the_package_id=the_package.id
         def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
         author_role_id = author_role.id
         def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
         editor_role_id = editor_role.id
       }
 
-      assert the_package != null
 
       long startTime=System.currentTimeMillis()
 
-      log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
+      log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package_id}")
       //now its converted, ingest it into the database.
 
       for (int x=0; x<kbart_beans.size;x++) {
@@ -582,7 +584,7 @@ class TSVIngestionService {
                     ingest_systime, 
                     author_role, 
                     editor_role, 
-                    Package.get(the_package.id),
+                    Package.get(the_package_id),
                     ingest_cfg )
 
           log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
@@ -593,19 +595,18 @@ class TSVIngestionService {
 
         if ( x % 25 == 0 ) {
           cleanUpGorm()
-          the_package.refresh();
         }
       }
 
-      log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${packageName}");
+      log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}");
 
       TitleInstancePackagePlatform.withNewTransaction {
         try {
           // Find all tipps in this package which have a lastSeen before the ingest date
           def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                            'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                           'where c.fromComponent=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
-                          [pkg:the_package,dt:ingest_systime]);
+                           'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
+                          [pkg:the_package_id,dt:ingest_systime]);
 
           q.each { tipp ->
             log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
