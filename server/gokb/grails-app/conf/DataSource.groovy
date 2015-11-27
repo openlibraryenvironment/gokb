@@ -24,7 +24,8 @@ environments {
             // dialect = org.hibernate.dialect.PostgreSQLDialect
 
             driverClassName = "com.mysql.jdbc.Driver"
-            dialect=org.hibernate.dialect.MySQL5Dialect
+            // dialect=org.hibernate.dialect.MySQL5Dialect
+            dialect=org.hibernate.dialect.MySQL5InnoDBDialect
             username = "k-int"
             password = "k-int"
             url = "jdbc:mysql://localhost/GoKB?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
@@ -54,7 +55,8 @@ environments {
         // dbCreate = "update"
         dbCreate = "create"
         driverClassName = "com.mysql.jdbc.Driver"
-        dialect=org.hibernate.dialect.MySQL5Dialect
+        // dialect=org.hibernate.dialect.MySQL5Dialect
+        dialect=org.hibernate.dialect.MySQL5InnoDBDialect
         username = "k-int"
         password = "k-int"
         url = "jdbc:mysql://localhost/GoKBTest?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
@@ -77,7 +79,8 @@ environments {
         dataSource {
             dbCreate = "update"
             driverClassName = "com.mysql.jdbc.Driver"
-            dialect=org.hibernate.dialect.MySQL5Dialect
+            // dialect=org.hibernate.dialect.MySQL5Dialect
+            dialect=org.hibernate.dialect.MySQL5InnoDBDialect
             username = "k-int"
             password = "k-int"
             url = "jdbc:mysql://localhost/GoKBProd?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
