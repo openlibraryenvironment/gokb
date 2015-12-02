@@ -229,7 +229,9 @@ class TitleInstance extends KBComponent {
       def tids = getIds() ?: []
       def tipps = getTipps()
       def theIssuer = getIssuer()
-      def thePublisher = getPublisher()
+      // def thePublisher = getPublisher()
+      def publisher_combos = getCombosByPropertyName('publisher')
+
 
       def history = getTitleHistory()
 
@@ -262,9 +264,19 @@ class TitleInstance extends KBComponent {
             }
           }
 
-          if (thePublisher) {
-            builder."publisher" (['id': thePublisher?.id]) {
-              "name" (thePublisher?.name)
+          publisher_combos?.each { Combo pc ->
+            def pub_org = null
+            if (isComboReverse('publisher')) {
+              pub_org = pc.toComponent
+            }
+            else {
+              pub_org = pc.fromComponent
+            }
+
+            if ( pub_org ) {
+              builder."publisher" (['id': pub_org?.id]) {
+                "name" (pub_org?.name)
+              }
             }
           }
 
