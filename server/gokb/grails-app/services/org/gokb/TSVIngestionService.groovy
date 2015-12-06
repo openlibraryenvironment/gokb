@@ -879,7 +879,7 @@ class TSVIngestionService {
   def handlePlatform(host, the_source) {
     
     def result;
-    def platforms=Platform.findAllByPrimaryUrlIlike(host);
+    def platforms=Platform.findAllByPrimaryUrl(host);
 
     
     switch (platforms.size()) {
