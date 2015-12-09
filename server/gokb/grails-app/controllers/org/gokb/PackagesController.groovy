@@ -86,9 +86,10 @@ class PackagesController {
                                           uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
 
               log.debug("Saved new datafile : ${new_datafile.id}");
+              new_datafile_id = new_datafile.id
+
             }
 
-            new_datafile_id = new_datafile.id
           }
 
           // Transactional part done. now queue the job
