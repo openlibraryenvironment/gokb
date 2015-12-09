@@ -85,6 +85,10 @@ class PackagesController {
                                           filesize:info.filesize,
                                           uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
 
+              new_datafile.fileData = temp_file.getBytes()
+              new_datafile.save(flush:true)
+
+
               log.debug("Saved new datafile : ${new_datafile.id}");
               new_datafile_id = new_datafile.id
 
