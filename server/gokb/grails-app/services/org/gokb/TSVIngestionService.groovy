@@ -902,30 +902,33 @@ class TSVIngestionService {
         //no match. create a new platform!
         log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
-        result = new Platform(
-                              name:host,
-                              primaryUrl:host,
-                              source:the_source)
-
-        // log.debug("Validate new platform");
-        // result.validate();
-
-        if ( result ) {
-          if (result.save(flush:true, failOnError:true)) {
-            log.debug("saved new platform: ${result}")
-          } else {
-            log.error("problem creating platform");
-            for (error in result.errors) {
-              log.error(error);
+        Platform.withNewTransaction {
+          result = new Platform(
+                                name:host,
+                                primaryUrl:host,
+                                source:the_source)
+  
+          // log.debug("Validate new platform");
+          // result.validate();
+  
+          if ( result ) {
+            if (result.save(flush:true, failOnError:true)) {
+              log.debug("saved new platform: ${result}")
+            } else {
+              log.error("problem creating platform");
+              for (error in result.errors) {
+                log.error(error);
+              }
             }
           }
-        }
-        else {
-          result.errors.allErrors.each {
-            log.error("Problem creating platform : ${e}");
+          else {
+            result.errors.allErrors.each {
+              log.error("Problem creating platform : ${e}");
+            }
+            throw new RuntimeException('Error creating new platform')
           }
-          throw new RuntimeException('Error creating new platform')
         }
+        result = Platform.get(result.id);
         break;
       case 1:
         //found a match
