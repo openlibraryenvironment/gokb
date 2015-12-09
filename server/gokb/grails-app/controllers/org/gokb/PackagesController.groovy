@@ -49,7 +49,7 @@ class PackagesController {
 
         log.debug("Multipart")
 
-        if ( upload_mime_type && 
+        if ( upload_mime_type &&
              upload_filename &&
              params.pkg &&
              params.platformUrl &&
@@ -64,19 +64,19 @@ class PackagesController {
           def platformUrl = params.platformUrl
           def source = params.source
 
-          DataFile.withNewTransaction { status ->
+          def info = analyse(temp_file);
 
-            def info = analyse(temp_file);
+          log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
+          def existing_file = DataFile.findByMd5(info.md5sumHex);
 
-            log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
-            def existing_file = DataFile.findByMd5(info.md5sumHex);
-
-            if ( existing_file != null ) {
-              log.debug("Found a match !")
-              redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
-            }
-            else {
-              log.debug("Create new datafile");
+          if ( existing_file != null ) {
+            log.debug("Found a match !")
+            redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+            return
+          }
+          else {
+            log.debug("Create new datafile");
+            DataFile.withTransaction {
               def new_datafile = new DataFile(
                                           guid:deposit_token,
                                           md5:info.md5sumHex,
@@ -86,10 +86,9 @@ class PackagesController {
                                           uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
 
               log.debug("Saved new datafile : ${new_datafile.id}");
-              new_datafile_id = new_datafile.id
-              new_datafile.fileData = temp_file.getBytes()
             }
 
+            new_datafile_id = new_datafile.id
           }
 
           // Transactional part done. now queue the job
@@ -100,7 +99,7 @@ class PackagesController {
                                           pkg,
                                           new java.net.URL(platformUrl),
                                           Source.findByName(source),
-                                          new_datafile_id, 
+                                          new_datafile_id,
                                           job)
             }
             catch ( Exception e ) {
@@ -120,7 +119,7 @@ class PackagesController {
         }
       }
     }
-    
+
 
     // Redirect to list of jobs
     redirect(controller:'admin', action:'jobs', params:[format:params.format, highlightJob:jobid]);

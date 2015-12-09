@@ -492,7 +492,17 @@ class TSVIngestionService {
              ip_id=null,
              ingest_cfg=null) {
 
+    if ( the_profile_id == null ) {
+      log.error("No datafile ID passed in to ingest")
+      return
+    }
+
     def the_profile = IngestionProfile.get(the_profile_id)
+
+    if ( the_profile == null )      {
+      log.error("Unable to datafile for ID ${datafile_id}")
+      return
+    }
 
     ingest2(the_profile.packageType,
            the_profile.packageName,
@@ -516,7 +526,8 @@ class TSVIngestionService {
 
     long start_time = System.currentTimeMillis();
 
-    def datafile = DataFile.get(datafile_id)
+    // Read does no dirty checking
+    def datafile = DataFile.read(datafile_id)
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
@@ -579,7 +590,6 @@ class TSVIngestionService {
           writeToDB(kbart_beans[x],
                     platformUrl,
                     source,
-                    DataFile.get(datafile_id),
                     ingest_date,
                     ingest_systime,
                     author_role,
@@ -639,7 +649,6 @@ class TSVIngestionService {
   def writeToDB(the_kbart,
                 platform_url,
                 source,
-                the_datafile,
                 ingest_date,
                 ingest_systime,
                 author_role,
@@ -705,7 +714,6 @@ class TSVIngestionService {
 
             def pre_create_tipp_time = System.currentTimeMillis();
             createTIPP(source,
-                       the_datafile,
                        the_kbart,
                        the_package,
                        title,
@@ -751,7 +759,6 @@ class TSVIngestionService {
 
 
   def createTIPP(the_source,
-                 the_datafile,
                  the_kbart,
                  the_package,
                  the_title,
@@ -840,10 +847,6 @@ class TSVIngestionService {
 
     log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    // if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
-    //   the_datafile.tipps << tipp
-    // }
-    // the_datafile.save(flush:true)
     log.debug("createTIPP returning")
   }
 
