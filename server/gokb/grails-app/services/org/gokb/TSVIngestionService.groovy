@@ -667,13 +667,22 @@ class TSVIngestionService {
     log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url?.host}")
 
     if ( the_kbart.title_url != null ) {
-      def title_url_host = new URL(the_kbart.title_url).host
-      log.debug("Got platform from title host :: ${title_url_host}")
-      platform = handlePlatform(title_url_host, source)
+      def title_url_host = null
+      try {
+        def title_url = new URL(the_kbart.title_url).host
+        title_url_host = title_url.host
+      }
+      catch ( Exception e ) {
+      }
+
+      if ( title_url_host ) {
+        log.debug("Got platform from title host :: ${title_url_host}")
+        platform = handlePlatform(title_url_host, source)
+      }
     }
-    else {
+
+    if ( platform == null ) {
       handlePlatform(platform_url.host, source)
-    }
 
     assert the_package != null
 
