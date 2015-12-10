@@ -54,9 +54,7 @@
           <g:annotatedLabel owner="${d}" property="primaryURL">Primary URL</g:annotatedLabel>
         </dt>
         <dd>
-          <g:xEditable class="ipe" owner="${d}" field="primaryUrl">
-            ${d.primaryUrl}
-          </g:xEditable>
+          <g:xEditable class="ipe" owner="${d}" field="primaryUrl">${d.primaryUrl}</g:xEditable>
           <g:if test="${d.primaryUrl}">
             &nbsp; <a href="${d.primaryUrl}" target="new">Follow Link</a>
           </g:if>
