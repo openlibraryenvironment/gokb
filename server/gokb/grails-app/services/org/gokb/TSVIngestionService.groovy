@@ -547,6 +547,7 @@ class TSVIngestionService {
       job?.setProgress(0)
 
       def kbart_beans=[]
+      def bad_kbart_beans=[]
 
       //we kind of assume that we need to convert to kbart
       if ("${packageType}"!='kbart2') {
@@ -587,18 +588,19 @@ class TSVIngestionService {
 
           long rowStartTime=System.currentTimeMillis()
 
-          writeToDB(kbart_beans[x],
-                    platformUrl,
-                    source,
-                    ingest_date,
-                    ingest_systime,
-                    author_role,
-                    editor_role,
-                    Package.get(the_package_id),
-                    ingest_cfg )
+          if ( validateRow(kbart_beans[x] ) ) {
+            writeToDB(kbart_beans[x],
+                      platformUrl,
+                      source,
+                      ingest_date,
+                      ingest_systime,
+                      author_role,
+                      editor_role,
+                      Package.get(the_package_id),
+                      ingest_cfg )
+          }
 
           log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
-
         }
 
         job?.setProgress( x , kbart_beans.size() )
@@ -1107,5 +1109,31 @@ class TSVIngestionService {
     propertyInstanceMap.get().clear()
   }
 
+  def makeBadFile() {
+    def depositToken = java.util.UUID.randomUUID().toString();
+    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+    def sub1 = deposit_token.substring(0,2);
+    def sub2 = deposit_token.substring(2,4);
+    validateUploadDir("${baseUploadDir}");
+    validateUploadDir("${baseUploadDir}/${sub1}");
+    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
+    def bad_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
+    log.debug("makeBadFile... ${bad_file_name}");
+    def bad_file = new File(bad_file_name);
+    bad_file
+  }
+
+  private def validateUploadDir(path) {
+    File f = new File(path);
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
+    }
+  }
+
+  def validateRow(row_data) {
+    log.debug("Validate ${row_data}");
+    return true
+  }
 
 }
