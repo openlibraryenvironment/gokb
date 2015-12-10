@@ -683,7 +683,7 @@ class TSVIngestionService {
       }
     }
 
-    if ( platform == null ) {
+    if ( platform == null )
       handlePlatform(platform_url.host, source)
 
     assert the_package != null
