@@ -154,10 +154,10 @@ class TSVIngestionService {
     result
   }
 
-  def lookupOrCreateTitle (String title, 
-                           def identifiers, 
-                           ingest_cfg, 
-                           def user = null, 
+  def lookupOrCreateTitle (String title,
+                           def identifiers,
+                           ingest_cfg,
+                           def user = null,
                            def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
@@ -486,13 +486,23 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile_id, 
-             datafile_id, 
-             job=null, 
-             ip_id=null, 
+  def ingest(the_profile_id,
+             datafile_id,
+             job=null,
+             ip_id=null,
              ingest_cfg=null) {
 
+    if ( the_profile_id == null ) {
+      log.error("No datafile ID passed in to ingest")
+      return
+    }
+
     def the_profile = IngestionProfile.get(the_profile_id)
+
+    if ( the_profile == null )      {
+      log.error("Unable to datafile for ID ${datafile_id}")
+      return
+    }
 
     ingest2(the_profile.packageType,
            the_profile.packageName,
@@ -509,14 +519,15 @@ class TSVIngestionService {
              packageName,
              platformUrl,
              source,
-             datafile_id, 
-             job=null, 
-             ip_id=null, 
+             datafile_id,
+             job=null,
+             ip_id=null,
              ingest_cfg=null) {
 
     long start_time = System.currentTimeMillis();
 
-    def datafile = DataFile.get(datafile_id)
+    // Read does no dirty checking
+    def datafile = DataFile.read(datafile_id)
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
@@ -576,14 +587,13 @@ class TSVIngestionService {
 
           long rowStartTime=System.currentTimeMillis()
 
-          writeToDB(kbart_beans[x], 
+          writeToDB(kbart_beans[x],
                     platformUrl,
                     source,
-                    DataFile.get(datafile_id),
-                    ingest_date, 
-                    ingest_systime, 
-                    author_role, 
-                    editor_role, 
+                    ingest_date,
+                    ingest_systime,
+                    author_role,
+                    editor_role,
                     Package.get(the_package_id),
                     ingest_cfg )
 
@@ -636,14 +646,13 @@ class TSVIngestionService {
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart, 
+  def writeToDB(the_kbart,
                 platform_url,
                 source,
-                the_datafile, 
-                ingest_date, 
-                ingest_systime, 
-                author_role, 
-                editor_role, 
+                ingest_date,
+                ingest_systime,
+                author_role,
+                editor_role,
                 the_package,
                 ingest_cfg) {
 
@@ -653,7 +662,18 @@ class TSVIngestionService {
     log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}")
 
     //first we need a platform:
-    def platform = handlePlatform(platform_url.host, source)
+    def platform = null; // handlePlatform(platform_url.host, source)
+
+    log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url?.host}")
+
+    if ( the_kbart.title_url != null ) {
+      def title_url_host = new URL(the_kbart.title_url).host
+      log.debug("Got platform from title host :: ${title_url_host}")
+      platform = handlePlatform(title_url_host, source)
+    }
+    else {
+      handlePlatform(platform_url.host, source)
+    }
 
     assert the_package != null
 
@@ -691,15 +711,14 @@ class TSVIngestionService {
             the_kbart.additional_authors.each { author ->
               addPerson(author, author_role, title)
             }
-            
+
             def pre_create_tipp_time = System.currentTimeMillis();
-            createTIPP(source, 
-                       the_datafile, 
-                       the_kbart, 
-                       the_package, 
-                       title, 
-                       platform, 
-                       ingest_date, 
+            createTIPP(source,
+                       the_kbart,
+                       the_package,
+                       title,
+                       platform,
+                       ingest_date,
                        ingest_systime)
           } else {
              log.warn("problem getting the title...")
@@ -740,7 +759,6 @@ class TSVIngestionService {
 
 
   def createTIPP(the_source,
-                 the_datafile,
                  the_kbart,
                  the_package,
                  the_title,
@@ -829,10 +847,6 @@ class TSVIngestionService {
 
     log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    // if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
-    //   the_datafile.tipps << tipp
-    // }
-    // the_datafile.save(flush:true)
     log.debug("createTIPP returning")
   }
 
@@ -877,41 +891,44 @@ class TSVIngestionService {
   }
 
   def handlePlatform(host, the_source) {
-    
-    def result;
-    def platforms=Platform.findAllByPrimaryUrlIlike(host);
 
-    
+    def result;
+    def platforms=Platform.findAllByPrimaryUrl(host);
+
+
     switch (platforms.size()) {
       case 0:
 
         //no match. create a new platform!
-        // log.debug("Create new platform ${host}, ${host}, ${the_source}");
+        log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
-        result = new Platform(
-                              name:host, 
-                              primaryUrl:host, 
-                              source:the_source)
-
-        // log.debug("Validate new platform");
-        // result.validate();
-
-        if ( result ) {
-          if (result.save(flush:true, failOnError:true)) {
-            log.debug("saved new platform: ${result}")
-          } else {
-            log.error("problem creating platform");
-            for (error in result.errors) {
-              log.error(error);
+        Platform.withNewTransaction {
+          result = new Platform(
+                                name:host,
+                                primaryUrl:host,
+                                source:the_source)
+  
+          // log.debug("Validate new platform");
+          // result.validate();
+  
+          if ( result ) {
+            if (result.save(flush:true, failOnError:true)) {
+              log.debug("saved new platform: ${result}")
+            } else {
+              log.error("problem creating platform");
+              for (error in result.errors) {
+                log.error(error);
+              }
             }
           }
-        }
-        else {
-          result.errors.allErrors.each {
-            log.error("Problem creating platform : ${e}");
+          else {
+            result.errors.allErrors.each {
+              log.error("Problem creating platform : ${e}");
+            }
+            throw new RuntimeException('Error creating new platform')
           }
-          throw new RuntimeException('Error creating new platform')
         }
+        result = Platform.get(result.id);
         break;
       case 1:
         //found a match

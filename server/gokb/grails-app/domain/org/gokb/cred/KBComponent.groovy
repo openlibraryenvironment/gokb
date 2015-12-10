@@ -278,6 +278,7 @@ abstract class KBComponent {
    */
   Source source
 
+  String lastUpdateComment
 
   Set tags = []
   List additionalProperties = []
@@ -339,6 +340,7 @@ abstract class KBComponent {
     lastUpdated column:'kbc_last_updated'
     reviewRequests sort: 'id', order: 'asc'
     lastSeen column:'kbc_last_seen'
+    lastUpdateComment column:'kbc_last_update_comment'
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
 
@@ -352,6 +354,7 @@ abstract class KBComponent {
     editStatus  (nullable:true, blank:false)
     source (nullable:true, blank:false)
     lastSeen (nullable:true, blank:false)
+    lastUpdateComment (nullable:true, blank:false)
   }
 
   /**

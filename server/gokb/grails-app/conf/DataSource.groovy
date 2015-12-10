@@ -42,7 +42,8 @@ environments {
                 testWhileIdle=true
                 testOnReturn=true
                 validationQuery="select 1"
-                defaultTransactionIsolation = java.sql.Connection.TRANSACTION_SERIALIZABLE
+                defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
+                // defaultTransactionIsolation = java.sql.Connection.TRANSACTION_SERIALIZABLE
             }
         }
     }
