@@ -154,10 +154,10 @@ class TSVIngestionService {
     result
   }
 
-  def lookupOrCreateTitle (String title, 
-                           def identifiers, 
-                           ingest_cfg, 
-                           def user = null, 
+  def lookupOrCreateTitle (String title,
+                           def identifiers,
+                           ingest_cfg,
+                           def user = null,
                            def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
@@ -486,10 +486,10 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile_id, 
-             datafile_id, 
-             job=null, 
-             ip_id=null, 
+  def ingest(the_profile_id,
+             datafile_id,
+             job=null,
+             ip_id=null,
              ingest_cfg=null) {
 
     def the_profile = IngestionProfile.get(the_profile_id)
@@ -509,9 +509,9 @@ class TSVIngestionService {
              packageName,
              platformUrl,
              source,
-             datafile_id, 
-             job=null, 
-             ip_id=null, 
+             datafile_id,
+             job=null,
+             ip_id=null,
              ingest_cfg=null) {
 
     long start_time = System.currentTimeMillis();
@@ -576,14 +576,14 @@ class TSVIngestionService {
 
           long rowStartTime=System.currentTimeMillis()
 
-          writeToDB(kbart_beans[x], 
+          writeToDB(kbart_beans[x],
                     platformUrl,
                     source,
                     DataFile.get(datafile_id),
-                    ingest_date, 
-                    ingest_systime, 
-                    author_role, 
-                    editor_role, 
+                    ingest_date,
+                    ingest_systime,
+                    author_role,
+                    editor_role,
                     Package.get(the_package_id),
                     ingest_cfg )
 
@@ -636,14 +636,14 @@ class TSVIngestionService {
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart, 
+  def writeToDB(the_kbart,
                 platform_url,
                 source,
-                the_datafile, 
-                ingest_date, 
-                ingest_systime, 
-                author_role, 
-                editor_role, 
+                the_datafile,
+                ingest_date,
+                ingest_systime,
+                author_role,
+                editor_role,
                 the_package,
                 ingest_cfg) {
 
@@ -653,7 +653,18 @@ class TSVIngestionService {
     log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}")
 
     //first we need a platform:
-    def platform = handlePlatform(platform_url.host, source)
+    def platform = null; // handlePlatform(platform_url.host, source)
+
+    log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url?.host}")
+
+    if ( the_kbart.title_url != null ) {
+      def title_url_host = new URL(the_kbart.title_url).host
+      log.debug("Got platform from title host :: ${title_url_host}")
+      platform = handlePlatform(title_url_host, source)
+    }
+    else {
+      handlePlatform(platform_url.host, source)
+    }
 
     assert the_package != null
 
@@ -691,15 +702,15 @@ class TSVIngestionService {
             the_kbart.additional_authors.each { author ->
               addPerson(author, author_role, title)
             }
-            
+
             def pre_create_tipp_time = System.currentTimeMillis();
-            createTIPP(source, 
-                       the_datafile, 
-                       the_kbart, 
-                       the_package, 
-                       title, 
-                       platform, 
-                       ingest_date, 
+            createTIPP(source,
+                       the_datafile,
+                       the_kbart,
+                       the_package,
+                       title,
+                       platform,
+                       ingest_date,
                        ingest_systime)
           } else {
              log.warn("problem getting the title...")
@@ -877,20 +888,20 @@ class TSVIngestionService {
   }
 
   def handlePlatform(host, the_source) {
-    
+
     def result;
     def platforms=Platform.findAllByPrimaryUrl(host);
 
-    
+
     switch (platforms.size()) {
       case 0:
 
         //no match. create a new platform!
-        // log.debug("Create new platform ${host}, ${host}, ${the_source}");
+        log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
         result = new Platform(
-                              name:host, 
-                              primaryUrl:host, 
+                              name:host,
+                              primaryUrl:host,
                               source:the_source)
 
         // log.debug("Validate new platform");
