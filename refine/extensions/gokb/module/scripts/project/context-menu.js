@@ -12,6 +12,14 @@ GOKb.contextMenu = {
     this.target = $(el);
     return this.getTarget();
   },
+  _niceNames : null,
+  niceNames : function () {
+    if (GOKb.contextMenu._niceNames === null) {
+      GOKb.contextMenu._niceNames = GOKb.isCapable("macros");
+    }
+    
+    return GOKb.contextMenu._niceNames;
+  },
   
   /**
    * Fired on menu show. Decides whether to show options or not. We should also set the target here as this
@@ -48,11 +56,19 @@ GOKb.contextMenu = {
         "gokb-lookup-org" : {
           name: "Organisation",
           callback: function () {
+            
+            var lookupProps;
+            if (GOKb.contextMenu.niceNames()) {
+              lookupProps = ["variantNames.variantName:Variant"];
+            } else {
+              lookupProps = ["variantNames.variantName"];
+            }
+            
             GOKb.handlers.lookup (
               GOKb.contextMenu.getTarget(),
               "org",
-              ["variantNames.variantName:Variant"],
-              ["variantNames.variantName:Variant"],
+              lookupProps,
+              lookupProps,
               "Lookup Organisation"
             );
           }
@@ -60,11 +76,19 @@ GOKb.contextMenu = {
         "gokb-lookup-package" : {
           name: "Package",
           callback: function () {
+            
+            var lookupProps;
+            if (GOKb.contextMenu.niceNames()) {
+              lookupProps = ["variantNames.variantName:Variant"];
+            } else {
+              lookupProps = ["variantNames.variantName"];
+            }
+            
             GOKb.handlers.lookup (
               GOKb.contextMenu.getTarget(),
               "package",
-              ["variantNames.variantName:Variant"],
-              ["variantNames.variantName:Variant"],
+              lookupProps,
+              lookupProps,
               "Lookup Package",
               true
             );
@@ -73,11 +97,19 @@ GOKb.contextMenu = {
         "gokb-lookup-platform" : {
           name: "Platform",
           callback: function () {
+
+            var lookupProps;
+            if (GOKb.contextMenu.niceNames()) {
+              lookupProps = ["variantNames.variantName:Variant"];
+            } else {
+              lookupProps = ["variantNames.variantName"];
+            }
+            
             GOKb.handlers.lookup (
               GOKb.contextMenu.getTarget(),
               "platform",
-              ["variantNames.variantName:Variant"],
-              ["variantNames.variantName:Variant"],
+              lookupProps,
+              lookupProps,
               "Lookup Platform"
             );
           },
@@ -88,8 +120,8 @@ GOKb.contextMenu = {
             GOKb.handlers.lookup (
               GOKb.contextMenu.getTarget(),
               "imprint",
-              ["variantNames.variantName:Variant"],
-              ["variantNames.variantName:Variant"],
+              lookupProps,
+              lookupProps,
               "Lookup Imprint"
             );
           },
