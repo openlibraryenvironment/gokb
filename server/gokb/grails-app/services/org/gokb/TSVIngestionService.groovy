@@ -492,7 +492,17 @@ class TSVIngestionService {
              ip_id=null,
              ingest_cfg=null) {
 
+    if ( the_profile_id == null ) {
+      log.error("No datafile ID passed in to ingest")
+      return
+    }
+
     def the_profile = IngestionProfile.get(the_profile_id)
+
+    if ( the_profile == null )      {
+      log.error("Unable to datafile for ID ${datafile_id}")
+      return
+    }
 
     ingest2(the_profile.packageType,
            the_profile.packageName,
@@ -516,7 +526,8 @@ class TSVIngestionService {
 
     long start_time = System.currentTimeMillis();
 
-    def datafile = DataFile.get(datafile_id)
+    // Read does no dirty checking
+    def datafile = DataFile.read(datafile_id)
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
@@ -536,6 +547,7 @@ class TSVIngestionService {
       job?.setProgress(0)
 
       def kbart_beans=[]
+      def bad_kbart_beans=[]
 
       //we kind of assume that we need to convert to kbart
       if ("${packageType}"!='kbart2') {
@@ -576,19 +588,19 @@ class TSVIngestionService {
 
           long rowStartTime=System.currentTimeMillis()
 
-          writeToDB(kbart_beans[x],
-                    platformUrl,
-                    source,
-                    DataFile.get(datafile_id),
-                    ingest_date,
-                    ingest_systime,
-                    author_role,
-                    editor_role,
-                    Package.get(the_package_id),
-                    ingest_cfg )
+          if ( validateRow(kbart_beans[x] ) ) {
+            writeToDB(kbart_beans[x],
+                      platformUrl,
+                      source,
+                      ingest_date,
+                      ingest_systime,
+                      author_role,
+                      editor_role,
+                      Package.get(the_package_id),
+                      ingest_cfg )
+          }
 
           log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
-
         }
 
         job?.setProgress( x , kbart_beans.size() )
@@ -639,7 +651,6 @@ class TSVIngestionService {
   def writeToDB(the_kbart,
                 platform_url,
                 source,
-                the_datafile,
                 ingest_date,
                 ingest_systime,
                 author_role,
@@ -658,13 +669,22 @@ class TSVIngestionService {
     log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url?.host}")
 
     if ( the_kbart.title_url != null ) {
-      def title_url_host = new URL(the_kbart.title_url).host
-      log.debug("Got platform from title host :: ${title_url_host}")
-      platform = handlePlatform(title_url_host, source)
+      def title_url_host = null
+      try {
+        def title_url = new URL(the_kbart.title_url).host
+        title_url_host = title_url.host
+      }
+      catch ( Exception e ) {
+      }
+
+      if ( title_url_host ) {
+        log.debug("Got platform from title host :: ${title_url_host}")
+        platform = handlePlatform(title_url_host, source)
+      }
     }
-    else {
+
+    if ( platform == null ) {
       handlePlatform(platform_url.host, source)
-    }
 
     assert the_package != null
 
@@ -705,7 +725,6 @@ class TSVIngestionService {
 
             def pre_create_tipp_time = System.currentTimeMillis();
             createTIPP(source,
-                       the_datafile,
                        the_kbart,
                        the_package,
                        title,
@@ -751,7 +770,6 @@ class TSVIngestionService {
 
 
   def createTIPP(the_source,
-                 the_datafile,
                  the_kbart,
                  the_package,
                  the_title,
@@ -840,10 +858,6 @@ class TSVIngestionService {
 
     log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    // if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
-    //   the_datafile.tipps << tipp
-    // }
-    // the_datafile.save(flush:true)
     log.debug("createTIPP returning")
   }
 
@@ -899,30 +913,33 @@ class TSVIngestionService {
         //no match. create a new platform!
         log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
-        result = new Platform(
-                              name:host,
-                              primaryUrl:host,
-                              source:the_source)
-
-        // log.debug("Validate new platform");
-        // result.validate();
-
-        if ( result ) {
-          if (result.save(flush:true, failOnError:true)) {
-            log.debug("saved new platform: ${result}")
-          } else {
-            log.error("problem creating platform");
-            for (error in result.errors) {
-              log.error(error);
+        Platform.withNewTransaction {
+          result = new Platform(
+                                name:host,
+                                primaryUrl:host,
+                                source:the_source)
+  
+          // log.debug("Validate new platform");
+          // result.validate();
+  
+          if ( result ) {
+            if (result.save(flush:true, failOnError:true)) {
+              log.debug("saved new platform: ${result}")
+            } else {
+              log.error("problem creating platform");
+              for (error in result.errors) {
+                log.error(error);
+              }
             }
           }
-        }
-        else {
-          result.errors.allErrors.each {
-            log.error("Problem creating platform : ${e}");
+          else {
+            result.errors.allErrors.each {
+              log.error("Problem creating platform : ${e}");
+            }
+            throw new RuntimeException('Error creating new platform')
           }
-          throw new RuntimeException('Error creating new platform')
         }
+        result = Platform.get(result.id);
         break;
       case 1:
         //found a match
@@ -1092,5 +1109,31 @@ class TSVIngestionService {
     propertyInstanceMap.get().clear()
   }
 
+  def makeBadFile() {
+    def depositToken = java.util.UUID.randomUUID().toString();
+    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+    def sub1 = deposit_token.substring(0,2);
+    def sub2 = deposit_token.substring(2,4);
+    validateUploadDir("${baseUploadDir}");
+    validateUploadDir("${baseUploadDir}/${sub1}");
+    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
+    def bad_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
+    log.debug("makeBadFile... ${bad_file_name}");
+    def bad_file = new File(bad_file_name);
+    bad_file
+  }
+
+  private def validateUploadDir(path) {
+    File f = new File(path);
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
+    }
+  }
+
+  def validateRow(row_data) {
+    log.debug("Validate ${row_data}");
+    return true
+  }
 
 }

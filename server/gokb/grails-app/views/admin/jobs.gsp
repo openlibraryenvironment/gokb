@@ -5,7 +5,9 @@
 <title>GOKb: Jobs</title>
 </head>
 <body>
-  <h1 class="page-header">Jobs</h1>
+  <h1 class="page-header">
+  <span class="pull-right">${cms.executorService.executor.activeCount} out of ${cms.executorService.executor.poolSize} threads In use</span>
+  Jobs</h1>
   <table class="table table-bordered">
     <thead>
       <tr>
@@ -13,6 +15,7 @@
         <th>Description</th>
         <th>Has Started</th>
         <th>Start Time</th>
+        <th>End Time</th>
         <th>Progress%</th>
       </tr>
     </thead>
@@ -23,6 +26,7 @@
           <td>${v.description}</td>
           <td>${v.begun}</td>
           <td>${v.startTime}</td>
+          <td>${v.endTime}</td>
           <td>${v.progress}</td>
         </tr>
       </g:each>

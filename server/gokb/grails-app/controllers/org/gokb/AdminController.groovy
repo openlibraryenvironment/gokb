@@ -14,12 +14,12 @@ class AdminController {
   def concurrencyManagerService
 
   def tidyOrgData() {
-    
+
     concurrencyManagerService.createJob {
       def result = [:]
-  
+
       def publisher_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Publisher');
-  
+
       result.nonMasterOrgs = Org.executeQuery('''
          select org
          from org.gokb.cred.Org as org
@@ -27,19 +27,19 @@ class AdminController {
          where tag.owner.desc = 'Org.Authorized'
            and tag.value = 'N'
       ''');
-  
+
       result.nonMasterOrgs.each { nmo ->
-  
+
         if ( nmo.parent != null ) {
-    
+
             nmo.parent.variantNames.add(new KBComponentVariantName(variantName:nmo.name, owner:nmo.parent))
             nmo.parent..save();
-    
+
           log.debug("${nmo.id} ${nmo.parent?.id}")
           def combosToDelete = []
           nmo.incomingCombos.each { ic ->
             combosToDelete.add(ic); //ic.delete(flush:true)
-    
+
             if ( ic.type == publisher_combo_type ) {
               log.debug("Got a publisher combo");
               if ( nmo.parent != null ) {
@@ -61,21 +61,21 @@ class AdminController {
             combosToDelete.add(oc); //ic.delete(flush:true)
             // oc.delete(flush:true)
           }
-    
+
           nmo.incomingCombos.clear();
           nmo.outgoingCombos.clear();
-    
+
           combosToDelete.each { cd ->
             cd.delete(flush:true)
           }
-    
+
           nmo.delete(flush:true)
         }
       }
     }.startOrQueue()
     render(view: "logViewer", model: logViewer())
   }
-  
+
   def logViewer() {
     cache "until_changed"
     def f = new File ("${grailsApplication.config.log_location}")
@@ -83,7 +83,7 @@ class AdminController {
   }
 
   def reSummariseLicenses() {
-    
+
     concurrencyManagerService.createJob {
       DataFile.executeQuery("select d from DataFile as d where d.doctype=?",['http://www.editeur.org/onix-pl:PublicationsLicenseExpression']).each { df ->
         log.debug(df);AdminController
@@ -127,19 +127,19 @@ class AdminController {
     def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
     def temp_file = new File(temp_file_name)
 
-     OutputStream outStream = null;  
-     ByteArrayOutputStream byteOutStream = null;  
-     try {  
-       outStream = new FileOutputStream(temp_file);  
-       byteOutStream = new ByteArrayOutputStream();  
-       // writing bytes in to byte output stream  
-       byteOutStream.write(inputfile); //data  
-       byteOutStream.writeTo(outStream);  
-     } catch (IOException e) {  
-       e.printStackTrace();  
-     } finally {  
-       outStream.close();  
-     }  
+     OutputStream outStream = null;
+     ByteArrayOutputStream byteOutStream = null;
+     try {
+       outStream = new FileOutputStream(temp_file);
+       byteOutStream = new ByteArrayOutputStream();
+       // writing bytes in to byte output stream
+       byteOutStream.write(inputfile); //data
+       byteOutStream.writeTo(outStream);
+     } catch (IOException e) {
+       e.printStackTrace();
+     } finally {
+       outStream.close();
+     }
     log.debug("Created temp_file ${temp_file.size()}")
 
     temp_file
@@ -182,9 +182,9 @@ class AdminController {
     grailsCacheAdminService.clearBlocksCache()
     redirect(url: request.getHeader('referer'))
   }
-  
+
   def buildExtension() {
-    
+
     // Run the task in the background so we can show the logs in this thread without having to wait
     // for the task to finish.
     concurrencyManagerService.createJob {
@@ -203,7 +203,8 @@ class AdminController {
 
   def jobs() {
     def result=[:]
-    result.jobs = concurrencyManagerService.jobs
+    result.jobs = concurrencyManagerService.jobs.sort { it.key }
+    result.cms = concurrencyManagerService
 
     if ( request.format == 'JSON' ) {
       render result as JSON
