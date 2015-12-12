@@ -105,7 +105,9 @@ class PackagesController {
                                           new java.net.URL(platformUrl),
                                           Source.findByName(source),
                                           new_datafile_id,
-                                          job)
+                                          job,
+                                          params.providerName,
+                                          params.providerIdentifierNamespace)
             }
             catch ( Exception e ) {
               log.error("Problem",e)

@@ -509,6 +509,8 @@ class TSVIngestionService {
            the_profile.platformUrl,
            the_profile.source,
            datafile_id,
+           null,
+           null,
            job,
            ip_id,
            ingest_cfg)
@@ -521,6 +523,8 @@ class TSVIngestionService {
              source,
              datafile_id,
              job=null,
+             providerName=null,
+             providerIdentifierNamespace=null,
              ip_id=null,
              ingest_cfg=null) {
 
@@ -563,7 +567,7 @@ class TSVIngestionService {
       def editor_role_id = null;
 
       Package.withNewTransaction() {
-        the_package=handlePackage(packageName,source)
+        the_package=handlePackage(packageName,source,providerName)
         assert the_package != null
         the_package_id=the_package.id
         def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
@@ -865,7 +869,7 @@ class TSVIngestionService {
   //this is a lot more complex than this for journals. (which uses refine)
   //theres no notion in here of retiring packages for example.
   //for this v1, I've made this very simple - probably too simple.
-  def handlePackage(packageName, source) {
+  def handlePackage(packageName, source, providerName) {
     def result;
     def norm_pkg_name = GOKbTextUtils.normaliseString(packageName)
     def packages=Package.findAllByNormname(norm_pkg_name);
@@ -876,14 +880,21 @@ class TSVIngestionService {
 
         def newpkgid = null;
 
-          def newpkg = new Package(name:packageName, source:source)
-          if (newpkg.save(flush:true, failOnError:true)) {
-            newpkgid = newpkg.id
-          } else {
-            for (error in result.errors) {
-              log.error(error);
-            }
+        def newpkg = new Package(name:packageName, source:source)
+        if (newpkg.save(flush:true, failOnError:true)) {
+          newpkgid = newpkg.id
+          if ( providerName && providerName.length() > 0 ) {
+            def norm_provider_name = GOKbTextUtils.normaliseString(providerName)
+            def provider = org.gokb.cred.Org.findByNormname(norm_provider_name) ?: new Org(name:norm_provider_name).save(flush:true, failOnError:true);
+            newpkg.provider = provider
+            newpkg.save()
           }
+        } else {
+          for (error in result.errors) {
+            log.error(error);
+          }
+        }
+
 
         log.debug("Created new package : ${newpkgid} in current session");
         result = Package.get(newpkgid);
