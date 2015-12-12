@@ -359,15 +359,19 @@ class TSVIngestionService {
   }
 
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
-    if ( publisher_name != null ) {
-      def norm_pub_name = GOKbTextUtils.normaliseString(publisher_name)
-      def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
+
+    def clean_pub_name  = publisher_name?.replaceAll('"','').replaceAll('\'','');
+
+    if ( ( clean_pub_name != null ) && ( clean_pub_name.trim().length() > 0 ) ) {
+
+      def norm_pub_name = GOKbTextUtils.normaliseString(clean_pub_name)
+      def publisher = org.gokb.cred.Org.findAllByNormname(clean_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
         // log.debug ("Publisher lookup yielded no matches.")
-        def the_publisher = new Org(name:publisher_name)
+        def the_publisher = new Org(name:clean_pub_name)
         if (the_publisher.save(failOnError:true, flush:true)) {
           log.debug("saved ${the_publisher.name}")
           publisher << the_publisher
