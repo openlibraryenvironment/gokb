@@ -715,7 +715,10 @@ class TSVIngestionService {
 
           if (title) {
             addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
-            addPublisher(the_kbart.publisher_name, title)
+
+            if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
+              addPublisher(the_kbart.publisher_name, title)
+
             if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
               addPerson(the_kbart.first_author, author_role, title);
 
