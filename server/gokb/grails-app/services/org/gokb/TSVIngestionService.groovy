@@ -535,7 +535,8 @@ class TSVIngestionService {
                      identifierMap:[
                        'print_identifier':'issn',
                        'online_identifier':'eissn',
-                     ]
+                     ],
+                     defaultMedium:'Journal'
                    ]
     }
 
@@ -709,7 +710,7 @@ class TSVIngestionService {
           // log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
           if (title) {
-            addOtherFieldsToTitle(title, the_kbart)
+            addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
             addPublisher(the_kbart.publisher_name, title)
             if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
               addPerson(the_kbart.first_author, author_role, title);
@@ -745,8 +746,8 @@ class TSVIngestionService {
     }
   }
 
-  def addOtherFieldsToTitle(title, the_kbart) {
-    title.medium=RefdataCategory.lookupOrCreate("TitleInstance.Medium", "eBook")
+  def addOtherFieldsToTitle(title, the_kbart, ingest_cfg) {
+    title.medium=RefdataCategory.lookupOrCreate("TitleInstance.Medium", ingest_cfg.defaultMedium ?: "eBook")
     title.editionNumber=the_kbart.monograph_edition
     title.dateFirstInPrint=parseDate(the_kbart.date_monograph_published_print)
     title.dateFirstOnline=parseDate(the_kbart.date_monograph_published_online)
