@@ -50,13 +50,13 @@ class PackagesController {
         result.max = params.max ? Integer.parseInt(params.max) : 10;
         result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
-        def query_str = buildQuery(params);
+        def query_str = buildQuery('componentType:Package '+(q?:'*'));
 
         log.debug("Searching for ${query_str}");
 
         def search = esclient.search {
                        indices grailsApplication.config.globalSearch.indices
-                       types 'packages'
+                       types 'component'
                        source {
                          from = result.offset
                          size = result.max
