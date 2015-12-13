@@ -220,15 +220,15 @@ class TSVIngestionService {
       // We should raise a review request here if the match was made by cross checking
       // different identifier namespaces.
       if (results['x_check_matches'].size() == 1) {
-      def data = results['x_check_matches'][0]
-      // Fire the review request.
-      ReviewRequest.raise(
-        matches[0],
-        "Identifier type mismatch.",
-        "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
-        user,
-        project
-      )
+        def data = results['x_check_matches'][0]
+        // Fire the review request.
+        ReviewRequest.raise(
+          matches[0],
+          "Identifier type mismatch.",
+          "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
+          user,
+          project
+        )
       }
       // Now we can examine the text of the title.
       the_title = singleTIMatch(title, norm_title, matches[0], user, project)
@@ -544,7 +544,8 @@ class TSVIngestionService {
                        'print_identifier':'issn',
                        'online_identifier':'eissn',
                      ],
-                     defaultMedium:'Journal'
+                     defaultMedium:'Journal',
+                     providerIdentifierNamespace:providerIdentifierNamespace
                    ]
     }
 
@@ -675,12 +676,17 @@ class TSVIngestionService {
     //first we need a platform:
     def platform = null; // handlePlatform(platform_url.host, source)
 
-    log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url?.host}")
+    log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url?.host} title_url:${the_kbart.title_url}")
 
     if ( the_kbart.title_url != null ) {
+
+      log.debug("Extract host from ${the_kbart.title_url}");
+
       def title_url_host = null
+
       try {
         def title_url = new URL(the_kbart.title_url).host
+        log.debug("Extracted title_url ${title_url}");
         title_url_host = title_url.host
       }
       catch ( Exception e ) {
@@ -689,11 +695,17 @@ class TSVIngestionService {
       if ( title_url_host ) {
         log.debug("Got platform from title host :: ${title_url_host}")
         platform = handlePlatform(title_url_host, source)
+        log.debug("Platform result : ${platform}");
       }
     }
+    else {
+      log.debug("No title url");
+    }
 
-    if ( platform == null )
-      handlePlatform(platform_url.host, source)
+    if ( platform == null ) {
+      log.debug("Platform is still null - use the default");
+      platform = handlePlatform(platform_url.host, source)
+    }
 
     assert the_package != null
 
@@ -710,6 +722,16 @@ class TSVIngestionService {
 
         the_kbart.additional_isbns.each { identifier ->
           identifiers << [type: 'isbn', value:identifier]
+        }
+
+        if ( ( the_kbart.title_id ) && ( the_kbart.title_id ) ) {
+          log.debug("title_id ${the_kbart.title_id}");
+          if ( ingest_cfg.providerIdentifierNamespace ) {
+            identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
+          }
+          else {
+            identifiers << [type:'title_id', value:the_kbart.title_id]
+          }
         }
 
         if ( identifiers.size() > 0 ) {
@@ -933,10 +955,7 @@ class TSVIngestionService {
         log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
         Platform.withNewTransaction {
-          result = new Platform(
-                                name:host,
-                                primaryUrl:host,
-                                source:the_source)
+          result = new Platform( name:host, primaryUrl:host, source:the_source)
   
           // log.debug("Validate new platform");
           // result.validate();
@@ -964,7 +983,7 @@ class TSVIngestionService {
         //found a match
         result=platforms[0]
         log.debug("match platform found: ${result}")
-      break
+        break
       default:
         log.error("found multiple platforms when looking for ${host}")
       break
@@ -972,6 +991,7 @@ class TSVIngestionService {
 
     assert result != null
 
+    log.debug("handlePlatform returning ${result}");
     result;
   }
 

@@ -63,6 +63,8 @@ class PackagesController {
           def pkg = params.pkg
           def platformUrl = params.platformUrl
           def source = params.source
+          def providerName = params.providerName
+          def providerIdentifierNamespace = params.providerIdentifierNamespace
 
           def info = analyse(temp_file);
 
@@ -106,8 +108,8 @@ class PackagesController {
                                           Source.findByName(source),
                                           new_datafile_id,
                                           job,
-                                          params.providerName,
-                                          params.providerIdentifierNamespace)
+                                          providerName,
+                                          providerIdentifierNamespace)
             }
             catch ( Exception e ) {
               log.error("Problem",e)

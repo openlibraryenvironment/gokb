@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export GOKB_HOST="http://localhost:8080"
+
+
 curl -v --user admin:admin -X POST \
   --form content=@./doaj \
   --form source="CUFTS" \
@@ -9,7 +12,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="DOAJ" \
   --form providerIdentifierNamespace="DOAJ" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 
 curl -v --user admin:admin -X POST \
@@ -21,7 +24,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="American Chemical Society" \
   --form providerIdentifierNamespace="ACS" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./apa_psycarticles \
@@ -32,7 +35,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="APA PsycNET" \
   --form providerIdentifierNamespace="APA" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./brill_online_journals \
@@ -43,7 +46,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Brill Online" \
   --form providerIdentifierNamespace="BRILL" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./bmj_online \
@@ -54,7 +57,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="BMJ Publishing" \
   --form providerIdentifierNamespace="BMJ" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./jstor_complete \
@@ -65,7 +68,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="JSTOR CSP" \
   --form providerIdentifierNamespace="JSTOR" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./npg_journals \
@@ -76,7 +79,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Nature Publishing Group" \
   --form providerIdentifierNamespace="NPG" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./oxford_open \
@@ -87,7 +90,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Oxford Journals" \
   --form providerIdentifierNamespace="OxfordJournals" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./project_euclid_direct \
@@ -98,7 +101,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Project Euclid" \
   --form providerIdentifierNamespace="ProjectEuclid" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./project_euclid_free \
@@ -109,7 +112,7 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Project Euclid II" \
   --form providerIdentifierNamespace="ProjectEuclid" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
 
 curl -v --user admin:admin -X POST \
   --form content=@./"project_muse_alltitles" \
@@ -120,4 +123,4 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Project Muse" \
   --form providerIdentifierNamespace="ProjectMuse" \
-  https://gokb.k-int.com/gokb/packages/deposit
+  $GOKB_HOST/gokb/packages/deposit
