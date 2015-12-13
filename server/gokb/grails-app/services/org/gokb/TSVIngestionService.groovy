@@ -2,6 +2,7 @@ package org.gokb
 
 import java.util.Map;
 import java.util.Set;
+import java.util.GregorianCalendar;
 
 import au.com.bytecode.opencsv.CSVReader
 import au.com.bytecode.opencsv.bean.CsvToBean
@@ -24,7 +25,7 @@ import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.KBComponent
 import org.gokb.cred.KBComponentVariantName
-import org.gokb.cred.KBartRecord
+// import org.gokb.cred.KBartRecord
 import org.gokb.cred.Org
 import org.gokb.cred.Package;
 import org.gokb.cred.Person
@@ -371,23 +372,22 @@ class TSVIngestionService {
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
-        Org.withNewTransaction {
-          // log.debug ("Publisher lookup yielded no matches.")
-          def the_publisher = new Org(name:clean_pub_name)
-          if (the_publisher.save(failOnError:true, flush:true)) {
-            log.debug("saved ${the_publisher.name}")
-            publisher << the_publisher
-            ReviewRequest.raise(
-              ti,
-              "'${the_publisher}' added as a publisher of '${ti.name}'.",
-               "This publisher did not exist before, so has been newly created",
-              user, project)
-          } else {
-            the_publisher.errors.each { error ->
-              log.error("problem saving ${the_publisher.name}:${error}")
+          log.debug ("Publisher ${clean_pub_name} lookup yielded no matches.")
+          Org.withNewTransaction {
+            def the_publisher = new Org(name:clean_pub_name)
+            if (the_publisher.save(failOnError:true, flush:true)) {
+              log.debug("saved ${the_publisher.name}")
+              ReviewRequest.raise(
+                ti,
+                "'${the_publisher}' added as a publisher of '${ti.name}'.",
+                 "This publisher did not exist before, so has been newly created",
+                user, project)
+            } else {
+              the_publisher.errors.each { error ->
+                log.error("problem saving ${the_publisher.name}:${error}")
+              }
             }
           }
-        }
 
         //carry on...
         case 1:
@@ -560,7 +560,7 @@ class TSVIngestionService {
       job?.setProgress(0)
 
       def kbart_beans=[]
-      def bad_kbart_beans=[]
+      def badrows=[]
 
       //we kind of assume that we need to convert to kbart
       if ("${packageType}"!='kbart2') {
@@ -601,7 +601,7 @@ class TSVIngestionService {
 
           long rowStartTime=System.currentTimeMillis()
 
-          if ( validateRow(kbart_beans[x] ) ) {
+          if ( validateRow(x, badrows, kbart_beans[x] ) ) {
             writeToDB(kbart_beans[x],
                       platformUrl,
                       source,
@@ -610,7 +610,8 @@ class TSVIngestionService {
                       author_role,
                       editor_role,
                       Package.get(the_package_id),
-                      ingest_cfg )
+                      ingest_cfg,
+                      badrows )
           }
 
           log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
@@ -648,6 +649,11 @@ class TSVIngestionService {
           log.debug("Done")
         }
       }
+
+      if ( badrows.size() > 0 ) {
+        log.debug("There are ${badrows.size()} bad rows -- write to badfile and report")
+      }
+      
     }
     catch ( Exception e ) {
       log.error("Problem",e)
@@ -669,7 +675,8 @@ class TSVIngestionService {
                 author_role,
                 editor_role,
                 the_package,
-                ingest_cfg) {
+                ingest_cfg,
+                badrows) {
 
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
@@ -742,42 +749,47 @@ class TSVIngestionService {
 
         if ( identifiers.size() > 0 ) {
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
+          if ( title ) {
           title.source=source
           // log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
           if (title) {
             addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
 
-            if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
-              addPublisher(the_kbart.publisher_name, title)
+              if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
+                addPublisher(the_kbart.publisher_name, title)
 
-            if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
-              addPerson(the_kbart.first_author, author_role, title);
+              if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
+                addPerson(the_kbart.first_author, author_role, title);
 
-            if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
-              addPerson(the_kbart.first_editor, editor_role, title);
+              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
+                addPerson(the_kbart.first_editor, editor_role, title);
 
-            addSubjects(the_kbart.subjects, title)
+              addSubjects(the_kbart.subjects, title)
 
-            the_kbart.additional_authors.each { author ->
-              addPerson(author, author_role, title)
+              the_kbart.additional_authors.each { author ->
+                addPerson(author, author_role, title)
+              }
+
+              def pre_create_tipp_time = System.currentTimeMillis();
+              createTIPP(source,
+                         the_kbart,
+                         the_package,
+                         title,
+                         platform,
+                         ingest_date,
+                         ingest_systime)
+            } else {
+               log.warn("problem getting the title...")
             }
-
-            def pre_create_tipp_time = System.currentTimeMillis();
-            createTIPP(source,
-                       the_kbart,
-                       the_package,
-                       title,
-                       platform,
-                       ingest_date,
-                       ingest_systime)
-          } else {
-             log.warn("problem getting the title...")
           }
-
+          else {
+            badrows.add([rowdata:the_kbart, reasons: 'Unable to lookup or create title']);
+          }
         }
         else {
           log.debug("Skipping row - no identifiers")
+          badrows.add([rowdata:the_kbart, reasons: 'No usable identifiers']);
         }
 
     } else {
@@ -799,7 +811,7 @@ class TSVIngestionService {
     if ( datestr && ( datestr.length() > 0 ) ) {
       for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
         try {
-          parsed_date = i.next().parse(datestr.replaceAll('-','/'));
+          parsed_date = i.next().clone().parse(datestr.replaceAll('-','/'));
         }
         catch ( Exception e ) {
         }
@@ -907,7 +919,8 @@ class TSVIngestionService {
   def handlePackage(packageName, source, providerName) {
     def result;
     def norm_pkg_name = GOKbTextUtils.normaliseString(packageName)
-    def packages=Package.findAllByNormname(norm_pkg_name);
+    // def packages=Package.findAllByNormname(norm_pkg_name);
+    def packages=Package.executeQuery("select p from Package as p where p.normname=?",[norm_pkg_name],[readonly:false])
     switch (packages.size()) {
       case 0:
         //no match. create a new package!
@@ -951,7 +964,8 @@ class TSVIngestionService {
   def handlePlatform(host, the_source) {
 
     def result;
-    def platforms=Platform.findAllByPrimaryUrl(host);
+    // def platforms=Platform.findAllByPrimaryUrl(host);
+    def platforms=Platform.executeQuery("select p from Platform as p where p.primaryUrl=?",[host],[readonly:false])
 
 
     switch (platforms.size()) {
@@ -960,7 +974,6 @@ class TSVIngestionService {
         //no match. create a new platform!
         log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
-        Platform.withNewTransaction {
           result = new Platform( name:host, primaryUrl:host, source:the_source)
   
           // log.debug("Validate new platform");
@@ -982,8 +995,6 @@ class TSVIngestionService {
             }
             throw new RuntimeException('Error creating new platform')
           }
-        }
-        result = Platform.get(result.id);
         break;
       case 1:
         //found a match
@@ -1055,12 +1066,10 @@ class TSVIngestionService {
       }
 
       log.debug(result)
-      log.debug(new KBartRecord(result))
-
+      // log.debug(new KBartRecord(result))
       //this is a cheat cos I don't get why springer files don't work!
-
-
-      results<<new KBartRecord(result)
+      // results<<new KBartRecord(result)
+      results.add(result)
       nl=csv.readNext()
       rownum++
     }
@@ -1108,7 +1117,9 @@ class TSVIngestionService {
 
       log.debug("** Process row:${row_counter++} ${nl}");
 
-      KBartRecord result = new KBartRecord()
+      // KBartRecord result = new KBartRecord()
+      def result = [:]
+
       fileRules.each { fileRule ->
         boolean done=false
         String data = nl[col_positions[fileRule.field]];
@@ -1176,9 +1187,36 @@ class TSVIngestionService {
     }
   }
 
-  def validateRow(row_data) {
-    log.debug("Validate ${row_data}");
-    return true
+  def validateRow(rownum, badrows, row_data) {
+    log.debug("Validate :: ${row_data}");
+    def result = true
+    def reasons = []
+   
+    // check the_kbart.date_first_issue_online is present and validates
+    if ( row_data.date_first_issue_online != null ) {
+      def parsed_start_date = parseDate(row_data.date_first_issue_online)
+      if ( parsed_start_date == null ) {
+        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}");
+        result=false
+      }
+      else {
+        Calendar calendar = new GregorianCalendar();
+        calendar.setTime(parsed_start_date);
+        Calendar rightNow = Calendar.getInstance();
+        def this_year = rightNow.get(Calendar.YEAR)
+        if ( calendar.get(Calendar.YEAR) > this_year+2 ) {  // Allow for some distance into the future.
+          reasons.add("Row ${rownum} contains a suspect date/year for date_first_issue_online :: ${row_data.date_first_issue_online}");
+          result=false
+        }
+      }
+    }
+
+    if ( !result ) {
+      log.error("Recording bad row : ${reasons}");
+      badrows.add([rowdata:row_data, reasons: reasons]);
+    }
+
+    return result
   }
 
 }

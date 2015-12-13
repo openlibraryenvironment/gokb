@@ -2,19 +2,6 @@
 
 export GOKB_HOST="http://localhost:8080"
 
-
-curl -v --user admin:admin -X POST \
-  --form content=@./doaj \
-  --form source="CUFTS" \
-  --form fmt="cufts" \
-  --form pkg="DOAJ_Complete" \
-  --form platformUrl="http://cufts.org/doaj" \
-  --form format="JSON" \
-  --form providerName="DOAJ" \
-  --form providerIdentifierNamespace="DOAJ" \
-  $GOKB_HOST/gokb/packages/deposit
-
-
 curl -v --user admin:admin -X POST \
   --form content=@./acs_legacy_archives \
   --form source="CUFTS" \
@@ -25,6 +12,9 @@ curl -v --user admin:admin -X POST \
   --form providerName="American Chemical Society" \
   --form providerIdentifierNamespace="ACS" \
   $GOKB_HOST/gokb/packages/deposit
+
+sleep 5 
+
 
 curl -v --user admin:admin -X POST \
   --form content=@./apa_psycarticles \
@@ -37,6 +27,9 @@ curl -v --user admin:admin -X POST \
   --form providerIdentifierNamespace="APA" \
   $GOKB_HOST/gokb/packages/deposit
 
+sleep 5 
+
+
 curl -v --user admin:admin -X POST \
   --form content=@./brill_online_journals \
   --form source="CUFTS" \
@@ -47,6 +40,9 @@ curl -v --user admin:admin -X POST \
   --form providerName="Brill Online" \
   --form providerIdentifierNamespace="BRILL" \
   $GOKB_HOST/gokb/packages/deposit
+
+sleep 5 
+
 
 curl -v --user admin:admin -X POST \
   --form content=@./bmj_online \
@@ -59,6 +55,9 @@ curl -v --user admin:admin -X POST \
   --form providerIdentifierNamespace="BMJ" \
   $GOKB_HOST/gokb/packages/deposit
 
+sleep 5 
+
+
 curl -v --user admin:admin -X POST \
   --form content=@./jstor_complete \
   --form source="CUFTS" \
@@ -69,6 +68,9 @@ curl -v --user admin:admin -X POST \
   --form providerName="JSTOR CSP" \
   --form providerIdentifierNamespace="JSTOR" \
   $GOKB_HOST/gokb/packages/deposit
+
+sleep 5 
+
 
 curl -v --user admin:admin -X POST \
   --form content=@./npg_journals \
@@ -81,6 +83,9 @@ curl -v --user admin:admin -X POST \
   --form providerIdentifierNamespace="NPG" \
   $GOKB_HOST/gokb/packages/deposit
 
+sleep 5 
+
+
 curl -v --user admin:admin -X POST \
   --form content=@./oxford_open \
   --form source="CUFTS" \
@@ -91,6 +96,9 @@ curl -v --user admin:admin -X POST \
   --form providerName="Oxford Journals" \
   --form providerIdentifierNamespace="OxfordJournals" \
   $GOKB_HOST/gokb/packages/deposit
+
+sleep 5 
+
 
 curl -v --user admin:admin -X POST \
   --form content=@./project_euclid_direct \
@@ -103,6 +111,9 @@ curl -v --user admin:admin -X POST \
   --form providerIdentifierNamespace="ProjectEuclid" \
   $GOKB_HOST/gokb/packages/deposit
 
+sleep 5 
+
+
 curl -v --user admin:admin -X POST \
   --form content=@./project_euclid_free \
   --form source="CUFTS" \
@@ -114,6 +125,8 @@ curl -v --user admin:admin -X POST \
   --form providerIdentifierNamespace="ProjectEuclid" \
   $GOKB_HOST/gokb/packages/deposit
 
+sleep 5 
+
 curl -v --user admin:admin -X POST \
   --form content=@./"project_muse_alltitles" \
   --form source="CUFTS" \
@@ -124,3 +137,17 @@ curl -v --user admin:admin -X POST \
   --form providerName="Project Muse" \
   --form providerIdentifierNamespace="ProjectMuse" \
   $GOKB_HOST/gokb/packages/deposit
+
+sleep 5 
+
+curl -v --user admin:admin -X POST \
+  --form content=@./doaj \
+  --form source="CUFTS" \
+  --form fmt="cufts" \
+  --form pkg="DOAJ_Complete" \
+  --form platformUrl="http://cufts.org/doaj" \
+  --form format="JSON" \
+  --form providerName="DOAJ" \
+  --form providerIdentifierNamespace="DOAJ" \
+  $GOKB_HOST/gokb/packages/deposit
+
