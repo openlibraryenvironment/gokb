@@ -28,6 +28,45 @@
          </ul>
        </div>
 
+       <div class="row">
+         <div class="col-md-12">
+           <g:form class="form" role="form" action="packageContent" method="get">
+             <span class="input-group">
+               <input class="form-control input-large" type="text" name="q"/>
+               <span class="input-group-btn">
+                 <button class="btn btn-default" type="submit">Search</button>
+               </span>
+             </span>
+           </g:form><br/>&nbsp;<br/>
+         </div>
+       </div>
+
+       <div class="row">
+         <div class="col-md-12">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Package name</th>
+                <th>Provider</th>
+                <th>Title count</th>
+                <th>Last updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <g:each in="${hits}" var="hit">
+                <tr>
+                  <td>${hit}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </g:each>
+            </tbody>
+          </table>
+         </div>
+       </div>
+
+
       </div> <!-- /.container -->
     </nav>
 
