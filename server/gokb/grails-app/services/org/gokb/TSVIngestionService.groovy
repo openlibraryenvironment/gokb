@@ -364,25 +364,28 @@ class TSVIngestionService {
 
     if ( ( clean_pub_name != null ) && ( clean_pub_name.trim().length() > 0 ) ) {
 
+      log.debug("Org lookup: ${clean_pub_name}");
       def norm_pub_name = GOKbTextUtils.normaliseString(clean_pub_name)
       def publisher = org.gokb.cred.Org.findAllByNormname(clean_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
-        // log.debug ("Publisher lookup yielded no matches.")
-        def the_publisher = new Org(name:clean_pub_name)
-        if (the_publisher.save(failOnError:true, flush:true)) {
-          log.debug("saved ${the_publisher.name}")
-          publisher << the_publisher
-          ReviewRequest.raise(
-            ti,
-            "'${the_publisher}' added as a publisher of '${ti.name}'.",
-             "This publisher did not exist before, so has been newly created",
-            user, project)
-        } else {
-          the_publisher.errors.each { error ->
-            log.error("problem saving ${the_publisher.name}:${error}")
+        Org.withNewTransaction {
+          // log.debug ("Publisher lookup yielded no matches.")
+          def the_publisher = new Org(name:clean_pub_name)
+          if (the_publisher.save(failOnError:true, flush:true)) {
+            log.debug("saved ${the_publisher.name}")
+            publisher << the_publisher
+            ReviewRequest.raise(
+              ti,
+              "'${the_publisher}' added as a publisher of '${ti.name}'.",
+               "This publisher did not exist before, so has been newly created",
+              user, project)
+          } else {
+            the_publisher.errors.each { error ->
+              log.error("problem saving ${the_publisher.name}:${error}")
+            }
           }
         }
 
@@ -685,9 +688,9 @@ class TSVIngestionService {
       def title_url_host = null
 
       try {
-        def title_url = new URL(the_kbart.title_url).host
-        log.debug("Extracted title_url ${title_url}");
-        title_url_host = title_url.host
+        def title_url = new URL(the_kbart.title_url)
+        log.debug("Parsed title_url : ${title_url}");
+        title_url_host = title_url.getHost()
       }
       catch ( Exception e ) {
       }
@@ -696,6 +699,9 @@ class TSVIngestionService {
         log.debug("Got platform from title host :: ${title_url_host}")
         platform = handlePlatform(title_url_host, source)
         log.debug("Platform result : ${platform}");
+      }
+      else {
+        log.debug("title_url_host::${title_url_host}");
       }
     }
     else {
