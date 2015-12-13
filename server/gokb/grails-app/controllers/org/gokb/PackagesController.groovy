@@ -23,16 +23,13 @@ class PackagesController {
   def grailsApplication
 
 
-  def index() {
+  def packageContent() {
+    log.debug("packageContent::${params}")
     def result = [:]
-    // User user = springSecurityService.currentUser
-    // For now, just get all the items owned by this user - eventually have a folder structure
-    // result.saved_items = SavedSearch.executeQuery('Select ss from SavedSearch as ss where ss.owner = ?',[user]);
-    log.debug("Packages::index ${params}.");
-    result
+     result
   }
 
-  def packageContent() {
+  def index() {
     log.debug("packageContent::${params}")
     def result = [:]
     org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
@@ -50,7 +47,7 @@ class PackagesController {
         result.max = params.max ? Integer.parseInt(params.max) : 10;
         result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
-        def query_str = buildQuery('componentType:Package '+(q?:'*'));
+        def query_str = 'componentType:Package AND '+(params.q?:'*');
 
         log.debug("Searching for ${query_str}");
 
@@ -73,6 +70,8 @@ class PackagesController {
         }
 
         result.resultsTotal = search.response.hits.totalHits
+        log.debug("found ${result.resultsTotal} records")
+
         // We pre-process the facet response to work around some translation issues in ES
 
         if ( search.response.facets != null ) {
@@ -86,6 +85,9 @@ class PackagesController {
           }
         }
       }
+    }
+    catch ( Exception e ) {
+      log.debug("Problem",e)
     }
     finally {
     }

@@ -30,7 +30,7 @@
 
        <div class="row">
          <div class="col-md-12">
-           <g:form class="form" role="form" action="packageContent" method="get">
+           <g:form class="form" role="form" controller="packages" action="index" method="get">
              <span class="input-group">
                <input class="form-control input-large" type="text" name="q"/>
                <span class="input-group-btn">
@@ -55,7 +55,7 @@
             <tbody>
               <g:each in="${hits}" var="hit">
                 <tr>
-                  <td>${hit}</td>
+                  <td>${hit.source.name}</td>
                   <td></td>
                   <td></td>
                   <td></td>
