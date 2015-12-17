@@ -40,7 +40,7 @@ curl -v --user admin:admin -X POST \
 curl -v --user admin:admin -X POST \
   --form content=@./bmj_online \
   --form source="CUFTS" \
-  --form fmt="cufts" \
+  --form fmt="cuftsBMJ" \
   --form pkg="BMJ Publishing Group: BMJ Online" \
   --form platformUrl="http://cufts.org/doaj" \
   --form format="JSON" \
