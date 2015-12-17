@@ -19,18 +19,81 @@ class PackagesController {
   def springSecurityService
   def concurrencyManagerService
   def TSVIngestionService
+  def ESWrapperService
+  def grailsApplication
 
-  def index() {
-    def result = [:]
-    // User user = springSecurityService.currentUser
-    // For now, just get all the items owned by this user - eventually have a folder structure
-    // result.saved_items = SavedSearch.executeQuery('Select ss from SavedSearch as ss where ss.owner = ?',[user]);
-    log.debug("Packages::index ${params}.");
-    result
-  }
 
   def packageContent() {
     log.debug("packageContent::${params}")
+    def result = [:]
+     result
+  }
+
+  def index() {
+    log.debug("packageContent::${params}")
+    def result = [:]
+    org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
+    org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
+    try {
+
+      if ( params.q && params.q.length() > 0) {
+
+        // Comment out replacement of ' by " so we can do exact string searching on identifiers - not sure what the use case
+        // was for this anyway. Pls document in comment and re-add if needed.
+        // params.q = params.q.replace('"',"'")
+        params.q = params.q.replace('[',"(")
+        params.q = params.q.replace(']',")")
+
+        result.max = params.max ? Integer.parseInt(params.max) : 10;
+        result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+
+        def query_str = 'componentType:Package AND '+(params.q?:'*');
+
+        log.debug("Searching for ${query_str}");
+
+        def search = esclient.search {
+                       indices grailsApplication.config.globalSearch.indices
+                       types 'component'
+                       source {
+                         from = result.offset
+                         size = result.max
+                         query {
+                           query_string (query: query_str)
+                         }
+                       }
+                     }
+
+        result.hits = search.response.hits
+
+        if(search.response.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
+          search.response.hits.maxScore = 0;
+        }
+
+        result.resultsTotal = search.response.hits.totalHits
+        log.debug("found ${result.resultsTotal} records")
+
+        // We pre-process the facet response to work around some translation issues in ES
+
+        if ( search.response.facets != null ) {
+          result.facets = [:]
+          search.response.facets.facets.each { facet ->
+            def facet_values = []
+            facet.value.entries.each { fe ->
+              facet_values.add([term: fe.term,display:fe.term,count:"${fe?.count}"])
+            }
+            result.facets[facet.key] = facet_values
+          }
+        }
+      }
+    }
+    catch ( Exception e ) {
+      log.debug("Problem",e)
+    }
+    finally {
+    }
+
+    result;
+
   }
 
   def deposit() {
@@ -63,6 +126,8 @@ class PackagesController {
           def pkg = params.pkg
           def platformUrl = params.platformUrl
           def source = params.source
+          def providerName = params.providerName
+          def providerIdentifierNamespace = params.providerIdentifierNamespace
 
           def info = analyse(temp_file);
 
@@ -105,7 +170,9 @@ class PackagesController {
                                           new java.net.URL(platformUrl),
                                           Source.findByName(source),
                                           new_datafile_id,
-                                          job)
+                                          job,
+                                          providerName,
+                                          providerIdentifierNamespace)
             }
             catch ( Exception e ) {
               log.error("Problem",e)

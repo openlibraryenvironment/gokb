@@ -202,14 +202,20 @@ class AdminController {
   }
 
   def jobs() {
+    log.debug("Jobs");
     def result=[:]
+    log.debug("Sort");
     result.jobs = concurrencyManagerService.jobs.sort { it.key }
+    log.debug("concurrency manager service");
     result.cms = concurrencyManagerService
 
+    log.debug("Render");
     if ( request.format == 'JSON' ) {
+      log.debug("JSON Render");
       render result as JSON
     }
 
+    log.debug("Return");
     result
   }
 }
