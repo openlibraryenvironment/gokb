@@ -96,6 +96,54 @@ class PackagesController {
 
   }
 
+  def preflight() {
+   def result = [:]
+    log.debug("deposit::${params}")
+    def jobid = null;
+
+    if ( request.method=='POST') {
+      log.debug("Handling post")
+
+      if ( request instanceof MultipartHttpServletRequest ) {
+
+        def upload_mime_type = request.getFile("content")?.contentType  // getPart?
+        def upload_filename = request.getFile("content")?.getOriginalFilename()
+        def new_datafile_id = null
+
+        log.debug("Multipart")
+
+        if ( upload_mime_type &&
+             upload_filename &&
+             params.pkg &&
+             params.platformUrl &&
+             params.fmt &&
+             params.source ) {
+
+          def deposit_token = java.util.UUID.randomUUID().toString();
+          def temp_file = copyUploadedFile(request.getFile("content"), deposit_token);
+          log.debug("Got file content")
+          def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype',params.fmt).save()
+          def pkg = params.pkg
+          def platformUrl = params.platformUrl
+          def source = params.source
+          def providerName = params.providerName
+          def providerIdentifierNamespace = params.providerIdentifierNamespace
+
+          def info = analyse(temp_file);
+
+          TSVIngestionService.preflight(format_rdv,
+                                        pkg,
+                                        new java.net.URL(platformUrl),
+                                        Source.findByName(source),
+                                        request.getFile("content"),
+                                        providerName,
+                                        providerIdentifierNamespace)
+
+        }
+      }
+    }
+  }
+
   def deposit() {
     def result = [:]
     log.debug("deposit::${params}")

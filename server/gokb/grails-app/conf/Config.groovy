@@ -95,6 +95,15 @@ possible_date_formats = [
     new SimpleDateFormat('yyyy')
 ];
 
+isxn_formatter = { issn_string ->
+      def result = issn_string
+      def trimmed = (issn_string?:'').trim()
+      if ( trimmed.length() == 8 ) {
+        result = issn_string.substring(0,4)+"-"+issn_string.substring(4,8)
+      }
+      return result;
+    }
+
 
 identifiers = [
   "class_ones" : [
@@ -108,6 +117,11 @@ identifiers = [
   // is found against a title but as an eISSN we still treat this as a match
   "cross_checks" : [
     ["issn", "eissn"]
+  ],
+
+  formatters : [
+    'issn' : isxn_formatter,
+    'eissn' : isxn_formatter,
   ]
 ]
 // if (System.properties["${appName}.config.location"]) {

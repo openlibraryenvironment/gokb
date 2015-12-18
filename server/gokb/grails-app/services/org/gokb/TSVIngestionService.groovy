@@ -39,6 +39,7 @@ import org.gokb.cred.TitleInstancePackagePlatform;
 import org.gokb.cred.User;
 import org.gokb.cred.DataFile;
 import org.gokb.cred.IngestionProfile;
+import org.gokb.exceptions.*;
 import com.k_int.TextUtils
 
 
@@ -82,75 +83,88 @@ class TSVIngestionService {
 
     // Go through each of the class_one_ids and look for a match.
     ids.each { id_def ->
-    if (id_def.type && id_def.value) {
-      log.debug("id_def.type")
-      // id_def is map with keys 'type' and 'value'
-      Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
-      // Add the id.
-      result['ids'] << the_id
-      log.debug("class_one_match ids ${result['ids']}")
-      // We only treat a component as a match if the matching Identifer
-      // is a class 1 identifier.
-      if (class_one_ids.contains(id_def.type)) {
-      // Flag class one is present.
-      result['class_one'] = true
-      // Flag for title match
-      boolean title_match = false
-      // If we find an ID then lookup the components.
-      Set<KBComponent> comp = the_id.identifiedComponents
-      comp.each { KBComponent c ->
-        // Ensure we're not looking at a Hibernate Proxy class representation of the class
-        KBComponent dproxied = ClassUtils.deproxy(c);
-        // Only add if it's a title.
-        if ( dproxied instanceof TitleInstance ) {
-          title_match = true
-          result['matches'] << (dproxied as TitleInstance)
+      if (id_def.type && id_def.value) {
+        log.debug("id_def.type")
+  
+        def id_value = id_def.value
+        // id_def is map with keys 'type' and 'value'
+        if ( grailsApplication.config.identifiers.formatters[id_def.type] ) {
+          // If we have a formatter for this kind of identifier, call it here.
+          id_value = grailsApplication.config.identifiers.formatters[id_def.type](id_value)
         }
-      }
-      // Did the ID yield a Title match?
-      log.debug("title match ${title_match}")
-      if (!title_match) {
-        log.debug ("No class one ti match.")
-        // We should see if the current ID namespace should be cross checked with another.
-        def other_ns = null
-        for (int i=0; i<xcheck.size() && (!(other_ns)); i++) {
-        Set<String> test = xcheck[i]
-        if (test.contains(id_def.type)) {
-          // Create the set then remove the matched instance to test teh remaining ones.
-          other_ns = new HashSet<String>(test)
-          // Remove the current namespace.
-          other_ns.remove(id_def.type)
-          log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
-          Identifier xc_id = null
-          for (int j=0; j<other_ns.size() && !(xc_id); j++) {
-          String ns = other_ns[j]
-          IdentifierNamespace namespace = IdentifierNamespace.findByValue(ns)
-          if (namespace) {
-            // Lookup the identifier namespace.
-            xc_id = Identifier.findByNamespaceAndValue(namespace, id_def.value)
-            log.debug ("Looking up ${ns}:${id_def.value} returned ${xc_id}.")
-            comp = xc_id?.identifiedComponents
-            comp?.each { KBComponent c ->
+  
+        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
+        // Add the id.
+        result['ids'] << the_id
+        log.debug("class_one_match ids ${result['ids']}")
+        // We only treat a component as a match if the matching Identifer
+        // is a class 1 identifier.
+        if (class_one_ids.contains(id_def.type)) {
+          // Flag class one is present.
+          result['class_one'] = true
+          // Flag for title match
+          boolean title_match = false
+          // If we find an ID then lookup the components.
+          Set<KBComponent> comp = the_id.identifiedComponents
+          comp.each { KBComponent c ->
             // Ensure we're not looking at a Hibernate Proxy class representation of the class
             KBComponent dproxied = ClassUtils.deproxy(c);
             // Only add if it's a title.
             if ( dproxied instanceof TitleInstance ) {
-              // log.debug ("Found ${id_def.value} in ${ns} namespace.")
-              // Save details here so we can raise a review request, only if a single title was matched.
-              result['x_check_matches'] << [
-              "suppliedNS"  : id_def.type,
-              "foundNS"     : ns
-              ]
+              title_match = true
               result['matches'] << (dproxied as TitleInstance)
             }
+          }
+    
+          // Did the ID yield a Title match?
+          log.debug("title match for ${id_def.value} : ${title_match}")
+    
+          if (!title_match) {
+            log.debug ("No class one ti match against ${id_def.type}:${id_def.value}. Cross-checking")
+    
+            // We should see if the current ID namespace should be cross checked with another.
+            def other_ns = null
+            for (int i=0; i<xcheck.size() && (!(other_ns)); i++) {
+              Set<String> test = xcheck[i]
+              if (test.contains(id_def.type)) {
+                // Create the set then remove the matched instance to test teh remaining ones.
+                other_ns = new HashSet<String>(test)
+                // Remove the current namespace.
+                other_ns.remove(id_def.type)
+                log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
+                Identifier xc_id = null
+                for (int j=0; j<other_ns.size() && !(xc_id); j++) {
+                  String ns = other_ns[j]
+                  IdentifierNamespace namespace = IdentifierNamespace.findByValue(ns)
+                  if (namespace) {
+                    // Lookup the identifier namespace.
+                    xc_id = Identifier.findByNamespaceAndValue(namespace, id_value)
+                    log.debug ("Looking up ${ns}:${id_value} returned ${xc_id}.")
+                    comp = xc_id?.identifiedComponents
+                    comp?.each { KBComponent c ->
+                      // Ensure we're not looking at a Hibernate Proxy class representation of the class
+                      KBComponent dproxied = ClassUtils.deproxy(c);
+                      // Only add if it's a title.
+                      if ( dproxied instanceof TitleInstance ) {
+                        // Save details here so we can raise a review request, only if a single title was matched.
+                        result['x_check_matches'] << [
+                        "suppliedNS"  : id_def.type,
+                        "foundNS"     : ns
+                        ]
+                        result['matches'] << (dproxied as TitleInstance)
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
+          else {
+            // Hurrah! we got a title match
+            log.debug ("Class one ti match against ${id_def.type}:${id_def.value}. Cross-checking")
           }
         }
-        }
       }
-      }
-    }
     }
     result
   }
@@ -231,8 +245,15 @@ class TSVIngestionService {
           project
         )
       }
+
       // Now we can examine the text of the title.
-      the_title = singleTIMatch(title, norm_title, matches[0], user, project)
+      the_title = singleTIMatch(title, 
+                                norm_title, 
+                                matches[0], 
+                                user, 
+                                project, 
+                                ingest_cfg.inconsistent_title_id_behavior,
+                                identifiers)
       break;
     default :
       // Multiple matches.
@@ -244,6 +265,8 @@ class TSVIngestionService {
     if (the_title) {
       results['ids'].each {
         if ( ! the_title.ids.contains(it) ) {
+          // We should **NOT** do this in the case where we are creating a new title because the publisher listed a title
+          // in the title history group using an identifier in that group.
           the_title.ids.add(it);
         }
       }
@@ -453,43 +476,81 @@ class TSVIngestionService {
     ti
   }
 
-  private TitleInstance singleTIMatch(String title, String norm_title, TitleInstance ti, User user, project = null) {
+  private TitleInstance singleTIMatch(String title, 
+                                      String norm_title, 
+                                      TitleInstance ti, 
+                                      User user, 
+                                      project = null, 
+                                      inconsistent_title_id_behaviour = 'add_as_variant',
+                                      identifiers) {
     // The threshold for a good match.
     double threshold = grailsApplication.config.cosine.good_threshold
     // Work out the distance between the 2 title strings.
     double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title)
     // Check the distance.
+
+    def result = ti;
+
     switch (distance) {
-    case 1 :
-      // Do nothing just continue using the TI.
-      // log.debug("Exact distance match for TI.")
-      break
-    case {
-      ti.variantNames.find {alt ->
-      GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
-      }}:
-      // Good match on existing variant titles
-      log.debug("Good match for TI on variant.")
-      break
-    case {it >= threshold} :
-      // Good match. Need to add as alternate name.
-      log.debug("Good distance match for TI. Add as variant.")
-      ti.addVariantTitle(title)
-      break
-    default :
-      // Bad match...
-      ti.addVariantTitle(title)
-      // Raise a review request
-      ReviewRequest.raise(
-        ti,
-        "'${title}' added as a variant of '${ti.name}'.",
-        "Match was made on 1st class identifier but title name seems to be very different.",
-        user, project
-        )
-      break
+      case 1 :
+        // Do nothing just continue using the TI.
+        // log.debug("Exact distance match for TI.")
+        break
+  
+      case {
+        ti.variantNames.find {alt ->
+        GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
+        }}:
+        // Good match on existing variant titles
+        log.debug("Good match for TI on variant.")
+        break
+
+      case {it >= threshold} :
+        // Good match. Need to add as alternate name.
+        log.debug("Good distance match for TI. Add as variant.")
+        ti.addVariantTitle(title)
+        break
+
+      default :
+
+        // We've got an inconsistent title/id situation here -- It might be a legitimate variant, but more likely
+        // the publisher is referring to an earlier title in the title history using a later identifier.
+
+        // Check #1 see if this title appears somewhere else in the title hisory for the identified record
+        def title_in_history = ti.findInTitleHistory(title)
+
+        if ( title_in_history ) {
+          log.debug("Using title string matched from title history ${ti} -> ${title_in_history}");
+          result=title_in_history
+          result.title_status_properties.matched_by='Title In Title History'
+        }
+        else {
+
+
+          // NO match in title history -- depends what the import user wants us to do now.
+          if ( inconsistent_title_id_behaviour == 'add_as_variant' ) {
+            // Add as a variant title string to the identified title
+            ti.addVariantTitle(title)
+            // Raise a review request
+            ReviewRequest.raise(
+              ti,
+              "'${title}' added as a variant of '${ti.name}'.",
+              "Match was made on 1st class identifier but title name seems to be very different.",
+              user, project
+              )
+          }
+          else if ( inconsistent_title_id_behaviour == 'reject' ) {
+            throw new InconsistentTitleIdentifierException("New title \"${title}\" matched via its identifiers ${identifiers} against title [${ti.id}] but that title string is \"${ti.name}\"")
+          }
+          else {
+            // New title without an identifier linked to the title history for the originally identified title
+
+          }
+        }
+        break
     }
 
-    ti
+    result
   }
 
   //these are now ingestions of profiles.
@@ -548,7 +609,8 @@ class TSVIngestionService {
                        'online_identifier':'eissn',
                      ],
                      defaultMedium:'Journal',
-                     providerIdentifierNamespace:providerIdentifierNamespace
+                     providerIdentifierNamespace:providerIdentifierNamespace,
+                     inconsistent_title_id_behavior:'reject'
                    ]
     }
 
@@ -574,86 +636,95 @@ class TSVIngestionService {
       def author_role_id = null;
       def editor_role_id = null;
 
-      Package.withNewTransaction() {
-        the_package=handlePackage(packageName,source,providerName)
-        assert the_package != null
-        the_package_id=the_package.id
-        def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
-        author_role_id = author_role.id
-        def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
-        editor_role_id = editor_role.id
-      }
+      def preflight_result = preflight( kbart_beans, ingest_cfg ) 
+      if ( preflight_result.passed ) {
 
-
-      long startTime=System.currentTimeMillis()
-
-      log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package_id}")
-      //now its converted, ingest it into the database.
-
-      for (int x=0; x<kbart_beans.size;x++) {
-
-        Package.withNewTransaction {
-
-          def author_role = RefdataValue.get(author_role_id)
-          def editor_role = RefdataValue.get(editor_role_id)
-
-          log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
-
-          long rowStartTime=System.currentTimeMillis()
-
-          if ( validateRow(x, badrows, kbart_beans[x] ) ) {
-            writeToDB(kbart_beans[x],
-                      platformUrl,
-                      source,
-                      ingest_date,
-                      ingest_systime,
-                      author_role,
-                      editor_role,
-                      Package.get(the_package_id),
-                      ingest_cfg,
-                      badrows )
+        log.debug("Passed preflight -- ingest");
+  
+        Package.withNewTransaction() {
+          the_package=handlePackage(packageName,source,providerName)
+          assert the_package != null
+          the_package_id=the_package.id
+          def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+          author_role_id = author_role.id
+          def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+          editor_role_id = editor_role.id
+        }
+  
+  
+        long startTime=System.currentTimeMillis()
+  
+        log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package_id}")
+        //now its converted, ingest it into the database.
+  
+        for (int x=0; x<kbart_beans.size;x++) {
+  
+          Package.withNewTransaction {
+  
+            def author_role = RefdataValue.get(author_role_id)
+            def editor_role = RefdataValue.get(editor_role_id)
+  
+            log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
+  
+            long rowStartTime=System.currentTimeMillis()
+  
+            if ( validateRow(x, badrows, kbart_beans[x] ) ) {
+              writeToDB(kbart_beans[x],
+                        platformUrl,
+                        source,
+                        ingest_date,
+                        ingest_systime,
+                        author_role,
+                        editor_role,
+                        Package.get(the_package_id),
+                        ingest_cfg,
+                        badrows )
+            }
+  
+            log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
           }
-
-          log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
-        }
-
-        job?.setProgress( x , kbart_beans.size() )
-
-        if ( x % 25 == 0 ) {
-          cleanUpGorm()
-        }
-      }
-
-      log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}");
-
-      TitleInstancePackagePlatform.withNewTransaction {
-        try {
-          // Find all tipps in this package which have a lastSeen before the ingest date
-          def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
-                           'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                           'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
-                          [pkg:the_package_id,dt:ingest_systime]);
-
-          q.each { tipp ->
-            log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
-            // tipp.deleteSoft()
-            tipp.accessEndDate = new Date();
-            tipp.save(failOnError:true,flush:true)
+  
+          job?.setProgress( x , kbart_beans.size() )
+  
+          if ( x % 25 == 0 ) {
+            cleanUpGorm()
           }
-          log.debug("Completed tipp cleanup")
         }
-        catch ( Exception e ) {
-          log.error("Problem",e)
+  
+        log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}");
+  
+        TitleInstancePackagePlatform.withNewTransaction {
+          try {
+            // Find all tipps in this package which have a lastSeen before the ingest date
+            def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
+                             'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                             'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
+                            [pkg:the_package_id,dt:ingest_systime]);
+  
+            q.each { tipp ->
+              log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
+              // tipp.deleteSoft()
+              tipp.accessEndDate = new Date();
+              tipp.save(failOnError:true,flush:true)
+            }
+            log.debug("Completed tipp cleanup")
+          }
+          catch ( Exception e ) {
+            log.error("Problem",e)
+          }
+          finally {
+            log.debug("Done")
+          }
         }
-        finally {
-          log.debug("Done")
+  
+        if ( badrows.size() > 0 ) {
+          log.debug("There are ${badrows.size()} bad rows -- write to badfile and report")
         }
+      }  
+      else {
+        // Preflight failed
+        log.error("Failed preflight :: ${preflight_result}");
       }
-
-      if ( badrows.size() > 0 ) {
-        log.debug("There are ${badrows.size()} bad rows -- write to badfile and report")
-      }
-      
     }
     catch ( Exception e ) {
       log.error("Problem",e)
@@ -750,7 +821,7 @@ class TSVIngestionService {
         if ( identifiers.size() > 0 ) {
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
           if ( title ) {
-          title.source=source
+            title.source=source
           // log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
           if (title) {
@@ -1104,10 +1175,29 @@ class TSVIngestionService {
 
     int ctr = 0
 
+
     header.each {
       log.debug("Column ${ctr} == ${it}");
       col_positions [ it ] = ctr++
     }
+
+    def mapped_cols = [] as ArrayList
+    def unmapped_cols = 0..(header.size()) as ArrayList
+
+    log.debug("Mapped columns: ${mapped_cols}");
+    log.debug("UnMapped columns: ${unmapped_cols}");
+
+
+    fileRules.each { fileRule ->
+      if ( col_positions[fileRule.field] >= 0 ) {
+        // Column is mapped
+        unmapped_cols.remove(col_positions[fileRule.field] as Object);
+        mapped_cols.add(col_positions[fileRule.field] as Object)
+      }
+    }
+
+    log.debug("Mapped columns: ${mapped_cols}");
+    log.debug("UnMapped columns: ${unmapped_cols}");
 
     String [] nl = csv.readNext()
 
@@ -1119,6 +1209,7 @@ class TSVIngestionService {
 
       // KBartRecord result = new KBartRecord()
       def result = [:]
+      result.unmapped=[]
 
       fileRules.each { fileRule ->
         boolean done=false
@@ -1135,6 +1226,7 @@ class TSVIngestionService {
               done=true
             }
           }
+
           if (fileRule.additional!=null && !done) {
             result[fileRule.additional] << data
           } else {
@@ -1142,6 +1234,14 @@ class TSVIngestionService {
           }
         }
       }
+
+      unmapped_cols.each { unmapped_col_idx ->
+        if ( nl.size() < unmapped_col_idx ) {
+          log.debug("Setting unmapped column idx ${unmapped_col_idx} ${header[unmapped_col_idx]} to ${nl[unmapped_col_idx]}");
+          result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]]);
+        }
+      }
+
       log.debug(result)
       results<<result;
       nl=csv.readNext()
@@ -1219,4 +1319,67 @@ class TSVIngestionService {
     return result
   }
 
+
+  // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
+  // before the ingest proper.
+  def preflight( kbart_beans, ingest_cfg ) {
+    log.debug("preflight");
+   
+    def result = [:]
+    result.problems = []
+    result.passed = true;
+    
+    // Iterate through -- create titles
+    kbart_beans.each { the_kbart ->
+
+      TitleInstance.withNewSession {
+        
+        def identifiers = []
+  
+        if ( the_kbart.online_identifier )
+          identifiers << [type:ingest_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
+  
+        if ( the_kbart.print_identifier )
+          identifiers << [type:ingest_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
+  
+        the_kbart.additional_isbns.each { identifier ->
+          identifiers << [type: 'isbn', value:identifier]
+        }
+  
+        if ( ( the_kbart.title_id ) && ( the_kbart.title_id ) ) {
+          log.debug("title_id ${the_kbart.title_id}");
+          if ( ingest_cfg.providerIdentifierNamespace ) {
+            identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
+          }
+          else {
+            identifiers << [type:'title_id', value:the_kbart.title_id]
+          }
+        }
+  
+        log.debug("Preflight ${the_kbart.publication_title} ${identifiers}");
+  
+        if ( identifiers.size() > 0 ) {
+          try {
+            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
+            log.debug("Preflight title : ${title}");
+          }
+          catch ( InconsistentTitleIdentifierException itie ) {
+            log.debug("Caught -- set passed to false",itie);
+            result.passed = false;
+            result.problems.add (
+              [
+                problem:itie.message,
+                options:[
+                  'The Identifier is for a later title in the title history group -- create a new title',          // It's something new, and optionally here's its real identifier
+                  'The Title really is a variant of the identified title - add it to the list of known variants'   // It's the same
+                ]
+              ])
+          }
+        }
+      }
+    }
+
+    log.debug("preflight returning ${passed}");
+    result
+  }
 }

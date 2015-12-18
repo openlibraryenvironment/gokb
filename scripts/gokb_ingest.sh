@@ -3,6 +3,19 @@
 export GOKB_HOST="http://localhost:8080"
 
 curl -v --user admin:admin -X POST \
+  --form content=@./project_euclid_direct \
+  --form source="CUFTS" \
+  --form fmt="cufts" \
+  --form pkg="Project Euclid: Project Euclid Direct" \
+  --form platformUrl="http://cufts.org/doaj" \
+  --form format="JSON" \
+  --form providerName="Project Euclid" \
+  --form providerIdentifierNamespace="ProjectEuclid" \
+  $GOKB_HOST/gokb/packages/deposit
+
+sleep 5 
+
+curl -v --user admin:admin -X POST \
   --form content=@./acs_legacy_archives \
   --form source="CUFTS" \
   --form fmt="cufts" \
@@ -95,20 +108,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Oxford Journals" \
   --form providerIdentifierNamespace="OxfordJournals" \
-  $GOKB_HOST/gokb/packages/deposit
-
-sleep 5 
-
-
-curl -v --user admin:admin -X POST \
-  --form content=@./project_euclid_direct \
-  --form source="CUFTS" \
-  --form fmt="cufts" \
-  --form pkg="Project Euclid: Project Euclid Direct" \
-  --form platformUrl="http://cufts.org/doaj" \
-  --form format="JSON" \
-  --form providerName="Project Euclid" \
-  --form providerIdentifierNamespace="ProjectEuclid" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 

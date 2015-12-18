@@ -25,6 +25,13 @@ class TitleInstance extends KBComponent {
     "OAStatus"  : "Unknown"
   ]
 
+
+  // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
+  // information about how this specific title was located, for example, by class 1 identifier match, or some other method
+  // title_status_properties.matched_by='Title In Title History' is used when the title was matched by a title string in the context of a title history
+  @Transient
+  public title_status_properties = [:]
+
   public void addVariantTitle (String title, String locale = "EN-us") {
 
     // Check that the variant is not equal to the name of this title first.
@@ -435,4 +442,21 @@ class TitleInstance extends KBComponent {
     return preceeding_titles.join(', ')
   }
 
+  def findInTitleHistory(title) {
+    def result = null;
+
+    def full_th = getFullTitleHistory()
+    full_th.fh.each { history_event ->
+      history_event.participants.each { history_event_participant ->
+        if ( history_event_participant.name == title ) {
+          result = history_event_participant
+        }
+      }
+    }
+
+    if ( result ) {  
+      result.title_status_properties.matched_by='Title In Title History'
+    }
+    result
+  }
 }
