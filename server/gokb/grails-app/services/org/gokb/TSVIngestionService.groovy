@@ -540,7 +540,8 @@ class TSVIngestionService {
               )
           }
           else if ( inconsistent_title_id_behaviour == 'reject' ) {
-            throw new InconsistentTitleIdentifierException("New title \"${title}\" matched via its identifiers ${identifiers} against title [${ti.id}] but that title string is \"${ti.name}\"")
+            throw new InconsistentTitleIdentifierException("New title \"${title}\" matched via its identifiers ${identifiers} against title [${ti.id}] but that title string is \"${ti.name}\"",
+                                                           title, identifiers, ti.id, ti.name)
           }
           else {
             // New title without an identifier linked to the title history for the originally identified title
@@ -1368,10 +1369,18 @@ class TSVIngestionService {
             result.passed = false;
             result.problems.add (
               [
+                // itie.title itie.identifiers itie.matched_title_id itie.matched_title
                 problem:itie.message,
+                when: "provider='' && the_kbart.publication_title=='${itie.proposed_title}' && identifier_value=='${itie.identifiers}'",
                 options:[
-                  'The Identifier is for a later title in the title history group -- create a new title',          // It's something new, and optionally here's its real identifier
-                  'The Title really is a variant of the identified title - add it to the list of known variants'   // It's the same
+                  [
+                    description:'The Identifier is for a later title in the title history group -- create a new title',
+                    then: "createNewTitle('${the_kbart.publication_title}',${itie.matched_title_id})",
+                  ], // It's something new, and optionally here's its real identifier
+                  [
+                    description:'The Title really is a variant of the identified title - add it to the list of known variants',
+                    then: "addVariant('${the_kbart.publication_title}',${itie.matched_title_id})"
+                  ]   // It's the same
                 ]
               ])
           }
