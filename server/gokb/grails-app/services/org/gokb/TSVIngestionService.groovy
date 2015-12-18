@@ -1379,7 +1379,7 @@ class TSVIngestionService {
       }
     }
 
-    log.debug("preflight returning ${passed}");
+    log.debug("preflight returning ${result.passed}");
     result
   }
 }
