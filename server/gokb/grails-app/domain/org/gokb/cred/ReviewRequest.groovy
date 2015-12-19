@@ -21,6 +21,7 @@ class ReviewRequest {
   User reviewedBy
   Boolean needsNotify
   RefineProject refineProject
+  String additionalInfo
 
   // Timestamps
   Date dateCreated
@@ -30,6 +31,7 @@ class ReviewRequest {
     id column:'rr_id'
     descriptionOfCause column:'rr_cause_txt', type:'text'
     reviewRequest column:'rr_req_txt', type:'text'
+    additionalInfo column:'rr_additional_info', type:'text'
   }
 
   transient public postCreateClosure = { ctx ->
@@ -56,9 +58,15 @@ class ReviewRequest {
     lastUpdated(nullable:true, blank:true)
     needsNotify(nullable:true, blank:true)
     refineProject(nullable:true, blank:true)
+    additionalInfo(nullable:true, blank:true)
   }
 
-  public static ReviewRequest raise (KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, refineProject = null) {
+  public static ReviewRequest raise (KBComponent forComponent,
+                                     String actionRequired,
+                                     String cause = null,
+                                     User raisedBy = null,
+                                     refineProject = null,
+                                     additionalInfo = null) {
 
     // Create a request.
     ReviewRequest req = new ReviewRequest (
@@ -67,7 +75,8 @@ class ReviewRequest {
         allocatedTo : (raisedBy),
         descriptionOfCause : (cause),
         reviewRequest : (actionRequired),
-        refineProject: (refineProject)
+        refineProject: (refineProject),
+        additionalInfo: (additionalInfo)
         )
 
     // Add to the list of requests for the component.

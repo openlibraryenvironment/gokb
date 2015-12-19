@@ -85,14 +85,14 @@ class TSVIngestionService {
     ids.each { id_def ->
       if (id_def.type && id_def.value) {
         log.debug("id_def.type")
-  
+
         def id_value = id_def.value
         // id_def is map with keys 'type' and 'value'
         if ( grailsApplication.config.identifiers.formatters[id_def.type] ) {
           // If we have a formatter for this kind of identifier, call it here.
           id_value = grailsApplication.config.identifiers.formatters[id_def.type](id_value)
         }
-  
+
         Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
         // Add the id.
         result['ids'] << the_id
@@ -115,13 +115,13 @@ class TSVIngestionService {
               result['matches'] << (dproxied as TitleInstance)
             }
           }
-    
+
           // Did the ID yield a Title match?
           log.debug("title match for ${id_def.value} : ${title_match}")
-    
+
           if (!title_match) {
             log.debug ("No class one ti match against ${id_def.type}:${id_def.value}. Cross-checking")
-    
+
             // We should see if the current ID namespace should be cross checked with another.
             def other_ns = null
             for (int i=0; i<xcheck.size() && (!(other_ns)); i++) {
@@ -247,11 +247,11 @@ class TSVIngestionService {
       }
 
       // Now we can examine the text of the title.
-      the_title = singleTIMatch(title, 
-                                norm_title, 
-                                matches[0], 
-                                user, 
-                                project, 
+      the_title = singleTIMatch(title,
+                                norm_title,
+                                matches[0],
+                                user,
+                                project,
                                 ingest_cfg.inconsistent_title_id_behavior,
                                 identifiers)
       break;
@@ -476,11 +476,11 @@ class TSVIngestionService {
     ti
   }
 
-  private TitleInstance singleTIMatch(String title, 
-                                      String norm_title, 
-                                      TitleInstance ti, 
-                                      User user, 
-                                      project = null, 
+  private TitleInstance singleTIMatch(String title,
+                                      String norm_title,
+                                      TitleInstance ti,
+                                      User user,
+                                      project = null,
                                       inconsistent_title_id_behaviour = 'add_as_variant',
                                       identifiers) {
     // The threshold for a good match.
@@ -496,7 +496,7 @@ class TSVIngestionService {
         // Do nothing just continue using the TI.
         // log.debug("Exact distance match for TI.")
         break
-  
+
       case {
         ti.variantNames.find {alt ->
         GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
@@ -637,11 +637,11 @@ class TSVIngestionService {
       def author_role_id = null;
       def editor_role_id = null;
 
-      def preflight_result = preflight( kbart_beans, ingest_cfg ) 
+      def preflight_result = preflight( kbart_beans, ingest_cfg )
       if ( preflight_result.passed ) {
 
         log.debug("Passed preflight -- ingest");
-  
+
         Package.withNewTransaction() {
           the_package=handlePackage(packageName,source,providerName)
           assert the_package != null
@@ -651,24 +651,24 @@ class TSVIngestionService {
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           editor_role_id = editor_role.id
         }
-  
-  
+
+
         long startTime=System.currentTimeMillis()
-  
+
         log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package_id}")
         //now its converted, ingest it into the database.
-  
+
         for (int x=0; x<kbart_beans.size;x++) {
-  
+
           Package.withNewTransaction {
-  
+
             def author_role = RefdataValue.get(author_role_id)
             def editor_role = RefdataValue.get(editor_role_id)
-  
+
             log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
-  
+
             long rowStartTime=System.currentTimeMillis()
-  
+
             if ( validateRow(x, badrows, kbart_beans[x] ) ) {
               writeToDB(kbart_beans[x],
                         platformUrl,
@@ -681,19 +681,19 @@ class TSVIngestionService {
                         ingest_cfg,
                         badrows )
             }
-  
+
             log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
           }
-  
+
           job?.setProgress( x , kbart_beans.size() )
-  
+
           if ( x % 25 == 0 ) {
             cleanUpGorm()
           }
         }
-  
+
         log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}");
-  
+
         TitleInstancePackagePlatform.withNewTransaction {
           try {
             // Find all tipps in this package which have a lastSeen before the ingest date
@@ -701,7 +701,7 @@ class TSVIngestionService {
                              'from TitleInstancePackagePlatform as tipp, Combo as c '+
                              'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
                             [pkg:the_package_id,dt:ingest_systime]);
-  
+
             q.each { tipp ->
               log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
               // tipp.deleteSoft()
@@ -717,14 +717,34 @@ class TSVIngestionService {
             log.debug("Done")
           }
         }
-  
+
         if ( badrows.size() > 0 ) {
           log.debug("There are ${badrows.size()} bad rows -- write to badfile and report")
         }
-      }  
+      }
       else {
+
+        preflight_result.source = source.id
+
         // Preflight failed
-        log.error("Failed preflight \n\n${preflight_result as JSON}");
+        log.error("Failed preflight");
+
+        // Raise a review request against the datafile
+        def preflight_json = preflight_result as JSON
+        DataFile.withNewTransaction {
+          def writeable_datafile = DataFile.get(datafile.id)
+          ReviewRequest req = new ReviewRequest (
+              status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
+              raisedBy : null,
+              allocatedTo : null,
+              descriptionOfCause : "Ingest of datafile ${datafile.id} / ${datafile.name} failed preflight",
+              reviewRequest : "Generate rules to handle error cases.",
+              refineProject: null,
+              additionalInfo: preflight_result.toString(),
+              componentToReview:writeable_datafile
+              ).save(flush:true, failOnError:true)
+
+        }
       }
     }
     catch ( Exception e ) {
@@ -1047,10 +1067,10 @@ class TSVIngestionService {
         log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
           result = new Platform( name:host, primaryUrl:host, source:the_source)
-  
+
           // log.debug("Validate new platform");
           // result.validate();
-  
+
           if ( result ) {
             if (result.save(flush:true, failOnError:true)) {
               log.debug("saved new platform: ${result}")
@@ -1292,7 +1312,7 @@ class TSVIngestionService {
     log.debug("Validate :: ${row_data}");
     def result = true
     def reasons = []
-   
+
     // check the_kbart.date_first_issue_online is present and validates
     if ( row_data.date_first_issue_online != null ) {
       def parsed_start_date = parseDate(row_data.date_first_issue_online)
@@ -1325,28 +1345,28 @@ class TSVIngestionService {
   // before the ingest proper.
   def preflight( kbart_beans, ingest_cfg ) {
     log.debug("preflight");
-   
+
     def result = [:]
     result.problems = []
     result.passed = true;
-    
+
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
 
       TitleInstance.withNewSession {
-        
+
         def identifiers = []
-  
+
         if ( the_kbart.online_identifier )
           identifiers << [type:ingest_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
-  
+
         if ( the_kbart.print_identifier )
           identifiers << [type:ingest_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
-  
+
         the_kbart.additional_isbns.each { identifier ->
           identifiers << [type: 'isbn', value:identifier]
         }
-  
+
         if ( ( the_kbart.title_id ) && ( the_kbart.title_id ) ) {
           log.debug("title_id ${the_kbart.title_id}");
           if ( ingest_cfg.providerIdentifierNamespace ) {
@@ -1356,9 +1376,9 @@ class TSVIngestionService {
             identifiers << [type:'title_id', value:the_kbart.title_id]
           }
         }
-  
+
         log.debug("Preflight ${the_kbart.publication_title} ${identifiers}");
-  
+
         if ( identifiers.size() > 0 ) {
           try {
             def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
@@ -1370,22 +1390,11 @@ class TSVIngestionService {
             result.problems.add (
               [
                 // itie.title itie.identifiers itie.matched_title_id itie.matched_title
-                problem:itie.message,
-                when: "provider='' && the_kbart.publication_title=='${itie.proposed_title}' && identifier_value=='${itie.identifiers}'",
-                options:[
-                  [
-                    // It's something new, and optionally here's its real identifier
-                    description:'The Identifier is for a later title in the title history group -- create a new title',
-                    then: "createNewTitle('${the_kbart.publication_title}',${itie.matched_title_id})",
-                    // Really we need to describe a form that will collect the parameters we need in order to do the right thing
-                    // in this case.
-                  ], 
-                  [
-                    // It's the same
-                    description:'The Title really is a variant of the identified title - add it to the list of known variants',
-                    then: "addVariant('${the_kbart.publication_title}',${itie.matched_title_id})"
-                  ]
-                ]
+                problemDescription:itie.message,
+                problemCode:'InconsistentTitleIdentifierException',
+                submittedTitle:the_kbart.publication_title,
+                submittedIdentifiers:identifiers,
+                matchedTitle:itie.matched_title_id
               ])
           }
         }

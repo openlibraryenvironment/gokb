@@ -10,6 +10,7 @@ class Source extends KBComponent {
   String contextualNotes
   // Org combo -- What organisation - aggregator -- responsibleParty
   String frequency
+  String ruleset
   // Default method refdata - email web ftp other
   // Default data Format KBART,Prop
   RefdataValue defaultSupplyMethod
@@ -19,6 +20,7 @@ class Source extends KBComponent {
 
   static mapping = {
     url column:'source_url'
+    ruleset column:'source_ruleset', type:'text'
   }
 
   static constraints = {
@@ -31,6 +33,7 @@ class Source extends KBComponent {
     defaultSupplyMethod(nullable:true, blank:true)
     defaultDataFormat(nullable:true, blank:true)
     responsibleParty(nullable:true, blank:true)
+    ruleset(nullable:true, blank:true)
   }
 
   public String getNiceName() {
