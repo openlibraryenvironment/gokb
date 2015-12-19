@@ -41,7 +41,7 @@ import org.gokb.cred.DataFile;
 import org.gokb.cred.IngestionProfile;
 import org.gokb.exceptions.*;
 import com.k_int.TextUtils
-
+import grails.converters.JSON
 
 @Transactional
 class TSVIngestionService {
@@ -724,7 +724,7 @@ class TSVIngestionService {
       }  
       else {
         // Preflight failed
-        log.error("Failed preflight :: ${preflight_result}");
+        log.error("Failed preflight \n\n${preflight_result as JSON}");
       }
     }
     catch ( Exception e ) {

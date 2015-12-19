@@ -184,8 +184,14 @@ class PackagesController {
 
           if ( existing_file != null ) {
             log.debug("Found a match !")
-            redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
-            return
+            if ( params.reprocess=='Y' ) {
+              log.debug("Located existing file, reprocess=Y, continuing");
+              new_datafile_id = existing_file.id
+            }
+            else {
+              redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+              return
+            }
           }
           else {
             log.debug("Create new datafile");
@@ -204,10 +210,9 @@ class PackagesController {
 
               log.debug("Saved new datafile : ${new_datafile.id}");
               new_datafile_id = new_datafile.id
-
             }
-
           }
+
 
           // Transactional part done. now queue the job
           Job background_job = concurrencyManagerService.createJob { Job job ->
