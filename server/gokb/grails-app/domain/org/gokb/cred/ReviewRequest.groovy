@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import org.gokb.refine.RefineProject
+import grails.converters.JSON
 
 class ReviewRequest {
 
@@ -117,5 +118,13 @@ class ReviewRequest {
     if ( isDirty('status') ) {
       reviewedBy = springSecurityService.currentUser
     }
+  }
+
+  def getAdditional() {
+    def result = null
+    if (additionalInfo && additionalInfo.length() > 0 ) {
+      result = JSON.parse(additionalInfo);
+    }
+    result;
   }
 }

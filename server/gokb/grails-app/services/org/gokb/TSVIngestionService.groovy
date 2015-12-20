@@ -740,7 +740,7 @@ class TSVIngestionService {
               descriptionOfCause : "Ingest of datafile ${datafile.id} / ${datafile.name} failed preflight",
               reviewRequest : "Generate rules to handle error cases.",
               refineProject: null,
-              additionalInfo: preflight_result.toString(),
+              additionalInfo: preflight_json.toString(),
               componentToReview:writeable_datafile
               ).save(flush:true, failOnError:true)
 
