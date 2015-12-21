@@ -637,7 +637,7 @@ class TSVIngestionService {
       def author_role_id = null;
       def editor_role_id = null;
 
-      def preflight_result = preflight( kbart_beans, ingest_cfg )
+      def preflight_result = preflight( kbart_beans, ingest_cfg, source )
       if ( preflight_result.passed ) {
 
         log.debug("Passed preflight -- ingest");
@@ -1288,7 +1288,7 @@ class TSVIngestionService {
 
   def makeBadFile() {
     def depositToken = java.util.UUID.randomUUID().toString();
-    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+    def baseUploadDir = grailsApplication.config.project_dir ?: '.'
     def sub1 = deposit_token.substring(0,2);
     def sub2 = deposit_token.substring(2,4);
     validateUploadDir("${baseUploadDir}");
@@ -1343,12 +1343,15 @@ class TSVIngestionService {
 
   // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
   // before the ingest proper.
-  def preflight( kbart_beans, ingest_cfg ) {
+  def preflight( kbart_beans, ingest_cfg, source ) {
     log.debug("preflight");
 
     def result = [:]
     result.problems = []
     result.passed = true;
+    result.probcount=0
+    result.sourceName=source?.name
+    result.sourceId=source?.id
 
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
@@ -1390,6 +1393,7 @@ class TSVIngestionService {
             result.problems.add (
               [
                 // itie.title itie.identifiers itie.matched_title_id itie.matched_title
+                problemSequence:result.probcount++,
                 problemDescription:itie.message,
                 problemCode:'InconsistentTitleIdentifierException',
                 submittedTitle:the_kbart.publication_title,

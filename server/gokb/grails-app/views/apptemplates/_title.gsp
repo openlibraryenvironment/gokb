@@ -139,8 +139,7 @@
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
         <dl class="dl-horizontal">
-          <g:form name="AddHistoryForm" controller="workflow"
-            action="createTitleHistoryEvent">
+          <g:form name="AddHistoryForm" controller="workflow" action="createTitleHistoryEvent">
             <dt>
               Titles
               </dt>

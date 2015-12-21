@@ -86,28 +86,37 @@
         </g:else>
 
         <g:if test="${d.additional}">
-       
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Specific Problems</th>
-                <th>Possible Resolutions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <g:each in="${d.additional?.problems}" var="revreq_problem"> 
+          <g:form name="AddRules" controller="workflow" action="addToRulebase">
+            <input type="hidden" name="sourceName" value="${d.additional.sourceName}"/>
+            <input type="hidden" name="sourceId" value="${d.additional.sourceId}"/>
+            <input type="hidden" name="prob_seq_count" value="${d.additional.probcount}" />
+            <table class="table table-striped">
+              <thead>
                 <tr>
-                 <td>
-                   <h2>${revreq_problem.problemCode}</h2>
-                   <p>${revreq_problem.problemDescription}</p>
-                 </td>
-                 <td>
-                   <g:render template="${revreq_problem.problemCode}" contextPath="../reviewRequestCases"  model="${[d:d]}" />
-                 </td>
+                  <th>Specific Problems</th>
+                  <th>Possible Resolutions</th>
                 </tr>
-              </g:each>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <g:each in="${d.additional?.problems}" var="revreq_problem"> 
+                  <tr>
+                   <td>
+                     <input type="hidden" name="prob_seq_${revreq_problem.problemSequence}_probcode" value='${revreq_problem.problemCode}' />
+                     <input type="hidden" name="prob_seq_${revreq_problem.problemSequence}_idstr" value='${revreq_problem.submittedIdentifiers}' />
+                     <input type="hidden" name="prob_seq_${revreq_problem.problemSequence}_title" value='${revreq_problem.submittedTitle}' />
+                     <h2>${revreq_problem.problemCode}</h2>
+                     <p>${revreq_problem.problemDescription}</p>
+                   </td>
+                   <td>
+                     <g:render template="${revreq_problem.problemCode}" contextPath="../reviewRequestCases"  model="${[d:d, prob:revreq_problem]}" />
+                   </td>
+                  </tr>
+                </g:each>
+              </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-success pull-right">Add/Update Selected Rules -></button>
+          </g:form>
         </g:if>
       </dl>
     </div>
