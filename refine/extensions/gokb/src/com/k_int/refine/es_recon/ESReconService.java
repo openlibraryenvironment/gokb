@@ -37,6 +37,7 @@ public class ESReconService {
     
     // Set UniREST defaults here.
     Unirest.setTimeouts(10000, 30000);
+    Unirest.clearDefaultHeaders();
     Unirest.setDefaultHeader("Authorization", "Basic Z29rYlJlZmluZUVkaXRvcjpIZXdhak1vb3No");
   }
   
