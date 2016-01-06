@@ -29,9 +29,7 @@ window.gokb = {
     
     if (value && value != "") {
       try {
-        // Access the clipboard using the api
-//        var pastedData = e.originalEvent.clipboardData.getData('text');
-        
+        // Parse the JSON
         var data = $.parseJSON ( value );
         
         data = JSON.stringify(data, null, "  ");
@@ -324,15 +322,15 @@ window.gokb = {
     // Add the json handling to the textareas.
     $(".json").on("paste", function(e){
       
-      // Halt all other events.
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      
       data = gokb.validateJson( e.originalEvent.clipboardData.getData('text') );
       if (data == false) {
         bootbox.alert("<h2 class='text-danger' >Error</h2>" +
           '<p>The JSON you are attempting to paste is incorrectly formatted. Please ensure you copy everything from the source.</p>'
         );
+        
+        // Halt all other events.
+        e.preventDefault();
+        e.stopImmediatePropagation();
       }
     });
     

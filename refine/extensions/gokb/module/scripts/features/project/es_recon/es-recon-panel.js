@@ -59,7 +59,7 @@ ReconESPanel.prototype._constructUI = function() {
       
       // Let's filter the list here to only contain allowed reconcile types.
       var dataTypes = $.grep(data.types, function(item){
-        return ($.inArray(item, ESRecon.exclTypes) > -1);
+        return item && ($.inArray(item.toLowerCase(), ESRecon.exclTypes) > -1);
       }, true);
       
       $.each(dataTypes, function(i){
