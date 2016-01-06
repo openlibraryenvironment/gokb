@@ -47,12 +47,12 @@ public class ESReconService {
   private JSONObject doSearch(JSONObject search) throws UnirestException, IOException {
     final String searchBody = search.toString();
     final String url = baseUrl + "_search";
-    log.debug("REQUEST: {}", searchBody.toString());
+    log.info("REQUEST: {}", searchBody.toString());
     JSONObject res = Unirest
       .post(url)
       .body(searchBody)
     .asJson().getBody().getObject();
-    log.debug("RESPONSE: {}", res.toString());
+    log.info("RESPONSE: {}", res.toString());
     return res;
   }
   
@@ -68,14 +68,14 @@ public class ESReconService {
       searchBody.append(search.toString() + "\n");
     }
     
-    log.debug("REQUEST: {}", searchBody.toString());
+    log.info("REQUEST: {}", searchBody.toString());
     
     JSONObject res = Unirest
       .post(url)
       .body(searchBody.toString())
     .asJson().getBody().getObject();
 
-    log.debug("RESPONSE: {}", res.toString());
+    log.info("RESPONSE: {}", res.toString());
     return res;
   }
   
