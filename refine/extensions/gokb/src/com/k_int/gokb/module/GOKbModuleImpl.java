@@ -583,6 +583,7 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
       _logger.info("Server does not provide an ES Recon service.");
     }
     
+    // Set to the new value.
     setReconService(recon);
 
     // Need to clear login information too.
@@ -653,11 +654,6 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
   }
   
   private static void setReconService(ESReconService eservice) {
-    if (reconService != null) {
-      _logger.info("Shutting down previous ES service first...");
-      reconService.destroy();
-      reconService = null;
-    }
     reconService = eservice;
   }
 
@@ -667,7 +663,10 @@ public class GOKbModuleImpl extends ButterflyModuleImpl implements Jsonizable {
 
   @Override
   public void destroy () throws Exception {
-    setReconService (null);
+    if (reconService != null) {
+      reconService.destroy();
+      reconService = null;
+    }
     this.scheduler.shutdown();
     super.destroy();
   }
