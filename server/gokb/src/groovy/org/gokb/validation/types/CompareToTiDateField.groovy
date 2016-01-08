@@ -1,11 +1,14 @@
 package org.gokb.validation.types
 
+import groovy.util.logging.Log4j;
+
 import java.text.SimpleDateFormat
 
 import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 import org.joda.time.format.*
 
+@Log4j
 class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowValidationRule {
 
   private static final String ERROR_TYPE = "ti_date_invalid"
@@ -43,10 +46,12 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
 
     if (iso_string && iso_string.trim() != "") {
       try {
-        the_date = ISODateParser.parseLocalDateTime(iso_string).toDate()
+        the_date = ISODateParser.parseLocalDate(iso_string).toDate()
+        log.debug("Parsing ${iso_string} produced ${the_date.toString()}")
 
       } catch (Throwable t) {
 
+        log.error("Error parsing ${iso_string}", t)
         // Ensure null date.
         the_date = null
       }
