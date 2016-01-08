@@ -302,7 +302,8 @@ log4j = {
       'org.gokb.cred.RefdataCategory',
       'com.k_int.apis',
       'com.k_int.asset.pipeline.groovy',
-      'asset.pipeline.less.compilers'
+      'asset.pipeline.less.compilers',
+      'org.gokb.validation.types.CompareToTiDateField'
 
   // debug  'org.gokb.DomainClassExtender'
 
@@ -352,6 +353,10 @@ validation.regex.date = "^[1-9][0-9]{3,3}\\-(0[1-9]|1[0-2])\\-(0[1-9]|[1-2][0-9]
 validation.regex.kbartembargo = "^([RP]\\d+[DMY](;?))+\$"
 validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|\\Qabstracts\\E)\$"
 
+class_one_cols = [:]
+identifiers.class_ones.each { name ->
+  class_one_cols[name] = "${IngestService.IDENTIFIER_PREFIX}${name}"
+}
 validation.rules = [
   "${IngestService.PUBLICATION_TITLE}" : [
     [ type: ColumnMissing     , severity: A_ValidationRule.SEVERITY_ERROR ],
@@ -402,7 +407,16 @@ validation.rules = [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
     [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: EnsureDate    ,severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ type: EnsureDate    ,severity: A_ValidationRule.SEVERITY_ERROR ],
+    [ 
+      type: CompareToTiDateField,
+      severity: A_ValidationRule.SEVERITY_WARNING,
+      args: [
+        class_one_cols,
+        "publishedFrom",
+        CompareToTiDateField.GTE
+      ]
+    ]
   ],
 
   "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
@@ -412,6 +426,15 @@ validation.rules = [
       type: EnsureDate,
       severity: A_ValidationRule.SEVERITY_ERROR,
       args: ["value.gokbDateCeiling()"]
+    ],
+    [ 
+      type: CompareToTiDateField,
+      severity: A_ValidationRule.SEVERITY_WARNING,
+      args: [
+        class_one_cols,
+        "publishedTo",
+        CompareToTiDateField.LTE
+      ]
     ]
   ],
 
