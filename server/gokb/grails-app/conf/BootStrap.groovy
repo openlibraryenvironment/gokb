@@ -170,7 +170,9 @@ class BootStrap {
       try {
 
         // Just try reading the class.
-        Class.forName(d.dcName)
+        Class c = Class.forName(d.dcName)
+        log.debug ("Looking for ${d.dcName} found class ${c}.")
+        
       } catch (ClassNotFoundException e) {
         d.delete(flush:true)
         log.info ("Deleted domain object for ${d.dcName} as the Class could not be found." )
