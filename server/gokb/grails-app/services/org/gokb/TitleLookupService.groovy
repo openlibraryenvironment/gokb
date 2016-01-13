@@ -9,6 +9,11 @@ class TitleLookupService {
   def grailsApplication
   def componentLookupService
 
+  @javax.annotation.PostConstruct
+  def init() {
+    log.debug("Init");
+  }
+
   //  def find(title, issn, eissn) {
   //    find(title, issn, eissn, null, null)
   //  }
