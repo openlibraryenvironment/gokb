@@ -377,12 +377,16 @@ class TitleLookupService {
     
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
+
+    def start_time = System.currentTimeMillis();
     
     ids.each { def id_def ->
       // Class ones only.
-      if (id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) {
+      if ( id_def.value && 
+           id_def.ns && 
+           class_one_ids.contains(id_def.ns) ) {
       
-        def identifiers = Identifier.createCriteria().list {
+        def identifiers = Identifier.createCriteria().list(max: 5) {
           and { 
             namespace {
               inList "value", id_def.ns
@@ -390,6 +394,10 @@ class TitleLookupService {
             
             eq "value", id_def.value
           }
+        }
+
+        if ( identifiers.size() > 4 ) {
+          log.warn("matchClassOne for ${id_def} returned a high number of candidate records. This shouldn't be the case");
         }
         
         // Examine the identified components.
@@ -404,6 +412,11 @@ class TitleLookupService {
           }
         }
       }
+    }
+
+    def elapsed = System.currentTimeMillis() - start_time;
+    if ( elapsed > 2000 ) {
+      log.warn("matchClassOnes took much longer than expected to complete when processing ${ids}. Needs investigation");
     }
     
     result
