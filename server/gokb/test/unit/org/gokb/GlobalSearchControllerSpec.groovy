@@ -16,5 +16,6 @@ class GlobalSearchControllerSpec extends Specification {
     }
 
     void "test something"() {
+      assert 1==1
     }
 }

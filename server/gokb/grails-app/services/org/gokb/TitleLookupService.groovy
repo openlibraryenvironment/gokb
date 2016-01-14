@@ -390,16 +390,18 @@ class TitleLookupService {
       if ( id_def.value && 
            id_def.ns && 
            class_one_ids.contains(id_def.ns) ) {
+
+        def identifiers = Identifier.executeQuery('select id from Identifier as id where id.value = ? and id.namespace.value = ?',[id_def.value, id_def.ns],[max:5]);
       
-        def identifiers = Identifier.createCriteria().list(max: 5) {
-          and { 
-            namespace {
-              inList "value", id_def.ns
-            }
-            
-            eq "value", id_def.value
-          }
-        }
+        // def identifiers = Identifier.createCriteria().list(max: 5) {
+        //   and { 
+        //     namespace {
+        //       inList "value", id_def.ns
+        //     }
+        //     
+        //     eq "value", id_def.value
+        //   }
+        // }
 
         if ( identifiers.size() > 4 ) {
           log.warn("matchClassOne for ${id_def} returned a high number of candidate records. This shouldn't be the case");
