@@ -30,17 +30,20 @@ class TitleLookupServiceSpec extends Specification {
     }
 
     void "test something"() {
+      def t = null
+      def name = null
       given: "Given a title with name TestTitle001 which has a single identifier of testNS:ID00001" 
         Identifier id = Identifier.lookupOrCreateCanonicalIdentifier('testNS','ID00001')
         TitleInstance ti = new TitleInstance(name:'TestTitle001');
+        ti.save(flush:true, failOnError:true);
         ti.ids.add(id);
         ti.save(flush:true, failOnError:true);
       when: "When we use the matchClassOne method on titleLookupService" 
         def id_list = [ ['ns':'testNS', 'value':'ID00001']  ]
-        def t = titleLookupService.matchClassOne(id_list)
+        t = titleLookupService.matchClassOnes(id_list)
       then: "Then we extract the name of the located title" 
-        def name = t[0].name
       expect: "We expect to get the right title back"
-        t[0].name=='TestTitle001'
+        t?.size() == 1
+        t[0]?.name=='TestTitle001'
     }
 }
