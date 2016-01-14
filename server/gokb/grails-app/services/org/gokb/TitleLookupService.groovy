@@ -378,6 +378,8 @@ class TitleLookupService {
    * @return
    */
   public def matchClassOnes (def ids) {
+    log.debug("matchClassOnes ${ids}");
+
     def result = [] as Set
     
     // Get the class 1 identifier namespaces.

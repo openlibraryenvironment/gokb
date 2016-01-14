@@ -43,6 +43,9 @@ class TitleLookupServiceSpec extends Specification {
         t = titleLookupService.matchClassOnes(id_list)
       then: "Then we extract the name of the located title" 
       expect: "We expect to get the right title back"
+        TitleInstance.list().size() == 1
+        Identifier.findAllByValue('ID00001').size() == 1
+        log.debug("OK");
         t?.size() == 1
         t[0]?.name=='TestTitle001'
     }
