@@ -54,7 +54,7 @@ environments {
 //        }
       dataSource {
         // dbCreate = "update"
-        dbCreate = "create"
+        dbCreate = "create-drop"
         driverClassName = "com.mysql.jdbc.Driver"
         // dialect=org.hibernate.dialect.MySQL5Dialect
         dialect=org.hibernate.dialect.MySQL5InnoDBDialect
