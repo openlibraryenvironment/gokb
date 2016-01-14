@@ -16,6 +16,7 @@ class SavedItemsControllerSpec extends Specification {
     }
 
     void "test something"() {
-      assert 1==1
+      expect:
+        1==1
     }
 }
