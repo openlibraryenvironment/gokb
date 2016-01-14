@@ -245,7 +245,7 @@ log_location = logFile
 
 grails {
   fileViewer {
-    locations = ["${logFile}"]
+    locations = ["${logFile}".toString()]
     linesCount = 250
     areDoubleDotsAllowedInFilePath = false
   }
