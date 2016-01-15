@@ -384,14 +384,16 @@ class TitleLookupService {
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
 
     def start_time = System.currentTimeMillis();
+    String typeVal = TitleInstance.getComboTypeValueFor(TitleInstance, 'ids')
     
-    ids.each { def id_def ->
+    for (Map id_def : ids) { 
       // Class ones only.
       if ( id_def.value && 
            id_def.ns && 
            class_one_ids.contains(id_def.ns) ) {
       
-        def identifiers = Identifier.createCriteria().list(max: 5) {
+        def time = System.currentTimeMillis()
+        def identifierIds = Identifier.createCriteria().list(max: 5) {
           and { 
             namespace {
               inList "value", id_def.ns
@@ -399,22 +401,51 @@ class TitleLookupService {
             
             eq "value", id_def.value
           }
+          
+          projections {
+            distinct ('id')
+          }
         }
+        time = System.currentTimeMillis() - time
+        if (time > 500) log.warn ("matchClassOne identifier lookup for ${id_def} took ${time}ms")
 
-        if ( identifiers.size() > 4 ) {
+        if ( identifierIds.size() > 4 ) {
           log.warn("matchClassOne for ${id_def} returned a high number of candidate records. This shouldn't be the case");
         }
         
-        // Examine the identified components.
-        identifiers?.each {
-          it?.identifiedComponents.each {
-            KBComponent comp = KBComponent.deproxy(it)
-            if (comp instanceof TitleInstance) {
-              
-              // Add to the set.
-              result << (TitleInstance)comp
+        if (identifierIds) {
+          // Examine the identified components.
+          time = System.currentTimeMillis()
+  //        identifiers?.each {
+  //          it?.identifiedComponents.each {
+  //            KBComponent comp = KBComponent.deproxy(it)
+  //            if (comp instanceof TitleInstance) {
+  //              
+  //              // Add to the set.
+  //              result << (TitleInstance)comp
+  //            }
+  //          }
+  //        }
+          
+          def tis = TitleInstance.createCriteria().list {
+            and {
+              "outgoingCombos" {
+                type {
+                  eq ("value", typeVal)
+                }
+                toComponent {
+                  inList ('id', identifierIds)
+                }
+              }
+              or {
+                isNotNull ("publishedFrom")
+                isNotNull ("publishedTo")
+              }
             }
           }
+          result.addAll(tis)
+          time = System.currentTimeMillis() - time
+          if (time > 500) log.warn ("matchClassOne examining matched components for ${id_def} took ${time}ms")
         }
       }
     }
