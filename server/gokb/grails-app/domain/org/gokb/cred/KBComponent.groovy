@@ -193,8 +193,10 @@ abstract class KBComponent {
   
                   // note 3 : withTransaction moved into RefdataCategory method itself as the safest place to correctly
                   // assert transaction isolation.
+                  
+                  // Steve O :: Reverting back tyo withNewSession as per note 2 above.
   
-                      KBComponent.withTransaction { session ->
+                      KBComponent.withNewSession { session ->
                         final String ucProp = GrailsNameUtils.getClassName(property);
                         final String key = "${className}.${ucProp}"
     
