@@ -273,7 +273,7 @@ class TSVIngestionService {
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
-        // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
+        log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
       }
       else {
         log.error("**PROBLEM SAVING TITLE**");
@@ -1356,7 +1356,7 @@ class TSVIngestionService {
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
 
-      TitleInstance.withNewSession {
+      TitleInstance.withNewTransaction {
 
         def identifiers = []
 
