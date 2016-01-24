@@ -113,11 +113,13 @@ class BootStrap {
       failAnyIngestingProjects()
     }
 
+    log.info("GoKB Migrate Disk Files");
     KBComponent.withTransaction() {
       migrateDiskFilesToDatabase()
     }
 
     
+    log.info("GoKB missing normalised component names");
     KBComponent.withTransaction() {
       KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
         KBComponent.withNewTransaction {
@@ -131,16 +133,21 @@ class BootStrap {
     }
 
 
+    log.info("GoKB defaultSortKeys()");
     KBComponent.withTransaction() {
       defaultSortKeys ()
     }
 
+    log.info("GoKB sourceObjects()");
     KBComponent.withTransaction() {
       sourceObjects()
     }
+
+    log.info("GoKB Initi complete");
   }
 
   def migrateDiskFilesToDatabase() {
+    log.info("Migrate Disk Files");
     def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
 
     DataFile.findAll("from DataFile as df where df.fileData is null").each{ df ->
