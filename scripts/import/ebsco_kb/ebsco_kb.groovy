@@ -44,9 +44,52 @@ int rownum = 0;
 // Read column headings
 nl = r.readNext()
 println("Column heads: ${nl}");
+// "Provider_ID",
+// "Provider_Name",
+// "Package_ID",
+// "Package_Name",
+// "Package_Type_ID",
+// "Package_Type",
+// "Package_Content_Type_ID",
+// "Package_Content_Type",
+// "Package_URL",
+// "Access_Type",
+// "Consortia",
+// "Vendor_Token_Prompt",
+// "Vendor_Token",
+// "Vendor_Token_Help",
+// "Package_Token_Prompt",
+// "Package_Token",
+// "Package_Token_Help"
 
 while ((nl = r.readNext()) != null) {
-  println("Row: "+nl);
+  // println("Row: "+nl);
 
   println("Process ${nl[0]}/EBSCO_${nl[0]}_${nl[2]}_${args[1]}.csv");
+  def ingest_file = args[0]+'/'+"${nl[0]}/EBSCO_${nl[0]}_${nl[2]}_${args[1]}.csv"
+
+  // 
+  // curl -v --user admin:admin -X POST \
+  //   --form content=@./$cufts_file \
+  //   --form source="CUFTS" \
+  //   --form fmt="cufts" \
+  //   --form pkg="$cufts_file" \
+  //   --form platformUrl="http://lib-code.lib.sfu.ca/projects/CUFTS/" \
+  //   --form format="JSON" \
+  //   http://localhost:8080/gokb/packages/deposit
+
+  def cmd = ["curl", "-v", "--user", "admin:admin", "-X", "POST",
+              "--form", "content=@${ingest_file}",
+              "--form", "source=EBSCO",
+              "--form", "fmt=ebsco",
+              "--form", "pkg=${nl[3]}",
+              "--form", "platformUrl=${nl[8]}",
+              "--form", "format=JSON",
+              "http://localhost:8080/gokb/packages/deposit"]
+
+  def sout = new StringBuffer(), serr = new StringBuffer()
+  def proc = cmd.execute()
+  proc.consumeProcessOutput(sout, serr)
+  proc.waitForOrKill(20000)
+  println "out> $sout err> $serr"
 }
