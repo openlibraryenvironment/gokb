@@ -12,6 +12,7 @@ import org.gokb.IngestService
 import org.gokb.cred.KBComponent
 import org.gokb.validation.types.*
 import java.text.SimpleDateFormat
+import java.util.concurrent.Executors
 
 grails.config.locations = [ "classpath:${appName}-config.properties",
   "classpath:${appName}-config.groovy",
@@ -1372,6 +1373,18 @@ searchApi = [
   'typingField' : 'componentType',
   'port'        : 9200
 ]
+
+concurrency.pools = [
+  "smallJobs" : [
+    type: 'SingleThreadExecutor'
+  ]
+]
+
+beans {
+  executorService {
+    executor = Executors.newFixedThreadPool(100)
+  }
+}
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'

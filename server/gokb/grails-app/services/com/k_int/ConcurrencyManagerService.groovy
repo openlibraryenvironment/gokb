@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
+import org.codehaus.groovy.grails.commons.GrailsApplication
 
 /**
  * This service will allocate tasks to the Executor service while maintaining a list of current tasks
@@ -70,6 +71,26 @@ class ConcurrencyManagerService {
 
       this
     }
+    
+    /**
+     * Starts the background task with a named pool.
+     * @return this Job
+     */
+    public synchronized Job startOrQueue (String poolName) {
+
+      // Just return if this task has already started.
+      if (!begun) {
+
+        // Check for a parameter on this closure.
+        work = work.rcurry(this)
+
+        task = grailsApplication.mainContext."${poolName}ExecutorService".submit(work)
+
+        begun = true
+      }
+
+      this
+    }
 
     /**
      * Attempt to retrieve the result. May be Null
@@ -106,6 +127,8 @@ class ConcurrencyManagerService {
     return map;
   }
 
+  GrailsApplication grailsApplication
+  
   /**
    * Executor Service
    */
