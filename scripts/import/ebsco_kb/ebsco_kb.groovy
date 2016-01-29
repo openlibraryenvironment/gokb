@@ -90,6 +90,10 @@ while ((nl = r.readNext()) != null) {
   def sout = new StringBuffer(), serr = new StringBuffer()
   def proc = cmd.execute()
   proc.consumeProcessOutput(sout, serr)
-  proc.waitForOrKill(20000)
+  proc.waitForOrKill(30000)
   println "out> $sout err> $serr"
+
+  synchronized(this) {
+    Thread.sleep(30000);
+  }
 }
