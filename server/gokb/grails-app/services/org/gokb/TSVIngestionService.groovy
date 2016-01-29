@@ -273,7 +273,7 @@ class TSVIngestionService {
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
-        // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
+        log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
       }
       else {
         log.error("**PROBLEM SAVING TITLE**");
@@ -851,17 +851,18 @@ class TSVIngestionService {
               if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
                 addPublisher(the_kbart.publisher_name, title)
 
-              if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
-                addPerson(the_kbart.first_author, author_role, title);
+              
+              // if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
+              //   addPerson(the_kbart.first_author, author_role, title);
 
-              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
-                addPerson(the_kbart.first_editor, editor_role, title);
+              // if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
+              //   addPerson(the_kbart.first_editor, editor_role, title);
 
-              addSubjects(the_kbart.subjects, title)
+              // addSubjects(the_kbart.subjects, title)
 
-              the_kbart.additional_authors.each { author ->
-                addPerson(author, author_role, title)
-              }
+              // the_kbart.additional_authors.each { author ->
+              //   addPerson(author, author_role, title)
+              // }
 
               def pre_create_tipp_time = System.currentTimeMillis();
               createTIPP(source,
@@ -891,10 +892,10 @@ class TSVIngestionService {
 
   def addOtherFieldsToTitle(title, the_kbart, ingest_cfg) {
     title.medium=RefdataCategory.lookupOrCreate("TitleInstance.Medium", ingest_cfg.defaultMedium ?: "eBook")
-    title.editionNumber=the_kbart.monograph_edition
-    title.dateFirstInPrint=parseDate(the_kbart.date_monograph_published_print)
-    title.dateFirstOnline=parseDate(the_kbart.date_monograph_published_online)
-    title.volumeNumber=the_kbart.monograph_volume
+    // title.editionNumber=the_kbart.monograph_edition
+    // title.dateFirstInPrint=parseDate(the_kbart.date_monograph_published_print)
+    // title.dateFirstOnline=parseDate(the_kbart.date_monograph_published_online)
+    // title.volumeNumber=the_kbart.monograph_volume
     title.save(failOnError:true,flush:true)
   }
 
@@ -1177,17 +1178,22 @@ class TSVIngestionService {
     //need to know the file type, then we need to create a new data structure for it
     //in the config, need to map the fields from the formats we support into kbart.
 
-    def fileRules = grailsApplication.config.kbart2.mappings."${packageType}"
-
-    if (fileRules==null) {
-      throw new Exception("couldn't find file rules for ${packageType}")
-    }
+    def kbart_cfg = grailsApplication.config.kbart2.mappings."${packageType}"
 
     //can you read a tsv file?
     def charset = 'ISO-8859-1' // 'UTF-8'
-    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData),
-                                                        java.nio.charset.Charset.forName(charset)),'\t' as char,'\0' as char)
+    if (kbart_cfg==null) {
+      throw new Exception("couldn't find config for ${packageType}")
+    }
+    else {
+      log.debug("Got config ${kbart_cfg}");
+    }
 
+    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData), java.nio.charset.Charset.forName(kbart_cfg.charset?:'ISO-8859-1')),
+                                                        (kbart_cfg.separator?:'\t') as char,
+                                                        (kbart_cfg.quoteChar?:'\0') as char)
+
+    def fileRules = kbart_cfg.rules
     Map col_positions=[:]
     fileRules.each { fileRule ->
       col_positions[fileRule.field]=-1;
@@ -1197,6 +1203,7 @@ class TSVIngestionService {
     int ctr = 0
 
 
+    log.debug("Processing column headers... count ${header?.length} items")
     header.each {
       log.debug("Column ${ctr} == ${it}");
       col_positions [ it ] = ctr++
@@ -1205,8 +1212,9 @@ class TSVIngestionService {
     def mapped_cols = [] as ArrayList
     def unmapped_cols = 0..(header.size()) as ArrayList
 
-    log.debug("Mapped columns: ${mapped_cols}");
-    log.debug("UnMapped columns: ${unmapped_cols}");
+    log.debug("Col positions : ${col_positions}");
+    log.debug("Before Mapped columns: ${mapped_cols}");
+    log.debug("Before UnMapped columns: ${unmapped_cols}");
 
 
     fileRules.each { fileRule ->
@@ -1215,10 +1223,13 @@ class TSVIngestionService {
         unmapped_cols.remove(col_positions[fileRule.field] as Object);
         mapped_cols.add(col_positions[fileRule.field] as Object)
       }
+      else {
+        log.debug("Unable to find column for ${fileRule.field}");
+      }
     }
 
-    log.debug("Mapped columns: ${mapped_cols}");
-    log.debug("UnMapped columns: ${unmapped_cols}");
+    log.debug("After Mapped columns: ${mapped_cols}");
+    log.debug("After UnMapped columns: ${unmapped_cols}");
 
     String [] nl = csv.readNext()
 
@@ -1314,7 +1325,7 @@ class TSVIngestionService {
     def reasons = []
 
     // check the_kbart.date_first_issue_online is present and validates
-    if ( row_data.date_first_issue_online != null ) {
+    if ( ( row_data.date_first_issue_online != null )  && ( row_data.date_first_issue_online.trim() != '' ) ) {
       def parsed_start_date = parseDate(row_data.date_first_issue_online)
       if ( parsed_start_date == null ) {
         reasons.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}");
@@ -1356,7 +1367,7 @@ class TSVIngestionService {
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
 
-      TitleInstance.withNewSession {
+      TitleInstance.withNewTransaction {
 
         def identifiers = []
 

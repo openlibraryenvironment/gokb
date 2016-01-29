@@ -21,6 +21,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 
   kbart2.mappings= [
     ingram : [
+               rules:[
                 [field: 'Title', kbart: 'publication_title'],
                 [field: 'Title ID', kbart: 'print_identifier'],
                 [field: 'Authors', kbart: 'first_author', separator: ';', additional: 'additional_authors'],
@@ -31,8 +32,10 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                 [field: 'Publisher', kbart: 'publisher_name'],
                 [field: 'URL', kbart: 'title_url'],
                 [field: 'PubDate', kbart: 'date_monograph_published_online'],
+              ]
          ],
      ybp : [
+               rules:[
                 [field: 'Title', kbart: 'publication_title'],
                 [field: 'ISBN', kbart: 'online_identifier'],
                 [field: 'Author', kbart: 'first_author'],
@@ -41,8 +44,10 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                 [field: 'Pub_Year', kbart: 'date_monograph_published_online'],
                 [field: 'Edition', kbart: 'monograph_edition'],
                 [field: 'LC/NLM/Dewey_Class', additional: 'subjects']
+              ]
      ],
      cufts:[
+               rules:[
                 [field: 'title', kbart: 'publication_title'],
                 [field: 'issn', kbart: 'print_identifier'],
                 [field: 'e_issn', kbart: 'online_identifier'],
@@ -61,8 +66,10 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                 [field: 'publisher', kbart: 'publisher_name'],
                 //[field: 'abbreviation', kbart: ''],
                 //[field: 'current_months', kbart: ''],
+              ]
      ],
      cuftsBJM:[
+               rules:[
                 [field: 'title', kbart: 'publication_title'],
                 [field: 'issn', kbart: 'print_identifier'],
                 [field: 'e_issn', kbart: 'online_identifier'],
@@ -79,8 +86,45 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                 [field: 'embargo_days', kbart: 'embargo_info'],
                 [field: 'embargo_months', kbart: 'embargo_info'],
                 [field: 'publisher', kbart: 'publisher_name'],
+              ]
+     ],
+     ebsco:[
+              quoteChar:'"',
+              separator:',',
+              rules:[
+                [field: 'publication_title', kbart: 'publication_title'],
+                [field: 'print_identifier', kbart: 'print_identifier'],
+                [field: 'online_identifier', kbart: 'online_identifier'],
+                [field: 'date_first_issue_online', kbart: 'date_first_issue_online'],
+                [field: 'date_last_issue_online', kbart: 'date_last_issue_online'],
+                [field: 'num_first_vol_online', kbart: 'num_first_vol_online'],
+                [field: 'num_last_vol_online', kbart: 'num_last_vol_online'],
+                [field: 'num_first_issue_online', kbart: 'num_first_issue_online'],
+                [field: 'num_last_issue_online', kbart: 'num_last_issue_online'],
+                [field: 'title_id', kbart: 'title_id'],
+                [field: 'title_url', kbart: 'title_url'],
+                [field: 'embargo_info', kbart: 'embargo_info'],
+                [field: 'publisher_name', kbart: 'publisher_name'],
+                [field:'first_author', kbart:"first_author"],
+                [field:'coverage_depth', kbart:"coverage_depth"],  // GOKb coverageDepth is refdata -- Investigating
+                [field:'notes', kbart:"notes"],
+                [field:'publisher_name', kbart:"publisher_name"],
+                [field:'publication_type', kbart:"publication_type"],
+                [field:'date_monograph_published_print', kbart:"date_monograph_published_print"],
+                [field:'date_monograph_published_online', kbart:"date_monograph_published_online"],
+                [field:'monograph_volume', kbart:"monograph_volume"],
+                [field:'monograph_edition', kbart:"monograph_edition"],
+                [field:'first_editor', kbart:"first_editor"],
+                [field:'parent_publication_title_id', kbart:"parent_publication_title_id"],
+                [field:'preceding_publication_title_id', kbart:"preceding_publication_title_id"],
+                [field:'access_type', kbart:"access_type"],
+                [field:'package_name', kbart:"package_name"],
+                // [field:'', kbart:"package_ID"],
+                // [field:'', kbart:"ProviderID"],
+                // [field:'', kbart:"EBSCO_Resource_Type"],
+                // [field:'', kbart:"EBSCO_Resource_TypeID"],
+              ]
      ]
-
 ]
 
 kbart2.personCategory='SPR'

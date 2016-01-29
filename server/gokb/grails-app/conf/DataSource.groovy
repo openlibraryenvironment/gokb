@@ -26,6 +26,7 @@ environments {
             driverClassName = "com.mysql.jdbc.Driver"
             // dialect=org.hibernate.dialect.MySQL5Dialect
             dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+            defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
             username = "k-int"
             password = "k-int"
             url = "jdbc:mysql://localhost/GoKB?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
@@ -58,6 +59,7 @@ environments {
         driverClassName = "com.mysql.jdbc.Driver"
         // dialect=org.hibernate.dialect.MySQL5Dialect
         dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+        defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
         username = "k-int"
         password = "k-int"
         url = "jdbc:mysql://localhost/GoKBTest?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
@@ -82,6 +84,7 @@ environments {
             driverClassName = "com.mysql.jdbc.Driver"
             // dialect=org.hibernate.dialect.MySQL5Dialect
             dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+            defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
             username = "k-int"
             password = "k-int"
             url = "jdbc:mysql://localhost/GoKBProd?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
