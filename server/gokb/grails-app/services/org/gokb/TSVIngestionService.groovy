@@ -460,6 +460,8 @@ class TSVIngestionService {
     // Default to the min threshold
     double best_distance = grailsApplication.config.cosine.good_threshold
 
+    // This isn't a good idea -- 1. Loading whole title records in causes loads of memory churn, and list() loads everything into an ArrayList rather than paging
+    // Needs to be a query selecting titles and variant names and then to paginate over them. For now, just not calling this method and using a flag doDistanceMatch in config
     TitleInstance.list().each { TitleInstance t ->
 
     // Get the distance and then determine whether to add to the list or
