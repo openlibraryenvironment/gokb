@@ -201,7 +201,13 @@ class TSVIngestionService {
         // No class 1s supplied we should try and find a match on the title string.
         log.debug ("No class 1 ids supplied.")
         // Lookup using title string match only.
-        the_title = attemptStringMatch (norm_title)
+
+        the_title == TitleInstance.findByNormname(norm_title)
+
+        if ( ( the_title == null ) && ( ingest_cfg.doDistanceMatch == true ) ) {
+          the_title = attemptStringMatch (norm_title)
+        }
+
         if (the_title) {
           log.debug("TI ${the_title} matched by name. Partial match")
           // Add the variant.
