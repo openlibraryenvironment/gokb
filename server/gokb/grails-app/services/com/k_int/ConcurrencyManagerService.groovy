@@ -95,8 +95,10 @@ class ConcurrencyManagerService {
     /**
      * Attempt to retrieve the result. May be Null
      * @see java.util.concurrent.FutureTask#get()
+     * II: I don't think this should be synchronized, as a waiting process will essentially block any other
+     * activities on this monitor. Removed for test..
      */
-    public synchronized def get() {
+    public def get() {
       task.get()
     }
 

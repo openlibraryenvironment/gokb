@@ -597,10 +597,14 @@ class TSVIngestionService {
              ip_id=null,
              ingest_cfg=null) {
 
+    log.debug("ingest2...");
+
     long start_time = System.currentTimeMillis();
 
     // Read does no dirty checking
+    log.debug("Get Datafile");
     def datafile = DataFile.read(datafile_id)
+    log.debug("Got Datafile");
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
@@ -616,15 +620,18 @@ class TSVIngestionService {
     }
 
     try {
+      log.debug("Initialise start time");
 
       def ingest_systime = start_time
       def ingest_date = new java.sql.Timestamp(start_time);
 
+      log.debug("Set progress");
       job?.setProgress(0)
 
       def kbart_beans=[]
       def badrows=[]
 
+      log.debug("Reading datafile");
       //we kind of assume that we need to convert to kbart
       if ("${packageType}"!='kbart2') {
         kbart_beans = convertToKbart(packageType, datafile)
@@ -636,6 +643,8 @@ class TSVIngestionService {
       def the_package_id = null
       def author_role_id = null;
       def editor_role_id = null;
+
+      log.debug("Starting preflight");
 
       def preflight_result = preflight( kbart_beans, ingest_cfg, source )
       if ( preflight_result.passed ) {
