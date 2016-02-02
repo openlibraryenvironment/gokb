@@ -199,12 +199,13 @@ class TSVIngestionService {
         the_title.ids=[]
       } else {
         // No class 1s supplied we should try and find a match on the title string.
-        log.debug ("No class 1 ids supplied.")
+        log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
         // Lookup using title string match only.
 
         the_title == TitleInstance.findByNormname(norm_title)
 
         if ( ( the_title == null ) && ( ingest_cfg.doDistanceMatch == true ) ) {
+          log.debug("No title match on identifier or normname -- try string match");
           the_title = attemptStringMatch (norm_title)
         }
 
@@ -394,16 +395,16 @@ class TSVIngestionService {
 
     if ( ( clean_pub_name != null ) && ( clean_pub_name.trim().length() > 0 ) ) {
 
-      log.debug("Org lookup: ${clean_pub_name}");
       def norm_pub_name = GOKbTextUtils.normaliseString(clean_pub_name)
-      def publisher = org.gokb.cred.Org.findAllByNormname(clean_pub_name)
+      log.debug("Org lookup: ${clean_pub_name}/${norm_pub_name}");
+      def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
           log.debug ("Publisher ${clean_pub_name} lookup yielded no matches.")
-          Org.withNewTransaction {
-            def the_publisher = new Org(name:clean_pub_name)
+          Org.withTransaction {
+            def the_publisher = new Org(name:clean_pub_name,normname:norm_pub_name)
             if (the_publisher.save(failOnError:true, flush:true)) {
               log.debug("saved ${the_publisher.name}")
               ReviewRequest.raise(
@@ -1043,7 +1044,15 @@ class TSVIngestionService {
           newpkgid = newpkg.id
           if ( providerName && providerName.length() > 0 ) {
             def norm_provider_name = GOKbTextUtils.normaliseString(providerName)
-            def provider = org.gokb.cred.Org.findByNormname(norm_provider_name) ?: new Org(name:norm_provider_name).save(flush:true, failOnError:true);
+            def provider = null;
+            def providers = org.gokb.cred.Org.findAllByNormname(norm_provider_name)
+            if ( providers.size() == 0 )
+              provider = new Org(name:providerName,normname:norm_provider_name).save(flush:true, failOnError:true);
+            else if ( providers.size() == 1 ) 
+              provider = providers[0]
+            else
+              log.error("Multiple orgs with name ${providerName}/${norm_provider_name} -- unable to set package provider");
+
             newpkg.provider = provider
             newpkg.save()
           }

@@ -1,7 +1,8 @@
 #!/usr/bin/groovy
 
-// @GrabResolver(name='es', root='https://oss.sonatype.org/content/repositories/releases')
+// @GrabResolver(name='central', root='http://central.maven.org/maven2/')
 @Grapes([
+  // @GrabResolver(name='es', root='https://oss.sonatype.org/content/repositories/releases'),
   @Grab(group='net.sf.opencsv', module='opencsv', version='2.0'),
   @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.1.2'),
   @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.0'),
