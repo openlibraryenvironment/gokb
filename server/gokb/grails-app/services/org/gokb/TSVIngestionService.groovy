@@ -987,7 +987,9 @@ class TSVIngestionService {
       log.debug("create a new tipp as at ${ingest_date}");
 
       // These are immutable for a TIPP - only set at creation time
-      tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
+      // We are going to create tipl objects at the end instead if per title inline.
+      // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
+      tipp = new TitleInstancePackagePlatform(tipp_values)
 
       log.debug("Created");
 
