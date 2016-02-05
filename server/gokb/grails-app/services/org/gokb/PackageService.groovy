@@ -5,6 +5,34 @@ import org.hibernate.Session
 
 class PackageService {
 
+  /*
+  public static String missingTIPs = '''
+    select distinct title, platform
+    from TitleInstancePackagePlatform as tipp, 
+         Combo as title_combo,
+         TitleInstance as title,
+         Combo as platform_combo,
+         Platform as plaform
+     where title_combo.fromComponent=tipp 
+       and title_combo.toComponent=title 
+       and title_combo.type.value='Title'
+       and platform_combo.fromComponent=tipp
+       and platform_combo.toComponent=platform
+       and platform_combo.type.value='Platform'
+       and not exists ( 
+             select tip 
+             from TitleInstancePlatform as tip,
+                  Combo as tip_title_combo,
+                  Combo as tip_platform_combo
+             where tip_title_combo.fromComponent=tip
+               and tip_title_combo.toComponent=title
+               and tip_platform_combo.fromComponent=tip
+               and tip_platform_combo.toComponent=platform
+           )
+'''
+  */
+
+
   ComponentLookupService componentLookupService
   
   /**
