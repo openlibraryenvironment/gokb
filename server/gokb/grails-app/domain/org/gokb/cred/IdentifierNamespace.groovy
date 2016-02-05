@@ -14,6 +14,7 @@ class IdentifierNamespace {
   }
 
   static constraints = {
+    // II: Want this, but need to tidy live first :: value (nullable:true, blank:false, unique:true)
     value (nullable:true, blank:false)
     datatype (nullable:true, blank:false)
     family (nullable:true, blank:false)
@@ -46,6 +47,10 @@ class IdentifierNamespace {
     }
 
     result
+  }
+
+  def beforeInsert() {
+    value = value.toLowerCase()
   }
 
 
