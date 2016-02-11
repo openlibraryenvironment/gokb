@@ -86,6 +86,7 @@
         </g:else>
 
         <g:if test="${d.additional}">
+
           <g:form name="AddRules" controller="workflow" action="addToRulebase">
             <input type="hidden" name="sourceName" value="${d.additional.sourceName}"/>
             <input type="hidden" name="sourceId" value="${d.additional.sourceId}"/>
@@ -98,7 +99,7 @@
                 </tr>
               </thead>
               <tbody>
-                <g:each in="${d.additional?.problems}" var="revreq_problem"> 
+                <g:each in="${d.additional?.problems}" var="revreq_problem" status="i"> 
                   <tr>
                    <td>
                      <input type="hidden" name="prob_seq_${revreq_problem.problemSequence}_probcode" value='${revreq_problem.problemCode}' />
@@ -108,7 +109,7 @@
                      <p>${revreq_problem.problemDescription}</p>
                    </td>
                    <td>
-                     <g:render template="${revreq_problem.problemCode}" contextPath="../reviewRequestCases"  model="${[d:d, prob:revreq_problem]}" />
+                     <g:render template="${revreq_problem.problemCode}" contextPath="../reviewRequestCases"  model="${[d:d, prob:revreq_problem, status:i]}" />
                    </td>
                   </tr>
                 </g:each>
