@@ -57,3 +57,7 @@ A script is provdied to import the ncsu orgs list, run from gokb-phase1/scripts/
 
 
 
+
+For parsing out Platform URLs
+http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/net/InternetDomainName.html
+System.out.println(InternetDomainName.fromLenient(uriHost).topPrivateDomain().name());
