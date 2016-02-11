@@ -11,7 +11,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Project Euclid" \
   --form providerIdentifierNamespace="ProjectEuclid" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -25,7 +24,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="American Chemical Society" \
   --form providerIdentifierNamespace="ACS" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -40,7 +38,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="APA PsycNET" \
   --form providerIdentifierNamespace="APA" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -55,7 +52,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Brill Online" \
   --form providerIdentifierNamespace="BRILL" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -70,7 +66,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="BMJ Publishing" \
   --form providerIdentifierNamespace="BMJ" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -85,7 +80,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="JSTOR CSP" \
   --form providerIdentifierNamespace="JSTOR" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -100,7 +94,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Nature Publishing Group" \
   --form providerIdentifierNamespace="NPG" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -115,7 +108,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Oxford Journals" \
   --form providerIdentifierNamespace="OxfordJournals" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -130,7 +122,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Project Euclid II" \
   --form providerIdentifierNamespace="ProjectEuclid" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -144,7 +135,6 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="Project Muse" \
   --form providerIdentifierNamespace="ProjectMuse" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 
 sleep 5 
@@ -158,6 +148,5 @@ curl -v --user admin:admin -X POST \
   --form format="JSON" \
   --form providerName="DOAJ" \
   --form providerIdentifierNamespace="DOAJ" \
-  --form synchronous="Y" \
   $GOKB_HOST/gokb/packages/deposit
 

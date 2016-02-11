@@ -1,7 +1,8 @@
 #!/usr/bin/groovy
 
-// @GrabResolver(name='es', root='https://oss.sonatype.org/content/repositories/releases')
+// @GrabResolver(name='central', root='http://central.maven.org/maven2/')
 @Grapes([
+  // @GrabResolver(name='es', root='https://oss.sonatype.org/content/repositories/releases'),
   @Grab(group='net.sf.opencsv', module='opencsv', version='2.0'),
   @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.1.2'),
   @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.0'),
@@ -62,6 +63,9 @@ println("Column heads: ${nl}");
 // "Package_Token",
 // "Package_Token_Help"
 
+def total = 0;
+def start_time = System.currentTimeMillis()
+
 while ((nl = r.readNext()) != null) {
   // println("Row: "+nl);
 
@@ -85,15 +89,22 @@ while ((nl = r.readNext()) != null) {
               "--form", "pkg=${nl[3]}",
               "--form", "platformUrl=${nl[8]}",
               "--form", "format=JSON",
+              "--form", "synchronous=Y",
               "http://localhost:8080/gokb/packages/deposit"]
 
   def sout = new StringBuffer(), serr = new StringBuffer()
   def proc = cmd.execute()
   proc.consumeProcessOutput(sout, serr)
-  proc.waitForOrKill(30000)
+  proc.waitFor()
   println "out> $sout err> $serr"
 
+  def elapsed = System.currentTimeMillis() - start_time
+  total += elapsed
+  println("This File : ${elapsed} Total: ${total}");
+
   synchronized(this) {
-    Thread.sleep(30000);
+    Thread.sleep(2000);
   }
 }
+
+println("Elapsed : ${total}");

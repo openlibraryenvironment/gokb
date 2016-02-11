@@ -199,9 +199,16 @@ class TSVIngestionService {
         the_title.ids=[]
       } else {
         // No class 1s supplied we should try and find a match on the title string.
-        log.debug ("No class 1 ids supplied.")
+        log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
         // Lookup using title string match only.
-        the_title = attemptStringMatch (norm_title)
+
+        the_title == TitleInstance.findByNormname(norm_title)
+
+        if ( ( the_title == null ) && ( ingest_cfg.doDistanceMatch == true ) ) {
+          log.debug("No title match on identifier or normname -- try string match");
+          the_title = attemptStringMatch (norm_title)
+        }
+
         if (the_title) {
           log.debug("TI ${the_title} matched by name. Partial match")
           // Add the variant.
@@ -388,16 +395,16 @@ class TSVIngestionService {
 
     if ( ( clean_pub_name != null ) && ( clean_pub_name.trim().length() > 0 ) ) {
 
-      log.debug("Org lookup: ${clean_pub_name}");
       def norm_pub_name = GOKbTextUtils.normaliseString(clean_pub_name)
-      def publisher = org.gokb.cred.Org.findAllByNormname(clean_pub_name)
+      log.debug("Org lookup: ${clean_pub_name}/${norm_pub_name}");
+      def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
           log.debug ("Publisher ${clean_pub_name} lookup yielded no matches.")
-          Org.withNewTransaction {
-            def the_publisher = new Org(name:clean_pub_name)
+          Org.withTransaction {
+            def the_publisher = new Org(name:clean_pub_name,normname:norm_pub_name)
             if (the_publisher.save(failOnError:true, flush:true)) {
               log.debug("saved ${the_publisher.name}")
               ReviewRequest.raise(
@@ -454,6 +461,8 @@ class TSVIngestionService {
     // Default to the min threshold
     double best_distance = grailsApplication.config.cosine.good_threshold
 
+    // This isn't a good idea -- 1. Loading whole title records in causes loads of memory churn, and list() loads everything into an ArrayList rather than paging
+    // Needs to be a query selecting titles and variant names and then to paginate over them. For now, just not calling this method and using a flag doDistanceMatch in config
     TitleInstance.list().each { TitleInstance t ->
 
     // Get the distance and then determine whether to add to the list or
@@ -597,10 +606,14 @@ class TSVIngestionService {
              ip_id=null,
              ingest_cfg=null) {
 
+    log.debug("ingest2...");
+
     long start_time = System.currentTimeMillis();
 
     // Read does no dirty checking
+    log.debug("Get Datafile");
     def datafile = DataFile.read(datafile_id)
+    log.debug("Got Datafile");
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
@@ -616,15 +629,18 @@ class TSVIngestionService {
     }
 
     try {
+      log.debug("Initialise start time");
 
       def ingest_systime = start_time
       def ingest_date = new java.sql.Timestamp(start_time);
 
+      log.debug("Set progress");
       job?.setProgress(0)
 
       def kbart_beans=[]
       def badrows=[]
 
+      log.debug("Reading datafile");
       //we kind of assume that we need to convert to kbart
       if ("${packageType}"!='kbart2') {
         kbart_beans = convertToKbart(packageType, datafile)
@@ -636,6 +652,8 @@ class TSVIngestionService {
       def the_package_id = null
       def author_role_id = null;
       def editor_role_id = null;
+
+      log.debug("Starting preflight");
 
       def preflight_result = preflight( kbart_beans, ingest_cfg, source )
       if ( preflight_result.passed ) {
@@ -969,7 +987,9 @@ class TSVIngestionService {
       log.debug("create a new tipp as at ${ingest_date}");
 
       // These are immutable for a TIPP - only set at creation time
-      tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
+      // We are going to create tipl objects at the end instead if per title inline.
+      // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
+      tipp = new TitleInstancePackagePlatform(tipp_values)
 
       log.debug("Created");
 
@@ -1026,7 +1046,15 @@ class TSVIngestionService {
           newpkgid = newpkg.id
           if ( providerName && providerName.length() > 0 ) {
             def norm_provider_name = GOKbTextUtils.normaliseString(providerName)
-            def provider = org.gokb.cred.Org.findByNormname(norm_provider_name) ?: new Org(name:norm_provider_name).save(flush:true, failOnError:true);
+            def provider = null;
+            def providers = org.gokb.cred.Org.findAllByNormname(norm_provider_name)
+            if ( providers.size() == 0 )
+              provider = new Org(name:providerName,normname:norm_provider_name).save(flush:true, failOnError:true);
+            else if ( providers.size() == 1 ) 
+              provider = providers[0]
+            else
+              log.error("Multiple orgs with name ${providerName}/${norm_provider_name} -- unable to set package provider");
+
             newpkg.provider = provider
             newpkg.save()
           }

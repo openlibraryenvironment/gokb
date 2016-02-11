@@ -148,103 +148,115 @@ class PackagesController {
     def result = [:]
     log.debug("deposit::${params}")
     def jobid = null;
+    Job background_job = null;
 
     if ( request.method=='POST') {
+    
       log.debug("Handling post")
 
-      if ( request instanceof MultipartHttpServletRequest ) {
-
-        def upload_mime_type = request.getFile("content")?.contentType  // getPart?
-        def upload_filename = request.getFile("content")?.getOriginalFilename()
-        def new_datafile_id = null
-
-        log.debug("Multipart")
-
-        if ( upload_mime_type &&
-             upload_filename &&
-             params.pkg &&
-             params.platformUrl &&
-             params.fmt &&
-             params.source ) {
-
-          def deposit_token = java.util.UUID.randomUUID().toString();
-          def temp_file = copyUploadedFile(request.getFile("content"), deposit_token);
-          log.debug("Got file content")
-          def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype',params.fmt).save()
-          def pkg = params.pkg
-          def platformUrl = params.platformUrl
-          def source = params.source
-          def providerName = params.providerName
-          def providerIdentifierNamespace = params.providerIdentifierNamespace
-
-          def info = analyse(temp_file);
-
-          log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
-          def existing_file = DataFile.findByMd5(info.md5sumHex);
-
-          if ( existing_file != null ) {
-            log.debug("Found a match !")
-            if ( params.reprocess=='Y' ) {
-              log.debug("Located existing file, reprocess=Y, continuing");
-              new_datafile_id = existing_file.id
+      DataFile.withNewSession() {
+        if ( request instanceof MultipartHttpServletRequest ) {
+  
+          def upload_mime_type = request.getFile("content")?.contentType  // getPart?
+          def upload_filename = request.getFile("content")?.getOriginalFilename()
+          def new_datafile_id = null
+  
+          log.debug("Multipart")
+  
+          if ( upload_mime_type &&
+               upload_filename &&
+               params.pkg &&
+               params.platformUrl &&
+               params.fmt &&
+               params.source ) {
+  
+            def deposit_token = java.util.UUID.randomUUID().toString();
+            def temp_file = copyUploadedFile(request.getFile("content"), deposit_token);
+            log.debug("Got file content")
+            def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype',params.fmt).save()
+            def pkg = params.pkg
+            def platformUrl = params.platformUrl
+            def source = params.source
+            def providerName = params.providerName
+            def providerIdentifierNamespace = params.providerIdentifierNamespace
+  
+            def info = analyse(temp_file);
+  
+            log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
+            def existing_file = DataFile.findByMd5(info.md5sumHex);
+  
+            if ( existing_file != null ) {
+              log.debug("Found a match !")
+              if ( params.reprocess=='Y' ) {
+                log.debug("Located existing file, reprocess=Y, continuing");
+                new_datafile_id = existing_file.id
+              }
+              else {
+                redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+                return
+              }
             }
             else {
-              redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
-              return
+              log.debug("Create new datafile");
+              DataFile.withNewTransaction {
+                def new_datafile = new DataFile(
+                                            guid:deposit_token,
+                                            md5:info.md5sumHex,
+                                            uploadName:upload_filename,
+                                            name:upload_filename,
+                                            filesize:info.filesize,
+                                            uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
+  
+                new_datafile.fileData = temp_file.getBytes()
+                new_datafile.save(flush:true, failOnError:true)
+  
+  
+                log.debug("Saved new datafile : ${new_datafile.id}");
+                new_datafile_id = new_datafile.id
+              }
             }
+  
+  
+            log.debug("Create background job");
+            // Transactional part done. now queue the job
+            background_job = concurrencyManagerService.createJob { Job job ->
+              // Create a new session to run the ingest.
+              try {
+                log.debug("Launching ingest");
+                TSVIngestionService.ingest2(format_rdv,
+                                            pkg,
+                                            new java.net.URL(platformUrl),
+                                            Source.findByName(source),
+                                            new_datafile_id,
+                                            job,
+                                            providerName,
+                                            providerIdentifierNamespace)
+              }
+              catch ( Exception e ) {
+                log.error("Problem",e)
+              }
+              finally {
+                log.debug ("Async Data insert complete")
+              }
+            }
+  
+            background_job.description="Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
+            background_job.startOrQueue()
+            jobid = background_job.id
+            log.debug("Background job started");
           }
           else {
-            log.debug("Create new datafile");
-            DataFile.withTransaction {
-              def new_datafile = new DataFile(
-                                          guid:deposit_token,
-                                          md5:info.md5sumHex,
-                                          uploadName:upload_filename,
-                                          name:upload_filename,
-                                          filesize:info.filesize,
-                                          uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
-
-              new_datafile.fileData = temp_file.getBytes()
-              new_datafile.save(flush:true)
-
-
-              log.debug("Saved new datafile : ${new_datafile.id}");
-              new_datafile_id = new_datafile.id
-            }
+            log.error("Missing parameters :: ${params}");
           }
-
-
-          // Transactional part done. now queue the job
-          Job background_job = concurrencyManagerService.createJob { Job job ->
-            // Create a new session to run the ingest.
-            try {
-              TSVIngestionService.ingest2(format_rdv,
-                                          pkg,
-                                          new java.net.URL(platformUrl),
-                                          Source.findByName(source),
-                                          new_datafile_id,
-                                          job,
-                                          providerName,
-                                          providerIdentifierNamespace)
-            }
-            catch ( Exception e ) {
-              log.error("Problem",e)
-            }
-            finally {
-              log.debug ("Async Data insert complete")
-            }
-          }
-
-          background_job.description="Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
-          background_job.startOrQueue()
-          jobid = background_job.id
-        }
-        else {
-          log.error("Missing parameters :: ${params}");
         }
       }
     }
 
+
+    if ( params.synchronous=='Y' ) {
+      log.debug("Waiting for job to complete");
+      background_job.get()
+    }
 
     // Redirect to list of jobs
     redirect(controller:'admin', action:'jobs', params:[format:params.format, highlightJob:jobid]);

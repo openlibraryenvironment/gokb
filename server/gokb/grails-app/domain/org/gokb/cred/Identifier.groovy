@@ -45,7 +45,19 @@ class Identifier extends KBComponent {
 
   static def lookupOrCreateCanonicalIdentifier(ns, value) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = IdentifierNamespace.findByValue(ns) ?: new IdentifierNamespace(value:ns).save(failOnError:true);
+    def namespace = null;
+    def namespaces = IdentifierNamespace.findAllByValue(ns.toLowerCase())
+    switch ( namespaces.size() ) {
+      case 0:
+        namespace = new IdentifierNamespace(value:ns).save(failOnError:true);
+        break;
+      case 1:
+        namespace = namespaces[0]
+        break;
+      default:
+        throw new RuntimeException("Multiple Namespaces with value ${ns}");
+        break;
+    }
     def identifier = Identifier.findByNamespaceAndNormname(namespace,Identifier.normalizeIdentifier(value)) ?: 
                                     new Identifier(namespace:namespace, value:value).save(failOnError:true, flush:true)
     identifier

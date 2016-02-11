@@ -91,6 +91,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
      ebsco:[
               quoteChar:'"',
               separator:',',
+              charset:'UTF-8',
+              // doDistanceMatch=true, // To enable full string title matching
               rules:[
                 [field: 'publication_title', kbart: 'publication_title'],
                 [field: 'print_identifier', kbart: 'print_identifier'],

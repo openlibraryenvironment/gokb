@@ -75,6 +75,7 @@ environments {
             testWhileIdle=true
             testOnReturn=true
             validationQuery="select 1"
+            defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
         }
     }
     }
@@ -100,6 +101,7 @@ environments {
                 testWhileIdle=true
                 testOnReturn=true
                 validationQuery="select 1"
+                defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
             }
         }
     }

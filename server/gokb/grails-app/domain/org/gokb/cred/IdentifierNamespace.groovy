@@ -5,15 +5,19 @@ class IdentifierNamespace {
 
   String value
   RefdataValue  datatype
+  String family
 
   static mapping = {
     value column:'idns_value'
     datatype column:'idns_datatype'
+    family column:'idns_family'
   }
 
   static constraints = {
+    // II: Want this, but need to tidy live first :: value (nullable:true, blank:false, unique:true)
     value (nullable:true, blank:false)
     datatype (nullable:true, blank:false)
+    family (nullable:true, blank:false)
   }
 
   @Override
@@ -34,7 +38,7 @@ class IdentifierNamespace {
     def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
-    ql = TitleInstance.executeQuery("select t.id, t.value from IdentifierNamespace as t where lower(t.value) like ?", ["${params.q?.toLowerCase()}%"],[max:20]);
+    ql = IdentifierNamespace.executeQuery("select t.id, t.value from IdentifierNamespace as t where lower(t.value) like ?", ["${params.q?.toLowerCase()}%"],[max:20]);
 
     if ( ql ) {
       ql.each { t ->
@@ -43,6 +47,10 @@ class IdentifierNamespace {
     }
 
     result
+  }
+
+  def beforeInsert() {
+    value = value.toLowerCase()
   }
 
 
