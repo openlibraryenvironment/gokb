@@ -1291,15 +1291,23 @@ class WorkflowController {
 
   def addToRulebase() {
     def result = [:]
-    log.debug("addToRulebase ${params}");
+
+
     result.ref=request.getHeader('referer')
+    log.debug("${params.sourceName}");
+    log.debug("${params.sourceId}");
+
+    def source = Source.get(params.sourceId);
+
     def num_probs = params.int('prob_seq_count')
+
     for ( int i = 0; i< num_probs; i++ ) {
-      log.debug("Process prob seq ${i}");
-      log.debug("when title = ${params['prob_seq_'+i+'_title']}");
-      log.debug(" and identifiers = ${params['prob_seq_'+i+'_idstr']}");
-      log.debug(" and probcode = ${params['prob_seq_'+i+'_probcode']}");
-      log.debug("THEN");
+      log.debug("addToRulebase ${params.pr['prob_res_'+i]}");
+    //   log.debug("Process prob seq ${i}");
+    //   log.debug("when title = ${params['prob_seq_'+i+'_title']}");
+    //   log.debug(" and identifiers = ${params['prob_seq_'+i+'_idstr']}");
+    //   log.debug(" and probcode = ${params['prob_seq_'+i+'_probcode']}");
+    //   log.debug("THEN");
     }
     redirect(url: result.ref)
   }
