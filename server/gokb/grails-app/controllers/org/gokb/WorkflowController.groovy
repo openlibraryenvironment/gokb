@@ -1299,16 +1299,30 @@ class WorkflowController {
 
     def source = Source.get(params.sourceId);
 
+    log.debug("Process existing rulebase:: ${source.ruleset}");
+
+    // See if the source rulebase has been initialised
+    def parsed_rulebase = source.ruleset ? JSON.parse(source.ruleset) : null;
+
+    if ( parsed_rulebase == null ) {
+      parsed_rulebase = [rules:[:]]
+    }
+
     def num_probs = params.int('prob_seq_count')
 
     for ( int i = 0; i< num_probs; i++ ) {
       log.debug("addToRulebase ${params.pr['prob_res_'+i]}");
-    //   log.debug("Process prob seq ${i}");
-    //   log.debug("when title = ${params['prob_seq_'+i+'_title']}");
-    //   log.debug(" and identifiers = ${params['prob_seq_'+i+'_idstr']}");
-    //   log.debug(" and probcode = ${params['prob_seq_'+i+'_probcode']}");
-    //   log.debug("THEN");
+      def resolution = params.pr['prob_res_'+i]
+      if ( resolution.ResolutionOption ) {
+        log.debug("When ${resolution.probcode}:${resolution.title}:${resolution.idstr} Then ${resolution.ResolutionOption}");
+      }
+      def rule = [ ruleResolution:"${resolution.ResolutionOption}" ]
+      parsed_rulebase.rules["${resolution.probcode}:${resolution.title}:${resolution.idstr}"] = rule;
     }
+
+    source.ruleset = parsed_rulebase as JSON
+    source.save(flush:true, failOnError:true);
+
     redirect(url: result.ref)
   }
 }
