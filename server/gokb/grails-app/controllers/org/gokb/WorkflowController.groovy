@@ -1313,11 +1313,13 @@ class WorkflowController {
     for ( int i = 0; i< num_probs; i++ ) {
       log.debug("addToRulebase ${params.pr['prob_res_'+i]}");
       def resolution = params.pr['prob_res_'+i]
+
+      // If the user has specified what happens in this case, then store the rule in the source for subsequent use
       if ( resolution.ResolutionOption ) {
-        log.debug("When ${resolution.probcode}:${resolution.title}:${resolution.idstr} Then ${resolution.ResolutionOption}");
+        log.debug("When ${resolution.probfingerprint} Then ${resolution.ResolutionOption}");
+        def rule_resolution = [ ruleResolution:"${resolution.ResolutionOption}" ]
+        parsed_rulebase.rules[resolution.probfingerprint] = rule_resolution;
       }
-      def rule = [ ruleResolution:"${resolution.ResolutionOption}" ]
-      parsed_rulebase.rules["${resolution.probcode}:${resolution.title}:${resolution.idstr}"] = rule;
     }
 
     source.ruleset = parsed_rulebase as JSON

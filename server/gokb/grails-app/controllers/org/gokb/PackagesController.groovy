@@ -192,7 +192,8 @@ class PackagesController {
                 new_datafile_id = existing_file.id
               }
               else {
-                redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+                // redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+                result.message="Datafile already present with internal id org.gokb.cred.DataFile:${existing_file.id}";
                 return
               }
             }
@@ -258,8 +259,12 @@ class PackagesController {
       background_job.get()
     }
 
-    // Redirect to list of jobs
-    redirect(controller:'admin', action:'jobs', params:[format:params.format, highlightJob:jobid]);
+
+    withFormat {
+      html result
+      json { render result as JSON }
+      xml { render result as XML }
+    }
   }
 
   def copyUploadedFile(inputfile, deposit_token) {

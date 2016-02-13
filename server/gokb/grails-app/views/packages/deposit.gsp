@@ -33,6 +33,10 @@
 
   <div class="container">
 
+    <g:if test="${message}">
+      <div class="well">${message}</div>
+    </g:if>
+
     <div class="row">
       Packages
     </div>
