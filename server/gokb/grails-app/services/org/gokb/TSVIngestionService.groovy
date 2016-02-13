@@ -655,7 +655,7 @@ class TSVIngestionService {
 
       log.debug("Starting preflight");
 
-      def preflight_result = preflight( kbart_beans, ingest_cfg, source )
+      def preflight_result = preflight( kbart_beans, ingest_cfg, source, packageName, providerName )
       if ( preflight_result.passed ) {
 
         log.debug("Passed preflight -- ingest");
@@ -1381,16 +1381,26 @@ class TSVIngestionService {
 
 
   // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
-  // before the ingest proper.
-  def preflight( kbart_beans, ingest_cfg, source ) {
+  // before the ingest proper. We record parameters used so that after recording any corrections we can re-process the file.
+  def preflight( kbart_beans, 
+                 ingest_cfg, 
+                 source, 
+                 packageName, 
+                 providerName  ) {
     log.debug("preflight");
 
     def result = [:]
     result.problems = []
     result.passed = true;
     result.probcount=0
+    result.packageName = packageName
+    result.providerName = providerName
     result.sourceName=source?.name
     result.sourceId=source?.id
+
+    def source_rules = null;
+    if ( source.ruleset )
+      source_rules = JSON.parse(source.ruleset)
 
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
@@ -1428,6 +1438,15 @@ class TSVIngestionService {
           }
           catch ( InconsistentTitleIdentifierException itie ) {
             log.debug("Caught -- set passed to false",itie);
+
+            // First thing to do is to see if we have a rule against this source for this case - if so, apply it,
+            // If not, raise the problem so that we will know what to do next time around.
+            def rule_fingerprint = "InconsistentTitleIdentifierException:${the_kbart.publication_title}:${identifiers.toString()}"
+
+            if ( source_rules && source_rules[rule_fingerprint] ) {
+              log.debug("Matched rule : ${source_rules[rule_fingerprint]}");
+            }
+         
             result.passed = false;
             result.problems.add (
               [
