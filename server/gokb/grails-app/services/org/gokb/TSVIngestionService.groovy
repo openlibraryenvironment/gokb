@@ -1399,8 +1399,11 @@ class TSVIngestionService {
     result.sourceId=source?.id
 
     def source_rules = null;
-    if ( source.ruleset )
+    if ( source.ruleset ) {
+      log.debug("read source ruleset ${source.ruleset}");
       source_rules = JSON.parse(source.ruleset)
+      log.debug("Fingerprints present : ${source_rules.rules.keySet()}");
+    }
 
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
@@ -1441,16 +1444,21 @@ class TSVIngestionService {
 
             // First thing to do is to see if we have a rule against this source for this case - if so, apply it,
             // If not, raise the problem so that we will know what to do next time around.
-            def rule_fingerprint = "InconsistentTitleIdentifierException:${the_kbart.publication_title}:${identifiers.toString()}"
+            def identifier_fingerprint_str = identifiers as JSON
+            def rule_fingerprint = "InconsistentTitleIdentifierException:${the_kbart.publication_title}:${identifier_fingerprint_str}"
 
-            if ( source_rules && source_rules[rule_fingerprint] ) {
+            if ( source_rules && source_rules.rules[rule_fingerprint] ) {
               log.debug("Matched rule : ${source_rules[rule_fingerprint]}");
+            }
+            else {
+              log.debug("No matching rule for fingerprint ${rule_fingerprint}");
             }
          
             result.passed = false;
             result.problems.add (
               [
                 // itie.title itie.identifiers itie.matched_title_id itie.matched_title
+                problemFingerprint:rule_fingerprint,
                 problemSequence:result.probcount++,
                 problemDescription:itie.message,
                 problemCode:'InconsistentTitleIdentifierException',
