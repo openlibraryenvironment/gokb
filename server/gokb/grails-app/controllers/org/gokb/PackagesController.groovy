@@ -155,6 +155,7 @@ class PackagesController {
       log.debug("Handling post")
 
       DataFile.withNewSession() {
+
         if ( request instanceof MultipartHttpServletRequest ) {
   
           def upload_mime_type = request.getFile("content")?.contentType  // getPart?
@@ -221,17 +222,18 @@ class PackagesController {
             log.debug("Create background job");
             // Transactional part done. now queue the job
             background_job = concurrencyManagerService.createJob { Job job ->
+              def job_result = null;
               // Create a new session to run the ingest.
               try {
                 log.debug("Launching ingest");
-                TSVIngestionService.ingest2(format_rdv,
-                                            pkg,
-                                            new java.net.URL(platformUrl),
-                                            Source.findByName(source),
-                                            new_datafile_id,
-                                            job,
-                                            providerName,
-                                            providerIdentifierNamespace)
+                job_result = TSVIngestionService.ingest2(format_rdv,
+                                                         pkg,
+                                                         new java.net.URL(platformUrl),
+                                                         Source.findByName(source),
+                                                         new_datafile_id,
+                                                         job,
+                                                         providerName,
+                                                         providerIdentifierNamespace)
               }
               catch ( Exception e ) {
                 log.error("Problem",e)
@@ -239,6 +241,8 @@ class PackagesController {
               finally {
                 log.debug ("Async Data insert complete")
               }
+
+              return result;
             }
   
             background_job.description="Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
@@ -256,7 +260,7 @@ class PackagesController {
 
     if ( params.synchronous=='Y' ) {
       log.debug("Waiting for job to complete");
-      background_job.get()
+      result.jobResult = background_job.get()
     }
 
 

@@ -607,6 +607,8 @@ class TSVIngestionService {
              ingest_cfg=null) {
 
     log.debug("ingest2...");
+    def result = [:]
+    result.messages = []
 
     long start_time = System.currentTimeMillis();
 
@@ -705,7 +707,7 @@ class TSVIngestionService {
 
           job?.setProgress( x , kbart_beans.size() )
 
-          if ( x % 25 == 0 ) {
+          if ( x % 50 == 0 ) {
             cleanUpGorm()
           }
         }
@@ -737,8 +739,12 @@ class TSVIngestionService {
         }
 
         if ( badrows.size() > 0 ) {
-          log.debug("There are ${badrows.size()} bad rows -- write to badfile and report")
+          def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
+          log.debug(msg)
+          result.messages.add([event:'BadRows',msg:msg, count:badrows.size()])
         }
+ 
+        result.messages.add([event:'ProcessingComplete',msg:"Processing Complete",numRows:kbart_beans.size(),elapsed:System.currentTimeMillis()-startTime]);
       }
       else {
 
@@ -762,6 +768,7 @@ class TSVIngestionService {
               componentToReview:writeable_datafile
               ).save(flush:true, failOnError:true)
 
+          result.messages.add([event:'FailedPreflight',msg:"Failed Preflight, see review request ${req.id}"]);
         }
       }
     }
@@ -773,7 +780,9 @@ class TSVIngestionService {
 
     def elapsed = System.currentTimeMillis()-start_time;
 
-    log.debug("ingest completed in ${elapsed}ms");
+    result.messages.add([event:'Complete',msg:"Ingest completed after ${elapsed}ms"]);
+
+    result
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
