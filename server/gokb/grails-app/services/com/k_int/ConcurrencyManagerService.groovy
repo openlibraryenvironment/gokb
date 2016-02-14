@@ -99,7 +99,7 @@ class ConcurrencyManagerService {
      * activities on this monitor. Removed for test..
      */
     public def get() {
-      task.get()
+      return task.get()
     }
 
     /**
@@ -107,7 +107,7 @@ class ConcurrencyManagerService {
      * @see java.util.concurrent.FutureTask#get(long timeout, TimeUnit unit)
      */
     public synchronized def get(long time, TimeUnit unit) {
-      task.get(time, unit)
+      return task.get(time, unit)
     }
 
     public synchronized def setProgress( progress, total) {

@@ -84,7 +84,7 @@ class TSVIngestionService {
     // Go through each of the class_one_ids and look for a match.
     ids.each { id_def ->
       if (id_def.type && id_def.value) {
-        log.debug("id_def.type")
+        // log.debug("id_def.type")
 
         def id_value = id_def.value
         // id_def is map with keys 'type' and 'value'
@@ -96,7 +96,7 @@ class TSVIngestionService {
         Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
         // Add the id.
         result['ids'] << the_id
-        log.debug("class_one_match ids ${result['ids']}")
+        // log.debug("class_one_match ids ${result['ids']}")
         // We only treat a component as a match if the matching Identifer
         // is a class 1 identifier.
         if (class_one_ids.contains(id_def.type)) {
@@ -117,7 +117,7 @@ class TSVIngestionService {
           }
 
           // Did the ID yield a Title match?
-          log.debug("title match for ${id_def.value} : ${title_match}")
+          // log.debug("title match for ${id_def.value} : ${title_match}")
 
           if (!title_match) {
             log.debug ("No class one ti match against ${id_def.type}:${id_def.value}. Cross-checking")
@@ -131,7 +131,7 @@ class TSVIngestionService {
                 other_ns = new HashSet<String>(test)
                 // Remove the current namespace.
                 other_ns.remove(id_def.type)
-                log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
+                // log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
                 Identifier xc_id = null
                 for (int j=0; j<other_ns.size() && !(xc_id); j++) {
                   String ns = other_ns[j]
@@ -139,7 +139,7 @@ class TSVIngestionService {
                   if (namespace) {
                     // Lookup the identifier namespace.
                     xc_id = Identifier.findByNamespaceAndValue(namespace, id_value)
-                    log.debug ("Looking up ${ns}:${id_value} returned ${xc_id}.")
+                    // log.debug ("Looking up ${ns}:${id_value} returned ${xc_id}.")
                     comp = xc_id?.identifiedComponents
                     comp?.each { KBComponent c ->
                       // Ensure we're not looking at a Hibernate Proxy class representation of the class
@@ -161,7 +161,7 @@ class TSVIngestionService {
           }
           else {
             // Hurrah! we got a title match
-            log.debug ("Class one ti match against ${id_def.type}:${id_def.value}. Cross-checking")
+            // log.debug ("Class one ti match against ${id_def.type}:${id_def.value}. Cross-checking")
           }
         }
       }
@@ -176,7 +176,7 @@ class TSVIngestionService {
                            def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
-    log.debug("lookup or create title :: ${title}(${ingest_cfg})")
+    // log.debug("lookup or create title :: ${title}(${ingest_cfg})")
 
     if (title == null) return null
 
@@ -191,7 +191,7 @@ class TSVIngestionService {
       // No match behaviour.
       // Check for presence of class one ID
       if (results['class_one']) {
-        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
+        // log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
         the_title = ingest_cfg.defaultType.newInstance()
@@ -238,7 +238,7 @@ class TSVIngestionService {
       break;
     case 1 :
       // Single component match.
-      log.debug ("Title class one identifier lookup yielded a single match.")
+      // log.debug ("Title class one identifier lookup yielded a single match.")
       // We should raise a review request here if the match was made by cross checking
       // different identifier namespaces.
       if (results['x_check_matches'].size() == 1) {
@@ -280,7 +280,7 @@ class TSVIngestionService {
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
-        log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
+        // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
       }
       else {
         log.error("**PROBLEM SAVING TITLE**");
@@ -290,7 +290,7 @@ class TSVIngestionService {
       }
     }
 
-    log.debug("lookupOrCreateTitle(${title}.....) returning ${the_title?.id}");
+    // log.debug("lookupOrCreateTitle(${title}.....) returning ${the_title?.id}");
     the_title
   }
 
@@ -306,7 +306,7 @@ class TSVIngestionService {
           // log.debug("Person lookup yielded no matches.")
           def the_person = new Person(name:person_name)
             if (the_person.save(failOnError:true, flush:true)) {
-            log.debug("saved ${the_person.name}")
+            // log.debug("saved ${the_person.name}")
             person << the_person
             ReviewRequest.raise(
             ti,
@@ -396,17 +396,17 @@ class TSVIngestionService {
     if ( ( clean_pub_name != null ) && ( clean_pub_name.trim().length() > 0 ) ) {
 
       def norm_pub_name = GOKbTextUtils.normaliseString(clean_pub_name)
-      log.debug("Org lookup: ${clean_pub_name}/${norm_pub_name}");
+      // log.debug("Org lookup: ${clean_pub_name}/${norm_pub_name}");
       def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
-          log.debug ("Publisher ${clean_pub_name} lookup yielded no matches.")
+          // log.debug ("Publisher ${clean_pub_name} lookup yielded no matches.")
           Org.withTransaction {
             def the_publisher = new Org(name:clean_pub_name,normname:norm_pub_name)
             if (the_publisher.save(failOnError:true, flush:true)) {
-              log.debug("saved ${the_publisher.name}")
+              // log.debug("saved ${the_publisher.name}")
               ReviewRequest.raise(
                 ti,
                 "'${the_publisher}' added as a publisher of '${ti.name}'.",
@@ -582,16 +582,16 @@ class TSVIngestionService {
       return
     }
 
-    ingest2(the_profile.packageType,
-           the_profile.packageName,
-           the_profile.platformUrl,
-           the_profile.source,
-           datafile_id,
-           null,
-           null,
-           job,
-           ip_id,
-           ingest_cfg)
+    return ingest2(the_profile.packageType,
+                   the_profile.packageName,
+                   the_profile.platformUrl,
+                   the_profile.source,
+                   datafile_id,
+                   null,
+                   null,
+                   job,
+                   ip_id,
+                   ingest_cfg)
   }
 
 
@@ -744,7 +744,18 @@ class TSVIngestionService {
           result.messages.add([event:'BadRows',msg:msg, count:badrows.size()])
         }
  
-        result.messages.add([event:'ProcessingComplete',msg:"Processing Complete",numRows:kbart_beans.size(),elapsed:System.currentTimeMillis()-startTime]);
+        long processing_elapsed = System.currentTimeMillis()-startTime
+        def average_milliseconds_per_row = kbart_beans.size() > 0 ? processing_elapsed.intdiv(kbart_beans.size()) : 0;
+        // 3600 seconds in an hour, * 1000ms in a second
+        def average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv( average_milliseconds_per_row ) : 0;
+        result.messages.add([
+                             event:'ProcessingComplete',
+                             msg:"Processing Complete",
+                             numRows:kbart_beans.size(),
+                             averagePerRow:average_milliseconds_per_row,
+                             averagePerHour:average_per_hour,
+                             elapsed:processing_elapsed
+                            ]);
       }
       else {
 
@@ -782,6 +793,7 @@ class TSVIngestionService {
 
     result.messages.add([event:'Complete',msg:"Ingest completed after ${elapsed}ms"]);
 
+    log.debug("Ingest2 returning ${result}")
     result
   }
 
@@ -949,7 +961,7 @@ class TSVIngestionService {
                  ingest_date,
                  ingest_systime) {
 
-    log.debug("TSVIngestionService::createTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
+    // log.debug("TSVIngestionService::createTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
 
     assert the_package != null && the_title != null && the_platform != null
 
@@ -1000,7 +1012,7 @@ class TSVIngestionService {
       // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
       tipp = new TitleInstancePackagePlatform(tipp_values)
 
-      log.debug("Created");
+      // log.debug("Created");
 
       // because pkg is not a real property, but a hasByCombo, passing the value in the map constuctor
       // won't actually get this set. So do it manually. Ditto the other fields
@@ -1023,16 +1035,16 @@ class TSVIngestionService {
       }
     }
 
-    log.debug("Values updated, set lastSeen");
+    // log.debug("Values updated, set lastSeen");
 
     if ( ingest_systime ) {
-      log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
+      // log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
       tipp.lastSeen = ingest_systime;
     }
 
-    log.debug("save tipp")
+    // log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    log.debug("createTIPP returning")
+    // log.debug("createTIPP returning")
   }
 
   //this is a lot more complex than this for journals. (which uses refine)
@@ -1111,9 +1123,9 @@ class TSVIngestionService {
 
           if ( result ) {
             if (result.save(flush:true, failOnError:true)) {
-              log.debug("saved new platform: ${result}")
+              // log.debug("saved new platform: ${result}")
             } else {
-              log.error("problem creating platform");
+              // log.error("problem creating platform");
               for (error in result.errors) {
                 log.error(error);
               }
@@ -1138,7 +1150,7 @@ class TSVIngestionService {
 
     assert result != null
 
-    log.debug("handlePlatform returning ${result}");
+    // log.debug("handlePlatform returning ${result}");
     result;
   }
 
@@ -1249,9 +1261,9 @@ class TSVIngestionService {
     def mapped_cols = [] as ArrayList
     def unmapped_cols = 0..(header.size()) as ArrayList
 
-    log.debug("Col positions : ${col_positions}");
-    log.debug("Before Mapped columns: ${mapped_cols}");
-    log.debug("Before UnMapped columns: ${unmapped_cols}");
+    // log.debug("Col positions : ${col_positions}");
+    // log.debug("Before Mapped columns: ${mapped_cols}");
+    // log.debug("Before UnMapped columns: ${unmapped_cols}");
 
 
     fileRules.each { fileRule ->
@@ -1265,8 +1277,8 @@ class TSVIngestionService {
       }
     }
 
-    log.debug("After Mapped columns: ${mapped_cols}");
-    log.debug("After UnMapped columns: ${unmapped_cols}");
+    // log.debug("After Mapped columns: ${mapped_cols}");
+    // log.debug("After UnMapped columns: ${unmapped_cols}");
 
     String [] nl = csv.readNext()
 
@@ -1321,7 +1333,7 @@ class TSVIngestionService {
   }
 
   def cleanUpGorm() {
-    log.debug("Clean up GORM");
+    // log.debug("Clean up GORM");
 
     // Get the current session.
     def session = sessionFactory.currentSession
@@ -1457,12 +1469,12 @@ class TSVIngestionService {
             def rule_fingerprint = "InconsistentTitleIdentifierException:${the_kbart.publication_title}:${identifier_fingerprint_str}"
 
             if ( source_rules && source_rules.rules[rule_fingerprint] ) {
-              log.debug("Matched rule : ${source_rules[rule_fingerprint]}");
-              switch ( source_rules[rule_fingerprint].ruleResolution ) {
+              log.debug("Matched rule : ${source_rules.rules[rule_fingerprint]}");
+              switch ( source_rules.rules[rule_fingerprint].ruleResolution ) {
                 case 'variantName':
                   log.debug("handle error case as variant name");
                   // exception properties:: proposed_title identifiers matched_title_id matched_title
-                  title = TitleInstance.get(itie.matched_title_id)
+                  def title = TitleInstance.get(itie.matched_title_id)
                   title.addVariantTitle(itie.proposed_title)
                   title.save(flush:true, failOnError:true)
                   break;

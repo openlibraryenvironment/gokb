@@ -234,6 +234,7 @@ class PackagesController {
                                                          job,
                                                          providerName,
                                                          providerIdentifierNamespace)
+
               }
               catch ( Exception e ) {
                 log.error("Problem",e)
@@ -242,7 +243,9 @@ class PackagesController {
                 log.debug ("Async Data insert complete")
               }
 
-              return result;
+
+              log.debug("Got job result: ${job_result}");
+              return job_result;
             }
   
             background_job.description="Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"

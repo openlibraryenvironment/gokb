@@ -132,10 +132,12 @@ curl -v --user admin:admin -X POST \
   --form fmt="cufts" \
   --form pkg="Project Muse: Project MUSE All Titles" \
   --form platformUrl="http://cufts.org/doaj" \
-  --form format="JSON" \
+  --form format="json" \
   --form providerName="Project Muse" \
   --form providerIdentifierNamespace="ProjectMuse" \
   --form reprocess="Y" \
+  --form synchronous="Y" \
+  --form flags="+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs" \
   $GOKB_HOST/gokb/packages/deposit
 # 
 # sleep 5 
