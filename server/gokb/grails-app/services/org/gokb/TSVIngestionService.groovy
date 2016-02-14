@@ -1458,23 +1458,38 @@ class TSVIngestionService {
 
             if ( source_rules && source_rules.rules[rule_fingerprint] ) {
               log.debug("Matched rule : ${source_rules[rule_fingerprint]}");
+              switch ( source_rules[rule_fingerprint].ruleResolution ) {
+                case 'variantName':
+                  log.debug("handle error case as variant name");
+                  // exception properties:: proposed_title identifiers matched_title_id matched_title
+                  title = TitleInstance.get(itie.matched_title_id)
+                  title.addVariantTitle(itie.proposed_title)
+                  title.save(flush:true, failOnError:true)
+                  break;
+                case 'newTitleInTHG':
+                  log.debug("handle error case as title in title history");
+                  break;
+                default:
+                  log.error("Unhandled rule resolution : ${source_rules[rule_fingerprint].ruleResolution}");
+                  break;
+              }
             }
             else {
               log.debug("No matching rule for fingerprint ${rule_fingerprint}");
-            }
          
-            result.passed = false;
-            result.problems.add (
-              [
-                // itie.title itie.identifiers itie.matched_title_id itie.matched_title
-                problemFingerprint:rule_fingerprint,
-                problemSequence:result.probcount++,
-                problemDescription:itie.message,
-                problemCode:'InconsistentTitleIdentifierException',
-                submittedTitle:the_kbart.publication_title,
-                submittedIdentifiers:identifiers,
-                matchedTitle:itie.matched_title_id
-              ])
+              result.passed = false;
+              result.problems.add (
+                [
+                  // itie.title itie.identifiers itie.matched_title_id itie.matched_title
+                  problemFingerprint:rule_fingerprint,
+                  problemSequence:result.probcount++,
+                  problemDescription:itie.message,
+                  problemCode:'InconsistentTitleIdentifierException',
+                  submittedTitle:the_kbart.publication_title,
+                  submittedIdentifiers:identifiers,
+                  matchedTitle:itie.matched_title_id
+                ])
+            }
           }
         }
       }
