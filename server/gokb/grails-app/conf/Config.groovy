@@ -1396,6 +1396,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.Org': [ type:'staticgsp', rendername:'org' ],
   'org.gokb.cred.Platform': [ type:'staticgsp', rendername:'platform' ],
   'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
+  'org.gokb.cred.BookInstance': [ type:'staticgsp', rendername:'book' ],
+  'org.gokb.cred.JournalInstance': [ type:'staticgsp', rendername:'journal' ],
   'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
   'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
@@ -1410,7 +1412,11 @@ globalDisplayTemplates = [
   'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
   'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ],
   'org.gokb.cred.IdentifierNamespace': [ type:'staticgsp', rendername:'identifier_namespace' ],
-  'org.gokb.cred.Macro': [ type:'staticgsp', rendername:'macro' ]
+  'org.gokb.cred.Macro': [ type:'staticgsp', rendername:'macro' ],
+  'org.gokb.cred.DSCategory': [ type:'staticgsp', rendername:'ds_category' ],
+  'org.gokb.cred.DSCriterion': [ type:'staticgsp', rendername:'ds_criterion' ],
+  'org.gokb.cred.Subject': [ type:'staticgsp', rendername:'subject' ],
+  'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ],
 ]
 
 permNames = [

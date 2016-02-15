@@ -949,4 +949,116 @@ abstract class KBComponent {
     return Note.findAllByOwnerClassAndOwnerId(this.class.name, this.getId())
   }
 
+  @Transient
+  def getDecisionSupportLines() {
+    // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
+    def result = [:]
+    def criterion = null;
+
+    // N.B. for steve.. saying "if id != null" always fails - id is hibernate injected - should investigate this
+    if (getId() != null) {
+          // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
+          // Workaround is to use the id directly
+          log.debug("Package being processed (KB COMPONENT): ${getId()}")
+          criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?', getId());
+          def currentUser = springSecurityService.currentUser
+
+          def criterionMap = [:] //Convert results to group many DSAppliedCriterion's (Val) to a DSCriterion (Key)
+          criterion.each{ c ->
+              if (!criterionMap.containsKey(c[0]))
+                  criterionMap.put(c[0], []);
+              if (c[1])
+                  criterionMap[c[0]].add(c[1])
+          }
+
+          Closure dates = { a, b -> a.lastUpdated <= b.lastUpdated? 1 : -1 }
+          criterionMap.each { c, acrit ->
+
+              def cat_code = c.owner.code //e.g. Fromat,Access - Read Online, etc.
+
+              if (result[cat_code] == null)
+                  result[cat_code] = [description: c.owner.description, criterion: [:]] //criterion now a map
+
+              // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
+              if (!result[cat_code].criterion[c.id]) {
+                  // Set all params.
+                  //use criterion key instead for id
+                  result[cat_code].criterion[c.id] = [
+                          "title"        : c.title,   //Downloadable PDF, Embedded PDF, etc.
+                          "appliedTo"    : getId(),   //Package extends KBComponent
+                          "yourVote"     : [],        //logged in users vote
+                          "otherVotes"   : [],        //Every else minus logged in & master vote
+                          "voteCounter"  : [0,0,0,0], //Red,Amber,Green,Unknown
+                          "notes"        : [],         //Comments organised
+                          "deletedNotes" : []         //Comments organised
+                  ]
+              }
+
+              //ORDERING
+              def liveOrg = [] //Live comments by logged in user domain, in date order (last updated)
+              def others  = [] //Comments by everyone else in date order
+              def deleted = [] //Remaining deleted comments by last updated
+              acrit.each { ac ->
+
+                  //Your votes placeholder
+                  if (currentUser == ac?.user) {
+                      // Current users vote.
+                      result[cat_code].criterion[c.id]['yourVote'] = [
+                              ac?.value?.value, //colour
+                              ac,               //dsac
+                              ac.user           //user
+                      ]
+                  }
+                  else {
+                      //Has there been any other vote
+                      result[cat_code].criterion[c.id]['otherVotes'] << [
+                              ac?.value?.value,
+                              ac,
+                              ac?.user
+                      ]
+                  }
+
+                  //DSAppliedCriterion level, not possible to check if deleted unless loop through each individual note
+                  //colour value is per vote, additional checks will need to be made
+                  switch (ac?.value?.value) {
+                      case 'Red':
+                          result[cat_code].criterion[c.id]['voteCounter'][0]++;
+                          break
+                      case 'Amber':
+                          result[cat_code].criterion[c.id]['voteCounter'][1]++;
+                          break
+                      case 'Green':
+                          result[cat_code].criterion[c.id]['voteCounter'][2]++;
+                          break
+                      default:
+                          result[cat_code].criterion[c.id]['voteCounter'][3]++;
+                          break
+                  }
+
+                  //Notes processing, for ordering and separation of deleted notes
+                  ac?.notes?.each { note ->
+                      if (!note.isDeleted  && note.criterion.user.org == currentUser.org)
+                          liveOrg.add(note)
+                      else if (note.isDeleted)
+                          deleted.add(note)
+                      else
+                          others.add(note)
+                  }
+
+              }
+              //End of DSAppliedCriterion processing for current criterion. Now to sort the notes...
+
+              liveOrg.sort(true,dates)
+              result[cat_code].criterion[c.id]['notes'].addAll(liveOrg)
+
+              others.sort(true,dates)
+              result[cat_code].criterion[c.id]['notes'].addAll(others)
+
+              deleted.sort(true,dates)
+              result[cat_code].criterion[c.id]['deletedNotes'].addAll(deleted)
+          }
+
+          return result
+    }
+  }
 }
