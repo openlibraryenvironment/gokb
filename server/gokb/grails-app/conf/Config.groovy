@@ -21,6 +21,9 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 
   kbart2.mappings= [
     ingram : [
+               defaultType:org.gokb.cred.BookInstance.class,
+               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
+               defaultMedium:'Book',
                rules:[
                 [field: 'Title', kbart: 'publication_title'],
                 [field: 'Title ID', kbart: 'print_identifier'],
@@ -35,6 +38,9 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               ]
          ],
      ybp : [
+               defaultType:org.gokb.cred.BookInstance.class,
+               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
+               defaultMedium:'Book',
                rules:[
                 [field: 'Title', kbart: 'publication_title'],
                 [field: 'ISBN', kbart: 'online_identifier'],

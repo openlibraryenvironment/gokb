@@ -617,14 +617,13 @@ class TSVIngestionService {
     def datafile = DataFile.read(datafile_id)
     log.debug("Got Datafile");
 
+    def kbart_cfg = grailsApplication.config.kbart2.mappings."${packageType}"
+
     if ( ingest_cfg == null ) {
       ingest_cfg = [
-                     defaultType:org.gokb.cred.TitleInstance.class,
-                     identifierMap:[
-                       'print_identifier':'issn',
-                       'online_identifier':'eissn',
-                     ],
-                     defaultMedium:'Journal',
+                     defaultType: kbart_cfg.defaultType ?: org.gokb.cred.TitleInstance.class,
+                     identifierMap: kbart_cfg.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
+                     defaultMedium: kbart_cfg.defaultMedium ?: 'Journal',
                      providerIdentifierNamespace:providerIdentifierNamespace,
                      inconsistent_title_id_behavior:'reject'
                    ]
