@@ -1282,6 +1282,110 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'DSCategory':[
+    baseclass:'org.gokb.cred.DSCategory',
+    title:'DS Categories',
+    group:'Tertiary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Description',
+          qparam:'qp_descr',
+          placeholder:'Description',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'description', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Code', property:'code', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Description', property:'description', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+      ]
+    ]
+  ],
+  'DSCriterion':[
+    baseclass:'org.gokb.cred.DSCriterion',
+    title:'DS Criterion',
+    group:'Tertiary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Description',
+          qparam:'qp_descr',
+          placeholder:'Description',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'description', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Category', property:'owner.description', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Title', property:'title'],
+        [heading:'Description', property:'description'],
+      ]
+    ]
+  ],
+  '1eBooks':[
+    baseclass:'org.gokb.cred.BookInstance',
+    title:'eBooks',
+    group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Book Title',
+          qparam:'qp_name',
+          placeholder:'Name or title of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
+          prompt:'Publisher',
+          qparam:'qp_pub',
+          placeholder:'Publisher',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
+          hide:true
+        ],
+	[
+	  type:'lookup',
+	  baseClass:'org.gokb.cred.Person',
+	  prompt:'Person',
+	  qparam:'qp_person',
+	  placeholder:'Person',
+	  contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'people.person'],
+	  hide:true
+	],
+	[
+	  type:'lookup',
+	  baseClass:'org.gokb.cred.Subject',
+	  prompt:'Subject',
+	  qparam:'qp_subject',
+	  placeholder:'Subject',
+	  contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'subjects.subject'],
+	  hide:true
+	],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
+          prompt:'Content Provider',
+          qparam:'qp_prov_id',
+          placeholder:'Content Provider',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider'],
+          hide:true
+        ],
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
+      ],
+      qbeResults:[
+        [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
+        [heading:'Status', property:'status.value',sort:'status'],
+      ]
+    ]
+  ],
 ]
 
 

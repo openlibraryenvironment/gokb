@@ -86,6 +86,10 @@ class BootStrap {
       }
     }
 
+    KBComponent.withTransaction() {
+      log.debug("Configuring default decision support parameters");
+      DSConfig();
+    }
 
     String fs = grailsApplication.config.project_dir
     log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
@@ -752,5 +756,76 @@ class BootStrap {
     def cup_source = Source.findByName('CUP') ?: new Source(name:'CUP').save(flush:true, failOnError:true);
     def wiley_source = Source.findByName('WILEY') ?: new Source(name:'WILEY').save(flush:true, failOnError:true);
     def cufts_source = Source.findByName('CUFTS') ?: new Source(name:'CUFTS').save(flush:true, failOnError:true);
+  }
+
+  def DSConfig() {
+
+    [ 
+      'accessdl':'Access - Download', 
+      'accessol':'Access - Read Online',
+      'accbildl':'Accessibility - Download', 
+      'accbilol':'Accessibility - Read Online', 
+      'device':'Device Requirements for Download',
+      'drm':'DRM', 
+      'format':'Format', 
+      'lic':'Licensing',
+      'other':'Other',
+      'ref':'Referencing',
+    ].each { k,v ->
+      def dscat = DSCategory.findByCode(k) ?: new DSCategory(code:k, description: v).save(failOnError: true)
+    }
+
+    [ 
+      [ 'format',     'Downloadable PDF', '', '' ],
+      [ 'format',     'Embedded PDF', '', '' ],
+      [ 'format',     'ePub', '', '' ],
+      [ 'format',     'OeB', '', '' ],
+      [ 'accessol',   'Book Navigation', '', '' ],
+      [ 'accessol',   'Table of contents navigation', '', '' ],
+      [ 'accessol',   'Pagination', '', '' ],
+      [ 'accessol',   'Page Search', '', '' ],
+      [ 'accessol',   'Search Within Book', '', '' ],
+      [ 'accessdl',   'Download Extent', '', '' ],
+      [ 'accessdl',   'Download Time', '', '' ],
+      [ 'accessdl',   'Download Reading View Navigation', '', '' ],
+      [ 'accessdl',   'Table of Contents Navigation', '', '' ],
+      [ 'accessdl',   'Pagination', '', '' ],
+      [ 'accessdl',   'Page Search', '', '' ],
+      [ 'accessdl',   'Search Within Book', '', '' ],
+      [ 'accessdl',   'Read Aloud or Listen Option', '', '' ],
+      [ 'device',     'General', '', '' ],
+      [ 'device',     'Android', '', '' ],
+      [ 'device',     'iOS', '', '' ],
+      [ 'device',     'Kindle Fire', '', '' ],
+      [ 'device',     'PC', '', '' ],
+      [ 'drm',        'Copying', '', '' ],
+      [ 'drm',        'Printing', '', '' ],
+      [ 'accbilol',   'Dictionary', '', '' ],
+      [ 'accbilol',   'Text Resize', '', '' ],
+      [ 'accbilol',   'Change Reading Colour', '', '' ],
+      [ 'accbilol',   'Read aloud or Listen Option', '', '' ],
+      [ 'accbilol',   'Integrated Help', '', '' ],
+      [ 'accbildl',   'Copying', '', '' ],
+      [ 'accbildl',   'Printing', '', '' ],
+      [ 'accbildl',   'Add Notes', '', '' ],
+      [ 'accbildl',   'Dictionary', '', '' ],
+      [ 'accbildl',   'Text Resize', '', '' ],
+      [ 'accbildl',   'Change Reading Colour', '', '' ],
+      [ 'accbildl',   'Integrated Help', '', '' ],
+      [ 'accbildl',   'Other Accessibility features or Support', '', '' ],
+      [ 'ref',        'Export to bibliographic software', '', '' ],
+      [ 'ref',        'Sharing / Social Media', '', '' ],
+      [ 'other',      'Changes / Redevelopment in the near future', '', '' ],
+      [ 'lic',        'Number of users', '', '' ],
+      [ 'lic',        'Credit Payment Model', '', '' ],
+      [ 'lic',        'Publishers Included', '', '' ] 
+    ].each { crit ->
+      def cat = DSCategory.findByCode(crit[0]);
+      def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
+                                                                               owner:cat,
+                                                                               title:crit[1],
+                                                                               description:crit[2],
+                                                                               explanation:crit[3]).save(failOnError: true)
+    }
   }
 }
