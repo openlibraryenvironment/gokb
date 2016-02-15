@@ -617,13 +617,18 @@ class TSVIngestionService {
     def datafile = DataFile.read(datafile_id)
     log.debug("Got Datafile");
 
-    def kbart_cfg = grailsApplication.config.kbart2.mappings."${packageType}"
+    def kbart_cfg = grailsApplication.config.kbart2.mappings[packageType?.toString()]
+    log.debug("Looking up config for ${packageType} : ${kbart_cfg ? 'Found' : 'Not Found'}");
+
+    if ( kbart_cfg == null ) {
+      throw new RuntimeException("Unable to locate config information for package type ${packageType}. Registered types are ${grailsApplication.config.kbart2.mappings.keySet()}");
+    }
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
-                     defaultType: kbart_cfg.defaultType ?: org.gokb.cred.TitleInstance.class,
-                     identifierMap: kbart_cfg.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
-                     defaultMedium: kbart_cfg.defaultMedium ?: 'Journal',
+                     defaultType: kbart_cfg?.defaultType ?: org.gokb.cred.TitleInstance.class,
+                     identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
+                     defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
                      providerIdentifierNamespace:providerIdentifierNamespace,
                      inconsistent_title_id_behavior:'reject'
                    ]

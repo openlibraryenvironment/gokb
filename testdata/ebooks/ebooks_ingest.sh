@@ -17,13 +17,16 @@ export GOKB_HOST="http://localhost:8080"
 # 
 curl -v --user admin:admin -X POST \
   --form content=@./YBP1.tsv \
-  --form source="ypb" \
-  --form fmt="ypb" \
+  --form source="ybp" \
+  --form fmt="ybp" \
   --form pkg="YBP Masterlist" \
   --form platformUrl="http://ybp.org/" \
   --form format="JSON" \
   --form providerName="YBP" \
   --form providerIdentifierNamespace="YBP" \
+  --form reprocess="Y" \
+  --form synchronous="Y" \
+  --form flags="+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs" \
   $GOKB_HOST/gokb/packages/deposit
 # 
 # sleep 5 
