@@ -1258,16 +1258,16 @@ class TSVIngestionService {
 
     log.debug("Processing column headers... count ${header?.length} items")
     header.each {
-      log.debug("Column ${ctr} == ${it}");
-      col_positions [ it ] = ctr++
+      log.debug("Column \"${ctr}\" == ${it} (${it.class.name})");
+      col_positions [ it.toString().trim() ] = ctr++
     }
 
     def mapped_cols = [] as ArrayList
     def unmapped_cols = 0..(header.size()) as ArrayList
 
-    // log.debug("Col positions : ${col_positions}");
-    // log.debug("Before Mapped columns: ${mapped_cols}");
-    // log.debug("Before UnMapped columns: ${unmapped_cols}");
+    log.debug("Col positions : ${col_positions}");
+    log.debug("Before Mapped columns: ${mapped_cols}");
+    log.debug("Before UnMapped columns: ${unmapped_cols}");
 
 
     fileRules.each { fileRule ->
@@ -1277,12 +1277,12 @@ class TSVIngestionService {
         mapped_cols.add(col_positions[fileRule.field] as Object)
       }
       else {
-        log.debug("Unable to find column for ${fileRule.field}");
+        log.debug("Mapping contains a definition for ${fileRule.field} but unable to find a column with that name in file headings : ${header}");
       }
     }
 
-    // log.debug("After Mapped columns: ${mapped_cols}");
-    // log.debug("After UnMapped columns: ${unmapped_cols}");
+    log.debug("After Mapped columns: ${mapped_cols}");
+    log.debug("After UnMapped columns: ${unmapped_cols}");
 
     String [] nl = csv.readNext()
 
@@ -1297,8 +1297,10 @@ class TSVIngestionService {
       result.unmapped=[]
 
       fileRules.each { fileRule ->
+
         boolean done=false
         String data = nl[col_positions[fileRule.field]];
+
         if ( col_positions[fileRule.field] >= 0 ) {
           // log.debug("field : ${fileRule.field} ${col_positions[fileRule.field]} ${data}")
           if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
@@ -1313,7 +1315,12 @@ class TSVIngestionService {
           }
 
           if (fileRule.additional!=null && !done) {
-            result[fileRule.additional] << data
+            if ( data ) {
+              if ( result[fileRule.additional] == null ) 
+                result[fileRule.additional] = []
+
+              result[fileRule.additional] << data
+            }
           } else {
             result[fileRule.kbart]=data
           }
