@@ -317,7 +317,9 @@ abstract class KBComponent {
     incomingCombos:'toComponent',
     additionalProperties: 'fromComponent',
     variantNames: 'owner',
-    reviewRequests:'componentToReview'
+    reviewRequests:'componentToReview',
+    people:'component',
+    subjects:'component'
   ]
 
   static hasMany = [
@@ -326,7 +328,9 @@ abstract class KBComponent {
     incomingCombos:Combo,
     additionalProperties:KBComponentAdditionalProperty,
     variantNames:KBComponentVariantName,
-    reviewRequests:ReviewRequest
+    reviewRequests:ReviewRequest,
+    people:ComponentPerson,
+    subjects:ComponentSubject
   ]
 
   static mapping = {
