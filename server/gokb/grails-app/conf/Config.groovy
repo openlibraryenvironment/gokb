@@ -37,7 +37,20 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                 [field: 'PubDate', kbart: 'date_monograph_published_online'],
               ]
          ],
-     ybp : [
+    askews : [
+               defaultType:org.gokb.cred.BookInstance.class,
+               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
+               quoteChar:'"',
+               defaultMedium:'Book',
+               rules:[
+                [field: 'publication_title', kbart: 'publication_title'],
+                [field: 'print_identifier', kbart: 'print_identifier'],
+                [field: 'online_identifier', kbart: 'online_identifier'],
+                [field: 'Authors', kbart: 'first_author', separator: ';', additional: 'additional_authors'],
+                [field: 'PubDate', kbart: 'date_monograph_published_online'],
+              ]
+         ],
+    ybp : [
                defaultType:org.gokb.cred.BookInstance.class,
                identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
                defaultMedium:'Book',

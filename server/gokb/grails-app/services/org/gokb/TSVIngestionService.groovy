@@ -83,7 +83,7 @@ class TSVIngestionService {
 
     // Go through each of the class_one_ids and look for a match.
     ids.each { id_def ->
-      if (id_def.type && id_def.value) {
+      if (id_def.type && id_def.value && ( id_def.value.trim().length() > 0 ) ) {
         // log.debug("id_def.type")
 
         def id_value = id_def.value
@@ -591,7 +591,8 @@ class TSVIngestionService {
                    null,
                    job,
                    ip_id,
-                   ingest_cfg)
+                   ingest_cfg,
+                   'N')
   }
 
 
@@ -604,7 +605,8 @@ class TSVIngestionService {
              providerName=null,
              providerIdentifierNamespace=null,
              ip_id=null,
-             ingest_cfg=null) {
+             ingest_cfg=null,
+             incremental=null) {
 
     log.debug("ingest2...");
     def result = [:]
@@ -716,29 +718,34 @@ class TSVIngestionService {
           }
         }
 
-        log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}");
 
-        TitleInstancePackagePlatform.withNewTransaction {
-          try {
-            // Find all tipps in this package which have a lastSeen before the ingest date
-            def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
-                             'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                             'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
-                            [pkg:the_package_id,dt:ingest_systime]);
-
-            q.each { tipp ->
-              log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
-              // tipp.deleteSoft()
-              tipp.accessEndDate = new Date();
-              tipp.save(failOnError:true,flush:true)
+        if ( incremental=='Y' ) {
+          log.debug("Incremental -- no expunge");
+        }
+        else {
+          log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}");
+          TitleInstancePackagePlatform.withNewTransaction {
+            try {
+              // Find all tipps in this package which have a lastSeen before the ingest date
+              def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
+                               'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
+                              [pkg:the_package_id,dt:ingest_systime]);
+  
+              q.each { tipp ->
+                log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
+                // tipp.deleteSoft()
+                tipp.accessEndDate = new Date();
+                tipp.save(failOnError:true,flush:true)
+              }
+              log.debug("Completed tipp cleanup")
             }
-            log.debug("Completed tipp cleanup")
-          }
-          catch ( Exception e ) {
-            log.error("Problem",e)
-          }
-          finally {
-            log.debug("Done")
+            catch ( Exception e ) {
+              log.error("Problem",e)
+            }
+            finally {
+              log.debug("Done")
+            }
           }
         }
 
@@ -862,17 +869,19 @@ class TSVIngestionService {
         log.debug(the_kbart.online_identifier)
 
         def identifiers = []
-        if ( the_kbart.online_identifier )
+        if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) ) 
           identifiers << [type:ingest_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
-        if ( the_kbart.print_identifier )
+        if ( the_kbart.print_identifier && ( the_kbart.print_identifier.trim().length() > 0 ) )
           identifiers << [type:ingest_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
 
         the_kbart.additional_isbns.each { identifier ->
-          identifiers << [type: 'isbn', value:identifier]
+          if ( identifier.trim().length() > 0 ) {
+            identifiers << [type: 'isbn', value:identifier]
+          }
         }
 
-        if ( ( the_kbart.title_id ) && ( the_kbart.title_id ) ) {
+        if ( ( the_kbart.title_id ) && ( the_kbart.title_id.trim().length() > 0 ) ) {
           log.debug("title_id ${the_kbart.title_id}");
           if ( ingest_cfg.providerIdentifierNamespace ) {
             identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
@@ -1444,17 +1453,18 @@ class TSVIngestionService {
 
         def identifiers = []
 
-        if ( the_kbart.online_identifier )
+        if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) )
           identifiers << [type:ingest_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
-        if ( the_kbart.print_identifier )
+        if ( the_kbart.print_identifier && ( the_kbart.print_identifier.trim().length() > 0 ) )
           identifiers << [type:ingest_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
 
         the_kbart.additional_isbns.each { identifier ->
+          if ( identifier && ( identifier.trim().length() > 0 ) )
           identifiers << [type: 'isbn', value:identifier]
         }
 
-        if ( ( the_kbart.title_id ) && ( the_kbart.title_id ) ) {
+        if ( ( the_kbart.title_id ) && ( the_kbart.title_id.trim().length() > 0  ) ) {
           log.debug("title_id ${the_kbart.title_id}");
           if ( ingest_cfg.providerIdentifierNamespace ) {
             identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]

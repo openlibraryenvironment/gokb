@@ -20,7 +20,7 @@ class DataFile extends KBComponent {
     uploadMimeType (nullable:true, blank:false)
     filesize (nullable:true, blank:false)
     doctype (nullable:true, blank:false)
-    fileData(nullable:true,blank:false,maxSize: 1024 * 1024 * 2)
+    fileData(nullable:true,blank:false,maxSize: 1024 * 1024 * 1024)
     canEdit(nullable:true, blank:false)
   }
 

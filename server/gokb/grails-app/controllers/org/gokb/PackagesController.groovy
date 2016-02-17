@@ -220,6 +220,7 @@ class PackagesController {
   
   
             log.debug("Create background job");
+            def incremental_flag = params.incremental
             // Transactional part done. now queue the job
             background_job = concurrencyManagerService.createJob { Job job ->
               def job_result = null;
@@ -233,8 +234,10 @@ class PackagesController {
                                                          new_datafile_id,
                                                          job,
                                                          providerName,
-                                                         providerIdentifierNamespace)
-
+                                                         providerIdentifierNamespace,
+                                                         null, //  ip_id
+                                                         null, //  ingest_cfg
+                                                         incremental_flag)
               }
               catch ( Exception e ) {
                 log.error("Problem",e)
@@ -242,7 +245,6 @@ class PackagesController {
               finally {
                 log.debug ("Async Data insert complete")
               }
-
 
               log.debug("Got job result: ${job_result}");
               return job_result;
