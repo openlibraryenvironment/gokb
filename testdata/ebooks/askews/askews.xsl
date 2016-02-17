@@ -7,6 +7,7 @@
 
    <xsl:variable name="DOUBLEQUOTE">"</xsl:variable>
    <xsl:variable name="ESCAPEDDOUBLEQUOTE">XXXX</xsl:variable>
+   <xsl:variable name="NONCE">¬</xsl:variable>
 
    <xsl:template match="/">
     <xsl:call-template name="ask_header" />
@@ -111,7 +112,7 @@
   <xsl:template name="tsventry">
     <xsl:param name="txt"/>
     <xsl:text>"</xsl:text>
-    <xsl:value-of select="fn:replace(normalize-space($txt),$DOUBLEQUOTE,$ESCAPEDDOUBLEQUOTE)"/>
+    <xsl:value-of select="translate(normalize-space($txt),$DOUBLEQUOTE,$NONCE)"/>
     <xsl:text>"</xsl:text>
     <xsl:text>&#x9;</xsl:text>
   </xsl:template>
