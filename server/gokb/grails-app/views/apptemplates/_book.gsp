@@ -66,6 +66,9 @@
   <dt> <g:annotatedLabel owner="${d}" property="editionNumber">Edition Number</g:annotatedLabel> </dt>
   <dd> <g:xEditable class="ipe" owner="${d}" field="editionNumber" /> </dd>
 
+  <dt> <g:annotatedLabel owner="${d}" property="coverImage">Cover Image URL</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="coverImage" /> </dd>
+
   <dt> <g:annotatedLabel owner="${d}" property="editionDifferentiator">Edition Differentiator</g:annotatedLabel> </dt>
   <dd> <g:xEditable class="ipe" owner="${d}" field="editionDifferentiator" /> </dd>
 

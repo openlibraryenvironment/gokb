@@ -17,6 +17,7 @@ class TitleInstance extends KBComponent {
   RefdataValue	OAStatus
   Date publishedFrom
   Date publishedTo
+  String coverImage
 //  String imprint
 
   private static refdataDefaults = [
@@ -92,6 +93,7 @@ class TitleInstance extends KBComponent {
 //    imprint (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo (nullable:true, blank:false)
+    coverImage (nullable:true, blank:true)
   }
 
   def availableActions() {

@@ -1195,7 +1195,9 @@ class TSVIngestionService {
       if ( nl.length > 0 ) {
 
         for (key in col_positions.keySet()) {
+
           log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
+
           if ( key && key.length() > 0 ) {
             //so, springer files seem to start with a dodgy character (int) 65279
             if (((int)key.toCharArray()[0])==65279) {
@@ -1205,8 +1207,14 @@ class TSVIngestionService {
               //}
             } else {
               //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
+
                 if ( ( col_positions[key] != null ) && ( col_positions[key] < nl.length ) ) {
-                  result[key]=nl[col_positions[key]]
+                  if ( nl[col_positions[key]].length() > 4092 ) {
+                    throw new RuntimeException("Unexpectedly long value in row ${rownum} -- Probable miscoded quote in line. Correct and resubmit");
+                  }
+                  else{
+                    result[key]=nl[col_positions[key]]
+                  }
                 }
                 else {
                   log.error("Column references value not present in col ${col_positions[key]} row ${rownum}");
@@ -1439,6 +1447,8 @@ class TSVIngestionService {
     result.sourceName=source?.name
     result.sourceId=source?.id
 
+    def preflight_counter = 0;
+
     def source_rules = null;
     if ( source.ruleset ) {
       log.debug("read source ruleset ${source.ruleset}");
@@ -1474,12 +1484,12 @@ class TSVIngestionService {
           }
         }
 
-        log.debug("Preflight ${the_kbart.publication_title} ${identifiers}");
+        log.debug("Preflight [${preflight_counter++}] ${the_kbart.publication_title} ${identifiers}");
 
         if ( identifiers.size() > 0 ) {
           try {
             def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
-            log.debug("Preflight title : ${title}");
+            log.debug("Identifier match Preflight title : ${title}");
           }
           catch ( InconsistentTitleIdentifierException itie ) {
             log.debug("Caught -- set passed to false",itie);

@@ -24,6 +24,8 @@ class User {
   boolean accountLocked
   boolean passwordExpired
   Long defaultPageSize = new Long(10)
+  Org org
+
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
@@ -42,6 +44,7 @@ class User {
     email blank: true, nullable:true
     defaultPageSize blank: true, nullable:true
     curatoryGroups blank: true, nullable:true
+    org blank: false, nullable:true
   }
 
   static mapping = {
