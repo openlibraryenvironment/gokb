@@ -38,11 +38,9 @@
   </dl>
 
   <ul id="tabs" class="nav nav-tabs">
-    <li class="active"><a href="#platformdetails" data-toggle="tab">Platform
-        Details</a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names 
-      <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
-    </a></li>
+    <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size()}</span> </a></li>
+    <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
   </ul>
 
 
@@ -94,6 +92,11 @@
     <g:render template="showVariantnames" contextPath="../tabTemplates"
       model="${[d:displayobj, showActions:true]}" />
             
+    <div class="tab-pane" id="ds">
+      <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
+    </div>
+
+
   </div>
   <g:render template="componentStatus" contextPath="../apptemplates"
     model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />

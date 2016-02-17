@@ -70,6 +70,8 @@
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
         <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
       </a></li>
+      <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+      <li><a href="#activity" data-toggle="tab">Activity</a></li>
     </ul>
 
     <div id="my-tab-content" class="tab-content">
@@ -123,8 +125,7 @@
         </g:if>
       </div>
 
-     <g:render template="showVariantnames" contextPath="../tabTemplates"
-      model="${[d:displayobj, showActions:true]}" />
+     <g:render template="showVariantnames" contextPath="../tabTemplates" model="${[d:displayobj, showActions:true]}" />
 
       <div class="tab-pane" id="identifiers">
         <g:render template="combosByType" contextPath="../apptemplates"
@@ -132,6 +133,32 @@
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
       </div>
+
+      <div class="tab-pane" id="ds">
+        <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
+      </div>
+
+      <div class="tab-pane" id="activity">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Action</th>
+              <th>Title</th>
+            </tr>
+          </thead>
+          <tbody>
+            <g:each in="${d?.getRecentActivity(20)}" var="h">
+              <tr>
+                <td>${h[1]}</td>
+                <td>${h[2]}</td>
+                <td>${h[0].title.name}</td>
+              </tr>
+            </g:each>
+          </tbody>
+        </table>
+      </div>
+
 
     </div>
     <g:render template="componentStatus" contextPath="../apptemplates"
