@@ -1462,7 +1462,9 @@ class TSVIngestionService {
     if ( source.ruleset ) {
       log.debug("read source ruleset ${source.ruleset}");
       source_rules = JSON.parse(source.ruleset)
-      log.debug("Fingerprints present : ${source_rules.rules.keySet()}");
+      source_rules.rules.keySet().each {
+        log.debug("Rule Fingerprint : ${it}");
+      }
     }
 
     // Iterate through -- create titles

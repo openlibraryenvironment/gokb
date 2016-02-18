@@ -1483,6 +1483,7 @@ extensionDownloadUrl = 'https://github.com/k-int/gokb-phase1/wiki/GOKb-Refine-Ex
 
 grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
 
+a
 /**
  * We need to disable springs password encoding as we handle this in our domain model.
  */

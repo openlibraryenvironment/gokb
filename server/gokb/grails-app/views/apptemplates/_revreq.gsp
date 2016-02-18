@@ -102,10 +102,10 @@
                 <g:each in="${d.additional?.problems}" var="revreq_problem" status="i"> 
                   <tr>
                    <td>
-                     <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.probfingerprint" value='${revreq_problem?.problemFingerprint}' />
+                     <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.probfingerprint" value='${revreq_problem?.problemFingerprint.encodeAsHTML()}' />
                      <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.probcode" value='${revreq_problem?.problemCode}' />
-                     <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.idstr" value='${revreq_problem?.submittedIdentifiers}' />
-                     <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.title" value='${revreq_problem?.submittedTitle}' />
+                     <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.idstr" value='${revreq_problem?.submittedIdentifiers?.encodeAsHTML()}' />
+                     <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.title" value='${revreq_problem?.submittedTitle?.encodeAsHTML()}' />
                      <h2>${revreq_problem.problemCode}</h2>
                      <p>${revreq_problem.problemDescription}</p>
                    </td>
