@@ -7,7 +7,7 @@ export GOKB_HOST="http://localhost:8080"
 for xml in `ls ~/DATA/askews/KB_20151014120236.xml` 
 do
     echo process $xml
-    xsltproc ./askews.xsl $xml | sed 's/¬/"""/g' > /tmp/askfile.tsv
+    xsltproc ./askews.xsl $xml | sed 's/¬/\\"/g' > /tmp/askfile.tsv
     
     # Convert all ¬ to """ in /tmp/askfile.tsv
 

@@ -10,7 +10,7 @@ suggest them in the form below, otherwise accept the defaults.
 Using <input type="date" name="pr.prob_res_${prob?.problemSequence}.HistoryChoiceDate"></input>
 </p>
 
-<h3> <input type="radio" name="pr.prob_res_${prob?.problemSequence}.ResolutionOption" value="variantName"/> Option 2 : Add the new title string as a variant</h3>
+<h3> <input type="radio" name="pr.prob_res_${prob?.problemSequence}.ResolutionOption" value="variantName" checked /> Option 2 : Add the new title string as a variant</h3>
 <p>The supplied title really is just a radically different variant of the canonical one - add it as a variant to
 resolve this issue.</p>
 </select>

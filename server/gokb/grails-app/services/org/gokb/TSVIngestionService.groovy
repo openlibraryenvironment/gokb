@@ -182,6 +182,11 @@ class TSVIngestionService {
 
     // Create the normalised title.
     String norm_title = GOKbTextUtils.generateComparableKey(title)
+
+    if ( ( norm_title == null )  || ( norm_title.length() == 0 ) ) {
+      throw new RuntimeException("Null normalsed title based on title ${title}, Identifiers ${identifiers}");
+    }
+
     // Lookup any class 1 identifier matches
     def results = class_one_match (identifiers)
     // The matches.
@@ -1316,31 +1321,35 @@ class TSVIngestionService {
       fileRules.each { fileRule ->
 
         boolean done=false
-        String data = nl[col_positions[fileRule.field]];
-
-        if ( col_positions[fileRule.field] >= 0 ) {
-          // log.debug("field : ${fileRule.field} ${col_positions[fileRule.field]} ${data}")
-          if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
-            def parts = data.split(fileRule.separator)
-            data=parts[0]
-            if ( parts.size() > 1 && fileRule.additional!=null ) {
-              for (int x=1; x<parts.size(); x++) {
-                result[fileRule.additional] << parts[x]
+        if ( nl.length > col_positions[fileRule.field] ) {
+          String data = nl[col_positions[fileRule.field]];
+          if ( col_positions[fileRule.field] >= 0 ) {
+            // log.debug("field : ${fileRule.field} ${col_positions[fileRule.field]} ${data}")
+            if (fileRule.separator!=null && data.indexOf(fileRule.separator)>-1) {
+              def parts = data.split(fileRule.separator)
+              data=parts[0]
+              if ( parts.size() > 1 && fileRule.additional!=null ) {
+                for (int x=1; x<parts.size(); x++) {
+                  result[fileRule.additional] << parts[x]
+                }
+                done=true
               }
-              done=true
+            }
+
+            if (fileRule.additional!=null && !done) {
+              if ( data ) {
+                if ( result[fileRule.additional] == null ) 
+                  result[fileRule.additional] = []
+  
+                result[fileRule.additional] << data
+              }
+            } else {
+              result[fileRule.kbart]=data
             }
           }
-
-          if (fileRule.additional!=null && !done) {
-            if ( data ) {
-              if ( result[fileRule.additional] == null ) 
-                result[fileRule.additional] = []
-
-              result[fileRule.additional] << data
-            }
-          } else {
-            result[fileRule.kbart]=data
-          }
+        }
+        else {
+          log.warn("Missing column[${col_positions[fileRule.field]}]-${fileRule.field} in ingest file at line ${row_counter}");
         }
       }
 
@@ -1489,6 +1498,11 @@ class TSVIngestionService {
         if ( identifiers.size() > 0 ) {
           try {
             def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
+            if ( title && the_kbart.title_image && ( the_kbart.title_image != title.coverImage) ) {
+              title.coverImage = the_kbart.title_image;
+              title.save(flush:true, failOnError:true)
+            }
+
             log.debug("Identifier match Preflight title : ${title}");
           }
           catch ( InconsistentTitleIdentifierException itie ) {
@@ -1496,6 +1510,7 @@ class TSVIngestionService {
 
             // First thing to do is to see if we have a rule against this source for this case - if so, apply it,
             // If not, raise the problem so that we will know what to do next time around.
+            identifiers.sort{it.value};
             def identifier_fingerprint_str = identifiers as JSON
             def rule_fingerprint = "InconsistentTitleIdentifierException:${the_kbart.publication_title}:${identifier_fingerprint_str}"
 

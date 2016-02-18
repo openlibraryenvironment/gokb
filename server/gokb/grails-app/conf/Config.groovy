@@ -39,7 +39,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
          ],
     askews : [
                defaultType:org.gokb.cred.BookInstance.class,
-               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
+               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'eisbn', ],
                quoteChar:'"',
                defaultMedium:'Book',
                rules:[
@@ -48,6 +48,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                 [field: 'online_identifier', kbart: 'online_identifier'],
                 [field: 'Authors', kbart: 'first_author', separator: ';', additional: 'additional_authors'],
                 [field: 'PubDate', kbart: 'date_monograph_published_online'],
+                [field: 'title_image', kbart: 'title_image'],
               ]
          ],
     ybp : [
@@ -179,13 +180,14 @@ identifiers = [
     "issn",
     "eissn",
     "doi",
-    "isbn"
+    "isbn",
+    "eisbn"
   ],
 
   // Class ones that need to be cross-checked. If an Identifier supplied as an ISSN,
   // is found against a title but as an eISSN we still treat this as a match
   "cross_checks" : [
-    ["issn", "eissn"]
+    ["issn", "eissn"],
   ],
 
   formatters : [

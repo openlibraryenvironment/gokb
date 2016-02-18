@@ -55,7 +55,14 @@ class GOKbTextUtils {
       }
     }
 
-    normstring.trim().replaceAll(" +", " ")
+    normstring = normstring.trim().replaceAll(" +", " ")
+
+    // If something has gone cataclysmically wrong (Like, for example, a title consisting of only wide utf-8 characters, or a title like "/." which appears
+    // in the askews file, then we fall back on the string we were originally given.
+    if ( normstring == '' )
+      normstring = s
+
+    normstring
   }
 
   public static String normaliseString(String s) {
@@ -83,7 +90,14 @@ class GOKbTextUtils {
       }
     }
 
-    normstring.trim().replaceAll(" +", " ")
+    normstring = normstring.trim().replaceAll(" +", " ")
+
+    // If something has gone cataclysmically wrong (Like, for example, a title consisting of only wide utf-8 characters, or a title like "/." which appears
+    // in the askews file, then we fall back on the string we were originally given.
+    if ( normstring == '' )
+      normstring = s
+
+    normstring
   }
 
   public static double cosineSimilarity(String s1, String s2, int degree = 2) {
