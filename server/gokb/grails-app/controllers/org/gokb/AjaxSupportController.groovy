@@ -13,6 +13,7 @@ class AjaxSupportController {
 
   def genericOIDService
   def aclUtilService
+  def springSecurityService
 
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -55,17 +56,17 @@ class AjaxSupportController {
 
     def config = refdata_config[params.id]
 
-  	if (!config) {
-  	  // Use generic config.
-  	  config = [
-  		domain:'RefdataValue',
-  		countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
-  		rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}' order by rdv.sortKey asc, rdv.description asc",
-  		qryParams:[],
-  		cols:['value'],
-  		format:'simple'
-  	  ]
-  	}
+    if (!config) {
+      // Use generic config.
+      config = [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}' order by rdv.sortKey asc, rdv.description asc",
+      qryParams:[],
+      cols:['value'],
+      format:'simple'
+      ]
+    }
 
     if ( config ) {
       def query_params = []
@@ -103,16 +104,16 @@ class AjaxSupportController {
       countQry:'select count(o) from Org as o where lower(o.name) like ?',
       rowQry:'select o from Org as o where lower(o.name) like ? order by o.name asc',
       qryParams:[
-		[
-		  param:'sSearch',
-		  clos:{ value ->
-			def result = '%'
-			if ( value && ( value.length() > 0 ) )
-			  result = "%${value.trim().toLowerCase()}%"
-			result
-		  }
-		]
-	  ],
+    [
+      param:'sSearch',
+      clos:{ value ->
+      def result = '%'
+      if ( value && ( value.length() > 0 ) )
+        result = "%${value.trim().toLowerCase()}%"
+      result
+      }
+    ]
+    ],
       cols:['name'],
       format:'map'
     ],
@@ -205,6 +206,12 @@ class AjaxSupportController {
               }
             }
           }
+        }
+
+        if (params.__refdataName && params.__refdataValue) {
+          log.debug("set refdata "+ params.__refdataName +" for component ${contextObj}")
+          def refdata = resolveOID2(params.__refdataValue)
+          new_obj[params.__refdataName] = refdata
         }
 
         // Need to do the right thing depending on who owns the relationship. If new obj
@@ -302,14 +309,46 @@ class AjaxSupportController {
     if ( contextObj ) {
       def item_to_remove = resolveOID2(params.__itemToRemove)
       if ( item_to_remove ) {
-        contextObj[params.__property].remove(item_to_remove)
-        contextObj.save()
-      }
-      else {
+        if ( ( item_to_remove != null ) && ( item_to_remove.hasProperty('hasByCombo') ) && ( item_to_remove.hasByCombo != null ) ) {
+          item_to_remove.hasByCombo.keySet().each { hbc ->
+            log.debug("Testing ${hbc}");
+            log.debug("here's the data: "+ item_to_remove[hbc])
+            if (item_to_remove[hbc]==contextObj) {
+              log.debug("context found");
+              //item_to_remove[hbc]=resolveOID2(null)
+              item_to_remove.deleteParent();
+              log.debug(item_to_remove.children)
+              log.debug(item_to_remove.heading)
+              log.debug(item_to_remove.parent)
+              log.debug("tried removal: "+item_to_remove[hbc]);
+            }
+          }
+        }
+        log.debug(params);
+        log.debug("removing: "+item_to_remove+" from "+params.__property+" for "+contextObj);
+
+            contextObj[params.__property].remove(item_to_remove);
+
+                log.debug("child removed: "+ contextObj[params.__property]);
+                if (contextObj.save()==false) {
+                  log.debug(contextObj.errors.allErrors())
+                } else {
+                  log.debug("saved ok");
+                }
+                item_to_remove.refresh();
+                if (params.__otherEnd && item_to_remove[params.__otherEnd]!=null) {
+                  log.debug("remove parent: "+item_to_remove[params.__otherEnd])
+                  //item_to_remove.setParent(null);
+                  item_to_remove[params.__otherEnd]=null; //this seems to fail
+                  log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
+                }
+                if (item_to_remove.save()==false) {
+                 log.debug(item_to_remove.errors.allError());
+                }
+      } else {
         log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
       }
-    }
-    else {
+    } else {
       log.error("Unable to resolve context obj : ${params.__context}");
     }
     redirect(url: request.getHeader('referer'))
@@ -497,4 +536,79 @@ class AjaxSupportController {
     log.debug("Redirecting to referer: ${request.getHeader('referer')}");
     redirect(url: (request.getHeader('referer')+params.hash?:''))
   }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def appliedCriterion() {
+      log.debug("applied criterion AJAXSupportController - ${params} ");
+    def result = [status:'OK']
+
+    // val:r, comp:139862, crit:1
+    def component = KBComponent.get(params.comp);
+    def crit      = DSCriterion.get(params.crit);
+    def lookup    = [ 'r' : 'Red', 'a' : 'Amber', 'g' : 'Green' ]
+    def rdv       = RefdataCategory.lookupOrCreate('RAG', lookup[params.val]).save()
+    def user      = springSecurityService.currentUser
+
+    def current_applied = DSAppliedCriterion.findByUserAndAppliedToAndCriterion(user,component,crit);
+    if ( current_applied == null ) {
+      // log.debug("Create new applied criterion");
+      current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
+    }
+    else {
+      log.debug("Update existing vote");
+      current_applied.value=rdv
+      current_applied.save(failOnError:true)
+    }
+    result.username = user.username
+    render result as JSON
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def criterionComment() {
+    log.debug('CRITERION COMMENT HAS BEEN CALLED!:'+params);
+    log.debug('criterionComment:'+params);
+    def result    = [:]
+    result.status = 'OK'
+    def idparts   = params.comp.split('_');
+    log.debug(idparts);
+    if ( idparts.length == 2 ) {
+      def component = KBComponent.get(idparts[0]);
+      def crit      = DSCriterion.get(idparts[1]);
+
+      def user = springSecurityService.currentUser
+      def current_applied = DSAppliedCriterion.findByUserAndAppliedToAndCriterion(user,component,crit);
+
+      if ( current_applied == null ) {
+        // Create a new applied criterion to comment on
+        def rdv  = RefdataCategory.lookupOrCreate('RAG', 'Unknown');
+        current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
+      }
+
+      def note = new DSNote(criterion:current_applied, note:params.comment, isDeleted:false).save(failOnError:true);
+      result.newNote  = note.id
+      result.created  = note.dateCreated
+      log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
+    }
+    render result as JSON
+  }
+
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def criterionCommentDelete() {
+    log.debug('criterionCommentDelete:'+params);
+    def result       = [:]
+    result.status    = 'OK'
+    def user         = springSecurityService.currentUser
+    def note         = DSNote.get(params.note)
+    if (note)
+    {
+        if (note.criterion.user == user)
+            note.isDeleted       = true
+        else
+            result.status = '401'
+    }
+
+    render result as JSON
+  }
+
 }
