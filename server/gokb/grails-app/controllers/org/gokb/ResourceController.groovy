@@ -66,6 +66,9 @@ class ResourceController {
         result.ownerClass = oid_components[0]
         result.ownerId = oid_components[1]
         result.num_notes = KBComponent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];
+        // How many people are watching this object
+        result.num_watch = 0;
+        result.user_watching = false;
       }
       else {
         log.debug("unable to resolve object");
