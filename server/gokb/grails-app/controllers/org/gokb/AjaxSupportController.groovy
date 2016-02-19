@@ -539,7 +539,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def appliedCriterion() {
-      log.debug("applied criterion AJAXSupportController - ${params} ");
+    log.debug("applied criterion AJAXSupportController - ${params} ");
     def result = [status:'OK']
 
     // val:r, comp:139862, crit:1

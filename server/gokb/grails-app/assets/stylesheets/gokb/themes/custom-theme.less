@@ -290,3 +290,127 @@ h1.panel-title {
     }
   }
 }
+
+/* Decision Support */
+#tab-decision-suppport .vote {
+  color: @brand-info;
+  a {
+    color: @brand-info;
+  }
+}
+
+/** More semantically applicable colour definitions for elements **/
+.bg-negative {
+  background-color: @brand-danger !important;
+}
+
+.bg-contentious {
+  background-color: @brand-warning !important;
+}
+
+.bg-positive {
+  background-color: @brand-success !important;
+}
+
+.bg-neutral {
+  background-color: @brand-primary !important;
+}
+
+.bg-deleted {
+  background-color: @gray !important;
+}
+
+.border-negative {
+  border-color: @brand-danger !important;
+}
+
+.border-contentious {
+  border-color: @brand-warning !important;
+}
+
+.border-positive {
+  border-color: @brand-success !important;
+}
+
+.border-neutral {
+  border-color: @brand-primary !important;
+}
+
+.border-deleted {
+  border-color: @gray !important;
+}
+
+.text-negative {
+  color: @brand-danger !important;
+}
+
+.text-contentious {
+  color: @brand-warning !important;
+}
+
+.text-positive {
+  color: @brand-success !important;
+}
+
+.text-neutral {
+  color: @brand-primary !important;
+}
+
+.text-deleted {
+  color: @gray !important;
+}
+
+
+.triangle-border:before {
+  top: 2px;
+  content: "";
+  display: block;
+  left: -15px; /* value = - border-left-width - border-right-width */
+  position: absolute;
+  width: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 10px solid ;
+}
+
+/* creates the smaller  triangle */
+.triangle-border:after {
+  border-color: transparent;
+  border-style: solid;
+  border-width: 13px 13px 0;
+  bottom: -13px;
+  content: "";
+  display: block;
+  left: 47px;
+  position: absolute;
+  width: 0;
+}
+
+.triangle-border {
+  background: none repeat scroll 0 0 #fff;
+  border: 5px solid ;
+  border-radius: 10px;
+  color: #333;
+  margin: 0 0 .5em 1em;
+  padding: 5px;
+  position: relative;
+}
+
+.DSInlineBlock { display: inline-block; }
+
+.DSAuthor { padding-right: 2em; }
+
+.DSVote {  }
+
+.DSTimestamp {
+  padding-left: 2em;
+  font-weight: 200;
+}
+
+.noteDelete {
+  padding-left: .5em;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+.DSOrg {  }

@@ -23,7 +23,8 @@
 // Global namespace for GOKb functions.
 window.gokb = {
   "config" : {
-    "lookupURI" : "/gokb/ajaxSupport/lookup"
+    "lookupURI" : "/gokb/ajaxSupport/lookup",
+    "baseUrl" : "/gokb",
   },
   validateJson : function (value) {
     
