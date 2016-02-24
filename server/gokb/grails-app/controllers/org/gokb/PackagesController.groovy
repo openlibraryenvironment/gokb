@@ -144,6 +144,7 @@ class PackagesController {
     }
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deposit() {
     def result = [:]
     log.debug("deposit::${params}")

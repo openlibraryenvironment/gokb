@@ -34,7 +34,7 @@
   <div class="container">
 
     <div class="row">
-      Packages
+      Package Content...
     </div>
 
   </div> <!-- /.container -->
