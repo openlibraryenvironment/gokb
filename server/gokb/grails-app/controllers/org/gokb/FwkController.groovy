@@ -67,18 +67,24 @@ class FwkController {
   }
 
   def toggleWatch() {
-    log.debug("FwkController::notes...");
-    def result = [:]
+    log.debug("FwkController::toggleWatch(${params})");
+    def result = [change:0]
+
     result.displayobj = resolveOID2(params.oid)
     result.user = User.get(springSecurityService.principal.id)
-    def watch = KBComponent.executeQuery("select n from ComponentWatch as n where n.component=? and n.user=?",[result.displayobj, result.user])
-    if ( watch.size() == 1 ) {
-      // watch exists
-      watch[0].delete();
-    }
-    else {
-      // Create new watch
-      def new_watch = new ComponentWatch(component:result.displayobj, user:result.user).save(flush:true, failOnError:true);
+
+    if ( result.displayobj && result.user ) {
+      def watch = KBComponent.executeQuery("select n from ComponentWatch as n where n.component=? and n.user=?",[result.displayobj, result.user])
+      if ( watch.size() == 1 ) {
+        // watch exists
+        watch[0].delete();
+        result.change = -1
+      }
+      else {
+        // Create new watch
+        def new_watch = new ComponentWatch(component:result.displayobj, user:result.user).save(flush:true, failOnError:true);
+        result.change = 1
+      }
     }
     
     result

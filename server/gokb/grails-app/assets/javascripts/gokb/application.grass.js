@@ -334,7 +334,8 @@ window.gokb = {
         e.stopImmediatePropagation();
       }
     });
-    
+
   });
+
   
 })(jQuery);
