@@ -1477,6 +1477,7 @@ grails.plugins.springsecurity.basic.realmName = "gokb"
 grails.plugins.springsecurity.filterChain.chainMap = [
   '/integration/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
+  '/packages/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
   // '/soap/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
   // '/rest/**': 'JOINED_FILTERS,-exceptionTranslationFilter'

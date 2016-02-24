@@ -1495,7 +1495,7 @@ class TSVIngestionService {
           }
         }
 
-        log.debug("Preflight [${preflight_counter++}] ${the_kbart.publication_title} ${identifiers}");
+        log.debug("Preflight [${packageName}:${preflight_counter++}] ${the_kbart.publication_title} ${identifiers}");
 
         if ( identifiers.size() > 0 ) {
           try {

@@ -1,27 +1,4 @@
-<div id="content">
-  <ul id="tabs" class="nav nav-tabs">
-    <li class="active"><a href="#rrdets" data-toggle="tab">Review
-        Request Details</a></li>
-  </ul>
-    <nav class="navbar navbar-inverse">
-    <div class="container-fluid">
-      <ul class="nav navbar-nav navbar-right">
-        <li><a data-toggle="modal" data-cache="false"
-          title="Show History"
-          data-remote='<g:createLink controller="fwk" action="history" id="${d.class.name}:${d.id}"/>'
-          data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
-
-        <li><a data-toggle="modal" data-cache="false"
-          title="Show Notes"
-          data-remote='<g:createLink controller="fwk" action="notes" id="${d.class.name}:${d.id}"/>'
-          data-target="#modal"><i class="glyphicon glyphicon-comment"></i></a></li>
-
-      </ul>
-    </div>
-    </nav>
-  <div id="my-tab-content" class="tab-content">
-    <div class="tab-pane active" id="rrdets">
-      <dl class="dl-horizontal">
+     <dl class="dl-horizontal">
         <dt>
           <g:annotatedLabel owner="${d}" property="id">Internal ID</g:annotatedLabel>
         </dt>
@@ -40,6 +17,14 @@
         <dd>
           <g:xEditable class="ipe" owner="${d}" field="reviewRequest" />
         </dd>
+     </dl>
+<div id="content">
+  <ul id="tabs" class="nav nav-tabs">
+    <li class="active"><a href="#rrdets" data-toggle="tab">Review Request Details</a></li>
+  </ul>
+  <div id="my-tab-content" class="tab-content">
+    <div class="tab-pane active" id="rrdets">
+      <dl class="dl-horizontal">
         <dt>
           <g:annotatedLabel owner="${d}" property="status">Request Status</g:annotatedLabel>
         </dt>

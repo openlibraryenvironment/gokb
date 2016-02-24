@@ -98,7 +98,7 @@ class PackagesController {
 
   def preflight() {
    def result = [:]
-    log.debug("deposit::${params}")
+    log.debug("preflight::${params}")
     def jobid = null;
 
     if ( request.method=='POST') {
