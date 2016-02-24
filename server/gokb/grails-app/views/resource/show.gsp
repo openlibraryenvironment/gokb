@@ -25,12 +25,13 @@
     </div>
 
     <ul class="nav navbar-nav navbar-right">
-      <li><a href='<g:createLink controller="fwk" action="toggleWatch" id="${displayobj.class.name}:${displayobj.id}"/>'
+      <li><a onClick="javascript:alert('test')"
+             href='<g:createLink controller="fwk" action="toggleWatch" params='["oid":"${displayobj.class.name}:${displayobj.id}"]'/>'
              title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
               ><i class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span class="badge badge-warning"> ${num_watch}</span></a></li>
       <li><a data-toggle="modal" data-cache="false"
              title="Show History"
-             data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>'
+             data-remote='<g:createLink controller="fwk" action="history" oid="${displayobj.class.name}:${displayobj.id}"/>'
              data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
 
       <li><a data-toggle="modal" data-cache="false"

@@ -12,10 +12,10 @@
     <g:each in="${d.reviewRequests}" var="rr">
       <tr>
         <td>
-          ${rr.descriptionOfCause}
+          <g:link controller="resource" action="show" id="org.gokb.cred.ReviewRequest:${rr.id}">${rr.descriptionOfCause}</g:link>
         </td>
         <td>
-          ${rr.reviewRequest}
+          <g:link controller="resource" action="show" id="org.gokb.cred.ReviewRequest:${rr.id}">${rr.reviewRequest}</g:link>
         </td>
         <td>
           <g:xEditableRefData owner="${rr}" field="status" config='ReviewRequest.Status' />

@@ -1044,6 +1044,12 @@ globalSearchTemplates = [
           placeholder:'Allocated To',
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'allocatedTo']
         ],
+        [
+          prompt:'Cause',
+          qparam:'qp_cause',
+          placeholder:'Cause',
+          contextTree:['ctxtp':'qry', 'comparator' : 'like', 'prop':'descriptionOfCause']
+        ]
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
