@@ -2,6 +2,7 @@ package org.gokb
 
 import org.gokb.cred.*;
 import org.codehaus.groovy.grails.plugins.orm.auditable.AuditLogEvent
+import grails.converters.JSON
 
 class FwkController {
 
@@ -87,7 +88,7 @@ class FwkController {
       }
     }
     
-    result
+    render result as JSON
   }
 
 }

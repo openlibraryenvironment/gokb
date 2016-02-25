@@ -14,10 +14,6 @@ if (typeof jQuery !== 'undefined') {
       actionsList.append(listItem);
     }
 
-    function toggleWatch(oid) {
-      alert('toggleWatch '+oid);
-    }
-
     /**
      * Method that updates the available actions on a the action list
      */

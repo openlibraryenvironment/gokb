@@ -26,8 +26,9 @@
 
     <ul class="nav navbar-nav navbar-right">
       <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
+             id="watchToggleLink"
              title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
-              ><i class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span class="badge badge-warning"> ${num_watch}</span></a></li>
+              ><i id="watchIcon" class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
       <li><a data-toggle="modal" data-cache="false"
              title="Show History"
              data-remote='<g:createLink controller="fwk" action="history" oid="${displayobj.class.name}:${displayobj.id}"/>'
@@ -109,5 +110,26 @@
                 </div>
         </div>
 
+   <script type="text/javascript" >
+        function toggleWatch(oid) {
+          $.ajax({
+            url: '/gokb/fwk/toggleWatch?oid='+oid,
+            dataType:"json"
+          }).done(function(data) {
+            if ( data.change == '-1' ) {
+              $('#watchToggleLink').prop('title','You are not watching this resource');
+              $('#watchIcon').removeClass('glyphicon-eye-open');
+              $('#watchIcon').addClass('glyphicon-eye-close');
+              $('#watchCounter').html('111');
+            }
+            else {
+              $('#watchToggleLink').prop('title','You are watching this resource');
+              $('#watchIcon').removeClass('glyphicon-eye-close');
+              $('#watchIcon').addClass('glyphicon-eye-open');
+              $('#watchCounter').html('222');
+            }
+          });
+        }
+   </script>
 </body>
 </html>
