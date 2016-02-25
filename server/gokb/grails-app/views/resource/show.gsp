@@ -116,17 +116,18 @@
             url: '/gokb/fwk/toggleWatch?oid='+oid,
             dataType:"json"
           }).done(function(data) {
+            var counter = parseInt($('#watchCounter').html());
             if ( data.change == '-1' ) {
               $('#watchToggleLink').prop('title','You are not watching this resource');
               $('#watchIcon').removeClass('glyphicon-eye-open');
               $('#watchIcon').addClass('glyphicon-eye-close');
-              $('#watchCounter').html('111');
+              $('#watchCounter').html(counter-1);
             }
             else {
               $('#watchToggleLink').prop('title','You are watching this resource');
               $('#watchIcon').removeClass('glyphicon-eye-close');
               $('#watchIcon').addClass('glyphicon-eye-open');
-              $('#watchCounter').html('222');
+              $('#watchCounter').html(counter+1);
             }
           });
         }
