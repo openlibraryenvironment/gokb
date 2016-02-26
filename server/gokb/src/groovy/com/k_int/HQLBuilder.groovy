@@ -279,6 +279,17 @@ public class HQLBuilder {
                                                          ( ( crit.defn.contextTree.wildcard=='R' || crit.defn.contextTree.wildcard=='B') ? '%' : '')
         break;
 
+      case 'like':
+        hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}${scoped_property} like :${crit.defn.qparam}");
+        def base_value = crit.value.trim()
+        if ( crit.defn.contextTree.normalise == true ) {
+          base_value = org.gokb.GOKbTextUtils.normaliseString(base_value)
+        }
+        hql_builder_context.bindvars[crit.defn.qparam] = ( ( crit.defn.contextTree.wildcard=='L' || crit.defn.contextTree.wildcard=='B') ? '%' : '') +
+                                                         base_value +
+                                                         ( ( crit.defn.contextTree.wildcard=='R' || crit.defn.contextTree.wildcard=='B') ? '%' : '')
+        break;
+
       default:
         log.error("Unhandled comparator '${crit.defn.contextTree.comparator}'. crit: ${crit}");
     }
