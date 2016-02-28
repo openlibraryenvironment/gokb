@@ -31,14 +31,18 @@
       </div> <!-- /.container -->
     </nav>
 
-  <div class="container">
+  <div class="container well">
 
     <g:if test="${message}">
       <div class="well">${message}</div>
     </g:if>
 
     <div class="row">
-      Packages
+      <h1>Package Deposit</h1>
+      <g:form controller="packages" action="deposit">
+        Deposit file: <input type="file" name="content"/>
+        <button type="submit">Submit</button>
+      </g:form>
     </div>
 
   </div> <!-- /.container -->
