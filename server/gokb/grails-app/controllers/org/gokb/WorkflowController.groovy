@@ -1328,4 +1328,24 @@ class WorkflowController {
 
     redirect(url: result.ref)
   }
+
+  def deprecateOrg() {
+    def result=[:]
+    log.debug("Params: ${params}");
+    log.debug("otd: ${params.orgsToDeprecate}");
+    log.debug("neworg: ${params.neworg}");
+    if ( params.orgsToDeprecate && params.neworg ) {
+      def otd = Org.get(params.orgsToDeprecate)
+      def neworg = genericOIDService.resolveOID2(params.neworg)
+
+      if ( otd && neworg ) {
+        log.debug("Got org to deprecate and neworg...  Process now");
+        // Updating all combo.toComponent
+        // Updating all combo.fromComponent
+        Combo.executeUpdate("update Combo set toComponent = ? where toComponent = ?",[neworg,otd]);
+        Combo.executeUpdate("update Combo set fromComponent = ? where fromComponent = ?",[neworg,otd]);
+      }
+    }
+    result
+  }
 }
