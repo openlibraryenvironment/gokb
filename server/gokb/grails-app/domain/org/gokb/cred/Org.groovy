@@ -7,6 +7,14 @@ class Org extends KBComponent {
   RefdataValue mission
   String homepage
 
+  def availableActions() {
+    [
+      [code:'org::deprecate', label:'Deprecate This Org Record'],
+      // [code:'title::reconcile', label:'Title Reconcile']
+    ]
+  }
+
+
   static manyByCombo = [
     providedPackages  : Package,
     children    : Org,

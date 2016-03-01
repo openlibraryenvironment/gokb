@@ -24,6 +24,7 @@ class WorkflowController {
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
+    'org::deprecate':[actionType:'workflow', view:'deprecateOrg'],
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
