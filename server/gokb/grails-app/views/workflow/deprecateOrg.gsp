@@ -9,6 +9,12 @@
 <body>
 
   <h1 class="page-header">Deprecate Org</h1>
+
+  <g:if test='${flash.message}'>
+    <div class='well'>${flash.message}</div>
+  </g:if>
+
+
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
       <h3 class="panel-title">Step 1 of 1</h3>

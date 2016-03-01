@@ -1344,6 +1344,7 @@ class WorkflowController {
         // Updating all combo.fromComponent
         Combo.executeUpdate("update Combo set toComponent = ? where toComponent = ?",[neworg,otd]);
         Combo.executeUpdate("update Combo set fromComponent = ? where fromComponent = ?",[neworg,otd]);
+        flash.message="Org Deprecation Completed"
       }
     }
     result
