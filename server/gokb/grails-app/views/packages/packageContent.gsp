@@ -33,9 +33,37 @@
 
   <div class="container">
 
-    <div class="row">
-      Package Content...
-    </div>
+    <div class="row"> <div class="box">
+   
+     <div class="col-lg-12 ">
+      <div class="well">
+      <g:if test="${pkgName}">
+
+        <h1>${pkgName}</h1>
+
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Identifiers</th>
+              <th>Coverage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <g:each in="${tipps}" var="t">
+              <tr>
+                <td>${t.title.name}</th>
+                <td></th>
+                <td></th>
+              </tr>
+            </g:each>
+          </tbody>
+        </table>
+      </g:if>
+
+      </div>
+      </div>
+    </div></div>
 
   </div> <!-- /.container -->
 </body>
