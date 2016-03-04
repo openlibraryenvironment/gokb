@@ -2,6 +2,8 @@ import grails.util.GrailsNameUtils;
 
 import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsApplication
+import grails.converters.JSON
+
 
 import java.lang.reflect.Method
 
@@ -153,7 +155,23 @@ class BootStrap {
     def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
     def doi_ns = IdentifierNamespace.findByValue('doi') ?: new IdentifierNamespace(value:'doi').save(flush:true, failOnError:true);
 
+    log.info("Default batch loader config");
+    defaultBulkLoaderConfig();
+
     log.info("GoKB Initi complete");
+  }
+
+  def defaultBulkLoaderConfig() {
+    // BulkLoaderConfig
+    grailsApplication.config.kbart2.mappings.each { k,v ->
+      def existing_cfg = BulkLoaderConfig.findByCode(k)
+      if ( existing_cfg ) {
+      }
+      else {
+        def cfg = v as JSON
+        existing_cfg = new BulkLoaderConfig(code:k, cfg:cfg?.toString()).save(flush:true, failOnError:true)
+      }
+    }
   }
 
   def migrateDiskFilesToDatabase() {

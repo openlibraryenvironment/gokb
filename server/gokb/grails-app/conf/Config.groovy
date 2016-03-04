@@ -21,7 +21,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
 
   kbart2.mappings= [
     ingram : [
-               defaultType:org.gokb.cred.BookInstance.class,
+               // defaultType:org.gokb.cred.BookInstance.class,
+               defaultTypeName:'org.gokb.cred.BookInstance',
                identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
                defaultMedium:'Book',
                rules:[
@@ -38,7 +39,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               ]
          ],
     askews : [
-               defaultType:org.gokb.cred.BookInstance.class,
+               defaultTypeName:'org.gokb.cred.BookInstance',
+               // defaultType:org.gokb.cred.BookInstance.class,
                identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'eisbn', ],
                quoteChar:'"',
                defaultMedium:'Book',
@@ -52,7 +54,8 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               ]
          ],
     ybp : [
-               defaultType:org.gokb.cred.BookInstance.class,
+               defaultTypeName:'org.gokb.cred.BookInstance',
+               // defaultType:org.gokb.cred.BookInstance.class,
                identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
                defaultMedium:'Book',
                quoteChar:'"',
