@@ -18,7 +18,6 @@
     <dt>
       <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
     </dt>
-
     <dd>
       <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
     </dd>
@@ -41,25 +40,18 @@
     <dd>
       <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier?.displayName}</g:manyToOneReferenceTypedown>
     </dd>
-    <dt>
-      <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:xEditable class="ipe" owner="${d}" type="date"
-        field="listVerifiedDate" />
-    </dd>
-    <dt>
-      <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:xEditableRefData owner="${d}" field="editStatus"
-        config='KBComponent.EditStatus' />
-    </dd>
+    <dt> <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel> </dt>
+    <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /> </dd>
+
+    <dt> <g:annotatedLabel owner="${d}" property="lastUpdateComment">Update Method</g:annotatedLabel> </dt>
+    <dd> <g:xEditable class="ipe" owner="${d}" field="lastUpdateComment" /> </dd>
+
+    <dt> <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel> </dt>
+    <dd> <g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /> </dd>
+
 
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
-    <dd>
-       <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
-    </dd>
+    <dd> <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" /> </dd>
   </dl>
 
 
