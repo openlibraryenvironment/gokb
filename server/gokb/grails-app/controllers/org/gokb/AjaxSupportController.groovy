@@ -296,7 +296,8 @@ class AjaxSupportController {
     def contextObj = resolveOID2(params.__context)
     if ( contextObj ) {
       contextObj["${params.__property}"].add (resolveOID2(params.__relatedObject))
-      contextObj.save(flush:true)
+      contextObj.save(flush:true, failOnError:true)
+      log.debug("Saved: ${contextObj.id}");
     }
     redirect(url: request.getHeader('referer'))
   }

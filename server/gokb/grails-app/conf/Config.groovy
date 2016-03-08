@@ -352,7 +352,7 @@ log4j = {
     }
   }
 
-  error  'org.codehaus.groovy.grails.web.servlet',        // controllers
+  error  'org.codehaus.groovy.grails.web.servlet',     // controllers
       'org.codehaus.groovy.grails.web.pages',          // GSP
       'org.codehaus.groovy.grails.web.sitemesh',       // layouts
       'org.codehaus.groovy.grails.web.mapping.filter', // URL mapping
@@ -365,19 +365,21 @@ log4j = {
       'net.sf.ehcache.hibernate'
 
   debug 'grails.app.controllers',
-      'grails.app.service',
-      'grails.app.services',
-      'grails.app.domain',
-      'grails.app.tagLib',
-      'grails.app.filters',
-      'grails.app.conf',
-      'grails.app.jobs',
-      'com.k_int',
-      'org.gokb.cred.RefdataCategory',
-      'com.k_int.apis',
-      'com.k_int.asset.pipeline.groovy',
-      'asset.pipeline.less.compilers',
-      'org.gokb.validation.types.CompareToTiDateField'
+        'grails.app.service',
+        'grails.app.services',
+        'grails.app.domain',
+        'grails.app.domains',
+        'grails.app.tagLib',
+        'grails.app.filters',
+        'grails.app.conf',
+        'grails.app.jobs',
+        'com.k_int',
+        'org.gokb.cred.RefdataCategory',
+        'com.k_int.apis',
+        'com.k_int.asset.pipeline.groovy',
+        'asset.pipeline.less.compilers',
+        'org.gokb.validation.types.CompareToTiDateField'
+        // 'org.gokb.cred'
 
   // debug  'org.gokb.DomainClassExtender'
 

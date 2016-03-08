@@ -1349,4 +1349,10 @@ class WorkflowController {
     }
     result
   }
+
+  def deleteCombo() {
+    Combo c = Combo.get(params.id);
+    c.delete();
+    redirect(url: request.getHeader('referer'));
+  }
 }

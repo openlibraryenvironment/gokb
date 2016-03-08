@@ -325,7 +325,7 @@
 
      <dd>
 		<g:render template="simpleCombos" contextPath="../apptemplates"
-        model="${[d:d, property:'publisher', fragment:'identifiers', cols:[
+        model="${[d:d, property:'publisher', fragment:'identifiers', delete:'true', cols:[
                   [expr:'name', colhead:'name', action:'link'],
                   [expr:'status', colhead:'status'],
 				  [expr:'startDate', colhead: 'from'],

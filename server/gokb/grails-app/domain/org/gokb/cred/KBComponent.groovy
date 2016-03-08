@@ -667,10 +667,12 @@ abstract class KBComponent {
     def hql_query
     def hql_params = []
 
-    if ( this.id != null ) {
+    if ( this.getId() != null ) {
       // Unsaved components can't have combo relations
       RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue(propertyName))
+      
       if(status && status!="null") status_ref = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, status);
+
       hql_query = "from Combo where type=? "
       hql_params += type
       if (isComboReverse(propertyName)) {
@@ -684,8 +686,16 @@ abstract class KBComponent {
         hql_query += " and status=?"
         hql_params += status_ref
       }
+
+
       combos = Combo.executeQuery(hql_query,hql_params)
+
+      log.debug("Qry: ${hql_query}, Params:${hql_params} : result.size=${combos?.size()}");
     }
+    else {
+      log.error("This.id == null");
+    }
+
     return combos
   }
 

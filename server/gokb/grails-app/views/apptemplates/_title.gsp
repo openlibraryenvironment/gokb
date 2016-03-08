@@ -259,8 +259,7 @@
       <dt>
         <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
       </dt>
-      <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers"
- params="${params.findAll{k, v -> k != 'publisher_status'}}">
+      <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers" params="${params.findAll{k, v -> k != 'publisher_status'}}">
 
        Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
       </g:form>
@@ -273,21 +272,17 @@
               <th>Combo Status</th>
               <th>Publisher From</th>
               <th>Publisher To</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <g:each in="${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)}" var="p">
               <tr>
-                <td><g:link controller="resource" action="show"
-                    id="${p.toComponent.class.name}:${p.toComponent.id}">
-                    ${p.toComponent.name}
-                  </g:link></td>
-                <td><g:xEditableRefData owner="${p}" field="status"
-                    config='Combo.Status' /></td>
-                <td><g:xEditable class="ipe" owner="${p}" field="startDate"
-                    type="date" /></td>
-                <td><g:xEditable class="ipe" owner="${p}" field="endDate"
-                    type="date" /></td>
+                <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
+                <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
+                <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
+                <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
+                <td><g:link controller="workflow" action="deleteCombo" id="${p.id}">Delete</g:link></td>
               </tr>
             </g:each>
           </tbody>
