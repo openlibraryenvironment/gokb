@@ -766,7 +766,8 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids').save()
 
-
+    log.debug("Deleting any null refdata values");
+    RefdataValue.executeUpdate('delete from RefdataValue where value is null');
   }
 
   def sourceObjects() {
