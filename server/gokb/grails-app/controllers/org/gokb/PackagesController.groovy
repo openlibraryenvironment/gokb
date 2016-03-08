@@ -136,7 +136,7 @@ class PackagesController {
           def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype',params.fmt).save()
           def pkg = params.pkg
           def platformUrl = params.platformUrl
-          def source = params.source
+          def source = Source.findByName(params.source) ?: new Source(name:params.source).save(flush:true, failOnError:true);
           def providerName = params.providerName
           def providerIdentifierNamespace = params.providerIdentifierNamespace
 
@@ -145,7 +145,7 @@ class PackagesController {
           TSVIngestionService.preflight(format_rdv,
                                         pkg,
                                         new java.net.URL(platformUrl),
-                                        Source.findByName(source),
+                                        source,
                                         request.getFile("content"),
                                         providerName,
                                         providerIdentifierNamespace)
@@ -189,7 +189,8 @@ class PackagesController {
             def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype',params.fmt).save()
             def pkg = params.pkg
             def platformUrl = params.platformUrl
-            def source = params.source
+            // def source = params.source
+            def source = Source.findByName(params.source) ?: new Source(name:params.source).save(flush:true, failOnError:true);
             def providerName = params.providerName
             def providerIdentifierNamespace = params.providerIdentifierNamespace
   
@@ -242,7 +243,7 @@ class PackagesController {
                 job_result = TSVIngestionService.ingest2(format_rdv,
                                                          pkg,
                                                          new java.net.URL(platformUrl),
-                                                         Source.findByName(source),
+                                                         source,
                                                          new_datafile_id,
                                                          job,
                                                          providerName,
