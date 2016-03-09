@@ -1183,7 +1183,7 @@ class TSVIngestionService {
     //def hcnms = new HeaderColumnNameMappingStrategy<KBartRecord>()
     //hcnms.type = KBartRecord
     def charset = 'ISO-8859-1' // 'UTF-8'
-    def csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(the_data.fileData),java.nio.charset.Charset.forName(charset)),'\t' as char,'\0' as char)
+    def csv = new CSVReader(new InputStreamReader(new org.apache.commons.io.input.BOMInputStream(new ByteArrayInputStream(the_data.fileData)),java.nio.charset.Charset.forName(charset)),'\t' as char,'\0' as char)
     //results=ctb.parse(hcnms, csv)
     //quick check that results aren't null...
 
