@@ -12,6 +12,12 @@ import com.k_int.ConcurrencyManagerService.Job
 import java.security.MessageDigest
 import grails.converters.JSON
 
+import org.hibernate.ScrollMode
+import org.hibernate.ScrollableResults
+import org.hibernate.type.*
+import org.hibernate.Hibernate
+
+
 
 class PackagesController {
 
@@ -21,6 +27,7 @@ class PackagesController {
   def TSVIngestionService
   def ESWrapperService
   def grailsApplication
+  def sessionFactory
 
   public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp  and c.type.value = ? order by tipp.id';
 
@@ -339,5 +346,111 @@ class PackagesController {
   }
 
 
+
+
+  // @Transactional(readOnly = true)
+  def kbart() {
+
+    def pkg = Package.get(params.id)
+
+    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def export_date = sdf.format(new java.util.Date());
+
+    def filename = "GOKb Export : ${pkg.name} : ${export_date}.tsv"
+
+    try {
+      response.setContentType('text/tab-separated-values');
+      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
+      response.contentType = "text/tab-separated-values" // "text/tsv"
+
+      def out = response.outputStream
+      out.withWriter { writer ->
+
+        def sanitize = { it ? "${it}".trim() : "" }
+
+          // As per spec header at top of file / section
+          // II: Need to add in preceding_publication_title_id
+          writer.write('publication_title\t'+
+                       'print_identifier\t'+
+                       'online_identifier\t'+
+                       'date_first_issue_online\t'+
+                       'num_first_vol_online\t'+
+                       'num_first_issue_online\t'+
+                       'date_last_issue_online\t'+
+                       'num_last_vol_online\t'+
+                       'num_last_issue_online\t'+
+                       'title_url\t'+
+                       'first_author\t'+
+                       'title_id\t'+
+                       'embargo_info\t'+
+                       'coverage_depth\t'+
+                       'coverage_notes\t'+
+                       'publisher_name\t'+
+                       'preceding_publication_title_id\t'+
+                       'date_monograph_published_print\t'+
+                       'date_monograph_published_online\t'+
+                       'monograph_volume\t'+
+                       'monograph_edition\t'+
+                       'first_editor\t'+
+                       'parent_publication_title_id\t'+
+                       'publication_type\t'+
+                       'access_type\n');
+
+          // scroll(ScrollMode.FORWARD_ONLY)
+          def session = sessionFactory.getCurrentSession()
+          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
+          query.setReadOnly(true)
+          query.setParameter('p',pkg.id, Hibernate.LONG)
+
+
+          ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
+
+          while (tipps.next()) {
+            def tipp_id = tipps.get(0);
+
+              TitleInstancePackagePlatform.withNewSession {
+                def tipp = TitleInstancePackagePlatform.get(tipp_id)
+                writer.write(
+                            sanitize( tipp.title.name ) + '\t' +
+                            sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
+                            sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                            sanitize( tipp.startDate ) + '\t' +
+                            sanitize( tipp.startVolume ) + '\t' +
+                            sanitize( tipp.startIssue ) + '\t' +
+                            sanitize( tipp.endDate ) + '\t' +
+                            sanitize( tipp.endVolume ) + '\t' +
+                            sanitize( tipp.endIssue ) + '\t' +
+                            sanitize( tipp.url ) + '\t' +
+                            '\t'+  // First Author
+                            sanitize( tipp.title.id ) + '\t' +
+                            sanitize( tipp.embargo ) + '\t' +
+                            sanitize( tipp.coverageDepth ) + '\t' +
+                            sanitize( tipp.coverageNote ) + '\t' +
+                            sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
+                            sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
+                            '\t' +  // date_monograph_published_print
+                            '\t' +  // date_monograph_published_online
+                            '\t' +  // monograph_volume
+                            '\t' +  // monograph_edition
+                            '\t' +  // first_editor
+                            '\t' +  // parent_publication_title_id
+                            sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
+                            sanitize( tipp.paymentType?.value ) +  // access_type
+                            '\n');
+                tipp.discard();
+              }
+          }
+
+          tipps.close()
+
+          writer.flush();
+          writer.close();
+        }
+      out.close()
+    }
+    catch ( Exception e ) {
+      log.error("Problem with export",e);
+    }
+  }
 
 }

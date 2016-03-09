@@ -5,12 +5,18 @@ import grails.plugins.springsecurity.Secured
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import grails.converters.JSON
+import org.hibernate.ScrollMode
+import org.hibernate.ScrollableResults
+import org.hibernate.type.*
+import org.hibernate.Hibernate
+
 
 class WorkflowController {
 
   def grailsApplication
   def genericOIDService
   def springSecurityService
+  def sessionFactory
 
   def actionConfig = [
     'method::deleteSoft':[actionType:'simple'],
@@ -1113,6 +1119,7 @@ class WorkflowController {
   }
 
 
+  // @Transactional(readOnly = true)
   private def packageKBartExport(packages_to_export) {
     def filename = null;
 
@@ -1169,13 +1176,26 @@ class WorkflowController {
                        'publication_type\t'+
                        'access_type\n');
 
+          // scroll(ScrollMode.FORWARD_ONLY)
+          // def session = sessionFactory.getCurrentSession()
+          // def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
+          // query.setReadOnly(true)
+          // query.setParameter('p',pkg.id, Hibernate.LONG)
+          // query.setParameter('s':'Deleted',StringType.class)
+          // query.setParameter('c':'Package.Tipps',StringType.class)
+
           def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
-                         [pkg, 'Deleted', 'Package.Tipps']);
+                         [pkg, 'Deleted', 'Package.Tipps'],[readOnly: true, fetchSize: 30]);
 
 
 
           tipps.each { tipp_id ->
+
+          // ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
+
+          // while (tipps.next()) {
+          //   Object tipp_id = tipps.get(0);
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
             writer.write(
                           sanitize( tipp.title.name ) + '\t' +
@@ -1207,6 +1227,7 @@ class WorkflowController {
             tipp.discard();
           }
         }
+        tipps.close()
 
         writer.flush();
         writer.close();
