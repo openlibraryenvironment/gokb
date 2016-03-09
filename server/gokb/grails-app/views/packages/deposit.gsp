@@ -44,17 +44,25 @@
       <h1>Manual Package Deposit</h1>
       <g:form controller="packages" action="deposit" enctype="multipart/form-data">
         <dt>Deposit file:</dt><dd> <input type="file" name="content"/></dd>
-        <dt>Source:</dt><dd> <input type="text" name="source"/></dd>
-        <dt>Format:</dt><dd> <input type="text" name="fmt"/></dd>
-        <dt>Package Name:</dt><dd> <input type="text" name="pkg"/></dd>
-        <dt>Platform Url:</dt><dd> <input type="text" name="platformUrl"/></dd>
-        <dt>Format:</dt><dd> <input type="text" name="format"/></dd>
-        <dt>Provider Name:</dt><dd> <input type="text" name="providerName"/></dd>
-        <dt>Title Id Namespace:</dt><dd> <input type="text" name="providerIdentifierNamespace"/></dd>
-        <dt>Reprocess:</dt><dd> <input type="text" name="reprocess"/></dd>
-        <dt>Incremental:</dt><dd> <input type="text" name="incremental"/></dd>
-        <dt>Synchronous:</dt><dd> <input type="text" name="synchronous"/></dd>
-        <dt>Flags:</dt><dd> <input type="text" name="flags"/></dd>
+        <dt>Source:</dt><dd> <input type="text" name="source" value="${params.source?:'CUFTS'}"/></dd>
+        <dt>Format:</dt>
+        <dd> 
+          <select name="fmt">
+            <option value="kbart2">KBART</option>
+            <g:each in="${grailsApplication.config.kbart2.mappings}" var="k,v">
+              <option value="${k}">${k}</option>
+            </g:each>
+          </select>
+        </dd>
+        <dt>Package Name:</dt><dd> <input type="text" name="pkg" value="${params.pkg}"/></dd>
+        <dt>Platform Url:</dt><dd> <input type="text" name="platformUrl" value="${params.platformUrl}"/></dd>
+        <dt>Return Format:</dt><dd> <input type="text" name="format" value="${params.format?:'html'}"/></dd>
+        <dt>Provider Name:</dt><dd> <input type="text" name="providerName" value="${params.providerName}"/></dd>
+        <dt>Title Id Namespace:</dt><dd> <input type="text" name="providerIdentifierNamespace" value="${params.providerIdentifierNamespace}"/></dd>
+        <dt>Reprocess:</dt><dd> <input type="text" name="reprocess" value="${params.reporocess?:'Y'}"/></dd>
+        <dt>Incremental:</dt><dd> <input type="text" name="incremental" value="${params.incremental?:'N'}"/></dd>
+        <dt>Synchronous:</dt><dd> <input type="text" name="synchronous" value="${params.synchronous?:'Y'}"/></dd>
+        <dt>Flags:</dt><dd> <input type="text" name="flags" value="${params.flags}"/></dd>
         
         <button type="submit">Submit</button>
       </g:form>

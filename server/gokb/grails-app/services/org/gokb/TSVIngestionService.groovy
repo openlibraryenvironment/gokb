@@ -624,10 +624,13 @@ class TSVIngestionService {
     def datafile = DataFile.read(datafile_id)
     log.debug("Got Datafile");
 
-    def kbart_cfg = grailsApplication.config.kbart2.mappings[packageType?.toString()]
-    log.debug("Looking up config for ${packageType} : ${kbart_cfg ? 'Found' : 'Not Found'}");
+    def kbart_cfg = grailsApplication.config.kbart2.mappings[packageType?.value.toString()]
+    log.debug("Looking up config for ${packageType} ${packageType?.class.name} : ${kbart_cfg ? 'Found' : 'Not Found'}");
 
-    if ( kbart_cfg == null ) {
+    if ( packageType.value.equals('kbart2') ) {
+      log.debug("Processing as kbart2");
+    }
+    else if ( kbart_cfg == null ) {
       throw new RuntimeException("Unable to locate config information for package type ${packageType}. Registered types are ${grailsApplication.config.kbart2.mappings.keySet()}");
     }
 
@@ -696,7 +699,7 @@ class TSVIngestionService {
             def author_role = RefdataValue.get(author_role_id)
             def editor_role = RefdataValue.get(editor_role_id)
 
-            log.debug("\n\n**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
+            log.debug("**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
             long rowStartTime=System.currentTimeMillis()
 

@@ -181,7 +181,7 @@ class PackagesController {
           def upload_filename = request.getFile("content")?.getOriginalFilename()
           def new_datafile_id = null
   
-          log.debug("Multipart")
+          log.debug("Multipart ${upload_mime_type} ${upload_filename}")
   
           if ( upload_mime_type &&
                upload_filename &&
@@ -293,7 +293,6 @@ class PackagesController {
       log.debug("Waiting for job to complete");
       result.jobResult = background_job.get()
     }
-
 
     withFormat {
       html result
