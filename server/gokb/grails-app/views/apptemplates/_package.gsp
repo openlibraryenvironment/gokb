@@ -6,6 +6,7 @@
     <dd>
       ${d.name}
       <g:if test="${ editable }">(Modify name through variants below)</g:if>
+      <g:link controller="packages" action="kbart" id="${d.id}">Public KBart</g:link>
     </dd>
 
     <dt>

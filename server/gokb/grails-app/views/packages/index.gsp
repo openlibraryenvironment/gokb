@@ -55,7 +55,10 @@
             <tbody>
               <g:each in="${hits}" var="hit">
                 <tr>
-                  <td><g:link controller="packages" action="packageContent" id="${hit.source._id}">${hit.source.name}</g:link></td>
+                  <td>
+                      <g:link controller="packages" action="packageContent" id="${hit.source._id}">${hit.source.name}</g:link>
+                      <g:link controller="packages" action="kbart" id="${hit.source._id}">(Public KBart)</g:link>
+                  </td>
                   <td></td>
                   <td></td>
                   <td></td>
