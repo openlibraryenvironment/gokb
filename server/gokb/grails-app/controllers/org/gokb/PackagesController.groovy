@@ -279,7 +279,13 @@ class PackagesController {
             log.error("Missing parameters :: ${params}");
           }
         }
+        else {
+          log.error("Not multipart");
+        }
       }
+    }
+    else {
+      log.debug("Get");
     }
 
 

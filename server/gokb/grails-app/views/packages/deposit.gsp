@@ -42,7 +42,7 @@
       <div class="col-lg-6">
 
       <h1>Manual Package Deposit</h1>
-      <g:form controller="packages" action="deposit">
+      <g:form controller="packages" action="deposit" enctype="multipart/form-data">
         <dt>Deposit file:</dt><dd> <input type="file" name="content"/></dd>
         <dt>Source:</dt><dd> <input type="text" name="source"/></dd>
         <dt>Format:</dt><dd> <input type="text" name="fmt"/></dd>
