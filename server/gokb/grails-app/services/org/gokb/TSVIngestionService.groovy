@@ -640,7 +640,8 @@ class TSVIngestionService {
                      identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
                      defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
                      providerIdentifierNamespace:providerIdentifierNamespace,
-                     inconsistent_title_id_behavior:'reject'
+                     inconsistent_title_id_behavior:'reject',
+                     quoteChar:'"'
                    ]
     }
 
