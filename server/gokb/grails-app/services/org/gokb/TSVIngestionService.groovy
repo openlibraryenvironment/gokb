@@ -761,6 +761,9 @@ class TSVIngestionService {
         if ( badrows.size() > 0 ) {
           def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
           job.message([timestam:System.currentTimeMillis(), message:msg, event:'BadRows', count:badrows.size()])
+          badrows.each {
+            job.message(it)
+          }
         }
  
         long processing_elapsed = System.currentTimeMillis()-startTime
@@ -939,12 +942,12 @@ class TSVIngestionService {
             }
           }
           else {
-            badrows.add([rowdata:the_kbart, reasons: 'Unable to lookup or create title']);
+            badrows.add([rowdata:the_kbart, message: 'Unable to lookup or create title']);
           }
         }
         else {
           log.debug("Skipping row - no identifiers")
-          badrows.add([rowdata:the_kbart, reasons: 'No usable identifiers']);
+          badrows.add([rowdata:the_kbart,message: 'No usable identifiers']);
         }
 
     } else {
@@ -1436,7 +1439,7 @@ class TSVIngestionService {
 
     if ( !result ) {
       log.error("Recording bad row : ${reasons}");
-      badrows.add([rowdata:row_data, reasons: reasons]);
+      badrows.add([rowdata:row_data,message: reasons]);
     }
 
     return result
