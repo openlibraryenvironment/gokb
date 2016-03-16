@@ -27,6 +27,21 @@ class ConcurrencyManagerService {
     private Closure work
     boolean begun = false;
     String description
+    List messages = []
+
+    public message(String message) {
+      log.debug(message);
+      messages.add([timestamp:System.currentTimeMillis(), message:message]);
+    }
+
+    public message(Map message) {
+      log.debug(message);
+      messages.add(message)
+    }
+
+    public getMessages() {
+      return messages
+    }
 
     /**
      * Cancel the job.

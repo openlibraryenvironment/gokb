@@ -22,12 +22,22 @@
     <tbody>
       <g:each in="${jobs}" var="k,v">
         <tr class="${k==params.highlightJob?'highlightRow':''}">
-          <td>${k}</td>
+          <td rowspan="2">${k}</td>
           <td>${v.description}</td>
           <td>${v.begun}</td>
           <td>${v.startTime}</td>
           <td>${v.endTime}</td>
           <td>${v.progress}</td>
+        </tr>
+        <tr>
+          <td colspan="5">
+            messages: 
+            <ul>
+              <g:each in="${v.messages}" var="m">
+                <li>${m.timestamp} ${m.message}</li>
+              </g:each>
+            </ul>
+          </td>
         </tr>
       </g:each>
     </tbody>

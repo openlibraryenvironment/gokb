@@ -759,17 +759,17 @@ class TSVIngestionService {
 
         if ( badrows.size() > 0 ) {
           def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
-          log.debug(msg)
-          result.messages.add([event:'BadRows',msg:msg, count:badrows.size()])
+          job.message([timestam:System.currentTimeMillis(), message:msg, event:'BadRows', count:badrows.size()])
         }
  
         long processing_elapsed = System.currentTimeMillis()-startTime
         def average_milliseconds_per_row = kbart_beans.size() > 0 ? processing_elapsed.intdiv(kbart_beans.size()) : 0;
         // 3600 seconds in an hour, * 1000ms in a second
         def average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv( average_milliseconds_per_row ) : 0;
-        result.messages.add([
+        job.message([
+                             timestamp:System.currentTimeMillis(),
                              event:'ProcessingComplete',
-                             msg:"Processing Complete",
+                             message:"Processing Complete : numRows:${kbart_beans.size()}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}",
                              numRows:kbart_beans.size(),
                              averagePerRow:average_milliseconds_per_row,
                              averagePerHour:average_per_hour,
@@ -781,7 +781,7 @@ class TSVIngestionService {
         preflight_result.source = source.id
 
         // Preflight failed
-        log.error("Failed preflight");
+        job.message("Failed Preflight");
 
         // Raise a review request against the datafile
         def preflight_json = preflight_result as JSON
@@ -798,11 +798,12 @@ class TSVIngestionService {
               componentToReview:writeable_datafile
               ).save(flush:true, failOnError:true)
 
-          result.messages.add([event:'FailedPreflight',msg:"Failed Preflight, see review request ${req.id}"]);
+          job.message([timestamp:System.currentTimeMillis(),event:'FailedPreflight',message:"Failed Preflight, see review request ${req.id}"]);
         }
       }
     }
     catch ( Exception e ) {
+      job.message(e.toString());
       log.error("Problem",e)
     }
 
@@ -810,9 +811,9 @@ class TSVIngestionService {
 
     def elapsed = System.currentTimeMillis()-start_time;
 
-    result.messages.add([event:'Complete',msg:"Ingest completed after ${elapsed}ms"]);
+    job.message("Ingest completed after ${elapsed}ms");
 
-    log.debug("Ingest2 returning ${result}")
+    job.message("Ingest2 returning ${result}")
     result
   }
 
