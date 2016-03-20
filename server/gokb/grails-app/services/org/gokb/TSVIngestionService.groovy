@@ -779,6 +779,10 @@ class TSVIngestionService {
                              averagePerHour:average_per_hour,
                              elapsed:processing_elapsed
                             ]);
+
+
+        Package.executeUpdate('update Package p set p.lastUpdateComment=:uc where p.id=:pid',
+                            [uc:"Direct ingest of file:${datafile.name}[${datafile.id}]", pid:the_package_id]);
       }
       else {
 
@@ -805,6 +809,7 @@ class TSVIngestionService {
           job.message([timestamp:System.currentTimeMillis(),event:'FailedPreflight',message:"Failed Preflight, see review request ${req.id}"]);
         }
       }
+
     }
     catch ( Exception e ) {
       job.message(e.toString());
@@ -812,6 +817,7 @@ class TSVIngestionService {
     }
 
     job?.setProgress(100)
+
 
     def elapsed = System.currentTimeMillis()-start_time;
 
