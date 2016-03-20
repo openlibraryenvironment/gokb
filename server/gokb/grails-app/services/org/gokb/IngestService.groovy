@@ -538,17 +538,21 @@ class IngestService {
             tipp.save(failOnError:true, flush:true)
             
             // If we have them we should compare TIPP dates with those of the TI.
+
+            // Tipp start date should not be before publishedFrom date on the title
             boolean date_diff
             Date tipp_date = tipp.startDate
-            Date ti_date = title_info.publishedTo
+            Date ti_date = title_info.publishedFrom
             if (tipp_date != null && ti_date != null) {
+              // Compare the title date to the tipp date. It should be before - so the result should be positive or zero
               int diff = ti_date.compareTo(tipp_date)
               date_diff = (diff > 0)
               preDates = (date_diff ? tipp.id : -1)
             }
 
+            // Tipp end date should not be after the publishedTo date on the title
             tipp_date = tipp.endDate
-            ti_date = title_info.publishedFrom
+            ti_date = title_info.publishedTo
             if (tipp_date != null && ti_date != null) {
               int diff = ti_date.compareTo(tipp_date)
               date_diff = (diff < 0)
@@ -570,6 +574,25 @@ class IngestService {
 
             skipped_titles << val.toString()
           }
+
+          if (preDates > -1) {
+            // Raise end date conflict.
+            ReviewRequest.raise(
+                TitleInstancePackagePlatform.get(preDates),
+                "TIPP start date(${tipp.startDate}) pre-dates that of the related Title(${title_info.publishedFrom})",
+                "The TIPP declares a start date that occurs before the start date of its title. Please review the dates.",
+                user, project
+                )
+          }
+
+          if (postDates > -1) {
+            ReviewRequest.raise(
+                TitleInstancePackagePlatform.get(postDates),
+                "TIPP end date (${tipp.endDate}) post-dates that of the related Title(${title_info.publishedTo})",
+                "The TIPP declares an end date that occurs after the end date of its title. Please review the dates.",
+                user, project
+                )
+          }
         }
         catch ( Exception e ) {
           log.error("Row level exception",e)
@@ -579,25 +602,7 @@ class IngestService {
           status.setRollbackOnly()
           return false
         }
-      }
       
-      if (preDates > -1) {
-        // Raise end date conflict.
-        ReviewRequest.raise(
-            TitleInstancePackagePlatform.get(preDates),
-            "TIPP start date pre-dates that of the related Title",
-            "The TIPP declares a start date that occurs before the start date of its title. Please review the dates.",
-            user, project
-            )
-      }
-
-      if (postDates > -1) {
-        ReviewRequest.raise(
-            TitleInstancePackagePlatform.get(postDates),
-            "TIPP end date post-dates that of the related Title",
-            "The TIPP declares an end date that occurs after the end date of its title. Please review the dates.",
-            user, project
-            )
       }
     }
     
