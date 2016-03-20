@@ -37,7 +37,9 @@ class PackagesController {
     log.debug("packageContent::${params}")
     def result = [:]
     if ( params.id ) {
-      result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id=?',[Long.parseLong(params.id)])
+      def pkg_id_components = params.id.split(':');
+      def pkg_id = pkg_id_components[1]
+      result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id=?',[Long.parseLong(pkg_id)])
       result.pkgId = result.pkgData[0][0]
       result.pkgName = result.pkgData[0][1]
       log.debug("Tipp qry name: ${result.pkgName}");
@@ -356,7 +358,7 @@ class PackagesController {
   // @Transactional(readOnly = true)
   def kbart() {
 
-    def pkg = Package.get(params.id)
+    def pkg = genericOIDService.resolveOID(params.id)
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
     def export_date = sdf.format(new java.util.Date());
