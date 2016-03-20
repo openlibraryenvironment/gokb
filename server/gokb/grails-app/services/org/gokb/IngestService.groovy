@@ -335,17 +335,14 @@ class IngestService {
           if (tipp.isCurrent()) {
             ReviewRequest.raise(
                 tipp,
-                "TIPP Not present when performing package update",
+                "TIPP[${tipp.id}] for \"${tipp.title.name}\" in package [${tipp.package.id}] \"${tipp.package.name}\" - Not present in file when performing package update",
                 "This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
                 user, project
                 )
-
             // Save.
             tipp.save(failOnError:true, flush:true)
             log.debug ("Raised review request for TIPP ${tipp_id}.")
-
           } else {
-
             // Ignoring this title as it's not a current TIPP.
             log.debug ("Ignoring TIPP ${tipp_id} as it's not marked as a Current.")
           }
