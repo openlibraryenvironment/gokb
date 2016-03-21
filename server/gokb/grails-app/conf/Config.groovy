@@ -1422,6 +1422,20 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'UserWatchedComponents':[
+    baseclass:'org.gokb.cred.ComponentWatch',
+    title:'My Components',
+    group:'Tertiary',
+    qbeConfig:[
+      qbeForm:[
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'component.name', link:[controller:'resource',action:'show',id:'x.r.component.class.name+\':\'+x.r.component.id'] ],
+      ]
+    ]
+  ],
 ]
 
 
