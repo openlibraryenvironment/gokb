@@ -138,6 +138,17 @@ class BootStrap {
       }
     }
 
+    log.info("GoKB missing normalised identifiers");
+    Identifier.withTransaction() {
+      Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
+        Identifier.withNewTransaction {
+          Identifier i = Identifier.get(id_id)
+          i.generateNormname()
+          i.save(flush:true, failOnError:true)
+          i.discard()
+        }
+      }
+    }
 
     log.info("GoKB defaultSortKeys()");
     KBComponent.withTransaction() {
