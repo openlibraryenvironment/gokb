@@ -9,7 +9,8 @@ class Org extends KBComponent {
 
   def availableActions() {
     [
-      [code:'org::deprecate', label:'Deprecate This Org Record'],
+      [code:'org::deprecateReplace', label:'Deprecate And Replace'],
+      [code:'method::deprecateDelete', label:'Deprecate And Delete'],
       // [code:'title::reconcile', label:'Title Reconcile']
     ]
   }
@@ -225,5 +226,13 @@ class Org extends KBComponent {
         }
       }
     }
+  }
+
+  def deprecateDelete(context) {
+    log.debug("deprecateDelete");
+    def result=[:]
+    Combo.executeUpdate("delete from Combo where toComponent.id = ?",[this.getId()]);
+    Combo.executeUpdate("delete from Combo where fromComponent.id = ?",[this.getId()]);
+    result
   }
 }
