@@ -127,6 +127,7 @@ class BootStrap {
     
     log.info("GoKB missing normalised component names");
     KBComponent.withTransaction() {
+      def ctr = 0;
       KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
         KBComponent.withNewTransaction {
           KBComponent kbc = KBComponent.get(kbc_id)
@@ -134,20 +135,25 @@ class BootStrap {
           kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
           kbc.save();
           kbc.discard()
+          ctr++
         }
       }
+      log.debug("${ctr} components updated");
     }
 
     log.info("GoKB missing normalised identifiers");
     Identifier.withTransaction() {
+      def ctr = 0;
       Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
         Identifier.withNewTransaction {
           Identifier i = Identifier.get(id_id)
           i.generateNormname()
           i.save(flush:true, failOnError:true)
           i.discard()
+          ctr++
         }
       }
+      log.debug("${ctr} identifiers updated");
     }
 
     log.info("GoKB defaultSortKeys()");
