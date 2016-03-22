@@ -1428,8 +1428,15 @@ globalSearchTemplates = [
     group:'Tertiary',
     qbeConfig:[
       qbeForm:[
+        [
+          prompt:'Component Name',
+          qparam:'qp_name',
+          placeholder:'Name or title of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
+        ],
       ],
       qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'user.id', 'comparator' : 'eq', 'value':'__USERID', 'default':'on', 'qparam':'qp_user', 'type':'java.lang.Long', 'hidden':true]
       ],
       qbeResults:[
         [heading:'Name', property:'component.name', link:[controller:'resource',action:'show',id:'x.r.component.class.name+\':\'+x.r.component.id'] ],
