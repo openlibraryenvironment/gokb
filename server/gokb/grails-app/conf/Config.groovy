@@ -1432,7 +1432,7 @@ globalSearchTemplates = [
           prompt:'Component Name',
           qparam:'qp_name',
           placeholder:'Name or title of item',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'component.name','wildcard':'R']
         ],
       ],
       qbeGlobals:[
