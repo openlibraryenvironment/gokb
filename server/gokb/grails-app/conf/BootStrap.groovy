@@ -132,7 +132,8 @@ class BootStrap {
         KBComponent.withNewTransaction {
           KBComponent kbc = KBComponent.get(kbc_id)
           log.debug("Repair component with no normalised name.. ${kbc.id} ${kbc.name}");
-          kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
+          kbc.generateNormname()
+          // kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
           kbc.save();
           kbc.discard()
           ctr++
