@@ -1,3 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="layout" content="sb-admin" />
+<title>GOKb: File Upload</title>
+</head>
+<body>
+
+
+
 <h3>Saved Items</h3>
 <hr/>
 <div class="container">
@@ -18,3 +28,5 @@
   </div>
 </div>
 
+</body>
+</html>

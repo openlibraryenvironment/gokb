@@ -100,8 +100,7 @@
                 <li><g:link controller="create" action="index" params="${[tmpl:'org.gokb.cred.Territory']}">Territory</g:link></li>
               </sec:ifAnyGranted>
             </ul></li>
-          <li class="dropdown"><a href="#" class="dropdown-toggle"
-            data-toggle="dropdown">ToDo</a>
+          <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">ToDo</a>
             <ul class="dropdown-menu">
               <li><g:link controller="search" action="index"
                   params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">My ToDos</g:link></li>

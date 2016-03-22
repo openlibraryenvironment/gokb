@@ -53,8 +53,15 @@
                   data-toggle="dropdown" >Save <span class="caret"></span></button>
           <ul id="savePopupForm" class="dropdown-menu pull-right well" role="menu" style="width: 400px;">
             <li>
-              <h5>Save Search</h5>
-              Save As : <input type="text" name="searchName"/> <input class="btn btn-success btn-sm" type="submit" name="searchAction" value="save"/>
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h3 class="panel-title">Save Search</h3>
+                </div>
+                <div class="panel-body">
+                  Save As : <input type="text" name="searchName"/> <input class="btn btn-success btn-sm" type="submit" name="searchAction" value="save"/>
+                </div>
+              </div>
+
             </li>
           </ul>
         </div>
