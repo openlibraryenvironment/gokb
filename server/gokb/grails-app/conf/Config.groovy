@@ -1440,7 +1440,10 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name', property:'component.name', link:[controller:'resource',action:'show',id:'x.r.component.class.name+\':\'+x.r.component.id'] ],
-        [heading:'Type', property:'component.getNiceName()']
+        [heading:'Type', property:'component.getNiceName()'],
+        [heading:'Last Update on', property:'component.lastUpdated'],
+        [heading:'Last Update by', property:'component.lastUpdatedBy?.displayName'],
+        [heading:'Source', property:'component.lastUpdateComment']
       ]
     ]
   ],
