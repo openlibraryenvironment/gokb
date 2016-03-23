@@ -332,10 +332,10 @@ class IngestService {
           // Ensure the tipp is in this transaction.
           TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
-          if (tipp.isCurrent()) {
+          if (tipp && tipp.isCurrent()) {
             ReviewRequest.raise(
                 tipp,
-                "TIPP[${tipp.id}] for \"${tipp.title.name}\" in package [${tipp.package.id}] \"${tipp.package.name}\" - Not present in file when performing package update",
+                "TIPP[${tipp.getId()}] for \"${tipp.title?.name}\" in package [${tipp.package?.getId()}] \"${tipp.package?.name}\" - Not present in file when performing package update",
                 "This TIPP was not present when ingesting a package update. Please check to see if it should be deleted",
                 user, project
                 )
@@ -344,7 +344,7 @@ class IngestService {
             log.debug ("Raised review request for TIPP ${tipp_id}.")
           } else {
             // Ignoring this title as it's not a current TIPP.
-            log.debug ("Ignoring TIPP ${tipp_id} as it's not marked as a Current.")
+            log.debug ("Ignoring TIPP ${tipp_id} as it's not marked as a Current or the lookup returned null.")
           }
         }
       }
@@ -361,7 +361,9 @@ class IngestService {
       
       RefineProject project = RefineProject.get(project_id)
       if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE,recon_data) ) {
+
         try {
+
           def ids = []
           for (ai in identifiers) {
             // The value.
@@ -556,6 +558,25 @@ class IngestService {
               postDates = (date_diff ? tipp.id : -1)
             }
 
+            if (preDates > -1) {
+              // Raise end date conflict.
+              ReviewRequest.raise(
+                  TitleInstancePackagePlatform.get(preDates),
+                  "TIPP start date(${tipp.startDate}) pre-dates that of the related Title(${title_info.publishedFrom})",
+                  "The TIPP declares a start date that occurs before the start date of its title. Please review the dates.",
+                  user, project
+                  )
+            }
+
+            if (postDates > -1) {
+              ReviewRequest.raise(
+                  TitleInstancePackagePlatform.get(postDates),
+                  "TIPP end date (${tipp.endDate}) post-dates that of the related Title(${title_info.publishedTo})",
+                  "The TIPP declares an end date that occurs after the end date of its title. Please review the dates.",
+                  user, project
+                  )
+            }
+
           } else {
 
             // Skip this row. Need to log this and save against the project.
@@ -572,24 +593,6 @@ class IngestService {
             skipped_titles << val.toString()
           }
 
-          if (preDates > -1) {
-            // Raise end date conflict.
-            ReviewRequest.raise(
-                TitleInstancePackagePlatform.get(preDates),
-                "TIPP start date(${tipp.startDate}) pre-dates that of the related Title(${title_info.publishedFrom})",
-                "The TIPP declares a start date that occurs before the start date of its title. Please review the dates.",
-                user, project
-                )
-          }
-
-          if (postDates > -1) {
-            ReviewRequest.raise(
-                TitleInstancePackagePlatform.get(postDates),
-                "TIPP end date (${tipp.endDate}) post-dates that of the related Title(${title_info.publishedTo})",
-                "The TIPP declares an end date that occurs after the end date of its title. Please review the dates.",
-                user, project
-                )
-          }
         }
         catch ( Exception e ) {
           log.error("Row level exception",e)
