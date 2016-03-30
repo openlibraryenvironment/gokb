@@ -460,4 +460,82 @@ class PackagesController {
     }
   }
 
+  def packageTSVExport() {
+
+
+    def filename = null;
+
+    if ( packages_to_export.size() == 0 )
+      return
+
+    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def export_date = sdf.format(new java.util.Date());
+
+    if ( packages_to_export.size() == 1 ) {
+      filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
+    }
+    else {
+      filename = "GOKb Export : multiple_packages : ${export_date}.tsv"
+    }
+
+    try {
+      response.setContentType('text/tab-separated-values');
+      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
+      response.contentType = "text/tab-separated-values" // "text/tsv"
+
+      def out = response.outputStream
+      out.withWriter { writer ->
+
+        def sanitize = { it ? "${it}".trim() : "" }
+
+
+          def pkg = genericOIDService.resolveOID(params.id)
+
+
+          // As per spec header at top of file / section
+          writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
+
+          writer.write('TIPP ID	TIPP URL	Title ID	Title	TIPP Status	[TI] Publisher	[TI] Imprint	[TI] Published From	[TI] Published to	[TI] Medium	[TI] OA Status	'+
+                     '[TI] Continuing series	[TI] ISSN	[TI] EISSN	Package	Package ID	Package URL	Platform	'+
+                     'Platform URL	Platform ID	Reference	Edit Status	Access Start Date	Access End Date	Coverage Start Date	'+
+                     'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
+                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
+
+          def query = TitleInstancePackagePlatform.createQuery(
+                "select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent.id=:p  and tipp.status.value <> 'Deleted'  and c.type.value = 'Package.Tipps' order by tipp.id");
+          query.setReadOnly(true)
+          query.setParameter('p',pkg.id, Hibernate.LONG)
+
+          ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
+
+          while (tipps.next()) {
+
+            def tipp_id = tipps.get(0);
+
+            TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+
+            writer.write( sanitize( tipp.id ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.id ) + '\t' + sanitize( tipp.title.name ) + '\t' +
+                          sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
+                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
+                          sanitize( tipp.title.continuingSeries?.value ) + '\t' +
+                          sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
+                          sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                          sanitize( pkg.name ) + '\t' + sanitize( pkg.id ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
+                          sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.id ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
+                          sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
+                          sanitize( tipp.endVolume ) + '\t' + sanitize( tipp.endIssue ) + '\t' + sanitize( tipp.embargo ) + '\t' + sanitize( tipp.coverageNote ) + '\t' + sanitize( tipp.hostPlatform.primaryUrl ) + '\t' +
+                          sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) +
+                          '\n');
+            tipp.discard();
+          }
+        }
+
+        writer.flush();
+        writer.close();
+      out.close()
+    }
+    catch ( Exception e ) {
+      log.error("Problem with export",e);
+    }
+  }
 }
