@@ -117,6 +117,14 @@ GOKb.contextMenu = {
         "gokb-lookup-imprint" : {
           name: "Imprint",
           callback: function () {
+            
+            var lookupProps;
+            if (GOKb.contextMenu.niceNames()) {
+              lookupProps = ["variantNames.variantName:Variant"];
+            } else {
+              lookupProps = ["variantNames.variantName"];
+            }
+            
             GOKb.handlers.lookup (
               GOKb.contextMenu.getTarget(),
               "imprint",
