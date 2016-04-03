@@ -781,8 +781,9 @@ class TSVIngestionService {
                             ]);
 
 
-        Package.executeUpdate('update Package p set p.lastUpdateComment=:uc where p.id=:pid',
-                            [uc:"Direct ingest of file:${datafile.name}[${datafile.id}]", pid:the_package_id]);
+        def update_agent = User.findByUsername('IngestAgent')
+        Package.executeUpdate('update Package p set p.lastUpdateComment=:uc, p.lastUpdatedBy=:updateAgent where p.id=:pid',
+                            [uc:"Direct ingest of file:${datafile.name}[${datafile.id}]", pid:the_package_id, updateAgent:update_agent]);
       }
       else {
 

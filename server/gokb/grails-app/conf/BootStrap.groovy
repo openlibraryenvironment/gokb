@@ -80,6 +80,18 @@ class BootStrap {
             enabled: true).save(failOnError: true)
       }
 
+      def ingestAgent = User.findByUsername('IngestAgent')
+      if ( ! ingestAgent ) {
+        log.error("No ingestAgent user found, create")
+        ingestAgent = new User(
+            username: 'ingestAgent',
+            password: 'ingestAgent',
+            display: 'Ingest Agent',
+            email: '',
+            enabled: false).save(failOnError: true)
+      }
+
+
       // Make sure admin user has all the system roles.
       [contributorRole,userRole,editorRole,adminRole,apiRole,suRole,refineUserRole,refineTesterRole].each { role ->
         if (!adminUser.authorities.contains(role)) {
