@@ -31,7 +31,7 @@ class WorkflowController {
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
-    'method::deprecateDelete':[actionType:'simple']
+    'method::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
