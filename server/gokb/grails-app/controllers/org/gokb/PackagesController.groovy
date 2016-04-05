@@ -463,20 +463,12 @@ class PackagesController {
   def packageTSVExport() {
 
 
-    def filename = null;
+    def pkg = genericOIDService.resolveOID(params.id)
 
-    if ( packages_to_export.size() == 0 )
-      return
+    if ( pkg == null )
+      return;
 
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new java.util.Date());
-
-    if ( packages_to_export.size() == 1 ) {
-      filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
-    }
-    else {
-      filename = "GOKb Export : multiple_packages : ${export_date}.tsv"
-    }
+    def filename = "GoKBPackage-${params.id}.tsv";
 
     try {
       response.setContentType('text/tab-separated-values');
@@ -489,7 +481,6 @@ class PackagesController {
         def sanitize = { it ? "${it}".trim() : "" }
 
 
-          def pkg = genericOIDService.resolveOID(params.id)
 
 
           // As per spec header at top of file / section

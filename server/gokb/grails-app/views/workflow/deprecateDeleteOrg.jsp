@@ -20,6 +20,7 @@
       <h3 class="panel-title">Remove Org from all Titles</h3>
     </div>
       <g:form name="DeprecateOrg" controller="workflow" action="deprecateDeleteOrg" method="post">
+        <input type="hidden" name="orgsToDeprecate" value="${o.id}"/>
         <div class="row">
           <div class="col-md-12">
             <button class="btn btn-success" type="submit">Confirm :: Remove this org from all titles</button>

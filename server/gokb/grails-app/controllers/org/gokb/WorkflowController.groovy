@@ -1372,6 +1372,15 @@ class WorkflowController {
     result
   }
 
+  def deprecateDeleteOrg() {
+    def result=[:]
+    def o = Org.get(params.orgsToDeprecate)
+    if ( o ) {
+      o.deprecateDelete()
+    }
+    result
+  }
+
   def deleteCombo() {
     Combo c = Combo.get(params.id);
     c.delete();
