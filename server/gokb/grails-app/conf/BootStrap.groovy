@@ -80,7 +80,7 @@ class BootStrap {
             enabled: true).save(failOnError: true)
       }
 
-      def ingestAgent = User.findByUsername('IngestAgent')
+      def ingestAgent = User.findByUsername('ingestAgent')
       if ( ! ingestAgent ) {
         log.error("No ingestAgent user found, create")
         ingestAgent = new User(
