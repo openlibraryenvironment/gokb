@@ -18,6 +18,9 @@
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
       <h3 class="panel-title">Step 1 of 1</h3>
+      <p>
+This action will replace the existing Publisher in all associated titles with the new Publisher selection
+      </p>
     </div>
     <div class="panel-body">
       <g:form name="DeprecateOrg" controller="workflow" action="deprecateOrg" method="post">

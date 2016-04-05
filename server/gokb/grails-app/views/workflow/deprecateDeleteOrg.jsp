@@ -18,6 +18,10 @@
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
       <h3 class="panel-title">Remove Org from all Titles</h3>
+      <p>
+This action will remove the Publisher name from all associated titles
+and leave the publisher name field empty.
+      </p>
     </div>
       <g:form name="DeprecateOrg" controller="workflow" action="deprecateDeleteOrg" method="post">
         <input type="hidden" name="orgsToDeprecate" value="${o.id}"/>
