@@ -49,7 +49,7 @@ class Identifier extends KBComponent {
     def namespaces = IdentifierNamespace.findAllByValue(ns.toLowerCase())
     switch ( namespaces.size() ) {
       case 0:
-        namespace = new IdentifierNamespace(value:ns).save(failOnError:true);
+        namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
         break;
       case 1:
         namespace = namespaces[0]
