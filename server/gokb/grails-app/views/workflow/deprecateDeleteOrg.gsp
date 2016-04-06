@@ -4,16 +4,15 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKb: Retire Org</title>
+<title>GOKb: Deprecate Org Transfer</title>
 </head>
 <body>
 
-  <h1 class="page-header">Deprecate Org -- Remove from all titles</h1>
+  <h1 class="page-header">Deprecate Org</h1>
 
   <g:if test='${flash.message}'>
     <div class='well'>${flash.message}</div>
   </g:if>
-
 
   <div id="mainarea" class="panel panel-default">
     <div class="panel-heading">
