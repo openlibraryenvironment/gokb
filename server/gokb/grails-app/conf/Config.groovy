@@ -191,6 +191,7 @@ identifiers = [
   // is found against a title but as an eISSN we still treat this as a match
   "cross_checks" : [
     ["issn", "eissn"],
+    ["eissn", "issn"],
   ],
 
   formatters : [
