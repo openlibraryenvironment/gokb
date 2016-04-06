@@ -212,11 +212,11 @@ class PackagesController {
               log.debug("Found a match !")
               if ( params.reprocess=='Y' ) {
                 log.debug("Located existing file, reprocess=Y, continuing");
-                new_datafile_id = existing_file.id
+                new_datafile_id = existing_file.getId()
               }
               else {
                 // redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
-                result.message="Datafile already present with internal id org.gokb.cred.DataFile:${existing_file.id}";
+                result.message="Datafile already present with internal id org.gokb.cred.DataFile:${existing_file.getId()}";
                 return
               }
             }
@@ -235,8 +235,8 @@ class PackagesController {
                 new_datafile.save(flush:true, failOnError:true)
   
   
-                log.debug("Saved new datafile : ${new_datafile.id}");
-                new_datafile_id = new_datafile.id
+                log.debug("Saved new datafile : ${new_datafile.getId()}");
+                new_datafile_id = new_datafile.getId()
               }
             }
   
@@ -274,7 +274,7 @@ class PackagesController {
   
             background_job.description="Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
             background_job.startOrQueue()
-            jobid = background_job.id
+            jobid = background_job.getId()
             log.debug("Background job started");
           }
           else {
@@ -407,7 +407,7 @@ class PackagesController {
           def session = sessionFactory.getCurrentSession()
           def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
           query.setReadOnly(true)
-          query.setParameter('p',pkg.id, Hibernate.LONG)
+          query.setParameter('p',pkg.get(id), Hibernate.LONG)
 
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
@@ -429,7 +429,7 @@ class PackagesController {
                             sanitize( tipp.endIssue ) + '\t' +
                             sanitize( tipp.url ) + '\t' +
                             '\t'+  // First Author
-                            sanitize( tipp.title.id ) + '\t' +
+                            sanitize( tipp.title.getId() ) + '\t' +
                             sanitize( tipp.embargo ) + '\t' +
                             sanitize( tipp.coverageDepth ) + '\t' +
                             sanitize( tipp.coverageNote ) + '\t' +
@@ -495,7 +495,7 @@ class PackagesController {
           def query = TitleInstancePackagePlatform.createQuery(
                 "select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent.id=:p  and tipp.status.value <> 'Deleted'  and c.type.value = 'Package.Tipps' order by tipp.id");
           query.setReadOnly(true)
-          query.setParameter('p',pkg.id, Hibernate.LONG)
+          query.setParameter('p',pkg.getId(), Hibernate.LONG)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
 
@@ -505,14 +505,14 @@ class PackagesController {
 
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
-            writer.write( sanitize( tipp.id ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.id ) + '\t' + sanitize( tipp.title.name ) + '\t' +
+            writer.write( sanitize( tipp.getId() ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.getId() ) + '\t' + sanitize( tipp.title.name ) + '\t' +
                           sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
                           sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
                           sanitize( tipp.title.continuingSeries?.value ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
-                          sanitize( pkg.name ) + '\t' + sanitize( pkg.id ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
-                          sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.id ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
+                          sanitize( pkg.name ) + '\t' + sanitize( pkg.getId() ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
+                          sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.getId() ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
                           sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
                           sanitize( tipp.endVolume ) + '\t' + sanitize( tipp.endIssue ) + '\t' + sanitize( tipp.embargo ) + '\t' + sanitize( tipp.coverageNote ) + '\t' + sanitize( tipp.hostPlatform.primaryUrl ) + '\t' +
                           sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) +
