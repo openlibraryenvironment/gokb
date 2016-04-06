@@ -1373,10 +1373,13 @@ class WorkflowController {
   }
 
   def deprecateDeleteOrg() {
+    log.debug("deprecateDeleteOrg ${params}");
     def result=[:]
-    def o = Org.get(params.orgsToDeprecate)
-    if ( o ) {
-      o.deprecateDelete()
+    if ( params.orgsToDeprecate  ) {
+      def o = Org.get(params.orgsToDeprecate)
+      if ( o ) {
+        o.deprecateDelete()
+      }
     }
     result
   }
