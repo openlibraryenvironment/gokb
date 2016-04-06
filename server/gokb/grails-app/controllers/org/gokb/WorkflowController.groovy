@@ -31,7 +31,7 @@ class WorkflowController {
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
-    'method::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg']
+    'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -1373,10 +1373,13 @@ class WorkflowController {
   }
 
   def deprecateDeleteOrg() {
+    log.debug("deprecateDeleteOrg ${params}");
     def result=[:]
-    def o = Org.get(params.orgsToDeprecate)
-    if ( o ) {
-      o.deprecateDelete()
+    if ( params.orgsToDeprecate  ) {
+      def o = Org.get(params.orgsToDeprecate)
+      if ( o ) {
+        o.deprecateDelete()
+      }
     }
     result
   }

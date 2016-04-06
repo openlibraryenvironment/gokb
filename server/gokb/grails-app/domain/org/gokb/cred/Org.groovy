@@ -10,7 +10,7 @@ class Org extends KBComponent {
   def availableActions() {
     [
       [code:'org::deprecateReplace', label:'Replace Publisher With...'],
-      [code:'method::deprecateDelete', label:'Remove Publisher name from title records...'],
+      [code:'org::deprecateDelete', label:'Remove Publisher name from title records...'],
       // [code:'title::reconcile', label:'Title Reconcile']
     ]
   }
