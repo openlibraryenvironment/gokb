@@ -562,7 +562,7 @@ class IngestService {
               // Raise end date conflict.
               ReviewRequest.raise(
                   TitleInstancePackagePlatform.get(preDates),
-                  "TIPP start date(${tipp.startDate}) pre-dates that of the related Title(${title_info.publishedFrom})",
+                  "TIPP \"${title_info.name}\"(${title_info.id}) start date(${tipp.startDate}) pre-dates that of the related Title(${title_info.publishedFrom})",
                   "The TIPP declares a start date that occurs before the start date of its title. Please review the dates.",
                   user, project
                   )
@@ -571,7 +571,7 @@ class IngestService {
             if (postDates > -1) {
               ReviewRequest.raise(
                   TitleInstancePackagePlatform.get(postDates),
-                  "TIPP end date (${tipp.endDate}) post-dates that of the related Title(${title_info.publishedTo})",
+                  "TIPP \"${title_info.name}\"(${title_info.id}) end date (${tipp.endDate}) post-dates that of the Title (${title_info.publishedTo})",
                   "The TIPP declares an end date that occurs after the end date of its title. Please review the dates.",
                   user, project
                   )
@@ -1233,13 +1233,16 @@ class IngestService {
 
       // Need to set the name to mirror the Identifier.
       pkg.name = new_identifier.value
+      pkg.lastUpdateComment = "Created by Refine ingest on ${new Date()}"
     }
     else {
+      pkg.lastUpdateComment = "Updated by Refine ingest on ${new Date()}"
       log.debug("Got existing package ${pkg.id}");
     }
 
     // Set the latest project.
     pkg.setLastProject(project)
+
 
     // Save and return
     pkg.save(failOnError:true, flush:true)
