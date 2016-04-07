@@ -450,6 +450,8 @@ class IngestService {
               pkg.setLastProject(project)
             }
 
+            pkg.lastUpdateComment = "Updated by Refine on ${new Date()}"
+
             // Save the Package changes.
             pkg.save(failOnError:true, flush:true)
 
