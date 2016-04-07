@@ -451,6 +451,7 @@ class IngestService {
             }
 
             pkg.lastUpdateComment = "Updated by Refine on ${new Date()}"
+            pkg.lastUpdatedBy = user
 
             // Save the Package changes.
             pkg.save(failOnError:true, flush:true)
@@ -1236,10 +1237,12 @@ class IngestService {
       // Need to set the name to mirror the Identifier.
       pkg.name = new_identifier.value
       pkg.lastUpdateComment = "Created by Refine ingest on ${new Date()}"
+      // pkg.lastUpdatedBy = user
     }
     else {
       pkg.lastUpdateComment = "Updated by Refine ingest on ${new Date()}"
       log.debug("Got existing package ${pkg.id}");
+      // pkg.lastUpdatedBy = user
     }
 
     // Set the latest project.
