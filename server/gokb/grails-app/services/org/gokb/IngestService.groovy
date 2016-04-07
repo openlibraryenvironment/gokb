@@ -301,6 +301,7 @@ class IngestService {
    * @param status
    */
   private void updateProjectStatus (long project_id, int progress, RefineProject.Status status = null) {
+    log.debug("UpdateProjectStatus");
     RefineProject.withNewSession { Session s ->
       s.beginTransaction()
         log.debug ("Trying to update the refine project in a new transaction.")
@@ -319,6 +320,7 @@ class IngestService {
         log.debug ("Updated the project.")
       s.getTransaction().commit()
     }
+    log.debug("leaving UpdateProjectStatus");
   }
 
   private handleNonePresentTipps(final old_tipps, user, project = null) {
@@ -451,7 +453,7 @@ class IngestService {
             }
 
             pkg.lastUpdateComment = "Updated by Refine on ${new Date()} ${user}"
-            // pkg.lastUpdatedBy = user
+            pkg.lastUpdatedBy = user
 
             // Save the Package changes.
             pkg.save(failOnError:true, flush:true)
@@ -697,9 +699,14 @@ class IngestService {
       
       // We want to handle a chunk of rows at a time.
       int chunk_size = 100
-      int chunk_count = (total / chunk_size) + (total % 25 == 0 ? -1 : 0)
+      int chunk_count = (total / chunk_size) + (total % chunk_size == 0 ? -1 : 0)
+
+      log.debug("Processing ${chunk_count} chunks");
       
       for (chunk_ctr in (0..chunk_count)) {
+
+        log.debug("process chunk ${chunk_ctr}");
+
         int end = ((chunk_ctr + 1) * chunk_size)
         end = (end > total ? total : end) - 1
         
@@ -714,6 +721,7 @@ class IngestService {
             if ( !addDatatRow(result, project_id, incremental, col_positions, identifiers, gokb_additional_ti_props, gokb_additional_tipp_props, datarow, old_tipps, retire_packages, skipped_titles, user, recon_data) ) {
               log.error("\n\n\n***** There were row level exceptions *****\n\n\n");
             }
+            log.debug("Row processing complete ${ctr}");
           }
   
           ctr ++
@@ -722,7 +730,9 @@ class IngestService {
             // Every chunk of records we update the progress.
             log.debug("Chunk complete, update status ${ctr} ${total}");
             updateProjectStatus(project_id, (ctr / total * 100) as int, RefineProject.Status.INGESTING)
+            log.debug("Update progress");
             job?.setProgress((ctr / total * 100) as int)
+            log.debug("Chunk processing complete ${ctr}");
           } 
         }
       }
