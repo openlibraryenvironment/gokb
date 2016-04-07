@@ -450,8 +450,8 @@ class IngestService {
               pkg.setLastProject(project)
             }
 
-            pkg.lastUpdateComment = "Updated by Refine on ${new Date()}"
-            pkg.lastUpdatedBy = user
+            pkg.lastUpdateComment = "Updated by Refine on ${new Date()} ${user}"
+            // pkg.lastUpdatedBy = user
 
             // Save the Package changes.
             pkg.save(failOnError:true, flush:true)
@@ -720,6 +720,7 @@ class IngestService {
           
           if (ctr % 25 == 0) {
             // Every chunk of records we update the progress.
+            log.debug("Chunk complete, update status ${ctr} ${total}");
             updateProjectStatus(project_id, (ctr / total * 100) as int, RefineProject.Status.INGESTING)
             job?.setProgress((ctr / total * 100) as int)
           } 
@@ -748,6 +749,7 @@ class IngestService {
         project.setProjectStatus (RefineProject.Status.INGESTED)
       }
 
+      log.debug("Updating job progress to 100 percent");
       // Update the progress.
       project.progress = 100
       job?.setProgress(100)
@@ -767,6 +769,8 @@ class IngestService {
     finally {
       log.debug("Ingest process completed");
     }
+
+    log.debug("Ingest returning");
 
     result
   }
