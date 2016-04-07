@@ -47,7 +47,7 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
     if (iso_string && iso_string.trim() != "") {
       try {
         the_date = ISODateParser.parseLocalDateTime(iso_string).toDate()
-//        log.debug("Parsing ${iso_string} produced ${the_date.toString()}")
+        log.debug("Parsing ${iso_string} produced ${the_date.toString()}")
 
       } catch (Throwable t) {
 
