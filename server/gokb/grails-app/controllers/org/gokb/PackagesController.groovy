@@ -496,7 +496,8 @@ class PackagesController {
                      'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
                      'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
 
-          def query = TitleInstancePackagePlatform.createQuery(
+          def session = sessionFactory.getCurrentSession()
+          def query = session.createQuery(
                 "select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent.id=:p  and tipp.status.value <> 'Deleted'  and c.type.value = 'Package.Tipps' order by tipp.id");
           query.setReadOnly(true)
           query.setParameter('p',pkg.getId(), Hibernate.LONG)
