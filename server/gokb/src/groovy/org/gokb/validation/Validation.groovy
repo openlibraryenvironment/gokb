@@ -106,10 +106,14 @@ class Validation {
     }
 
     // Check the rules for the column context.
+    def check_start_time = System.currentTimeMillis();
     checkColumnRules (result, col_positions, project_data.columnDefinitions)
+    log.debug("checkColumnRules completed in ${System.currentTimeMillis() - check_start_time}");
 
     // Row-level checks.
+    check_start_time = System.currentTimeMillis();
     checkRowRules (result, col_positions, project_data)
+    log.debug("checkRowRules completed in ${System.currentTimeMillis() - check_start_time}");
 
     // Return the result.
     result
@@ -267,17 +271,25 @@ class Validation {
       
           // Instantiate the rule.
           I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(inst_params as Object[])
+
+          def rule_start_time = System.currentTimeMillis();
   
           // Execute the rule.
           valid = (rule.validate(result, col_positions, original_data) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
+
+          log.debug("${rule?.class.name} completed in ${System.currentTimeMillis() - rule_start_time}");
         }
       } else {
       
         // Instantiate the rule.
         I_ColumnValidationRule rule = (ruleDef[0] as Class).newInstance(conf)
 
+        def rule_start_time = System.currentTimeMillis();
+
         // Execute the rule.
         valid = (rule.validate(result, col_positions, original_data) || rule.severity != A_ValidationRule.SEVERITY_ERROR) && valid
+
+        log.debug("${rule?.class.name} completed in ${System.currentTimeMillis() - rule_start_time}");
       }
     }
     
