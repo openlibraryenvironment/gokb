@@ -379,7 +379,8 @@ log4j = {
         'com.k_int.apis',
         'com.k_int.asset.pipeline.groovy',
         'asset.pipeline.less.compilers',
-        'org.gokb.validation.types.CompareToTiDateField'
+        'org.gokb.validation.types.CompareToTiDateField',
+        'org.gokb.validation'
         // 'org.gokb.cred'
 
   // debug  'org.gokb.DomainClassExtender'
