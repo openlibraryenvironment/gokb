@@ -1025,7 +1025,7 @@ class ApiController {
     "core"                : true,
     "project-mamangement" : true,
     "cell-level-edits"    : true,
-    "es-recon"            : false,
+    "es-recon"            : true,
     "macros"              : true,
   ]
   
