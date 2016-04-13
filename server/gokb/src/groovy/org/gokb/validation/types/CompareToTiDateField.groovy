@@ -221,37 +221,31 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
           }
           
           // Now lets find the titles.
-          def results = titleLookupService.matchClassOnes(id_maps)
 
           // Default valid to true.
           boolean valid = true
-          Date ti_date
-          if (results.size() == 1) {
-            
-            // We can only reliably check if there is only one TI ID'd by all the identifiers.
-            ti_date = results[0]."${ti_field_name}"
-            
-            if (ti_date) {
-              Date date_val = parseDate( raw_val )
+          Date ti_date = (Date) titleLookupService.getTitleFieldForIdentifier(id_maps,ti_field_name);
+
+          if (ti_date) {
+            Date date_val = parseDate( raw_val )
               
-              if (date_val) {
+            if (date_val) {
                 
-                // Compare the 2 dates.
-                int compare = date_val.compareTo(ti_date)
-                switch (operator) {
-                  case GTE :
-                    valid = (compare >= 0)
+              // Compare the 2 dates.
+              int compare = date_val.compareTo(ti_date)
+              switch (operator) {
+                case GTE :
+                  valid = (compare >= 0)
                   break;
-                  case GT :
-                    valid = (compare > 0)
+                case GT :
+                  valid = (compare > 0)
                   break;
-                  case LTE :
-                    valid = (compare <= 0)
+                case LTE :
+                  valid = (compare <= 0)
                   break;
-                  case LT :
-                    valid = (compare < 0)
+                case LT :
+                  valid = (compare < 0)
                   break;
-                }
               }
             }
           }

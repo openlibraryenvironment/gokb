@@ -467,4 +467,19 @@ class TitleLookupService {
 
     result
   }
+
+  def Object getTitleField(title_id, field_name) {
+    def result = TitleInstance.executeQuery("select ti."+field_name+" from TitleInstance as ti where ti.id=?",title_id);
+    return result.size() == 1 ? result[0] : null;
+  }
+
+  def Object getTitleFieldForIdentifier(ids, field_name) {
+    def result = null
+    def l = matchClassOneComponentIds(ids)
+    if ( l.size() == 1 ) {
+      result = TitleInstance.executeQuery("select ti."+field_name+" from TitleInstance as ti where ti.id=?",l[0])[0];
+    }
+    return result
+  } 
+
 }

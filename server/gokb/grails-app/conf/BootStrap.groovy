@@ -878,5 +878,7 @@ class BootStrap {
                                                                                explanation:crit[3]).save(failOnError: true)
     }
 
+    // log.debug(titleLookupService.getTitleFieldForIdentifier('isbn','9780195090017','publishedFrom'));
+    // log.debug(titleLookupService.getTitleFieldForIdentifier('isbn','9780195090017','publishedTo'));
   }
 }
