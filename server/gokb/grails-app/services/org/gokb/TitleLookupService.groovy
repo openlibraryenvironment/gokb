@@ -426,4 +426,45 @@ class TitleLookupService {
     
     result
   }
+
+  public def matchClassOneComponentIds(def ids) {
+    def result = null
+
+    // Get the class 1 identifier namespaces.
+    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
+
+    def start_time = System.currentTimeMillis();
+
+    def bindvars = []
+    StringWriter sw = new StringWriter()
+    sw.write("select t.id from TitleInstance as t where exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where ")
+
+
+    def ctr = 0;
+    ids.each { def id_def ->
+      // Class ones only.
+      if ( id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) { 
+        if ( ctr++ ) {
+          sw.write(" or ");
+        }
+
+        sw.write( "( id.namespace.value = ? and id.value = ? )" )
+        bindvars.add(id_def.ns)
+        bindvars.add(id_def.value)
+      }
+    }
+
+
+    if ( ctr > 0 ) {
+      sw.write(" ) ) ");
+      def qry = sw.toString();
+      log.debug("Run: ${qry} ${bindvars}");
+      result = TitleInstance.executeQuery(qry,bindvars);
+    }
+    else {
+      log.warn("No class 1 identifiers(${class_one_ids}) in ${ids}");
+    }
+
+    result
+  }
 }

@@ -29,7 +29,7 @@ class TitleLookupServiceSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "Test find title by identifier"() {
       def t = null
       def name = null
       given: "Given a title with name TestTitle001 which has a single identifier of testNS:ID00001" 
@@ -48,5 +48,16 @@ class TitleLookupServiceSpec extends Specification {
         log.debug("OK");
         t?.size() == 1
         t[0]?.name=='TestTitle001'
+    }
+
+    void "Test Title Lookup By Identifier"() {
+      given: "An list of candidate identifiers"
+        def ids = [ ['ns':'testNS', 'value':'ID00001']  ]
+      when: "Caller asks for a title id via identifier"
+        def result = titleLookupService.matchClassOneComponentIds(ids)
+      then: "then the service should return the approproate title"
+      expect: "That only one title is returned with an id of"
+        result.size() == 1
+        result[0] == 1
     }
 }
