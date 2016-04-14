@@ -437,26 +437,31 @@ class TitleLookupService {
 
     def bindvars = []
     StringWriter sw = new StringWriter()
-    sw.write("select t.id from TitleInstance as t where exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where ")
+    sw.write("select c.fromComponent.id from Combo as c where ( ")
 
 
     def ctr = 0;
     ids.each { def id_def ->
       // Class ones only.
       if ( id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) { 
-        if ( ctr++ ) {
-          sw.write(" or ");
-        }
+        def ns = IdentifierNamespace.findByValue(id_def.ns)
+        if ( ns ) {
 
-        sw.write( "( id.namespace.value = ? and id.value = ? )" )
-        bindvars.add(id_def.ns)
-        bindvars.add(id_def.value)
+          if ( ctr++ ) {
+            sw.write(" or ");
+          }
+
+          sw.write( "( c.toComponent.value = ? and c.toComponent.namespace.id = ? )" )
+          bindvars.add(id_def.value)
+          bindvars.add(ns.id)
+        }
       }
     }
 
 
     if ( ctr > 0 ) {
-      sw.write(" ) ) ");
+      sw.write(" ) and c.type.value=? and c.toComponent.class = Identifier");
+      bindvars.add('KBComponent.Ids');
       def qry = sw.toString();
       log.debug("Run: ${qry} ${bindvars}");
       result = TitleInstance.executeQuery(qry,bindvars);
@@ -465,6 +470,7 @@ class TitleLookupService {
       log.warn("No class 1 identifiers(${class_one_ids}) in ${ids}");
     }
 
+    log.debug("Returning Result of matchClassOneComponentIds(${ids}) : ${result}");
     result
   }
 
@@ -479,6 +485,7 @@ class TitleLookupService {
     if ( l.size() == 1 ) {
       result = TitleInstance.executeQuery("select ti."+field_name+" from TitleInstance as ti where ti.id=?",l[0])[0];
     }
+    log.debug("getTitleFieldForIdentifier(${ids},${field_name} : ${result}");
     return result
   } 
 

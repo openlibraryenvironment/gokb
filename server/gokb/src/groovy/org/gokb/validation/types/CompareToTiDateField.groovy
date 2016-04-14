@@ -226,11 +226,12 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
           boolean valid = true
           Date ti_date = (Date) titleLookupService.getTitleFieldForIdentifier(id_maps,ti_field_name);
 
+          log.debug("Test ${ti_field_name} date ${ti_date}");
+          
           if (ti_date) {
             Date date_val = parseDate( raw_val )
               
             if (date_val) {
-                
               // Compare the 2 dates.
               int compare = date_val.compareTo(ti_date)
               switch (operator) {
@@ -266,6 +267,8 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
             // Add the conditions.
             invalid.add(conditions)
           }
+
+          log.debug("Done");
         }
       }
     }

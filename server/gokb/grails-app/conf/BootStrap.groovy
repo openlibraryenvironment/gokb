@@ -37,6 +37,7 @@ class BootStrap {
   GrailsApplication grailsApplication
   def aclUtilService
   def gokbAclService
+  //def titleLookupService
 
   def init = { servletContext ->
 
@@ -878,7 +879,7 @@ class BootStrap {
                                                                                explanation:crit[3]).save(failOnError: true)
     }
 
-    // log.debug(titleLookupService.getTitleFieldForIdentifier('isbn','9780195090017','publishedFrom'));
-    // log.debug(titleLookupService.getTitleFieldForIdentifier('isbn','9780195090017','publishedTo'));
+    //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedFrom'));
+    //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedTo'));
   }
 }
