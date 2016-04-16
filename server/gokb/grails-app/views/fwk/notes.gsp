@@ -10,7 +10,7 @@
 
     <h4>New note</h4>
 
-    <g:form controller="ajaxSupport" action="addToCollection" role="form" class="form">
+    <g:form name="newNoteForm" controller="ajaxSupport" action="addToCollection" role="form" class="form">
       <input type="hidden" name="__context" value="${ownerClass}:${ownerId}"/>
       <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Note"/>
       <input type="hidden" name="ownerClass" value="${ownerClass}"/>
@@ -18,7 +18,7 @@
       <input type="hidden" name="creator" value="org.gokb.cred.User:${user.id}"/>
       <div class="input-group">
         <textarea class="form-control" style="resize:none;" rows="5" name="note"></textarea>
-        <span class="btn btn-default btn-primary btn-sm input-group-addon">Add</span>
+        <span class="btn btn-default btn-primary btn-sm input-group-addon" onClick="document.forms['newNoteForm'].submit()">Add</span>
       </div>
     </g:form>
     <br/>
