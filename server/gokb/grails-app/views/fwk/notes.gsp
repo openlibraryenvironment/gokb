@@ -7,38 +7,40 @@
   </div>
 
   <div class="panel-body modal-body">
+
+    <h4>New note</h4>
+
+    <g:form controller="ajaxSupport" action="addToCollection" role="form" class="form">
+      <input type="hidden" name="__context" value="${ownerClass}:${ownerId}"/>
+      <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Note"/>
+      <input type="hidden" name="ownerClass" value="${ownerClass}"/>
+      <input type="hidden" name="ownerId" value="${ownerId}"/>
+      <input type="hidden" name="creator" value="org.gokb.cred.User:${user.id}"/>
+      <div class="input-group">
+        <textarea class="form-control" style="resize:none;" rows="5" name="note"></textarea>
+        <span class="btn btn-default btn-primary btn-sm input-group-addon">Add</span>
+      </div>
+    </g:form>
+    <br/>
+
     <table class="table table-striped table-bordered">
       <thead>
         <tr>
-          <th>Note ID</th>
-          <th>Agent</th>
           <th>Date</th>
+          <th>Agent</th>
           <th>Note</th>
         </tr>
       </thead>
       <tbody>
         <g:each in="${noteLines}" var="n">
           <tr>
-            <td>${n.id}</td>
-            <td style="white-space:nowrap;">${n.creator.username}</td>
             <td style="white-space:nowrap;">${n.dateCreated}</td>
-            <td style="white-space:nowrap;">${n.note}</td>
+            <td style="white-space:nowrap;">${n.creator.username}</td>
+            <td width="100%">${n.note}</td>
           </tr>
         </g:each>
       </tbody>
     </table>
 
-    <h4>Add a note</h4>
-    <dl class="dl-horizontal">
-      <g:form controller="ajaxSupport" action="addToCollection" role="form" class="form">
-        <input type="hidden" name="__context" value="${ownerClass}:${ownerId}"/>
-        <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Note"/>
-        <input type="hidden" name="ownerClass" value="${ownerClass}"/>
-        <input type="hidden" name="ownerId" value="${ownerId}"/>
-        <input type="hidden" name="creator" value="org.gokb.cred.User:${user.id}"/>
-        <textarea style="width:100%" class="input-xxlarge" name="note"></textarea>
-        <button type="submit" class="btn btn-default btn-primary btn-sm pull-right">Add</button>
-      </g:form>
-    </dl>
   </div>
 </div>
