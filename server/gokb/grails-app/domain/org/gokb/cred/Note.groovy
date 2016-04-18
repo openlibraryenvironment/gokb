@@ -8,6 +8,14 @@ class Note {
   Date dateCreated
   Date lastUpdated 
 
+  static hasMany = [
+    mentions:NoteMention
+  ]
+
+  static mappedBy = [
+    mentions:'owner'
+  ]
+
   static mapping = {
     id column:'note_id'
     note column:'note_txt', type:'text'
