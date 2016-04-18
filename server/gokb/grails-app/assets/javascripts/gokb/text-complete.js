@@ -47,31 +47,19 @@
       }
     });
   };
-//  
-//  // We want to add on default ready event.
-//  $(document).ready(addAutoComplete);
-//  
-//  // We also want to listen for a modal show.
-//  // There is a modal event fired when the "remote" attribute is loaded and shown, but this is now
-//  // deprecated. We will act on show as we do not care how, the modal has been populated. This should
-//  // future proof this code.
-  $(document).on('shown.bs.modal', function (e) {
+  
+  // We want to add on default ready event.
+  $(document).ready(function(){
+    addAutoComplete();
+  })
+  
+  // We also want to listen for a modal show.
+  // There is a modal event fired when the "remote" attribute is loaded and shown, but this is now
+  // deprecated. We will act on show as we do not care how, the modal has been populated. This should
+  // future proof this code.
+  .on('shown.bs.modal', function (e) {
     // Us the modal as the context.
     var modal = $(e.target);
     addAutoComplete (modal);
-  });
-//  
-////  .textcomplete([
-////    { // GoKBComponent
-////      id: 'gokb-component',
-////      words: ['apple', 'google', 'facebook', 'github'],
-////      match: /\@(\w{2,})$/,
-////      search: lookup,
-////      index: 1,
-////      replace: function (word) {
-////        return word + ' ';
-////      }
-////    }
-////  ] );
-  
+  });  
 })(jQuery);
