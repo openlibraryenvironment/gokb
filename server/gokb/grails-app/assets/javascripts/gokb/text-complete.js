@@ -3,16 +3,42 @@
   /**
    * Default privately scoped methods and props.
    */
-  var words = ['apple', 'google', 'facebook', 'github'];
-  function defaultLookup (term, callback) {
-    callback($.map(words, function (word) {
-      var termLc = term.toLowerCase();
-      if (typeof term !== 'undefined') {
-        return word.toLowerCase().indexOf(termLc) === 0 ? word : null;
-      }
-      
-      return null;
-    }));
+  var components = {
+    'org'   : [
+      {id: 1, 'class': 'org.gokb.cred.Org', title: 'apple'},
+      {id: 2, 'class': 'org.gokb.cred.Org', title: 'google'},
+      {id: 3, 'class': 'org.gokb.cred.Org', title: 'facebook'},
+      {id: 4, 'class': 'org.gokb.cred.Org', title: 'github'}],
+    'title' : [
+      {id: 5, 'class': 'org.gokb.cred.TitleInstance', title: 'Title 1'},
+      {id: 6, 'class': 'org.gokb.cred.TitleInstance', title: 'Title 2'},
+      {id: 7, 'class': 'org.gokb.cred.TitleInstance', title: 'Title 3'},
+      {id: 8, 'class': 'org.gokb.cred.TitleInstance', title: 'Title 4'}]
+  };
+  
+  /**
+   * Default lookup function that will be used if not 
+   */
+  function defaultLookup (term, callback, segments) {
+
+    // Regex match groups contain or filter and title.
+    var type = (segments[2] || "").toLowerCase();
+    
+    if (type in components) {
+      // Match against the name.
+      callback($.map(components[type], function ( component ) {
+        var termLc = term.toLowerCase();
+        if (typeof term !== 'undefined' && component) {
+         
+          // Return object instead of just a string.
+          return component.title.toLowerCase().indexOf(termLc) === 0 ? component : null;
+        }
+        
+        return null;
+      }));
+    }
+    
+    
   };
   
   /**
@@ -25,7 +51,7 @@
       scope = $("body");
     }
     
-    $('.text-complete', $(scope)).each(function(){
+    $('.text-complete:not(".text-complete-enhanced")', $(scope)).each(function(){
       var me = $(this);
       var method = me.attr('data-complete-search') || 'defaultLookup';
       method = eval(method);
@@ -34,13 +60,23 @@
       if (typeof method === 'function') {
         // Add the complete.
         me.textcomplete([{
-          match: /\B@(\w{2,})$/,
+          match: /(\s|^)@(\w+)\:(\w+)$/,
           search: method,
-          replace: function (word) {
-            return word + ' ';
+          index: 3,
+          replace: function ( component ) {
+            return ['$1<a href="' + gokb.config.baseUrl + '/resource/show/' + component['class'] + ':' + component['id'] + '" >' + component['title'], '</a>'];
           },
-          index: 1,
-        }]);
+          template: function (component, event) {
+            return component.title;
+          }
+        }], 
+        // Options...
+        {
+          zIndex:     99999,
+          debounce:   650,
+        })
+        // Mark as enhanced.
+        .addClass('text-complete-enhanced');
       } else {
         // Could not find suitable search method.
         throw "Text Complete: search method not found.";
