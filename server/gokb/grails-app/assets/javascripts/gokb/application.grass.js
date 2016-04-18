@@ -20,6 +20,7 @@
 //=require moment.min
 //=require decisionSupport
 //=require jquery.textcomplete.min
+//=require text-complete
 
 // Global namespace for GOKb functions.
 window.gokb = {
@@ -318,7 +319,9 @@ window.gokb = {
       var me = $(this);
       me.showMore();
       var button = me.showMore('getButton');
-      button.addClass('btn btn-default');
+      if (button) {
+        button.addClass('btn btn-default');
+      }
     });
     
     // Add the json handling to the textareas.
@@ -337,6 +340,4 @@ window.gokb = {
     });
 
   });
-
-  
 })(jQuery);
