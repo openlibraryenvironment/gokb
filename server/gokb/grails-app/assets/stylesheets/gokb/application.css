@@ -26,3 +26,7 @@ body .modal-dialog {
     /* must be half of the width, minus scrollbar on the left (30px) */
     /* margin-left: -375px; */
 }
+
+.textcomplete-dropdown {
+	z-index: 9999 !important;
+}
