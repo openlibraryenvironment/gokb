@@ -17,7 +17,7 @@
       <input type="hidden" name="ownerId" value="${ownerId}"/>
       <input type="hidden" name="creator" value="org.gokb.cred.User:${user.id}"/>
       <div class="input-group">
-        <textarea id="noteTextArea" class="form-control" style="resize:none;" rows="5" name="note"></textarea>
+        <textarea class="form-control text-complete" style="resize:none;" rows="5" name="note"></textarea>
         <span class="btn btn-default btn-primary btn-sm input-group-addon" onClick="document.forms['newNoteForm'].submit()">Add</span>
       </div>
     </g:form>
@@ -44,23 +44,4 @@
 
   </div>
 </div>
-
-<script type="text/javascript">
-  $('#noteTextArea').textcomplete([
-    { // GoKBComponent
-        id: 'gokb-component',
-        words: ['apple', 'google', 'facebook', 'github'],
-        match: /\b(\w{2,})$/,
-        search: function (term, callback) {
-            callback($.map(this.words, function (word) {
-                return word.indexOf(term) === 0 ? word : null;
-            }));
-        },
-        index: 1,
-        replace: function (word) {
-            return word + ' ';
-        }
-    }
-  ]);
-</script>
 
