@@ -110,7 +110,7 @@
                 </div>
         </div>
 
-   <script type="text/javascript" >
+   <asset:script type="text/javascript" >
         function toggleWatch(oid) {
           $.ajax({
             url: '/gokb/fwk/toggleWatch?oid='+oid,
@@ -131,6 +131,7 @@
             }
           });
         }
-   </script>
+
+   </asset:script>
 </body>
 </html>

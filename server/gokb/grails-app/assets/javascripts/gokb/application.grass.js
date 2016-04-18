@@ -19,6 +19,7 @@
 //=require select-all-multistate
 //=require moment.min
 //=require decisionSupport
+//=require jquery.textcomplete.min
 
 // Global namespace for GOKb functions.
 window.gokb = {

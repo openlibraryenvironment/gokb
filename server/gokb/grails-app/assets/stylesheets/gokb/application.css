@@ -12,6 +12,7 @@
 *= require select2-bootstrap3
 *= require bootstrap-editable
 *= require morris
+*= require jquery.textcomplete
 *= encoding UTF-8
 */
 
