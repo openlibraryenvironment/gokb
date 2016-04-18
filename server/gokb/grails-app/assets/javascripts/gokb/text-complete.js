@@ -4,23 +4,11 @@
    * Default privately scoped methods and props.
    */
   var words = ['apple', 'google', 'facebook', 'github'];
-  function lookup (term, callback) {
+  function defaultLookup (term, callback) {
     callback($.map(words, function (word) {
-      
+      var termLc = term.toLowerCase();
       if (typeof term !== 'undefined') {
-        return word.indexOf(term) === 0 ? word : null;
-      }
-      
-      return null;
-    }));
-  };
-  
-  var testWords = ['Steve', 'Ian' ,'Gill']; 
-  function testLookup (term, callback) {
-    callback($.map(words, function (word) {
-      
-      if (typeof term !== 'undefined') {
-        return word.indexOf(term) === 0 ? word : null;
+        return word.toLowerCase().indexOf(termLc) === 0 ? word : null;
       }
       
       return null;
@@ -39,7 +27,7 @@
     
     $('.text-complete', $(scope)).each(function(){
       var me = $(this);
-      var method = me.attr('data-complete-search') || 'lookup';
+      var method = me.attr('data-complete-search') || 'defaultLookup';
       method = eval(method);
       
       // If the method was found.
@@ -47,7 +35,7 @@
         // Add the complete.
         me.textcomplete([{
           match: /\B@(\w{2,})$/,
-          search: lookup,
+          search: method,
           replace: function (word) {
             return word + ' ';
           },
