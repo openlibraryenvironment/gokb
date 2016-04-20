@@ -162,9 +162,11 @@ grails.project.dependency.resolution = {
       compile ":cache-headers:1.1.7"
 
       // compile ":profiler:0.5"
-      test ":spock:0.7", {
-        exclude "spock-grails-support"
-      }
+
+      // Spock is included by default now - adding the dependency runs spock tests twice, which is nice
+      // test ":spock:0.7", {
+      //   exclude "spock-grails-support"
+      // }
       test ":geb:$gebVersion"
 
     }

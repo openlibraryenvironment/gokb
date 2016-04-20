@@ -82,7 +82,7 @@ class RefdataCategory {
   
         if ( !result ) {
           // Create and save a new refdata value.
-          // log.debug("Attempt to create new refdataValue(${category_name},${value},${sortkey})");
+          log.debug("Attempt to create new refdataValue(${category_name},${value},${sortkey})");
           result = new RefdataValue(owner:cat, value:value, sortKey:sortkey)
           if ( result.save(failOnError:true, flush:true) ) {
             // log.debug("result = ${result}");
