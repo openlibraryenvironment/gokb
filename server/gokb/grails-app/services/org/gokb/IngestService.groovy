@@ -1251,12 +1251,12 @@ class IngestService {
       // Need to set the name to mirror the Identifier.
       pkg.name = new_identifier.value
       pkg.lastUpdateComment = "Created by Refine ingest on ${new Date()}"
-      // pkg.lastUpdatedBy = user
+      pkg.lastUpdatedBy = user
     }
     else {
       pkg.lastUpdateComment = "Updated by Refine ingest on ${new Date()}"
       log.debug("Got existing package ${pkg.id}");
-      // pkg.lastUpdatedBy = user
+      pkg.lastUpdatedBy = user
     }
 
     // Set the latest project.
