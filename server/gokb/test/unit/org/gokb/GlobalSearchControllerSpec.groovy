@@ -15,7 +15,7 @@ class GlobalSearchControllerSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "test GlobalSearchController"() {
       expect:
         1==1
     }

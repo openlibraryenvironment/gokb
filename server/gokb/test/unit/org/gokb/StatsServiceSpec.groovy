@@ -15,7 +15,7 @@ class StatsServiceSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "test StatsService"() {
       expect:
         1==1
     }

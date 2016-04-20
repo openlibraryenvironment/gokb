@@ -15,7 +15,7 @@ class OaiControllerSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "test OaiController"() {
       expect:
         1==1
     }

@@ -15,7 +15,7 @@ class KBDomainInfoSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "test KBDomainInfoSpec"() {
       expect:
         1==1
     }

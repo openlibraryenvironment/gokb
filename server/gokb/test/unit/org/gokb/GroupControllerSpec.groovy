@@ -15,7 +15,7 @@ class GroupControllerSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "test GroupController"() {
       expect:
         1==1
     }

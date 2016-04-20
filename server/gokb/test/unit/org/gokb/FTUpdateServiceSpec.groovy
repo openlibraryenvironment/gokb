@@ -15,7 +15,7 @@ class FTUpdateServiceSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "test FTUpdateServiceSpec"() {
       expect:
         1==1
     }

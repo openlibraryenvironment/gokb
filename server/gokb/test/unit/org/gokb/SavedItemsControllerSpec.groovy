@@ -15,7 +15,7 @@ class SavedItemsControllerSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    void "test SavedItemsController"() {
       expect:
         1==1
     }
