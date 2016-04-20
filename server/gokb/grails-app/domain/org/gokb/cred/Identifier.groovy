@@ -12,8 +12,7 @@ class Identifier extends KBComponent {
 
   static mapping = {
                value column:'id_value', index:'id_value_idx'
-            normname column:'normname'
-           namespace column:'id_namespace_fk', index:'id_value_idx, norm_id_value_idx'
+           namespace column:'id_namespace_fk', index:'id_value_idx'
   }
 
   static manyByCombo = [

@@ -26,7 +26,9 @@ switch ("${System.getProperty('grails.env')}") {
 grails.project.dependency.resolver = "maven"
 
 def gebVersion = "0.9.3"
-def seleniumVersion = "2.43.1"
+// def seleniumVersion = "2.53.0"
+def seleniumVersion = "2.53.0"
+def seleniumHtmlunitDriverVersion = "2.52.0"
 
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
@@ -39,15 +41,12 @@ grails.project.dependency.resolution = {
 
     repositories {
         inherits true // Whether to inherit repository definitions from plugins
-
         grailsPlugins()
         grailsHome()
         grailsCentral()
-
         mavenLocal()
         mavenCentral()
-        
-        // Custom repo that points to the public nexus repo. Used for elastic search client as there are no "official" ones.
+        mavenRepo "http://central.maven.org/maven2/"
         mavenRepo "http://repo.spring.io/milestone/"
         mavenRepo "http://nexus.k-int.com/content/repositories/releases"
 
@@ -56,7 +55,6 @@ grails.project.dependency.resolution = {
         //mavenRepo "http://repository.codehaus.org"
         //mavenRepo "http://download.java.net/maven/2/"
         //mavenRepo "http://repository.jboss.com/maven2/"
-        mavenRepo "http://central.maven.org/maven2/"
     }
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
@@ -64,6 +62,8 @@ grails.project.dependency.resolution = {
         // runtime "postgresql:postgresql:8.3-603.jdbc3"
         // To allow us to un-tgz uploaded data files
         runtime 'org.apache.commons:commons-compress:1.9'
+        // runtime 'commons-collections:commons-collections:3.2.2'
+        // runtime 'org.apache.commons:commons-collections4:4.1'
         runtime 'org.apache.tika:tika-core:1.6'
         
         // Must get parsers as well as core or we can only detect generic types.
@@ -80,11 +80,12 @@ grails.project.dependency.resolution = {
         compile 'com.github.sommeri:less4j:1.8.2'
         
         compile 'org.ajoberstar:grgit:0.2.3' // 0.3.0 is Groovy >=2.3 and breaks for me.
-        build 'org.apache.httpcomponents:httpcore:4.3.2'
+        build 'org.apache.httpcomponents:httpcore:4.4.4'
 
-        test("org.seleniumhq.selenium:selenium-htmlunit-driver:$seleniumVersion") {
-            exclude 'xml-apis'
-        }
+        test("org.seleniumhq.selenium:selenium-htmlunit-driver:$seleniumHtmlunitDriverVersion")
+        // test("org.seleniumhq.selenium:selenium-htmlunit-driver:$seleniumHtmlunitDriverVersion") {
+        //     excludes 'xml-apis', 'commons-collections'
+        // }
         test "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
         test "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
 
@@ -116,7 +117,6 @@ grails.project.dependency.resolution = {
       }
       
       runtime ':hibernate:3.6.10.18'  // II trying .19 over .16
-      // runtime ':hibernate:3.6.10.14' - this pukes forme
       runtime ':database-migration:1.4.1-SNAPSHOT'  // II: updated here due to ehCache problem - see https://github.com/grails-plugins/grails-spring-security-core/issues/152
       
       compile ":file-viewer:0.3"
