@@ -1,0 +1,24 @@
+package org.gokb
+
+
+class ESUpdateJob {
+
+  def grailsApplication
+  def FTUpdateService
+  
+  // Allow only one run at a time.
+  def concurrent = false
+  
+  static triggers = {
+    // Cron timer.            
+    cron name: 'MasterListUpdateJobTrigger', cronExpression: "*/5 * * * * ?", startDelay:50000
+  }
+  
+  PackageService packageService
+
+  def execute() {
+    log.debug ("Beginning scheduled es update job.")
+    FTUpdateService.updateFTIndexes();
+    log.debug ("es update job completed.")
+  }
+}
