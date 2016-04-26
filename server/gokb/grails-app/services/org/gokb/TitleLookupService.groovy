@@ -437,7 +437,7 @@ class TitleLookupService {
 
     def bindvars = []
     StringWriter sw = new StringWriter()
-    sw.write("select c.fromComponent.id from Combo as c where ( ")
+    sw.write("select DISTINCT c.fromComponent.id from Combo as c where ( ")
 
 
     def ctr = 0;
