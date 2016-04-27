@@ -10,8 +10,7 @@ class MasterListUpdateJob {
   
   static triggers = {
     // Cron timer.            
-    cron name: 'MasterListUpdateJobTrigger', cronExpression: "0 0 0 * * ?", startDelay:60000
-//    cron name: 'MasterListUpdateJobTrigger', cronExpression: "0/15 * * * * ?", startDelay:10000
+    cron name: 'MasterListUpdateJobTrigger', cronExpression: "0 0/2 * * * ?", startDelay:60000
   }
   
   PackageService packageService
