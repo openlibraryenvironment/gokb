@@ -11,7 +11,7 @@ class ESUpdateJob {
   
   static triggers = {
     // Cron timer.            
-    cron name: 'MasterListUpdateJobTrigger', cronExpression: "*/5 * * * * ?", startDelay:50000
+    cron name: 'ESUpdateTrigger', cronExpression: "0 0/5 * * * ?", startDelay:50000
   }
   
   PackageService packageService
