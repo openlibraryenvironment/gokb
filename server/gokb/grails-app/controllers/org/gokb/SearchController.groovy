@@ -20,6 +20,7 @@ class SearchController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     User user = springSecurityService.currentUser
+    def start_time = System.currentTimeMillis();
 
     log.debug("Entering SearchController:index ${params}");
 
@@ -147,6 +148,7 @@ class SearchController {
       xml { render apiresponse as XML }
     }
 
+    log.debug("Search completed after ${System.currentTimeMillis() - start_time}");
   }
 
   def doQuery (qbetemplate, params, result) {
