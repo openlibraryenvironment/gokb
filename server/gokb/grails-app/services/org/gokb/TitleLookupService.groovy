@@ -482,7 +482,7 @@ class TitleLookupService {
   def Object getTitleFieldForIdentifier(ids, field_name) {
     def result = null
     def l = matchClassOneComponentIds(ids)
-    if ( l.size() == 1 ) {
+    if ( l && l.size() == 1 ) {
       result = TitleInstance.executeQuery("select ti."+field_name+" from TitleInstance as ti where ti.id=?",l[0])[0];
     }
     log.debug("getTitleFieldForIdentifier(${ids},${field_name} : ${result}");

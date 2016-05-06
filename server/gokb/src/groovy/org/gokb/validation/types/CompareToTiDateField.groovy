@@ -121,7 +121,7 @@ class CompareToTiDateField extends A_ValidationRule implements I_DeferredRowVali
             row_entry = "and( if (isNonBlank( cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')], isBlank( cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')], false ) , ${row_entry} )"
           }
         } else {
-          row_entry = "if ( isNonBlank(cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')]), cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value==toDate('${entry.value}'), false )"
+          row_entry = "if ( isNonBlank(cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')]), cells[gokbCaseInsensitiveCellLookup('${entry.col_name}')].value.toString()==toDate('${entry.value}').toString(), false )"
           
           // First entry contains the extra details we need.
           quick_fix_value = entry.ti_field_value
