@@ -191,12 +191,12 @@ identifiers = [
   // is found against a title but as an eISSN we still treat this as a match
   "cross_checks" : [
     ["issn", "eissn"],
-    ["eissn", "issn"],
+    ["eissn", "issn"]
   ],
 
   formatters : [
     'issn' : isxn_formatter,
-    'eissn' : isxn_formatter,
+    'eissn' : isxn_formatter
   ]
 ]
 // if (System.properties["${appName}.config.location"]) {

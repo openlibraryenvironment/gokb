@@ -141,14 +141,13 @@ class SearchController {
     }
 
     // log.debug("leaving SearchController::index...");
+    log.debug("Search completed after ${System.currentTimeMillis() - start_time}");
 
     withFormat {
       html result
       json { render apiresponse as JSON }
       xml { render apiresponse as XML }
     }
-
-    log.debug("Search completed after ${System.currentTimeMillis() - start_time}");
   }
 
   def doQuery (qbetemplate, params, result) {
