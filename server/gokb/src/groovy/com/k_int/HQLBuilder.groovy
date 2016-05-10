@@ -112,10 +112,10 @@ public class HQLBuilder {
     // log.debug("HQL: ${hql}");
     // log.debug("BindVars: ${hql_builder_context.bindvars}");
 
-    def count_hql = "select count (o) ${hql}"
+    def count_hql = "select count (distinct o) ${hql}"
     def fetch_hql = null
     if ( returnObjectsOrRows=='objects' ) {
-      fetch_hql = "select o ${hql}"
+      fetch_hql = "select distinct o ${hql}"
     }
     else {
       fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql}"
