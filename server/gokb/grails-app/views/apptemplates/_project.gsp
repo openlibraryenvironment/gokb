@@ -114,15 +114,14 @@
 
 				<g:if test="${d.id != null}">
 					<dt>
-						<g:annotatedLabel owner="${d}" property="provider">
+						<g:annotatedLabel owner="${d}" property="provider">Provider</g:annotatedLabel>
 					</dt>
 					<dd>
                                         
                                                            <g:manyToOneReferenceTypedown owner="${d}" field="provider"
                                                                 baseClass="org.gokb.cred.Org">
-                                                                ${d.source?.name}
+                                                                ${d.provider?.name}
                                                         </g:manyToOneReferenceTypedown>
-                                                </g:annotatedLabel>
 					</dd>
 
 					<dd>
