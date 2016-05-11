@@ -115,12 +115,16 @@
 				<g:if test="${d.id != null}">
 					<dt>
 						<g:annotatedLabel owner="${d}" property="provider">
+					</dt>
+					<dd>
+                                        
                                                            <g:manyToOneReferenceTypedown owner="${d}" field="provider"
                                                                 baseClass="org.gokb.cred.Org">
                                                                 ${d.source?.name}
                                                         </g:manyToOneReferenceTypedown>
                                                 </g:annotatedLabel>
-					</dt>
+					</dd>
+
 					<dd>
 						${d.provider?.name ?: 'Not yet set'}
 					</dd>
