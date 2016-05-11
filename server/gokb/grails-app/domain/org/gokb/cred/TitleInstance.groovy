@@ -276,10 +276,10 @@ class TitleInstance extends KBComponent {
           publisher_combos?.each { Combo pc ->
             def pub_org = null
             if (isComboReverse('publisher')) {
-              pub_org = pc.toComponent
+              pub_org = pc.fromComponent
             }
             else {
-              pub_org = pc.fromComponent
+              pub_org = pc.toComponent
             }
 
             if ( pub_org ) {
