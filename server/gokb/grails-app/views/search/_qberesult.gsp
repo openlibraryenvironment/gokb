@@ -44,18 +44,15 @@
         <tr class="${++counter==det ? 'success':''}">
           <!-- Row ${counter} -->
           <g:each in="${qbeConfig.qbeResults}" var="c">
+            <g:set var="colVal" value="${groovy.util.Eval.x(r, 'x.' + c.property)}"/>
 
-
-
-            <td><g:if test="${c.link != null }">
-                <g:link controller="${c.link.controller}"
-                  action="${c.link.action}"
-                  id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
+            <td><g:if test="${colVal != null && c.link != null }">
+                <g:link controller="${c.link.controller}" action="${c.link.action}" id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
                   params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">
-                  ${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty'}
+                  ${colVal ?: 'Empty'}
                 </g:link>
               </g:if> <g:else>
-                ${groovy.util.Eval.x(r, 'x.' + c.property) ?: 'Empty' }
+                ${colVal ?: 'Empty'}
               </g:else></td>
           </g:each>
         </tr>

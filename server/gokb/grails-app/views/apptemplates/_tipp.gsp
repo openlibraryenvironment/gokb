@@ -5,7 +5,7 @@
     </dt>
     <dd>
       <g:link controller="resource" action="show"
-        id="${d.title?.class.name+':'+d.title?.id}">
+        id="${d.title?.class?.name+':'+d.title?.id}">
         ${(d.title?.name)?:'Empty'}
       </g:link>
     </dd>
@@ -15,7 +15,7 @@
     </dt>
     <dd>
       <g:link controller="resource" action="show"
-        id="${d.pkg.class.name+':'+d.pkg?.id}">
+        id="${d.pkg?.class?.name+':'+d.pkg?.id}">
         ${(d.pkg?.name)?:'Empty'}
       </g:link>
     </dd>
@@ -25,7 +25,7 @@
     </dt>
     <dd>
       <g:link controller="resource" action="show"
-        id="${d.hostPlatform?.class.name+':'+d.hostPlatform?.id}">
+        id="${d.hostPlatform?.class?.name+':'+d.hostPlatform?.id}">
         ${(d.hostPlatform?.name)?:'Empty'}
       </g:link>
     </dd>

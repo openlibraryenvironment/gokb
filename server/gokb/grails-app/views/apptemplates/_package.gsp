@@ -94,10 +94,8 @@
         <g:if test="${ editable }">
           <g:form controller="ajaxSupport" action="addToCollection"
             class="form-inline">
-            <input type="hidden" name="__context"
-              value="${d.class.name}:${d.id}" />
-            <input type="hidden" name="__newObjectClass"
-              value="org.gokb.cred.TitleInstancePackagePlatform" />
+            <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
+            <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
             <input type="hidden" name="__addToColl" value="tipps" />
             <dl class="dl-horizontal">
               <dt>Title</dt>
