@@ -106,8 +106,7 @@
               </dd>
               <dt>Platform</dt>
               <dd>
-                <g:simpleReferenceTypedown class="form-control" name="hostPlatform"
-                  baseClass="org.gokb.cred.Platform" />
+                <g:simpleReferenceTypedown class="form-control" name="hostPlatform" baseClass="org.gokb.cred.Platform" />
               </dd>
               <dt></dt>
               <dd>
