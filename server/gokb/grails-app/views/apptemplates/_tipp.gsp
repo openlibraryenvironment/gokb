@@ -1,40 +1,34 @@
 
 <dl class="dl-horizontal">
-  <g:if test="${d.title != null}">
     <dt>
       <g:annotatedLabel owner="${d}" property="title">Title</g:annotatedLabel>
     </dt>
     <dd>
       <g:link controller="resource" action="show"
         id="${d.title?.class.name+':'+d.title?.id}">
-        ${d.title.name}
+        ${(d.title?.name)?:'Empty'}
       </g:link>
     </dd>
-  </g:if>
 
-  <g:if test="${d.pkg != null}">
     <dt>
       <g:annotatedLabel owner="${d}" property="package">Package</g:annotatedLabel>
     </dt>
     <dd>
       <g:link controller="resource" action="show"
         id="${d.pkg.class.name+':'+d.pkg?.id}">
-        ${d.pkg.name}
+        ${(d.pkg?.name)?:'Empty'}
       </g:link>
     </dd>
-  </g:if>
 
-  <g:if test="${d.hostPlatform != null}">
     <dt>
       <g:annotatedLabel owner="${d}" property="platform">Platform</g:annotatedLabel>
     </dt>
     <dd>
       <g:link controller="resource" action="show"
-        id="${d.hostPlatform.class.name+':'+d.hostPlatform.id}">
-        ${d.hostPlatform.name}
+        id="${d.hostPlatform?.class.name+':'+d.hostPlatform?.id}">
+        ${(d.hostPlatform?.name)?:'Empty'}
       </g:link>
     </dd>
-  </g:if>
 
   <dt>
     <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
