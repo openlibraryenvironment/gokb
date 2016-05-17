@@ -987,8 +987,8 @@ globalSearchTemplates = [
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Title', property:'title.name',link:[controller:'resource',action:'show',id:'x.r.title.class.name+\':\'+x.r.title.id'] ],
         [heading:'Status', property:'status.value'],
-        [heading:'Package', property:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg.class.name+\':\'+x.r.pkg.id'] ],
-        [heading:'Platform', property:'hostPlatform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform.class.name+\':\'+x.r.hostPlatform.id'] ],
+        [heading:'Package', property:'pkg?.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class.name+\':\'+x.r.pkg.id'] ],
+        [heading:'Platform', property:'hostPlatform?.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class.name+\':\'+x.r.hostPlatform?.id'] ],
       ]
     ]
   ],
