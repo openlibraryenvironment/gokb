@@ -199,7 +199,8 @@ class TSVIngestionService {
         // log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
-        the_title = ingest_cfg.defaultType.newInstance()
+        def new_inst_clazz = Class.forName(ingest_cfg.defaultType)
+        the_title = new_inst_clazz.newInstance()
         the_title.name=title
         the_title.ids=[]
       } else {
@@ -229,7 +230,8 @@ class TSVIngestionService {
           log.debug("No TI could be matched by name. New TI, flag for review.")
           // Could not match on title either.
           // Create a new TI but attach a Review request to it.
-          the_title = ingest_cfg.defaultType.newInstance()
+          def new_inst_clazz = Class.forName(ingest_cfg.defaultType)
+          the_title = new_inst_clazz.newInstance()
           the_title.ids=[]
           the_title.name=title
           ReviewRequest.raise(
@@ -636,7 +638,7 @@ class TSVIngestionService {
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
-                     defaultType: kbart_cfg?.defaultType ?: org.gokb.cred.TitleInstance.class,
+                     defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.TitleInstance',
                      identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
                      defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
                      providerIdentifierNamespace:providerIdentifierNamespace,
@@ -690,7 +692,7 @@ class TSVIngestionService {
 
         long startTime=System.currentTimeMillis()
 
-        log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package_id}")
+        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${kbart_beans.size}(cfg:${packageType?.value.toString()}) rows. Package is ${the_package_id}")
         //now its converted, ingest it into the database.
 
         for (int x=0; x<kbart_beans.size;x++) {
