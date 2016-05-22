@@ -1292,6 +1292,12 @@ class TSVIngestionService {
 
     int ctr = 0
 
+    if ( ( header == null ) || ( header.size() ==  0) ) {
+      log.error("No header");
+      results.add([message:"No header"]);
+      return results;
+    }
+
 
     log.debug("Processing column headers... count ${header?.length} items")
     header.each {
