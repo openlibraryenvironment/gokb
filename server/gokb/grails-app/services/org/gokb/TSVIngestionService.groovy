@@ -507,7 +507,16 @@ class TSVIngestionService {
     // The threshold for a good match.
     double threshold = grailsApplication.config.cosine.good_threshold
     // Work out the distance between the 2 title strings.
-    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title)
+    double distance = 0; 
+
+    if ( ti.getName().equalsIgnoreCase(norm_title) ) {
+      distance  = 1
+    }
+    else {
+      log.debug("Comparing ${ti.getName()} and ${norm_title}");
+      distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title) ?: 0
+    }
+
     // Check the distance.
 
     def result = ti;
@@ -520,7 +529,8 @@ class TSVIngestionService {
 
       case {
         ti.variantNames.find {alt ->
-        GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
+          log.debug("Comparing ${alt.variantName} and ${norm_title}");
+          GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
         }}:
         // Good match on existing variant titles
         log.debug("Good match for TI on variant.")
