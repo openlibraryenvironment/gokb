@@ -810,6 +810,7 @@ class BootStrap {
     def wiley_source = Source.findByName('WILEY') ?: new Source(name:'WILEY').save(flush:true, failOnError:true);
     def cufts_source = Source.findByName('CUFTS') ?: new Source(name:'CUFTS').save(flush:true, failOnError:true);
     def askews_source = Source.findByName('ASKEWS') ?: new Source(name:'ASKEWS').save(flush:true, failOnError:true);
+    def ebsco_source = Source.findByName('EBSCO') ?: new Source(name:'EBSCO').save(flush:true, failOnError:true);
   }
 
   def DSConfig() {
