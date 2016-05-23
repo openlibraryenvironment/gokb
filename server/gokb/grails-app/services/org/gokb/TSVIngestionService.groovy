@@ -176,7 +176,7 @@ class TSVIngestionService {
                            def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
-    // log.debug("lookup or create title :: ${title}(${ingest_cfg})")
+    log.debug("lookup or create title :: ${title}(${ingest_cfg})")
 
     if (title == null) return null
 
@@ -191,15 +191,20 @@ class TSVIngestionService {
     def results = class_one_match (identifiers)
     // The matches.
     List< KBComponent> matches = results['matches'] as List
+
+    log.debug("Title matches ${matches?.size()} existing entries");
+
     switch (matches.size()) {
     case 0 :
       // No match behaviour.
       // Check for presence of class one ID
       if (results['class_one']) {
-        // log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
+        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
-        def new_inst_clazz = Class.forName(ingest_cfg.defaultType)
+        log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}");
+
+        def new_inst_clazz = Class.forName(ingest_cfg.defaultTypeName)
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
         the_title.ids=[]
@@ -287,7 +292,7 @@ class TSVIngestionService {
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
-        // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
+        log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
       }
       else {
         log.error("**PROBLEM SAVING TITLE**");
@@ -1281,9 +1286,12 @@ class TSVIngestionService {
       log.debug("Got config ${kbart_cfg}");
     }
 
-    CSVReader csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(data_file.fileData), java.nio.charset.Charset.forName(kbart_cfg.charset?:'ISO-8859-1')),
-                                                        (kbart_cfg.separator?:'\t') as char,
-                                                        (kbart_cfg.quoteChar?:'\0') as char)
+    CSVReader csv = new CSVReader(
+                      new InputStreamReader(
+                        new org.apache.commons.io.input.BOMInputStream( new ByteArrayInputStream(data_file.fileData)), 
+                        java.nio.charset.Charset.forName(kbart_cfg.charset?:'ISO-8859-1')),
+                      (kbart_cfg.separator?:'\t') as char,
+                      (kbart_cfg.quoteChar?:'\0') as char)
 
     def fileRules = kbart_cfg.rules
     Map col_positions=[:]
@@ -1518,7 +1526,7 @@ class TSVIngestionService {
           }
         }
 
-        log.debug("Preflight [${packageName}:${preflight_counter++}] ${the_kbart.publication_title} ${identifiers}");
+        log.debug("Preflight [${packageName}:${preflight_counter++}] title:${the_kbart.publication_title} identifiers:${identifiers}");
 
         if ( identifiers.size() > 0 ) {
           try {
@@ -1526,6 +1534,9 @@ class TSVIngestionService {
             if ( title && the_kbart.title_image && ( the_kbart.title_image != title.coverImage) ) {
               title.coverImage = the_kbart.title_image;
               title.save(flush:true, failOnError:true)
+            }
+            else {
+              log.warn("Lookup or create title returned null ${title} / ${identifiers}");
             }
 
             log.debug("Identifier match Preflight title : ${title}");
@@ -1574,6 +1585,9 @@ class TSVIngestionService {
                 ])
             }
           }
+        }
+        else {
+          log.warn("${packageName}:${preflight_counter++}] No identifiers. Map:${ingest_cfg.identifierMap}, print_identifier:${the_kbart.print_identifier} online_identifier:${the_kbart.online_identifier}");
         }
       }
     }

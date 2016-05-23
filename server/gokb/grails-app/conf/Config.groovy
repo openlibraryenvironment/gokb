@@ -157,6 +157,9 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               quoteChar:'"',
               // separator:',',
               charset:'UTF-8',
+              defaultTypeName:'org.gokb.cred.BookInstance',
+              identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
+              defaultMedium:'Book',
               // doDistanceMatch=true, // To enable full string title matching
               rules:[
                 [field: 'publication_title', kbart: 'publication_title'],
