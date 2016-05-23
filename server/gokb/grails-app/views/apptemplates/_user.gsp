@@ -22,12 +22,6 @@
                         </g:manyToOneReferenceTypedown>
     </dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
-    <dd>
-       <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
-    </dd>
-
-
   </dl>
   <div id="content">
     <ul id="tabs" class="nav nav-tabs">
