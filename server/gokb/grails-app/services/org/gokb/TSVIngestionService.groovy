@@ -1013,7 +1013,7 @@ class TSVIngestionService {
       hostPlatform:the_platform,
       embargo:the_kbart.embargo_info?:'',
       coverageNote:the_kbart.coverage_depth?:'',
-      notes:the_kbart.notes?:'',
+      // notes:the_kbart.notes?:'',
       startDate:parseDate(the_kbart.date_first_issue_online),
       startVolume:the_kbart.num_first_vol_online,
       startIssue:the_kbart.num_first_issue_online,
