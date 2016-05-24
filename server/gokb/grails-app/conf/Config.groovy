@@ -160,6 +160,19 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               defaultTypeName:'org.gokb.cred.BookInstance',
               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
               defaultMedium:'Book',
+              discriminatorColumn:'publication_type',
+              polmorphicRows:[
+                'Serial':[
+                  identifierMap:[ 'print_identifier':'issn', 'online_identifier':'issn' ],
+                  defaultMedium:'Serial',
+                  defaultTypeName:'org.gokb.cred.TitleInstance'
+                 ],
+                'Monograph':[
+                  identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
+                  defaultMedium:'Book',
+                  defaultTypeName:'org.gokb.cred.BookInstance'
+                ]
+              ],
               // doDistanceMatch=true, // To enable full string title matching
               rules:[
                 [field: 'publication_title', kbart: 'publication_title'],
