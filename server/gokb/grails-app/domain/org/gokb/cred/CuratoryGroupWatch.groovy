@@ -10,7 +10,7 @@ package org.gokb.cred
 class CuratoryGroupWatch {
 
   KBComponent component
-  CuratoryGroup user
+  CuratoryGroup curatoryGroup
 
   static hasMany = [
   ]

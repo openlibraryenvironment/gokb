@@ -739,7 +739,7 @@ class TSVIngestionService {
 
           job?.setProgress( x , kbart_beans.size() )
 
-          if ( x % 50 == 0 ) {
+          if ( x % 25 == 0 ) {
             cleanUpGorm()
           }
         }
