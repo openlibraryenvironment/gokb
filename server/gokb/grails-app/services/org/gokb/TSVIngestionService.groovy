@@ -1092,9 +1092,9 @@ class TSVIngestionService {
       tipp.lastSeen = ingest_systime;
     }
 
-    // log.debug("save tipp")
+    log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    // log.debug("createTIPP returning")
+    log.debug("createTIPP returning")
   }
 
   //this is a lot more complex than this for journals. (which uses refine)
