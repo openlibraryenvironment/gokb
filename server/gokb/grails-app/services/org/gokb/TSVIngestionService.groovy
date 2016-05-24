@@ -250,7 +250,7 @@ class TSVIngestionService {
       break;
     case 1 :
       // Single component match.
-      // log.debug ("Title class one identifier lookup yielded a single match.")
+      log.debug ("Title class one identifier lookup yielded a single match.")
       // We should raise a review request here if the match was made by cross checking
       // different identifier namespaces.
       if (results['x_check_matches'].size() == 1) {
@@ -276,7 +276,7 @@ class TSVIngestionService {
       break;
     default :
       // Multiple matches.
-      log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
+      log.warn ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
       break;
     }
 
@@ -497,6 +497,9 @@ class TSVIngestionService {
     ti
   }
 
+  /*
+   *  Given 2 title strings, see if they might be the same. Used to detect title variants.
+   */
   private TitleInstance singleTIMatch(String title,
                                       String norm_title,
                                       TitleInstance ti,
@@ -504,15 +507,21 @@ class TSVIngestionService {
                                       project = null,
                                       inconsistent_title_id_behaviour = 'add_as_variant',
                                       identifiers) {
+
+
+
     // The threshold for a good match.
     double threshold = grailsApplication.config.cosine.good_threshold
+
     // Work out the distance between the 2 title strings.
     double distance = 0; 
 
-    if ( ti.getName().equalsIgnoreCase(norm_title) ) {
+    // Don't f-about if the title exactly matches the one from the DB we are all-systems-go.
+    if ( ti.getName().equalsIgnoreCase(title) ) {
       distance  = 1
     }
     else {
+      // Otherwise -- work out if they are roughly close enough to warrant a good matcg
       log.debug("Comparing ${ti.getName()} and ${norm_title}");
       distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title) ?: 0
     }

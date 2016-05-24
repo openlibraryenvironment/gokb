@@ -334,6 +334,7 @@ abstract class KBComponent {
   ]
 
   static mapping = {
+    tablePerHierarchy false
     id column:'kbc_id'
     version column:'kbc_version'
     name column:'kbc_name', type:'text'
