@@ -199,7 +199,7 @@ class TSVIngestionService {
       // No match behaviour.
       // Check for presence of class one ID
       if (results['class_one']) {
-        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultType}")
+        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultTypeName}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
         log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}");
