@@ -172,6 +172,7 @@ class TSVIngestionService {
   def lookupOrCreateTitle (String title,
                            def identifiers,
                            ingest_cfg,
+                           row_specific_config,
                            def user = null,
                            def project = null) {
     // The TitleInstance
@@ -204,7 +205,7 @@ class TSVIngestionService {
         // the_title = new BookInstance(name:title)
         log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}");
 
-        def new_inst_clazz = Class.forName(ingest_cfg.defaultTypeName)
+        def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
         the_title.ids=[]
@@ -235,7 +236,7 @@ class TSVIngestionService {
           log.debug("No TI could be matched by name. New TI, flag for review.")
           // Could not match on title either.
           // Create a new TI but attach a Review request to it.
-          def new_inst_clazz = Class.forName(ingest_cfg.defaultType)
+          def new_inst_clazz = Class.forName(row_specific_config.defaultType)
           the_title = new_inst_clazz.newInstance()
           the_title.ids=[]
           the_title.name=title
@@ -728,6 +729,8 @@ class TSVIngestionService {
 
             log.debug("**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
+            def row_specific_cfg = getRowSpecificCfg(ingest_cfg,kbart_beans[x]);
+
             long rowStartTime=System.currentTimeMillis()
 
             if ( validateRow(x, badrows, kbart_beans[x] ) ) {
@@ -740,7 +743,8 @@ class TSVIngestionService {
                         editor_role,
                         Package.get(the_package_id),
                         ingest_cfg,
-                        badrows )
+                        badrows,
+                        row_specific_config )
             }
 
             log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
@@ -864,7 +868,8 @@ class TSVIngestionService {
                 editor_role,
                 the_package,
                 ingest_cfg,
-                badrows) {
+                badrows,
+                row_specific_config) {
 
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
@@ -938,7 +943,7 @@ class TSVIngestionService {
         }
 
         if ( identifiers.size() > 0 ) {
-          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
+          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config)
           if ( title ) {
             title.source=source
           // log.debug("title found: for ${the_kbart.publication_title}:${title}")
@@ -1487,6 +1492,49 @@ class TSVIngestionService {
     return result
   }
 
+  /**
+   * Sometimes a row will have a discriminator that tells us to interpret the columns in different ways. for example,
+   * KBart publication_type can be Serial or Monograph -- Depeneding on which we might need to do something different like
+   * treat the print identifier as an isbn or an issn. This method looks at the config and the values for the row and
+   * works out what the right bit of row specific config is. Example config looks like this
+   * elsevier:[
+   *           quoteChar:'"',
+   *           // separator:',',
+   *           charset:'UTF-8',
+   *           defaultTypeName:'org.gokb.cred.BookInstance',
+   *           identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
+   *           defaultMedium:'Book',
+   *           discriminatorColumn:'publication_type',
+   *           polymorphicRows:[
+   *             'Serial':[
+   *               identifierMap:[ 'print_identifier':'issn', 'online_identifier':'issn' ],
+   *               defaultMedium:'Serial',
+   *               defaultTypeName:'org.gokb.cred.TitleInstance'
+   *              ],
+   *             'Monograph':[
+   *               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
+   *               defaultMedium:'Book',
+   *               defaultTypeName:'org.gokb.cred.BookInstance'
+   *             ]
+   *           ],
+   *           // doDistanceMatch=true, // To enable full string title matching
+   *           rules:[
+   *             [field: 'publication_title', kbart: 'publication_title'],
+   *             [field: 'print_identifier', kbart: 'print_iden..........
+   */
+  def getRowSpecificCfg(cfg, row) {
+    def result = cfg
+    if ( cfg.polymorphicRows && cfg.discriminatorColumn ) {
+      if ( row[cfg.discriminatorColumn] ) {
+        def row_specific_cfg = cfg.polymorphicRows[row[cfg.discriminatorColumn]]
+        if ( row_specific_cfg ) {
+          result = row_specific_cfg
+        }
+      }
+    }
+    result;
+  }
+
 
   // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
   // before the ingest proper. We record parameters used so that after recording any corrections we can re-process the file.
@@ -1520,15 +1568,17 @@ class TSVIngestionService {
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
 
+      def row_specific_cfg = getRowSpecificCfg(ingest_cfg,the_kbart);
+
       TitleInstance.withNewTransaction {
 
         def identifiers = []
 
         if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) )
-          identifiers << [type:ingest_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
+          identifiers << [type:row_specific_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
         if ( the_kbart.print_identifier && ( the_kbart.print_identifier.trim().length() > 0 ) )
-          identifiers << [type:ingest_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
+          identifiers << [type:row_specific_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
 
         the_kbart.additional_isbns.each { identifier ->
           if ( identifier && ( identifier.trim().length() > 0 ) )
@@ -1549,7 +1599,7 @@ class TSVIngestionService {
 
         if ( identifiers.size() > 0 ) {
           try {
-            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg)
+            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config)
             if ( title && the_kbart.title_image && ( the_kbart.title_image != title.coverImage) ) {
               title.coverImage = the_kbart.title_image;
               title.save(flush:true, failOnError:true)
