@@ -161,7 +161,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
               defaultMedium:'Book',
               discriminatorColumn:'publication_type',
-              polmorphicRows:[
+              polymorphicRows:[
                 'Serial':[
                   identifierMap:[ 'print_identifier':'issn', 'online_identifier':'issn' ],
                   defaultMedium:'Serial',
