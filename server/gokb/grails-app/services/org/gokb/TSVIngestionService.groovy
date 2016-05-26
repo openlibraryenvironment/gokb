@@ -48,7 +48,6 @@ import grails.converters.JSON
 class TSVIngestionService {
 
   def grailsApplication
-  def titleLookupService
   def componentLookupService
   def refdataCategory
   def sessionFactory
@@ -113,7 +112,10 @@ class TSVIngestionService {
             // Only add if it's a title.
             if ( dproxied instanceof TitleInstance ) {
               title_match = true
-              result['matches'] << (dproxied as TitleInstance)
+              result['matches'] << (dproxied)
+            }
+            else {
+              log.warn("Matched component ${dproxied.class.name}:${dproxied} but not added to matches because it's not a title");
             }
           }
 
@@ -152,7 +154,7 @@ class TSVIngestionService {
                         "suppliedNS"  : id_def.type,
                         "foundNS"     : ns
                         ]
-                        result['matches'] << (dproxied as TitleInstance)
+                        result['matches'] << dproxied
                       }
                     }
                   }
@@ -196,6 +198,7 @@ class TSVIngestionService {
 
     log.debug("Title matches ${matches?.size()} existing entries");
 
+    def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
     switch (matches.size()) {
     case 0 :
       // No match behaviour.
@@ -204,9 +207,8 @@ class TSVIngestionService {
         log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultTypeName}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
-        log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}");
+        log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
 
-        def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
         the_title.ids=[]
@@ -215,7 +217,7 @@ class TSVIngestionService {
         log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
         // Lookup using title string match only.
 
-        the_title == TitleInstance.findByNormname(norm_title)
+        the_title == new_inst_clazz.findByNormname(norm_title)
 
         if ( ( the_title == null ) && ( ingest_cfg.doDistanceMatch == true ) ) {
           log.debug("No title match on identifier or normname -- try string match");
@@ -235,9 +237,9 @@ class TSVIngestionService {
             )
         } else {
           log.debug("No TI could be matched by name. New TI, flag for review.")
+          log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
           // Could not match on title either.
           // Create a new TI but attach a Review request to it.
-          def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
           the_title = new_inst_clazz.newInstance()
           the_title.ids=[]
           the_title.name=title
@@ -814,9 +816,11 @@ class TSVIngestionService {
                             ]);
 
 
-        def update_agent = User.findByUsername('IngestAgent')
-        Package.executeUpdate('update Package p set p.lastUpdateComment=:uc, p.lastUpdatedBy=:updateAgent where p.id=:pid',
+        Package.withNewTransaction {
+          def update_agent = User.findByUsername('IngestAgent')
+          Package.executeUpdate('update Package p set p.lastUpdateComment=:uc, p.lastUpdatedBy=:updateAgent where p.id=:pid',
                             [uc:"Direct ingest of file:${datafile.name}[${datafile.id}]", pid:the_package_id, updateAgent:update_agent]);
+        }
       }
       else {
 
@@ -924,10 +928,10 @@ class TSVIngestionService {
 
         def identifiers = []
         if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) ) 
-          identifiers << [type:ingest_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
+          identifiers << [type:row_specific_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
         if ( the_kbart.print_identifier && ( the_kbart.print_identifier.trim().length() > 0 ) )
-          identifiers << [type:ingest_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
+          identifiers << [type:row_specific_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
 
         the_kbart.additional_isbns.each { identifier ->
           if ( identifier.trim().length() > 0 ) {
