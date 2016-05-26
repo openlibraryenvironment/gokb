@@ -942,6 +942,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
+        [heading:'Type', property:'component.getNiceName()'],
         [heading:'Status', property:'status.value',sort:'status'],
       ]
     ]

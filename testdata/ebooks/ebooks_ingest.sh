@@ -8,7 +8,7 @@ curl -v --user admin:admin -X POST \
   --form content=@./SD_TEST_1.txt \
   --form source="ELSEVIER" \
   --form fmt="elsevier" \
-  --form pkg="Elsevier Global All Titles" \
+  --form pkg="Functional Test - elsevier#1" \
   --form platformUrl="http://www.sciencedirect.com/science" \
   --form format="JSON" \
   --form providerName="elsevier" \
