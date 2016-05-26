@@ -11,8 +11,9 @@ class GlobalSearchController {
 
   def index() { 
     def result = [:]
-    org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
-    org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
+
+    def esclient = ESWrapperService.getClient()
+
     try {
 
       if ( params.q && params.q.length() > 0) {

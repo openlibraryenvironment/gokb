@@ -69,9 +69,18 @@ grails.project.dependency.resolution = {
         // Must get parsers as well as core or we can only detect generic types.
         runtime 'org.apache.tika:tika-parsers:1.6'
         
+
+        runtime 'org.elasticsearch:elasticsearch:2.1.1'
+        runtime ('org.elasticsearch:elasticsearch-groovy:2.1.1') {
+          excludes "org.codehaus.groovy:groovy-all"
+        }
+
+        // runtime ('org.elasticsearch:elasticsearch:1.7.1')
+        // runtime ('org.elasticsearch:elasticsearch-groovy:1.7.0') {
+        //     excludes "org.codehaus.groovy:groovy-all:2.4.3"
+        // }
+
         runtime 'xalan:xalan:2.7.1'
-        runtime 'org.elasticsearch:elasticsearch:1.3.2'
-        runtime 'org.elasticsearch:elasticsearch-client-groovy:1.3.2'
         runtime 'net.sf.opencsv:opencsv:2.0'
         
         // Gant. Matched the version that ships with grails bootstrap in Grails 2.3.11

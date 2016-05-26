@@ -1613,7 +1613,6 @@ apiClasses = [
 
 /** Less config **/
 grails.assets.less.compiler = 'less4j'
-grails.assets.excludes = ["gokb/themes/**/*.less", "icons"]
 grails.assets.includes = ["gokb/themes/**/theme.less", "jquery/*.js"]
 
 

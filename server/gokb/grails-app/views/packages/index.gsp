@@ -28,21 +28,89 @@
          </ul>
        </div>
 
+
        <div class="row">
-         <div class="col-md-12">
-           <g:form class="form" role="form" controller="packages" action="index" method="get">
-             <span class="input-group">
-               <input class="form-control input-large" type="text" name="q"/>
-               <span class="input-group-btn">
-                 <button class="btn btn-default" type="submit">Search</button>
-               </span>
-             </span>
-           </g:form><br/>&nbsp;<br/>
+         <div class="span12">
+
+           <g:form controller="packages" class="form" role="form" action="index" method="get" params="${params}">
+
+             <input type="hidden" name="offset" value="${params.offset}"/>
+             <g:if test="${params.startYear && params.endYear}">
+               <input type="hidden" name="startYear" value="${params.startYear}"/>
+               <input type="hidden" name="endYear" value="${params.endYear}"/>
+             </g:if>
+             <if test="${params.filter}">
+               <input type="hidden" name="filter" value="${params.filter}"/>
+             </if>
+
+             <ul class="nav nav-pills">
+               <g:set var="active_filter" value="${params.filter}"/>
+               <li class="${(active_filter != 'current')?'active':''}"><g:link action="index">All Packages</g:link></li>
+  
+               <li class="${active_filter=='current'?'active':''}"><g:link action="index" params="${ [filter:'current',endYear:"[ ${new Date().year +1900} TO 2100]"]}">Current Packages</g:link></li>
+
+  
+             </ul>
+
+             <div class="well form-horizontal">
+               Search Term: <input name="q" placeholder="Add &quot;&quot; for exact match" value="${params.q}"/>
+               Sort: <select name="sort">
+                       <option ${params.sort=='sortname' ? 'selected' : ''} value="sortname">Package Name</option>
+                       <option ${params.sort=='_score' ? 'selected' : ''} value="_score">Score</option>
+                       <option ${params.sort=='lastModified' ? 'selected' : ''} value="lastModified">Last Modified</option>
+                     </select>
+               Order: <select name="order" value="${params.order}">
+                       <option ${params.order=='asc' ? 'selected' : ''} value="asc">Ascending</option>
+                       <option ${params.order=='desc' ? 'selected' : ''} value="desc">Descending</option>
+                     </select>
+   
+               <button type="submit" name="search" value="yes">Search</button>
+               <p>
+                 <g:each in="${['type','endYear','startYear','consortiaName','cpname']}" var="facet">
+                   <g:each in="${params.list(facet)}" var="fv">
+                     <span class="badge alert-info">${facet}:${fv} &nbsp; <g:link controller="${controller}" action="index" params="${removeFacet(params,facet,fv)}"><i class="icon-remove icon-white"></i></g:link></span>
+                   </g:each>
+                 </g:each>
+               </p>
+             </div>
+           </g:form>
+
          </div>
        </div>
 
        <div class="row">
-         <div class="col-md-12">
+
+
+         <div class="facetFilter span2">
+           <g:each in="${facets.sort{it.key}}" var="facet">
+             <g:if test="${facet.key != 'type'}">
+             <div class="panel panel-default">
+               <div class="panel-heading">
+                 <h5><g:message code="facet.so.${facet.key}" default="${facet.key}" /></h5>
+               </div>
+               <div class="panel-body">
+                 <ul>
+                   <g:each in="${facet.value.sort{it.display}}" var="v">
+                     <li>
+                       <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
+ 
+                       <g:if test="${params.list(facet.key).contains(v.term.toString())}">
+                         ${v.display} (${v.count})
+                       </g:if>
+                       <g:else>
+                         <g:link controller="${controller}" action="${action}" params="${addFacet(params,facet.key,v.term)}">${v.display}</g:link> (${v.count})
+                       </g:else>
+                     </li>
+                   </g:each>
+                 </ul>
+               </div>
+             </div>
+             </g:if>
+           </g:each>
+         </div>
+
+
+         <div class="col-md-10">
           <table class="table table-striped">
             <thead>
               <tr>

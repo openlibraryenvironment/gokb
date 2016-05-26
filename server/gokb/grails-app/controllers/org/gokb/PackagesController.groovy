@@ -26,6 +26,7 @@ class PackagesController {
   def concurrencyManagerService
   def TSVIngestionService
   def ESWrapperService
+  def ESSearchService
   def grailsApplication
   def sessionFactory
 
@@ -49,72 +50,36 @@ class PackagesController {
     result
   }
 
+
   def index() {
-    log.debug("packageContent::${params}")
     def result = [:]
-    org.elasticsearch.groovy.node.GNode esnode = ESWrapperService.getNode()
-    org.elasticsearch.groovy.client.GClient esclient = esnode.getClient()
-    try {
+    params.max = 30
 
-      if ( params.q && params.q.length() > 0) {
+    params.rectype = "Package" // Tells ESSearchService what to look for
 
-        // Comment out replacement of ' by " so we can do exact string searching on identifiers - not sure what the use case
-        // was for this anyway. Pls document in comment and re-add if needed.
-        // params.q = params.q.replace('"',"'")
-        params.q = params.q.replace('[',"(")
-        params.q = params.q.replace(']',")")
-
-        result.max = params.max ? Integer.parseInt(params.max) : 10;
-        result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
-
-        def query_str = 'componentType:Package AND '+(params.q?:'*');
-
-        log.debug("Searching for ${query_str}");
-
-        def search = esclient.search {
-                       indices grailsApplication.config.globalSearch.indices
-                       types 'component'
-                       source {
-                         from = result.offset
-                         size = result.max
-                         query {
-                           query_string (query: query_str)
-                         }
-                       }
-                     }
-
-        result.hits = search.response.hits
-
-        if(search.response.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          search.response.hits.maxScore = 0;
-        }
-
-        result.resultsTotal = search.response.hits.totalHits
-        log.debug("found ${result.resultsTotal} records")
-
-        // We pre-process the facet response to work around some translation issues in ES
-
-        if ( search.response.facets != null ) {
-          result.facets = [:]
-          search.response.facets.facets.each { facet ->
-            def facet_values = []
-            facet.value.entries.each { fe ->
-              facet_values.add([term: fe.term,display:fe.term,count:"${fe?.count}"])
-            }
-            result.facets[facet.key] = facet_values
-          }
-        }
-      }
+    if(params.q == "")  params.remove('q');
+    params.isPublic="Yes"
+    if(params.lastUpdated){
+      params.lastModified ="[${params.lastUpdated} TO 2100]"
     }
-    catch ( Exception e ) {
-      log.debug("Problem",e)
+    if (!params.sort){
+      params.sort="sortname"
+      params.order = "asc"
     }
-    finally {
+    if(params.search.equals("yes")){
+      //when searching make sure results start from first page
+      params.offset = 0
+      params.search = null
     }
+    if(params.filter == "current")
+      params.tempFQ = " -pkg_scope:\"Master File\" -\"open access\" ";
 
-    result;
+    result =  ESSearchService.search(params)
+    result.transforms = grailsApplication.config.packageTransforms
 
+    result
   }
+
 
   def preflight() {
    def result = [:]
