@@ -928,10 +928,10 @@ class TSVIngestionService {
 
         def identifiers = []
         if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) ) 
-          identifiers << [type:row_specific_cfg.identifierMap.online_identifier, value:the_kbart.online_identifier]
+          identifiers << [type:row_specific_config.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
         if ( the_kbart.print_identifier && ( the_kbart.print_identifier.trim().length() > 0 ) )
-          identifiers << [type:row_specific_cfg.identifierMap.print_identifier, value:the_kbart.print_identifier]
+          identifiers << [type:row_specific_config.identifierMap.print_identifier, value:the_kbart.print_identifier]
 
         the_kbart.additional_isbns.each { identifier ->
           if ( identifier.trim().length() > 0 ) {

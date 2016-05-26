@@ -5,7 +5,7 @@ export GOKB_HOST="http://localhost:8080"
 # wget http://holdings.sciencedirect.com/holdings/productReport.url?packageId=&productId=34
 
 curl -v --user admin:admin -X POST \
-  --form content=@./SD_TEST_1.txt \
+  --form content=@./elsevier/SD_TEST_1.txt \
   --form source="ELSEVIER" \
   --form fmt="elsevier" \
   --form pkg="Functional Test - elsevier#1" \
