@@ -31,12 +31,14 @@ class HomeController {
     return stats_cache
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index () {
     if (springSecurityService.currentUser) {
       forward (action: "dashboard", params: (params))
     }
   }
   
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def calculate() {
     log.debug("Calculating stats...");
 
