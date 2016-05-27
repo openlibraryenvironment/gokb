@@ -86,7 +86,7 @@ grails.project.dependency.resolution = {
         // Gant. Matched the version that ships with grails bootstrap in Grails 2.3.11
         runtime 'org.codehaus.gant:gant_groovy1.8:1.9.6'
         
-        compile 'com.github.sommeri:less4j:1.8.2'
+        //compile 'com.github.sommeri:less4j:1.8.2'
         
         compile 'org.ajoberstar:grgit:0.2.3' // 0.3.0 is Groovy >=2.3 and breaks for me.
         build 'org.apache.httpcomponents:httpcore:4.4.4'
@@ -128,9 +128,10 @@ grails.project.dependency.resolution = {
       // Injects grailsApplication and config for easy access in your files.
       
       // LESS compiler
-      compile ":less-asset-pipeline:2.9.1", {
-        excludes 'less4j'
-      }
+      //compile ":less-asset-pipeline:2.9.1", {
+      //  excludes 'less4j'
+      //}
+      compile ":less-asset-pipeline:2.9.1"
       
       runtime ':hibernate:3.6.10.18'  // II trying .19 over .16
       runtime ':database-migration:1.4.1-SNAPSHOT'  // II: updated here due to ehCache problem - see https://github.com/grails-plugins/grails-spring-security-core/issues/152
