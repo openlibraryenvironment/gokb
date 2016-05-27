@@ -447,21 +447,21 @@ log4j = {
 }
 
 // Added by the Spring Security Core plugin:
-grails.plugins.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.User'
-grails.plugins.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
-grails.plugins.springsecurity.authority.className = 'org.gokb.cred.Role'
+grails.plugin.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.User'
+grails.plugin.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
+grails.plugin.springsecurity.authority.className = 'org.gokb.cred.Role'
 
 //Enable Basic Auth Filter
-grails.plugins.springsecurity.useBasicAuth = true
-grails.plugins.springsecurity.basic.realmName = "GOKb API Authentication Required"
+grails.plugin.springsecurity.useBasicAuth = true
+grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required"
 //Exclude normal controllers from basic auth filter. Just the JSON API is included
-grails.plugins.springsecurity.filterChain.chainMap = [
+grails.plugin.springsecurity.filterChain.chainMap = [
   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/packages/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
 ]
 
-grails.plugins.springsecurity.controllerAnnotations.staticRules = [
+grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/admin/**': ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/file/**': ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']
 ]

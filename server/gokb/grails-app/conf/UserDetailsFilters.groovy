@@ -25,17 +25,12 @@ class UserDetailsFilters {
     
     setUserFilter(controller:'*', action:'*') {
       before = {
-        // if ( session.sessionPreferences == null ) {
-        //   session.sessionPreferences = grailsApplication.config.appDefaultPrefs
-        // }
-        // else {
-        // }
-        if ( springSecurityService.principal instanceof String ) {
-          //log.debug("User is string: ${springSecurityService.principal}");
-        }
-        else if (springSecurityService.principal?.id != null ) {
-          request.user = User.get(springSecurityService.principal.id)
-          request.userOptions = request.user.getUserOptions()
+
+        def user = springSecurityService.getCurrentUser()
+
+        if (user) {
+          request.user = user
+          request.userOptions = user.getUserOptions()
           
           if (!session.menus) {
           
