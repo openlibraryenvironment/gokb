@@ -7,7 +7,7 @@
 import com.k_int.TextUtils
 import org.apache.log4j.DailyRollingFileAppender
 import org.apache.log4j.RollingFileAppender
-import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
+import grails.plugin.springsecurity.SpringSecurityUtils
 import org.gokb.IngestService
 import org.gokb.cred.KBComponent
 import org.gokb.validation.types.*

@@ -1,6 +1,6 @@
 package org.gokb
 
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 import grails.util.GrailsNameUtils
 
 import org.gokb.cred.*

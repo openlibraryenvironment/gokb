@@ -1,6 +1,6 @@
 package org.gokb.cred
 
-import grails.plugins.springsecurity.SpringSecurityService
+import grails.plugin.springsecurity.SpringSecurityService
 import groovy.util.logging.Log4j;
 
 import java.lang.reflect.Field

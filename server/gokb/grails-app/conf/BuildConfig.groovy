@@ -105,7 +105,14 @@ grails.project.dependency.resolution = {
 
     plugins {
       
-      runtime ":cors:1.1.6"
+      compile ":spring-security-core:2.0.0"
+      compile ":spring-security-ui:1.0-RC3"
+      compile ":spring-security-acl:2.0.1"
+
+      runtime( ":cors:1.1.8" ) { 
+        excludes 'spring-security-core' 
+        excludes 'spring-security-web' 
+      }
       
       compile ":grails-melody:1.52.0"
 
@@ -115,13 +122,13 @@ grails.project.dependency.resolution = {
       // plugins for the compile step
       compile ':cache:1.1.3'
       
-      compile ':asset-pipeline:1.9.9'
+      compile ':asset-pipeline:2.9.1'
       
       // Allows the use of groovy code in css and js files by suffixing with '-gtpl'.
       // Injects grailsApplication and config for easy access in your files.
       
       // LESS compiler
-      compile ":less-asset-pipeline:1.11.0", {
+      compile ":less-asset-pipeline:2.9.1", {
         excludes 'less4j'
       }
       
@@ -142,13 +149,10 @@ grails.project.dependency.resolution = {
 
   
       // Joda time to handle the ISO dates.
-      compile ":joda-time:1.4"
+      compile ":joda-time:1.5"
 
-      compile ":spring-security-core:1.2.7.3"
-      compile ":spring-security-ui:0.2"
-      compile ":spring-security-acl:1.1.1"
 
-      compile ':mail:1.0.1', {
+      compile ':mail:1.0.7', {
          excludes 'spring-test'
       }
       
@@ -159,10 +163,10 @@ grails.project.dependency.resolution = {
       compile ":quartz:1.0.1"
 
       /** Moved plugins from the properties file to here **/
-      compile ':audit-logging:0.5.4' // SO: Tried upgrading to 0.5.5.3, but this caused a null pointer to be thrown.
+      compile ':audit-logging:1.1.0'
       compile ':executor:0.3'
       compile ':famfamfam:1.0.1'
-      compile ':rest:0.7'
+      compile ':rest:0.8'
       compile ":twitter-bootstrap:3.2.0.2"
 
       compile ":gson:1.1.4"

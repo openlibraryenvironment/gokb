@@ -1,7 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.*
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import grails.converters.JSON

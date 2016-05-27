@@ -1,7 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.*;
-import org.codehaus.groovy.grails.plugins.orm.auditable.AuditLogEvent
+import org.codehaus.groovy.grails.plugins.orm.auditable.AuditLogEventController
 import grails.converters.JSON
 
 class FwkController {
@@ -18,8 +18,13 @@ class FwkController {
     result.max = params.max ?: 20;
     result.offset = params.offset ?: 0;
 
-    result.historyLines = AuditLogEvent.executeQuery("select e from AuditLogEvent as e where className=? and persistedObjectId=? order by id desc", qry_params, [max:result.max, offset:result.offset]);
-    result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from AuditLogEvent as e where className=? and persistedObjectId=?",qry_params)[0];
+    Class AuditLogEvent = AuditLogEventController.AuditLogEvent
+    result.historyLines = AuditLogEvent.executeQuery("select e from AuditLogEvent as e where className=? and persistedObjectId=? order by id desc", 
+                                                                             qry_params, 
+                                                                             [max:result.max, offset:result.offset]);
+
+    result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from AuditLogEvent as e where className=? and persistedObjectId=?",
+                                                                                  qry_params)[0];
 
     result
   }
@@ -36,6 +41,8 @@ class FwkController {
 
     result.max = params.max ?: 20;
     result.offset = params.offset ?: 0;
+
+    Class AuditLogEvent = AuditLogEventController.AuditLogEvent
 
     result.noteLines = Note.executeQuery("select n from Note as n where ownerClass=? and ownerId=? order by id desc", qry_params, [max:result.max, offset:result.offset]);
     result.noteLinesTotal = AuditLogEvent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];

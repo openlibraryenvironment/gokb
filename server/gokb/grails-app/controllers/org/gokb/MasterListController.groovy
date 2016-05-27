@@ -2,7 +2,7 @@ package org.gokb
 
 import org.gokb.cred.*
 import grails.converters.*
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 

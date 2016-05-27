@@ -1,6 +1,6 @@
 import org.gokb.cred.*
 import org.springframework.security.core.context.SecurityContextHolder as SCH
-import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
+import grails.plugin.springsecurity.SpringSecurityUtils
 
 class UserDetailsFilters {
 

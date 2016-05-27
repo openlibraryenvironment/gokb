@@ -1,7 +1,6 @@
 package org.gokb
 
-import grails.plugins.springsecurity.Secured
-
+import org.springframework.security.access.annotation.Secured;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream

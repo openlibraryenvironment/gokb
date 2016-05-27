@@ -2,7 +2,7 @@ package org.gokb
 
 import static java.util.UUID.randomUUID
 import grails.converters.JSON
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 import grails.util.GrailsNameUtils
 import grails.util.Holders
 

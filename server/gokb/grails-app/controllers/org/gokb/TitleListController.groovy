@@ -2,7 +2,7 @@ package org.gokb
 
 import grails.converters.*
 import org.springframework.security.acls.model.NotFoundException
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.gokb.cred.*
 import grails.plugin.gson.converters.GSON

@@ -2,7 +2,7 @@ package com.k_int.apis
 
 import groovy.util.logging.Log4j
 
-import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
+import grails.plugin.springsecurity.SpringSecurityUtils
 import org.gokb.cred.KBDomainInfo
 import org.springframework.security.acls.model.Permission
 import org.springframework.security.core.context.SecurityContextHolder as SECCH

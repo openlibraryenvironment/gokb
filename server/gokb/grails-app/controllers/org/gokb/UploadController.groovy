@@ -1,7 +1,7 @@
 package org.gokb
 
 import java.security.MessageDigest
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 import grails.converters.*
 import org.gokb.cred.*
 

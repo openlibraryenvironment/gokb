@@ -1,7 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.*
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 import java.security.MessageDigest
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job

@@ -1,7 +1,7 @@
 package org.gokb
 
 import grails.converters.JSON
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 
 import org.gokb.cred.*
 

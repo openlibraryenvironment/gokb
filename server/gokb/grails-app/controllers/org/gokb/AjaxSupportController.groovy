@@ -6,7 +6,7 @@ import com.k_int.ClassUtils
 
 import org.gokb.cred.*
 
-import grails.plugins.springsecurity.Secured
+import org.springframework.security.access.annotation.Secured;
 import grails.util.GrailsNameUtils;
 
 class AjaxSupportController {
