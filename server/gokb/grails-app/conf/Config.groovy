@@ -743,6 +743,9 @@ validation.rules = [
 ]
 
 auditLog {
+
+  auditDomainClassName = "org.gokb.cred.AuditLogEvent"
+
   actorClosure = { request, session ->
 
     if (request.applicationContext.springSecurityService.principal instanceof java.lang.String){
@@ -1613,6 +1616,7 @@ apiClasses = [
 
 /** Less config **/
 grails.assets.less.compiler = 'less4j'
+grails.assets.excludes = ["**/*.less"]
 grails.assets.includes = ["gokb/themes/**/theme.less", "jquery/*.js"]
 
 
@@ -1689,3 +1693,8 @@ beans {
  }
  }
  remove this line */
+
+
+// Added by the Audit-Logging plugin:
+auditLog.auditDomainClassName = 'org.gokb.cred.AuditLogEvent'
+

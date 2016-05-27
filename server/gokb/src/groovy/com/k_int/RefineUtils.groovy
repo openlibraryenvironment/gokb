@@ -9,7 +9,7 @@ import org.apache.tools.ant.Project
 import org.apache.tools.ant.ProjectHelper
 import org.eclipse.jgit.lib.NullProgressMonitor
 import org.eclipse.jgit.lib.ProgressMonitor
-import org.json.JSONObject
+import org.codehaus.groovy.grails.web.json.*
 
 import com.k_int.grgit.GitUtils
 
