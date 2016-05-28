@@ -449,6 +449,7 @@ class AjaxSupportController {
     outs.close()
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def genericSetRel() {
     // [id:1, value:JISC_Collections_NESLi2_Lic_IOP_Institute_of_Physics_NESLi2_2011-2012_01012011-31122012.., type:License, action:inPlaceSave, controller:ajax
     // def clazz=grailsApplication.domainClasses.findByFullName(params.type)
@@ -516,6 +517,7 @@ class AjaxSupportController {
     result;
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addIdentifier() {
     log.debug(params);
     // Check identifier namespace present, and identifier value valid for that namespace
