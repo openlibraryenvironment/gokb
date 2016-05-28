@@ -23,7 +23,8 @@ environments {
             // driverClassName = "org.postgresql.Driver"
             // dialect = org.hibernate.dialect.PostgreSQLDialect
 
-            driverClassName = "com.mysql.jdbc.Driver"
+            // driverClassName = "com.mysql.jdbc.Driver"
+            driverClassName = "org.mariadb.jdbc.Driver"
             // dialect=org.hibernate.dialect.MySQL5Dialect
             dialect=org.hibernate.dialect.MySQL5InnoDBDialect
             defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED

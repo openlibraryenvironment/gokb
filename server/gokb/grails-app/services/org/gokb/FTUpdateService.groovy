@@ -39,6 +39,7 @@ class FTUpdateService {
 
       if ( kbc instanceof org.gokb.cred.Identifier ) {
         // Don't do anything for identifiers - they are a part of everything else indexed
+        log.debug("Skipping ID");
       }
       else {
         result = [:]
@@ -56,9 +57,10 @@ class FTUpdateService {
   
         result.componentType=kbc.class.simpleName
 
+        log.debug("process ${result}");
       }
 
-      result
+      return result
     }
   }
 
@@ -101,6 +103,8 @@ class FTUpdateService {
         idx_record.remove('_id');
 
         if ( idx_record != null ) {
+
+          log.debug("Proces ${idx_record}");
 
           def future = esclient.indexAsync {
             index 'gokb'
