@@ -120,9 +120,27 @@ def processFile(official_package_name, link, config) {
   }
   else {
     println("Checksum changed - process file");
+    pushToGokb(official_package_name, package_data);
     config.packageData[official_package_name].cksum = md5sumHex
     config.packageData[official_package_name].lastProcessed = System.currentTimeMillis()
   }
+
+}
+
+def pushToGokb(name, data) {
+  // curl -v --user admin:admin -X POST \
+  //   --form content=@./elsevier/ScienceDirectStandard_Global_AllTitles_2016-05-23.txt \
+  //   --form source="ELSEVIER" \
+  //   --form fmt="elsevier" \
+  //   --form pkg="Elsevier Global All Titles" \
+  //   --form platformUrl="http://www.sciencedirect.com/science" \
+  //   --form format="JSON" \
+  //   --form providerName="elsevier" \
+  //   --form providerIdentifierNamespace="ELSEVIER" \
+  //   --form reprocess="Y" \
+  //   --form synchronous="Y" \
+  //   --form flags="+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs" \
+  //   $GOKB_HOST/gokb/packages/deposit
 
 }
 
