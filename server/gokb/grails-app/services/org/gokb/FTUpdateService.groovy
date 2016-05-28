@@ -134,10 +134,10 @@ class FTUpdateService {
         def idx_record = recgen_closure(r)
 
         if ( idx_record != null ) {
-          log.debug("Index start -- ${recid}");
-
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
+          log.debug("Index start -- ${recid}");
+
 
           def future = esclient.indexAsync {
             index 'gokb'
