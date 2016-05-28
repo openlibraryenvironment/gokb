@@ -99,12 +99,11 @@ class FTUpdateService {
       while (results.next()) {
         Object r = results.get(0);
         def idx_record = recgen_closure(r)
-        def recid = idx_record['_id'].toString()
-        idx_record.remove('_id');
 
         if ( idx_record != null ) {
 
-          log.debug("Proces ${idx_record}");
+          def recid = idx_record['_id'].toString()
+          idx_record.remove('_id');
 
           def future = esclient.indexAsync {
             index 'gokb'

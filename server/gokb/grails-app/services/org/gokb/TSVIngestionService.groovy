@@ -818,8 +818,12 @@ class TSVIngestionService {
 
         Package.withNewTransaction {
           def update_agent = User.findByUsername('IngestAgent')
-          Package.executeUpdate('update Package p set p.lastUpdateComment=:uc, p.lastUpdatedBy=:updateAgent where p.id=:pid',
-                            [uc:"Direct ingest of file:${datafile.name}[${datafile.id}]", pid:the_package_id, updateAgent:update_agent]);
+          // insertBenchmark updateBenchmark
+          Package.executeUpdate('update Package p set p.insertBenchmark=:elapsed where p.id=:pid AND p.insertBenchmark is null',
+                            [pid:the_package_id,elapsed:processing_elapsed]);
+          Package.executeUpdate('update Package p set p.lastUpdateComment=:uc, p.lastUpdatedBy=:updateAgent, p.updateBenchmark=:elapsed where p.id=:pid',
+                            [uc:"Direct ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}", pid:the_package_id, updateAgent:update_agent, elapsed:processing_elapsed]);
+ 
         }
       }
       else {
