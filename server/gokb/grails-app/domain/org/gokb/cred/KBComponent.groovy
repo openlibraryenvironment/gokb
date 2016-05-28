@@ -302,6 +302,8 @@ abstract class KBComponent {
   Date lastUpdated
 
   Long lastSeen
+  Long insertBenchmark
+  Long updateBenchmark
 
   // Read only flag should be honoured in the UI
   boolean systemComponent = false
@@ -349,6 +351,8 @@ abstract class KBComponent {
     lastUpdated column:'kbc_last_updated'
     reviewRequests sort: 'id', order: 'asc'
     lastSeen column:'kbc_last_seen'
+    insertBenchmark column:'kbc_insert_benchmark'
+    updateBenchmark column:'kbc_update_benchmark'
     lastUpdateComment column:'kbc_last_update_comment'
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
@@ -364,6 +368,8 @@ abstract class KBComponent {
     source (nullable:true, blank:false)
     lastSeen (nullable:true, blank:false)
     lastUpdateComment (nullable:true, blank:false)
+    insertBenchmark (nullable:true, blank:false)
+    updateBenchmark (nullable:true, blank:false)
   }
 
   /**
