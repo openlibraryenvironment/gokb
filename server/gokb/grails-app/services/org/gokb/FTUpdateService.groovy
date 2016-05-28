@@ -33,36 +33,69 @@ class FTUpdateService {
 
     def esclient = ESWrapperService.getClient()
 
-    updateES(esclient, org.gokb.cred.KBComponent.class) { kbc ->
+    updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
 
       def result = null
 
-      if ( kbc instanceof org.gokb.cred.Identifier ) {
-        // Don't do anything for identifiers - they are a part of everything else indexed
-        log.debug("Skipping ID");
+      result = [:]
+      result._id = "${kbc.class.name}:${kbc.id}"
+      result.name = kbc.name
+      result.publisher = kbc.currentPublisher?.name
+      result.publisherId = kbc.currentPublisher?.id
+      result.altname = []
+      kbc.variantNames.each { vn ->
+        result.altname.add(vn.variantName)
       }
-      else {
-        result = [:]
-        result._id = "${kbc.class.name}:${kbc.id}"
-        result.name = kbc.name
-        result.altname = []
-        kbc.variantNames.each { vn ->
-          result.altname.add(vn.variantName)
-        }
 
-        result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
-        }
+      result.identifiers = []
+      kbc.ids.each { identifier ->
+        result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+      }
   
-        result.componentType=kbc.class.simpleName
+      result.componentType=kbc.class.simpleName
 
-        log.debug("process ${result}");
-      }
+      log.debug("process ${result}");
 
       return result
     }
+
+
+    updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
+
+      def result = null
+
+      result = [:]
+      result._id = "${kbc.class.name}:${kbc.id}"
+      result.name = kbc.name
+      result.publisher = kbc.currentPublisher?.name
+      result.publisherId = kbc.currentPublisher?.id
+      result.altname = []
+      kbc.variantNames.each { vn ->
+        result.altname.add(vn.variantName)
+      }
+
+      result.identifiers = []
+      kbc.ids.each { identifier ->
+        result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+      }
+
+      result.componentType=kbc.class.simpleName
+
+      log.debug("process ${result}");
+
+      return result
+    }
+
+    updateES(esclient, org.gokb.cred.Package.class) { kbc ->
+      def result = null
+      result = [:]
+      result._id = "${kbc.class.name}:${kbc.id}"
+      result.name = kbc.name
+      return result
+    }
+
   }
+
 
   def updateES(esclient, domain, recgen_closure) {
 
@@ -101,6 +134,7 @@ class FTUpdateService {
         def idx_record = recgen_closure(r)
 
         if ( idx_record != null ) {
+          log.debug("Index start -- ${recid}");
 
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
@@ -113,6 +147,7 @@ class FTUpdateService {
           }
 
           future.actionGet()
+          log.debug("Index completed -- ${recid}");
         }
 
         latest_ft_record.lastTimestamp = r.lastUpdated?.getTime()

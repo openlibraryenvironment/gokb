@@ -41,7 +41,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
     askews : [
                defaultTypeName:'org.gokb.cred.BookInstance',
                // defaultType:org.gokb.cred.BookInstance.class,
-               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'eisbn', ],
+               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn', ],
                quoteChar:'"',
                defaultMedium:'Book',
                rules:[
@@ -163,9 +163,9 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               discriminatorColumn:'publication_type',
               polymorphicRows:[
                 'Serial':[
-                  identifierMap:[ 'print_identifier':'issn', 'online_identifier':'issn' ],
+                  identifierMap:[ 'print_identifier':'issn', 'online_identifier':'eissn' ],
                   defaultMedium:'Serial',
-                  defaultTypeName:'org.gokb.cred.TitleInstance'
+                  defaultTypeName:'org.gokb.cred.JournalInstance'
                  ],
                 'Monograph':[
                   identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
@@ -238,8 +238,7 @@ identifiers = [
     "issn",
     "eissn",
     "doi",
-    "isbn",
-    "eisbn"
+    "isbn"
   ],
 
   // Class ones that need to be cross-checked. If an Identifier supplied as an ISSN,
@@ -953,7 +952,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
-        [heading:'Type', property:'niceName'],
+        [heading:'Type', property:'class?.simpleName'],
         [heading:'Status', property:'status.value',sort:'status'],
       ]
     ]
@@ -1478,6 +1477,40 @@ globalSearchTemplates = [
           qparam:'qp_prov_id',
           placeholder:'Content Provider',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider'],
+          hide:true
+        ],
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
+      ],
+      qbeResults:[
+        [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
+        [heading:'Status', property:'status.value',sort:'status'],
+      ]
+    ]
+  ],
+  '1eJournals':[
+    baseclass:'org.gokb.cred.JournalInstance',
+    title:'eBooks',
+    group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Journal Title',
+          qparam:'qp_name',
+          placeholder:'Name or title of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
+          prompt:'Publisher',
+          qparam:'qp_pub',
+          placeholder:'Publisher',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
           hide:true
         ],
       ],
