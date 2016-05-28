@@ -1493,7 +1493,7 @@ globalSearchTemplates = [
   ],
   '1eJournals':[
     baseclass:'org.gokb.cred.JournalInstance',
-    title:'eBooks',
+    title:'Journals',
     group:'Secondary',
     defaultSort:'name',
     defaultOrder:'asc',
