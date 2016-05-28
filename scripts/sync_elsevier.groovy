@@ -5,9 +5,9 @@
   @Grab(group='net.sourceforge.nekohtml', module='nekohtml', version='1.9.14'),
   @Grab(group='javax.mail', module='mail', version='1.4.7'),
   @Grab(group='net.sourceforge.htmlunit', module='htmlunit', version='2.21'),
-  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.2');
-  @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.3.5');
-  @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.3.5');
+  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.2'),
+  @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
+  @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
   @GrabExclude('org.codehaus.groovy:groovy-all')
 ])
 
@@ -20,12 +20,14 @@ import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import com.gargoylesoftware.htmlunit.*
 import groovyx.net.http.HTTPBuilder
-import static groovyx.net.http.ContentType.URLENC
 import org.apache.http.entity.mime.MultipartEntity
 import org.apache.http.entity.mime.HttpMultipartMode
 import org.apache.http.entity.mime.content.InputStreamBody
 import org.apache.http.entity.mime.content.StringBody
 import groovyx.net.http.*
+import org.apache.http.entity.mime.MultipartEntityBuilder /* we'll use the new builder strategy */
+import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulate our file uploads */
+import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
 
 config = null;
 cfg_file = new File('./handler-cfg.json')
@@ -51,10 +53,6 @@ cfg_file << toJson(config);
 def pullLatest(config, url) {
   def result = false;
 
-  def http = new HTTPBuilder( 'http://localhost:8080' )
-  http.auth.basic 'admin', 'admin'
-
-
   println("Get URL ${url}");
   client = new WebClient()
   client.getOptions().setThrowExceptionOnScriptError(false);
@@ -74,6 +72,9 @@ def pullLatest(config, url) {
   int page_count = 0;
   int package_count = 0;
 
+  def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
+  httpbuilder.auth.basic 'admin', 'admin'
+
   while(next_page) {
     page_count++
     // List<?> links = page.getByXPath("//div[@class='generate']/@href");
@@ -82,7 +83,7 @@ def pullLatest(config, url) {
     links.each { link ->
       if ( link.value.startsWith('../holdings/productReport.url') ) {
         def package_name = link.getOwnerElement().getParentNode().getByXPath('../td[@class="report"]/text()');
-        processFile(package_name[0],link.value, config, http);
+        processFile(package_name[0],link.value, config, httpbuilder);
         package_count++;
       }
     }
@@ -147,25 +148,23 @@ def pushToGokb(name, data, http) {
 
     MultipartEntityBuilder multiPartContent = new MultipartEntityBuilder()
     // Adding Multi-part file parameter "imageFile"
-    multiPartContent.addPart("content", new InputStreamBody( new ByteArrayInputStream(data.getBytes()), 
-                                        "application/tsv",
-                                        name))
+    multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
 
     // Adding another string parameter "city"
     multiPartContent.addPart("source", new StringBody("ELSEVIER"))
     multiPartContent.addPart("fmt", new StringBody("elsevier"))
-    multiPartContent.addPart("pkg", new StringBody(name))
-    multiPartContent.addPart("platformUrl", "http://www.sciencedirect.com/science");
-    multiPartContent.addPart("format", "JSON");
-    multiPartContent.addPart("providerName", "elsevier");
-    multiPartContent.addPart("providerIdentifierNamespace", "ELSEVIER");
-    multiPartContent.addPart("reprocess", "Y");
-    multiPartContent.addPart("synchronous", "Y");
-    multiPartContent.addPart("flags", "+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs");
+    multiPartContent.addPart("pkg", new StringBody(name.toString()))
+    multiPartContent.addPart("platformUrl", new StringBody("http://www.sciencedirect.com/science"));
+    multiPartContent.addPart("format", new StringBody("JSON"));
+    multiPartContent.addPart("providerName", new StringBody("elsevier"));
+    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("ELSEVIER"));
+    multiPartContent.addPart("reprocess", new StringBody("Y"));
+    multiPartContent.addPart("synchronous", new StringBody("Y"));
+    multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
     
     req.entity = multiPartContent.build()
 
-    response.success = { resp, data ->
+    response.success = { resp, rdata ->
       if (resp.statusLine.statusCode == 200) {
         // response handling
         println("OK");
