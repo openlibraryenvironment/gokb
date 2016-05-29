@@ -79,8 +79,22 @@ def pullLatest(config, url) {
         System.err.println("FTP server refused connection.");
         System.exit(1);
     }
-      // ... // transfer files
-      ftp.logout();
+
+    // FTPFile[] files = ftp.listFiles('/2016 data/obook Collection');
+    FTPFile[] files = ftp.listFiles('/');
+    files.each { ftpfile ->
+      println("file: ${ftpfile}");
+      if ( ftpfile.name.startsWith('20') && 
+           ( ftpfile.name.length() >= 9 ) && 
+           ( ftpfile.name.substring(4,9)==' data' ) && 
+           ( ftpfile.type == FTPFile.DIRECTORY_TYPE ) ) {
+        recurse(ftp, '/'+ftpfile.name);
+      }
+    }
+
+    println("All done");
+    // ... // transfer files
+    ftp.logout();
   } catch(IOException e) {
       error = true;
       e.printStackTrace();
@@ -96,6 +110,28 @@ def pullLatest(config, url) {
   
   println("Done ${package_count} packages");
 }
+
+
+def recurse(ftp, dir) {
+  println("recurse(ftp, \"${dir}\")");
+  FTPFile[] files = ftp.listFiles(dir);
+  files.each { file ->
+    if ( ( file.type == FTPFile.DIRECTORY_TYPE ) &&
+         ( file.name != '.' ) &&
+         ( file.name != '..' ) ) {
+      recurse(ftp, dir+'/'+file.name);
+    }
+    else {
+      if ( file.name.length() > 4 ) {
+        if( file.name.substring(file.name.length()-4, file.name.length()) == '.txt' ) {
+          println("Candidate : ${file.name}");
+        }
+      }
+    }
+  }
+}
+
+
 
 def processFile(official_package_name, link, config, http) {
   println("\n\nfetching ${official_package_name} - ${link}");
