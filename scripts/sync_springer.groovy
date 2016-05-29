@@ -33,6 +33,9 @@ config = null;
 cfg_file = new File('./sync-springer-cfg.json')
 if ( cfg_file.exists() ) {
   config = new JsonSlurper().parseText(cfg_file.text);
+  if ( config.packageDate == null ) {
+    config.packageData=[:]
+  }
 }
 else {
   config=[:]
@@ -74,7 +77,7 @@ def pullLatest(config, url) {
   int package_count = 0;
 
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
-  httpbuilder.auth.basic 'admin', 'admin'
+  httpbuilder.auth.basic config.uploadUser, config.uploadPass
 
   while(next_page) {
     page_count++
