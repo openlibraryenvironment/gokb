@@ -114,6 +114,9 @@ def pullLatest(config, url) {
 
 def recurse(ftp, dir) {
   println("recurse(ftp, \"${dir}\")");
+  
+  def candidates = [:]
+
   FTPFile[] files = ftp.listFiles(dir);
   files.each { file ->
     if ( ( file.type == FTPFile.DIRECTORY_TYPE ) &&
@@ -125,9 +128,41 @@ def recurse(ftp, dir) {
       if ( file.name.length() > 4 ) {
         if( file.name.substring(file.name.length()-4, file.name.length()) == '.txt' ) {
           println("Candidate : ${file.name}");
+          //  wiley_all_obooks_2016-03-01.txt
+          if ( file.name ==~ /(.*)_(\d{4}-[01]\d-[0-3]\d).txt/ ) {
+
+            java.util.regex.Matcher file_info = file.name =~ /(.*)_(\d{4}-[01]\d-[0-3]\d).txt/
+            println(file_info[0][1])
+            println(file_info[0][2])
+
+            if ( candidates[file_info[0][1]] == null ) {
+              // First time we have seen this file...
+              candidates[file_info[0][1]] = [ ts:file_info[0][2], path:dir+'/'+file.name ]
+            }
+            else {
+              println("Checking if ${file_info[0][2]} is more recent than ${candidates[file_info[0][1]].ts}");
+              if ( file_info[0][2] > candidates[file_info[0][1]].ts ) {
+                println("  -> Yes, use");
+                candidates[file_info[0][1]].ts = file_info[0][2]
+                candidates[file_info[0][1]].path = dir+'/'+file.name
+                println("  -> New candidate for ${file_info[0][1]} : ${candidates[file_info[0][1]]}");
+              }
+              else {
+                println("  -> Nope, skipping");
+              }
+            }
+          }
+          else {
+            println("Candidate ${file.name} does not match regex name_yyyy_mm_dd.txt");
+          }
         }
       }
     }
+  }
+
+  println("After recursing into ${dir} the following candidate files are found:");
+  candidates.each { k,v ->
+    println("${k} -> ${v}");
   }
 }
 
