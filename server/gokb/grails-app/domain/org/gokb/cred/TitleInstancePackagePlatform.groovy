@@ -58,6 +58,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     additionalPlatforms   : Platform,
   ]
 
+  static hasMany = [
+    coverageStatements : TIPPCoverageStatement
+  ]
+
+  static mappedBy = [
+    coverageStatements : 'owner'
+  ]
+
   public getPersistentId() {
     "gokb:TIPP:${title?.id}:${pkg?.id}"
   }
