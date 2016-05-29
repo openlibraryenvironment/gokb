@@ -163,19 +163,20 @@ def recurse(ftp, dir) {
   println("After recursing into ${dir} the following candidate files are found:");
   candidates.each { k,v ->
     println("${k} -> ${v}");
+    processFile(k, v.path, config, ftp);
   }
 }
 
 
 
-def processFile(official_package_name, link, config, http) {
+def processFile(official_package_name, link, config, ftp) {
   println("\n\nfetching ${official_package_name} - ${link}");
 
-  def package_data = new URL(link).getText()
-
+  // def package_data = new URL(link).getText()
+  byte[] bytes = IOUtils.toByteArray(ftp.retrieveFileStream(link));
 
   MessageDigest md5_digest = MessageDigest.getInstance("MD5");
-  InputStream md5_is = new ByteArrayInputStream(package_data.getBytes());
+  InputStream md5_is = new ByteArrayInputStream(bytes);
 
   int filesize = 0;
   byte[] md5_buffer = new byte[8192];
@@ -199,7 +200,7 @@ def processFile(official_package_name, link, config, http) {
   }
   else {
     println("Checksum changed - process file");
-    pushToGokb(official_package_name, package_data, http);
+    pushToGokb(official_package_name, bytes, http);
     config.packageData[official_package_name].cksum = md5sumHex
     config.packageData[official_package_name].lastProcessed = System.currentTimeMillis()
   }
@@ -215,7 +216,7 @@ def pushToGokb(name, data, http) {
 
     MultipartEntityBuilder multiPartContent = new MultipartEntityBuilder()
     // Adding Multi-part file parameter "imageFile"
-    multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
+    multiPartContent.addPart("content", new ByteArrayBody( data, name.toString()))
 
     // Adding another string parameter "city"
     multiPartContent.addPart("source", new StringBody("SPRINGER"))
