@@ -30,7 +30,7 @@ import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulat
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
 
 config = null;
-cfg_file = new File('./handler-cfg.json')
+cfg_file = new File('./sync-springer-cfg.json')
 if ( cfg_file.exists() ) {
   config = new JsonSlurper().parseText(cfg_file.text);
 }
@@ -42,7 +42,7 @@ else {
 println("Using config ${config}");
 
 println("Pulling latest messages");
-pullLatest(config,'http://holdings.sciencedirect.com/ehr/manageProductReports.url');
+pullLatest(config,'http://link.springer.com/lists');
 println("All done");
 
 println("Updating config");
@@ -78,18 +78,18 @@ def pullLatest(config, url) {
 
   while(next_page) {
     page_count++
-    // List<?> links = page.getByXPath("//div[@class='generate']/@href");
+
     List<?> links = html.getByXPath("//a/@href");
     println("Processing ${links.size()} links");
     links.each { link ->
-      if ( link.value.startsWith('../holdings/productReport.url') ) {
-        def package_name = link.getOwnerElement().getParentNode().getByXPath('../td[@class="report"]/text()');
-        processFile(package_name[0],link.value, config, httpbuilder);
+      if ( link.value.startsWith('https://static-content.springer.com/kbart') ) {
+        def package_name = link.getOwnerElement().getByXPath('./text()');
+        processFile(package_name[0].toString(),"${link.value}".toString(), config, httpbuilder);
         package_count++;
       }
     }
   
-    def next_page_links = html.getByXPath("//a[text()='Next >']")
+    def next_page_links = []
     if ( next_page_links.size() > 0 ) {
       html = next_page_links[0].click();
     }
@@ -103,9 +103,9 @@ def pullLatest(config, url) {
 }
 
 def processFile(official_package_name, link, config, http) {
-  def url_to_fecth = "http://holdings.sciencedirect.com/"+link.substring(3,link.length())
-  println("fetching ${official_package_name} - ${url_to_fecth}");
-  def package_data = new URL(url_to_fecth).getText()
+  println("\n\nfetching ${official_package_name} - ${link}");
+
+  def package_data = new URL(link).getText()
 
 
   MessageDigest md5_digest = MessageDigest.getInstance("MD5");
@@ -122,7 +122,7 @@ def processFile(official_package_name, link, config, http) {
   byte[] md5sum = md5_digest.digest();
   def md5sumHex = new BigInteger(1, md5sum).toString(16);
 
-  // println("Hash for ${link} is ${md5sumHex}");
+  println("Hash for ${link} is ${md5sumHex}");
 
   if ( config.packageData[official_package_name] == null ) {
     config.packageData[official_package_name] = [ cksum:0 ];
@@ -152,13 +152,13 @@ def pushToGokb(name, data, http) {
     multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
 
     // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("ELSEVIER"))
-    multiPartContent.addPart("fmt", new StringBody("elsevier"))
+    multiPartContent.addPart("source", new StringBody("SPRINGER"))
+    multiPartContent.addPart("fmt", new StringBody("springer-kbart"))
     multiPartContent.addPart("pkg", new StringBody(name.toString()))
-    multiPartContent.addPart("platformUrl", new StringBody("http://www.sciencedirect.com/science"));
+    multiPartContent.addPart("platformUrl", new StringBody("http://link.springer.com"));
     multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("elsevier"));
-    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("ELSEVIER"));
+    multiPartContent.addPart("providerName", new StringBody("springer"));
+    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("doi"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
