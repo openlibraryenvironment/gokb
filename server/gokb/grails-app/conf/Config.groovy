@@ -903,6 +903,7 @@ globalSearchTemplates = [
         [heading:'Provider', property:'provider?.name'],
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name'],
+        [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
         [heading:'Status', property:'status.value',sort:'status'],
       ],
       actions:[
