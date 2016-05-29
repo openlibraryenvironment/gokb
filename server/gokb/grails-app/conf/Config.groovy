@@ -884,7 +884,16 @@ globalSearchTemplates = [
           qparam:'qp_name',
           placeholder:'Package Name',
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'normname', 'wildcard':'B', normalise:true]
-        ]
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
+          prompt:'Provider',
+          qparam:'qp_provider',
+          placeholder:'Provider',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'provider'],
+          hide:false
+        ],
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
