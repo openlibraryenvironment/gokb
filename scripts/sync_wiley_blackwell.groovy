@@ -45,7 +45,7 @@ else {
 println("Using config ${config}");
 
 println("Pulling latest messages");
-pullLatest(config,'http://link.springer.com/lists');
+pullLatest(config)
 println("All done");
 
 println("Updating config");
@@ -54,7 +54,7 @@ cfg_file << toJson(config);
 
 
 
-def pullLatest(config, url) {
+def pullLatest(config) {
   int package_count = 0;
 
   // see https://commons.apache.org/proper/commons-net/apidocs/org/apache/commons/net/ftp/FTPClient.html
@@ -219,12 +219,12 @@ def pushToGokb(name, data, http) {
     multiPartContent.addPart("content", new ByteArrayBody( data, name.toString()))
 
     // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("SPRINGER"))
-    multiPartContent.addPart("fmt", new StringBody("springer-kbart"))
+    multiPartContent.addPart("source", new StringBody("WILEY"))
+    multiPartContent.addPart("fmt", new StringBody("wiley-blackwell-kbart"))
     multiPartContent.addPart("pkg", new StringBody(name.toString()))
-    multiPartContent.addPart("platformUrl", new StringBody("http://link.springer.com"));
+    multiPartContent.addPart("platformUrl", new StringBody("http://onlinelibrary.wiley.com"));
     multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("springer"));
+    multiPartContent.addPart("providerName", new StringBody("wiley"));
     multiPartContent.addPart("providerIdentifierNamespace", new StringBody("doi"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
