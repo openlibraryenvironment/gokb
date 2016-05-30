@@ -30,6 +30,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder /* we'll use the new b
 import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulate our file uploads */
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
 
+import org.apache.commons.io.IOUtils
 import org.apache.commons.net.ftp.*
 
 config = null;
@@ -44,8 +45,13 @@ else {
 
 println("Using config ${config}");
 
+def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
+httpbuilder.auth.basic config.uploadUser, config.uploadPass
+
+
+
 println("Pulling latest messages");
-pullLatest(config)
+pullLatest(config, httpbuilder)
 println("All done");
 
 println("Updating config");
@@ -54,7 +60,7 @@ cfg_file << toJson(config);
 
 
 
-def pullLatest(config) {
+def pullLatest(config, http) {
   int package_count = 0;
 
   // see https://commons.apache.org/proper/commons-net/apidocs/org/apache/commons/net/ftp/FTPClient.html
@@ -88,7 +94,8 @@ def pullLatest(config) {
            ( ftpfile.name.length() >= 9 ) && 
            ( ftpfile.name.substring(4,9)==' data' ) && 
            ( ftpfile.type == FTPFile.DIRECTORY_TYPE ) ) {
-        recurse(ftp, '/'+ftpfile.name);
+        println("Master loop - recurse into /${ftpfile.name}");
+        recurse(ftp, '/'+ftpfile.name, http);
       }
     }
 
@@ -112,19 +119,25 @@ def pullLatest(config) {
 }
 
 
-def recurse(ftp, dir) {
-  println("recurse(ftp, \"${dir}\")");
+def recurse(ftp, dir, http) {
+  println("\n\nrecurse(ftp, \"${dir}\")");
   
   def candidates = [:]
 
   FTPFile[] files = ftp.listFiles(dir);
+
+  println("${files.size()} entries in ${dir}");
+
   files.each { file ->
+    println("Consider dir entry : ${file.name}");
     if ( ( file.type == FTPFile.DIRECTORY_TYPE ) &&
          ( file.name != '.' ) &&
          ( file.name != '..' ) ) {
-      recurse(ftp, dir+'/'+file.name);
+      println("Directory - recurse");
+      recurse(ftp, dir+'/'+file.name,http);
     }
     else {
+      println("File - consider");
       if ( file.name.length() > 4 ) {
         if( file.name.substring(file.name.length()-4, file.name.length()) == '.txt' ) {
           println("Candidate : ${file.name}");
@@ -137,6 +150,7 @@ def recurse(ftp, dir) {
 
             if ( candidates[file_info[0][1]] == null ) {
               // First time we have seen this file...
+              println("Adding to candidates - first time seen");
               candidates[file_info[0][1]] = [ ts:file_info[0][2], path:dir+'/'+file.name ]
             }
             else {
@@ -156,20 +170,27 @@ def recurse(ftp, dir) {
             println("Candidate ${file.name} does not match regex name_yyyy_mm_dd.txt");
           }
         }
+        else {
+          println("  -> Does not end in .txt");
+        }
+      }
+      else {
+        println("  -> Not long enough");
       }
     }
   }
 
   println("After recursing into ${dir} the following candidate files are found:");
+
   candidates.each { k,v ->
     println("${k} -> ${v}");
-    processFile(k, v.path, config, ftp);
+    processFile(k, v.path, config, ftp, http);
   }
 }
 
 
 
-def processFile(official_package_name, link, config, ftp) {
+def processFile(official_package_name, link, config, ftp, http) {
   println("\n\nfetching ${official_package_name} - ${link}");
 
   // def package_data = new URL(link).getText()

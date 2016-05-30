@@ -30,7 +30,7 @@ import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulat
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
 
 config = null;
-cfg_file = new File('./handler-cfg.json')
+cfg_file = new File('./sync-elsevier-cfg.json')
 if ( cfg_file.exists() ) {
   config = new JsonSlurper().parseText(cfg_file.text);
   if ( config.packageData==null ) {
