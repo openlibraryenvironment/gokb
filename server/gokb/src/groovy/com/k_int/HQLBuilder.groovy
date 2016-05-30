@@ -117,7 +117,7 @@ public class HQLBuilder {
       count_hql = "select count (distinct o) ${hql}"
     }
     else {
-      count_hql = "select count o ${hql}"
+      count_hql = "select count (o) ${hql}"
     }
 
     def fetch_hql = null
