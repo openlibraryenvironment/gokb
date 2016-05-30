@@ -69,6 +69,7 @@ def pullLatest(config, http) {
   // config.setXXX(YYY); // change required options
   // for example config.setServerTimeZoneId("Pacific/Pitcairn")
   ftp.configure(ftp_config );
+  ftp.setControlKeepAliveTimeout(150);
   boolean error = false;
   try {
     int reply;
@@ -194,7 +195,16 @@ def processFile(official_package_name, link, config, ftp, http) {
   println("\n\nfetching ${official_package_name} - ${link}");
 
   // def package_data = new URL(link).getText()
-  byte[] bytes = IOUtils.toByteArray(ftp.retrieveFileStream(link));
+  def fis = ftp.retrieveFileStream(link)
+  byte[] bytes = IOUtils.toByteArray(fis);
+  fis.close()
+
+  if(!ftp.completePendingCommand()) {
+    System.err.println("File transfer failed.");
+    ftp.logout();
+    ftp.disconnect();
+    System.exit(1);
+  }
 
   MessageDigest md5_digest = MessageDigest.getInstance("MD5");
   InputStream md5_is = new ByteArrayInputStream(bytes);

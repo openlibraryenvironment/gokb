@@ -39,5 +39,5 @@ nl = r.readNext()
 println("Column heads: ${nl}");
 
 while ((nl = r.readNext()) != null) {
-  println("${rownum++}, ${nl.length}, ${nl[20]} ${nl[21]} ${nl[22]} ${nl[23]}   ");
+  println("${rownum++}, ${nl.length}");
 }
