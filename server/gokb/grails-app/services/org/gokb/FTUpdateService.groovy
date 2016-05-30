@@ -105,6 +105,8 @@ class FTUpdateService {
 
  
       def latest_ft_record = null;
+      def highest_timestamp = 0;
+      def highest_id = 0;
       FTControl.withNewTransaction {
         latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name,'ESIndex')
 
@@ -128,6 +130,7 @@ class FTUpdateService {
       c.buildCriteria{
           gt('lastUpdated', from)
           order("lastUpdated", "asc")
+          order("id", "asc")
       }
 
       def results = c.scroll(ScrollMode.FORWARD_ONLY)
@@ -156,6 +159,11 @@ class FTUpdateService {
         }
 
 
+        if ( r.lastUpdated?.getTime() > highest_timestamp ) {
+          highest_timestamp = r.lastUpdated?.getTime();
+        }
+        highest_id=r.id
+
         count++
         total++
         if ( count > 50 ) {
@@ -163,7 +171,8 @@ class FTUpdateService {
           log.debug("processed ${++total} records (${domain.name}) - interim flush");
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
-            latest_ft_record.lastTimestamp = r.lastUpdated?.getTime()
+            latest_ft_record.lastTimestamp = highest_timestamp
+            latest_ft_record.lastId = highest_id
             latest_ft_record.save(flush:true);
           }
           cleanUpGorm();
@@ -171,15 +180,17 @@ class FTUpdateService {
       }
       results.close();
 
-      println("Processed ${total} records for ${domain.name}");
 
       // update timestamp
       FTControl.withNewTransaction {
         latest_ft_record = FTControl.get(latest_ft_record.id);
-        latest_ft_record.lastTimestamp = r.lastUpdated?.getTime()
+        latest_ft_record.lastTimestamp = highest_timestamp
+        latest_ft_record.lastId = highest_id
         latest_ft_record.save(flush:true);
       }
       cleanUpGorm();
+
+      println("Processed ${total} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${max_id}");
     }
     catch ( Exception e ) {
       log.error("Problem with FT index",e);
