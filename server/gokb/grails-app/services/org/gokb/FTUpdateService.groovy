@@ -103,14 +103,19 @@ class FTUpdateService {
     try {
       log.debug("updateES - ${domain.name}");
 
-      def latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name,'ESIndex')
+ 
+      def latest_ft_record = null;
+      FTControl.withNewTransaction {
+        latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name,'ESIndex')
 
-      log.debug("result of findByDomain: ${latest_ft_record}");
-      if ( !latest_ft_record) {
-        latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0)
+        log.debug("result of findByDomain: ${latest_ft_record}");
+        if ( !latest_ft_record) {
+          latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0).save(flush:true, failOnError:true)
+        }
       }
 
       log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}");
+
       def total = 0;
       Date from = new Date(latest_ft_record.lastTimestamp);
       // def qry = domain.findAllByLastUpdatedGreaterThan(from,[sort:'lastUpdated']);
@@ -150,14 +155,17 @@ class FTUpdateService {
           log.debug("Index completed -- ${recid}");
         }
 
-        latest_ft_record.lastTimestamp = r.lastUpdated?.getTime()
 
         count++
         total++
-        if ( count > 100 ) {
+        if ( count > 50 ) {
           count = 0;
-          log.debug("processed ${++total} records (${domain.name})");
-          latest_ft_record.save(flush:true);
+          log.debug("processed ${++total} records (${domain.name}) - interim flush");
+          FTControl.withNewTransaction {
+            latest_ft_record = FTControl.get(latest_ft_record.id);
+            latest_ft_record.lastTimestamp = r.lastUpdated?.getTime()
+            latest_ft_record.save(flush:true);
+          }
           cleanUpGorm();
         }
       }
@@ -166,7 +174,12 @@ class FTUpdateService {
       println("Processed ${total} records for ${domain.name}");
 
       // update timestamp
-      latest_ft_record.save(flush:true);
+      FTControl.withNewTransaction {
+        latest_ft_record = FTControl.get(latest_ft_record.id);
+        latest_ft_record.lastTimestamp = r.lastUpdated?.getTime()
+        latest_ft_record.save(flush:true);
+      }
+      cleanUpGorm();
     }
     catch ( Exception e ) {
       log.error("Problem with FT index",e);

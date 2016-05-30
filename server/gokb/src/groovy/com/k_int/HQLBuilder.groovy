@@ -120,7 +120,6 @@ public class HQLBuilder {
       count_hql = "select count o ${hql}"
     }
 
-    def count_hql = "select count (distinct o) ${hql}"
     def fetch_hql = null
     if ( returnObjectsOrRows=='objects' ) {
       fetch_hql = "select ${qbetemplate.useDistinct == true ? 'distinct' : ''} o ${hql}"
