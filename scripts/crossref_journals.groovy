@@ -76,3 +76,10 @@ def pullLatest(config,httpbuilder) {
   }
 }
 
+
+def addToGoKB(gokb, title, publisher, ids) {
+  gokb.request(Method.POST) { req ->
+    uri.path='/gokb/integration/crossReferenceTitle'
+  }
+
+}
