@@ -673,6 +673,7 @@ class TSVIngestionService {
                      inconsistent_title_id_behavior:'reject',
                      quoteChar:'"',
                      discriminatorColumn: kbart_cfg?.discriminatorColumn,
+                     discriminatorFunction: kbart_cfg?.discriminatorFunction,
                      polymorphicRows:kbart_cfg?.polymorphicRows
                    ]
     }
@@ -1649,6 +1650,16 @@ class TSVIngestionService {
     if ( cfg.polymorphicRows && cfg.discriminatorColumn ) {
       if ( row[cfg.discriminatorColumn] ) {
         def row_specific_cfg = cfg.polymorphicRows[row[cfg.discriminatorColumn]]
+        if ( row_specific_cfg ) {
+          result = row_specific_cfg
+        }
+      }
+    }
+    else if ( cfg.polymorphicRows && cfg.discriminatorFunction ) {
+      log.debug("discriminatorFunction");
+      def rowtype = cfg.discriminatorFunction.call(row)
+      if ( rowtype ) {
+        def row_specific_cfg = cfg.polymorphicRows[row[rowtype]]
         if ( row_specific_cfg ) {
           result = row_specific_cfg
         }

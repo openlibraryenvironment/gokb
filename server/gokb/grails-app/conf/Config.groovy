@@ -266,7 +266,13 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               defaultTypeName:'org.gokb.cred.BookInstance',
               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
               defaultMedium:'Book',
-              discriminatorColumn:'publication_type',
+              discriminatorFunction: { rowdata ->
+                def result = 'Monograph'
+                if ( rowdata['title_url'].contains('/journal/') ) {
+                  result='Serial';
+                }
+                return result
+              },
               polymorphicRows:[
                 'Serial':[
                   identifierMap:[ 'print_identifier':'issn', 'online_identifier':'eissn' ],
