@@ -22,6 +22,10 @@ class DSCriterion {
     appliedCriterion : DSAppliedCriterion
   ]
 
+  static belongsTo = [
+    owner: DSCategory
+  ]
+
   static mappedBy = [
     appliedCriterion : 'criterion'
   ]
@@ -41,7 +45,7 @@ class DSCriterion {
 
     if ( ql ) {
       ql.each { t ->
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        result.add([id:"${t.class.name}:${t.id}",text:"${t.description}"])
       }
     }
 
@@ -65,7 +69,7 @@ class DSCriterion {
 
   @Transient
   def getNiceName() {
-    return "${owner?.description} / ${title}"
+    return "Decision Support Criteria ${description?' : '+description:''}"
   }
 
 }
