@@ -190,7 +190,7 @@ class FTUpdateService {
       }
       cleanUpGorm();
 
-      println("Processed ${total} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${max_id}");
+      println("Processed ${total} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
     }
     catch ( Exception e ) {
       log.error("Problem with FT index",e);

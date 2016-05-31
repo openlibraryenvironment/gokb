@@ -9,7 +9,7 @@
   <div class="container">
     <div class="row">
       <div class='col-md-12'>
-        &nbsp;${emailSent}
+        &nbsp;
       </div>
     </div>
     <div class="row">
@@ -24,8 +24,14 @@
         </g:if> 
 
         <g:if test='${emailSent}'>
-          <br/>
-          <g:message code='spring.security.ui.register.sent'/>
+          <div class="panel panel-default">
+            <div class="panel-heading">Register as a new user</div>
+            <div class="panel-body">
+              <div class="info alert-success" style="display: block">
+                <g:message code='spring.security.ui.register.sent'/>
+              </div>
+            </div>
+          </div>
         </g:if>
         <g:else>
           <div class="panel panel-default">

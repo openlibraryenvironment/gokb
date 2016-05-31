@@ -1708,23 +1708,23 @@ permNames = [
   16 : [name:'Administration', inst:org.springframework.security.acls.domain.BasePermission.ADMINISTRATION],
 ]
 
-grails.plugins.springsecurity.ui.password.minLength = 6
-grails.plugins.springsecurity.ui.password.maxLength = 64
-grails.plugins.springsecurity.ui.password.validationRegex = '^.*$'
+grails.plugin.springsecurity.ui.password.minLength = 6
+grails.plugin.springsecurity.ui.password.maxLength = 64
+grails.plugin.springsecurity.ui.password.validationRegex = '^.*$'
 
 //configure register
-grails.plugins.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.k-int.com>"
-grails.plugins.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
-grails.plugins.springsecurity.ui.register.defaultRoleNames = [
+grails.plugin.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.k-int.com>"
+grails.plugin.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
+grails.plugin.springsecurity.ui.register.defaultRoleNames = [
   "ROLE_USER"
 ]
 // The following 2 entries make the app use basic auth by default
-grails.plugins.springsecurity.useBasicAuth = true
-grails.plugins.springsecurity.basic.realmName = "gokb"
+grails.plugin.springsecurity.useBasicAuth = true
+grails.plugin.springsecurity.basic.realmName = "gokb"
 
 // This stanza then says everything should use form apart from /api
 // More info: http://stackoverflow.com/questions/7065089/how-to-configure-grails-spring-authentication-scheme-per-url
-grails.plugins.springsecurity.filterChain.chainMap = [
+grails.plugin.springsecurity.filterChain.chainMap = [
   '/integration/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/packages/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
