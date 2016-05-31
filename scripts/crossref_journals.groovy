@@ -68,7 +68,7 @@ def pullLatest(config,httpbuilder) {
     crossref.get( path:'/journals', query:[offset:offset,rows:100]) { resp, json ->
       last_reccount = 0
       json.message.items.each { item ->
-        println("${item.title} - ${item.ISSN}");
+        println("${item.title} ${item.publisher} - ${item.ISSN}");
         last_reccount++;
       }
       offset += last_reccount
