@@ -87,6 +87,8 @@ def pullLatest(config, http) {
         System.exit(1);
     }
 
+    ftp.enterLocalPassiveMode();
+
     // FTPFile[] files = ftp.listFiles('/2016 data/obook Collection');
     FTPFile[] files = ftp.listFiles('/');
     files.each { ftpfile ->
