@@ -1,11 +1,13 @@
 <html>
 <head>
   <meta name='layout' content='register'/>
-  <title><g:message code='spring.security.ui.register.title'/></title>
+  <title>AAA<g:message code='spring.security.ui.register.title'/></title>
 </head>
 
 <body>
 
+REGISTER
+posturl  {{postUrl}}
 <div class="container">
   <div class="row"
     <div class='col-md-12'>
@@ -52,6 +54,8 @@
 </div>
 </div>
 </div>
+
+ENDEND
 
 <script>
 $(document).ready(function() {

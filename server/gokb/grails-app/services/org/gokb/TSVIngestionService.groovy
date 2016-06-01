@@ -673,6 +673,7 @@ class TSVIngestionService {
                      inconsistent_title_id_behavior:'reject',
                      quoteChar:'"',
                      discriminatorColumn: kbart_cfg?.discriminatorColumn,
+                     discriminatorFunction: kbart_cfg?.discriminatorFunction,
                      polymorphicRows:kbart_cfg?.polymorphicRows
                    ]
     }
@@ -749,7 +750,7 @@ class TSVIngestionService {
                         Package.get(the_package_id),
                         ingest_cfg,
                         badrows,
-                        row_specific_cfg )
+                        row_specific_cfg)
             }
 
             log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
@@ -966,17 +967,17 @@ class TSVIngestionService {
                 addPublisher(the_kbart.publisher_name, title)
 
               
-              // if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
-              //   addPerson(the_kbart.first_author, author_role, title);
+              if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
+                addPerson(the_kbart.first_author, author_role, title);
 
-              // if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
-              //   addPerson(the_kbart.first_editor, editor_role, title);
+              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
+                addPerson(the_kbart.first_editor, editor_role, title);
 
-              // addSubjects(the_kbart.subjects, title)
+              addSubjects(the_kbart.subjects, title)
 
-              // the_kbart.additional_authors.each { author ->
-              //   addPerson(author, author_role, title)
-              // }
+              the_kbart.additional_authors.each { author ->
+                addPerson(author, author_role, title)
+              }
 
               def pre_create_tipp_time = System.currentTimeMillis();
               manualCreateTIPP(source,
@@ -1649,6 +1650,16 @@ class TSVIngestionService {
     if ( cfg.polymorphicRows && cfg.discriminatorColumn ) {
       if ( row[cfg.discriminatorColumn] ) {
         def row_specific_cfg = cfg.polymorphicRows[row[cfg.discriminatorColumn]]
+        if ( row_specific_cfg ) {
+          result = row_specific_cfg
+        }
+      }
+    }
+    else if ( cfg.polymorphicRows && cfg.discriminatorFunction ) {
+      log.debug("discriminatorFunction");
+      def rowtype = cfg.discriminatorFunction.call(row)
+      if ( rowtype ) {
+        def row_specific_cfg = cfg.polymorphicRows[row[rowtype]]
         if ( row_specific_cfg ) {
           result = row_specific_cfg
         }

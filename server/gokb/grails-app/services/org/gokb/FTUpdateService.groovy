@@ -112,7 +112,7 @@ class FTUpdateService {
 
         log.debug("result of findByDomain: ${latest_ft_record}");
         if ( !latest_ft_record) {
-          latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0).save(flush:true, failOnError:true)
+          latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0,lastId:0).save(flush:true, failOnError:true)
         }
       }
 
@@ -129,6 +129,7 @@ class FTUpdateService {
 
       c.buildCriteria{
           gt('lastUpdated', from)
+          gt('id', (latest_ft_record.lastId)?:0)
           order("lastUpdated", "asc")
           order("id", "asc")
       }
@@ -185,12 +186,12 @@ class FTUpdateService {
       FTControl.withNewTransaction {
         latest_ft_record = FTControl.get(latest_ft_record.id);
         latest_ft_record.lastTimestamp = highest_timestamp
-        latest_ft_record.lastId = highest_id
+        latest_ft_record.lastId = 0
         latest_ft_record.save(flush:true);
       }
       cleanUpGorm();
 
-      println("Processed ${total} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${max_id}");
+      println("Processed ${total} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
     }
     catch ( Exception e ) {
       log.error("Problem with FT index",e);

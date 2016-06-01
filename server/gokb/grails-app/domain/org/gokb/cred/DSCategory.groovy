@@ -17,18 +17,30 @@ class DSCategory {
     description(nullable:false, blank:false)
   }
 
- static def refdataFind(params) {
+  static hasMany = [
+    criterion:DSCriterion
+  ];
+
+  static mappedBy = [
+    criterion:'owner'
+  ];
+
+  static def refdataFind(params) {
     def result = [];
     def ql = null;
     ql = DSCategory.findAllByDescriptionIlike("${params.q}%",params)
 
     if ( ql ) {
       ql.each { t ->
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        result.add([id:"${t.class.name}:${t.id}",text:"${t.description}"])
       }
     }
 
     result
+  }
+
+  public String getNiceName() {
+    return "Decision Support Category";
   }
 
 }
