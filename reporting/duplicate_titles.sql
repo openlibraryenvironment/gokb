@@ -2,7 +2,13 @@ select min(kbc_id), count(kbc_id), kbc_normname from kbcomponent where class='or
 
 
 
-create table duplicate_titles as ( select kbc_normname from kbcomponent where class='org.gokb.cred.TitleInstance' group by kbc_normname having count(kbc_id) > 1 );
+drop table duplicate_titles;
+create table duplicate_titles as ( select kbc_name as name, min(kbc_id) as primary_component, count(kbc_id) as dup_count from kbcomponent where kbc_name is not null and class='org.gokb.cred.TitleInstance' group by kbc_name having count(kbc_id) > 1 );
+
+
+
+
+create table duplicate_titles as ( select kbc_normname normname, min(kbc_id), count(kbc_id) from kbcomponent where class='org.gokb.cred.TitleInstance' group by kbc_normname having count(kbc_id) > 1 );
 
 select kbc.kbc_id, kbc.kbc_name from kbcomponent kbc, duplicate_titles dt where kbc.kbc_normname = dt.normname limit 10;
 
