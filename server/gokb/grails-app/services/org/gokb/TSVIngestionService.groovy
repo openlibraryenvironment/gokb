@@ -963,21 +963,21 @@ class TSVIngestionService {
           if (title) {
             addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
 
-              //if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
-              //  addPublisher(the_kbart.publisher_name, title)
+              if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
+                addPublisher(the_kbart.publisher_name, title)
 
               
-              //if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
-              //  addPerson(the_kbart.first_author, author_role, title);
+              if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
+                addPerson(the_kbart.first_author, author_role, title);
 
-              //if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
-              //  addPerson(the_kbart.first_editor, editor_role, title);
+              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
+                addPerson(the_kbart.first_editor, editor_role, title);
 
-              //addSubjects(the_kbart.subjects, title)
+              addSubjects(the_kbart.subjects, title)
 
-              //the_kbart.additional_authors.each { author ->
-              //  addPerson(author, author_role, title)
-              //}
+              the_kbart.additional_authors.each { author ->
+                addPerson(author, author_role, title)
+              }
 
               def pre_create_tipp_time = System.currentTimeMillis();
               manualCreateTIPP(source,
