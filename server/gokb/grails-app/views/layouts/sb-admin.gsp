@@ -182,6 +182,7 @@
                     <li><g:link controller="admin" action="resetTextIndexes"><i class="fa fa-angle-double-right fa-fw"></i> Reset Free Text Indexes</g:link></li>
                     <li><g:link controller="admin" action="masterListUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Force Master List Update</g:link></li>
                     <li><g:link controller="admin" action="clearBlockCache"><i class="fa fa-angle-double-right fa-fw"></i> Clear Block Cache (eg Stats)</g:link></li>
+                    <li><g:link controller="admin" action="cleanup"><i class="fa fa-angle-double-right fa-fw"></i> Expunge Deleted Records</g:link></li>
                     <li><g:link controller="admin" action="triggerEnrichments"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
                     <li><g:link controller="admin" action="buildExtension"><i class="fa fa-angle-double-right fa-fw"></i> Build Refine Extensions</g:link></li>
                     <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
