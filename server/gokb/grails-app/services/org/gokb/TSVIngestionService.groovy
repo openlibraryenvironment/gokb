@@ -187,7 +187,8 @@ class TSVIngestionService {
     if (title == null) return null
 
     // Create the normalised title.
-    String norm_title = GOKbTextUtils.generateComparableKey(title)
+    // String norm_title = GOKbTextUtils.generateComparableKey(title)
+    String norm_title = GOKbTextUtils.normaliseString(title)
 
     if ( ( norm_title == null )  || ( norm_title.length() == 0 ) ) {
       throw new RuntimeException("Null normalsed title based on title ${title}, Identifiers ${identifiers}");
@@ -485,7 +486,8 @@ class TSVIngestionService {
     TitleInstance.list().each { TitleInstance t ->
 
     // Get the distance and then determine whether to add to the list or
-    double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.generateComparableKey(t.getName()))
+    // double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.generateComparableKey(t.getName()))
+    double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.normaliseString(t.getName()))
     if (distance >= best_distance) {
       ti = t
       best_distance = distance
@@ -531,7 +533,8 @@ class TSVIngestionService {
     else {
       // Otherwise -- work out if they are roughly close enough to warrant a good matcg
       // log.debug("Comparing ${ti.getName()} and ${norm_title}");
-      distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title) ?: 0
+      // distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title) ?: 0
+      distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.normaliseString(ti.getName()), norm_title) ?: 0
     }
 
     // Check the distance.
@@ -547,7 +550,7 @@ class TSVIngestionService {
       case {
         ti.variantNames.find {alt ->
           // log.debug("Comparing ${alt.variantName} and ${norm_title}");
-          GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
+          GOKbTextUtils.cosineSimilarity(GOKbTextUtils.normaliseString(alt.variantName), norm_title) >= threshold
         }}:
         // Good match on existing variant titles
         // log.debug("Good match for TI on variant.")
