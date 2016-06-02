@@ -180,7 +180,7 @@ class TSVIngestionService {
                            def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
-    log.debug("lookup or create title :: ${title}(${ingest_cfg})")
+    // log.debug("lookup or create title :: ${title}(${ingest_cfg})")
 
     if (title == null) return null
 
@@ -196,7 +196,7 @@ class TSVIngestionService {
     // The matches.
     List< KBComponent> matches = results['matches'] as List
 
-    log.debug("Title matches ${matches?.size()} existing entries");
+    // log.debug("Title matches ${matches?.size()} existing entries");
 
     def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
     switch (matches.size()) {
@@ -204,28 +204,28 @@ class TSVIngestionService {
       // No match behaviour.
       // Check for presence of class one ID
       if (results['class_one']) {
-        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultTypeName}")
+        // log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultTypeName}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
-        log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
+        // log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
 
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
         the_title.ids=[]
       } else {
         // No class 1s supplied we should try and find a match on the title string.
-        log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
+        // log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
         // Lookup using title string match only.
 
         the_title == new_inst_clazz.findByNormname(norm_title)
 
         if ( ( the_title == null ) && ( ingest_cfg.doDistanceMatch == true ) ) {
-          log.debug("No title match on identifier or normname -- try string match");
+          // log.debug("No title match on identifier or normname -- try string match");
           the_title = attemptStringMatch (norm_title)
         }
 
         if (the_title) {
-          log.debug("TI ${the_title} matched by name. Partial match")
+          // log.debug("TI ${the_title} matched by name. Partial match")
           // Add the variant.
           the_title.addVariantTitle(title)
           // Raise a review request
@@ -236,8 +236,8 @@ class TSVIngestionService {
             user, project
             )
         } else {
-          log.debug("No TI could be matched by name. New TI, flag for review.")
-          log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
+          // log.debug("No TI could be matched by name. New TI, flag for review.")
+          // log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
           // Could not match on title either.
           // Create a new TI but attach a Review request to it.
           the_title = new_inst_clazz.newInstance()
@@ -254,7 +254,7 @@ class TSVIngestionService {
       break;
     case 1 :
       // Single component match.
-      log.debug ("Title class one identifier lookup yielded a single match.")
+      // log.debug ("Title class one identifier lookup yielded a single match.")
       // We should raise a review request here if the match was made by cross checking
       // different identifier namespaces.
       if (results['x_check_matches'].size() == 1) {
@@ -296,7 +296,7 @@ class TSVIngestionService {
 
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
-        log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
+        // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
       }
       else {
         log.error("**PROBLEM SAVING TITLE**");
@@ -450,8 +450,8 @@ class TSVIngestionService {
             // log.debug("calling changepublisher")
             boolean added = ti.changePublisher ( publisher[0], true)
 
-            log.debug("Not first : ${not_first}")
-            log.debug("Added: ${added}");
+            // log.debug("Not first : ${not_first}")
+            // log.debug("Added: ${added}");
 
             // Raise a review request, if needed.
             if (not_first && added) {
@@ -461,7 +461,7 @@ class TSVIngestionService {
           } //!orgs.contains(publisher)
           break
         default:
-          log.debug ("Publisher lookup yielded ${publisher.size()} matches. Not really sure which publisher to use, so not using any.")
+          log.warn ("Publisher lookup yielded ${publisher.size()} matches. Not really sure which publisher to use, so not using any.")
         break
       }  //switch
     } //publisher_name !=null
@@ -526,7 +526,7 @@ class TSVIngestionService {
     }
     else {
       // Otherwise -- work out if they are roughly close enough to warrant a good matcg
-      log.debug("Comparing ${ti.getName()} and ${norm_title}");
+      // log.debug("Comparing ${ti.getName()} and ${norm_title}");
       distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title) ?: 0
     }
 
@@ -542,16 +542,16 @@ class TSVIngestionService {
 
       case {
         ti.variantNames.find {alt ->
-          log.debug("Comparing ${alt.variantName} and ${norm_title}");
+          // log.debug("Comparing ${alt.variantName} and ${norm_title}");
           GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
         }}:
         // Good match on existing variant titles
-        log.debug("Good match for TI on variant.")
+        // log.debug("Good match for TI on variant.")
         break
 
       case {it >= threshold} :
         // Good match. Need to add as alternate name.
-        log.debug("Good distance match for TI. Add as variant.")
+        // log.debug("Good distance match for TI. Add as variant.")
         ti.addVariantTitle(title)
         break
 
@@ -963,21 +963,21 @@ class TSVIngestionService {
           if (title) {
             addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
 
-              if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
-                addPublisher(the_kbart.publisher_name, title)
+              //if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
+              //  addPublisher(the_kbart.publisher_name, title)
 
               
-              if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
-                addPerson(the_kbart.first_author, author_role, title);
+              //if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
+              //  addPerson(the_kbart.first_author, author_role, title);
 
-              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
-                addPerson(the_kbart.first_editor, editor_role, title);
+              //if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
+              //  addPerson(the_kbart.first_editor, editor_role, title);
 
-              addSubjects(the_kbart.subjects, title)
+              //addSubjects(the_kbart.subjects, title)
 
-              the_kbart.additional_authors.each { author ->
-                addPerson(author, author_role, title)
-              }
+              //the_kbart.additional_authors.each { author ->
+              //  addPerson(author, author_role, title)
+              //}
 
               def pre_create_tipp_time = System.currentTimeMillis();
               manualCreateTIPP(source,

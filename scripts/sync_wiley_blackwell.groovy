@@ -198,6 +198,7 @@ def processFile(official_package_name, link, config, ftp, http) {
   println("\n\nfetching ${official_package_name} - ${link}");
 
   // def package_data = new URL(link).getText()
+  ftp.setFileType(org.apache.commons.net.ftp.FTP.BINARY_FILE_TYPE);
   def fis = ftp.retrieveFileStream(link)
   byte[] bytes = IOUtils.toByteArray(fis);
   fis.close()
@@ -245,33 +246,38 @@ def pushToGokb(name, data, http) {
   // curl -v --user admin:admin -X POST \
   //   $GOKB_HOST/gokb/packages/deposit
 
-  http.request(Method.POST) { req ->
-    uri.path="/gokb/packages/deposit"
+  try {
+    http.request(Method.POST) { req ->
+      uri.path="/gokb/packages/deposit"
 
-    MultipartEntityBuilder multiPartContent = new MultipartEntityBuilder()
-    // Adding Multi-part file parameter "imageFile"
-    multiPartContent.addPart("content", new ByteArrayBody( data, name.toString()))
+      MultipartEntityBuilder multiPartContent = new MultipartEntityBuilder()
+      // Adding Multi-part file parameter "imageFile"
+      multiPartContent.addPart("content", new ByteArrayBody( data, name.toString()))
 
-    // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("WILEY"))
-    multiPartContent.addPart("fmt", new StringBody("wiley-blackwell-kbart"))
-    multiPartContent.addPart("pkg", new StringBody(name.toString()))
-    multiPartContent.addPart("platformUrl", new StringBody("http://onlinelibrary.wiley.com"));
-    multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("wiley"));
-    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("doi"));
-    multiPartContent.addPart("reprocess", new StringBody("Y"));
-    multiPartContent.addPart("synchronous", new StringBody("Y"));
-    multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
+      // Adding another string parameter "city"
+      multiPartContent.addPart("source", new StringBody("WILEY"))
+      multiPartContent.addPart("fmt", new StringBody("wiley-blackwell-kbart"))
+      multiPartContent.addPart("pkg", new StringBody(name.toString()))
+      multiPartContent.addPart("platformUrl", new StringBody("http://onlinelibrary.wiley.com"));
+      multiPartContent.addPart("format", new StringBody("JSON"));
+      multiPartContent.addPart("providerName", new StringBody("wiley"));
+      multiPartContent.addPart("providerIdentifierNamespace", new StringBody("doi"));
+      multiPartContent.addPart("reprocess", new StringBody("Y"));
+      multiPartContent.addPart("synchronous", new StringBody("Y"));
+      multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
     
-    req.entity = multiPartContent.build()
+      req.entity = multiPartContent.build()
 
-    response.success = { resp, rdata ->
-      if (resp.statusLine.statusCode == 200) {
-        // response handling
-        println("OK");
+      response.success = { resp, rdata ->
+        if (resp.statusLine.statusCode == 200) {
+          // response handling
+          println("OK");
+        }
       }
     }
+  }
+  catch ( Throwable t ) {
+    println("ERROR Submitting file",t);
   }
 }
 
