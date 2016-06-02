@@ -442,7 +442,7 @@ class TSVIngestionService {
           // log.debug("ti.getPublisher ${orgs}")
           // Has the publisher ever existed in the list against this title.
 
-          if (!orgs.contains(publisher[0])) {
+          if (!orgs?.contains(publisher[0])) {
             // log.debug("orgs did not contain this publisher")
             // First publisher added?
             boolean not_first = orgs.size() > 0
