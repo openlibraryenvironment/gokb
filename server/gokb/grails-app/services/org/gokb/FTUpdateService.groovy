@@ -129,7 +129,7 @@ class FTUpdateService {
 
       c.buildCriteria{
           gt('lastUpdated', from)
-          gt('id', (latest_ft_record.lastId)?:0)
+          gt('id', (latest_ft_record.lastId)?:new Long(0))
           order("lastUpdated", "asc")
           order("id", "asc")
       }

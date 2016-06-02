@@ -267,7 +267,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
               defaultMedium:'Book',
               discriminatorFunction: { rowdata ->
-                def result = 'Monograph'
+                def result = 'Monograph';
                 if ( rowdata['title_url'].contains('/journal/') ) {
                   result='Serial';
                 }

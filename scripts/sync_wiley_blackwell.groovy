@@ -66,6 +66,7 @@ def pullLatest(config, http) {
   // see https://commons.apache.org/proper/commons-net/apidocs/org/apache/commons/net/ftp/FTPClient.html
   FTPClient ftp = new FTPClient();
   FTPClientConfig ftp_config = new FTPClientConfig();
+  ftp_config.setFileType(org.apache.commons.net.ftp.FTP.BINARY_FILE_TYPE);
   // config.setXXX(YYY); // change required options
   // for example config.setServerTimeZoneId("Pacific/Pitcairn")
   ftp.configure(ftp_config );

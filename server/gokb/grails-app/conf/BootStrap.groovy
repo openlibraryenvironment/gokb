@@ -189,8 +189,8 @@ class BootStrap {
     def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
     def doi_ns = IdentifierNamespace.findByValue('doi') ?: new IdentifierNamespace(value:'doi').save(flush:true, failOnError:true);
 
-    log.info("Default batch loader config");
-    defaultBulkLoaderConfig();
+    // log.info("Default batch loader config");
+    // defaultBulkLoaderConfig();
 
     log.debug("Register users and override default admin password");
     registerUsers()
@@ -201,8 +201,10 @@ class BootStrap {
   def defaultBulkLoaderConfig() {
     // BulkLoaderConfig
     grailsApplication.config.kbart2.mappings.each { k,v ->
+      log.debug("Process ${k}");
       def existing_cfg = BulkLoaderConfig.findByCode(k)
       if ( existing_cfg ) {
+        log.debug("Got existing config");
       }
       else {
         def cfg = v as JSON
