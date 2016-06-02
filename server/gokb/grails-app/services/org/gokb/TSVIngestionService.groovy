@@ -1656,7 +1656,7 @@ class TSVIngestionService {
       }
     }
     else if ( cfg.polymorphicRows && cfg.discriminatorFunction ) {
-      log.debug("discriminatorFunction");
+      log.debug("calling discriminatorFunction ${row}");
       def rowtype = cfg.discriminatorFunction.call(row)
       if ( rowtype ) {
         def row_specific_cfg = cfg.polymorphicRows[row[rowtype]]
@@ -1664,6 +1664,7 @@ class TSVIngestionService {
           result = row_specific_cfg
         }
       }
+      log.debug("discriminatorFunction ${rowtype}");
     }
     result;
   }
