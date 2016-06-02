@@ -34,7 +34,7 @@ import org.apache.commons.io.IOUtils
 import org.apache.commons.net.ftp.*
 
 config = null;
-cfg_file = new File('./sync-wiley-blackwell-cfg.json')
+cfg_file = new File('./sync-crossref-cfg.json')
 if ( cfg_file.exists() ) {
   config = new JsonSlurper().parseText(cfg_file.text);
 }
@@ -46,7 +46,7 @@ else {
 println("Using config ${config}");
 
 def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
-// httpbuilder.auth.basic config.uploadUser, config.uploadPass
+httpbuilder.auth.basic config.uploadUser, config.uploadPass
 
 
 
@@ -69,6 +69,7 @@ def pullLatest(config,httpbuilder) {
       last_reccount = 0
       json.message.items.each { item ->
         println("${item.title} ${item.publisher} - ${item.ISSN}");
+        addToGoKB(httpbuilder, item.title, item.publisher, item.ISSN)
         last_reccount++;
       }
       offset += last_reccount
@@ -78,8 +79,30 @@ def pullLatest(config,httpbuilder) {
 
 
 def addToGoKB(gokb, title, publisher, ids) {
+  def title_data = [
+    type:'Serial',
+    title:title,
+    publisher:publisher,
+    identifiers:[
+    ]
+  ]
+
+  ids.each {
+    title_data.identifiers.add([type:'issn',value:it])
+  }
+
   gokb.request(Method.POST) { req ->
     uri.path='/gokb/integration/crossReferenceTitle'
+    body = title_data
+    requestContentType = ContentType.JSON
+
+    response.success = { resp ->
+      println "Success! ${resp.status}"
+    }
+
+    response.failure = { resp ->
+      println "Request failed with status ${resp.status}"
+    }
   }
 
 }

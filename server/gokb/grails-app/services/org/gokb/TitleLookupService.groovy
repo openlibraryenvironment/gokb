@@ -14,10 +14,6 @@ class TitleLookupService {
     log.debug("Init");
   }
 
-  //  def find(title, issn, eissn) {
-  //    find(title, issn, eissn, null, null)
-  //  }
-
   private Map class_one_match (def ids) {
 
     // Get the class 1 identifier namespaces.
@@ -132,7 +128,12 @@ class TitleLookupService {
     result
   }
 
-  def find (String title, String publisher_name, def identifiers, def user = null, def project = null) {
+  def find (String title, 
+            String publisher_name, 
+            def identifiers, 
+            def user = null, 
+            def project = null,
+            def newTitleClassName = 'org.gokb.cred.JournalInstance' ) {
 
     // The TitleInstance
     TitleInstance the_title = null
@@ -159,7 +160,17 @@ class TitleLookupService {
           log.debug ("One or more class 1 IDs supplied so must be a new TI.")
 
           // Create the new TI.
-          the_title = new TitleInstance(name:title, ids:[])
+          if ( newTitleClassName == null ) {
+            the_title = new TitleInstance(name:title, ids:[])
+          }
+          else {
+            def clazz = Class.forName(newTitleClassName)
+            the_title = clazz.newInstance()
+            the_title.name = title
+            // the_title.status = 
+            // the_title.editStatus = 
+            the_title.ids = []
+          }
 
         } else {
 
@@ -189,7 +200,17 @@ class TitleLookupService {
 
             // Could not match on title either.
             // Create a new TI but attach a Review request to it.
-            the_title = new TitleInstance(name:title, ids:[])
+
+            if ( newTitleClassName == null ) {
+              the_title = new TitleInstance(name:title, ids:[])
+            }
+            else {
+              def clazz = Class.forName(newTitleClassName)
+              the_title = clazz.newInstance()
+              the_title.name = title
+              the_title.ids = []
+            }
+
             ReviewRequest.raise(
                 the_title,
                 "New TI created.",
@@ -231,6 +252,9 @@ class TitleLookupService {
 
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
+
+      the_title.save(failOnError:true, flush:true);
+      
       
       // Add the publisher.
       addPublisher(publisher_name, the_title, user, project)
@@ -241,7 +265,7 @@ class TitleLookupService {
           // Double check the identifier we are about to add does not already exist in the system
           // Combo.Type : KBComponent.Ids
           def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-          existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent = ? and c.type = ?",it,id_combo_type);
+          def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent = ? and c.type = ?",[it,id_combo_type]);
           if ( existing_identifier.size() > 0 ) {
             ReviewRequest.raise(
               the_title,
@@ -273,12 +297,30 @@ class TitleLookupService {
 
   private TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
 
+    log.debug("Add publisher ${publisher_name}");
+
     if ( publisher_name != null ) {
       // Lookup our publisher.
-      Org publisher = componentLookupService.lookupComponent(publisher_name)
+      def norm_pub_name = GOKbTextUtils.normaliseString(publisher_name);
+
+      Org publisher = Org.findByNormname(norm_pub_name)
+
+      if ( publisher == null ) {
+        def candidate_orgs = Org.executeQuery("select o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
+        if ( candidate_orgs.size() == 1 ) {
+          publisher = candidate_orgs[0]
+        }
+        else if ( candidate_orgs.size() == 0 ) {
+          publisher = new Org(name:publisher_name).save(flush:true, failOnError:true);
+        }
+        else {
+          log.error("Unable to match unique pub");
+        }
+      }
 
       // Found a publisher.
       if (publisher) {
+        log.debug("Found publisher ${publisher}");
         def orgs = ti.getPublisher()
 
         // Has the publisher ever existed in the list against this title.
@@ -288,20 +330,7 @@ class TitleLookupService {
           boolean not_first = orgs.size() > 0
 
           // Added a publisher?
-          boolean added = ti.changePublisher (
-              componentLookupService.lookupComponent(publisher_name),
-              true
-              )
-
-          // Raise a review request, if needed.
-          if (not_first && added) {
-            ReviewRequest.raise(
-                ti,
-                "Added '${publisher.name}' as a publisher on '${ti.name}'.",
-                "Publisher supplied in ingested file is different to any already present on TI.",
-                user, project
-                )
-          }
+          ti.changePublisher (publisher)
         }
       }
     }

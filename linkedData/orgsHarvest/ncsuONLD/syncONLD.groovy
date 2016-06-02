@@ -1,15 +1,11 @@
-// Grapes are a way to import dependencies into a groovy scriptlet.
-// Here we really only need MySQL, a number of secondary useful modules are commented out
-// They are handy for related tasks
-
-@GrabConfig(systemClassLoader=true)
+#!groovy
 
 @Grapes([
-  // Following libs useful for calling out to REST web services
-  @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.1.2'),
-  @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.0'),
-  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.5.0'),
-  @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.1.2'),
+  @GrabResolver(name='mvnRepository', root='http://central.maven.org/maven2/'),
+  @Grab(group='net.sourceforge.nekohtml', module='nekohtml', version='1.9.14'),
+  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.2'),
+  @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
+  @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
   @GrabExclude('xml-apis:xml-apis')
 ])
 

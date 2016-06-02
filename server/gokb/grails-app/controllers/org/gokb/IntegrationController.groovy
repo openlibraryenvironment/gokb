@@ -392,30 +392,12 @@ class IntegrationController {
     log.debug("crossReferenceTitle()");
 
     User user = springSecurityService.currentUser
-    def title = titleLookupService.find(request.JSON.title, request.JSON.publisher, request.JSON.identifiers, user)
-
-    if ( title ) {
-      log.debug("Looked up title...${title}");
-      request.JSON.identifiers.each { id ->
-        log.debug("Identifier entry: ${id}");
-        def existing_id = title.identifiers.find { it -> it.namespace.value==id.type && it.value==id.value}
-        if ( existing_id ) {
-          log.debug("Found identifier for ${id.type} : ${id.value}");
-        }
-        else {
-          log.debug("No identifier for ${id.type} : ${id.value}");
-          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(id.type,id.value);
-          title.addToIds(canonical_identifier);
-          title.save(flush:true);
-        }
-      }
-      log.debug("Done iterating through identifiers");
-    }
-    else {
-      log.debug("Unable to locate title");
-    }
-
-    
+    def title = titleLookupService.find(request.JSON.title, 
+                                        request.JSON.publisher, 
+                                        request.JSON.identifiers, 
+                                        user,
+                                        null,
+                                        request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )  // project
 
     render result as JSON
   }
