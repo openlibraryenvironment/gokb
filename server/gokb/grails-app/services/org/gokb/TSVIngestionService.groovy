@@ -24,6 +24,8 @@ import org.gokb.cred.IngestionProfile
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.KBComponent
+import org.gokb.cred.ComponentHistoryEvent
+import org.gokb.cred.ComponentHistoryEventParticipant
 import org.gokb.cred.KBComponentVariantName
 // import org.gokb.cred.KBartRecord
 import org.gokb.cred.Org
@@ -276,7 +278,8 @@ class TSVIngestionService {
                                 user,
                                 project,
                                 ingest_cfg.inconsistent_title_id_behavior,
-                                identifiers)
+                                identifiers,
+                                row_specific_config)
       break;
     default :
       // Multiple matches.
@@ -510,7 +513,8 @@ class TSVIngestionService {
                                       User user,
                                       project = null,
                                       inconsistent_title_id_behaviour = 'add_as_variant',
-                                      identifiers) {
+                                      identifiers,
+                                      row_specific_config) {
 
 
 
@@ -584,8 +588,21 @@ class TSVIngestionService {
               )
           }
           else if ( inconsistent_title_id_behaviour == 'reject' ) {
-            throw new InconsistentTitleIdentifierException("New title \"${title}\" matched via its identifiers ${identifiers} against title with internal ID [${ti.id}] but that title string is \"${ti.name}\". Radically different titles with the same identifier are usually different titles in the same title history group when the publisher has elected not to discover the correct identifier for a preceeding or succeeding item.",
-                                                           title, identifiers, ti.id, ti.name)
+            throw new InconsistentTitleIdentifierException("New title \"${title}\" matched via its identifiers ${identifiers} against title with internal ID [${ti.id}] but that title string is \"${ti.name}\". Radically different titles with the same identifier are usually different titles in the same title history group when the publisher has elected not to discover the correct identifier for a preceeding or succeeding item.", title, identifiers, ti.id, ti.name)
+          }
+          else if ( inconsistent_title_id_behaviour == 'AddToTitleHistory' ) {
+            log.debug("Creating title entry for history");
+            // See if we can find the title by normalised name
+            result = TitleInstance.findByNormname(norm_title)
+            if ( result == null ) {
+              def new_ti_clazz = Class.forName(row_specific_config.defaultTypeName);
+              result = new_ti_clazz.newInstance()
+              result.name=title;
+              result.save(flush:true, failOnError:true)
+            }
+            def he = new ComponentHistoryEvent(eventDate:new Date()).save(flush:true, failOnError:true);
+            def hep1 = new ComponentHistoryEventParticipant(event:he,participant:result,role:'in').save(flush:true, failOnError:true);
+            def hep2 = new ComponentHistoryEventParticipant(event:he,participant:ti,role:'out').save(flush:true, failOnError:true);
           }
           else {
             // New title without an identifier linked to the title history for the originally identified title

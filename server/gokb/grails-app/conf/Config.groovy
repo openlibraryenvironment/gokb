@@ -285,6 +285,11 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
                   defaultTypeName:'org.gokb.cred.BookInstance'
                 ]
               ],
+              // Wiley have form for adding titles using the new ISSN and the title of previous
+              // journals in the history. If a normalised title comes in which is sufficiently
+              // different to the name currently allocated to the jornal, assume it's a title
+              // history case.
+              "inconsistent_title_id_behaviour":"AddToTitleHistory",
               // doDistanceMatch=true, // To enable full string title matching
               rules:[
                 [field: 'publication_title', kbart: 'publication_title'],
