@@ -1659,12 +1659,12 @@ class TSVIngestionService {
       log.debug("calling discriminatorFunction ${row}");
       def rowtype = cfg.discriminatorFunction.call(row)
       if ( rowtype ) {
-        def row_specific_cfg = cfg.polymorphicRows[row[rowtype]]
+        def row_specific_cfg = cfg.polymorphicRows[rowtype]
         if ( row_specific_cfg ) {
           result = row_specific_cfg
         }
       }
-      log.debug("discriminatorFunction ${rowtype}");
+      log.debug("discriminatorFunction ${rowtype}, rowConfig=${result}");
     }
     result;
   }
