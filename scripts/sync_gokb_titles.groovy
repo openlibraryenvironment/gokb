@@ -37,6 +37,14 @@ import static groovyx.net.http.ContentType.XML
 import static groovyx.net.http.Method.GET
 
 
+// Example full record http://gokb.kuali.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:309298
+
+// Alternate names
+// Example full record http://gokb.kuali.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:232360
+
+// Publisher example
+// Example full record http://gokb.kuali.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:14290
+
 config = null;
 cfg_file = new File('./sync-gokb-titles-cfg.json')
 if ( cfg_file.exists() ) {
@@ -104,7 +112,7 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
         resourceFieldMap['identifiers'] = []
         r.metadata.gokb.title.identifiers.identifier.each {
-          if ( ['issn', 'eissn', 'doi', 'isbn'].contains(it.'@namespace') )
+          if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
             resourceFieldMap.identifiers.add( [ namespace:it.'@namespace'.text(),value:it.'@value'.text() ] )
         }
         resources << resourceFieldMap
