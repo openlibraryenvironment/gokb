@@ -291,6 +291,12 @@ class TSVIngestionService {
 
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
+
+      if ( ( the_title.title?.startsWith('Unknown Title') &&
+           ( title?.length() > 0 ) ) {
+        the_title.title = title;
+      }
+
       results['ids'].each {
         if ( ! the_title.ids.contains(it) ) {
           // We should **NOT** do this in the case where we are creating a new title because the publisher listed a title

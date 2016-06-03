@@ -94,35 +94,61 @@ def pullLatest(config,httpbuilder, issnfile) {
 
   while(nl!=null) {
     nl=csv.readNext()
-    println(nl)
+    println("${rownum} ${nl}")
+
+    def identifiers = []
+    def first = true
+    nl.each {
+      if ( first ) {
+        identifiers.add( [ type:'issnl', value:it ] )
+        first=false
+      }
+      else {
+        identifiers.add( [ type:'issn', value:it ] )
+      }
+    }
+
+    addToGoKB(false, httpbuilder, 'Unknown Title '+ nl[0],'Serial',null,identifiers);
     rownum++;
   }
 }
 
-def addToGoKB(gokb, title, type, publisher, ids) {
+
+/**
+ *    {
+ *      title:'sss',
+ *      identifiers:[
+ *        { namespace:'sss', value:'qqq'},
+ *        { namespace:'sss', value:'qqq'},
+ *      ]
+ *    }
+ *
+ */
+def addToGoKB(dryrun, gokb, title, type, publisher, ids) {
+
   def title_data = [
     type:type,
     title:title,
     publisher:publisher,
-    identifiers:[
-    ]
+    identifiers:ids
   ]
 
-  ids.each {
-    title_data.identifiers.add([type:'issn',value:it])
+  if ( dryrun ) {
+    println("add title : ${title} ${type} ${publisher} ${ids}");
   }
+  else {
+    gokb.request(Method.POST) { req ->
+      uri.path='/gokb/integration/crossReferenceTitle'
+      body = title_data
+      requestContentType = ContentType.JSON
 
-  gokb.request(Method.POST) { req ->
-    uri.path='/gokb/integration/crossReferenceTitle'
-    body = title_data
-    requestContentType = ContentType.JSON
+      response.success = { resp ->
+        println "Success! ${resp.status}"
+      }
 
-    response.success = { resp ->
-      println "Success! ${resp.status}"
-    }
-
-    response.failure = { resp ->
-      println "Request failed with status ${resp.status}"
+      response.failure = { resp ->
+        println "Request failed with status ${resp.status}"
+      }
     }
   }
 
