@@ -352,14 +352,19 @@ identifiers = [
     "issn",
     "eissn",
     "doi",
-    "isbn"
+    "isbn",
+    "issnl"
   ],
 
   // Class ones that need to be cross-checked. If an Identifier supplied as an ISSN,
   // is found against a title but as an eISSN we still treat this as a match
   "cross_checks" : [
     ["issn", "eissn"],
-    ["eissn", "issn"]
+    ["issn", "issnl"],
+    ["eissn", "issn"],
+    ["eissn", "issnl"],
+    ["issnl", "issn"],
+    ["issnl", "eissn"]
   ],
 
   formatters : [

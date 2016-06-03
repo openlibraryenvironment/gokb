@@ -45,6 +45,7 @@ import org.gokb.cred.IngestionProfile;
 import org.gokb.exceptions.*;
 import com.k_int.TextUtils
 import grails.converters.JSON
+import org.apache.commons.io.ByteOrderMark
 
 @Transactional
 class TSVIngestionService {
