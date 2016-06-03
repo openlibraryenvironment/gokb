@@ -3,7 +3,16 @@ select min(kbc_id), count(kbc_id), kbc_normname from kbcomponent where class='or
 
 
 drop table duplicate_titles;
-create table duplicate_titles as ( select kbc_name as name, min(kbc_id) as primary_component, count(kbc_id) as dup_count from kbcomponent where kbc_name is not null and class='org.gokb.cred.TitleInstance' group by kbc_name having count(kbc_id) > 1 );
+create table duplicate_titles as ( 
+  select kbcomponent.kbc_name as name, 
+         min(kbcomponent.kbc_id) as primary_component, 
+         count(kbcomponent.kbc_id) as dup_count 
+    from kbcomponent,
+         title_instance
+   where kbc_name is not null 
+     and title_instance.kbc_id = kbcomponent.kbc_id
+   group by kbc_name 
+  having count(kbcomponent.kbc_id) > 1 );
 
 
 
