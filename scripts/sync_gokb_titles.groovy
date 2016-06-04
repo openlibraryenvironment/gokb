@@ -111,10 +111,48 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap['name'] = r.metadata.gokb.title.name.text()
         resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
         resourceFieldMap['identifiers'] = []
+        resourceFieldMap['publishedFrom'] = r.metadata.gokb.title.publishedFrom?.text()
+        resourceFieldMap['publishedTo'] = r.metadata.gokb.title.publishedTo?.text()
+        resourceFieldMap['continuingSeries'] = r.metadata.gokb.title.continuingSeries?.text()
+        resourceFieldMap['OAStatus'] = r.metadata.gokb.title.OAStatus?.text()
+        resourceFieldMap['imprint'] = r.metadata.gokb.title.imprint?.text()
+        resourceFieldMap['issuer'] = r.metadata.gokb.title.issuer?.text()
+        resourceFieldMap['variantNames'] = []
+        resourceFieldMap['historyEvents'] = []
+
         r.metadata.gokb.title.identifiers.identifier.each {
           if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
             resourceFieldMap.identifiers.add( [ namespace:it.'@namespace'.text(),value:it.'@value'.text() ] )
         }
+
+        if ( r.metadata.gokb.title.publisher?.name ) {
+          resourceFieldMap['publisher'] = r.metadata.gokb.title.publisher.name.text()
+        }
+
+        r.metadata.gokb.title.variantNames?.variantName.each { vn ->
+          resourceFieldMap['variantNames'].add(vn.text());
+        }
+
+        r.metadata.gokb.title.history?.historyEvent.each { he ->
+          def history_event = 
+            [
+              from:[ ],
+              to:[ ]
+            ];
+
+          he.from.each { fr ->
+            history_event.from.add(convertHistoryEvent(fr));
+          }
+
+          he.to.each { to ->
+            history_event.to.add(convertHistoryEvent(to));
+          }
+
+          history_event.date = he.date;
+
+          resourceFieldMap['historyEvents'].add (history_event);
+        }
+
         resources << resourceFieldMap
       }
     }
@@ -125,6 +163,17 @@ private static getResourcesFromGoKBByPage(URL url) {
     }
   }
   [resources, resumptionToken]
+}
+
+def convertHistoryEvent(evt) {
+  // convert the evt structure to a json object and add to lst
+  def result = [:]
+  result.title.evt=title.text()
+  result.identifiers=[]
+  evt.identifiers.each { id ->
+    result.ids.add( [ type: id.'@namespace'.text(), value: id.'@value'.text() ] );
+  }
+  result
 }
 
 private static URL gokbUrl(host, resumptionToken = null) {

@@ -273,6 +273,15 @@ class TSVIngestionService {
         )
       }
 
+      // If we made a good match on a class one identifier, but the title in the DB starts with
+      // Unknown title, then this is a title whos identifier has come from loading a file of identifiers
+      // we should use the title given instead.
+      if ( ( the_title.title?.startsWith('Unknown Title') ) &&
+           ( title?.length() > 0 ) ) {
+        the_title.title = title;
+      }
+
+
       // Now we can examine the text of the title.
       the_title = singleTIMatch(title,
                                 norm_title,
@@ -291,11 +300,6 @@ class TSVIngestionService {
 
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
-
-      if ( ( the_title.title?.startsWith('Unknown Title') ) &&
-           ( title?.length() > 0 ) ) {
-        the_title.title = title;
-      }
 
       results['ids'].each {
         if ( ! the_title.ids.contains(it) ) {
