@@ -292,7 +292,7 @@ class TSVIngestionService {
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
 
-      if ( ( the_title.title?.startsWith('Unknown Title') &&
+      if ( ( the_title.title?.startsWith('Unknown Title') ) &&
            ( title?.length() > 0 ) ) {
         the_title.title = title;
       }
