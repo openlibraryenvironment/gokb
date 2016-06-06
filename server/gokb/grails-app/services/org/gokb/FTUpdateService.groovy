@@ -67,7 +67,7 @@ class FTUpdateService {
       result = [:]
       result._id = "${kbc.class.name}:${kbc.id}"
       result.name = kbc.name
-      result.publisher = kbc.currentPublisher?.name
+      // result.publisher = kbc.currentPublisher?.name
       result.publisherId = kbc.currentPublisher?.id
       result.altname = []
       kbc.variantNames.each { vn ->
@@ -167,7 +167,7 @@ class FTUpdateService {
 
         count++
         total++
-        if ( count > 50 ) {
+        if ( count > 200 ) {
           count = 0;
           log.debug("processed ${++total} records (${domain.name}) - interim flush");
           FTControl.withNewTransaction {
@@ -177,6 +177,9 @@ class FTUpdateService {
             latest_ft_record.save(flush:true);
           }
           cleanUpGorm();
+          synchronized(this) {
+            thread.sleep(1000);
+          }
         }
       }
       results.close();

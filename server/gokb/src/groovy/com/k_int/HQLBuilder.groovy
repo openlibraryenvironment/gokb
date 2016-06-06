@@ -132,7 +132,8 @@ public class HQLBuilder {
     // log.debug("Attempt qry ${fetch_hql}");
     // log.debug("Params ${hql_builder_context.bindvars}");
 
-    result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars,[readOnly:true])[0]
+    // result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars,[readOnly:true])[0]
+    result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
     // log.debug("Got count result: ${result.reccount}");
 
     def query_params = [:]
@@ -141,7 +142,7 @@ public class HQLBuilder {
     if ( result.offset )
       query_params.offset = result.offset
 
-    query_params.readOnly = true;
+    // query_params.readOnly = true;
 
     // log.debug("Get data rows..");
     result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,query_params);

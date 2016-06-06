@@ -19,7 +19,7 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
   "file:${userHome}/.grails/${appName}-config.properties",
   "file:${userHome}/.grails/${appName}-config.groovy"]
 
-  kbart2.mappings= [
+kbart2.mappings= [
     ingram : [
                // defaultType:org.gokb.cred.BookInstance.class,
                defaultTypeName:'org.gokb.cred.BookInstance',

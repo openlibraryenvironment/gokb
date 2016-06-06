@@ -1,4 +1,4 @@
-#!groovy
+dryrun,dryrun,  #!groovy
 
 @Grapes([
   @GrabResolver(name='mvnRepository', root='http://central.maven.org/maven2/'),
@@ -85,7 +85,7 @@ def importJournals(host, gokb) {
 
     resourcesFromPage.each {
       println(it);
-      addToGoKB(gokb, it.title, it.medium?:'Journal', it.publisher, it.identifiers)
+      addToGoKB(true, gokb, it)
     }
 
     if ( resumptionToken ) moredata = true else moredata = false;
@@ -120,9 +120,13 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap['variantNames'] = []
         resourceFieldMap['historyEvents'] = []
 
+        if ( ( resourceFieldMap['medium'] == null ) || ( resourceFieldMap['medium'].length() == 0 ) ) {
+          resourceFieldMap['medium'] = 'Journal'
+        }
+
         r.metadata.gokb.title.identifiers.identifier.each {
           if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
-            resourceFieldMap.identifiers.add( [ namespace:it.'@namespace'.text(),value:it.'@value'.text() ] )
+            resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
         }
 
         if ( r.metadata.gokb.title.publisher?.name ) {
@@ -191,30 +195,25 @@ private static URL gokbUrl(host, resumptionToken = null) {
 
 
 
-def addToGoKB(gokb, title, type, publisher, ids) {
-  def title_data = [
-    type:type,
-    title:title,
-    publisher:publisher,
-    identifiers:[
-    ]
-  ]
+def addToGoKB(dryrun, gokb, title_data) {
 
-  ids.each {
-    title_data.identifiers.add([type:'issn',value:it])
+  if ( dryrun ) {
+    println(title_data)
   }
+  else {
+    gokb.request(Method.POST) { req ->
+      uri.path='/gokb/integration/crossReferenceTitle'
+      body = title_data
+      requestContentType = ContentType.JSON
 
-  gokb.request(Method.POST) { req ->
-    uri.path='/gokb/integration/crossReferenceTitle'
-    body = title_data
-    requestContentType = ContentType.JSON
+      response.success = { resp ->
+        println "Success! ${resp.status}"
+      }
 
-    response.success = { resp ->
-      println "Success! ${resp.status}"
-    }
-
-    response.failure = { resp ->
-      println "Request failed with status ${resp.status}"
+      response.failure = { resp ->
+        println "Request failed with status ${resp.status}"
+        println (title_data);
+      }
     }
   }
 

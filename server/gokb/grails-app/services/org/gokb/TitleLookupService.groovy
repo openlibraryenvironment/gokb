@@ -240,10 +240,26 @@ class TitleLookupService {
           )
         }
         
-        // Now we can examine the text of the title.
-        the_title = singleTIMatch(title, norm_title, matches[0], user, project)
+        // Take whatever we can get if what we have is an unknown title
+        if ( title.startsWith("Unknown Title") ) {
+          // Don't go through title matching if we don't have a real title
+          the_title = matches[0]
+        }
+        else {
+          if ( matches[0].name.startsWith("Unknown Title") ) {
+            // If we have an unknown title in the db, and a real title, then take that
+            // in preference 
+            the_title = matches[0]
+            the_title.name = title
+          }
+          else {
+            // Now we can examine the text of the title.
+            the_title = singleTIMatch(title, norm_title, matches[0], user, project)
+          }
+        }
 
         break;
+
       default :
         // Multiple matches.
         log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")

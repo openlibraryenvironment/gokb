@@ -86,6 +86,7 @@ def pullLatest(config,httpbuilder, issnfile) {
   String[] header = csv.readNext()
   println(header)
 
+  // Blank line
   String[] blank = csv.readNext()
 
   String[] nl=csv.readNext()
@@ -93,23 +94,31 @@ def pullLatest(config,httpbuilder, issnfile) {
   int rownum = 0;
 
   while(nl!=null) {
-    nl=csv.readNext()
-    println("${rownum} ${nl}")
-
-    def identifiers = []
-    def first = true
-    nl.each {
-      if ( first ) {
-        identifiers.add( [ type:'issnl', value:it ] )
-        first=false
-      }
-      else {
-        identifiers.add( [ type:'issn', value:it ] )
+    if ( rownum % 5000 == 0 ) {
+      synchronized(this) {
+        println("Sleeping 5");
+        Thread.sleep(6000);
       }
     }
 
-    addToGoKB(false, httpbuilder, 'Unknown Title '+ nl[0],'Serial',null,identifiers);
-    rownum++;
+      println("${rownum} ${nl}")
+
+      def identifiers = []
+      def first = true
+      nl.each {
+        if ( first ) {
+          identifiers.add( [ type:'issnl', value:it ] )
+          first=false
+        }
+        else {
+          identifiers.add( [ type:'issn', value:it ] )
+        }
+      }
+
+      addToGoKB(false, httpbuilder, 'Unknown Title '+ nl[0],'Serial',null,identifiers);
+      rownum++;
+
+    nl=csv.readNext()
   }
 }
 
