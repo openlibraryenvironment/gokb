@@ -175,7 +175,7 @@ private static getResourcesFromGoKBByPage(URL url) {
 private static convertHistoryEvent(evt) {
   // convert the evt structure to a json object and add to lst
   def result = [:]
-  result.title.evt=evt.title[0].text()
+  result.title=evt.title[0].text()
   result.identifiers=[]
   evt.identifiers.each { id ->
     result.ids.add( [ type: id.'@namespace'.text(), value: id.'@value'.text() ] );
