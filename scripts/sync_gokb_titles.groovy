@@ -178,7 +178,7 @@ private static convertHistoryEvent(evt) {
   result.title=evt.title[0].text()
   result.identifiers=[]
   evt.identifiers.each { id ->
-    result.ids.add( [ type: id.'@namespace'.text(), value: id.'@value'.text() ] );
+    result.identifiers.add( [ type: id.'@namespace'.text(), value: id.'@value'.text() ] );
   }
   result
 }
