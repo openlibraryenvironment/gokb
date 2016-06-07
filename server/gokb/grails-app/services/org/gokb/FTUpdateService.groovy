@@ -178,7 +178,7 @@ class FTUpdateService {
           }
           cleanUpGorm();
           synchronized(this) {
-            thread.sleep(1000);
+            Thread.sleep(1000);
           }
         }
       }
