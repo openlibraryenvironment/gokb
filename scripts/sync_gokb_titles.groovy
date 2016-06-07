@@ -138,6 +138,7 @@ private static getResourcesFromGoKBByPage(URL url) {
         }
 
         r.metadata.gokb.title.history?.historyEvent.each { he ->
+          println("Handle history event");
           def history_event = 
             [
               from:[ ],
@@ -145,10 +146,12 @@ private static getResourcesFromGoKBByPage(URL url) {
             ];
 
           he.from.each { fr ->
+            println("Convert from title in history event : ${fr}");
             history_event.from.add(convertHistoryEvent(fr));
           }
 
           he.to.each { to ->
+            println("Convert to title in history event : ${to}");
             history_event.to.add(convertHistoryEvent(to));
           }
 
@@ -169,10 +172,10 @@ private static getResourcesFromGoKBByPage(URL url) {
   [resources, resumptionToken]
 }
 
-def convertHistoryEvent(evt) {
+private static convertHistoryEvent(evt) {
   // convert the evt structure to a json object and add to lst
   def result = [:]
-  result.title.evt=title.text()
+  result.title.evt=evt.title[0].text()
   result.identifiers=[]
   evt.identifiers.each { id ->
     result.ids.add( [ type: id.'@namespace'.text(), value: id.'@value'.text() ] );
