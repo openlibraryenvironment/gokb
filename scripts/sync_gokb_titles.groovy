@@ -1,4 +1,4 @@
-dryrun,dryrun,  #!groovy
+#!groovy
 
 @Grapes([
   @GrabResolver(name='mvnRepository', root='http://central.maven.org/maven2/'),
