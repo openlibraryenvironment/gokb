@@ -85,7 +85,7 @@ def importJournals(host, gokb) {
 
     resourcesFromPage.each {
       println(it);
-      addToGoKB(true, gokb, it)
+      addToGoKB(false, gokb, it)
     }
 
     if ( resumptionToken ) moredata = true else moredata = false;
