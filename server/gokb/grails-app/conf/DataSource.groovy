@@ -30,7 +30,7 @@ environments {
             defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
             username = "k-int"
             password = "k-int"
-            url = "jdbc:mysql://localhost/GoKB?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
+            url = "jdbc:mysql://localhost/GoKB7_0?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
             // logSql = true
             // formatSql = true

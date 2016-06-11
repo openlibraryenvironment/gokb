@@ -1337,7 +1337,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],

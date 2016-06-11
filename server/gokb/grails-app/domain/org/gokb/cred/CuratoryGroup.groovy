@@ -2,13 +2,15 @@ package org.gokb.cred
 
 class CuratoryGroup extends KBComponent {
   
-  
   static belongsTo = User
+
+  User owner;
+
   static hasMany = [
     users: User,
   ]
   
-  static mappedBy = [users: "curatoryGroups"]
+  static mappedBy = [users: "curatoryGroups", ]
   
   static manyByCombo = [
   	licenses 	: License,
@@ -23,6 +25,10 @@ class CuratoryGroup extends KBComponent {
   	platforms : 'curatoryGroups',
   	offices  	: 'curatoryGroups',
   ]
+
+  static constraints = {
+    owner (nullable:true, blank:false)
+  }
   
   static def refdataFind(params) {
     def result = [];
@@ -37,5 +43,12 @@ class CuratoryGroup extends KBComponent {
 
     result
   }
+
+  def beforeInsert() {
+    def user = springSecurityService?.currentUser
+    this.owner = user
+  }
+
+
 }
 

@@ -34,9 +34,16 @@ class HomeController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index () {
     if (springSecurityService.currentUser) {
-      forward (action: "dashboard", params: (params))
+      forward (action: "userdash", params: (params))
     }
   }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def userdash() {
+    def result = [:]
+    result
+  }
+  
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def calculate() {
