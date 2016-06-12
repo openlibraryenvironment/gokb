@@ -57,7 +57,7 @@
                 <tbody>
                   <g:each in="${request.user.memberships}" var="uog">
                     <tr>
-                      <td>${uog.memberOf?.displayName}</td>
+                      <td><g:link controller="resource" action="show" id="org.gokb.cred.UserOrganisation:${uog.memberOf.id}">${uog.memberOf.displayName}</g:link></td>
                       <td>${uog.memberOf?.owner?:''}</td>
                     </tr>
                   </g:each>
