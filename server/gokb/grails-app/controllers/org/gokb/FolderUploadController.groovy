@@ -17,6 +17,7 @@ class FolderUploadController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processSubmission() {
+    log.debug("FolderUploadController::processSubmission()");
     if ( request.method == 'POST' ) {
       def temp_file
       try {
@@ -35,6 +36,9 @@ class FolderUploadController {
         temp_file?.delete()
       }
     }
+
+    log.debug("Send back to referer");
+
     redirect(url: request.getHeader('referer'))
   }
 

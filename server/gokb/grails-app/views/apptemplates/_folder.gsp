@@ -24,7 +24,7 @@
         </div>
 
         <div class="tab-pane " id="loadTitleList">
-          <g:form controller="FolderUploadController" action="processSubmission">
+          <g:form controller="folderUpload" action="processSubmission" method="post" enctype="multipart/form-data">
             <div class="input-group" >
               <span class="input-group-btn">
                 <span class="btn btn-default btn-file">
