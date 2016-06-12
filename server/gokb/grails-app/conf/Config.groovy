@@ -1714,6 +1714,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.DSCriterion': [ type:'staticgsp', rendername:'ds_criterion' ],
   'org.gokb.cred.Subject': [ type:'staticgsp', rendername:'subject' ],
   'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ],
+  'org.gokb.cred.UserOrganisation': [ type:'staticgsp', rendername:'user_org' ],
 ]
 
 permNames = [

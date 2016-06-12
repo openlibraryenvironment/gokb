@@ -64,7 +64,6 @@ println("Using config ${config}");
 def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
 httpbuilder.auth.basic config.uploadUser, config.uploadPass
 
-
 println("Pulling latest messages");
 pullLatest(config, httpbuilder, args[0])
 println("All done");
@@ -72,7 +71,6 @@ println("All done");
 println("Updating config");
 cfg_file.delete()
 cfg_file << toJson(config);
-
 
 def pullLatest(config,httpbuilder, issnfile) {
   File f = new File(args[0])

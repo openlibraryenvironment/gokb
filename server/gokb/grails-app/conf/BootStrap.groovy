@@ -805,6 +805,13 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids').save()
 
+    RefdataCategory.lookupOrCreate('MembershipRole','Administrator').save()
+    RefdataCategory.lookupOrCreate('MembershipRole','Member').save()
+
+    RefdataCategory.lookupOrCreate('MembershipStatus','Approved').save()
+    RefdataCategory.lookupOrCreate('MembershipStatus','Pending').save()
+    RefdataCategory.lookupOrCreate('MembershipStatus','Rejected/Revoked').save()
+
     log.debug("Deleting any null refdata values");
     RefdataValue.executeUpdate('delete from RefdataValue where value is null');
   }

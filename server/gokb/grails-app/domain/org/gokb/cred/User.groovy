@@ -10,14 +10,13 @@ import javax.persistence.Transient
 import org.hibernate.proxy.HibernateProxy
 
 @Log4j
-class User {
+class User extends Party {
 
   transient springSecurityService
   transient grailsApplication
 
   String username
   String password
-  String displayName
   String email
   boolean enabled
   boolean accountExpired
@@ -31,7 +30,8 @@ class User {
   RefdataValue showInfoIcon
     
   static hasMany = [
-    curatoryGroups : CuratoryGroup
+    curatoryGroups : CuratoryGroup,
+
   ]
   
   static mappedBy = [curatoryGroups: "users"]
@@ -39,7 +39,6 @@ class User {
   static constraints = {
     username blank: false, unique: true
     password blank: false
-    displayName blank: true, nullable:true
     showQuickView blank: true, nullable:true
     email blank: true, nullable:true
     defaultPageSize blank: true, nullable:true
@@ -67,6 +66,10 @@ class User {
 
     // Default to false.
     false
+  }
+
+  transient def getOwnedGroups() {
+    UserOrganisation.executeQuery('select uo from UserOrganisation as uo where uo.owner = :owner',[owner:this])
   }
   
   transient boolean isAdmin() {
