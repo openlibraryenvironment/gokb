@@ -69,7 +69,7 @@
       <tbody>
         <g:each in="${d.folders}" var="f">
           <tr>
-            <td>${f.name}</td>
+            <td><g:link controller="resource" action="show" id="org.gokb.cred.Folder:${f.id}">${f.name}</g:link></td>
             <td></td>
           </tr>
         </g:each>

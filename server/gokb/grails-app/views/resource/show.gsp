@@ -25,10 +25,12 @@
     </div>
 
     <ul class="nav navbar-nav navbar-right">
-      <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
-             id="watchToggleLink"
-             title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
-              ><i id="watchIcon" class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
+      <g:if test="${d instanceof org.gokb.cred.KBComponent}">
+        <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
+               id="watchToggleLink"
+               title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
+                ><i id="watchIcon" class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
+      </g:if>
       <li><a data-toggle="modal" data-cache="false"
              title="Show History"
              data-remote='<g:createLink controller="fwk" action="history" oid="${displayobj.class.name}:${displayobj.id}"/>'

@@ -1,9 +1,17 @@
 package org.gokb.cred
 
 
-class FolderEntry {
+public class FolderEntry {
 
   Folder folder
   static BelongsTo = [ Folder ]
+
+  public Object getLinkedItem() {
+    return null;
+  }
+
+  public String getDisplayName() {
+    return "none"
+  }
 
 }

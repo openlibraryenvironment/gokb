@@ -1683,6 +1683,33 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'folderContents':[
+    baseclass:'org.gokb.cred.FolderEntry',
+    title:'Folder Contents',
+    group:'Secondary',
+    defaultSort:'id',
+    defaultOrder:'asc',
+    qbeConfig:[
+      qbeForm:[
+       [
+          prompt:'Folder ID',
+          qparam:'qp_folder_id',
+          placeholder:'Folder ID',
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'folder.id', 'type' : 'java.lang.Long']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name/Title', 
+         property:'displayName', 
+         link:[controller:'resource',
+               action:'show',      
+               id:'x.r.linkedItem.class.name+\':\'+x.r.linkedItem.id'] ],
+      ]
+    ]
+  ],
+
 ]
 
 
@@ -1715,6 +1742,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.Subject': [ type:'staticgsp', rendername:'subject' ],
   'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ],
   'org.gokb.cred.UserOrganisation': [ type:'staticgsp', rendername:'user_org' ],
+  'org.gokb.cred.Folder': [ type:'staticgsp', rendername:'folder' ],
 ]
 
 permNames = [
