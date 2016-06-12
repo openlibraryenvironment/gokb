@@ -57,6 +57,38 @@
     </table>
   </dd>
 
+  <dt><g:annotatedLabel owner="${d}" property="name">Folders / Collections</g:annotatedLabel></dt>
+  <dd>
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <td>Name</td>
+          <td>Actions</td>
+        </tr>
+      </thead>
+      <tbody>
+        <g:each in="${d.folders}" var="f">
+          <tr>
+            <td>${f.name}</td>
+            <td></td>
+          </tr>
+        </g:each>
+      </tbody>
+      <tfoot>
+        <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">
+          <input type="hidden" name="__context" value="org.gokb.cred.UserOrganisation:${d.id}"/>
+          <input type="hidden" name="__recip" value="owner"/>
+          <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Folder"/>
+          <tr>
+            <td>
+              <input type="text" class="form-control" name="name" placeholder="New Folder Name"/>
+            </td>
+            <td><button class="btn btn-success">Add</button></td>
+          </tr>
+        </g:form>
+      </tfoot>
+    </table>
+  </dd>
 
   </g:if>
 

@@ -41,4 +41,8 @@ class UserOrganisation extends Party {
     this.owner = user
   }
 
+  @Transient
+  def getFolders() {
+    Folder.executeQuery('select f from Folder as f where f.owner = :org',[org:this]);
+  }
 }
