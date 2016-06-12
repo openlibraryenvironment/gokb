@@ -1790,7 +1790,7 @@ a
 /**
  * We need to disable springs password encoding as we handle this in our domain model.
  */
-grails.plugins.springsecurity.ui.encodePassword = false
+grails.plugin.springsecurity.ui.encodePassword = false
 
 defaultOaiConfig = [
   lastModified:'lastUpdated',

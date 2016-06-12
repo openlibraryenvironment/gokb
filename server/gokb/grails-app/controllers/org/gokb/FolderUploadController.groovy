@@ -33,7 +33,7 @@ class FolderUploadController {
       catch ( Exception e ) {
         log.error("Problem processing uploaded file",e);
       }finally{
-        temp_file?.delete()
+        // temp_file?.delete()
       }
     }
 
@@ -59,6 +59,7 @@ class FolderUploadController {
     // Copy the upload file to a temporary space
     inputfile.transferTo(temp_file);
 
+    log.debug("temp file is ${temp_file_name}");
     temp_file
   }
 
