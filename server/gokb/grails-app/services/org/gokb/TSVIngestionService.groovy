@@ -279,8 +279,7 @@ class TSVIngestionService {
       // Unknown title, then this is a title whos identifier has come from loading a file of identifiers
       // we should use the title given instead.
       if ( ( matches[0] ) && 
-           ( matches[0].name?.startsWith('Unknown Title') ) && 
-           ( title?.length() > 0 ) ) {
+           ( ( matches[0].name?.startsWith('Unknown Title') && ( title?.length() > 0 ) ) || ( matches[0].name == null ) ) ) {
         log.debug("${matches[0].name} is an unknown title - updating to ${title}");
         the_title = matches[0]
         the_title.name = title;
