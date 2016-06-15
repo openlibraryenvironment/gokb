@@ -18,26 +18,32 @@ class FolderService {
   def sessionFactory
 
   static def columns_config = [
+    'list.name':[action:'process',target:'listname'],   // For ingesting into multiple folders
     'Title':[action:'process',target:'title'],
+    'title.title':[action:'process',target:'title'],
     'Author(s)':[action:'process',target:'author'],
+    'title.primary_author':[action:'process',target:'author'],
     'Editor(s)':[action:'process',target:''],
     'Importance':[action:'ignore'],
+    'title.identifier':[action:'process',target:'title.identifier.isbn'],
     'ISBN10':[action:'process',target:'title.identifier.isbn'],
     'ISBN13':[action:'process',target:'title.identifier.isbn'],
     'Date of Publication':[action:'process',target:'pubdate'],
+    'title.publication_year':[action:'process',target:'pubdate'],
     'Publisher':[action:'process',target:'publisher.name'],
+    'title.publisher':[action:'process',target:'publisher.name'],
     'Web Address':[action:'process',target:'custom.url'],
     'Time Period':[action:'ignore'],
     'CKEY':[action:'process',target:'custom.ckey'],
   ];
 
-  def enqueTitleList(file, folder_id, config) {
+  def enqueTitleList(file, default_folder_id, config) {
     def future = executorService.submit({
       processTitleList(file, folder_id, config)
     } as java.util.concurrent.Callable)
   }
 
-  def processTitleList(file, folder_id, config) {
+  def processTitleList(file, default_folder_id, config) {
 
     try {
 
