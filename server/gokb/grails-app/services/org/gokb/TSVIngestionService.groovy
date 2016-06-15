@@ -75,6 +75,7 @@ class TSVIngestionService {
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
     def xcheck = grailsApplication.config.identifiers.cross_checks
+
     // Return the list of class 1 identifiers we have found or created, as well as the
     // list of matches
     def result = [
@@ -98,6 +99,7 @@ class TSVIngestionService {
 
         Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
         // Add the id.
+
         result['ids'] << the_id
         // log.debug("class_one_match ids ${result['ids']}")
         // We only treat a component as a match if the matching Identifer
@@ -201,24 +203,24 @@ class TSVIngestionService {
     List< KBComponent> matches = results['matches'] as List
 
     // log.debug("Title matches ${matches?.size()} existing entries");
-
     def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
+
     switch (matches.size()) {
     case 0 :
       // No match behaviour.
       // Check for presence of class one ID
       if (results['class_one']) {
-        // log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultTypeName}")
+        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultTypeName}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
-        // log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
+        log.debug("Creating new ${row_specific_config.defaultTypeName} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
 
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
         the_title.ids=[]
       } else {
         // No class 1s supplied we should try and find a match on the title string.
-        // log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
+        log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
         // Lookup using title string match only.
 
         the_title == new_inst_clazz.findByNormname(norm_title)
@@ -276,21 +278,25 @@ class TSVIngestionService {
       // If we made a good match on a class one identifier, but the title in the DB starts with
       // Unknown title, then this is a title whos identifier has come from loading a file of identifiers
       // we should use the title given instead.
-      if ( ( the_title.title?.startsWith('Unknown Title') ) &&
+      if ( ( matches[0] ) && 
+           ( matches[0].title?.startsWith('Unknown Title') ) && 
            ( title?.length() > 0 ) ) {
+        log.debug("${matches[0].title} is an unknown title - updating to ${title}");
         the_title.title = title;
       }
+      else {
+        log.debug("handling a matched title ${matches[0].title} ==? ${title}");
+        // Now we can examine the text of the title.
+        the_title = singleTIMatch(title,
+                                  norm_title,
+                                  matches[0],
+                                  user,
+                                  project,
+                                  ingest_cfg.inconsistent_title_id_behavior,
+                                  identifiers,
+                                  row_specific_config)
+      }
 
-
-      // Now we can examine the text of the title.
-      the_title = singleTIMatch(title,
-                                norm_title,
-                                matches[0],
-                                user,
-                                project,
-                                ingest_cfg.inconsistent_title_id_behavior,
-                                identifiers,
-                                row_specific_config)
       break;
     default :
       // Multiple matches.
