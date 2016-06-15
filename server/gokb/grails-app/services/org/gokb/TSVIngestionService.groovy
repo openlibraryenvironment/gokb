@@ -282,6 +282,7 @@ class TSVIngestionService {
            ( matches[0].name?.startsWith('Unknown Title') ) && 
            ( title?.length() > 0 ) ) {
         log.debug("${matches[0].name} is an unknown title - updating to ${title}");
+        the_title = matches[0]
         the_title.name = title;
       }
       else {
