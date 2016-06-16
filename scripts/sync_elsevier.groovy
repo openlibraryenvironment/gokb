@@ -89,11 +89,11 @@ def pullLatest(config, url, cfg_file) {
         }
         package_count++;
       }
-    }
 
-    println("Updating config");
-    cfg_file.delete()
-    cfg_file << toJson(config);
+      println("Updating config");
+      cfg_file.delete()
+      cfg_file << toJson(config);
+    }
 
   
     def next_page_links = html.getByXPath("//a[text()='Next >']")
