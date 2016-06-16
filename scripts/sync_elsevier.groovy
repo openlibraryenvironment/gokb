@@ -45,16 +45,10 @@ else {
 println("Using config ${config}");
 
 println("Pulling latest messages");
-pullLatest(config,'http://holdings.sciencedirect.com/ehr/manageProductReports.url');
+pullLatest(config,'http://holdings.sciencedirect.com/ehr/manageProductReports.url', cfg_file);
 println("All done");
 
-println("Updating config");
-cfg_file.delete()
-cfg_file << toJson(config);
-
-
-
-def pullLatest(config, url) {
+def pullLatest(config, url, cfg_file) {
   def result = false;
 
   println("Get URL ${url}");
@@ -87,10 +81,20 @@ def pullLatest(config, url) {
     links.each { link ->
       if ( link.value.startsWith('../holdings/productReport.url') ) {
         def package_name = link.getOwnerElement().getParentNode().getByXPath('../td[@class="report"]/text()');
-        processFile(package_name[0],link.value, config, httpbuilder);
+        try {
+          processFile(package_name[0].toString(),link.value, config, httpbuilder);
+        }
+        catch ( Exception e ) {
+          e.printStackTrace()
+        }
         package_count++;
       }
     }
+
+    println("Updating config");
+    cfg_file.delete()
+    cfg_file << toJson(config);
+
   
     def next_page_links = html.getByXPath("//a[text()='Next >']")
     if ( next_page_links.size() > 0 ) {
