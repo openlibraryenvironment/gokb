@@ -1035,8 +1035,8 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.TitleInstance',
     title:'Titles',
     group:'Secondary',
-    defaultSort:'name',
-    defaultOrder:'asc',
+    // defaultSort:'name',
+    // defaultOrder:'asc',
     // useDistinct=true,
     qbeConfig:[
       qbeForm:[
