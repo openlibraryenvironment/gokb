@@ -28,6 +28,10 @@ class SearchController {
 
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+
+    if ( params.jumpToPage ) {
+      result.offset = ( ( params.int('jumpToPage') - 1 ) * result.max )
+    }
     
     result.hide = params.list("hide") ?: []
 
@@ -142,6 +146,9 @@ class SearchController {
         apiresponse.records.add(response_record);
       }
     }
+
+    result.withoutJump = params.clone()
+    result.withoutJump.remove('jumpToPage');
 
     // log.debug("leaving SearchController::index...");
     log.debug("Search completed after ${System.currentTimeMillis() - start_time}");

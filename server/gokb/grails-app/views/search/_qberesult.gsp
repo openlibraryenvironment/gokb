@@ -3,7 +3,9 @@
 <g:set var="counter" value="${offset}" />
 
 <g:if test="${ request.isAjax() }">
+
   <g:render template="pagination" contextPath="." model="${params}" />
+
   <table class="table table-striped table-condensed table-bordered">
     <thead>
       <tr class="inline-nav">
@@ -61,10 +63,12 @@
   </table>
 </g:if>
 <g:else>
-  <g:form controller="workflow" action="action" method="post" params="${params}"
-    class='action-form' >
-    <div class="batch-all-info" style="display:none;"></div>
-    <g:render template="pagination" contextPath="." model="${params}" />
+  <div class="batch-all-info" style="display:none;"></div>
+
+  <g:render template="pagination" contextPath="." model="${params}" />
+
+  <g:form controller="workflow" action="action" method="post" params="${params}" class='action-form' >
+
     <table class="table table-striped table-condensed table-bordered">
       <thead>
         <tr>
@@ -143,6 +147,12 @@
         </g:each>
       </tbody>
     </table>
-    <g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
-  </g:form>
+    </g:form>
+  <g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
 </g:else>
+
+<script language="JavaScript">
+function jumpToPage() {
+  alert("jump to page");
+}
+</script>
