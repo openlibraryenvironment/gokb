@@ -22,19 +22,7 @@
 					</li>
 					<li class="divider-vertical"></li>
 				</g:if>
-				<li class="dropdown page-jump${ dropup ? ' dropup' : ''}"><a
-						href="#" class="dropdown-toggle" data-toggle="dropdown">Page
-							${page} of ${page_max} <span class="caret"></span></a>
-					<ul class="dropdown-menu dropdown-menu-scroll" role="menu">
-						<g:each var="p" in="${ 1..page_max }">
-							<li><g:link title="Previous Page" controller="${s_controller}"
-									action="${s_action}"
-									params="${params+["${custom_offset}":((p.toInteger() - 1) * max.toInteger()),det:null]}">
-								Page ${p}
-								</g:link></li>
-						</g:each>
-					</ul>
-				</li>
+				<li> Page ${page} of ${page_max} </li>
 				</g:if>
 				<g:if test="${ page == 1 }">
 					<li class='disabled'><a class='disabled' href='#'><i
