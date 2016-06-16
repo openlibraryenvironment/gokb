@@ -61,9 +61,9 @@ class SearchController {
 
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate ) {
-        // log.debug("Execute query");
+        log.debug("Execute query");
         doQuery(result.qbetemplate, params, result)
-        // log.debug("Query complete");
+        log.debug("Query complete");
         result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
         
         // Add the page information.
@@ -74,7 +74,10 @@ class SearchController {
         log.error("no template ${result?.qbetemplate}");
       }
 
+      
       if ( result.det && result.recset ) {
+
+        log.debug("Got details page");
 
         int recno = result.det - result.offset - 1
 
