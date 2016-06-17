@@ -1005,7 +1005,7 @@ abstract class KBComponent {
               def cat_code = c.owner.code //e.g. Fromat,Access - Read Online, etc.
 
               if (result[cat_code] == null)
-                  result[cat_code] = [description: c.owner.description, criterion: [:]] //criterion now a map
+                  result[cat_code] = [description: c.owner.description, id:c.owner.id, criterion: [:]] //criterion now a map
 
               // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
               if (!result[cat_code].criterion[c.id]) {
