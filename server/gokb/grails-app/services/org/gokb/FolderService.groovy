@@ -162,6 +162,19 @@ class FolderService {
         def title = titleLookupService.find(row['title'], row['publisher.name'], identifiers, null, null, 'org.gokb.cred.BookInstance' )  ;
 
         log.debug("Result of lookup ${identifiers} ${title}");
+        def fe = KBComponentFolderEntry.executeQuery('select fe from KBComponentFolderEntry as fe where fe.linkedComponent = :c and fe.folder = :f',[c:title, f:folder]);
+        switch(fe.size()) {
+          case 0:
+            log.debug("No current folder entry.. create");
+            def nfe = new KBComponentFolderEntry(linkedComponent:title, folder:folder).save(flush:true, failOnError:true);
+            break;
+          case 1:
+            log.debug("Found existing folder entry.. ignore");
+            break;
+          default:
+            log.warn("Multiple matching folder entries. PANIC");
+            break;
+        }
       }
       
     }
