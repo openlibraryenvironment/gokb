@@ -25,6 +25,8 @@
 
         <div class="tab-pane " id="loadTitleList">
           <g:form controller="folderUpload" action="processSubmission" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="defaultFolder" value="${d.id}"/>
+            <input type="hidden" name="ownerOrg" value="${d.owner.id}"/>
             <div class="input-group" >
               <span class="input-group-btn">
                 <span class="btn btn-default btn-file">

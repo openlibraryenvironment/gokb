@@ -17,9 +17,14 @@ class FolderUploadController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processSubmission() {
-    log.debug("FolderUploadController::processSubmission()");
+    log.debug("FolderUploadController::processSubmission(${params})");
     if ( request.method == 'POST' ) {
       def temp_file
+      def default_folder = params.defaultFolder ? Folder.get(params.defaultFolder) : null;
+      def org = params.ownerOrg ? Party.get(params.ownerOrg) : null;
+
+      log.debug("Converted ${params.ownerOrg} to org ${org}");
+
       try {
         def upload_mime_type = request.getFile("submissionFile")?.contentType
         def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
@@ -28,7 +33,7 @@ class FolderUploadController {
         def deposit_token = java.util.UUID.randomUUID().toString();
         temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
 
-        folderService.enqueTitleList(temp_file, params.folder_id, [:]);
+        folderService.enqueTitleList(temp_file, default_folder, request.user, org, [:]);
       }
       catch ( Exception e ) {
         log.error("Problem processing uploaded file",e);

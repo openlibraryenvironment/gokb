@@ -57,6 +57,7 @@
     </table>
   </dd>
 
+
   <dt><g:annotatedLabel owner="${d}" property="name">Folders / Collections</g:annotatedLabel></dt>
   <dd>
     <table class="table table-bordered table-striped">
@@ -90,6 +91,23 @@
     </table>
   </dd>
 
+  <dt><g:annotatedLabel owner="${d}" property="name">Load Title List</g:annotatedLabel> (<a href="https://github.com/k-int/gokb-phase1/wiki/Title-List-Upload-Format">Format</a>)</dt>
+  <dd class="container">
+    <g:form controller="folderUpload" action="processSubmission" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="ownerOrg" value="${d.id}"/>
+      <div class="input-group" >
+        <span class="input-group-btn">
+          <span class="btn btn-default btn-file">
+            Browse <input type="file" id="submissionFile" name="submissionFile" onchange='$("#upload-file-info").html($(this).val());' />
+          </span>
+        </span>
+        <span class='form-control' id="upload-file-info"><label for="submissionFile" >Select a file...</label></span>
+        <span class="input-group-btn">
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </span>
+      </div>
+    </g:form>
+  </dd>
   </g:if>
 
 </dl>

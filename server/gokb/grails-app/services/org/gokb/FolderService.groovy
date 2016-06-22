@@ -16,6 +16,7 @@ class FolderService {
 
   def executorService
   def sessionFactory
+  def titleLookupService
 
   static def columns_config = [
     'list.name':[action:'process',target:'listname'],   // For ingesting into multiple folders
@@ -37,17 +38,20 @@ class FolderService {
     'CKEY':[action:'process',target:'custom.ckey'],
   ];
 
-  def enqueTitleList(file, default_folder_id, config) {
+  def enqueTitleList(file, default_folder, user, org, config) {
+    log.debug("enqueTitleList(${file}, ${default_folder}, ${user}, ${org}, ${config})")
     def future = executorService.submit({
-      processTitleList(file, folder_id, config)
+      processTitleList(file, default_folder, user, org, config)
     } as java.util.concurrent.Callable)
+    log.debug("Job enqueued");
   }
 
-  def processTitleList(file, default_folder_id, config) {
+  def processTitleList(file, default_folder, user, org, config) {
+    log.debug("processTitleList....");
 
     try {
 
-      log.debug("processTitleList(${file}, ${folder_id}, ${config})");
+      log.debug("processTitleList(file:${file}, default:${default_folder}, user:${user}, org:${org}, cfg:${config})");
 
       // Open File
       if ( file ) {
@@ -59,7 +63,7 @@ class FolderService {
                                    new org.apache.commons.io.input.BOMInputStream(
                                      file.newInputStream(),
                                      ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE,ByteOrderMark.UTF_8),
-                                 java.nio.charset.Charset.forName(charset)),'\t' as char,'"' as char)   // Use \0 for no quote char
+                                 java.nio.charset.Charset.forName(charset)),',' as char,'"' as char)   // Use \0 for no quote char
   
 
         log.debug("Process rows.. config is ${columns_config}");
@@ -78,17 +82,19 @@ class FolderService {
             def col_cfg = columns_config[header[colctr]]
             log.debug("using column config for ${header[colctr]} : ${col_cfg}");
 
-            if ( ( col_cfg ) && ( it ) && ( it.trim().length() > 0 ) ) {
+            if ( ( col_cfg ) && 
+                 ( it ) && 
+                 ( it.trim().length() > 0 ) ) {
               if ( col_cfg.action=='process' ) {
                 if ( row_result[col_cfg.target] == null ) {
-                  row_result[col_cfg.target] = it
+                  row_result[col_cfg.target] = it.trim()
                 }
                 else {
                   if ( row_result[col_cfg.target] instanceof List ) {
-                    row_result[col_cfg.target].add(it);
+                    row_result[col_cfg.target].add(it.trim());
                   }
                   else {
-                    row_result[col_cfg.target] = [ row_result[col_cfg.target], it ]
+                    row_result[col_cfg.target] = [ row_result[col_cfg.target], it.trim() ]
                   }
                 }
               }
@@ -97,6 +103,7 @@ class FolderService {
           }
 
           log.debug("Row result: ${row_result}");
+          processRow(row_result, user, org, default_folder);
         }
       }
 
@@ -110,5 +117,56 @@ class FolderService {
 
     // Return
     return
+  }
+
+  private void processRow(row, user, org, default_folder) {
+    log.debug("processRow(${row},${user},${org},${default_folder})");
+    if ( org ) {
+
+      def folder = null;
+
+      if ( ( row['listname'] == null || row['listname'].length() == 0 ) && default_folder == null ) {
+        log.debug("No listname or default folder - cannot continue");
+      }
+      else {
+        // Try and lookup folder owned by this org with the given name
+        if ( row['listname'] != null && row['listname'].length() > 0 ) {
+          def folders = Folder.executeQuery('select f from Folder as f where f.owner=:owner and f.name=:fname',[owner:org, fname:row['listname']]);
+          switch ( folders.size() ) {
+            case 0:
+              log.debug("Create new folder or use default if present and no row level name");
+              folder = new Folder(name:row['listname'], owner:org).save(flush:true, failOnError:true);
+              break;
+            case 1:
+              folder = folders.get(0);
+              break;
+            default:
+              log.warn("Matched multiple folders");
+              break;
+          }
+        }
+        else {
+          folder = default_folder
+        }
+      }
+
+      log.debug("Folder for row will be ${folder}");
+
+      // Process the title...
+      // Preflight
+      if ( ( row['title.identifier.isbn'] ) &&
+           ( row['title.identifier.isbn'].trim().length() > 0 ) &&
+           ( row['title'] ) &&
+           ( row['title'].trim().length() > 0 ) ) {
+        def identifiers = [[type:'isbn',value:row['title.identifier.isbn']]]
+        def title = titleLookupService.find(row['title'], row['publisher.name'], identifiers, null, null, 'org.gokb.cred.BookInstance' )  ;
+
+        log.debug("Result of lookup ${identifiers} ${title}");
+      }
+      
+    }
+    else {
+      log.warn("No org - cannot continue");
+    }
   }
 }
