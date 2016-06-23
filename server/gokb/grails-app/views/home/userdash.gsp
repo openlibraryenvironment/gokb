@@ -19,6 +19,7 @@
                     <tr>
                       <th>List Name</th>
                       <th>Owner</th>
+                      <th>Last Updated</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -26,6 +27,7 @@
                       <tr>
                         <td><g:link controller="resource" action="show" id="${f.class.name}:${f.id}">${f.name}</g:link></td>
                         <td><g:link controller="resource" action="show" id="${f.owner.class.name}:${f.owner.id}">${f.owner.displayName}</g:link></td>
+                        <td>${f.lastUpdated}</td>
                       </tr>
                     </g:each>
                   </tbody>

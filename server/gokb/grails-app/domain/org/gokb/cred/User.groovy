@@ -83,6 +83,10 @@ class User extends Party {
 
     def result = direct_ownership + via_group
 
+    result.each {
+      log.debug(it)
+    }
+
     return result
   }
   
