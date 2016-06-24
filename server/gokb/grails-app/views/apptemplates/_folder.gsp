@@ -8,6 +8,7 @@
 
       <ul id="tabs" class="nav nav-tabs">
         <li class="active"><a href="#folderContents" data-toggle="tab">Folder Contents</a></li>
+        <li class=""><a href="#availability" data-toggle="tab">Availability</a></li>
         <li class=""><a href="#loadTitleList" data-toggle="tab">Load Title List</a></li>
       </ul>
 
@@ -22,6 +23,13 @@
                   params="[qbe:'g:folderContents', qp_folder_id:d.id, hide:['qp_folder_id', 'SEARCH_FORM']]"
                   id="folderContentsSearch">Contents of this folder</g:link>
         </div>
+
+        <div class="tab-pane " id="availability">
+          <pre>
+            ${d.getAvailability()}
+          </pre>
+        </div>
+
 
         <div class="tab-pane " id="loadTitleList">
           <g:form controller="folderUpload" action="processSubmission" method="post" enctype="multipart/form-data">
