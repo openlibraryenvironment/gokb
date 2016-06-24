@@ -15,7 +15,7 @@
         </h4>
       </div>
 
-      <div id="collapse${dsl.id}" class="panel-collapse collapse" role="tabpanel" aria-labelledby="${dsl.id}">
+      <div id="collapse${dsl.id}" class="panel-collapse collapse collapsed" role="tabpanel" aria-labelledby="${dsl.id}">
         <div class="panel-body">
 
           <div class="container-fluid">
