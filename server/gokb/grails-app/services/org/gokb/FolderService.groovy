@@ -47,11 +47,11 @@ class FolderService {
   }
 
   def processTitleList(file, default_folder, user, org, config) {
-    // log.debug("processTitleList....");
+    log.debug("processTitleList....");
 
     try {
 
-      // log.debug("processTitleList(file:${file}, default:${default_folder}, user:${user}, org:${org}, cfg:${config})");
+      log.debug("processTitleList(file:${file}, default:${default_folder}, user:${user}, org:${org}, cfg:${config})");
 
       // Open File
       if ( file ) {
@@ -110,7 +110,7 @@ class FolderService {
       }
 
       // Delete file
-      // log.debug("Delete temp file");
+      log.debug("Delete temp file");
       file.delete()
     }
     catch ( Throwable t ) {

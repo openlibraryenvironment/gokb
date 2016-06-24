@@ -7,7 +7,7 @@ select count(t)
 from TitleInstance as t, 
      KBComponentFolderEntry as fe 
 where fe.folder = :folder 
-  and t = fe.linkedComponent
+  and t.id = fe.linkedComponent.id
   and exists ( select c from Combo as c where c.fromComponent = t and c.type.value = 'TitleInstance.Tipps' )
 """
 
