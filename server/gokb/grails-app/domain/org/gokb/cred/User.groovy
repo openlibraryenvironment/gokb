@@ -71,6 +71,24 @@ class User extends Party {
   transient def getOwnedGroups() {
     UserOrganisation.executeQuery('select uo from UserOrganisation as uo where uo.owner = :owner',[owner:this])
   }
+
+  /**
+   *  Return a list of all folders this user has access to
+   */
+  transient def getFolderList() {
+
+    def direct_ownership = Folder.executeQuery('select f from Folder as f where f.owner = :user',[user:this]);
+    // This query finds all folders where the user is a direct member of the group
+    def via_group = Folder.executeQuery('select f from Folder as f where f.owner in ( select uom.memberOf from UserOrganisationMembership as uom where uom.party = :user )',[user:this])
+
+    def result = direct_ownership + via_group
+
+    result.each {
+      log.debug(it)
+    }
+
+    return result
+  }
   
   transient boolean isAdmin() {
     Role adminRole = Role.findByAuthority("ROLE_ADMIN")

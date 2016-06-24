@@ -6,9 +6,34 @@
   </head>
   <body>
     <h1 class="page-header">${request.user?.displayName ?: request.user?.username}</h1>
-    <div class="container">
+    <div class="container-fluid">
       <div class="row">
         <div class="col-md-8">
+            <div class="panel panel-default col-md-12">
+              <div class="panel-heading">
+                <h3 class="panel-title">Your Lists</h3>
+              </div>
+              <div class="panel-body">
+                <table class="table table-striped table-responsive">
+                  <thead>
+                    <tr>
+                      <th>List Name</th>
+                      <th>Owner</th>
+                      <th>Last Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <g:each in="${request.user.getFolderList()}" var="f">
+                      <tr>
+                        <td><g:link controller="resource" action="show" id="${f.class.name}:${f.id}">${f.name}</g:link></td>
+                        <td><g:link controller="resource" action="show" id="${f.owner.class.name}:${f.owner.id}">${f.owner.displayName}</g:link></td>
+                        <td>${f.lastUpdated}</td>
+                      </tr>
+                    </g:each>
+                  </tbody>
+                </table>
+              </div>
+            </div>
         </div>
 
         <div class="col-md-4">

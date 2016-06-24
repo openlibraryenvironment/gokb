@@ -1702,11 +1702,8 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name/Title', 
-         property:'displayName', 
-         link:[controller:'resource',
-               action:'show',      
-               id:'x.r.linkedItem.class.name+\':\'+x.r.linkedItem.id'] ],
+        [heading:'Name/Title', property:'displayName', link:[controller:'resource', action:'show',      id:'x.r.linkedItem.class.name+\':\'+x.r.linkedItem.id'] ],
+        [heading:'Availability', property:'linkedItem.tipps?.size()?:"none"'],
       ]
     ]
   ],

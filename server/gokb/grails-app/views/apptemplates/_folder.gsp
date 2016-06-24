@@ -8,6 +8,7 @@
 
       <ul id="tabs" class="nav nav-tabs">
         <li class="active"><a href="#folderContents" data-toggle="tab">Folder Contents</a></li>
+        <li class=""><a href="#availability" data-toggle="tab">Availability</a></li>
         <li class=""><a href="#loadTitleList" data-toggle="tab">Load Title List</a></li>
       </ul>
 
@@ -23,8 +24,17 @@
                   id="folderContentsSearch">Contents of this folder</g:link>
         </div>
 
+        <div class="tab-pane " id="availability">
+          <pre>
+            ${d.getAvailability()}
+          </pre>
+        </div>
+
+
         <div class="tab-pane " id="loadTitleList">
           <g:form controller="folderUpload" action="processSubmission" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="defaultFolder" value="${d.id}"/>
+            <input type="hidden" name="ownerOrg" value="${d.owner.id}"/>
             <div class="input-group" >
               <span class="input-group-btn">
                 <span class="btn btn-default btn-file">
