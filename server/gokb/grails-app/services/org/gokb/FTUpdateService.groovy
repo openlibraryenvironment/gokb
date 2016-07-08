@@ -54,7 +54,7 @@ class FTUpdateService {
   
       result.componentType=kbc.class.simpleName
 
-      log.debug("process ${result}");
+      // log.debug("process ${result}");
 
       return result
     }
@@ -81,7 +81,7 @@ class FTUpdateService {
 
       result.componentType=kbc.class.simpleName
 
-      log.debug("process ${result}");
+      // log.debug("process ${result}");
 
       return result
     }
@@ -110,7 +110,7 @@ class FTUpdateService {
       FTControl.withNewTransaction {
         latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name,'ESIndex')
 
-        log.debug("result of findByDomain: ${latest_ft_record}");
+        log.debug("result of findByDomain: ${domain} ${latest_ft_record}");
         if ( !latest_ft_record) {
           latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0,lastId:0).save(flush:true, failOnError:true)
         }
@@ -125,7 +125,8 @@ class FTUpdateService {
       def c = domain.createCriteria()
       c.setReadOnly(true)
       c.setCacheable(false)
-      c.setFetchSize(Integer.MIN_VALUE);
+      // c.setFetchSize(Integer.MIN_VALUE);
+      c.setFetchSize(1000)
 
       c.buildCriteria{
           gt('lastUpdated', from)
@@ -156,7 +157,7 @@ class FTUpdateService {
           }
 
           future.actionGet()
-          log.debug("Index completed -- ${recid}");
+          // log.debug("Index completed -- ${recid}");
         }
 
 
