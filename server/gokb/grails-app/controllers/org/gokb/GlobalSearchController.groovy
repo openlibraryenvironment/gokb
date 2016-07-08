@@ -31,7 +31,9 @@ class GlobalSearchController {
 
         log.debug("Searching for ${query_str}");
 
-        def search = esclient.search {
+        def typing_field = grailsApplication.config.globalSearch.typingField ?: 'componentType'
+
+        def search_action = esclient.search {
                        indices grailsApplication.config.globalSearch.indices
                        types grailsApplication.config.globalSearch.types
                        source {
@@ -40,33 +42,39 @@ class GlobalSearchController {
                          query {
                            query_string (query: query_str)
                          }
-                         facets {
+                         aggregations {
                            'Component Type' {
                              terms {
-                               field = grailsApplication.config.globalSearch.typingField
+                               field = typing_field
                              }
                            }
                          }
                        }
                      }
 
-        result.hits = search.response.hits
+        def search = search_action.actionGet()
 
-        if(search.response.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          search.response.hits.maxScore = 0;
+        result.hits = search.hits
+
+        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
+          search.hits.maxScore = 0;
         }
 
-        result.resultsTotal = search.response.hits.totalHits
+        result.resultsTotal = search.hits.totalHits
         // We pre-process the facet response to work around some translation issues in ES
 
-        if ( search.response.facets != null ) {
+        if ( search.getAggregations() != null ) {
           result.facets = [:]
-          search.response.facets.facets.each { facet ->
+          search.getAggregations().each { entry ->
             def facet_values = []
-            facet.value.entries.each { fe ->
-              facet_values.add([term: fe.term,display:fe.term,count:"${fe?.count}"])
+            entry.buckets.each { bucket ->
+                log.debug("Bucket: ${bucket}");
+                bucket.each { bi ->
+                  log.debug("Bucket item: ${bi} ${bi.getKey()} ${bi.getDocCount()}");
+                  facet_values.add([term:bi.getKey(),display:bi.getKey(),count:bi.getDocCount()])
+                  }
             }
-            result.facets[facet.key] = facet_values
+            result.facets[entry.getName()] = facet_values
           }
         }
       }
