@@ -156,7 +156,7 @@ class FTUpdateService {
             source idx_record
           }
 
-          future.actionGet()
+          // future.actionGet()
           // log.debug("Index completed -- ${recid}");
         }
 
