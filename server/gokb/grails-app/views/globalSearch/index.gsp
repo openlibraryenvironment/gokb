@@ -116,7 +116,7 @@
              <tbody>
                <g:each in="${hits}" var="hit">
                  <tr>
-                   <td> <g:link controller="resource" action="show" id="${hit.source._id}">${hit.source.name}</g:link> </td>
+                   <td> <g:link controller="resource" action="show" id="${hit.id}">${hit.source.name}</g:link></td>
                    <td> ${hit.source.componentType} </td>
                  </tr>
                </g:each>
