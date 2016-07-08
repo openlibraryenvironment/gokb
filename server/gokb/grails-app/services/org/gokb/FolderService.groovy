@@ -55,7 +55,7 @@ class FolderService {
 
       // Open File
       if ( file ) {
-        // log.debug("Got file ${file}");
+        log.debug("Got file ${file}");
   
         def charset='UTF-8'
 
@@ -66,25 +66,28 @@ class FolderService {
                                  java.nio.charset.Charset.forName(charset)),'\t' as char,'"' as char)   // Use \0 for no quote char
   
 
-        // log.debug("Process rows.. config is ${columns_config}");
+        log.debug("Process rows.. config is ${columns_config}");
 
         String[] header = csv.readNext()
-        // log.debug("Got header ${header}");
+        log.debug("Got header ${header}");
 
         String[] nl=csv.readNext()
+        log.debug("First row: ${nl}");
         int rownum = 0;
+
         while(nl!=null) {
           def row_result = [:]
-          nl=csv.readNext()
-          // log.debug("Got row ${nl}");
+          log.debug("Got row ${nl}");
           int colctr = 0;
           nl.each {
-            def col_cfg = columns_config[header[colctr]]
-            // log.debug("using column config for ${header[colctr]} : ${col_cfg}");
+            def colname = columns_config[header[colctr].replaceAll("\\s+","")]
+            def col_cfg = columns_config[colname]
+            log.debug("using column config for \"${header[colctr].trim()}\" \"${header[colctr].trim()}\": ${col_cfg}");
 
             if ( ( col_cfg ) && 
                  ( it ) && 
                  ( it.trim().length() > 0 ) ) {
+
               if ( col_cfg.action=='process' ) {
                 if ( row_result[col_cfg.target] == null ) {
                   row_result[col_cfg.target] = it.trim()
@@ -106,15 +109,21 @@ class FolderService {
           if ( row_result.size() > 0 ) {
             processRow(row_result, user, org, default_folder);
           }
+          nl=csv.readNext()
         }
+
+        // log.debug("Completed processing rows");
+      }
+      else {
+        log.error("Unable to locate file");
       }
 
       // Delete file
       log.debug("Delete temp file");
       file.delete()
     }
-    catch ( Throwable t ) {
-      log.error("Problem in processTitleList",t);
+    catch ( Exception e ) {
+      log.error("Problem in processTitleList",e);
     }
 
     // Return
@@ -122,7 +131,7 @@ class FolderService {
   }
 
   private void processRow(row, user, org, default_folder) {
-    // log.debug("processRow(${row},${user},${org},${default_folder})");
+    log.debug("processRow(${row},${user},${org},${default_folder})");
     if ( org ) {
 
       def folder = null;
@@ -155,6 +164,7 @@ class FolderService {
       // log.debug("Folder for row will be ${folder}");
 
       def identifiers = []
+
       if ( row['title.identifier.isbn'] ) {
         if ( row['title.identifier.isbn'] instanceof List ) {
           row['title.identifier.isbn']?.each {
@@ -175,7 +185,8 @@ class FolderService {
       if ( ( row['title.identifier.isbn'] ) &&
            ( row['title'] ) &&
            ( row['title'].trim().length() > 0 ) &&
-           ( identifiers.size() > 0 ) ) {
+           ( identifiers.size() > 0 ) &&
+           ( folder ) ) {
         def title = titleLookupService.find(row['title'], row['publisher.name'], identifiers, null, null, 'org.gokb.cred.BookInstance' )  ;
 
         // log.debug("Result of lookup ${identifiers} ${title}");

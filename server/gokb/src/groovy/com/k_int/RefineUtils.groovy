@@ -151,7 +151,7 @@ class RefineUtils {
       String zip_name = "gokb-release-${ver}".toLowerCase()
 
       // We can override the build properties here.
-      def build_props = ["fullname" : zip_name, "version" : ver]
+      def build_props = ["fullname" : zip_name, "version" : ver, "source":"1.7", "target":"1.7"]
 
       // Build the XML file overriding the properties in the file with our custom values.
       Project p = antBuild(bxml, ant, b_target, build_props)
