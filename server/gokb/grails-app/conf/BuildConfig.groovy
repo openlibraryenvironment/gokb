@@ -85,7 +85,7 @@ grails.project.dependency.resolution = {
         runtime 'net.sf.opencsv:opencsv:2.0'
         
         // Gant. Matched the version that ships with grails bootstrap in Grails 2.3.11
-        runtime 'org.codehaus.gant:gant_groovy1.8:1.9.6'
+        runtime 'org.codehaus.gant:gant_groovy1.8:1.9.10'
         
         //compile 'com.github.sommeri:less4j:1.8.2'
         

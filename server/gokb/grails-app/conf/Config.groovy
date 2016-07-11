@@ -384,7 +384,7 @@ refine_min_version = "3.0.0"
 refine = [
   refineRepoURL           : "https://github.com/OpenRefine/OpenRefine.git",
   refineRepoBranch        : "master",
-  refineRepoTagPattern    : /\Q2.6-beta.1\E/,
+  refineRepoTagPattern    : /\Q2.6-rc.2\E/,
   refineRepoPath          : "gokb-build/refine",
   gokbRepoURL             : "https://github.com/k-int/gokb-phase1.git",
   gokbRepoBranch          : "release",

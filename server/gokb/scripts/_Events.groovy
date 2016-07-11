@@ -19,20 +19,20 @@ eventCompileStart = { kind ->
 }
 
 // Require our extension build script
-includeTargets << new File("${basedir}/scripts/RefineExtension.groovy")
+// includeTargets << new File("${basedir}/scripts/RefineExtension.groovy")
 
 /**
  * Add our extension to grails.
  */
-eventPackagingEnd = {
-  
-  if ("${argsMap['refine_module']}" != "false") {
-    println ("Building Refine module...")
-  
-    // After the app has been packaged for deployment we need to package the extension, so that
-    // it is included in our .war file.
-    packageExtension()
-  } else {
-    println ("Skipping refine build due to command line arg...")
-  }
-}
+// eventPackagingEnd = {
+//   
+//   if ("${argsMap['refine_module']}" != "false") {
+//     println ("Building Refine module...")
+//   
+//     // After the app has been packaged for deployment we need to package the extension, so that
+//     // it is included in our .war file.
+//     packageExtension()
+//   } else {
+//     println ("Skipping refine build due to command line arg...")
+//   }
+// }
