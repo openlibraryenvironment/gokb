@@ -1025,7 +1025,6 @@ abstract class KBComponent {
 
               //ORDERING
               def liveOrg = [] //Live comments by logged in user domain, in date order (last updated)
-              def others  = [] //Comments by everyone else in date order
               def deleted = [] //Remaining deleted comments by last updated
               acrit.each { ac ->
 
@@ -1066,12 +1065,12 @@ abstract class KBComponent {
 
                   //Notes processing, for ordering and separation of deleted notes
                   ac?.notes?.each { note ->
-                      if (!note.isDeleted  && note.criterion.user.org == currentUser.org)
+                      if (!note.isDeleted ) //   && note.criterion.user.org == currentUser.org)
                           liveOrg.add(note)
                       else if (note.isDeleted)
                           deleted.add(note)
                       else
-                          others.add(note)
+                          liveOrg.add(note)
                   }
 
               }
@@ -1079,9 +1078,6 @@ abstract class KBComponent {
 
               liveOrg.sort(true,dates)
               result[cat_code].criterion[c.id]['notes'].addAll(liveOrg)
-
-              others.sort(true,dates)
-              result[cat_code].criterion[c.id]['notes'].addAll(others)
 
               deleted.sort(true,dates)
               result[cat_code].criterion[c.id]['deletedNotes'].addAll(deleted)

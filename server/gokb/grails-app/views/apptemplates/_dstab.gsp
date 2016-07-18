@@ -1,14 +1,14 @@
 
 <div id="tab-decision-suppport">
-<div class="well">
+<div class="well clearfix">
   <span class="pull-right">
     <g:form name="rsform" controller="resource" action="show" id="${params.id}" fragment="ds" method="post">
       Filter DS Lines:&nbsp;
-      <input name="DSFilter" value="curator" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='curator'?'checked':''}>Curators</input>&nbsp;
-      <input name="DSFilter" value="mylib" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='mylib'?'checked':''}>My Library</input>&nbsp;
-      <input name="DSFilter" value="otherlib" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='otherlib'?'checked':''}>Other Libraries</input>&nbsp;
-      <input name="DSFilter" value="vendor" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='vendor'?'checked':''}>Vendors</input>&nbsp;
-      <input name="DSFilter" value="" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter==''?'checked':''}>All</input>&nbsp;
+      <input name="DSFilter" value="curator" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='curator'?'checked':''}>Curators</input>&nbsp;|&nbsp;
+      <input name="DSFilter" value="mylib" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='mylib'?'checked':''}>My Library</input>&nbsp;|&nbsp;
+      <input name="DSFilter" value="otherlib" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='otherlib'?'checked':''}>Other Libraries</input>&nbsp;|&nbsp;
+      <input name="DSFilter" value="vendor" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter=='vendor'?'checked':''}>Vendors</input>&nbsp;|&nbsp;
+      <input name="DSFilter" value="" type="radio" onClick="$('#rsform').submit();" ${params.DSFilter==''?'checked':''}>All</input>&nbsp;&nbsp;<br/>
     </g:form>
   </span>
 </div>

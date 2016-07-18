@@ -187,8 +187,6 @@ class FTUpdateService {
           }
         }
       }
-      results.close();
-
 
       // update timestamp
       FTControl.withNewTransaction {
