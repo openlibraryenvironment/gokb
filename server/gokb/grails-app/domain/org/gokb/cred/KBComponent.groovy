@@ -1065,12 +1065,26 @@ abstract class KBComponent {
 
                   //Notes processing, for ordering and separation of deleted notes
                   ac?.notes?.each { note ->
-                      if (!note.isDeleted ) //   && note.criterion.user.org == currentUser.org)
+
+                    def comment_user_is_curator = false
+                    if ( filter == 'curator' ) {
+                    }
+
+                    // Control comment inclusion based on filter
+                    if ( 
+                           ( filter == null ) || ( filter=='all' ) || ( filter == '' ) ||                                // NO filter == everything
+                         ( ( filter == 'mylib' )    && (  note.criterion.user.org == currentUser.org ) ) ||              // User only wants comments from their own org
+                         ( ( filter == 'otherlib' ) && ( note.criterion.user.org != currentUser.org ) ) ||               // HEIs other than the users
+                         ( ( filter == 'vendor' )   && ( note.criterion.user.org?.mission?.value == 'Commercial' ) ) ||  // Filter to vendor comments
+                         ( ( filter == 'curator' )  && comment_user_is_curator )                                         // User is a curator
+                       ) { 
+                      if (!note.isDeleted )
                           liveOrg.add(note)
                       else if (note.isDeleted)
                           deleted.add(note)
                       else
                           liveOrg.add(note)
+                    }
                   }
 
               }
