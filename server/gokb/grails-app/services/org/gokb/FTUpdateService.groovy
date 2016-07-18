@@ -15,14 +15,23 @@ class FTUpdateService {
   def ESWrapperService
   def sessionFactory
 
+  public static boolean running = false;
+
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
-  def updateFTIndexes() {
+  def synchronized updateFTIndexes() {
     log.debug("updateFTIndexes");
-    def future = executorService.submit({
-      doFTUpdate()
-    } as java.util.concurrent.Callable)
-    log.debug("updateFTIndexes returning");
+    
+    if ( running == false ) {
+      running = true;
+      def future = executorService.submit({
+        doFTUpdate()
+      } as java.util.concurrent.Callable)
+      log.debug("updateFTIndexes returning");
+    }
+    else {
+      log.debug("FTUpdate already running");
+    }
   }
 
   def doFTUpdate() {
@@ -94,6 +103,7 @@ class FTUpdateService {
       return result
     }
 
+    running = false;
   }
 
 
@@ -137,20 +147,19 @@ class FTUpdateService {
 
       // def results = c.scroll(ScrollMode.FORWARD_ONLY)
   
-      def q = domain.executeQuery('select o.id from '+domain.name+' as o where o.lastUpdated > :ts',[ts: from], [readonly:true]);
+      def q = domain.executeQuery('select o.id from '+domain.name+' as o where o.lastUpdated > :ts order by o.lastUpdated, o.id',[ts: from], [readonly:true]);
     
       log.debug("Query completed.. processing rows...");
 
       // while (results.next()) {
       q.each { r_id ->
         Object r = domain.get(r_id)
+        log.debug("${r.id} -- ${r.lastUpdated} > ${from}");
         def idx_record = recgen_closure(r)
 
         if ( idx_record != null ) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
-          log.debug("Index start -- ${recid}");
-
 
           def future = esclient.indexAsync {
             index 'gokb'
@@ -178,7 +187,7 @@ class FTUpdateService {
             latest_ft_record = FTControl.get(latest_ft_record.id);
             latest_ft_record.lastTimestamp = highest_timestamp
             latest_ft_record.lastId = highest_id
-            latest_ft_record.save(flush:true);
+            latest_ft_record.save(flush:true, failOnError:true);
           }
           cleanUpGorm();
           synchronized(this) {
@@ -193,7 +202,7 @@ class FTUpdateService {
         latest_ft_record = FTControl.get(latest_ft_record.id);
         latest_ft_record.lastTimestamp = highest_timestamp
         latest_ft_record.lastId = 0
-        latest_ft_record.save(flush:true);
+        latest_ft_record.save(flush:true, failOnError:true);
       }
       cleanUpGorm();
 
