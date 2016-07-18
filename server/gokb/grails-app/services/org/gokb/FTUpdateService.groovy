@@ -122,25 +122,28 @@ class FTUpdateService {
       Date from = new Date(latest_ft_record.lastTimestamp);
       // def qry = domain.findAllByLastUpdatedGreaterThan(from,[sort:'lastUpdated']);
 
-      def c = domain.createCriteria()
-      c.setReadOnly(true)
-      c.setCacheable(false)
+      // def c = domain.createCriteria()
+      // c.setReadOnly(true)
+      // c.setCacheable(false)
       // c.setFetchSize(Integer.MIN_VALUE);
-      c.setFetchSize(1000)
+      // c.setFetchSize(250)
 
-      c.buildCriteria{
-          gt('lastUpdated', from)
-          gt('id', (latest_ft_record.lastId)?:new Long(0))
-          order("lastUpdated", "asc")
-          order("id", "asc")
-      }
+      // c.buildCriteria{
+      //     gt('lastUpdated', from)
+      //     gt('id', (latest_ft_record.lastId)?:new Long(0))
+      //     order("lastUpdated", "asc")
+      //     order("id", "asc")
+      // }
 
-      def results = c.scroll(ScrollMode.FORWARD_ONLY)
+      // def results = c.scroll(ScrollMode.FORWARD_ONLY)
+  
+      def q = domain.executeQuery('select o.id from '+domain.name+' as o where o.lastUpdated > :ts',[ts: from], [readonly:true]);
     
       log.debug("Query completed.. processing rows...");
 
-      while (results.next()) {
-        Object r = results.get(0);
+      // while (results.next()) {
+      q.each { r_id ->
+        Object r = domain.get(r_id)
         def idx_record = recgen_closure(r)
 
         if ( idx_record != null ) {
@@ -168,9 +171,9 @@ class FTUpdateService {
 
         count++
         total++
-        if ( count > 200 ) {
+        if ( count > 250 ) {
           count = 0;
-          log.debug("processed ${++total} records (${domain.name}) - interim flush");
+          log.debug("processed ${++total} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
             latest_ft_record.lastTimestamp = highest_timestamp
@@ -179,7 +182,8 @@ class FTUpdateService {
           }
           cleanUpGorm();
           synchronized(this) {
-            Thread.sleep(1000);
+            Thread.yield()
+            Thread.sleep(2000);
           }
         }
       }

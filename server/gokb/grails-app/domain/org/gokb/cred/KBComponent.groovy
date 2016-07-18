@@ -978,7 +978,8 @@ abstract class KBComponent {
   }
 
   @Transient
-  def getDecisionSupportLines() {
+  def getDecisionSupportLines(filter=null) {
+
     // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
     def result = [:]
     def criterion = null;
