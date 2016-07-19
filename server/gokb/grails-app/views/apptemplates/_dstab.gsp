@@ -158,7 +158,11 @@
                                 <g:else>
                                     ${note.note}
                                 </g:else>
-                            </p> %{--closing tag from dynamic check of colour--}%
+                                <div class="pull-right">
+                                  <span class="fa fa-thumbs-up fa-2x"></span><br/>
+                                   <span class="badge">0</span>
+                                </div>
+                              </p> %{--closing tag from dynamic check of colour--}%
                             </dd>
                         </g:each>
                     </dl>
