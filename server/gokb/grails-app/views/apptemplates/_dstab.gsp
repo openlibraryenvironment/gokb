@@ -112,76 +112,62 @@
                 <div class="col-md-8">
 
                     <dl id="${c['appliedTo']}_${id}_notestable">
-                        <g:each in="${c['notes']}" var="note">
-                            <dt>
-                                <span class="DSAuthor">${note?.criterion?.user.username}</span>-
-                            <g:if test="${note?.criterion?.value?.value == 'Unknown'}">-(NOT VOTED)--</g:if>
-                                <i class="DSTimestamp">
-                                    <g:if test="${note.lastUpdated == note.dateCreated}"><g:formatDate date="${note.dateCreated}" /></g:if>
-                                    <g:else>Edited: <g:formatDate date="${note.lastUpdated}" /></g:else>
-                                </i>
-                            </dt>
-                            <dd>
-                                <p class="DSInlineBlock DSOrg">
-                                    <g:if test="${note.criterion?.user?.org}">
+
+                        <div class="panel panel-default">
+                          <!-- Default panel contents -->
+                          <div class="panel-heading">Comments</div>
+                          <!-- List group -->
+                          <ul class="list-group"> 
+                            <g:each in="${c['notes']}" var="note">
+                              <li class="list-group-item">
+                                <g:if test="${!note.isDeleted && note.criterion.user.id == user.id}" >
+                                    <g:xEditable owner="${note}" field="note"/>
+                                </g:if>
+                                <g:else>
+                                    ${note.note}
+                                </g:else>
+                                <hr/>
+                                <div class="pull-right">
+                                <a data-comp="${c['appliedTo']}_${id}" data-note="${note.id}" class="noteDelete text-negative fa fa-times-circle"></a>
+                                <i class="fa fa-thumbs-up"></i>
+                                <span class="badge">0</span>
+                                </div>
+                                <div>
+                                  by <strong>${note?.criterion?.user.username}</strong> of
+                                   <g:if test="${note.criterion?.user?.org}">
                                       <g:if test="${note.criterion?.user?.org?.name == null}">
                                           N/A
                                       </g:if>
                                       <g:else>
-                                          ${note.criterion?.user?.org?.name} <br/> (${note.criterion?.user?.org?.mission?.value})
+                                          <strong>${note.criterion?.user?.org?.name} (${note.criterion?.user?.org?.mission?.value})</strong>
                                       </g:else>
                                     </g:if>
                                     <g:else>
                                       <g:link controller="home" action="profile">No user org</g:link>
                                     </g:else>
-                                </p>
-                                <g:if test="${note?.isDeleted}">
-                                    <p data-cid="${c['appliedTo']}_${id}" class="triangle-border DSInlineBlock text-deleted border-deleted">
-                                </g:if>
-                                <g:elseif test="${note?.criterion?.value?.value == null || note?.criterion?.value?.value == 'Amber'}" >
-                                    <p class="triangle-border DSInlineBlock text-contentious border-contentious">
-                                </g:elseif>
-                                <g:elseif test="${note?.criterion?.value?.value == 'Red'}">
-                                    <p class="triangle-border DSInlineBlock text-negative border-negative">
-                                </g:elseif>
-                                <g:elseif test="${note?.criterion?.value?.value == 'Green'}">
-                                    <p class="triangle-border DSInlineBlock text-positive border-positive">
-                                </g:elseif>
-                                <g:elseif test="${note?.criterion?.value?.value == 'Unknown'}">
-                                    <p class="triangle-border DSInlineBlock text-contentious border-contentious">
-                                </g:elseif>
+                                   on <strong><g:if test="${note.lastUpdated == note.dateCreated}"><g:formatDate date="${note.dateCreated}" /></g:if>
+                                    <g:else>Edited: <g:formatDate date="${note.lastUpdated}" /></g:else></strong>
 
-                                <g:if test="${!note.isDeleted && note.criterion.user.id == user.id}" >
-                                    <g:xEditable owner="${note}" field="note"/>
-                                    <a data-comp="${c['appliedTo']}_${id}" data-note="${note.id}" class="noteDelete text-negative fa fa-times-circle fa-2x"></a>
-                                </g:if>
-                                <g:else>
-                                    ${note.note}
-                                </g:else>
-
-                                <div class="pull-right">
-                                   <span class="fa fa-thumbs-up fa-2x"></span><br/>
-                                   <span class="badge">0</span>
+                                  
                                 </div>
-                              </p> %{--closing tag from dynamic check of colour--}%
-                            </dd>
-                        </g:each>
+                              </li>
+                            </g:each>
+                            <li class="list-group-item">
+                              <form role="form" class="form" onsubmit='return addNote("${c['appliedTo']}_${id}", "${user.username}", "${user?.org?.name}")'>
+                                <div class="form-group">
+                                  <div class="input-group">
+                                    <span class="input-group-addon">Add note</span>
+                                    <textarea class="form-control" id="${c['appliedTo']}_${id}_newnote"></textarea>
+                                    <span class="input-group-addon">
+                                      <button type="submit">Add</button>
+                                    </span>
+                                  </div>
+                                </div>
+                              </form>
+                            </li>
+                          </ul>
+                        </div>
                     </dl>
-
-                     <form role="form" class="form" onsubmit='return addNote("${c['appliedTo']}_${id}", "${user.username}", "${user?.org?.name}")'>
-                         <div class="form-group">
-                             <div class="input-group">
-                                 <span class="input-group-addon">
-                                     Add note
-                                 </span>
-                                 <textarea class="form-control" id="${c['appliedTo']}_${id}_newnote"></textarea>
-                                 <span class="input-group-addon">
-                                     <button type="submit">Add</button>
-                                 </span>
-                             </div>
-                         </div>
-                     </form>
-
 
                 </div>
               </div>
