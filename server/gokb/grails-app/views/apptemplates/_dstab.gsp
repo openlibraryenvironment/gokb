@@ -123,11 +123,16 @@
                             </dt>
                             <dd>
                                 <p class="DSInlineBlock DSOrg">
-                                    <g:if test="${note.criterion?.user?.org?.name == null}">
-                                        N/A
+                                    <g:if test="${note.criterion?.user?.org}">
+                                      <g:if test="${note.criterion?.user?.org?.name == null}">
+                                          N/A
+                                      </g:if>
+                                      <g:else>
+                                          ${note.criterion?.user?.org?.name} <br/> (${note.criterion?.user?.org?.mission?.value})
+                                      </g:else>
                                     </g:if>
                                     <g:else>
-                                        ${note.criterion?.user?.org?.name}
+                                      <g:link controller="home" action="profile">No user org</g:link>
                                     </g:else>
                                 </p>
                                 <g:if test="${note?.isDeleted}">
