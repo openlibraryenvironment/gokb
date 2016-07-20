@@ -22,7 +22,7 @@
       <div class="panel-heading" role="tab" id="${dsl.id}">
         <h4 class="panel-title">
           <a role="button" class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapse${dsl.id}" aria-expanded="true" aria-controls="collapse${dsl.id}">
-            ${dsl.description}
+            ${dsl.description} - ${dsl.comment_count} comments, ${dsl.vote_count} votes
           </a>
         </h4>
       </div>
@@ -35,7 +35,8 @@
             <g:each in="${dsl.criterion}" var="id, c" status="i">
               <div class="row well">
                 <div class="col-md-4">
-                    <div class="criterionTitle">&nbsp;&nbsp;${c['title']}</div></br>
+                    <div class="criterionTitle"><strong>${c.description?:c.title}</strong> - ${c.explanation?:'No explanation available'}
+                    </div></br>
 
                     <div class="vote" style="white-space: nowrap;">
                         <g:if test="${c['yourVote'].isEmpty()}">

@@ -1006,20 +1006,30 @@ abstract class KBComponent {
               def cat_code = c.owner.code //e.g. Fromat,Access - Read Online, etc.
 
               if (result[cat_code] == null)
-                  result[cat_code] = [description: c.owner.description, id:c.owner.id, criterion: [:]] //criterion now a map
+                  result[cat_code] = [description: c.owner.description, 
+                                      id:c.owner.id, 
+                                      criterion: [:],
+                                      comment_count:0,
+                                      vote_count:0,
+                                      vote_y_count:0,
+                                      vote_n_count:0,
+                                      vote_o_count:0 ] //criterion now a map
 
               // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
               if (!result[cat_code].criterion[c.id]) {
                   // Set all params.
                   //use criterion key instead for id
                   result[cat_code].criterion[c.id] = [
-                          "title"        : c.title,   //Downloadable PDF, Embedded PDF, etc.
-                          "appliedTo"    : getId(),   //Package extends KBComponent
-                          "yourVote"     : [],        //logged in users vote
-                          "otherVotes"   : [],        //Every else minus logged in & master vote
-                          "voteCounter"  : [0,0,0,0], //Red,Amber,Green,Unknown
-                          "notes"        : [],         //Comments organised
-                          "deletedNotes" : []         //Comments organised
+                          "title"        : c.title,         //Downloadable PDF, Embedded PDF, etc.
+                          "description"  : c.description,   //Downloadable PDF, Embedded PDF, etc.
+                          "explanation"  : c.explanation,   //Downloadable PDF, Embedded PDF, etc.
+                          "title"        : c.title,         //Downloadable PDF, Embedded PDF, etc.
+                          "appliedTo"    : getId(),         //Package extends KBComponent
+                          "yourVote"     : [],              //logged in users vote
+                          "otherVotes"   : [],              //Every else minus logged in & master vote
+                          "voteCounter"  : [0,0,0,0],       //Red,Amber,Green,Unknown
+                          "notes"        : [],              //Comments organised
+                          "deletedNotes" : []               //Comments organised
                   ]
               }
 
@@ -1051,12 +1061,18 @@ abstract class KBComponent {
                   switch (ac?.value?.value) {
                       case 'Red':
                           result[cat_code].criterion[c.id]['voteCounter'][0]++;
+                          result[cat_code].vote_n_count++;
+                          result[cat_code].vote_count++;
                           break
                       case 'Amber':
                           result[cat_code].criterion[c.id]['voteCounter'][1]++;
+                          result[cat_code].vote_o_count++;
+                          result[cat_code].vote_count++;
                           break
                       case 'Green':
                           result[cat_code].criterion[c.id]['voteCounter'][2]++;
+                          result[cat_code].vote_y_count++;
+                          result[cat_code].vote_count++;
                           break
                       default:
                           result[cat_code].criterion[c.id]['voteCounter'][3]++;
@@ -1065,6 +1081,7 @@ abstract class KBComponent {
 
                   //Notes processing, for ordering and separation of deleted notes
                   ac?.notes?.each { note ->
+                    result[cat_code].comment_count++;
 
                     def comment_user_is_curator = false
                     if ( filter == 'curator' ) {
