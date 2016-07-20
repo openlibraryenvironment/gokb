@@ -614,4 +614,32 @@ class AjaxSupportController {
     render result as JSON
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def plusOne() {
+    def result       = [:]
+    def user         = springSecurityService.currentUser
+    def oid = params.oid
+    if (oid ) {
+      def oid_components = oid.split(':');
+       if ( oid_components.length == 2 ) {
+         def existing_like = ComponentLike.executeQuery('select cl from ComponentLike where cl.ownerClass=:oc and cl.ownerId=:oi and cl.user=:u',
+                             [oc:oid_components[0], oi:oid_components[1], u:user]);
+         switch ( existing_like.size() ) {
+           case 0:
+             new ComponentLike(ownerClass:oid_components[0], ownerId:oid_components[1], user:user).save(flush:true, failOnError:true)
+             break;
+           case 1:
+             existing_like.get(0).delete()
+             break;
+           default:
+             break;
+         }
+       }
+       result.newcount = ComponentLike.executeQuery('select count(cl) from ComponentLike where cl.ownerClass=:oc and cl.ownerId=:oi',
+                             [oc:oid_components[0], oi:oid_components[1]]).get(0)
+
+
+    }
+    render result as JSON
+  }
 }

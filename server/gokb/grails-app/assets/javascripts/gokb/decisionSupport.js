@@ -135,3 +135,15 @@ function deleteNote(target,note) {
 
   return false;
 }
+
+function meToo(id) {
+  console.log("Me too %o",oid);
+  $.ajax({
+    url: gokb.config.baseUrl+'/ajaxSupport/plusOne?object='+oid,
+    dataType:"json"
+  }).done(function(data) {
+    if(data.status == 'OK') {
+      console.log("OK %o",data);
+    }
+  });
+}
