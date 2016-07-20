@@ -130,7 +130,7 @@
                                 <hr/>
                                 <div class="pull-right">
                                 <a data-comp="${c['appliedTo']}_${id}" data-note="${note.id}" class="noteDelete text-negative fa fa-times-circle"></a>
-                                <i class="fa fa-thumbs-up"></i>
+                                <a onClick="javascript:thumbsUp(${note.id});"><i id="thumb_for_comment_${note.id}" class="fa fa-thumbs-up notethumb"></i></a>
                                 <span class="badge">0</span>
                                 </div>
                                 <div>
@@ -186,5 +186,9 @@
 <asset:script type="text/javascript">
   var hash = window.location.hash;
   hash && $('ul.nav a[href="' + hash + '"]').tab('show');
+
+  function thumbsUp(id) {
+    console.log("Thumbs up %o",id);
+  }
 </asset:script>
 
