@@ -33,7 +33,7 @@
                 <tr>
                   <g:each in="${matrix.criterion}" var="c">
                     <th style="background-color:${c.color?:'none'};">${c.title} ${c.description}
-                      <input type="checkbox" name="hide_cat_${c.id}">
+                      <input type="checkbox" name="show_category" value="${c.id}">
                     </th>
                   </g:each>
                 </tr>
