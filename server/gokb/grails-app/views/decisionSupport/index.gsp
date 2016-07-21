@@ -10,11 +10,6 @@
       <g:form controller="decisionSupport">
         <div class="row">
           <div class="col-md-12 centered">
-            Browse&nbsp;:&nbsp;<select name="dimension">
-              <option value="Platform">By Platform</option>
-              <option value="Package">By Package</option>
-              <option value="Title">By Title</option>
-            </select>
           </div>
         </div>
         <div class="row">
@@ -22,14 +17,24 @@
             <table class="table table-striped">
               <thead>
                 <tr>
-                  <th rowspan="2"></th>
+                  <th rowspan="2">
+                    Browse&nbsp;:&nbsp;<select name="dimension">
+                      <option value="Platform">By Platform</option>
+                      <option value="Package">By Package</option>
+                      <option value="Title">By Title</option>
+                    </select><br/>
+                    Filter:<input type="text form-control"/>
+                  </th>
                   <g:each in="${matrix.criterion_heads}" var="ch">
-                    <th colspan="${ch?.count}" style="background-color:${ch.color?:'none'};">${ch?.name}</th>
+                    <th colspan="${ch?.count}" style="background-color:${ch.color?:'none'};">${ch?.name}
+                    </th>
                   </g:each>
                 </tr>
                 <tr>
                   <g:each in="${matrix.criterion}" var="c">
-                    <th style="background-color:${c.color?:'none'};">${c.title} ${c.description}</th>
+                    <th style="background-color:${c.color?:'none'};">${c.title} ${c.description}
+                      <input type="checkbox" name="hide_cat_${c.id}">
+                    </th>
                   </g:each>
                 </tr>
               </thead>
@@ -52,9 +57,5 @@
         </div>
       </g:form>
     </div>
-
-    <pre>
-      ${matrix}
-    </pre>
   </body>
 </html>
