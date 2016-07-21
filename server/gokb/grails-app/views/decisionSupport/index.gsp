@@ -39,9 +39,9 @@
                     <td>${r.component.name}</td>
                     <g:each in="${r.data}" var="d">
                       <td>
-                        ${d[1]}<br/>
-                        ${d[2]}<br/>
-                        ${d[3]}
+                        <span class="label label-pill label-success">${d[1]}</span> &nbsp;
+                        <span class="label label-pill label-danger">${d[2]}</span> &nbsp;
+                        <span class="label label-pill label-warning">${d[3]}</span>
                       </td>
                     </g:each>
                   </tr>
