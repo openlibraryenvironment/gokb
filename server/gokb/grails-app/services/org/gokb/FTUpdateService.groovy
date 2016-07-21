@@ -154,7 +154,7 @@ class FTUpdateService {
       // while (results.next()) {
       q.each { r_id ->
         Object r = domain.get(r_id)
-        log.debug("${r.id} ${domain.name} -- ${r.lastUpdated} > ${from}");
+        log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}");
         def idx_record = recgen_closure(r)
 
         if ( idx_record != null ) {

@@ -18,15 +18,32 @@
           </div>
         </div>
         <div class="row">
-  
           <div class="col-md-12">
             <table class="table table-striped">
               <thead>
+                <tr>
+                  <th rowspan="2"></th>
+                  <g:each in="${matrix.criterion_heads}" var="ch">
+                    <th colspan="${ch?.count}" style="background-color:${ch.color?:'none'};">${ch?.name}</th>
+                  </g:each>
+                </tr>
+                <tr>
+                  <g:each in="${matrix.criterion}" var="c">
+                    <th style="background-color:${c.color?:'none'};">${c.title} ${c.description}</th>
+                  </g:each>
+                </tr>
               </thead>
               <tbody>
-                <g:each in="${matrix}" var="r">
+                <g:each in="${matrix.rowdata}" var="r">
                   <tr>
-                    <td>${r}</td>
+                    <td>${r.component.name}</td>
+                    <g:each in="${r.data}" var="d">
+                      <td>
+                        ${d[1]}<br/>
+                        ${d[2]}<br/>
+                        ${d[3]}
+                      </td>
+                    </g:each>
                   </tr>
                 </g:each>
               </tbody>
@@ -35,5 +52,9 @@
         </div>
       </g:form>
     </div>
+
+    <pre>
+      ${matrix}
+    </pre>
   </body>
 </html>

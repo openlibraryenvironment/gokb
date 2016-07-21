@@ -6,15 +6,19 @@ class DSCategory {
 
   String code
   String description
+  String colour
 
   static mapping = {
     code column:'dscat_code'
     description column:'dscat_desc'
+    colour column:'dscat_colour'
+    criterion(sort:'id', order:'asc')
   }
 
   static constraints = {
     code(nullable:false, blank:false)
     description(nullable:false, blank:false)
+    colour(nullable:false, blank:false)
   }
 
   static hasMany = [

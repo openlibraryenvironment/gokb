@@ -9,6 +9,11 @@
     <label for="description"><g:annotatedLabel owner="${d}" property="description">Category Description</g:annotatedLabel></label>
     <g:xEditable owner="${d}" field="description" class="form-control" />
   </div>
+
+  <div class="form-group">
+    <label for="colour"><g:annotatedLabel owner="${d}" property="colour">Colour</g:annotatedLabel></label>
+    <g:xEditable owner="${d}" field="colour" class="form-control" />
+  </div>
 </form>
 
 <g:if test="${d.id != null}">
