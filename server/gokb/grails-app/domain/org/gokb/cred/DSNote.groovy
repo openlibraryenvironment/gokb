@@ -24,4 +24,8 @@ class DSNote {
     isDeleted(defaultValue: "false", nullable: true, blank:false)
   }
 
+  transient public long getLikeCount() {
+    def result = ComponentLike.executeQuery('select count(cl) from ComponentLike as cl where cl.ownerClass=:cls and cl.ownerId=:id',[cls:'org.gokb.cred.DSNote',id:this.id])[0]
+    result;
+  }
 }

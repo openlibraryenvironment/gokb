@@ -635,13 +635,14 @@ class AjaxSupportController {
              break;
            case 1:
              log.debug("UnLike");
-             existing_like.get(0).delete()
+             existing_like.get(0).delete(flush:true, failOnError:true)
              break;
            default:
              break;
          }
        }
        
+       result.status = 'OK'
        result.newcount = ComponentLike.executeQuery('select count(cl) from ComponentLike as cl where cl.ownerClass=:oc and cl.ownerId=:oi',
                              [oc:oid_components[0], oi:Long.parseLong(oid_components[1])]).get(0)
 
