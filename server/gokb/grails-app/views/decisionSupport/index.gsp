@@ -26,13 +26,13 @@
                     Filter:<input name="q" type="text form-control" value="${params.q}"/>
                   </th>
                   <g:each in="${matrix.criterion_heads}" var="ch">
-                    <th colspan="${ch?.count}" style="background-color:${ch.color?:'none'};">${ch?.name}
-                    </th>
+                    <th colspan="${ch?.count}" style="background-color:${ch.color?:'none'};"><g:link controller="resource" action="show" id="org.gokb.cred.DSCategory:${ch.id}">${ch?.name}</g:link></th>
                   </g:each>
                 </tr>
                 <tr>
                   <g:each in="${matrix.criterion}" var="c">
-                    <th style="background-color:${c.color?:'none'};">${c.title} ${c.description} ${c.id}
+                    <th style="background-color:${c.color?:'none'};">
+                      <g:link controller="resource" action="show" id="org.gokb.cred.DSCriterion:${c.id}" title="${c.explanation}">${c.description?:c.title}</g:link>
                       <input type="checkbox" name="show_category" value="${c.id}">
                     </th>
                   </g:each>

@@ -49,7 +49,7 @@ order by c.id
         criterion.add([id:crit.id, title:crit.title, description:crit.description, explanation:crit.explanation, color:cat.colour])
         groupcount++
       }
-      criterion_heads.add([name:cat.description, count:groupcount, color:cat.colour])
+      criterion_heads.add([id:cat.id, name:cat.description, count:groupcount, color:cat.colour])
     }
 
     def qry = null;
