@@ -2,10 +2,10 @@
 <html>
   <head>
     <meta name='layout' content='sb-admin'/>
-    <title>GOKb: Decision Support Browser</title>
+    <title>GOKb: Decision Support Dashboard</title>
   </head>
   <body>
-    <h1 class="page-header">Decision Support Browser</h1>
+    <h1 class="page-header">Decision Support Dashboard</h1>
     <div class="container-fluid">
       <g:form controller="decisionSupport" method="get">
         <div class="row">
