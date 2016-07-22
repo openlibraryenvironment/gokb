@@ -152,12 +152,12 @@ def pushToGokb(name, data, http) {
     multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
 
     // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("SPRINGER"))
+    multiPartContent.addPart("source", new StringBody("JSTOR"))
     multiPartContent.addPart("fmt", new StringBody("springer-kbart"))
     multiPartContent.addPart("pkg", new StringBody(name.toString()))
-    multiPartContent.addPart("platformUrl", new StringBody("http://link.springer.com"));
+    multiPartContent.addPart("platformUrl", new StringBody("http://www.jstor.org/"));
     multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("springer"));
+    multiPartContent.addPart("providerName", new StringBody("JSTOR"));
     multiPartContent.addPart("providerIdentifierNamespace", new StringBody("doi"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
