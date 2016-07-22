@@ -7,7 +7,7 @@
   <body>
     <h1 class="page-header">Decision Support Browser</h1>
     <div class="container-fluid">
-      <g:form controller="decisionSupport">
+      <g:form controller="decisionSupport" method="get">
         <div class="row">
           <div class="col-md-12 centered">
           </div>
@@ -23,7 +23,7 @@
                       <option value="Package">By Package</option>
                       <option value="Title">By Title</option>
                     </select><br/>
-                    Filter:<input type="text form-control"/>
+                    Filter:<input name="q" type="text form-control" value="${params.q}"/>
                   </th>
                   <g:each in="${matrix.criterion_heads}" var="ch">
                     <th colspan="${ch?.count}" style="background-color:${ch.color?:'none'};">${ch?.name}
@@ -32,7 +32,7 @@
                 </tr>
                 <tr>
                   <g:each in="${matrix.criterion}" var="c">
-                    <th style="background-color:${c.color?:'none'};">${c.title} ${c.description}
+                    <th style="background-color:${c.color?:'none'};">${c.title} ${c.description} ${c.id}
                       <input type="checkbox" name="show_category" value="${c.id}">
                     </th>
                   </g:each>
@@ -41,9 +41,9 @@
               <tbody>
                 <g:each in="${matrix.rowdata}" var="r">
                   <tr>
-                    <td>${r.component.name}</td>
+                    <td><g:link controller="resource" action="show" id="${r.component.class.name}:${r.component.id}">${r.component.name}</g:link></td>
                     <g:each in="${r.data}" var="d">
-                      <td>
+                      <td style="white-space:nowrap" >
                         <span class="label label-pill label-success">${d[1]}</span> &nbsp;
                         <span class="label label-pill label-danger">${d[2]}</span> &nbsp;
                         <span class="label label-pill label-warning">${d[3]}</span>

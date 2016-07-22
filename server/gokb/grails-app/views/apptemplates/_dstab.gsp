@@ -130,8 +130,8 @@
                                 <hr/>
                                 <div class="pull-right">
                                 <a data-comp="${c['appliedTo']}_${id}" data-note="${note.id}" class="noteDelete text-negative fa fa-times-circle"></a>
-                                <a onClick="javascript:meToo(${note.id});"><i id="thumb_for_comment_${note.id}" class="fa fa-thumbs-up notethumb"></i></a>
-                                <span class="badge">0</span>
+                                <span onClick="javascript:meToo('org.gokb.cred.DSNote:${note.id}','count_for_comment_${note.id}');"><i id="thumb_for_comment_${note.id}" class="fa fa-thumbs-up notethumb"></i></span>
+                                <span id="count_for_comment_${note.id}" class="badge">0</span>
                                 </div>
                                 <div>
                                   by <strong>${note?.criterion?.user.username}</strong> of

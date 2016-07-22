@@ -136,7 +136,7 @@ function deleteNote(target,note) {
   return false;
 }
 
-function meToo(id) {
+function meToo(oid, result) {
   console.log("Me too %o",oid);
   $.ajax({
     url: gokb.config.baseUrl+'/ajaxSupport/plusOne?object='+oid,
@@ -144,6 +144,9 @@ function meToo(id) {
   }).done(function(data) {
     if(data.status == 'OK') {
       console.log("OK %o",data);
+      if ( result ) {
+        $(result).html(""+data.newcount);
+      }
     }
   });
 }
