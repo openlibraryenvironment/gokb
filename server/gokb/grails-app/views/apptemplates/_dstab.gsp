@@ -40,13 +40,13 @@
 
                     <div class="vote" style="white-space: nowrap;">
                         <g:if test="${c['yourVote'].isEmpty()}">
-                            <i id="${c['appliedTo']}_${id}_q_neutral" class="text-neutral"> <span class="fa fa-question-circle fa-2x"></span><span>&nbsp;&nbsp;cast your vote</span></i></br></br>
+                            <i id="${c['appliedTo']}_${id}_q_neutral" class="text-neutral"> <span class="fa fa-question-circle fa-2x"></span><span>&nbsp;&nbsp;Your Rating:</span></i></br></br>
                         </g:if>
                         <g:elseif test="${c['yourVote'][0] == 'Unknown'}">
-                            <span><b>You have commented without voting, please vote!</b></span>
+                            <span><b>You have commented without rating, please rate!</b></span>
                         </g:elseif>
                         <g:else>
-                            <span><b>You have voted</b></span>
+                            <span><b>Your Rating </b></span>
                         </g:else>
                         <div class="DSVote" id="currentVote${c['appliedTo']}_${id}">
                             <a id="${c['appliedTo']}_${id}_r_negative" title="${c['voteCounter'][0] +  (c['voteCounter'][3]>0? ' Red vote(s) and ' + c['voteCounter'][3] + ' commented only':' Red vote(s)') }" href='#' ${c['yourVote'][0]=='Red'?'class="text-negative selected"':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
@@ -61,7 +61,7 @@
                             <table id="otherVoters" style="margin: 0; padding: 0">
                                 <thead>
                                 <tr>
-                                    <th>Others Voted</th>
+                                    <th>Other Ratings</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -90,7 +90,7 @@
                                 <table>
                                     <thead>
                                     <tr>
-                                        <th colspan="3">Others Voted</th>
+                                        <th colspan="3">Other Ratings</th>
                                     </tr>
                                     </thead>
                                     <tbody>
