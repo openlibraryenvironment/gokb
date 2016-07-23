@@ -534,7 +534,7 @@ abstract class KBComponent {
 
   protected def generateComponentHash() {
     // Default component hash generation
-    componentHash = GOKbTextUtils.getHash([name, componentDiscriminator]);
+    componentHash = GOKbTextUtils.generateComponentHash([name, componentDiscriminator]);
   }
 
   def beforeInsert() {

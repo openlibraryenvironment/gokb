@@ -108,7 +108,7 @@ class GOKbTextUtils {
     return 0
   }
 
-  def generateComponentHash(List components) {
+  public static String generateComponentHash(List components) {
     def sw = new StringWriter()
     def first = true;
     components.each { c ->
