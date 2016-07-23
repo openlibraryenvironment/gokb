@@ -37,13 +37,13 @@ import static groovyx.net.http.ContentType.XML
 import static groovyx.net.http.Method.GET
 
 
-// Example full record http://gokb.kuali.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:309298
+// Example full record http://gokb.openlibraryfoundation.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:309298
 
 // Alternate names
-// Example full record http://gokb.kuali.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:232360
+// Example full record http://gokb.openlibraryfoundation.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:232360
 
 // Publisher example
-// Example full record http://gokb.kuali.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:14290
+// Example full record http://gokb.openlibraryfoundation.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:14290
 
 config = null;
 cfg_file = new File('./sync-gokb-titles-cfg.json')
@@ -62,33 +62,50 @@ httpbuilder.auth.basic config.uploadUser, config.uploadPass
 
 
 println("Pulling latest messages");
-pullLatest(config, httpbuilder)
+pullLatest(config, httpbuilder, cfg_file)
 println("All done");
 
-println("Updating config");
-cfg_file.delete()
-cfg_file << toJson(config);
-
-
-def pullLatest(config,httpbuilder) {
-  importJournals('http://gokb.kuali.org', httpbuilder);
+def pullLatest(config,httpbuilder, cfg_file) {
+  importJournals('http://gokb.openlibraryfoundation.org', httpbuilder, config, cfg_file);
 }
 
-def importJournals(host, gokb) {
-  def resumptionToken, resourcesFromPage
+def importJournals(host, gokb, config, cfg_file) {
+  def resumptionToken
+  def resourcesFromPage
+
+  resumptionToken = config.resumptionToken
 
   def moredata = true;
 
   while ( moredata ) {
-
+    def first_resource = false;
+    def ctr = 0;
     (resourcesFromPage, resumptionToken) = getResourcesFromGoKBByPage(gokbUrl(host, resumptionToken))
 
-    resourcesFromPage.each {
-      println(it);
-      addToGoKB(false, gokb, it)
+    resourcesFromPage.each { gt ->
+      ctr++
+      if ( first_resource ) {
+        println(gt);
+        first_resource = false;
+      }
+      else {
+      }
+
+      addToGoKB(false, gokb, gt)
     }
 
-    if ( resumptionToken ) moredata = true else moredata = false;
+    if ( resumptionToken ) {
+      moredata = true 
+      config.resumptionToken = resumptionToken
+    } 
+    else {
+      moredata = false;
+      resumptionToken = null;
+    }
+
+    println("Updating config - processed ${ctr} records");
+    cfg_file.delete()
+    cfg_file << toJson(config);
   }
 }
 
@@ -101,12 +118,16 @@ private static getResourcesFromGoKBByPage(URL url) {
 
   def resources = []
   def resumptionToken = null
+  def ctr = 0;
 
   http.request(GET, XML) { req ->
     response.success = { resp, body ->
       resumptionToken = body?.ListRecords?.resumptionToken.text()
 
       body?.'ListRecords'?.'record'.each { r ->
+
+        println("Record ${ctr++}");
+
         def resourceFieldMap = [:]
         resourceFieldMap['name'] = r.metadata.gokb.title.name.text()
         resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
@@ -119,6 +140,7 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap['issuer'] = r.metadata.gokb.title.issuer?.text()
         resourceFieldMap['variantNames'] = []
         resourceFieldMap['historyEvents'] = []
+        resourceFieldMap['type'] = 'Serial'
 
         if ( ( resourceFieldMap['medium'] == null ) || ( resourceFieldMap['medium'].length() == 0 ) ) {
           resourceFieldMap['medium'] = 'Journal'
@@ -155,7 +177,7 @@ private static getResourcesFromGoKBByPage(URL url) {
             history_event.to.add(convertHistoryEvent(to));
           }
 
-          history_event.date = he.date;
+          history_event.date = he.date.text();
 
           resourceFieldMap['historyEvents'].add (history_event);
         }
@@ -169,6 +191,8 @@ private static getResourcesFromGoKBByPage(URL url) {
       println(err)
     }
   }
+
+  println("Fetched ${resources.size()} titles in oai page");
   [resources, resumptionToken]
 }
 
@@ -177,9 +201,12 @@ private static convertHistoryEvent(evt) {
   def result = [:]
   result.title=evt.title[0].text()
   result.identifiers=[]
-  evt.identifiers.each { id ->
+  evt.identifiers.identifier.each { id ->
     result.identifiers.add( [ type: id.'@namespace'.text(), value: id.'@value'.text() ] );
   }
+
+  println("Result of convertHistoryEvent : ${result}");
+
   result
 }
 
@@ -199,25 +226,32 @@ private static URL gokbUrl(host, resumptionToken = null) {
 
 
 def addToGoKB(dryrun, gokb, title_data) {
+  
+  try {
+    if ( dryrun ) {
+      println(title_data)
+    }
+    else {
+      gokb.request(Method.POST) { req ->
+        uri.path='/gokb/integration/crossReferenceTitle'
+        body = title_data
+        requestContentType = ContentType.JSON
 
-  if ( dryrun ) {
-    println(title_data)
-  }
-  else {
-    gokb.request(Method.POST) { req ->
-      uri.path='/gokb/integration/crossReferenceTitle'
-      body = title_data
-      requestContentType = ContentType.JSON
+        response.success = { resp ->
+          println "Success! ${resp.status}"
+        }
 
-      response.success = { resp ->
-        println "Success! ${resp.status}"
-      }
-
-      response.failure = { resp ->
-        println "Request failed with status ${resp.status}"
-        println (title_data);
+        response.failure = { resp ->
+          println "Request failed with status ${resp.status}"
+          println (title_data);
+        }
       }
     }
+  }
+  catch ( Exception e ) {
+    println("Fatal error loading ${title_data}");
+    e.printStackTrace();
+    System.exit(0);
   }
 
 }
