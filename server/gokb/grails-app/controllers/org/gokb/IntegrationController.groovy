@@ -385,6 +385,10 @@ class IntegrationController {
     render result as JSON
   }
 
+
+  /**
+   *  Cross reference an incoming title with the database
+   */
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferenceTitle() {
     def result = [ 'result' : 'OK' ]

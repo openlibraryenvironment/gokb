@@ -311,6 +311,13 @@ abstract class KBComponent {
   // used in data tidy routines
   KBComponent duplicateOf
 
+  // MD5 Hash specific to class of component that is used for deduplication
+  String componentHash
+
+  // A discriminator which can be added to the hash above to explicitly
+  // discriminate items who's hash would otherwise be (Correctly) the same.
+  String componentDiscriminator
+
   // ids moved to combos.
   static manyByCombo = [
     ids : Identifier,
@@ -358,6 +365,8 @@ abstract class KBComponent {
     insertBenchmark column:'kbc_insert_benchmark'
     updateBenchmark column:'kbc_update_benchmark'
     lastUpdateComment column:'kbc_last_update_comment'
+    componentHash column:'kbc_component_hash'
+    componentDiscriminator column:'kbc_component_descriminator'
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
 
@@ -523,11 +532,17 @@ abstract class KBComponent {
     normname = nname == "" ? null : nname
   }
 
+  protected def generateComponentHash() {
+    // Default component hash generation
+    componentHash = GOKbTextUtils.getHash([name, componentDiscriminator]);
+  }
+
   def beforeInsert() {
 
     // Generate the any necessary values.
     generateShortcode()
     generateNormname()
+    generateComponentHash()
 
     // Ensure any defaults defined get set.
     ensureDefaults()

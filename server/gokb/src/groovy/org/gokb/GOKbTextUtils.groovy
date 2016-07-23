@@ -108,11 +108,48 @@ class GOKbTextUtils {
     return 0
   }
 
-  public static double cosineSimilarity(char[] sequence1, char[] sequence2, int degree = 2) {
-    Map<List, Integer> m1 = countNgramFrequency(sequence1, degree)
-    Map<List, Integer> m2 = countNgramFrequency(sequence2, degree)
+  def generateComponentHash(List components) {
+    def sw = new StringWriter()
+    def first = true;
+    components.each { c ->
+      if ( c ) {
+        if ( first ) { first = false; } else { sw.write (' '); }
+        sw.write(c)
+      }
+    }
 
-    dotProduct(m1, m2) / Math.sqrt(dotProduct(m1, m1) * dotProduct(m2, m2))
+    return norm2(sw.toString()).trim().toLowerCase()
+  }
+
+  public static String norm2(String s) {
+
+    // Ensure s is not null.
+    if (!s) s = "";
+
+    // Normalize to the D Form and then remove diacritical marks.
+    s = Normalizer.normalize(s, Normalizer.Form.NFD)
+    s = s.replaceAll("\\p{InCombiningDiacriticalMarks}+","");
+
+    // lowercase.
+    s = s.toLowerCase();
+
+    // Break apart the string.
+    String[] components = s.split("\\s");
+
+    // Re-piece the array back into a string.
+    String normstring = "";
+    components.each { String piece ->
+      if ( !STOPWORDS.contains(piece)) {
+
+        // Remove all unnecessary characters.
+        normstring += piece.replaceAll("[^a-z0-9]", " ") + " ";
+      }
+    }
+
+    // normstring.trim().replaceAll(" +", " ")
+    // Do spaces really add anything for our purposes here, or are random spaces more likely to creep in to the
+    // source records and throw the matching? Suspect the latter, kill them for now
+    normstring.trim().replaceAll(' ', '')
   }
 
   private static Map<List, Integer> countNgramFrequency(char[] sequence, int degree) {
@@ -133,4 +170,12 @@ class GOKbTextUtils {
   private static double dotProduct(Map<List, Integer> m1, Map<List, Integer> m2) {
     m1.keySet().collect { key -> m1[key] * m2.get(key, 0) }.sum()
   }
+
+  public static double cosineSimilarity(char[] sequence1, char[] sequence2, int degree = 2) {
+    Map<List, Integer> m1 = countNgramFrequency(sequence1, degree)
+    Map<List, Integer> m2 = countNgramFrequency(sequence2, degree)
+
+    dotProduct(m1, m2) / Math.sqrt(dotProduct(m1, m1) * dotProduct(m2, m2))
+  }
+
 }
