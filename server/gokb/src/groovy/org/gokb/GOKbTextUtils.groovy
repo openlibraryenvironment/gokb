@@ -1,6 +1,8 @@
 package org.gokb
 
 import java.text.Normalizer
+import java.security.MessageDigest
+
 
 class GOKbTextUtils {
 
@@ -109,6 +111,11 @@ class GOKbTextUtils {
   }
 
   public static String generateComponentHash(List components) {
+    def s = norm1(components);
+    return MessageDigest.getInstance("MD5").digest(s.bytes).encodeHex().toString()
+  }
+
+  public static String norm1(List components) {
     def sw = new StringWriter()
     def first = true;
     components.each { c ->

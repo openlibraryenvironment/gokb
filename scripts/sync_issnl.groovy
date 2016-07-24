@@ -47,7 +47,7 @@ import org.apache.commons.io.ByteOrderMark
 
 
 
-println("Load ISSN-L file ${args[0]}");
+println("Load ISSN-L (ISSN-L-to-ISSN) file ${args[0]}");
 
 config = null;
 cfg_file = new File('./sync-issnl-cfg.json')

@@ -313,9 +313,9 @@ class TitleLookupService {
 
   private TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
 
-    log.debug("Add publisher ${publisher_name}");
 
-    if ( publisher_name != null ) {
+    if ( ( publisher_name != null ) && ( publisher_name.trim().length() > 0 ) ) {
+      log.debug("Add publisher \"${publisher_name}\"");
       // Lookup our publisher.
       def norm_pub_name = GOKbTextUtils.normaliseString(publisher_name);
 

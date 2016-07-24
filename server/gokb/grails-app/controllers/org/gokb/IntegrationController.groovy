@@ -393,7 +393,7 @@ class IntegrationController {
   def crossReferenceTitle() {
     def result = [ 'result' : 'OK' ]
 
-    log.debug("crossReferenceTitle()");
+    log.debug("crossReferenceTitle(${request.JSON.type},$request.JSON.title,${request.JSON.identifiers}},...)");
 
     User user = springSecurityService.currentUser
     def title = titleLookupService.find(request.JSON.title, 
@@ -402,6 +402,55 @@ class IntegrationController {
                                         user,
                                         null,
                                         request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )  // project
+
+    if ( request.JSON.historyEvents?size() > 0 ) { jhe ->
+      // 1971-01-01 00:00:00.0
+      def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
+      log.debug("Handling title history");
+      try {
+        def new he = new ComponentHistoryEvent()
+        if ( jhe.date ) {
+          he.eventDate = sdf.parse(jhe.date);
+        }
+        he.save(flush:true, failOnError:true);
+
+        request.JSON.historyEvents.from.each { fhe ->
+          def participant =  titleLookupService.find(fhe.title,
+                                                     null,
+                                                     fhe.identifiers,
+                                                     user,
+                                                     null,
+                                                     request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
+          if ( participant ) {
+            def hep = new ComponentHistoryEventParticipant(event:he, participant:participant, participantRole:'in');
+            hep.save(flush:true, failOnError:true);
+          }
+        }
+
+        request.JSON.historyEvents.to.each {
+          def participant =  titleLookupService.find(fhe.title,
+                                                     null,
+                                                     fhe.identifiers,
+                                                     user,
+                                                     null,
+                                                     request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
+          if ( participant ) {
+            def hep = new ComponentHistoryEventParticipant(event:he, participant:participant, participantRole:'out');
+            hep.save(flush:true, failOnError:true);
+          }
+        }
+      }
+      catch ( Exception e ) {
+        log.error("Problem processing title history",e);
+      }
+    }
+
+    if ( title ) {
+      result.message = "Created title ${title.id}"
+    }
+    else {
+      result.message = "No title for ${request.JSON}";
+    }
 
     render result as JSON
   }

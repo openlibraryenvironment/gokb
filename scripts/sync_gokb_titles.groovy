@@ -129,7 +129,7 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}");
 
         def resourceFieldMap = [:]
-        resourceFieldMap['name'] = r.metadata.gokb.title.name.text()
+        resourceFieldMap['title'] = r.metadata.gokb.title.name.text()
         resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
         resourceFieldMap['identifiers'] = []
         resourceFieldMap['publishedFrom'] = r.metadata.gokb.title.publishedFrom?.text()
@@ -237,8 +237,8 @@ def addToGoKB(dryrun, gokb, title_data) {
         body = title_data
         requestContentType = ContentType.JSON
 
-        response.success = { resp ->
-          println "Success! ${resp.status}"
+        response.success = { resp, data ->
+          println "Success! ${resp.status} ${data.message}"
         }
 
         response.failure = { resp ->
