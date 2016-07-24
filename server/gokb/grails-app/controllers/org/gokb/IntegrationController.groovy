@@ -410,7 +410,7 @@ class IntegrationController {
       }
     }
 
-    if ( request.JSON.historyEvents?size() > 0 ) {
+    if ( request.JSON.historyEvents?.size() > 0 ) {
       request.JSON.historyEvents.each { jhe ->
         // 1971-01-01 00:00:00.0
         def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
