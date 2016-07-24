@@ -89,6 +89,7 @@ def importJournals(host, gokb, config, cfg_file) {
         first_resource = false;
       }
       else {
+        println(gt);
       }
 
       addToGoKB(false, gokb, gt)

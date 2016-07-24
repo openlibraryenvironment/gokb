@@ -422,7 +422,8 @@ class IntegrationController {
           }
           he.save(flush:true, failOnError:true);
   
-          request.JSON.historyEvents.from.each { fhe ->
+          jhe.from.each { fhe ->
+            log.debug("handle from participant : ${fhe}");
             def participant =  titleLookupService.find(fhe.title,
                                                        null,
                                                        fhe.identifiers,
@@ -435,7 +436,8 @@ class IntegrationController {
             }
           }
   
-          request.JSON.historyEvents.to.each {
+          jhe.to.each { fhe ->
+            log.debug("handle to participant : ${fhe}");
             def participant =  titleLookupService.find(fhe.title,
                                                        null,
                                                        fhe.identifiers,
