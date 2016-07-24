@@ -147,6 +147,9 @@ class FTUpdateService {
 
       // def results = c.scroll(ScrollMode.FORWARD_ONLY)
   
+      def countq = domain.executeQuery('select count(o.id) from '+domain.name+' as o where o.lastUpdated > :ts order by o.lastUpdated, o.id',[ts: from], [readonly:true])[0];
+      log.debug("Will process ${countq} records");
+
       def q = domain.executeQuery('select o.id from '+domain.name+' as o where o.lastUpdated > :ts order by o.lastUpdated, o.id',[ts: from], [readonly:true]);
     
       log.debug("Query completed.. processing rows...");
@@ -182,7 +185,7 @@ class FTUpdateService {
         total++
         if ( count > 250 ) {
           count = 0;
-          log.debug("processed ${++total} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
+          log.debug("interim:: processed ${++total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
             latest_ft_record.lastTimestamp = highest_timestamp
@@ -206,7 +209,7 @@ class FTUpdateService {
       }
       cleanUpGorm();
 
-      println("Processed ${total} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
+      println("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
     }
     catch ( Exception e ) {
       log.error("Problem with FT index",e);
