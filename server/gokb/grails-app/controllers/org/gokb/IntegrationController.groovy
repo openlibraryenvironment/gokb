@@ -403,7 +403,7 @@ class IntegrationController {
                                         null,
                                         request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )  // project
 
-    if ( request.JSON.variantNames?size() > 0 ) {
+    if ( request.JSON.variantNames?.size() > 0 ) {
       request.JSON.variantNames.each { vn ->
         log.debug("Ensure variant name ${vn}");
         title.addVariantTitle(vn);
