@@ -175,10 +175,15 @@ class TitleLookupService {
         } else {
 
           // No class 1s supplied we should try and find a match on the title string.
-          log.debug ("No class 1 ids supplied.")
+          log.debug ("No class 1 ids supplied. attempting string match")
+
+          // The hash we use is constructed differently based on the type of items.
+          // Serial hashes are based soley on the title, Monographs are based currently on title+primary author surname
+          def target_hash = null;
 
           // Lookup using title string match only.
-          the_title = attemptStringMatch (norm_title)
+          // the_title = attemptStringMatch (norm_title)
+          the_title = attemptBucketMatch (target_hash)
 
           if (the_title) {
             log.debug("TI ${the_title} matched by name. Partial match")
@@ -354,6 +359,12 @@ class TitleLookupService {
     ti
   }
 
+
+  private TitleInstance attemptBucketMatch (String title) {
+    def t = null;
+    return t;
+  }
+
   private TitleInstance attemptStringMatch (String norm_title) {
 
     // Default to return null.
@@ -362,7 +373,7 @@ class TitleLookupService {
     // Try and find a title by matching the norm string.
     // Default to the min threshold
     double best_distance = grailsApplication.config.cosine.good_threshold
-
+    
     TitleInstance.list().each { TitleInstance t ->
 
       // Get the distance and then determine whether to add to the list or

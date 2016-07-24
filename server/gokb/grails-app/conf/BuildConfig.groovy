@@ -118,10 +118,10 @@ grails.project.dependency.resolution = {
       compile ":grails-melody:1.52.0"
 
       /* Grails 2.4 Upgrade */
-      build ':tomcat:7.0.54' // plugins for the compile step compile
+      build ':tomcat:7.0.55' // plugins for the compile step compile
       
       // plugins for the compile step
-      compile ':cache:1.1.3'
+      compile ':cache:1.1.8'
       
       compile ':asset-pipeline:2.9.1'
       
@@ -134,7 +134,7 @@ grails.project.dependency.resolution = {
       //}
       compile ":less-asset-pipeline:2.9.1"
       
-      runtime ':hibernate:3.6.10.18'  // II trying .19 over .16
+      runtime ':hibernate:3.6.10.19'  // II trying .19 over .16
       runtime ':database-migration:1.4.1-SNAPSHOT'  // II: updated here due to ehCache problem - see https://github.com/grails-plugins/grails-spring-security-core/issues/152
       
       compile ":file-viewer:0.3"
