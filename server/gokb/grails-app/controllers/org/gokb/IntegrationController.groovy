@@ -416,7 +416,7 @@ class IntegrationController {
         def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
         log.debug("Handling title history");
         try {
-          def new he = new ComponentHistoryEvent()
+          def he = new ComponentHistoryEvent()
           if ( jhe.date ) {
             he.eventDate = sdf.parse(jhe.date);
           }
