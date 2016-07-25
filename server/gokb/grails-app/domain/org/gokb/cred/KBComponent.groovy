@@ -363,7 +363,7 @@ abstract class KBComponent {
     status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
     tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
-    dateCreated column:'kbc_date_created'
+    dateCreated column:'kbc_date_created', index:'kbc_date_created_idx'
     lastUpdated column:'kbc_last_updated'
     duplicateOf column:'kbc_duplicate_of'
     reviewRequests sort: 'id', order: 'asc'

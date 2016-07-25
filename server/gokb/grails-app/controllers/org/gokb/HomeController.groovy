@@ -22,6 +22,8 @@ class HomeController {
   def dashboard() {
     if ( ( stats_timestamp == null )|| ( System.currentTimeMillis() - stats_timestamp > 3600000 ) ) {
       stats_timestamp = System.currentTimeMillis()
+      // Initialise
+      stats_cache = [widgets:[:]];
       stats_cache = calculate();
     }
     else {
@@ -125,6 +127,8 @@ class HomeController {
     // the count for that stat in the matrix (Rows = stats, cols = months)
     widgets.each {widget_name, widget_data ->
 
+      log.debug("Processing counts for ${widget_name}");
+
       // Widget data.
       def wData = [:].withDefault {
         [:]
@@ -152,6 +156,9 @@ class HomeController {
         }
 
         for ( int i=0; i<12; i++ ) {
+
+          log.debug("Period ${i}");
+
           def period_start_date = calendar.getTime()
           calendar.add(Calendar.MONTH, 1)
           def period_end_date = calendar.getTime()
@@ -192,6 +199,8 @@ class HomeController {
           wData."${xVal}".putAll(entry)
         }
       }
+
+      log.debug("Completed Processing counts for ${widget_name}");
 
       // Add the results.
       result."${widget_name}"."data" = wData.values()

@@ -133,6 +133,7 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap['title'] = r.metadata.gokb.title.name.text()
         resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
         resourceFieldMap['identifiers'] = []
+        resourceFieldMap['publisherHistory'] = []
         resourceFieldMap['publishedFrom'] = r.metadata.gokb.title.publishedFrom?.text()
         resourceFieldMap['publishedTo'] = r.metadata.gokb.title.publishedTo?.text()
         resourceFieldMap['continuingSeries'] = r.metadata.gokb.title.continuingSeries?.text()
@@ -152,8 +153,14 @@ private static getResourcesFromGoKBByPage(URL url) {
             resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
         }
 
-        if ( r.metadata.gokb.title.publisher?.name ) {
-          resourceFieldMap['publisher'] = r.metadata.gokb.title.publisher.name.text()
+        // if ( r.metadata.gokb.title.publisher?.name ) {
+        //   resourceFieldMap['publisher'] = r.metadata.gokb.title.publisher.name.text()
+        // }
+        r.metadata.gokb.title.publisher.each {
+          if ( resourceFieldMap['publisher'] == null ) {
+            resourceFieldMap['publisher'] = it.name.text();
+          }
+          resourceFieldMap['publisherHistory'].add([name:it.name.text(),publisherFrom:null,publisherTo:null])
         }
 
         r.metadata.gokb.title.variantNames?.variantName.each { vn ->

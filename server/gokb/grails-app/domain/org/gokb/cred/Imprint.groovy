@@ -12,7 +12,7 @@ class Imprint extends KBComponent {
   ]
 
   public getPersistentId() {
-    "gokb:Impront:${id}"
+    "gokb:Imprint:${id}"
   }
 
   static mapping = {

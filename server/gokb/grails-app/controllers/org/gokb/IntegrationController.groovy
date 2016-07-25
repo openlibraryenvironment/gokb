@@ -409,6 +409,8 @@ class IntegrationController {
   def crossReferenceTitle() {
     def result = [ 'result' : 'OK' ]
 
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
+
     log.debug("crossReferenceTitle(${request.JSON.type},$request.JSON.title,${request.JSON.identifiers}},...)");
 
     User user = springSecurityService.currentUser
@@ -425,45 +427,99 @@ class IntegrationController {
         title.addVariantTitle(vn);
       }
     }
+    
+    def title_changed = false;
+
+    if ( request.JSON.imprint ) {
+      if ( title.imprint?.name == request.JSON.imprint ) {
+        // Imprint already set
+      }
+      else {
+        def imprint = Imprint.findByName(request.JSON.imprint) ?: new Imprint(name:request.JSON.imprint).save(flush:true, failOnError:true);
+        title.imprint = imprint;
+
+      }
+    }
+
+    title_changed |= setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
+    title_changed |= setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
+    title_changed |= setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
+
+    if ( title_changed ) {
+      log.debug("Saving title changes");
+      title.save(flush:true, failOnError:true);
+    }
 
     if ( request.JSON.historyEvents?.size() > 0 ) {
       request.JSON.historyEvents.each { jhe ->
         // 1971-01-01 00:00:00.0
-        def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
         log.debug("Handling title history");
         try {
-          def he = new ComponentHistoryEvent()
-          if ( jhe.date ) {
-            he.eventDate = sdf.parse(jhe.date);
-          }
-          he.save(flush:true, failOnError:true);
-  
+          def inlist = []
+          def outlist = []
+          def cont = true
           jhe.from.each { fhe ->
-            log.debug("handle from participant : ${fhe}");
-            def participant =  titleLookupService.find(fhe.title,
-                                                       null,
-                                                       fhe.identifiers,
-                                                       user,
-                                                       null,
-                                                       request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
-            if ( participant ) {
-              def hep = new ComponentHistoryEventParticipant(event:he, participant:participant, participantRole:'in');
+            def p = titleLookupService.find(fhe.title,
+                                                         null,
+                                                         fhe.identifiers,
+                                                         user,
+                                                         null,
+                                                         request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
+            if ( p ) { inlist.add(p); } else { cont = false; }
+          }
+          jhe.to.each { fhe ->
+            def p =  titleLookupService.find(fhe.title,
+                                                         null,
+                                                         fhe.identifiers,
+                                                         user,
+                                                         null,
+                                                         request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
+            if ( p ) { outlist.add(p); } else { cont = false; }
+          }
+
+          def first = true;
+          // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
+          def che_check_qry_sw  = new StringWriter();
+          def qparams = []
+          che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
+
+          inlist.each { fhe ->
+            if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+            che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+            qparams.add(fhe)
+          }
+          outlist.each { fhe ->
+            if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+            che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+            qparams.add(fhe)
+          }
+
+          def che_check_qry = che_check_qry_sw.toString()
+          log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
+          def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
+          if ( qr.size() > 0 )
+            cont = false;
+
+          if ( cont ) {
+  
+            def he = new ComponentHistoryEvent()
+            if ( jhe.date ) {
+              he.eventDate = sdf.parse(jhe.date);
+            }
+            he.save(flush:true, failOnError:true);
+    
+            inlist.each {
+              def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
+              hep.save(flush:true, failOnError:true);
+            }
+
+            outlist.each {
+              def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
               hep.save(flush:true, failOnError:true);
             }
           }
-  
-          jhe.to.each { fhe ->
-            log.debug("handle to participant : ${fhe}");
-            def participant =  titleLookupService.find(fhe.title,
-                                                       null,
-                                                       fhe.identifiers,
-                                                       user,
-                                                       null,
-                                                       request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
-            if ( participant ) {
-              def hep = new ComponentHistoryEventParticipant(event:he, participant:participant, participantRole:'out');
-              hep.save(flush:true, failOnError:true);
-            }
+          else {
+            // Matched an existing TH event, not creating a duplicate
           }
         }
         catch ( Exception e ) {
@@ -565,4 +621,34 @@ class IntegrationController {
     propertyInstanceMap.get().clear()
   }
 
+  private def setDateIfPresent(value, obj, prop, sdf) {
+    //request.JSON.title.publishedFrom, title, 'publishedFrom', sdf)
+    boolean result = false;
+    if ( ( value ) && ( value.toString().trim().length() > 0 ) ) {
+      try {
+        def pd = sdf.parse(value);
+        if (pd) {
+          obj[prop]=pd;
+          result=true;
+        }
+      }
+      catch(Exception e) {
+      }
+    }
+    result;
+  }
+
+  private def setRefdataIfPresent(value, obj, prop, cat) {
+    boolean result = false;
+
+    if ( ( value ) && 
+         ( value.toString().trim().length() > 0 ) &&
+         ( ( obj[prop] == null ) || ( obj[prop].value != value.trim() ) ) ) {
+      def v = RefdataCategory.lookupOrCreate(cat,value);
+      obj[prop] = v
+      result = true;
+    }
+
+    result
+  }
 }
