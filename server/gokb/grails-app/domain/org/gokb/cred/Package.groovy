@@ -205,7 +205,7 @@ class Package extends KBComponent {
 
     // Get the tipps manually rather than iterating over the collection - For better management
     // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
-    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status, tipp.accessStartDate, tipp.accessEndDate, tipp.format, tipp.embargo from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
+    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status, tipp.accessStartDate, tipp.accessEndDate, tipp.format, tipp.embargo, hostPlatformCombo.fromComponent.primaryUrl from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
 where pkgCombo.toComponent=tipp
   and pkgCombo.fromComponent= ?
   and pkgCombo.type= ?
@@ -253,6 +253,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
                 }
               }
               'platform'([id:tipp[4]]) {
+                'primaryUrl' (tipp[19]?.trim())
                 'name' (tipp[3]?.trim())
               }
               'access'(start:tipp[15]?sdf.format(tipp[15]):null,end:tipp[16]?sdf.format(tipp[16]):null)
