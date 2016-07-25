@@ -385,6 +385,22 @@ class IntegrationController {
     render result as JSON
   }
 
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def crossReferencePlatform() {
+    def result = [ 'result' : 'OK' ]
+    User user = springSecurityService.currentUser
+    if ( ( request.JSON.platformUrl ) &&
+         ( request.JSON.platformUrl.trim().length() > 0 ) &&
+         ( request.JSON.platformName ) &&
+         ( request.JSON.platformName.trim().length() > 0 ) ) {
+      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl);
+      if ( p == null ) {
+        p=new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true);
+      }
+      result.platform.id = p.id;
+    }
+    result
+  }
 
   /**
    *  Cross reference an incoming title with the database
