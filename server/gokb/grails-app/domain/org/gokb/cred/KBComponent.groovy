@@ -311,6 +311,12 @@ abstract class KBComponent {
   // used in data tidy routines
   KBComponent duplicateOf
 
+  // MD5 Hash of the comparable title for the component. This hash is used to group
+  // candidate duplicates together. It is the means by which we group possible duplicates
+  // for more meaningful comparisons. As such, it needs to be coarse and as widely encompassing
+  // as possible.
+  String bucketHash
+
   // MD5 Hash specific to class of component that is used for deduplication
   String componentHash
 
@@ -366,6 +372,7 @@ abstract class KBComponent {
     updateBenchmark column:'kbc_update_benchmark'
     lastUpdateComment column:'kbc_last_update_comment'
     componentHash column:'kbc_component_hash'
+    bucketHash column:'kbc_bucket_hash'
     componentDiscriminator column:'kbc_component_descriminator'
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
@@ -384,6 +391,9 @@ abstract class KBComponent {
     lastUpdateComment (nullable:true, blank:false)
     insertBenchmark (nullable:true, blank:false)
     updateBenchmark (nullable:true, blank:false)
+    bucketHash (nullable:true, blank:false)
+    componentDiscriminator (nullable:true, blank:false)
+    componentHash (nullable:true, blank:false)
   }
 
   /**
@@ -534,7 +544,8 @@ abstract class KBComponent {
 
   protected def generateComponentHash() {
     // Default component hash generation
-    componentHash = GOKbTextUtils.generateComponentHash([name, componentDiscriminator]);
+    componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);
+    bucketHash = GOKbTextUtils.generateComponentHash([normname]);
   }
 
   def beforeInsert() {
