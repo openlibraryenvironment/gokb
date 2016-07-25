@@ -397,7 +397,17 @@ class IntegrationController {
       if ( p == null ) {
         p=new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true);
       }
-      result.platform.id = p.id;
+
+      def changed = false;
+      changed |= setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
+      changed |= setRefdataIfPresent(request.JSON.software, p, 'software', 'Platform.Software')
+      changed |= setRefdataIfPresent(request.JSON.service, p, 'service', 'Platform.Service')
+
+      if ( changed ) {
+        p.save(flush:true, failOnError:true);
+      }
+
+      result.platform_id = p.id;
     }
     result
   }
