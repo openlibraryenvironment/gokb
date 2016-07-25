@@ -386,6 +386,16 @@ class IntegrationController {
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def crossReferencePackage() {
+    def result = [ 'result' : 'OK' ]
+    User user = springSecurityService.currentUser
+    if ( request.JSON.name ) {
+      log.debug("Sync package: ${request.JSON}");
+    }
+    result;
+  }
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     User user = springSecurityService.currentUser
