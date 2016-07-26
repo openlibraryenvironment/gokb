@@ -1,7 +1,9 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import groovy.util.logging.*
 
+@Log4j
 class TitleInstancePackagePlatform extends KBComponent {
 
   Date startDate
@@ -154,6 +156,13 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   public static boolean validateDTO(tipp_dto) {
     def result = true;
+    result &= tipp_dto.package?.internalId != null
+    result &= tipp_dto.platform?.internalId != null
+    result &= tipp_dto.title?.internalId != null
+
+    if ( !result ) 
+      log.warn("Tipp failed validation: ${tipp_dto}");
+
     result;
   }
 
@@ -163,6 +172,53 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   public static TitleInstancePackagePlatform upsertDTO(tipp_dto) {
     def result = null;
+    log.debug("upsertDTO(${tipp_dto})");
+    def pkg = Package.get(tipp_dto.package?.internalId)
+    def plt = Platform.get(tipp_dto.platform?.internalId)
+    def ti = TitleInstance.get(tipp_dto.title?.internalId)
+
+    if ( pkg && plt && ti ) {
+      log.debug("See if we already have a tipp");
+      def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
+                                           'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?'+
+                                           'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
+                                           'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
+                                          [pkg,plt,ti])
+      def tipp = null;
+      if ( tipps.size() == 1 ) {
+        log.debug("found");
+        tipp = tipps[0]
+      }
+      else {
+        log.debug("not found");
+        tipp=new TitleInstancePackagePlatform()
+        tipp.pkg = pkg;
+        tipp.title = ti;
+        tipp.hostPlatform = plt;
+      }
+      tipp.save(flush:true,failOnError:true);
+      def changed = false
+
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
+
+      tipp_dto.coverage.each { c ->
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startIssue)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endIssue)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
+        changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
+        changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
+        // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
+      }
+
+      if ( changed )
+        tipp.save(flush:true, failOnError:true);
+
+      result = tipp;
+    }
+
     result;
   }
 

@@ -390,41 +390,66 @@ class IntegrationController {
     def result = [ 'result' : 'OK' ]
     User user = springSecurityService.currentUser
     if ( request.JSON.packageHeader.name ) {
-      log.debug("Sync package: ${request.JSON}");
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
         def pkg = Package.upsertDTO(request.JSON.packageHeader)
+        log.debug("Package: ${pkg}");
 
         // Validate and upsert titles and platforms
         request.JSON.tipps.each { tipp ->
+
+
           valid &= TitleInstance.validateDTO(tipp.title);
+
           def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
           if ( ti && ( tipp.title.internalId == null ) ) {
             tipp.title.internalId = ti.id;
           }
+
           valid &= Platform.validateDTO(tipp.platform);
-          def pl = Platform.upsertDTO(tipp.platform);
-          if ( pl && ( tipp.platform.internalId == null ) ) {
-            tipp.platform.internalId = pl.id;
+
+          if ( valid ) {
+            def pl = Platform.upsertDTO(tipp.platform);
+            if ( pl && ( tipp.platform.internalId == null ) ) {
+              tipp.platform.internalId = pl.id;
+            }
+            else {
+              log.warn("No platform arising from ${tipp.platform}");
+            }
+          }
+          else {
+            log.warn("Skip platform upsert ${tipp.platform}");
           }
 
-          if ( tipp.package == null ) {
+          if ( ( tipp.package == null ) && ( pkg.id ) ) {
             tipp.package = [ internalId: pkg.id ]
+          }
+          else {
+            log.warn("No package");
+            valid = false
           }
         }
 
         if ( valid ) {
           // If valid so far, validate tipps
+          log.debug("Validating tipps");
           request.JSON.tipps.each { tipp ->
             valid &= TitleInstancePackagePlatform.validateDTO(tipp)
           }
+        }
+        else {
+          log.warn("Not validating tipps - failed pre validation");
         }
 
         if ( valid ) {
           // If valid, upsert tipps
           request.JSON.tipps.each { tipp ->
+            log.debug("Upsert tipp ${tipp}");
             TitleInstancePackagePlatform.upsertDTO(tipp)
           }
+        }
+        else {
+          log.warn("Not loading tipps - failed validation");
         }
       }
    

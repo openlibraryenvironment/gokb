@@ -1,7 +1,9 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import groovy.util.logging.*
 
+@Log4j
 class Platform extends KBComponent {
 
   String primaryUrl
@@ -132,6 +134,11 @@ class Platform extends KBComponent {
     result &= platformDTO != null
     result &= platformDTO.name != null
     result &= platformDTO.name.trim().length() > 0
+
+    if ( !result ) {
+      log.error("platform failed validation ${platformDTO}");
+    }
+
     result;
   }
 

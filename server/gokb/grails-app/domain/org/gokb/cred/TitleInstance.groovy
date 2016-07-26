@@ -477,22 +477,28 @@ class TitleInstance extends KBComponent {
   public static boolean validateDTO(titleDTO) {
     def result = true;
     result &= titleDTO != null
-    result &= titleDTO.title != null
+    result &= titleDTO.name != null
     result &= titleDTO.identifiers != null
     result &= titleDTO.identifiers.size() > 0
+
+    if ( !result ) {
+      log.warn("Title Failed Validation ${titleDTO}");
+    }
+
     result;
   }
 
   @Transient
   public static TitleInstance upsertDTO(titleLookupService,titleDTO) {
     def result = null;
-    result = titleLookupService.find(titleDTO.title,
+    result = titleLookupService.find(titleDTO.name,
                                      titleDTO.publisher,
                                      titleDTO.identifiers,
                                      null,
                                      null,
                                      titleDTO.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )
 
+    log.debug("Result of upsertDTO: ${result}");
     result;
   }
 }
