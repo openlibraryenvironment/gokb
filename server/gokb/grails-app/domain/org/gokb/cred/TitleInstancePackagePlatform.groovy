@@ -148,4 +148,17 @@ class TitleInstancePackagePlatform extends KBComponent {
     return name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
   }
 
+  /**
+   * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
+   */ 
+  @Transient
+  public static boolean validateTippDTO(tipp_dto) {
+  }
+
+  /**
+   * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
+   */ 
+  @Transient
+  public static TitleInstancePackagePlatform upsert(tipp_dto) {
+  }
 }
