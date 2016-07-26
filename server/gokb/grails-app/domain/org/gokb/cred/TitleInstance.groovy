@@ -462,4 +462,14 @@ class TitleInstance extends KBComponent {
     }
     result
   }
+
+  public static boolean validateDTO(titleDTO) {
+    def result = true;
+    result;
+  }
+
+  public static TitleInstance upsertDTO(titleDTO) {
+    def result = null;
+    result;
+  }
 }

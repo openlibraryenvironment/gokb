@@ -153,6 +153,8 @@ class TitleInstancePackagePlatform extends KBComponent {
    */ 
   @Transient
   public static boolean validateTippDTO(tipp_dto) {
+    def result = true;
+    result;
   }
 
   /**
@@ -160,5 +162,8 @@ class TitleInstancePackagePlatform extends KBComponent {
    */ 
   @Transient
   public static TitleInstancePackagePlatform upsert(tipp_dto) {
+    def result = null;
+    result;
   }
+
 }

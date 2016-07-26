@@ -120,4 +120,14 @@ class Platform extends KBComponent {
     ]
   }
 
+  public static boolean validateDTO(platformDTO) {
+    def result = true;
+    result;
+  }
+
+  public static Platform upsertDTO(platformDTO) {
+    def result = null;
+    result;
+  }
+
 }

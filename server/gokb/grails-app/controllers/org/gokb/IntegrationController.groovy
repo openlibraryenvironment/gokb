@@ -393,13 +393,37 @@ class IntegrationController {
       log.debug("Sync package: ${request.JSON}");
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
-        def p = Package.upsertDTO(request.JSON.packageHeader)
+        def pkg = Package.upsertDTO(request.JSON.packageHeader)
 
         // Validate and upsert titles and platforms
+        request.JSON.tipps.each { tipp ->
+          valid &= TitleInstance.validateDTO(tipp.title);
+          def ti = TitleInstance.upsertDTO(tipp.title);
+          if ( ti && ( tipp.title.internalId == null ) ) {
+            tipp.title.internalId = ti.id;
+          }
+          valid &= Platform.validateDTO(tipp.platform);
+          def pl = Platform.upsertDTO(tipp.title);
+          if ( pl && ( tipp.platform.internalId == null ) ) {
+            tipp.platform.internalId = pl.id;
+          }
 
-        // If valid so far, validate tipps
+          if ( tipp.package == null ) {
+            tipp.package = [ internalId: pkg.id ]
+          }
+        }
 
-        // If valid, upsert tipps
+        if ( valid ) {
+          // If valid so far, validate tipps
+          request.JSON.tipps.each { tipp ->
+            valid &= TitleInstancePackagePlatform.validateDTO(tipp)
+          }
+        }
+
+        if ( valid ) {
+          // If valid, upsert tipps
+          TitleInstancePackagePlatform.upsertDTO(tipp)
+        }
       }
    
     }
