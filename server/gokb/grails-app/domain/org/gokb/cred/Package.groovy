@@ -310,4 +310,28 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     return result;
   }
 
+  /**
+   * Definitive rules for a valid package header
+   */
+  @Transient
+  public static boolean validateDTO(packageHeaderDTO) {
+    def result = true;
+    result &= ( packageHeaderDTO != null )
+    result &= ( packageHeaderDTO.name != null )
+    result &= ( packageHeaderDTO.name.trim().length() > 0 )
+    result;
+  }
+
+  /**
+   * Definitive rules for taking a package header DTO and inserting or updating an existing package based on package name
+   */
+  @Transient
+  public static Package upsertDTO(packageHeaderDTO) {
+    def result = null
+    log.debug("Upsert package with name ${packageHeaderDTO.name}");
+    result = Package.findByName(packageHeaderDTO.name) ?: new Package(name:packageHeaderDTO.name).save(flush:true, failOnError:true);
+    result
+  }
+
+
 }

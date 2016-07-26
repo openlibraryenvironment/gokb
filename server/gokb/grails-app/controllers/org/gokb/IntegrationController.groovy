@@ -389,8 +389,19 @@ class IntegrationController {
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
     User user = springSecurityService.currentUser
-    if ( request.JSON.name ) {
+    if ( request.JSON.packageHeader.name ) {
       log.debug("Sync package: ${request.JSON}");
+      def valid = Package.validateDTO(request.JSON.packageHeader)
+      if ( valid ) {
+        def p = Package.upsertDTO(request.JSON.packageHeader)
+
+        // Validate and upsert titles and platforms
+
+        // If valid so far, validate tipps
+
+        // If valid, upsert tipps
+      }
+   
     }
     result;
   }

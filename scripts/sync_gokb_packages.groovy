@@ -131,16 +131,17 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}");
 
         def resourceFieldMap = [:]
-        resourceFieldMap['scope'] = r.metadata.gokb.package.scope.text()
-        resourceFieldMap['listStatus'] = r.metadata.gokb.package.listStatus.text()
-        resourceFieldMap['status'] = r.metadata.gokb.package.status.text()
-        resourceFieldMap['breakable'] = r.metadata.gokb.package.breakable.text()
-        resourceFieldMap['consistent'] = r.metadata.gokb.package.consistent.text()
-        resourceFieldMap['fixed'] = r.metadata.gokb.package.fixed.text()
-        resourceFieldMap['paymentType'] = r.metadata.gokb.package.paymentType.text()
-        resourceFieldMap['global'] = r.metadata.gokb.package.global.text()
-        resourceFieldMap['name'] = r.metadata.gokb.package.name.text()
-        resourceFieldMap['tipps'] = []
+        resourceFieldMap.packageHeader = [:]
+        resourceFieldMap.packageHeader.scope = r.metadata.gokb.package.scope.text()
+        resourceFieldMap.packageHeader.listStatus = r.metadata.gokb.package.listStatus.text()
+        resourceFieldMap.packageHeader.status = r.metadata.gokb.package.status.text()
+        resourceFieldMap.packageHeader.breakable = r.metadata.gokb.package.breakable.text()
+        resourceFieldMap.packageHeader.consistent = r.metadata.gokb.package.consistent.text()
+        resourceFieldMap.packageHeader.fixed = r.metadata.gokb.package.fixed.text()
+        resourceFieldMap.packageHeader.paymentType = r.metadata.gokb.package.paymentType.text()
+        resourceFieldMap.packageHeader.global = r.metadata.gokb.package.global.text()
+        resourceFieldMap.packageHeader.name = r.metadata.gokb.package.name.text()
+        resourceFieldMap.tipps = []
 
         r.metadata.gokb.package.TIPPs.TIPP.each { xmltipp ->
           def newtipp = [:]
