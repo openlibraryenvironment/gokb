@@ -464,6 +464,7 @@ class IntegrationController {
     title_changed |= setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
     title_changed |= setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
     title_changed |= setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
+    title_changed |= setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
 
     if ( title_changed ) {
       log.debug("Saving title changes");

@@ -137,7 +137,8 @@ def addToGoKB(dryrun, gokb, title, type, publisher, ids) {
     type:type,
     title:title,
     publisher:publisher,
-    identifiers:ids
+    identifiers:ids,
+    status:'Expected'
   ]
 
   if ( dryrun ) {

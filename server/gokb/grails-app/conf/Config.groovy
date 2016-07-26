@@ -1073,6 +1073,16 @@ globalSearchTemplates = [
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider'],
           hide:true
         ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'KBComponent.Status',
+          prompt:'Status',
+          qparam:'qp_status',
+          placeholder:'Name or title of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status']
+        ],
+
         // In order for this to work as users expect, we're going to need a unique clause at the root context, or we get
         // repeated rows where a wildcard matches multiple titles. [That or this clause needs to be an "exists" caluse]
         // [
