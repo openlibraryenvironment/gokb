@@ -1057,7 +1057,7 @@ globalSearchTemplates = [
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
           hide:false
         ],
-       [
+        [
           prompt:'Identifier',
           qparam:'qp_identifier',
           placeholder:'Identifier Value',
@@ -1080,7 +1080,9 @@ globalSearchTemplates = [
           prompt:'Status',
           qparam:'qp_status',
           placeholder:'Name or title of item',
-          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status']
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status'],
+          // II: Default not yet implemented
+          default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
         ],
 
         // In order for this to work as users expect, we're going to need a unique clause at the root context, or we get
