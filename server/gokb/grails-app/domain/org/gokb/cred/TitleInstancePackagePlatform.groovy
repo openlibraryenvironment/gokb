@@ -152,7 +152,7 @@ class TitleInstancePackagePlatform extends KBComponent {
    * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
    */ 
   @Transient
-  public static boolean validateTippDTO(tipp_dto) {
+  public static boolean validateDTO(tipp_dto) {
     def result = true;
     result;
   }
@@ -161,7 +161,7 @@ class TitleInstancePackagePlatform extends KBComponent {
    * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
    */ 
   @Transient
-  public static TitleInstancePackagePlatform upsert(tipp_dto) {
+  public static TitleInstancePackagePlatform upsertDTO(tipp_dto) {
     def result = null;
     result;
   }

@@ -197,6 +197,9 @@
 
               </sec:ifAnyGranted>
               <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Operating environment</g:link></li>
+              <g:if test="${ grailsApplication.config.decisionSupport }">
+                <li><g:link controller="decisionSupport"><i class="fa fa-search fa-fw"></i> Decision Support Dashboard</g:link></li>
+              </g:if>
 
             </sec:ifLoggedIn>
             <sec:ifNotLoggedIn>
@@ -204,9 +207,6 @@
               <li class="${params?.controller == "register" ? 'active' : ''}"><g:link controller="register"><i class="fa fa-edit fa-fw"></i> Register</g:link></li>
               <li class="${params?.controller == "login" ? 'active' : ''}"><g:link controller="login"><i class="fa fa-sign-in fa-fw"></i> Sign in</g:link></li>
             </sec:ifNotLoggedIn>
-            <g:if test="${ grailsApplication.config.decisionSupport }">
-              <li><g:link controller="decisionSupport"><i class="fa fa-search fa-fw"></i> Decision Support Dashboard</g:link></li>
-            </g:if>
             <li><a href="https://github.com/k-int/gokb-phase1/wiki/API"><i class="fa fa-cogs fa-fw"></i> API Documentation</a></li>
           </ul>
         </div>

@@ -102,6 +102,7 @@ def importJournals(host, gokb, config, cfg_file) {
     else {
       moredata = false;
       resumptionToken = null;
+      config.resumptionToken = null;
     }
 
     println("Updating config - processed ${ctr} records");

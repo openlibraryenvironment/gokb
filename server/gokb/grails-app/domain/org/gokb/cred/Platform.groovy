@@ -120,13 +120,25 @@ class Platform extends KBComponent {
     ]
   }
 
+  /**
+   *  {
+   *    name:'name',
+   *    platformUrl:'platformUrl',
+   *  }
+   */
+  @Transient
   public static boolean validateDTO(platformDTO) {
     def result = true;
+    result &= platformDTO != null
+    result &= platformDTO.name != null
+    result &= platformDTO.name.trim().length() > 0
     result;
   }
 
+  @Transient
   public static Platform upsertDTO(platformDTO) {
-    def result = null;
+    // Ideally this should be done on platformUrl, but we fall back to name here
+    def result = Platform.findByName(platformDTO.name) ?: new Platform(name:platformDTO.name).save(flush:true,failOnError:true)
     result;
   }
 

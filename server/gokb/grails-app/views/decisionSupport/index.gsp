@@ -44,9 +44,9 @@
                     <td><g:link controller="resource" action="show" id="${r.component.class.name}:${r.component.id}">${r.component.name}</g:link></td>
                     <g:each in="${r.data}" var="d">
                       <td style="white-space:nowrap" >
-                        <span class="label label-pill label-success">${d[1]}</span> &nbsp;
-                        <span class="label label-pill label-danger">${d[2]}</span> &nbsp;
-                        <span class="label label-pill label-warning">${d[3]}</span>
+                        <g:if test="${d[1] != 0}"> <span class="label label-pill label-success">${d[1]}</span> &nbsp; </g:if>
+                        <g:if test="${d[2] != 0}"> <span class="label label-pill label-danger">${d[2]}</span> &nbsp; </g:if>
+                        <g:if test="${d[3] != 0}"> <span class="label label-pill label-warning">${d[3]}</span> </g:if>
                       </td>
                     </g:each>
                   </tr>

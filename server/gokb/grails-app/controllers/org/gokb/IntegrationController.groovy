@@ -398,12 +398,12 @@ class IntegrationController {
         // Validate and upsert titles and platforms
         request.JSON.tipps.each { tipp ->
           valid &= TitleInstance.validateDTO(tipp.title);
-          def ti = TitleInstance.upsertDTO(tipp.title);
+          def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
           if ( ti && ( tipp.title.internalId == null ) ) {
             tipp.title.internalId = ti.id;
           }
           valid &= Platform.validateDTO(tipp.platform);
-          def pl = Platform.upsertDTO(tipp.title);
+          def pl = Platform.upsertDTO(tipp.platform);
           if ( pl && ( tipp.platform.internalId == null ) ) {
             tipp.platform.internalId = pl.id;
           }
@@ -422,7 +422,9 @@ class IntegrationController {
 
         if ( valid ) {
           // If valid, upsert tipps
-          TitleInstancePackagePlatform.upsertDTO(tipp)
+          request.JSON.tipps.each { tipp ->
+            TitleInstancePackagePlatform.upsertDTO(tipp)
+          }
         }
       }
    

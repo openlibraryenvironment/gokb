@@ -8,7 +8,6 @@ import groovy.util.logging.*
 @Log4j
 class TitleInstance extends KBComponent {
 
-
   // title is now NAME in the base component class...
   RefdataValue	medium
   RefdataValue	pureOA
@@ -463,13 +462,37 @@ class TitleInstance extends KBComponent {
     result
   }
 
+  /**
+   * titleDTO {
+   *   title:'Title',
+   *   publisher:'PubName',
+   *   identifiers:[
+   *      { type:'type', value:'value' },
+   *      { type:'type', value:'value' },
+   *   ],
+   *   type:'Serial' or 'Monograph'
+   * }
+   */
+  @Transient
   public static boolean validateDTO(titleDTO) {
     def result = true;
+    result &= titleDTO != null
+    result &= titleDTO.title != null
+    result &= titleDTO.identifiers != null
+    result &= titleDTO.identifiers.size() > 0
     result;
   }
 
-  public static TitleInstance upsertDTO(titleDTO) {
+  @Transient
+  public static TitleInstance upsertDTO(titleLookupService,titleDTO) {
     def result = null;
+    result = titleLookupService.find(titleDTO.title,
+                                     titleDTO.publisher,
+                                     titleDTO.identifiers,
+                                     null,
+                                     null,
+                                     titleDTO.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )
+
     result;
   }
 }
