@@ -256,6 +256,7 @@ class TitleLookupService {
             // in preference 
             the_title = matches[0]
             the_title.name = title
+            the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
           }
           else {
             // Now we can examine the text of the title.
