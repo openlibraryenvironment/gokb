@@ -60,7 +60,13 @@ class TitleLookupService {
             // Only add if it's a title.
             if ( dproxied instanceof TitleInstance ) {
               title_match = true
-              result['matches'] << (dproxied as TitleInstance)
+              TitleInstance the_ti = (dproxied as TitleInstance)
+              // Don't add repeated matches
+              if ( result['matches'].contains(the_ti) ) {
+              }
+              else {
+                result['matches'] << the_ti
+              }
             }
           }
           
@@ -113,7 +119,14 @@ class TitleLookupService {
                           "suppliedNS"  : id_def.type,
                           "foundNS"     : ns
                         ]
-                        result['matches'] << (dproxied as TitleInstance)
+
+                        TitleInstance the_ti = (dproxied as TitleInstance)
+                        // Don't add repeated matches
+                        if ( result['matches'].contains(the_ti) ) {
+                        }
+                        else {
+                          result['matches'] << the_ti
+                        }
                       }
                     }
                   }

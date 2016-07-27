@@ -1105,6 +1105,7 @@ globalSearchTemplates = [
          'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
+        [heading:'ID', property:'id', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
         [heading:'Type', property:'class?.simpleName'],
         [heading:'Status', property:'status.value',sort:'status'],

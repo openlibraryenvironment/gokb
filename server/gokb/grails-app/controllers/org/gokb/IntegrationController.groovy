@@ -393,11 +393,10 @@ class IntegrationController {
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
         def pkg = Package.upsertDTO(request.JSON.packageHeader)
-        log.debug("Package: ${pkg}");
+        log.debug("\n\n\nPackage: ${pkg}");
 
         // Validate and upsert titles and platforms
         request.JSON.tipps.each { tipp ->
-
 
           valid &= TitleInstance.validateDTO(tipp.title);
 
@@ -440,7 +439,10 @@ class IntegrationController {
           // If valid so far, validate tipps
           log.debug("Validating tipps [${tippctr++}]");
           request.JSON.tipps.each { tipp ->
-            valid &= TitleInstancePackagePlatform.validateDTO(tipp)
+            def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
+            if ( !validation_result) {
+              log.error("TIPP Validation failed on ${tipp}");
+            }
           }
         }
         else {
