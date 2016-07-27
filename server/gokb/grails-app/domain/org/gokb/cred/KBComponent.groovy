@@ -312,12 +312,12 @@ abstract class KBComponent {
   KBComponent duplicateOf
 
   // MD5 Hash of the comparable title for the component. This hash is used to group
-  // candidate duplicates together. It is the means by which we group possible duplicates
+  // candidate duplicate works together. It is the means by which we group possible duplicates
   // for more meaningful comparisons. As such, it needs to be coarse and as widely encompassing
   // as possible.
   String bucketHash
 
-  // MD5 Hash specific to class of component that is used for deduplication
+  // MD5 Hash specific to class of component that is used for deduplication - EG Title + Edition == Instance level hashing
   String componentHash
 
   // A discriminator which can be added to the hash above to explicitly
@@ -371,8 +371,8 @@ abstract class KBComponent {
     insertBenchmark column:'kbc_insert_benchmark'
     updateBenchmark column:'kbc_update_benchmark'
     lastUpdateComment column:'kbc_last_update_comment'
-    componentHash column:'kbc_component_hash'
-    bucketHash column:'kbc_bucket_hash'
+    componentHash column:'kbc_component_hash', index:'kbc_component_hash_idx'
+    bucketHash column:'kbc_bucket_hash', index:'kbc_bucket_hash_idx'
     componentDiscriminator column:'kbc_component_descriminator'
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
@@ -544,7 +544,11 @@ abstract class KBComponent {
 
   protected def generateComponentHash() {
     // Default component hash generation
+
+    // To try and find instances
     componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);
+
+    // To find works
     bucketHash = GOKbTextUtils.generateComponentHash([normname]);
   }
 
@@ -568,6 +572,7 @@ abstract class KBComponent {
 
   def afterUpdate() {
 
+
     // Alter the timestamps of any dependants.
     touchAllDependants()
   }
@@ -584,6 +589,7 @@ abstract class KBComponent {
         shortcode = generateShortcode(name);
       }
       generateNormname();
+      generateComponentHash()
     }
     def user = springSecurityService?.currentUser
     if ( user != null ) {

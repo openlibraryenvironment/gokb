@@ -1,10 +1,24 @@
-package org.gokb
-
 import java.text.Normalizer
 import java.security.MessageDigest
 
 
 class GOKbTextUtils {
+
+  public static void main(String[] args) {
+    String[] titles = [
+      'Journal of Structural Engineering' ,  // 000a211bbfc571ca410519f02950efa0
+      'International Journal of Testing',    // 757efc0cc28f0e3d2f45baa486b0efc6
+    ]
+
+    titles.each { it ->
+      println(it);
+      println(generateComponentHash([it]));
+      println(generateComponentHash([it,null]));
+      println("Normalised version: ${normaliseString(it)}");
+      println(generateComponentHash([normaliseString(it)]));
+    }
+    
+  }
 
   private static final List<String> STOPWORDS = [
     "and",

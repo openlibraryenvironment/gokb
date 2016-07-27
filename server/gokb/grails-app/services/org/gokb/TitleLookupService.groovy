@@ -196,7 +196,7 @@ class TitleLookupService {
 
           // Lookup using title string match only.
           // the_title = attemptStringMatch (norm_title)
-          the_title = attemptBucketMatch (target_hash)
+          the_title = attemptBucketMatch (title)
 
           if (the_title) {
             log.debug("TI ${the_title} matched by name. Partial match")
@@ -376,6 +376,16 @@ class TitleLookupService {
 
   private TitleInstance attemptBucketMatch (String title) {
     def t = null;
+    if ( title && ( title.length() > 0 ) ) {
+      def nname = GOKbTextUtils.normaliseString(title);
+      def bucket_hash = GOKbTextUtils.generateComponentHash([nname]);
+
+      // def component_hash = GOKbTextUtils.generateComponentHash([nname, componentDiscriminator]);
+
+      t = TitleInstance.findByBucketHash(bucket_hash);
+      log.debug("Result of findByBucketHash(\"${bucket_hash}\") for title ${title} : ${t}");
+    }
+
     return t;
   }
 
