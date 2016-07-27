@@ -401,12 +401,17 @@ class IntegrationController {
 
           valid &= TitleInstance.validateDTO(tipp.title);
 
+          if ( !valid ) 
+            log.warn("Not valid after title validation ${tipp.title}");
+
           def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
           if ( ti && ( tipp.title.internalId == null ) ) {
             tipp.title.internalId = ti.id;
           }
 
           valid &= Platform.validateDTO(tipp.platform);
+          if ( !valid ) 
+            log.warn("Not valid after platform validation ${tipp.platform}");
 
           if ( valid ) {
             def pl = Platform.upsertDTO(tipp.platform);
@@ -418,7 +423,7 @@ class IntegrationController {
             }
           }
           else {
-            log.warn("Skip platform upsert ${tipp.platform}");
+            log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
           }
 
           if ( ( tipp.package == null ) && ( pkg.id ) ) {
@@ -430,9 +435,10 @@ class IntegrationController {
           }
         }
 
+        int tippctr=0;
         if ( valid ) {
           // If valid so far, validate tipps
-          log.debug("Validating tipps");
+          log.debug("Validating tipps [${tippctr++}]");
           request.JSON.tipps.each { tipp ->
             valid &= TitleInstancePackagePlatform.validateDTO(tipp)
           }
@@ -441,10 +447,11 @@ class IntegrationController {
           log.warn("Not validating tipps - failed pre validation");
         }
 
+        tippctr=0
         if ( valid ) {
           // If valid, upsert tipps
           request.JSON.tipps.each { tipp ->
-            log.debug("Upsert tipp ${tipp}");
+            log.debug("Upsert tipp [${tippctr}] ${tipp}");
             TitleInstancePackagePlatform.upsertDTO(tipp)
           }
         }
