@@ -93,6 +93,9 @@ def importJournals(host, gokb, config, cfg_file) {
       }
 
       addToGoKB(false, gokb, gt)
+      synchronized(this) {
+        Thread.sleep(3000);
+      }
     }
 
     if ( resumptionToken ) {

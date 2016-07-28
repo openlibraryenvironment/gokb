@@ -124,6 +124,9 @@ class FTUpdateService {
         if ( !latest_ft_record) {
           latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0,lastId:0).save(flush:true, failOnError:true)
         }
+        else {
+          highest_timestamp = latest_ft_record.lastTimestamp
+        }
       }
 
       log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}");
