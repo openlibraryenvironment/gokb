@@ -85,11 +85,11 @@ def importJournals(host, gokb, config, cfg_file) {
     resourcesFromPage.each { gt ->
       ctr++
       if ( first_resource ) {
-        println(gt);
+        // println(gt);
         first_resource = false;
       }
       else {
-        println(gt);
+        // println(gt);
       }
 
       addToGoKB(false, gokb, gt)
@@ -178,7 +178,7 @@ private static getResourcesFromGoKBByPage(URL url) {
     }
 
     response.error = { err ->
-      println "Failed http request"
+      println "OAI GET Failed http request"
       println(err)
     }
   }
@@ -219,8 +219,8 @@ def addToGoKB(dryrun, gokb, title_data) {
         }
 
         response.failure = { resp ->
-          println "Request failed with status ${resp.status}"
-          println (title_data);
+          println "GOKB crossReferencePackage Request failed with status ${resp.status}"
+          // println (title_data);
         }
       }
     }
