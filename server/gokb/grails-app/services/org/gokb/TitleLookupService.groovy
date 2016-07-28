@@ -153,9 +153,6 @@ class TitleLookupService {
 
     if (title == null) return null
 
-    // Create the normalised title.
-    String norm_title = GOKbTextUtils.generateComparableKey(title)
-
     // Lookup any class 1 identifier matches
     def results = class_one_match (identifiers)
 
@@ -272,8 +269,16 @@ class TitleLookupService {
             the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
           }
           else {
-            // Now we can examine the text of the title.
-            the_title = singleTIMatch(title, norm_title, matches[0], user, project)
+            if ( matches[0].name.equals(title) ) { 
+              // Perfect match - do nothing  
+              the_title = matches[0]
+            }
+            else {
+              // Create the normalised title.
+              String norm_title = GOKbTextUtils.generateComparableKey(title)
+              // Now we can examine the text of the title.
+              the_title = singleTIMatch(title, norm_title, matches[0], user, project)
+            }
           }
         }
 
@@ -288,7 +293,9 @@ class TitleLookupService {
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
 
-      the_title.save(failOnError:true, flush:true);
+      if ( ( the_title.id == null ) || the_title.isDirty() ) {
+        the_title.save(failOnError:true, flush:true);
+      }
       
       
       // Add the publisher.
@@ -317,12 +324,14 @@ class TitleLookupService {
       }
 
       // Try and save the result now.
-      if ( the_title.save(failOnError:true, flush:true) ) {
-        log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
-      }
-      else {
-        the_title.errors.each { e ->
-          log.error("Problem saving title: ${e}");
+      if ( the_title.isDirty() ) {
+        if ( the_title.save(failOnError:true, flush:true) ) {
+          log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
+        }
+        else {
+          the_title.errors.each { e ->
+            log.error("Problem saving title: ${e}");
+          }
         }
       }
     }
@@ -421,6 +430,8 @@ class TitleLookupService {
   }
 
   private TitleInstance singleTIMatch(String title, String norm_title, TitleInstance ti, User user, project = null) {
+
+    log.debug("singleTIMatch");
 
     // The threshold for a good match.
     double threshold = grailsApplication.config.cosine.good_threshold
