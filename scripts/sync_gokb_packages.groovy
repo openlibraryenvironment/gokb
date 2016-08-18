@@ -80,22 +80,28 @@ def importJournals(host, gokb, config, cfg_file) {
   while ( moredata ) {
     def first_resource = false;
     def ctr = 0;
+    println("Request resources...");
     (resourcesFromPage, resumptionToken) = getResourcesFromGoKBByPage(gokbUrl(host, resumptionToken))
+    println("Got resources, processing...");
 
     resourcesFromPage.each { gt ->
       ctr++
       if ( first_resource ) {
-        println(gt);
+        // println(gt);
         first_resource = false;
       }
       else {
-        println(gt);
+        // println(gt);
       }
 
       addToGoKB(false, gokb, gt)
+      synchronized(this) {
+        Thread.sleep(3000);
+      }
     }
 
     if ( resumptionToken ) {
+      println("Requesting another page...");
       moredata = true 
       config.resumptionToken = resumptionToken
     } 
@@ -129,6 +135,7 @@ private static getResourcesFromGoKBByPage(URL url) {
       body?.'ListRecords'?.'record'.each { r ->
 
         println("Record ${ctr++}");
+        def tc = 0;
 
         def resourceFieldMap = [:]
         resourceFieldMap.packageHeader = [:]
@@ -144,6 +151,7 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap.tipps = []
 
         r.metadata.gokb.package.TIPPs.TIPP.each { xmltipp ->
+          tc++
           def newtipp = [:]
           newtipp.status = xmltipp.status.text()
           newtipp.medium = xmltipp.medium.text()
@@ -173,12 +181,14 @@ private static getResourcesFromGoKBByPage(URL url) {
           resourceFieldMap['tipps'].add(newtipp);
         }
 
+        println("Got package ${resourceFieldMap.packageHeader.name} of ${tc} tipps");
+
         resources << resourceFieldMap
       }
     }
 
     response.error = { err ->
-      println "Failed http request"
+      println "OAI GET Failed http request"
       println(err)
     }
   }
@@ -205,6 +215,7 @@ private static URL gokbUrl(host, resumptionToken = null) {
 def addToGoKB(dryrun, gokb, title_data) {
   
   try {
+    println("addToGoKB..... ${new Date()}");
     if ( dryrun ) {
       println(title_data)
     }
@@ -219,16 +230,20 @@ def addToGoKB(dryrun, gokb, title_data) {
         }
 
         response.failure = { resp ->
-          println "Request failed with status ${resp.status}"
-          println (title_data);
+          println "GOKB crossReferencePackage Request failed with status ${resp.status}"
+          // println (title_data);
         }
       }
     }
   }
   catch ( Exception e ) {
-    println("Fatal error loading ${title_data}");
+    println("Fatal error loading ${title_data}\nNot loaded");
     e.printStackTrace();
     System.exit(0);
   }
+  finally {
+    println("addToGoKB complete ${new Date()}");
+  }
+  
 
 }

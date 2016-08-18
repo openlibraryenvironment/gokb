@@ -123,6 +123,11 @@ class FTUpdateService {
         log.debug("result of findByDomain: ${domain} ${latest_ft_record}");
         if ( !latest_ft_record) {
           latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0,lastId:0).save(flush:true, failOnError:true)
+          log.debug("Create new FT control record, as none available for ${domain.name}");
+        }
+        else {
+          highest_timestamp = latest_ft_record.lastTimestamp
+          log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}");
         }
       }
 
@@ -130,22 +135,6 @@ class FTUpdateService {
 
       def total = 0;
       Date from = new Date(latest_ft_record.lastTimestamp);
-      // def qry = domain.findAllByLastUpdatedGreaterThan(from,[sort:'lastUpdated']);
-
-      // def c = domain.createCriteria()
-      // c.setReadOnly(true)
-      // c.setCacheable(false)
-      // c.setFetchSize(Integer.MIN_VALUE);
-      // c.setFetchSize(250)
-
-      // c.buildCriteria{
-      //     gt('lastUpdated', from)
-      //     gt('id', (latest_ft_record.lastId)?:new Long(0))
-      //     order("lastUpdated", "asc")
-      //     order("id", "asc")
-      // }
-
-      // def results = c.scroll(ScrollMode.FORWARD_ONLY)
   
       def countq = domain.executeQuery('select count(o.id) from '+domain.name+' as o where o.lastUpdated > :ts order by o.lastUpdated, o.id',[ts: from], [readonly:true])[0];
       log.debug("Will process ${countq} records");

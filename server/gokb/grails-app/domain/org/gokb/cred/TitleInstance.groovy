@@ -479,7 +479,6 @@ class TitleInstance extends KBComponent {
     result &= titleDTO != null
     result &= titleDTO.name != null
     result &= titleDTO.identifiers != null
-    result &= titleDTO.identifiers.size() > 0
 
     if ( !result ) {
       log.warn("Title Failed Validation ${titleDTO}");

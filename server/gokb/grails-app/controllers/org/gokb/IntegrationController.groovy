@@ -463,7 +463,7 @@ class IntegrationController {
       }
    
     }
-    result;
+    render result as JSON;
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
@@ -490,7 +490,7 @@ class IntegrationController {
 
       result.platform_id = p.id;
     }
-    result
+    render result as JSON
   }
 
   /**
