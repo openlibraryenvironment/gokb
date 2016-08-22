@@ -222,14 +222,24 @@ class AdminController {
   def housekeeping() {
     log.debug("Housekeeping");
     concurrencyManagerService.createJob {
-      log.debug("Remove any ISSN identifiers where an eISSN with the same value is also present");
-      // Find all identifier occurrences where the component attached also has an issn with the same value.
-      // select combo from Combo as combo where combo.toComponent in (select identifier from Identifier as identifier where identifier.ns.ns = 'eissn' )
-      //    and exists (
-      // Select identifier from Identifier as identifier where identifier.ns.ns = 'eissn'
-      // and 
+      try {
+        log.debug("Remove any ISSN identifiers where an eISSN with the same value is also present");
+        // Find all identifier occurrences where the component attached also has an issn with the same value.
+        // select combo from Combo as combo where combo.toComponent in (select identifier from Identifier as identifier where identifier.ns.ns = 'eissn' )
+        //    and exists (
+        log.debug("Quey");
+        def q1 = Identifier.executeQuery('select i1 from Identifier as i1 where i1.namespace.value = :n1 and exists ( select i2 from Identifier as i2 where i2.namespace.value=:n2 and i2.value = i1.value )',
+                                         [n1:'issn', n2:'eissn']);
+        log.debug("Quey complete");
+        q1.each { issn ->
+          log.debug(issn);
+        }
+        log.debug("Done");
+      }
+      catch ( Exception e ) {
+        e.printStackTrace();
+      }
     }.startOrQueue()
     render(view: "logViewer", model: logViewer())
-
   }
 }
