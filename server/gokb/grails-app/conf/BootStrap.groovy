@@ -817,6 +817,7 @@ class BootStrap {
   }
 
   def sourceObjects() {
+    log.debug("Lookup or create source objects");
     def ybp_source = Source.findByName('YBP') ?: new Source(name:'YBP').save(flush:true, failOnError:true);
     def cup_source = Source.findByName('CUP') ?: new Source(name:'CUP').save(flush:true, failOnError:true);
     def wiley_source = Source.findByName('WILEY') ?: new Source(name:'WILEY').save(flush:true, failOnError:true);

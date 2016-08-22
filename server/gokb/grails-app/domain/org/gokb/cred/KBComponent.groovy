@@ -419,10 +419,13 @@ abstract class KBComponent {
 
   static def incUntilUnique(name) {
     def result = name;
-    if ( KBComponent.findWhere([shortcode : (name)]) ) {
+    def l = KBComponent.executeQuery('select id from KBComponent where shortcode = :n',[n:name]);
+    // if ( KBComponent.findWhere([shortcode : (name)]) ) {
+    if ( l.size() > 0 ) {
       // There is already a shortcode for that identfier
       int i = 2;
-      while ( KBComponent.findWhere([shortcode : "${name}_${i}"]) ) {
+      // while ( KBComponent.findWhere([shortcode : "${name}_${i}"]) ) {
+      while ( KBComponent.executeQuery('select id from KBComponent where shortcode = :n',[n:"${name}_${i}"]).size() > 0 ) {
         i++
       }
       result = "${name}_${i}"

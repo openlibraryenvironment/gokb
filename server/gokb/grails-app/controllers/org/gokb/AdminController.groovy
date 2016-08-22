@@ -223,6 +223,8 @@ class AdminController {
     log.debug("Housekeeping");
     concurrencyManagerService.createJob {
       try {
+        def ctr = 0;
+        def start_time = System.currentTimeMillis();
         log.debug("Remove any ISSN identifiers where an eISSN with the same value is also present");
         // Find all identifier occurrences where the component attached also has an issn with the same value.
         // select combo from Combo as combo where combo.toComponent in (select identifier from Identifier as identifier where identifier.ns.ns = 'eissn' )
@@ -230,11 +232,12 @@ class AdminController {
         log.debug("Quey");
         def q1 = Identifier.executeQuery('select i1 from Identifier as i1 where i1.namespace.value = :n1 and exists ( select i2 from Identifier as i2 where i2.namespace.value=:n2 and i2.value = i1.value )',
                                          [n1:'issn', n2:'eissn']);
-        log.debug("Quey complete");
+        log.debug("Query complete, elapsed = ${System.currentTimeMillis() - start_time}");
         q1.each { issn ->
-          log.debug(issn);
+          // log.debug(issn);
+          ctr++;
         }
-        log.debug("Done");
+        log.debug("ISSN/eISSN cleanup complete ctr=${ctr}, elapsed = ${System.currentTimeMillis() - start_time}");
       }
       catch ( Exception e ) {
         e.printStackTrace();
