@@ -86,7 +86,7 @@ class AdminController {
 
     concurrencyManagerService.createJob {
       DataFile.executeQuery("select d from DataFile as d where d.doctype=?",['http://www.editeur.org/onix-pl:PublicationsLicenseExpression']).each { df ->
-        log.debug(df);AdminController
+        log.debug(df);
         df.incomingCombos.each { ic ->
           log.debug(ic);
           if ( ic.fromComponent instanceof License ) {
@@ -217,5 +217,19 @@ class AdminController {
 
     log.debug("Return");
     result
+  }
+
+  def housekeeping() {
+    log.debug("Housekeeping");
+    concurrencyManagerService.createJob {
+      log.debug("Remove any ISSN identifiers where an eISSN with the same value is also present");
+      // Find all identifier occurrences where the component attached also has an issn with the same value.
+      // select combo from Combo as combo where combo.toComponent in (select identifier from Identifier as identifier where identifier.ns.ns = 'eissn' )
+      //    and exists (
+      // Select identifier from Identifier as identifier where identifier.ns.ns = 'eissn'
+      // and 
+    }.startOrQueue()
+    render(view: "logViewer", model: logViewer())
+
   }
 }
