@@ -16,7 +16,8 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN mkdir -p "$CATALINA_HOME"
 WORKDIR $CATALINA_HOME
 RUN wget http://www.mirrorservice.org/sites/ftp.apache.org/tomcat/tomcat-8/v8.5.4/bin/apache-tomcat-8.5.4.tar.gz
-RUN tar xzvf ./apache-tomcat-8.5.4.tar.gz
+RUN tar xzvf ./apache-tomcat-8.5.4.tar.gz --strip 1
+RUN rm ./apache-tomcat-8.5.4.tar.gz
 RUN pwd
 RUN ls
 COPY ./gokb-7.0.11.war $CATALINA_HOME/webapps/gokb.war
