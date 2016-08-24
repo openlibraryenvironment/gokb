@@ -1,3 +1,4 @@
 # gradle fatJar
 #
-docker build -t first-module .
+cp ../server/gokb/target/gokb-7.0.11.war .
+docker build -t gokb .

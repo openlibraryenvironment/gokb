@@ -9,9 +9,7 @@ RUN apt-get update
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
 RUN apt-get install -y oracle-java8-installer
 RUN apt-get install -y tomcat8 libapr1
-
-
 RUN rm -rf /var/lib/apt/lists/*
-# COPY /build/libs/first-module.jar .
-# EXPOSE 9201
+COPY ./gokb-7.0.11.war /var/lib/tomcat8/webapps/
+EXPOSE 8080
 # CMD ["java", "-jar", "./first-module.jar", "1>server.log", "2>server.log"]
