@@ -14,9 +14,7 @@ environments {
 
     development {
         dataSource {
-
             dbCreate = "update"
-
             url = "jdbc:postgresql://pghost:5432/gokb"
             username = "knowint"
             password = "knowint"
@@ -28,8 +26,8 @@ environments {
             // dialect=org.hibernate.dialect.MySQL5Dialect
             // dialect=org.hibernate.dialect.MySQL5InnoDBDialect
             defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
-            // username = "k-int"
-            // password = "k-int"
+            // username = "ak-int"
+            // password = "ak-int"
             // url = "jdbc:mysql://localhost/GoKB7_0?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
             // logSql = true

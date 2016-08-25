@@ -77,7 +77,8 @@ class RefineProject extends KBComponent {
     possibleRulesString column: 'rp_matching_rules', type: 'text'
     notes column: 'rp_notes'
     projectStatus column: 'rp_project_status'
-    sourceFile column: 'rp_source_file', sqlType:'longblob', lazy: true
+    // sourceFile column: 'rp_source_file', sqlType:'longblob', lazy: true - Changed -- longblob not supported by pgsql
+    sourceFile column: 'rp_source_file', lazy:true
   }
 
 
@@ -96,7 +97,7 @@ class RefineProject extends KBComponent {
     defaultDataFormat(nullable:true, blank:true)
     accessUrl(nullable:true, blank:true)
     dataUrl(nullable:true, blank:true)
-
+    sourceFile(nullable:true,blank:false,maxSize: 1024 * 1024 * 1024)
   }
 
   @Transient
