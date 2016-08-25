@@ -17,20 +17,20 @@ environments {
 
             dbCreate = "update"
 
-            // url = "jdbc:postgresql://localhost:5432/gokb"
-            // username = "knowint"
-            // password = "knowint"
-            // driverClassName = "org.postgresql.Driver"
-            // dialect = org.hibernate.dialect.PostgreSQLDialect
+            url = "jdbc:postgresql://pghost:5432/gokb"
+            username = "knowint"
+            password = "knowint"
+            driverClassName = "org.postgresql.Driver"
+            dialect = org.hibernate.dialect.PostgreSQLDialect
 
             // driverClassName = "com.mysql.jdbc.Driver"
-            driverClassName = "org.mariadb.jdbc.Driver"
+            // driverClassName = "org.mariadb.jdbc.Driver"
             // dialect=org.hibernate.dialect.MySQL5Dialect
-            dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+            // dialect=org.hibernate.dialect.MySQL5InnoDBDialect
             defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
-            username = "k-int"
-            password = "k-int"
-            url = "jdbc:mysql://localhost/GoKB7_0?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
+            // username = "k-int"
+            // password = "k-int"
+            // url = "jdbc:mysql://localhost/GoKB7_0?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
             // logSql = true
             // formatSql = true

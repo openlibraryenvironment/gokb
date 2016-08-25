@@ -23,7 +23,7 @@ RUN ls
 COPY ./gokb-7.0.11.war $CATALINA_HOME/webapps/gokb.war
 EXPOSE 8080 22
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-# CMD ["/usr/bin/supervisord"]
-CMD /bin/bash
+CMD ["/usr/bin/supervisord"]
+# CMD /bin/bash
 # CMD ["service tomcat8 start && tail -f /var/log/tomcat8/catalina.out"]
 # CMD ["java", "-jar", "./first-module.jar", "1>server.log", "2>server.log"]
