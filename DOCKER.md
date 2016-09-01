@@ -40,13 +40,37 @@ Build the gokb war file as per usual deployment
     cd ~/gokb-phase-1/server/gokb
     grails prod war
 
-    cp target/gokb-7.0.11.war ../../docker
     cd ../../docker
-    docker build -t gokb .
+    ./docker-build.sh
+
+## Configuring a gokb schema in pgsql
+
+Wherever your DB is installed....
+
+    postgres=# CREATE DATABASE gokb;
+    CREATE DATABASE
+    postgres=# CREATE USER knowint WITH PASSWORD 'knowint';
+    CREATE ROLE
+    postgres=# GRANT ALL PRIVILEGES ON DATABASE gokb to knowint;
+
+
 
 ## Run the gokb image
 
+### Using a dockerized postgres
+
     docker run --link pghost:pghost -dit -p 8080:8080 gokb
 
+### Using a postgres running on localhost
+
+    alias hostip="ip route show 0.0.0.0/0 | grep -Eo 'via \S+' | awk '{ print \$2 }'"
+    docker run --add-host=pghost:$(hostip) -dit -p 8080:8080 gokb
+
+
+### Using a postgres runing elsewhere on the network
+
+    docker run --add-host=pghost:address.of.pg.host -dit -p 8080:8080 gokb
+
+## Checking on the health of the GOKb installation
 
 

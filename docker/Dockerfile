@@ -20,7 +20,7 @@ RUN tar xzvf ./apache-tomcat-8.5.4.tar.gz --strip 1
 RUN rm ./apache-tomcat-8.5.4.tar.gz
 RUN pwd
 RUN ls
-COPY ./gokb-7.0.11.war $CATALINA_HOME/webapps/gokb.war
+COPY ./gokb-7.0.11.war ./webapps/gokb.war
 EXPOSE 8080 22
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord"]

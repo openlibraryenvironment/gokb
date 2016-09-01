@@ -15,7 +15,7 @@ environments {
     development {
         dataSource {
             dbCreate = "update"
-            url = "jdbc:postgresql://pghost:5432/gokb"
+            url = "jdbc:postgresql://pghost:5432/gokbDev"
             username = "knowint"
             password = "knowint"
             driverClassName = "org.postgresql.Driver"
@@ -82,13 +82,12 @@ environments {
     production {
         dataSource {
             dbCreate = "update"
-            driverClassName = "com.mysql.jdbc.Driver"
-            // dialect=org.hibernate.dialect.MySQL5Dialect
-            dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+            url = "jdbc:postgresql://pghost:5432/gokb"
+            username = "knowint"
+            password = "knowint"
+            driverClassName = "org.postgresql.Driver"
+            dialect = org.hibernate.dialect.PostgreSQLDialect
             defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
-            username = "k-int"
-            password = "k-int"
-            url = "jdbc:mysql://localhost/GoKBProd?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
             // logSql = true
             // formatSql = true
