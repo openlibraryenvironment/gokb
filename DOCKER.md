@@ -57,6 +57,13 @@ Wherever your DB is installed....
 
 ## Run the gokb image
 
+Some of these configurations need postgres to allow connections from addresses other than localhost.. Adding the following line to
+/etc/postgresql/9.5/main/pg_hba.conf or your local equivalent will enable access from the 192.168 network. Do not do this lightly, the lines
+are provided here for illustative purposes - YMMV
+
+host    all             all             192.168.0.0/16          md5
+
+
 ### Using a dockerized postgres
 
     docker run --link pghost:pghost -dit -p 8080:8080 gokb
