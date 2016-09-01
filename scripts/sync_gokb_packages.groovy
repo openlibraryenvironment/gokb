@@ -114,6 +114,11 @@ def importJournals(host, gokb, config, cfg_file) {
     println("Updating config - processed ${ctr} records");
     cfg_file.delete()
     cfg_file << toJson(config);
+
+    synchronized(this) { 
+      println("Quick Sleep");
+      Thread.sleep(4000);
+    }
   }
 }
 

@@ -393,6 +393,7 @@ class IntegrationController {
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
         def pkg = Package.upsertDTO(request.JSON.packageHeader)
+        def platform_cache = [:]
         log.debug("\n\n\nPackage: ${pkg}");
 
         // Validate and upsert titles and platforms
@@ -413,7 +414,13 @@ class IntegrationController {
             log.warn("Not valid after platform validation ${tipp.platform}");
 
           if ( valid ) {
-            def pl = Platform.upsertDTO(tipp.platform);
+
+            def pl = platform_cache[tipp.platform.name]
+            if ( pl == null ) {
+              pl = Platform.upsertDTO(tipp.platform);
+              platform_cache[tipp.platform.name] = pl
+            }
+
             if ( pl && ( tipp.platform.internalId == null ) ) {
               tipp.platform.internalId = pl.id;
             }
@@ -451,11 +458,13 @@ class IntegrationController {
 
         tippctr=0
         if ( valid ) {
+          def tipp_upsert_start_time = System.currentTimeMillis();
           // If valid, upsert tipps
           request.JSON.tipps.each { tipp ->
-            log.debug("Upsert tipp [${tippctr}] ${tipp}");
+            log.debug("Upsert tipp [${tippctr++}] ${tipp}");
             TitleInstancePackagePlatform.upsertDTO(tipp)
           }
+          log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records");
         }
         else {
           log.warn("Not loading tipps - failed validation");
