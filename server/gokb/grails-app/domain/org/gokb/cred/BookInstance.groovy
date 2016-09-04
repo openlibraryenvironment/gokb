@@ -72,22 +72,20 @@ class BookInstance extends TitleInstance {
     log.debug("BookInstance::submitRemapWorkTask");
     def tls = grailsApplication.mainContext.getBean("titleLookupService")
     def map_work_task = task {
+      // Wait for the onSave to complete, and the system to release the session, thus freeing the data to
+      // other transactions
+      synchronized(this) {
+        Thread.sleep(2000);
+      }
       tls.remapTitleInstance('org.gokb.cred.BookInstance:'+this.id)
     }
 
-    map_work_task.get()
-    // onComplete([map_work_task]) { mapResult ->
+    // We cannot wait for the task to complete as the transaction has to complete in order
+    // for the Instance to become visible to other transactions. Therefore there has to be
+    // a delay between completing the Instance update, and attempting to resolve the work.
+    onComplete([map_work_task]) { mapResult ->
       // Might want to add a message to the system log here
-    // }
-  }
-
-  // This is called by the titleLookupService::remapTitleInstance method but NOTE:: this is done
-  // primarily so that the cpu-work and object creation of the work instance is done outside the
-  // context of the primary hibernate session.
-  def remapWork() {
-    log.debug('remapWork');
-    // BKM:TITLE + then FIRSTAUTHOR if duplicates found
-
+    }
   }
 
 }

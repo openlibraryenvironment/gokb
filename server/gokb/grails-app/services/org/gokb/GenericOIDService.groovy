@@ -27,6 +27,8 @@ class GenericOIDService {
 
     if ( clazz ) {
       result = clazz.get(oid_components[1])
+      if ( result == null )
+        log.warn("Unable to locate instance of ${oid_components[0]} with id ${oid_components[1]}");
     }
     else {
       log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");

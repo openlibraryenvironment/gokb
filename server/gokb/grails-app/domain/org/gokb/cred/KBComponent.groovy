@@ -546,7 +546,7 @@ abstract class KBComponent {
   }
 
   protected def generateComponentHash() {
-    // Default component hash generation
+    // Default component hash generation -- Override in subclasses
 
     // To try and find instances
     componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);

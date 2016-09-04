@@ -19,6 +19,9 @@ import org.springframework.test.annotation.Rollback;
 @Integration
 class TitleLookupServiceSpec extends Specification {
 
+    // Stop grails from rolling back the transaction at the end of each call
+    static transactional = false
+
     // extending IntegrationSpec means this works
     @Autowired
     TitleLookupService titleLookupService
@@ -90,6 +93,10 @@ class TitleLookupServiceSpec extends Specification {
         c.crossReferenceTitle()
         println(c.response.json)
         def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
       then: "The item is created in the database because it does not exist"
         response.message != null
         response.message.startsWith('Created')
@@ -111,8 +118,12 @@ class TitleLookupServiceSpec extends Specification {
       when: "Caller asks for this record to be cross referenced"
         c.request.JSON = json_record
         c.crossReferenceTitle()
-        println(c.response.json)
+        log.debug(c.response.json)
         def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
       then: "The item is created in the database because it does not exist"
         response.message != null
         response.message.startsWith('Created')
@@ -123,5 +134,15 @@ class TitleLookupServiceSpec extends Specification {
         matching_with_class_one_ids[0] == response.titleId
     }
 
+    void "Test that work instances created"() {
+      given: "The prior tests completed"
+      when: "I wait for any work update threads to complete, then search for all works"
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+        def works = Work.executeQuery('select w from Work as w')
+      then: "I should find two work records"
+        works.size() == 2
+    }
 
 }

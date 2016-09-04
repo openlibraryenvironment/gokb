@@ -654,11 +654,14 @@ class IntegrationController {
 
     if ( title ) {
       result.message = "Created/looked up title ${title.id}"
+      result.cls = title.class.name
       result.titleId = title.id
     }
     else {
       result.message = "No title for ${request.JSON}";
     }
+
+    log.debug("Result of cross ref title: ${result}");
 
     render result as JSON
   }
