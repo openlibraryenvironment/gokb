@@ -503,7 +503,30 @@ class IntegrationController {
   }
 
   /**
-   *  Cross reference an incoming title with the database
+   *  Cross reference an incoming title with the database. See an example of calling this controller method
+   *  in GOKB_PROJECT slash scripts slash sync_gokb_titles.groovy
+   *
+   *  Cross reference record::
+   *
+   *  {
+   *    'title':'the_title',
+   *    'publisher':'the_publisher',
+   *    'identifiers':[
+   *      {type:'namespace',value:'value'},
+   *      {type:'isbn', value:'1234-5678'}
+   *    ]
+   *    'type':'Serial'|'Monograph',
+   *    'variantNames':[
+   *      'Array Of Strings - one for each variant name'
+   *    ],
+   *    'imprint':'the_publisher',
+   *    'publishedFrom':'yyyy-MM-dd' 'HH:mm:ss.SSS',
+   *    'publishedTo':'yyyy-MM-dd' 'HH:mm:ss.SSS',
+   *    'editStatus':'the_publisher',
+   *    'status':'the_publisher',
+   *    'historyEvents':[
+   *    ]
+   *  }
    */
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferenceTitle() {
@@ -635,6 +658,8 @@ class IntegrationController {
     else {
       result.message = "No title for ${request.JSON}";
     }
+
+    log.debug("Result of cross reference title: ${result}");
 
     render result as JSON
   }

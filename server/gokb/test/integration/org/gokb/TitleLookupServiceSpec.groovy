@@ -69,4 +69,26 @@ class TitleLookupServiceSpec extends Specification {
         matching_with_class_one_ids.size() == 1
         matching_with_class_one_ids[0] == new_title.id
     }
+
+    // IntegrationController::crossReferenceTitle is our canonical method for absorbing bib records
+    // which describe Instances (See Bibframe::instance).
+    // N.B. There is an argument that this test is better placed in the functional test suite. HOwever here we're
+    // really exercising the services underpinning this controller, expect to see this test replicated in the func suite.
+    void "Test IntegrationController::crossReferenceTitle Case 1"() {
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        def json_record = [
+          'title':'Ians test book record',
+          'identifiers':[['type':'issn', 'value':'1234-5678']],
+          'type':'Monograph'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        println(c.response.json)
+        def response = c.response.json
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+    }
 }
