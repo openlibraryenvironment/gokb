@@ -27,15 +27,24 @@ class JournalInstance extends TitleInstance {
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
     if ( ( oldMap.name != newMap.name ) ||
          ( oldMap.componentDiscriminator != newMap.componentDiscriminator ) ) {
-      def map_work_task = task { 
-        tls = grailsApplication.mainContext.getBean("titleLookupService")
-        tls.remapTitleInstance('org.gokb.cred.JournalInstance:'+newMap.id)
-      }
-
-      onComplete([map_work_task]) { mapResult ->
-        // Might want to add a message to the system log here
-      }
+      submitRemapWorkTask(newMap);
     }
+  }
+
+
+  // audit plugin, onSave fires on a new item - we always want to map a work in this case, so directly call and wait
+  @Transient onSave = { newMap ->
+    submitRemapWorkTask(newMap);
+  }
+
+  def submitRemapWorkTask(newMap) {
+    log.debug("BookInstance::submitRemapWorkTask");
+    def tls = grailsApplication.mainContext.getBean("titleLookupService")
+    def map_work_task = task {
+      tls.remapTitleInstance('org.gokb.cred.BookInstance:'+this.id)
+    }
+
+    map_work_task.get()
   }
 
   def remapWork() {
