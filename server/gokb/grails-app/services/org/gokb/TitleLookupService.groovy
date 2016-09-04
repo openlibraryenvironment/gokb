@@ -8,6 +8,8 @@ class TitleLookupService {
 
   def grailsApplication
   def componentLookupService
+  def genericOIDService
+  
 
   @javax.annotation.PostConstruct
   def init() {
@@ -147,14 +149,21 @@ class TitleLookupService {
             def user = null, 
             def project = null,
             def newTitleClassName = 'org.gokb.cred.JournalInstance' ) {
+    return find([title:title, publisher_name:publisher_name,identifiers:identifiers],user,project,newTitleClassName)
+  }
+
+  def find (Map metadata,
+            def user = null, 
+            def project = null,
+            def newTitleClassName = 'org.gokb.cred.JournalInstance' ) {
 
     // The TitleInstance
     TitleInstance the_title = null
 
-    if (title == null) return null
+    if (metadata.title == null) return null
 
     // Lookup any class 1 identifier matches
-    def results = class_one_match (identifiers)
+    def results = class_one_match (metadata.identifiers)
 
     // The matches.
     List< KBComponent> matches = results['matches'] as List
@@ -171,12 +180,12 @@ class TitleLookupService {
 
           // Create the new TI.
           if ( newTitleClassName == null ) {
-            the_title = new TitleInstance(name:title, ids:[])
+            the_title = new TitleInstance(name:metadata.title, ids:[])
           }
           else {
             def clazz = Class.forName(newTitleClassName)
             the_title = clazz.newInstance()
-            the_title.name = title
+            the_title.name = metadata.title
             // the_title.status = 
             // the_title.editStatus = 
             the_title.ids = []
@@ -199,7 +208,7 @@ class TitleLookupService {
             log.debug("TI ${the_title} matched by name. Partial match")
 
             // Add the variant.
-            the_title.addVariantTitle(title)
+            the_title.addVariantTitle(metadata.title)
 
             // Raise a review request
             ReviewRequest.raise(
@@ -217,12 +226,12 @@ class TitleLookupService {
             // Create a new TI but attach a Review request to it.
 
             if ( newTitleClassName == null ) {
-              the_title = new TitleInstance(name:title, ids:[])
+              the_title = new TitleInstance(name:metadata.title, ids:[])
             }
             else {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
-              the_title.name = title
+              the_title.name = metadata.title
               the_title.ids = []
             }
 
@@ -265,19 +274,19 @@ class TitleLookupService {
             // If we have an unknown title in the db, and a real title, then take that
             // in preference 
             the_title = matches[0]
-            the_title.name = title
+            the_title.name = metadata.title
             the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
           }
           else {
-            if ( matches[0].name.equals(title) ) { 
+            if ( matches[0].name.equals(metadata.title) ) { 
               // Perfect match - do nothing  
               the_title = matches[0]
             }
             else {
               // Create the normalised title.
-              String norm_title = GOKbTextUtils.generateComparableKey(title)
+              String norm_title = GOKbTextUtils.generateComparableKey(metadata.title)
               // Now we can examine the text of the title.
-              the_title = singleTIMatch(title, norm_title, matches[0], user, project)
+              the_title = singleTIMatch(metadata.title, norm_title, matches[0], user, project)
             }
           }
         }
@@ -299,7 +308,7 @@ class TitleLookupService {
       
       
       // Add the publisher.
-      addPublisher(publisher_name, the_title, user, project)
+      addPublisher(metadata.publisher_name, the_title, user, project)
 
       results['ids'].each {
         if ( ! the_title.ids.contains(it) ) {
@@ -538,44 +547,54 @@ class TitleLookupService {
   public def matchClassOneComponentIds(def ids) {
     def result = null
 
-    // Get the class 1 identifier namespaces.
-    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
-
-    def start_time = System.currentTimeMillis();
-
-    def bindvars = []
-    StringWriter sw = new StringWriter()
-    sw.write("select DISTINCT c.fromComponent.id from Combo as c where ( ")
-
-
-    def ctr = 0;
-    ids.each { def id_def ->
-      // Class ones only.
-      if ( id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) { 
-        def ns = IdentifierNamespace.findByValue(id_def.ns)
-        if ( ns ) {
-
-          if ( ctr++ ) {
-            sw.write(" or ");
+    try {
+      // Get the class 1 identifier namespaces.
+      Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
+  
+      def start_time = System.currentTimeMillis();
+  
+      def bindvars = []
+      StringWriter sw = new StringWriter()
+      sw.write("select DISTINCT c.fromComponent.id from Combo as c where ( ")
+  
+  
+      def ctr = 0;
+      ids.each { def id_def ->
+        // Class ones only.
+        if ( id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) { 
+          def ns = IdentifierNamespace.findByValue(id_def.ns)
+          if ( ns ) {
+  
+            def the_id = Identifier.executeQuery('select i from Identifier as i where i.value = ? and i.namespace = ?',[id_def.value, ns])
+            if ( the_id.size() == 1 ) {
+              if ( ctr++ ) {
+                sw.write(" or ");
+              }
+  
+              sw.write( "( c.toComponent = ? )" )
+              bindvars.add(the_id[0])
+            }
+            if ( the_id.size() > 1 ) {
+              applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Multiple Identifiers Matched on lookup id:${id_def}"])
+            }
           }
-
-          sw.write( "( c.toComponent.value = ? and c.toComponent.namespace.id = ? )" )
-          bindvars.add(id_def.value)
-          bindvars.add(ns.id)
         }
       }
+  
+  
+      if ( ctr > 0 ) {
+        sw.write(" ) and c.type.value=?");
+        bindvars.add('KBComponent.Ids');
+        def qry = sw.toString();
+        log.debug("Run: ${qry} ${bindvars}");
+        result = TitleInstance.executeQuery(qry,bindvars);
+      }
+      else {
+        log.warn("No class 1 identifiers(${class_one_ids}) in ${ids}");
+      }
     }
-
-
-    if ( ctr > 0 ) {
-      sw.write(" ) and c.type.value=? and c.toComponent.class = Identifier");
-      bindvars.add('KBComponent.Ids');
-      def qry = sw.toString();
-      log.debug("Run: ${qry} ${bindvars}");
-      result = TitleInstance.executeQuery(qry,bindvars);
-    }
-    else {
-      log.warn("No class 1 identifiers(${class_one_ids}) in ${ids}");
+    catch ( Exception e ) {
+      log.error("unexpected error attempting to find title by identifiers",e);
     }
 
     log.debug("Returning Result of matchClassOneComponentIds(${ids}) : ${result}");
@@ -597,4 +616,11 @@ class TitleLookupService {
     return result
   } 
 
+  // 
+  def remapTitleInstance(oid) {
+    def domain_object = genericOIDService.resolveOID(oid)
+    if ( domain_object ) {
+      domain_object.remapWork();
+    }
+  }
 }

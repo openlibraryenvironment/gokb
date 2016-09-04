@@ -27,7 +27,7 @@ grails.project.dependency.resolver = "maven"
 
 def gebVersion = "0.9.3"
 // def seleniumVersion = "2.53.0"
-def seleniumVersion = "2.53.0"
+def seleniumVersion = "2.53.1"
 def seleniumHtmlunitDriverVersion = "2.52.0"
 
 grails.project.dependency.resolution = {
