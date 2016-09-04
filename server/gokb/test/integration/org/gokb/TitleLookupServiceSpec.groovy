@@ -90,5 +90,10 @@ class TitleLookupServiceSpec extends Specification {
       then: "The item is created in the database because it does not exist"
         response.message != null
         response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def ids = [ ['ns':'issn', 'value':'1234-5678']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
     }
 }
