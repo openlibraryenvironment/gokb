@@ -2,8 +2,6 @@
 // config files can be ConfigSlurper scripts, Java properties files, or classes
 // in the classpath in ConfigSlurper format
 
-
-
 import com.k_int.TextUtils
 import org.apache.log4j.DailyRollingFileAppender
 import org.apache.log4j.RollingFileAppender
@@ -1668,6 +1666,31 @@ globalSearchTemplates = [
           placeholder:'Publisher',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
           hide:true
+        ],
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted', 
+         'qparam':'qp_showDeleted', 'default':'on']
+      ],
+      qbeResults:[
+        [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
+        [heading:'Status', property:'status.value',sort:'status'],
+      ]
+    ]
+  ],
+  '1aWorks':[
+    baseclass:'org.gokb.cred.Work',
+    title:'Works',
+    group:'Primary',
+    defaultSort:'name',
+    defaultOrder:'asc',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Title',
+          qparam:'qp_name',
+          placeholder:'Name or title of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
         ],
       ],
       qbeGlobals:[

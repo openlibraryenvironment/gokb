@@ -145,4 +145,36 @@ class TitleLookupServiceSpec extends Specification {
         works.size() == 2
     }
 
+
+    void "Test Work Mappings for First Edition"() {
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        // First edition, published 1972-03-01
+        def json_record = [
+          'title':'Brain of the Firm',
+          'primaryAuthor':'Beer, Stafford',
+          'identifiers':[['type':'isbn', 'value':'0713902191'],
+                         ['type':'isbn', 'value':'9780713902198']
+                        ],
+          'edition':'First edition',
+          'type':'Monograph'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        println(c.response.json)
+        def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def ids = [ ['ns':'isbn', 'value':'0-471-94839-X']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
+    }
 }

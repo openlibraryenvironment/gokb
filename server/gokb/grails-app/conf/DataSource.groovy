@@ -15,7 +15,7 @@ environments {
     development {
         dataSource {
             dbCreate = "update"
-            url = "jdbc:postgresql://pghost:5432/gokbDev"
+            url = "jdbc:postgresql://pghost:5432/gokbdev"
             username = "knowint"
             password = "knowint"
             driverClassName = "org.postgresql.Driver"

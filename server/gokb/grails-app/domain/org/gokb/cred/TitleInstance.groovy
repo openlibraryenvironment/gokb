@@ -511,7 +511,9 @@ class TitleInstance extends KBComponent {
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found
     def nname = GOKbTextUtils.normaliseString(name);
 
-    if ( ( nname ) && ( nname.length() > 0 ) ) {
+    if ( ( nname ) && 
+         ( nname.length() > 0 ) &&
+         ( ! nname.startsWith('unknown title')) ) {
       // book bucket (Work) hashes are based on the normalised name.
       def h = GOKbTextUtils.generateComponentHash([nname]);
 
