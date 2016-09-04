@@ -10,6 +10,9 @@ import static grails.async.Promises.*
 @Log4j
 class BookInstance extends TitleInstance {
 
+  @Transient
+  def titleLookupService
+
   String editionNumber
   String editionDifferentiator
   String editionStatement
@@ -47,21 +50,40 @@ class BookInstance extends TitleInstance {
   @Transient
   def onChange = { oldMap,newMap ->
 
+    log.debug("BookInstance::onChange handler");
+    println("onChange handler");
+
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
     if ( ( oldMap.name != newMap.name ) ||
          ( oldMap.editionNumber != newMap.editionNumber ) ||
          ( oldMap.componentDiscriminator != newMap.componentDiscriminator ) ) {
-      def map_work_task = task {
-        tls = grailsApplication.mainContext.getBean("titleLookupsService")
-        tls.remapTitleInstance('org.gokb.cred.BookInstance:'+newMap.id)
-      }
-
-      onComplete([map_work_task]) { mapResult ->
-        // Might want to add a message to the system log here
-      }
+      log.debug("BookInstance::onChange detected an update to properties that might change the work mapping. Looking up");
+      submitRemapWorkTask(newMap);
     }
   }
 
+  @Transient
+  def onSave = { newMap ->  
+    log.debug("BookInstance::onSave handler");
+    submitRemapWorkTask(newMap);
+  }
+
+  def submitRemapWorkTask(newMap) {
+    log.debug("BookInstance::submitRemapWorkTask");
+    def tls = grailsApplication.mainContext.getBean("titleLookupService")
+    def map_work_task = task {
+      tls.remapTitleInstance('org.gokb.cred.BookInstance:'+this.id)
+    }
+
+    map_work_task.get()
+    // onComplete([map_work_task]) { mapResult ->
+      // Might want to add a message to the system log here
+    // }
+  }
+
+  // This is called by the titleLookupService::remapTitleInstance method but NOTE:: this is done
+  // primarily so that the cpu-work and object creation of the work instance is done outside the
+  // context of the primary hibernate session.
   def remapWork() {
     log.debug('remapWork');
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found

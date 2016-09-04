@@ -74,12 +74,15 @@ class TitleLookupServiceSpec extends Specification {
     // which describe Instances (See Bibframe::instance).
     // N.B. There is an argument that this test is better placed in the functional test suite. HOwever here we're
     // really exercising the services underpinning this controller, expect to see this test replicated in the func suite.
-    void "Test IntegrationController::crossReferenceTitle Case 1"() {
+    void "Test IntegrationController::crossReferenceTitle (BOOK) Case 1"() {
       def c = new IntegrationController()
       given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
         def json_record = [
-          'title':'Ians test book record',
-          'identifiers':[['type':'issn', 'value':'1234-5678']],
+          'title':'Brain of the Firm',
+          'primaryAuthor':'Beer, Stafford',
+          'identifiers':[['type':'isbn', 'value':'0 471 27687 1'],
+                         ['type':'isbn', 'value':'0-471-94839-X']
+                        ],
           'type':'Monograph'
         ]
       when: "Caller asks for this record to be cross referenced"
@@ -91,9 +94,34 @@ class TitleLookupServiceSpec extends Specification {
         response.message != null
         response.message.startsWith('Created')
       expect: "Find item by ID can now locate that item"
-        def ids = [ ['ns':'issn', 'value':'1234-5678']  ]
+        def ids = [ ['ns':'isbn', 'value':'0-471-94839-X']  ]
         def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
         matching_with_class_one_ids.size() == 1
         matching_with_class_one_ids[0] == response.titleId
     }
+
+    void "Test IntegrationController::crossReferenceTitle (JOURNAL) Case 1"() {
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        def json_record = [
+          'title':'Structured programming',
+          'identifiers':[['type':'issn', 'value':'0935-1183']],
+          'type':'Serial'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        println(c.response.json)
+        def response = c.response.json
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def ids = [ ['ns':'issn', 'value':'0935-1183']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
+    }
+
+
 }

@@ -28,7 +28,7 @@ class JournalInstance extends TitleInstance {
     if ( ( oldMap.name != newMap.name ) ||
          ( oldMap.componentDiscriminator != newMap.componentDiscriminator ) ) {
       def map_work_task = task { 
-        tls = grailsApplication.mainContext.getBean("titleLookupsService")
+        tls = grailsApplication.mainContext.getBean("titleLookupService")
         tls.remapTitleInstance('org.gokb.cred.JournalInstance:'+newMap.id)
       }
 

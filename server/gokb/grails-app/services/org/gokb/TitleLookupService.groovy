@@ -618,6 +618,7 @@ class TitleLookupService {
 
   // 
   def remapTitleInstance(oid) {
+    log.debug("remapTitleInstance::${oid}");
     def domain_object = genericOIDService.resolveOID(oid)
     if ( domain_object ) {
       domain_object.remapWork();
