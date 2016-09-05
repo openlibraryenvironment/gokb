@@ -285,7 +285,7 @@ class TSVIngestionService {
         the_title.name = title;
       }
       else {
-        log.debug("handling a matched title ${matches[0].title} ==? ${title}");
+        log.debug("handling a matched title ${matches[0].name} ==? ${title}");
         // Now we can examine the text of the title.
         the_title = singleTIMatch(title,
                                   norm_title,
@@ -1015,6 +1015,8 @@ class TSVIngestionService {
               the_kbart.additional_authors.each { author ->
                 addPerson(author, author_role, title)
               }
+
+              the_title.save(flush:true, failOnError:true);
 
               def pre_create_tipp_time = System.currentTimeMillis();
               manualCreateTIPP(source,
