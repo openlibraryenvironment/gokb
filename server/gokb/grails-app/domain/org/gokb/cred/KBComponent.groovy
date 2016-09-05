@@ -539,7 +539,9 @@ abstract class KBComponent {
   protected def generateNormname () {
 
     // Get the norm_name
-    def nname = GOKbTextUtils.normaliseString(name);
+    // def nname = GOKbTextUtils.normaliseString(name);
+    // Use alternate normalisation strategy
+    def nname = GOKbTextUtils.norm2(name);
 
     // Set to null if blank.
     normname = nname == "" ? null : nname
