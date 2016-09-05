@@ -15,20 +15,12 @@ environments {
     development {
         dataSource {
             dbCreate = "update"
-            url = "jdbc:postgresql://pghost:5432/gokbDev"
+            url = "jdbc:postgresql://pghost:5432/gokbdev"
             username = "knowint"
             password = "knowint"
             driverClassName = "org.postgresql.Driver"
             dialect = org.hibernate.dialect.PostgreSQLDialect
-
-            // driverClassName = "com.mysql.jdbc.Driver"
-            // driverClassName = "org.mariadb.jdbc.Driver"
-            // dialect=org.hibernate.dialect.MySQL5Dialect
-            // dialect=org.hibernate.dialect.MySQL5InnoDBDialect
             defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
-            // username = "ak-int"
-            // password = "ak-int"
-            // url = "jdbc:mysql://localhost/GoKB7_0?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
             // logSql = true
             // formatSql = true
@@ -48,36 +40,31 @@ environments {
         }
     }
     test {
-//        dataSource {
-//            dbCreate = "update"
-//            url = "jdbc:h2:mem:testDb;MVCC=TRUE;LOCK_TIMEOUT=10000"
-//        }
-      dataSource {
-        // dbCreate = "update"
-        // dbCreate = "create-drop"
-        dbCreate = "create"
-        driverClassName = "com.mysql.jdbc.Driver"
-        // dialect=org.hibernate.dialect.MySQL5Dialect
-        dialect=org.hibernate.dialect.MySQL5InnoDBDialect
-        defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
-        username = "k-int"
-        password = "k-int"
-        url = "jdbc:mysql://localhost/GoKBTest?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
-        pooled = true
-        // logSql = true
-        // formatSql = true
-        properties {
-            maxActive = 500
-            minEvictableIdleTimeMillis=1800000
-            timeBetweenEvictionRunsMillis=1800000
-            numTestsPerEvictionRun=3
-            testOnBorrow=true
-            testWhileIdle=true
-            testOnReturn=true
-            validationQuery="select 1"
+        dataSource {
+            dbCreate = "create-drop"
+            url = "jdbc:postgresql://pghost:5432/ebookstest"
+            username = "knowint"
+            password = "knowint"
+            driverClassName = "org.postgresql.Driver"
+            dialect = org.hibernate.dialect.PostgreSQLDialect
             defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
+            pooled = true
+            // logSql = true
+            // formatSql = true
+            configClass = 'com.k_int.KIGormConfiguration'
+            properties {
+                maxActive = 500
+                minEvictableIdleTimeMillis=1800000
+                timeBetweenEvictionRunsMillis=1800000
+                numTestsPerEvictionRun=3
+                testOnBorrow=true
+                testWhileIdle=true
+                testOnReturn=true
+                validationQuery="select 1"
+                defaultTransactionIsolation = java.sql.Connection.TRANSACTION_READ_COMMITTED
+                // defaultTransactionIsolation = java.sql.Connection.TRANSACTION_SERIALIZABLE
+            }
         }
-    }
     }
     production {
         dataSource {

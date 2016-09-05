@@ -6,15 +6,8 @@
 # add --restart=always to restart always
 # Handy Alias
 
-#
-# This seems to get default route, not host IP
-#
-# alias hostip="ip route show 0.0.0.0/0 | grep -Eo 'via \S+' | awk '{ print \$2 }'"
-#
-
-
-# docker run --add-host=pghost:$(hostip) -dit -p 8080:8080 gokb
-docker run --add-host dockerhost:`/sbin/ip route|awk '/default/ { print  $3}'` -dit -p 8080:8080 gokb
+echo Start gokb container using containerized postgresql mapped as pghost. Host is temporary, vanishes when done.
+docker run -t --link pghost:pghost -p 8080:8080 gokb
 
 echo Running docker ps -a
 docker ps -a

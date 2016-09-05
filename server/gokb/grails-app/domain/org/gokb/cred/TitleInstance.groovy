@@ -14,6 +14,7 @@ class TitleInstance extends KBComponent {
   RefdataValue	continuingSeries
   RefdataValue	reasonRetired
   RefdataValue	OAStatus
+  Work work
   Date publishedFrom
   Date publishedTo
   String coverImage
@@ -93,6 +94,7 @@ class TitleInstance extends KBComponent {
     publishedFrom (nullable:true, blank:false)
     publishedTo (nullable:true, blank:false)
     coverImage (nullable:true, blank:true)
+    work (nullable:true, blank:false)
   }
 
   def availableActions() {
@@ -500,4 +502,38 @@ class TitleInstance extends KBComponent {
     log.debug("Result of upsertDTO: ${result}");
     result;
   }
+
+  // This is called by the titleLookupService::remapTitleInstance method but NOTE:: this is done
+  // primarily so that the cpu-work and object creation of the work instance is done outside the
+  // context of the primary hibernate session.
+  def remapWork() {
+    log.debug('remapWork');
+    // BKM:TITLE + then FIRSTAUTHOR if duplicates found
+    def nname = GOKbTextUtils.normaliseString(name);
+
+    if ( ( nname ) && 
+         ( nname.length() > 0 ) &&
+         ( ! nname.startsWith('unknown title')) ) {
+      // book bucket (Work) hashes are based on the normalised name.
+      def h = GOKbTextUtils.generateComponentHash([nname]);
+
+      def bucketMatches = Work.executeQuery('select w from Work as w where w.bucketHash = :h',[h:h]);
+
+      switch( bucketMatches.size() ) {
+        case 0:
+          log.debug("No matches - create work");
+          def w = new Work(name: name).save(flush:true, failOnError:true)
+          this.work = w
+          this.save(flush:true, failOnError:true)
+          break;
+        case 1:
+          log.debug("Good enough unique match on bucketHash");
+          break;
+        default:
+          log.debug("Mached multiple works - use discriminator properties");
+          break;
+      }
+    }
+  }
+
 }

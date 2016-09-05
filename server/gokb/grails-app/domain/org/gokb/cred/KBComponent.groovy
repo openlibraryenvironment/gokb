@@ -41,7 +41,7 @@ abstract class KBComponent {
   private def springSecurityService
 
   @Transient
-  private def grailsApplication
+  protected def grailsApplication
 
   @Transient
   public setSpringSecurityService(sss) {
@@ -358,7 +358,7 @@ abstract class KBComponent {
     name column:'kbc_name', type:'text'
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
     // create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk);
-    normname column:'kbc_normname', type:'text'
+    normname column:'kbc_normname', type:'text', index:'kbc_normname_idx'
     source column:'kbc_source_fk'
     status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
@@ -539,14 +539,16 @@ abstract class KBComponent {
   protected def generateNormname () {
 
     // Get the norm_name
-    def nname = GOKbTextUtils.normaliseString(name);
+    // def nname = GOKbTextUtils.normaliseString(name);
+    // Use alternate normalisation strategy
+    def nname = GOKbTextUtils.norm2(name);
 
     // Set to null if blank.
     normname = nname == "" ? null : nname
   }
 
   protected def generateComponentHash() {
-    // Default component hash generation
+    // Default component hash generation -- Override in subclasses
 
     // To try and find instances
     componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);

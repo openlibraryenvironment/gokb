@@ -10,10 +10,10 @@ class SystemBootstrapSpec extends GebReportingSpec {
 
   def "FrontPage" (){
     when:
-      to PublicPage
-      at PublicPage
+      to LoginPage
+      at LoginPage
     then:
-      browser.page.title.startsWith "GOKb: Welcome"
+      browser.page.title.startsWith "Login"
   }
  
 }

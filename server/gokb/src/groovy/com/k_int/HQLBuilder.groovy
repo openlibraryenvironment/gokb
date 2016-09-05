@@ -108,7 +108,7 @@ public class HQLBuilder {
       // log.debug("QueryClause: ${qc}");
     }
 
-    def hql = outputHql(hql_builder_context, qbetemplate)
+    def hql = outputHqlWithoutSort(hql_builder_context, qbetemplate)
     // log.debug("HQL: ${hql}");
     // log.debug("BindVars: ${hql_builder_context.bindvars}");
 
@@ -126,6 +126,11 @@ public class HQLBuilder {
     }
     else {
       fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql}"
+    }
+
+    // Many SQL variants freak out if you order by on a count(*) query, so only order by for the actual fetch
+    if ( ( hql_builder_context.sort != null ) && ( hql_builder_context.sort.length() > 0 ) ) {
+      fetch_hql += " order by o.${hql_builder_context.sort} ${hql_builder_context.order}";
     }
 
     // log.debug("Attempt count qry ${count_hql}");
@@ -311,7 +316,7 @@ public class HQLBuilder {
     }
   }
 
-  static def outputHql(hql_builder_context, qbetemplate) {
+  static def outputHqlWithoutSort(hql_builder_context, qbetemplate) {
     StringWriter sw = new StringWriter()
     sw.write(" from ${qbetemplate.baseclass} as o\n")
 
@@ -335,9 +340,9 @@ public class HQLBuilder {
       }
     }
 
-    if ( ( hql_builder_context.sort != null ) && ( hql_builder_context.sort.length() > 0 ) ) {
-      sw.write(" order by o.${hql_builder_context.sort} ${hql_builder_context.order}");
-    }
+    // if ( ( hql_builder_context.sort != null ) && ( hql_builder_context.sort.length() > 0 ) ) {
+    //   sw.write(" order by o.${hql_builder_context.sort} ${hql_builder_context.order}");
+    // }
 
     // Return the toString of the writer
     sw.toString();

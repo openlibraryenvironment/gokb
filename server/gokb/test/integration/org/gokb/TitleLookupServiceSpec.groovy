@@ -19,6 +19,9 @@ import org.springframework.test.annotation.Rollback;
 @Integration
 class TitleLookupServiceSpec extends Specification {
 
+    // Stop grails from rolling back the transaction at the end of each call
+    static transactional = false
+
     // extending IntegrationSpec means this works
     @Autowired
     TitleLookupService titleLookupService
@@ -68,5 +71,110 @@ class TitleLookupServiceSpec extends Specification {
       expect: "That only one title is returned with an id of"
         matching_with_class_one_ids.size() == 1
         matching_with_class_one_ids[0] == new_title.id
+    }
+
+    // IntegrationController::crossReferenceTitle is our canonical method for absorbing bib records
+    // which describe Instances (See Bibframe::instance).
+    // N.B. There is an argument that this test is better placed in the functional test suite. HOwever here we're
+    // really exercising the services underpinning this controller, expect to see this test replicated in the func suite.
+    void "Test IntegrationController::crossReferenceTitle (BOOK) Case 1"() {
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        def json_record = [
+          'title':'Brain of the Firm',
+          'primaryAuthor':'Beer, Stafford',
+          'identifiers':[['type':'isbn', 'value':'0 471 27687 1'],
+                         ['type':'isbn', 'value':'0-471-94839-X']
+                        ],
+          'type':'Monograph'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        println(c.response.json)
+        def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def ids = [ ['ns':'isbn', 'value':'0-471-94839-X']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
+    }
+
+    void "Test IntegrationController::crossReferenceTitle (JOURNAL) Case 1"() {
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        def json_record = [
+          'title':'Structured programming',
+          'identifiers':[['type':'issn', 'value':'0935-1183']],
+          'type':'Serial'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        log.debug(c.response.json)
+        def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def ids = [ ['ns':'issn', 'value':'0935-1183']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
+    }
+
+    void "Test that work instances created"() {
+      given: "The prior tests completed"
+      when: "I wait for any work update threads to complete, then search for all works"
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+        def works = Work.executeQuery('select w from Work as w')
+      then: "I should find two work records"
+        works.size() == 2
+    }
+
+
+    void "Test Work Mappings for First Edition"() {
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        // First edition, published 1972-03-01
+        def json_record = [
+          'title':'Brain of the Firm',
+          'primaryAuthor':'Beer, Stafford',
+          'identifiers':[['type':'isbn', 'value':'0713902191'],
+                         ['type':'isbn', 'value':'9780713902198']
+                        ],
+          'edition':'First edition',
+          'type':'Monograph'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        println(c.response.json)
+        def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def ids = [ ['ns':'isbn', 'value':'0-471-94839-X']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
     }
 }
