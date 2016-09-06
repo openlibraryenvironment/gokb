@@ -64,12 +64,13 @@ are provided here for illustative purposes - YMMV
 host    all             all             192.168.0.0/16          md5
 
 
-### Using a dockerized postgres
+### Using a dockerized postgres and a dockerized tomcat
 
     docker run --link pghost:pghost -dit -p 8080:8080 gokb
 
 ### Using a postgres running on localhost
 
+    DONT DO THIS - IT DOESN'T WORK WELL
     alias hostip="ip route show 0.0.0.0/0 | grep -Eo 'via \S+' | awk '{ print \$2 }'"
     docker run --add-host=pghost:$(hostip) -dit -p 8080:8080 gokb
 
@@ -77,6 +78,13 @@ host    all             all             192.168.0.0/16          md5
 ### Using a postgres runing elsewhere on the network
 
     docker run --add-host=pghost:address.of.pg.host -dit -p 8080:8080 gokb
+
+### Dockerized postgres, local gokb
+
+    install and autostart postgres as the top of this file
+    edit /etc/hosts and add pghost as another name for localhost
+    grails run-app
+
 
 ## Checking on the health of the GOKb installation
 
