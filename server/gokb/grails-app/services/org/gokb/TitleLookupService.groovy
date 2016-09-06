@@ -202,7 +202,7 @@ class TitleLookupService {
 
           // Lookup using title string match only.
           // the_title = attemptStringMatch (norm_title)
-          the_title = attemptBucketMatch (title)
+          the_title = attemptBucketMatch (metadata.title)
 
           if (the_title) {
             log.debug("TI ${the_title} matched by name. Partial match")
