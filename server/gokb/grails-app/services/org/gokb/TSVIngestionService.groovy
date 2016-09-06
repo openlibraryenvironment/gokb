@@ -1016,7 +1016,7 @@ class TSVIngestionService {
                 addPerson(author, author_role, title)
               }
 
-              the_title.save(flush:true, failOnError:true);
+              title.save(flush:true, failOnError:true);
 
               def pre_create_tipp_time = System.currentTimeMillis();
               manualCreateTIPP(source,
