@@ -7,5 +7,17 @@ import groovy.util.logging.*
 
 @Log4j
 class Work extends KBComponent {
+
+  static mappedBy = [
+    instances: 'work'
+  ]
+
+  static hasMany = [
+    instances:TitleInstance
+  ]
+
+  static mapping = {
+  }
+
 }
 
