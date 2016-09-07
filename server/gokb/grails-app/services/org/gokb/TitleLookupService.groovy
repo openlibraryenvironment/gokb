@@ -306,14 +306,13 @@ class TitleLookupService {
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
 
+      // Add the publisher.
+      addPublisher(metadata.publisher_name, the_title, user, project)
+
       if ( ( the_title.id == null ) || the_title.isDirty() ) {
         the_title.save(failOnError:true, flush:true);
       }
       
-      
-      // Add the publisher.
-      addPublisher(metadata.publisher_name, the_title, user, project)
-
       results['ids'].each {
         if ( ! the_title.ids.contains(it) ) {
 
