@@ -65,17 +65,18 @@ class TitleLookupService {
               TitleInstance the_ti = (dproxied as TitleInstance)
               // Don't add repeated matches
               if ( result['matches'].contains(the_ti) ) {
+                log.debug("Not adding duplicate");
               }
               else {
+                log.debug("Adding ${the_ti} (title_match = ${title_match})");
                 result['matches'] << the_ti
               }
             }
           }
           
           // Did the ID yield a Title match?
+          log.debug("After class one matches, title_match=${title_match}");
           if (!title_match) {
-            log.debug ("No class one ti match. (${result['matches'].size()} should == 0)")
-            assert result['matches'].size() == 0
             
             // We should see if the current ID namespace should be cross checked with another.
             def other_ns = null
