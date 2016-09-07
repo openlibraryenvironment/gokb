@@ -89,3 +89,11 @@ host    all             all             192.168.0.0/16          md5
 ## Checking on the health of the GOKb installation
 
 
+
+## Resource management
+
+Docker may need more than the default resources, to allocate 4 cpus and 5G memory, use 
+  docker ps 
+  docker update -c 4 <DockerContainerId>
+  docker update -m 6G <DockerContainerId>
+
