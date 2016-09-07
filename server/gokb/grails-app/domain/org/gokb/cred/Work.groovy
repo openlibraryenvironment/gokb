@@ -16,8 +16,5 @@ class Work extends KBComponent {
     instances:TitleInstance
   ]
 
-  static mapping = {
-  }
-
 }
 

@@ -74,8 +74,8 @@ class TitleLookupService {
           
           // Did the ID yield a Title match?
           if (!title_match) {
-            
-            log.debug ("No class one ti match.")
+            log.debug ("No class one ti match. (${result['matches'].size()} should == 0)")
+            assert result['matches'].size() == 0
             
             // We should see if the current ID namespace should be cross checked with another.
             def other_ns = null
@@ -99,10 +99,9 @@ class TitleLookupService {
                   IdentifierNamespace namespace = IdentifierNamespace.findByValue(ns)
                   
                   if (namespace) {
-                  
                     // Lookup the identifier namespace.
                     xc_id = Identifier.findByNamespaceAndValue(namespace, id_def.value)                  
-                    log.debug ("Looking up ${ns}:${id_def.value} returned ${xc_id}.")
+                    log.debug ("Looking up ${ns}:${id_def.value} returned Identifier ${xc_id}");
                     
                     comp = xc_id?.identifiedComponents
                     
@@ -123,11 +122,14 @@ class TitleLookupService {
                         ]
 
                         TitleInstance the_ti = (dproxied as TitleInstance)
+
                         // Don't add repeated matches
                         if ( result['matches'].contains(the_ti) ) {
+                          log.debug("Title already in list of matched instances");
                         }
                         else {
                           result['matches'] << the_ti
+                          log.debug("Adding cross check title to matches (Now ${result['matches'].size()} items)");
                         }
                       }
                     }
@@ -139,6 +141,8 @@ class TitleLookupService {
         }
       }
     }
+
+    log.debug("At end of class_one_match, result['matches'].size == ${result['matches'].size()}");
 
     result
   }
@@ -290,12 +294,11 @@ class TitleLookupService {
             }
           }
         }
-
         break;
 
       default :
         // Multiple matches.
-        log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
+        log.debug ("Title class one identifier lookup yielded ${matches.size()} matches - ${matches.collect{it.id}}. This is a bad match. Ingest should skip this row.")
         break;
     }
 
