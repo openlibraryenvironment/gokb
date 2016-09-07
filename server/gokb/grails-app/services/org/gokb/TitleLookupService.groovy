@@ -213,7 +213,7 @@ class TitleLookupService {
             // Raise a review request
             ReviewRequest.raise(
                 the_title,
-                "'${title}' added as a variant of '${the_title.name}'.",
+                "'${metadata.title}' added as a variant of '${the_title.name}'.",
                 "No 1st class ID supplied but reasonable match was made on the title name.",
                 user, project
                 )
