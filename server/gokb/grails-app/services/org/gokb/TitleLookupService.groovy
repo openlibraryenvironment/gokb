@@ -265,7 +265,7 @@ class TitleLookupService {
         }
         
         // Take whatever we can get if what we have is an unknown title
-        if ( title.startsWith("Unknown Title") ) {
+        if ( metadata.title.startsWith("Unknown Title") ) {
           // Don't go through title matching if we don't have a real title
           the_title = matches[0]
         }
