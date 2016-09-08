@@ -26,6 +26,12 @@ class TitleInstance extends KBComponent {
     "OAStatus"  : "Unknown"
   ]
 
+  static mapping = {
+    // From TitleInstance
+    includes KBComponent.mapping
+  }
+
+
 
   // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
   // information about how this specific title was located, for example, by class 1 identifier match, or some other method

@@ -22,6 +22,7 @@ class BookInstance extends TitleInstance {
   String summaryOfContent
 
  static mapping = {
+    includes TitleInstance.mapping
             editionNumber column:'bk_ednum'
     editionDifferentiator column:'bk_editionDifferentiator'
          editionStatement column:'bk_editionStatement'

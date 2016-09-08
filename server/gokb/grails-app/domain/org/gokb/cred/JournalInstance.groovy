@@ -10,6 +10,7 @@ import static grails.async.Promises.*
 class JournalInstance extends TitleInstance {
 
   static mapping = {
+    includes TitleInstance.mapping
   }
 
   static constraints = {
