@@ -317,29 +317,30 @@ class TitleLookupService {
       // Add the publisher.
       addPublisher(metadata.publisher_name, the_title, user, project)
 
-      if ( ( the_title.id == null ) || the_title.isDirty() ) {
-        log.debug("Saving Title");
-        the_title.save(failOnError:true, flush:true);
-      }
-      
+      the_title.save(flush:true, failOnError:true);
+
       results['ids'].each {
         if ( ! the_title.ids.contains(it) ) {
 
-          // Double check the identifier we are about to add does not already exist in the system
+          log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
+
+          // Double check the identifier we are about to add does not already exist attached to another item in the system
           // Combo.Type : KBComponent.Ids
           def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-          def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent = ? and c.type = ?",[it,id_combo_type]);
+          def existing_identifier = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = ? and c.type.id = ?",[it.id,id_combo_type.id]);
           if ( existing_identifier.size() > 0 ) {
             ReviewRequest.raise(
               the_title,
               "Adding an identifier(${it.id}) to this title would create a duplicate record",
-              "The ingest file suggested an identifier (${it.id}) for a title which conflicts with a record already in the system (${existing_identifier[0].fromComponent.id})",
+              "The ingest file suggested an identifier (${it.id}) for a title which conflicts with a record already in the system (combo ${existing_identifier[0]})",
               user,
               project
             )
           }
           else {
+            log.debug("Adding identifier to title");
             the_title.ids.add(it);
+            the_title.save(flush:true, failOnError:true);
           }
         }
       }
