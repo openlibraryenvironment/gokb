@@ -172,9 +172,75 @@ class TitleLookupServiceSpec extends Specification {
         response.message != null
         response.message.startsWith('Created')
       expect: "Find item by ID can now locate that item"
-        def ids = [ ['ns':'isbn', 'value':'0-471-94839-X']  ]
+        def ids = [ ['ns':'isbn', 'value':'9780713902198']  ]
         def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
         matching_with_class_one_ids.size() == 1
         matching_with_class_one_ids[0] == response.titleId
     }
+
+    void "Test Problem Record Identified In GOKb load"() {
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        def json_record = [
+          'title':'ACM SIGICE Bulletin',
+          'identifiers':[['type':'eissn', value:'1558-1144'], 
+                         ['type':'issn', value:'1078-134X']
+                        ],
+          'type':'Serial'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        println(c.response.json)
+        def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def ids = [ ['ns':'issn', 'value':'1078-134X']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
+    }
+
+
+    void "Test repeated load of duplicate item"() {
+
+      // Check that we can find the existing item
+      def precheck_ids = [ ['ns':'issn', 'value':'1078-134X']  ]
+      def precheck_lookup_result = titleLookupService.matchClassOneComponentIds(precheck_ids)
+      assert precheck_lookup_result.size() == 1
+
+      def c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        def json_record = [
+          'title':'ACM SIGICE Bulletin',
+          'identifiers':[['type':'eissn', value:'1558-1144'],
+                         ['type':'issn', value:'1078-134X']
+                        ],
+          'type':'Serial'
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        println(c.response.json)
+        def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+      then: "The item is looked up as it already exists"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID still only returns one item"
+        def ids = [ ['ns':'issn', 'value':'1078-134X']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
+    }
+   
 }

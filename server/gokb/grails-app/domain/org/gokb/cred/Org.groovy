@@ -61,8 +61,8 @@ class Org extends KBComponent {
   ]
 
   static mapping = {
-    //         id column:'org_id'
-    //    version column:'org_version'
+    // From TitleInstance
+    includes KBComponent.mapping
     mission column:'org_mission_fk_rv'
     homepage column:'org_homepage'
   }

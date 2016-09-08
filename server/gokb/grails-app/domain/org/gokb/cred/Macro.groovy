@@ -6,6 +6,7 @@ class Macro extends KBComponent {
   String description
   
   static mapping = {
+    includes KBComponent.mapping
     refineTransformations type: 'text'
     description maxSize:128
  }

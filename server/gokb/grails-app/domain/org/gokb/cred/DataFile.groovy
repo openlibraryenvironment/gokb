@@ -25,6 +25,7 @@ class DataFile extends KBComponent {
   }
 
   static mapping = {
+    includes TitleInstance.mapping
     guid column:'df_guid'
     md5 column:'df_md5'
     uploadName column:'df_upload_name'

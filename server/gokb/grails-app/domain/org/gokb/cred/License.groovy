@@ -38,6 +38,7 @@ class License extends KBComponent {
   }
   
   static mapping = {
+    includes KBComponent.mapping
                  url column:'license_url'
                 file column:'license_document'
                 type column:'license_type_fk_rd'

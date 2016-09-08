@@ -8,13 +8,10 @@ import groovy.util.logging.*
 @Log4j
 class Work extends KBComponent {
 
-  static mappedBy = [
-    instances: 'work'
-  ]
 
-  static hasMany = [
-    instances:TitleInstance
-  ]
-
+  @Transient
+  getInstances() {
+    TitleInstance.executeQuery('select t from TitleInstance as t w where t.work = :work',[work:this]);
+  }
 }
 

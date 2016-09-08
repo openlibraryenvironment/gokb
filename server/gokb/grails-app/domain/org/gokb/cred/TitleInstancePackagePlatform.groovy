@@ -77,6 +77,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   static mapping = {
+    includes KBComponent.mapping
     startDate column:'tipp_start_date'
     startVolume column:'tipp_start_volume'
     startIssue column:'tipp_start_issue'

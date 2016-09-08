@@ -15,9 +15,6 @@ class Imprint extends KBComponent {
     "gokb:Imprint:${id}"
   }
 
-  static mapping = {
-  }
-
   static constraints = {
   }
 

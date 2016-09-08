@@ -105,6 +105,11 @@ def importJournals(host, gokb, config, cfg_file) {
       config.resumptionToken = null;
     }
 
+    synchronized(this) {
+      // Give the poor remote server a second
+      Thread.sleep(1000);
+    }
+
     println("Updating config - processed ${ctr} records");
     cfg_file.delete()
     cfg_file << toJson(config);

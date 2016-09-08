@@ -19,6 +19,7 @@ class Source extends KBComponent {
 
 
   static mapping = {
+    includes KBComponent.mapping
     url column:'source_url'
     ruleset column:'source_ruleset', type:'text'
   }

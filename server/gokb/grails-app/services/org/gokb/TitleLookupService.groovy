@@ -34,7 +34,11 @@ class TitleLookupService {
     // Go through each of the class_one_ids and look for a match.
     ids.each { id_def ->
 
-      if (id_def.type && id_def.value) {
+      // We only treat a component as a match if the matching Identifer
+      // is a class 1 identifier.
+      if (id_def.type && id_def.value && class_one_ids.contains(id_def.type) ) {
+
+        log.debug("Attempt match using component ${id_def}");
 
         // id_def is map with keys 'type' and 'value'
         Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
@@ -42,96 +46,96 @@ class TitleLookupService {
         // Add the id.
         result['ids'] << the_id
 
-        // We only treat a component as a match if the matching Identifer
-        // is a class 1 identifier.
-        if (class_one_ids.contains(id_def.type)) {
+        // Flag class one is present.
+        result['class_one'] = true
 
-          // Flag class one is present.
-          result['class_one'] = true
+        // Flag for title match
+        boolean title_match = false
+        
+        // If we find an ID then lookup the components.
+        Set<KBComponent> comp = the_id.identifiedComponents
+        log.debug("Scanning ${comp.size()} components attached to identifier");
+        comp.each { KBComponent c ->
 
-          // Flag for title match
-          boolean title_match = false
-          
-          // If we find an ID then lookup the components.
-          Set<KBComponent> comp = the_id.identifiedComponents
-          comp.each { KBComponent c ->
+          // Ensure we're not looking at a Hibernate Proxy class representation of the class
+          KBComponent dproxied = ClassUtils.deproxy(c);
 
-            // Ensure we're not looking at a Hibernate Proxy class representation of the class
-            KBComponent dproxied = ClassUtils.deproxy(c);
-
-            // Only add if it's a title.
-            if ( dproxied instanceof TitleInstance ) {
-              title_match = true
-              TitleInstance the_ti = (dproxied as TitleInstance)
-              // Don't add repeated matches
-              if ( result['matches'].contains(the_ti) ) {
-                log.debug("Not adding duplicate");
-              }
-              else {
-                log.debug("Adding ${the_ti} (title_match = ${title_match})");
-                result['matches'] << the_ti
-              }
+          // Only add if it's a title.
+          if ( dproxied instanceof TitleInstance ) {
+            title_match = true
+            TitleInstance the_ti = (dproxied as TitleInstance)
+            // Don't add repeated matches
+            if ( result['matches'].contains(the_ti) ) {
+              log.debug("Not adding duplicate");
+            }
+            else {
+              log.debug("Adding ${the_ti} (title_match = ${title_match})");
+              result['matches'] << the_ti
             }
           }
+          else {
+            log.debug("ID Doesn't point at a title, skipping");
+          }
+        }
+        
+        // Did the ID yield a Title match?
+        log.debug("After class one matches (${id_def.type}:${id_def.value}, ${the_id.id}, title_match=${title_match}");
+
+        if (!title_match) {
           
-          // Did the ID yield a Title match?
-          log.debug("After class one matches, title_match=${title_match}");
-          if (!title_match) {
+          // We should see if the current ID namespace should be cross checked with another.
+          def other_ns = null
+          for (int i=0; i<xcheck.size() && (!(other_ns)); i++) {
+            Set<String> test = xcheck[i]
             
-            // We should see if the current ID namespace should be cross checked with another.
-            def other_ns = null
-            for (int i=0; i<xcheck.size() && (!(other_ns)); i++) {
-              Set<String> test = xcheck[i]
+            if (test.contains(id_def.type)) {
               
-              if (test.contains(id_def.type)) {
+              // Create the set then remove the matched instance to test teh remaining ones.
+              other_ns = new HashSet<String>(test)
+              
+              // Remove the current namespace.
+              other_ns.remove(id_def.type)
+              log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
+              
+              Identifier xc_id = null
+              for (int j=0; j<other_ns.size() && !(xc_id); j++) {
                 
-                // Create the set then remove the matched instance to test teh remaining ones.
-                other_ns = new HashSet<String>(test)
+                String ns = other_ns[j]
                 
-                // Remove the current namespace.
-                other_ns.remove(id_def.type)
-                log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
+                IdentifierNamespace namespace = IdentifierNamespace.findByValue(ns)
                 
-                Identifier xc_id = null
-                for (int j=0; j<other_ns.size() && !(xc_id); j++) {
+                if (namespace) {
+                  // Lookup the identifier namespace.
+                  xc_id = Identifier.findByNamespaceAndValue(namespace, id_def.value)                  
+                  log.debug ("Looking up ${ns}:${id_def.value} returned Identifier ${xc_id}");
                   
-                  String ns = other_ns[j]
+                  comp = xc_id?.identifiedComponents
                   
-                  IdentifierNamespace namespace = IdentifierNamespace.findByValue(ns)
-                  
-                  if (namespace) {
-                    // Lookup the identifier namespace.
-                    xc_id = Identifier.findByNamespaceAndValue(namespace, id_def.value)                  
-                    log.debug ("Looking up ${ns}:${id_def.value} returned Identifier ${xc_id}");
-                    
-                    comp = xc_id?.identifiedComponents
-                    
-                    comp?.each { KBComponent c ->
-          
-                      // Ensure we're not looking at a Hibernate Proxy class representation of the class
-                      KBComponent dproxied = ClassUtils.deproxy(c);
-          
-                      // Only add if it's a title.
-                      if ( dproxied instanceof TitleInstance ) {
-                        
-                        log.debug ("Found ${id_def.value} in ${ns} namespace.")
-                        
-                        // Save details here so we can raise a review request, only if a single title was matched.
-                        result['x_check_matches'] << [
-                          "suppliedNS"  : id_def.type,
-                          "foundNS"     : ns
-                        ]
+                  comp?.each { KBComponent c ->
+        
+                    // Ensure we're not looking at a Hibernate Proxy class representation of the class
+                    KBComponent dproxied = ClassUtils.deproxy(c);
+        
+                    // Only add if it's a title.
+                    if ( dproxied instanceof TitleInstance ) {
+                      
+                      log.debug ("Found ${id_def.value} in ${ns} namespace.")
+                      
+                      // Save details here so we can raise a review request, only if a single title was matched.
+                      result['x_check_matches'] << [
+                        "suppliedNS"  : id_def.type,
+                        "foundNS"     : ns
+                      ]
 
-                        TitleInstance the_ti = (dproxied as TitleInstance)
+                      TitleInstance the_ti = (dproxied as TitleInstance)
 
-                        // Don't add repeated matches
-                        if ( result['matches'].contains(the_ti) ) {
-                          log.debug("Title already in list of matched instances");
-                        }
-                        else {
-                          result['matches'] << the_ti
-                          log.debug("Adding cross check title to matches (Now ${result['matches'].size()} items)");
-                        }
+                      // Don't add repeated matches
+                      if ( result['matches'].contains(the_ti) ) {
+                        log.debug("Title already in list of matched instances");
+                      }
+                      else {
+                        result['matches'] << the_ti
+                        log.debug("Adding cross check title to matches (Now ${result['matches'].size()} items)");
                       }
                     }
                   }
@@ -140,6 +144,9 @@ class TitleLookupService {
             }
           }
         }
+      }
+      else {
+        log.warn("Skipping problem ID ${id_def}");
       }
     }
 
@@ -310,6 +317,7 @@ class TitleLookupService {
       addPublisher(metadata.publisher_name, the_title, user, project)
 
       if ( ( the_title.id == null ) || the_title.isDirty() ) {
+        log.debug("Saving Title");
         the_title.save(failOnError:true, flush:true);
       }
       
@@ -355,10 +363,10 @@ class TitleLookupService {
 
 
     if ( ( publisher_name != null ) && ( publisher_name.trim().length() > 0 ) ) {
-      log.debug("Add publisher \"${publisher_name}\"");
       // Lookup our publisher.
       def norm_pub_name = GOKbTextUtils.normaliseString(publisher_name);
 
+      log.debug("Add publisher \"${publisher_name}\" (${norm_pub_name})");
       Org publisher = Org.findByNormname(norm_pub_name)
 
       if ( publisher == null ) {
@@ -506,10 +514,15 @@ class TitleLookupService {
     def start_time = System.currentTimeMillis();
     
     ids.each { def id_def ->
+
+      log.debug("Consider ${id_def}");
+
       // Class ones only.
       if ( id_def.value && 
            id_def.ns && 
            class_one_ids.contains(id_def.ns) ) {
+
+        log.debug("looking up ${id_def}");
       
         def identifiers = Identifier.createCriteria().list(max: 5) {
           and { 
@@ -521,16 +534,18 @@ class TitleLookupService {
           }
         }
 
+        log.debug("Attempt matchClassOnes on ${id_def}, processing ${identifiers.size()} candidates");
+
         if ( identifiers.size() > 4 ) {
           log.warn("matchClassOne for ${id_def} returned a high number of candidate records. This shouldn't be the case");
         }
         
         // Examine the identified components.
         identifiers?.each {
+          log.debug("Handle ${it?.identifiedComponents.size()} components");
           it?.identifiedComponents.each {
             KBComponent comp = KBComponent.deproxy(it)
             if (comp instanceof TitleInstance) {
-              
               // Add to the set.
               result << (TitleInstance)comp
             }
@@ -549,6 +564,8 @@ class TitleLookupService {
 
   public def matchClassOneComponentIds(def ids) {
     def result = null
+
+    log.debug("matchClassOneComponentIds(${ids})");
 
     try {
       // Get the class 1 identifier namespaces.

@@ -536,23 +536,30 @@ log4j = {
       'org.hibernate',
       'net.sf.ehcache.hibernate'
 
-  debug 'grails.app.controllers',
-        'grails.app.service',
-        'grails.app.services',
-        'grails.app.domain',
-        'grails.app.domains',
-        'grails.app.tagLib',
-        'grails.app.filters',
-        'grails.app.conf',
-        'grails.app.jobs',
-        'com.k_int',
-        'org.gokb.cred.RefdataCategory',
-        'com.k_int.apis',
-        'com.k_int.asset.pipeline.groovy',
-        'asset.pipeline.less.compilers',
-        'org.gokb.validation.types.CompareToTiDateField',
-        'org.gokb.validation'
-        // 'org.gokb.cred'
+  environments {
+    development {
+      debug 'grails.app.controllers',
+            'grails.app.service',
+            'grails.app.services',
+            'grails.app.domain',
+            'grails.app.domains',
+            'grails.app.tagLib',
+            'grails.app.filters',
+            'grails.app.conf',
+            'grails.app.jobs',
+            'com.k_int',
+            'org.gokb.cred.RefdataCategory',
+            'com.k_int.apis',
+            'com.k_int.asset.pipeline.groovy',
+            'asset.pipeline.less.compilers',
+            'org.gokb.validation.types.CompareToTiDateField',
+            'org.gokb.validation'
+    }
+    test {
+      debug 'grails.app.controllers',
+            'grails.app.services'
+    }
+  }
 
   // debug  'org.gokb.DomainClassExtender'
 

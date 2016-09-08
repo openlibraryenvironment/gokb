@@ -538,134 +538,145 @@ class IntegrationController {
 
     log.debug("crossReferenceTitle(${request.JSON.type},$request.JSON.title,${request.JSON.identifiers}},...)");
 
-    User user = springSecurityService.currentUser
-    def title = titleLookupService.find(request.JSON.title, 
-                                        request.JSON.publisher, 
-                                        request.JSON.identifiers, 
-                                        user,
-                                        null,
-                                        request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )  // project
-
-    if ( title ) {
+    try {
   
-      if ( request.JSON.variantNames?.size() > 0 ) {
-        request.JSON.variantNames.each { vn ->
-          log.debug("Ensure variant name ${vn}");
-          title.addVariantTitle(vn);
-        }
-      }
-      
-      def title_changed = false;
+      User user = springSecurityService.currentUser
+      def title = titleLookupService.find(request.JSON.title, 
+                                          request.JSON.publisher, 
+                                          request.JSON.identifiers, 
+                                          user,
+                                          null,
+                                          request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )  // project
   
-      if ( request.JSON.imprint ) {
-        if ( title.imprint?.name == request.JSON.imprint ) {
-          // Imprint already set
-        }
-        else {
-          def imprint = Imprint.findByName(request.JSON.imprint) ?: new Imprint(name:request.JSON.imprint).save(flush:true, failOnError:true);
-          title.imprint = imprint;
-  
-        }
-      }
-  
-      title_changed |= setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
-      title_changed |= setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
-      title_changed |= setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
-      title_changed |= setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
-  
-      if ( title_changed ) {
-        log.debug("Saving title changes");
-        title.save(flush:true, failOnError:true);
-      }
-  
-      if ( request.JSON.historyEvents?.size() > 0 ) {
-        request.JSON.historyEvents.each { jhe ->
-          // 1971-01-01 00:00:00.0
-          log.debug("Handling title history");
-          try {
-            def inlist = []
-            def outlist = []
-            def cont = true
-            jhe.from.each { fhe ->
-              def p = titleLookupService.find(fhe.title,
-                                                           null,
-                                                           fhe.identifiers,
-                                                           user,
-                                                           null,
-                                                           request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
-              if ( p ) { inlist.add(p); } else { cont = false; }
-            }
-            jhe.to.each { fhe ->
-              def p =  titleLookupService.find(fhe.title,
-                                                           null,
-                                                           fhe.identifiers,
-                                                           user,
-                                                           null,
-                                                           request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
-              if ( p ) { outlist.add(p); } else { cont = false; }
-            }
-  
-            def first = true;
-            // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
-            def che_check_qry_sw  = new StringWriter();
-            def qparams = []
-            che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
-  
-            inlist.each { fhe ->
-              if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-              che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-              qparams.add(fhe)
-            }
-            outlist.each { fhe ->
-              if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-              che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-              qparams.add(fhe)
-            }
-  
-            def che_check_qry = che_check_qry_sw.toString()
-            log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
-            def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
-            if ( qr.size() > 0 )
-              cont = false;
-  
-            if ( cont ) {
+      if ( title ) {
     
-              def he = new ComponentHistoryEvent()
-              if ( jhe.date ) {
-                he.eventDate = sdf.parse(jhe.date);
-              }
-              he.save(flush:true, failOnError:true);
-      
-              inlist.each {
-                def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
-                hep.save(flush:true, failOnError:true);
-              }
-  
-              outlist.each {
-                def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
-                hep.save(flush:true, failOnError:true);
-              }
-            }
-            else {
-              // Matched an existing TH event, not creating a duplicate
-            }
-          }
-          catch ( Exception e ) {
-            log.error("Problem processing title history",e);
+        if ( request.JSON.variantNames?.size() > 0 ) {
+          request.JSON.variantNames.each { vn ->
+            log.debug("Ensure variant name ${vn}");
+            title.addVariantTitle(vn);
           }
         }
+        
+        def title_changed = false;
+    
+        if ( request.JSON.imprint ) {
+          if ( title.imprint?.name == request.JSON.imprint ) {
+            // Imprint already set
+          }
+          else {
+            def imprint = Imprint.findByName(request.JSON.imprint) ?: new Imprint(name:request.JSON.imprint).save(flush:true, failOnError:true);
+            title.imprint = imprint;
+    
+          }
+        }
+    
+        title_changed |= setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
+        title_changed |= setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
+        title_changed |= setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
+        title_changed |= setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
+    
+        if ( title_changed ) {
+          log.debug("Saving title changes");
+          title.save(flush:true, failOnError:true);
+        }
+    
+        if ( request.JSON.historyEvents?.size() > 0 ) {
+          request.JSON.historyEvents.each { jhe ->
+            // 1971-01-01 00:00:00.0
+            log.debug("Handling title history");
+            try {
+              def inlist = []
+              def outlist = []
+              def cont = true
+              jhe.from.each { fhe ->
+                def p = titleLookupService.find(fhe.title,
+                                                             null,
+                                                             fhe.identifiers,
+                                                             user,
+                                                             null,
+                                                             request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
+                if ( p ) { inlist.add(p); } else { cont = false; }
+              }
+              jhe.to.each { fhe ->
+                def p =  titleLookupService.find(fhe.title,
+                                                             null,
+                                                             fhe.identifiers,
+                                                             user,
+                                                             null,
+                                                             request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
+                if ( p ) { outlist.add(p); } else { cont = false; }
+              }
+    
+              def first = true;
+              // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
+              def che_check_qry_sw  = new StringWriter();
+              def qparams = []
+              che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
+    
+              inlist.each { fhe ->
+                if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+                che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                qparams.add(fhe)
+              }
+              outlist.each { fhe ->
+                if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+                che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                qparams.add(fhe)
+              }
+    
+              def che_check_qry = che_check_qry_sw.toString()
+              log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
+              def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
+              if ( qr.size() > 0 )
+                cont = false;
+    
+              if ( cont ) {
+      
+                def he = new ComponentHistoryEvent()
+                if ( jhe.date ) {
+                  he.eventDate = sdf.parse(jhe.date);
+                }
+                he.save(flush:true, failOnError:true);
+        
+                inlist.each {
+                  def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
+                  hep.save(flush:true, failOnError:true);
+                }
+    
+                outlist.each {
+                  def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
+                  hep.save(flush:true, failOnError:true);
+                }
+              }
+              else {
+                // Matched an existing TH event, not creating a duplicate
+              }
+            }
+            catch ( Exception e ) {
+              log.error("Problem processing title history",e);
+            }
+          }
+        }
+  
+        result.message = "Created/looked up title ${title.id}"
+        result.cls = title.class.name
+        result.titleId = title.id
       }
-
-      result.message = "Created/looked up title ${title.id}"
-      result.cls = title.class.name
-      result.titleId = title.id
+      else {
+        result.message = "No title for ${request.JSON}";
+        applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${request.JSON}"])
+      }
     }
-    else {
-      result.message = "No title for ${request.JSON}";
-      applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${request.JSON}"])
+    catch ( Exception e ) {
+      log.error("Exception attempting to cross reference title",e);
+      result.result="ERROR"
+      result.message=e.toString()
+      result.baddata=request.JSON
+      log.error("Source message causing error (ADD_TO_TEST_CASES): ${request.JSON}");
     }
-
-    log.debug("Result of cross ref title: ${result}");
+    finally {
+      log.debug("Result of cross ref title: ${result}");
+    }
 
     render result as JSON
   }

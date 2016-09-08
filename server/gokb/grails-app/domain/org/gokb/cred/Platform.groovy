@@ -32,6 +32,7 @@ class Platform extends KBComponent {
   ]
 
   static mapping = {
+    includes KBComponent.mapping
     primaryUrl column:'plat_primary_url',  index:'platform_primary_url_idx'
     authentication column:'plat_authentication_fk_rv'
     software column:'plat_sw_fk_rv'

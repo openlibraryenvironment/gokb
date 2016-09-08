@@ -64,6 +64,7 @@ class Package extends KBComponent {
   ]
 
   static mapping = {
+    includes KBComponent.mapping
     listStatus column:'pkg_list_status_rv_fk'
     lastProject column:'pkg_refine_project_fk'
     scope column:'pkg_scope_rv_fk'

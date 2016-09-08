@@ -25,6 +25,7 @@ class Office extends KBComponent {
   ]
   
   static mapping = {
+        includes KBComponent.mapping
 	website column:'office_website'
 	email column:'office_email'
 	phoneNumber column:'office_phone_number'

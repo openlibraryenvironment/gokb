@@ -20,9 +20,6 @@ class TitleInstancePlatform extends KBComponent {
     "gokb:TIPL:${title?.id}:${hostPlatform?.id}"
   }
 
-  static mapping = {
-  }
-
   static constraints = {
     url (nullable:true, blank:true)
   }

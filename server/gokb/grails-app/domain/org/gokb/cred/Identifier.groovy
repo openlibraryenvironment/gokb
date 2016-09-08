@@ -11,6 +11,7 @@ class Identifier extends KBComponent {
   }
 
   static mapping = {
+    includes KBComponent.mapping
                value column:'id_value', index:'id_value_idx'
            namespace column:'id_namespace_fk', index:'id_value_idx'
   }

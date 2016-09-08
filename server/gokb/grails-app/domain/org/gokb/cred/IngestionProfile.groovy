@@ -26,6 +26,8 @@ class IngestionProfile extends KBComponent {
   }
 
   static mapping = {
+    includes KBComponent.mapping
+
     packageName column:'ebdf_packageName'
     packageType column:'ebdf_packageType'
     platformUrl column:'endf_default_platform_url'

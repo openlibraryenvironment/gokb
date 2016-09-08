@@ -282,7 +282,7 @@ abstract class KBComponent {
 
   String lastUpdateComment
 
-  Set tags = []
+  // Set tags = []
   List additionalProperties = []
   Set outgoingCombos = []
   Set incomingCombos = []
@@ -341,7 +341,7 @@ abstract class KBComponent {
   ]
 
   static hasMany = [
-    tags:RefdataValue,
+    // tags:RefdataValue,
     outgoingCombos:Combo,
     incomingCombos:Combo,
     additionalProperties:KBComponentAdditionalProperty,
@@ -362,7 +362,7 @@ abstract class KBComponent {
     source column:'kbc_source_fk'
     status column:'kbc_status_rv_fk'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
-    tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
+    // tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
     dateCreated column:'kbc_date_created', index:'kbc_date_created_idx'
     lastUpdated column:'kbc_last_updated'
     duplicateOf column:'kbc_duplicate_of'
