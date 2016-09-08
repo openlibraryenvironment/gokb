@@ -53,7 +53,8 @@ class TitleLookupService {
         boolean title_match = false
         
         // If we find an ID then lookup the components.
-        Set<KBComponent> comp = the_id.identifiedComponents
+        Set<KBComponent> comp = getComponentsForIdentifier(the_id)
+
         log.debug("Scanning ${comp.size()} components attached to identifier");
         comp.each { KBComponent c ->
 
@@ -649,5 +650,10 @@ class TitleLookupService {
     else {
       log.debug("Unable tyo locate domain object for ${oid}");
     }
+  }
+
+  def getComponentsForIdentifier(identifier) {
+    // was identifier.identifiedComponents
+    KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp',[id:identifier,tp:'KBComponent.Ids']);
   }
 }
