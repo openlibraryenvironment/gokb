@@ -17,8 +17,13 @@ class ESUpdateJob {
   PackageService packageService
 
   def execute() {
-    log.debug ("Beginning scheduled es update job.")
-    FTUpdateService.updateFTIndexes();
-    log.debug ("es update job completed.")
+    if ( grailsApplication.config.ftupdate_enabled ) {
+      log.debug ("Beginning scheduled es update job.")
+      FTUpdateService.updateFTIndexes();
+      log.debug ("es update job completed.")
+    }
+    else {
+      log.debug("FTUpdate is not enabled - set config.ftupdate_enabled = true in config to enable");
+    }
   }
 }
