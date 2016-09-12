@@ -314,6 +314,9 @@ class TitleLookupService {
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
 
+      // Make sure we're all saved before looking up the publisher
+      the_title.save(flush:true, failOnError:true);
+
       // Add the publisher.
       addPublisher(metadata.publisher_name, the_title, user, project)
 
@@ -364,7 +367,9 @@ class TitleLookupService {
   private TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
 
 
-    if ( ( publisher_name != null ) && ( publisher_name.trim().length() > 0 ) ) {
+    if ( ( publisher_name != null ) && 
+         ( publisher_name.trim().length() > 0 ) ) {
+
       // Lookup our publisher.
       def norm_pub_name = GOKbTextUtils.normaliseString(publisher_name);
 
