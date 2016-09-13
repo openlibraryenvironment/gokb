@@ -566,7 +566,7 @@ class IntegrationController {
           else {
             def imprint = Imprint.findByName(request.JSON.imprint) ?: new Imprint(name:request.JSON.imprint).save(flush:true, failOnError:true);
             title.imprint = imprint;
-    
+            title_changed = true
           }
         }
     
@@ -575,10 +575,8 @@ class IntegrationController {
         title_changed |= setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
         title_changed |= setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
     
-        if ( title_changed ) {
-          log.debug("Saving title changes");
-          title.save(flush:true, failOnError:true);
-        }
+        log.debug("Saving title changes");
+        title.save(flush:true, failOnError:true);
     
         if ( request.JSON.historyEvents?.size() > 0 ) {
           request.JSON.historyEvents.each { jhe ->
@@ -590,11 +588,11 @@ class IntegrationController {
               def cont = true
               jhe.from.each { fhe ->
                 def p = titleLookupService.find(fhe.title,
-                                                             null,
-                                                             fhe.identifiers,
-                                                             user,
-                                                             null,
-                                                             request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
+                                                null,
+                                                fhe.identifiers,
+                                                user,
+                                                null,
+                                                request.JSON.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
                 if ( p ) { inlist.add(p); } else { cont = false; }
               }
               jhe.to.each { fhe ->
