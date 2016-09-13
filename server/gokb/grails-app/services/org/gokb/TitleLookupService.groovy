@@ -647,14 +647,16 @@ class TitleLookupService {
   // any field that might change the Instance -> Work mapping. We have to wait for that update to
   // complete before processing
   def remapTitleInstance(oid) {
-    log.debug("remapTitleInstance::${oid}");
-    def domain_object = genericOIDService.resolveOID(oid)
-    if ( domain_object ) {
-      log.debug("Calling ${domain_object}.remapWork()");
-      domain_object.remapWork();
-    }
-    else {
-      log.debug("Unable tyo locate domain object for ${oid}");
+    TitleInstance.withNewTransaction {
+      log.debug("remapTitleInstance::${oid}");
+      def domain_object = genericOIDService.resolveOID(oid)
+      if ( domain_object ) {
+        log.debug("Calling ${domain_object}.remapWork()");
+        domain_object.remapWork();
+      }
+      else {
+        log.debug("Unable tyo locate domain object for ${oid}");
+      }
     }
   }
 
