@@ -678,6 +678,7 @@ class WorkflowController {
   }
 
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleChange(activity_record, activity_data) {
 
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
@@ -786,6 +787,7 @@ class WorkflowController {
     activity_record.save()
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
@@ -906,6 +908,7 @@ class WorkflowController {
     activity_record.save()
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processPackageReplacement() {
     def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
     def result = [:]
@@ -938,6 +941,7 @@ class WorkflowController {
     render view:'platformReplacementResult' , model:[result:result]
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def download() {
     log.debug("Download ${params}");
 
@@ -950,6 +954,7 @@ class WorkflowController {
     }
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def authorizeVariant() {
     log.debug(params);
     def result = [:]
@@ -980,6 +985,7 @@ class WorkflowController {
     redirect(url: result.ref)
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteVariant() {
     log.debug(params);
     def result = [:]
@@ -991,6 +997,7 @@ class WorkflowController {
     redirect(url: result.ref)
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processCreateWebHook() {
 
     log.debug("processCreateWebHook ${params}");
@@ -1040,6 +1047,7 @@ class WorkflowController {
     redirect(url: result.ref)
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processRRTransfer() {
     def result = [:]
     log.debug("processRRTransfer ${params}");
@@ -1062,6 +1070,7 @@ class WorkflowController {
     redirect(url: result.ref)
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def createTitleHistoryEvent() {
 
     log.debug("createTitleHistoryEvent")
@@ -1108,6 +1117,7 @@ class WorkflowController {
     redirect(url: result.ref)
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteTitleHistoryEvent() {
     log.debug(params);
     def result = [:]
@@ -1121,6 +1131,7 @@ class WorkflowController {
 
 
   // @Transactional(readOnly = true)
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def packageKBartExport(packages_to_export) {
     def filename = null;
 
@@ -1241,6 +1252,7 @@ class WorkflowController {
   }
 
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def packageTSVExport(packages_to_export) {
     def filename = null;
 
@@ -1312,6 +1324,7 @@ class WorkflowController {
     }
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToRulebase() {
     def result = [:]
 
@@ -1351,6 +1364,7 @@ class WorkflowController {
     redirect(url: result.ref)
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deprecateOrg() {
     def result=[:]
     log.debug("Params: ${params}");
@@ -1372,6 +1386,7 @@ class WorkflowController {
     result
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deprecateDeleteOrg() {
     log.debug("deprecateDeleteOrg ${params}");
     def result=[:]
@@ -1384,6 +1399,7 @@ class WorkflowController {
     result
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteCombo() {
     Combo c = Combo.get(params.id);
     c.delete();
