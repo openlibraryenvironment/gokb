@@ -100,6 +100,7 @@ class FTUpdateService {
       result = [:]
       result._id = "${kbc.class.name}:${kbc.id}"
       result.name = kbc.name
+      result.componentType=kbc.class.simpleName
       return result
     }
 
