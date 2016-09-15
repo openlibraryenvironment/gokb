@@ -217,18 +217,24 @@ class TitleLookupService {
           the_title = attemptBucketMatch (metadata.title)
 
           if (the_title) {
-            log.debug("TI ${the_title} matched by name. Partial match")
+            log.debug("TI ${the_title} matched by bucket.")
 
-            // Add the variant.
-            the_title.addVariantTitle(metadata.title)
+            if ( metadata.title != the_title.name ) {
+              log.debug("bucket match but \"${metadata.title}\" != \"${the_title.name}\" so add as a variant");
 
-            // Raise a review request
-            ReviewRequest.raise(
-                the_title,
-                "'${metadata.title}' added as a variant of '${the_title.name}'.",
-                "No 1st class ID supplied but reasonable match was made on the title name.",
-                user, project
-                )
+              // Add the variant.
+              the_title.addVariantTitle(metadata.title)
+
+              // Raise a review request
+              ReviewRequest.raise(
+                  the_title,
+                  "'${metadata.title}' added as a variant of '${the_title.name}'.",
+                  "No 1st class ID supplied but reasonable match was made on the title name.",
+                  user, project
+                  )
+
+              the_title.save(flush:true, failOnError:true);
+            }
 
           } else {
 
@@ -411,6 +417,7 @@ class TitleLookupService {
     def t = null;
     if ( title && ( title.length() > 0 ) ) {
       def nname = GOKbTextUtils.norm2(title);
+      
       def bucket_hash = GOKbTextUtils.generateComponentHash([nname]);
 
       // def component_hash = GOKbTextUtils.generateComponentHash([nname, componentDiscriminator]);
@@ -615,16 +622,21 @@ class TitleLookupService {
   // any field that might change the Instance -> Work mapping. We have to wait for that update to
   // complete before processing
   def remapTitleInstance(oid) {
-    TitleInstance.withNewTransaction {
-      log.debug("remapTitleInstance::${oid}");
-      def domain_object = genericOIDService.resolveOID(oid)
-      if ( domain_object ) {
-        log.debug("Calling ${domain_object}.remapWork()");
-        domain_object.remapWork();
+    try {
+      TitleInstance.withNewTransaction {
+        log.debug("remapTitleInstance::${oid}");
+        def domain_object = genericOIDService.resolveOID(oid,true)
+        if ( domain_object ) {
+          log.debug("Calling ${domain_object}.remapWork()");
+          domain_object.remapWork();
+        }
+        else {
+          log.debug("Unable tyo locate domain object for ${oid}");
+        }
       }
-      else {
-        log.debug("Unable tyo locate domain object for ${oid}");
-      }
+    }
+    catch ( Exception e ) {
+      log.error("Problem in remap work.",e);
     }
   }
 

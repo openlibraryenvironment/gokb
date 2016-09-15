@@ -5,7 +5,7 @@ class GenericOIDService {
   def grailsApplication
   def classCache = [:]
 
-  def resolveOID(oid) {
+  def resolveOID(oid, boolean lock=false) {
 
     def oid_components = oid.split(':');
 
@@ -26,7 +26,13 @@ class GenericOIDService {
     }
 
     if ( clazz ) {
-      result = clazz.get(oid_components[1])
+      if ( lock ) {
+        result = clazz.lock(oid_components[1])
+      }
+      else {
+        result = clazz.get(oid_components[1])
+      }
+
       if ( result == null )
         log.warn("Unable to locate instance of ${oid_components[0]} with id ${oid_components[1]}");
     }

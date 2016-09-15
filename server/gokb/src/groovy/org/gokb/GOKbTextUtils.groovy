@@ -110,9 +110,21 @@ class GOKbTextUtils {
     return 0
   }
 
+  /**
+   * Concatenate the components (Which should already be normalised strings) and then hash them
+   */
   public static String generateComponentHash(List components) {
-    def s = norm1(components);
-    return MessageDigest.getInstance("MD5").digest(s.bytes).encodeHex().toString()
+
+    def sw = new StringWriter()
+    def first = true;
+    components.each { c ->
+      if ( c ) {
+        if ( first ) { first = false; } else { sw.write (' '); }
+        sw.write(c)
+      }
+    }
+
+    return MessageDigest.getInstance("MD5").digest(sw.toString().bytes).encodeHex().toString()
   }
 
   public static String norm1(List components) {

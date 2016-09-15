@@ -528,13 +528,15 @@ class TitleInstance extends KBComponent {
           case 0:
             log.debug("No matches - create work");
             def w = new Work(name: name).save(flush:true, failOnError:true)
-            TitleInstance.executeUpdate('update TitleInstance set work = :w where id = :tid',[w:w, tid:this.id]);
-            // this.work = w
-            // this.save(flush:true, failOnError:true)
+            // TitleInstance.executeUpdate('update TitleInstance ti set ti.work.id = :w where ti.id = :tid',[w:w.id, tid:this.id]);
+            this.work = w
+            this.save(flush:true, failOnError:true)
             break;
           case 1:
             log.debug("Good enough unique match on bucketHash");
-            TitleInstance.executeUpdate('update TitleInstance set work = :w where id = :tid',[w:bucketMatches[0], tid:this.id]);
+            // TitleInstance.executeUpdate('update TitleInstance ti set ti.work.id = :w where ti.id = :tid',[w:bucketMatches[0].id, tid:this.id]);
+            this.work = bucketMatches[0]
+            this.save(flush:true, failOnError:true)
             break;
           default:
             log.debug("Mached multiple works - use discriminator properties");
