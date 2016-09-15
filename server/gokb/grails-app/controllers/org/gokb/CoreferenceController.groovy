@@ -3,9 +3,12 @@ package org.gokb
 import org.gokb.cred.*;
 import grails.gorm.*
 import grails.converters.*
+import org.springframework.security.access.annotation.Secured;
+
 
 class CoreferenceController {
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() { 
     def result = [:]
     result.count = -1
@@ -86,6 +89,7 @@ class CoreferenceController {
     }
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def search() {
   }
 }
