@@ -231,25 +231,34 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         'global' ( global?.value )
         'nominalPlatform' ( nominalPlatform?.name )
         'nominalProvider' ( nominalPlatform?.provider?.name )
+        'listVerifier' ( listVerifier?.username )
+        'listVerifierDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
         'source' {
-          'url': (source?.url),
-          'defaultAccessURL': (source?.defaultAccessURL),
-          'explanationAtSource': (source?.explanationAtSource),
-          'contextualNotes': (source?.contextualNotes),
-          'frequency': (source?.frequency),
-          'ruleset': (source?.ruleset),
-          'defaultSupplyMethod': (source?.defaultSupplyMethod?.value),
-          'defaultDataFormat': (source?.defaultSupplyMethod?.value),
-          'responsibleParty': (source?.responsibleParty?.name),
+          'url' (source?.url)
+          'defaultAccessURL' (source?.defaultAccessURL)
+          'explanationAtSource' (source?.explanationAtSource)
+          'contextualNotes' (source?.contextualNotes)
+          'frequency' (source?.frequency)
+          'ruleset': (source?.ruleset)
+          'defaultSupplyMethod' (source?.defaultSupplyMethod?.value)
+          'defaultDataFormat' (source?.defaultSupplyMethod?.value)
+          'responsibleParty' (source?.responsibleParty?.name)
         }
         'name' (name)
-         if ( variantNames ) {
+        if ( curatoryGroups ) {
+           builder.'curatoryGroups' {
+             curatoryGroups.each { cg ->
+               builder.'curatoryGroup' ( cg.name )
+             }
+           }
+        }
+        if ( variantNames ) {
            builder.'variantNames' {
              variantNames.each { vn ->
                builder.'variantName' ( vn.variantName )
              }
            }
-         }
+        }
         'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {
           tipps.each { tipp ->
