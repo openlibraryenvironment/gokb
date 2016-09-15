@@ -28,7 +28,8 @@ class TitleLookupService {
       "class_one"         : false,
       "ids"               : [],
       "matches"           : [] as Set,
-      "x_check_matches"   : [] as Set
+      "x_check_matches"   : [] as Set,
+      "other_identifiers" : [] as Set
     ]
 
     // Go through each of the class_one_ids and look for a match.
@@ -148,6 +149,8 @@ class TitleLookupService {
       }
       else {
         log.warn("Skipping problem ID ${id_def}");
+        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
+        result['other_identifiers'] << the_id
       }
     }
 
@@ -325,7 +328,11 @@ class TitleLookupService {
 
       the_title.save(flush:true, failOnError:true);
 
-      results['ids'].each {
+      Set ids_to_add = []
+      ids_to_add.addAll(results['ids'])
+      ids_to_add.addAll(results['other_identifiers'])
+
+      ids_to_add.each {
         if ( ! the_title.ids.contains(it) ) {
 
           log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
@@ -342,11 +349,14 @@ class TitleLookupService {
               user,
               project
             )
+            // We have to save the title as this modifies the revreq collections
+            the_title.save(flush:true, failOnError:true);
           }
           else {
             log.debug("Adding identifier to title");
-            the_title.ids.add(it);
-            the_title.save(flush:true, failOnError:true);
+            Combo new_id = new Combo(toComponent:it, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
+            // the_title.ids.add(it);
+            // the_title.save(flush:true, failOnError:true);
           }
         }
       }

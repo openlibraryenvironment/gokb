@@ -247,7 +247,8 @@ class TitleLookupServiceSpec extends Specification {
         def json_record = [
           'title':'ACM SIGICE Bulletin',
           'identifiers':[['type':'eissn', value:'1558-1144'],
-                         ['type':'issn', value:'1078-134X']
+                         ['type':'issn', value:'1078-134X'],
+                         ['type':'wibbleNS', value:'Wibble99887766']
                         ],
           'type':'Serial'
         ]
@@ -264,7 +265,7 @@ class TitleLookupServiceSpec extends Specification {
         response.message != null
         response.message.startsWith('Created')
       expect: "Find item by ID still only returns one item"
-        def ids = [ ['ns':'issn', 'value':'1078-134X']  ]
+        def ids = [ ['ns':'issn', 'value':'1078-134X'] ]
         def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
         matching_with_class_one_ids.size() == 1
         matching_with_class_one_ids[0] == response.titleId

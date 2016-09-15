@@ -77,11 +77,9 @@ class ReviewRequest {
         descriptionOfCause : (cause),
         reviewRequest : (actionRequired),
         refineProject: (refineProject),
-        additionalInfo: (additionalInfo)
-        )
-
-    // Add to the list of requests for the component.
-    forComponent.addToReviewRequests( req )
+        additionalInfo: (additionalInfo),
+        componentToReview: (forComponent)
+        ).save(flush:true, failOnError:true);
 
     // Just return the request.
     req
