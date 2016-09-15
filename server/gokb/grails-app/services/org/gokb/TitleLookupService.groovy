@@ -214,7 +214,6 @@ class TitleLookupService {
           def target_hash = null;
 
           // Lookup using title string match only.
-          // the_title = attemptStringMatch (norm_title)
           the_title = attemptBucketMatch (metadata.title)
 
           if (the_title) {
@@ -296,10 +295,8 @@ class TitleLookupService {
               the_title = matches[0]
             }
             else {
-              // Create the normalised title.
-              String norm_title = GOKbTextUtils.generateComparableKey(metadata.title)
               // Now we can examine the text of the title.
-              the_title = singleTIMatch(metadata.title, norm_title, matches[0], user, project)
+              the_title = singleTIMatch(metadata.title,matches[0], user, project)
             }
           }
         }
@@ -371,7 +368,7 @@ class TitleLookupService {
          ( publisher_name.trim().length() > 0 ) ) {
 
       // Lookup our publisher.
-      def norm_pub_name = GOKbTextUtils.normaliseString(publisher_name);
+      def norm_pub_name = GOKbTextUtils.norm2(publisher_name);
 
       log.debug("Add publisher \"${publisher_name}\" (${norm_pub_name})");
       Org publisher = Org.findByNormname(norm_pub_name)
@@ -413,7 +410,7 @@ class TitleLookupService {
   private TitleInstance attemptBucketMatch (String title) {
     def t = null;
     if ( title && ( title.length() > 0 ) ) {
-      def nname = GOKbTextUtils.normaliseString(title);
+      def nname = GOKbTextUtils.norm2(title);
       def bucket_hash = GOKbTextUtils.generateComponentHash([nname]);
 
       // def component_hash = GOKbTextUtils.generateComponentHash([nname, componentDiscriminator]);
@@ -425,46 +422,17 @@ class TitleLookupService {
     return t;
   }
 
-  private TitleInstance attemptStringMatch (String norm_title) {
-
-    // Default to return null.
-    TitleInstance ti = null
-
-    // Try and find a title by matching the norm string.
-    // Default to the min threshold
-    double best_distance = grailsApplication.config.cosine.good_threshold
-    
-    TitleInstance.list().each { TitleInstance t ->
-
-      // Get the distance and then determine whether to add to the list or
-      double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.generateComparableKey(t.getName()))
-      if (distance >= best_distance) {
-        ti = t
-        best_distance = distance
-      }
-
-      t.variantNames?.each { vn ->
-        distance = GOKbTextUtils.cosineSimilarity(norm_title, vn.normVariantName)
-        if (distance >= best_distance) {
-          ti = t
-          best_distance = distance
-        }
-      }
-    }
-
-    // Return what we have found... If anything.
-    ti
-  }
-
-  private TitleInstance singleTIMatch(String title, String norm_title, TitleInstance ti, User user, project = null) {
+  private TitleInstance singleTIMatch(String title, TitleInstance ti, User user, project = null) {
 
     log.debug("singleTIMatch");
 
+    String comparable_title = GOKbTextUtils.generateComparableKey(title)
+    
     // The threshold for a good match.
     double threshold = grailsApplication.config.cosine.good_threshold
 
     // Work out the distance between the 2 title strings.
-    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title)
+    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), comparable_title)
 
     // Check the distance.
     switch (distance) {
@@ -477,7 +445,7 @@ class TitleLookupService {
 
       case {
         ti.variantNames.find {alt ->
-          GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), norm_title) >= threshold
+          GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(alt.variantName), comparable_title) >= threshold
         }}:
         // Good match on existing variant titles
         log.debug("Good match for TI on variant.")

@@ -950,7 +950,7 @@ abstract class KBComponent {
   @Transient
   def ensureVariantName(name) {
 
-    def normname = GOKbTextUtils.normaliseString(name)
+    def normname = GOKbTextUtils.norm2(name)
 
     // Check that name is not already a name or a variant, if so, add it.
     def existing_component = KBComponent.findByNormname( normname )
