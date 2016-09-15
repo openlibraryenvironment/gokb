@@ -239,7 +239,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
           'explanationAtSource' (source?.explanationAtSource)
           'contextualNotes' (source?.contextualNotes)
           'frequency' (source?.frequency)
-          'ruleset': (source?.ruleset)
+          'ruleset' (source?.ruleset)
           'defaultSupplyMethod' (source?.defaultSupplyMethod?.value)
           'defaultDataFormat' (source?.defaultSupplyMethod?.value)
           'responsibleParty' (source?.responsibleParty?.name)

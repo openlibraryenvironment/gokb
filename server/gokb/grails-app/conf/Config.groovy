@@ -581,6 +581,7 @@ grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required
 grails.plugin.springsecurity.filterChain.chainMap = [
   '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/packages/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
+  '/admin/bulkLoadUsers': 'JOINED_FILTERS,-exceptionTranslationFilter',
   '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
 ]
 

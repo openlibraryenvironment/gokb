@@ -18,6 +18,10 @@ import com.k_int.ConcurrencyManagerService
 import com.k_int.TextUtils
 import com.k_int.ConcurrencyManagerService.Job
 
+import au.com.bytecode.opencsv.CSVReader
+import org.springframework.web.multipart.MultipartHttpServletRequest
+
+
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
  * 
@@ -71,7 +75,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig', 'bulkLoadUsers']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -1081,4 +1085,40 @@ class ApiController {
     // See: https://jira.grails.org/browse/GPCACHEHEADERS-14
     "${capabilities.app.version}${capabilities.app.buildNumber}".toString()
   }
+
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  def bulkLoadUsers() {
+
+    log.debug("bulkLoadUsers");
+
+    def result = [:]
+
+    if ( request.method=='POST') {
+      log.debug("Handling post")
+      User.withNewSession() {
+
+        if ( request instanceof MultipartHttpServletRequest ) {
+          def users_stream = request.getFile("users")?.inputStream
+          char tab = '\t'
+          char quote = '"'
+          def r = new CSVReader( new InputStreamReader(users_stream, java.nio.charset.Charset.forName('UTF-8') ), tab,quote )
+
+          // Load and process header
+          String [] l = r.readNext()
+
+          log.debug(l)
+          int ctr = 0
+
+          l = r.readNext()
+          while (l) {
+            log.debug("Process user ${l}");
+            l = r.readNext()
+          }
+        }
+      }
+    }
+
+    render result as JSON
+  }
+
 }

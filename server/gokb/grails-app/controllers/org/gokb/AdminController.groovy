@@ -3,6 +3,7 @@ package org.gokb
 import org.gokb.cred.*
 import grails.converters.JSON
 
+
 class AdminController {
 
   def uploadAnalysisService
@@ -247,4 +248,5 @@ class AdminController {
     }.startOrQueue()
     render(view: "logViewer", model: logViewer())
   }
+
 }
