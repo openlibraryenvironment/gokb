@@ -231,6 +231,17 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         'global' ( global?.value )
         'nominalPlatform' ( nominalPlatform?.name )
         'nominalProvider' ( nominalPlatform?.provider?.name )
+        'source' {
+          'url': (source?.url),
+          'defaultAccessURL': (source?.defaultAccessURL),
+          'explanationAtSource': (source?.explanationAtSource),
+          'contextualNotes': (source?.contextualNotes),
+          'frequency': (source?.frequency),
+          'ruleset': (source?.ruleset),
+          'defaultSupplyMethod': (source?.defaultSupplyMethod?.value),
+          'defaultDataFormat': (source?.defaultSupplyMethod?.value),
+          'responsibleParty': (source?.responsibleParty?.name),
+        }
         'name' (name)
          if ( variantNames ) {
            builder.'variantNames' {
