@@ -237,7 +237,7 @@ class AdminController {
         def id_combo_type = RefdataValue.findByValue('KBComponent.Ids');
         q1.each { issn ->
           log.debug("cleaning up ${issn.namespace.value}:${issn.value}");
-          Combo.executeUpdate('delete from Combo where type=:tp and ( fromComponent = :f or toComponent=:t )',[f:issn, t:issn, tp:id_combo_type]);
+          Combo.executeUpdate('delete from Combo c where c.type=:tp and ( c.fromComponent = :f or c.toComponent=:t )',[f:issn, t:issn, tp:id_combo_type]);
           ctr++;
         }
         log.debug("ISSN/eISSN cleanup complete ctr=${ctr}, elapsed = ${System.currentTimeMillis() - start_time}");
