@@ -25,7 +25,7 @@ class Imprint extends KBComponent {
   }
 
   public String getNiceName() {
-	return "Imprint";
+    return "Imprint";
   }
 
   /**

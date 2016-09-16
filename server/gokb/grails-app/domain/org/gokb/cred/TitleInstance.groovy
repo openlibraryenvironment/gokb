@@ -18,7 +18,6 @@ class TitleInstance extends KBComponent {
   Date publishedFrom
   Date publishedTo
   String coverImage
-//  String imprint
 
   private static refdataDefaults = [
     "medium"		: "Journal",
@@ -94,7 +93,6 @@ class TitleInstance extends KBComponent {
     pureOA (nullable:true, blank:false)
     reasonRetired (nullable:true, blank:false)
     OAStatus (nullable:true, blank:false)
-//    imprint (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo (nullable:true, blank:false)
     coverImage (nullable:true, blank:true)
