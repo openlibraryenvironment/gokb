@@ -155,6 +155,7 @@ class Org extends KBComponent {
       builder.'org' (['id':(id)]) {
         builder.'name' (name)
         builder.'homepage' (homepage)
+        builder.'mission' (mission?.value)
 
         if (identifiers) {
           builder.'identifiers' {
