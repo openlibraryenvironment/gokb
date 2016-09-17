@@ -236,7 +236,7 @@ class IntegrationController {
         request.JSON.customIdentifers.each { ci ->
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
-      located_or_new_org.ids.add(canonical_identifier)
+          located_or_new_org.ids.add(canonical_identifier)
         }
     
         // roles
