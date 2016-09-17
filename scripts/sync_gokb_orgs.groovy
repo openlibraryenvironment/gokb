@@ -127,7 +127,8 @@ private static getResourcesFromGoKBByPage(URL url) {
         def resourceFieldMap = [:]
         resourceFieldMap['name'] = r.metadata.gokb.org.name.text()
         resourceFieldMap['homepage'] = r.metadata.gokb.org.homepage.text()
-        resourceFieldMap['identifiers'] = []
+        resourceFieldMap['mission'] = r.metadata.gokb.org.mission.text()
+        resourceFieldMap['customIdentifiers'] = []
         
 
         resources << resourceFieldMap
@@ -167,7 +168,19 @@ def addToGoKB(dryrun, gokb, org_data) {
     }
     else {
       gokb.request(Method.POST) { req ->
-        uri.path='/gokb/integration/assertJsonldOrg'
+
+        //      [
+        //         name:National Association of Corrosion Engineers, 
+        //         description:National Association of Corrosion Engineers,
+        //         parent:
+        //         customIdentifers:[[identifierType:"idtype", identifierValue:"value"]], 
+        //         combos:[[linkTo:[identifierType:"ncsu-internal", identifierValue:"ncsu:61929"], linkType:"HasParent"]], 
+        //         flags:[[flagType:"Org Role", flagValue:"Content Provider"],
+        //                [flagType:"Org Role", flagValue:"Publisher"], 
+        //                [flagType:"Authorized", flagValue:"N"]]
+        //      ]
+
+        uri.path='/gokb/integration/assertOrg'
         body = org_data
         requestContentType = ContentType.JSON
 
