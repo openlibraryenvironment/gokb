@@ -238,6 +238,7 @@ class User extends Party {
               [ type:'val', property:'username', colname:'username' ],
               [ type:'val', property:'password', colname:'password' ],
               [ type:'val', property:'email', colname:'email' ],
+              [ type:'val', property:'display_name', colname:'display_name' ],
               [ type:'valueClosure', property:'direct_password', closure: {  colmap, nl, locatedObjects -> true } ],
             ]
           ]
@@ -248,6 +249,7 @@ class User extends Party {
         [colname:'username', desc:''],
         [colname:'password', desc:''],
         [colname:'email', desc:''],
+        [colname:'display_name', desc:''],
       ]
     ]
   ]
