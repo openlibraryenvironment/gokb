@@ -17,6 +17,7 @@ import org.gokb.validation.Validation
 import com.k_int.ConcurrencyManagerService
 import com.k_int.TextUtils
 import com.k_int.ConcurrencyManagerService.Job
+import com.k_int.TsvSuperlifterService
 
 import au.com.bytecode.opencsv.CSVReader
 import org.springframework.web.multipart.MultipartHttpServletRequest
@@ -30,6 +31,7 @@ import org.springframework.web.multipart.MultipartHttpServletRequest
 
 class ApiController {
   
+  TsvSuperlifterService tsvSuperlifterService
   RefineService refineService
   SecureRandom rand = new SecureRandom()
   UploadAnalysisService uploadAnalysisService
@@ -1099,21 +1101,9 @@ class ApiController {
 
         if ( request instanceof MultipartHttpServletRequest ) {
           def users_stream = request.getFile("users")?.inputStream
-          char tab = '\t'
-          char quote = '"'
-          def r = new CSVReader( new InputStreamReader(users_stream, java.nio.charset.Charset.forName('UTF-8') ), tab,quote )
-
-          // Load and process header
-          String [] l = r.readNext()
-
-          log.debug(l)
-          int ctr = 0
-
-          l = r.readNext()
-          while (l) {
-            log.debug("Process user ${l}");
-            l = r.readNext()
-          }
+          result.loaderResult = tsvSuperlifterService.load(users_stream,
+                                                           User.tsv_dataload_config,
+                                                           params.dryRun=='Y'?true:false)
         }
       }
     }

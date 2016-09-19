@@ -220,6 +220,15 @@ class IntegrationController {
           return
         }
         
+        if ( request.JSON.mission ) {
+          log.debug("Mission ${request.JSON.mission}");
+          located_or_new_org.mission = RefdataCategory.lookupOrCreate('Org.Mission','request.JSON.mission');
+        }
+
+        if ( request.JSON.homepage ) {
+          located_or_new_org.homepage = request.JSON.homepage
+        }
+
         // Add parent.
         if (request.JSON.parent) {
           def parentDef = request.JSON.parent;
@@ -236,7 +245,7 @@ class IntegrationController {
         request.JSON.customIdentifers.each { ci ->
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
           log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
-      located_or_new_org.ids.add(canonical_identifier)
+          located_or_new_org.ids.add(canonical_identifier)
         }
     
         // roles
@@ -244,9 +253,7 @@ class IntegrationController {
         request.JSON.roles.each { r ->
           log.debug("Adding role ${r}");
           def role = RefdataCategory.lookupOrCreate("Org.Role", r)
-          located_or_new_org.addToRoles(
-      role
-          )
+          located_or_new_org.addToRoles(role)
         }
 
         // flags
