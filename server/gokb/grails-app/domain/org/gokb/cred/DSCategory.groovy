@@ -17,7 +17,7 @@ class DSCategory {
 
   static constraints = {
     code(nullable:false, blank:false)
-    description(nullable:false, blank:false)
+    description(nullable:true, blank:true)
     colour(nullable:true, blank:true)
   }
 
