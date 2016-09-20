@@ -1001,7 +1001,9 @@ class TSVIngestionService {
         }
 
         if ( identifiers.size() > 0 ) {
+
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config)
+
           if ( title ) {
             title.source=source
           // log.debug("title found: for ${the_kbart.publication_title}:${title}")
@@ -1178,7 +1180,7 @@ class TSVIngestionService {
                        ingest_date,
                        ingest_systime) {
 
-    // log.debug("TSVIngestionService::createTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
+    log.debug("TSVIngestionService::manualCreateTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
 
     assert the_package != null && the_title != null && the_platform != null
 
@@ -1208,6 +1210,9 @@ class TSVIngestionService {
     if ( tipps.size() == 1 ) {
       log.debug("found");
       tipp = tipps[0]
+    }
+    else {
+      log.debug("tipp lookup found ${tipps.size()} entries");
     }
 
 
@@ -1254,7 +1259,7 @@ class TSVIngestionService {
       
 
     } else {
-      // log.debug("found a tipp to use")
+      log.debug("found a tipp to update")
 
       // Set all properties on the object.
       tipp_values.each { prop, value ->
