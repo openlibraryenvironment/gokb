@@ -306,6 +306,7 @@ class TSVIngestionService {
 
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
+      log.debug("Got title - merge any other properties");
 
       results['ids'].each {
         if ( ! the_title.ids.contains(it) ) {
@@ -535,8 +536,6 @@ class TSVIngestionService {
                                       identifiers,
                                       row_specific_config) {
 
-
-
     // The threshold for a good match.
     double threshold = grailsApplication.config.cosine.good_threshold
 
@@ -558,15 +557,18 @@ class TSVIngestionService {
 
     def result = ti;
 
+    log.debug("distance: ${distance} (threshold) ${threshold}");
+
     switch (distance) {
       case 1 :
         // Do nothing just continue using the TI.
-        // log.debug("Exact distance match for TI.")
+        log.debug("Exact distance match for TI.")
         break
 
+      // Try for exact match on variant name
       case {
         ti.variantNames.find {alt ->
-          // log.debug("Comparing ${alt.variantName} and ${norm_title}");
+          log.debug("Comparing ${alt.variantName} and ${norm_title}");
           GOKbTextUtils.cosineSimilarity(GOKbTextUtils.normaliseString(alt.variantName), norm_title) >= threshold
         }}:
         // Good match on existing variant titles
@@ -575,7 +577,7 @@ class TSVIngestionService {
 
       case {it >= threshold} :
         // Good match. Need to add as alternate name.
-        // log.debug("Good distance match for TI. Add as variant.")
+        log.debug("Good distance match for TI. Add as variant.")
         ti.addVariantTitle(title)
         break
 
@@ -1197,7 +1199,7 @@ class TSVIngestionService {
 
     def tipp = null;
 
-    log.debug("Lookup existing");
+    log.debug("Lookup existing TIPP");
     def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
                                            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? '+
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? '+

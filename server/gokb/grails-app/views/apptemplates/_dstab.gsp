@@ -50,12 +50,12 @@
                         </g:else>
                         <div class="DSVote" id="currentVote${c['appliedTo']}_${id}">
                             <a id="${c['appliedTo']}_${id}_r_negative" title="${c['voteCounter'][0] +  (c['voteCounter'][3]>0? ' Red vote(s) and ' + c['voteCounter'][3] + ' commented only':' Red vote(s)') }" href='#' ${c['yourVote'][0]=='Red'?'class="text-negative selected"':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
-                            <a id="${c['appliedTo']}_${id}_a_contentious" title="${c['voteCounter'][1] +  (c['voteCounter'][3]>0? ' Amber vote(s) and ' + c['voteCounter'][3] + ' commented only':' Amber vote(s)') }" href='#' ${c['yourVote'][0]=='Amber'?'class="text-contentious selected"':''} ><i class="fa fa-info-circle fa-2x"></i></a>&nbsp;
+                            <a id="${c['appliedTo']}_${id}_a_contentious" title="${c['voteCounter'][1] +  (c['voteCounter'][3]>0? ' Amber vote(s) and ' + c['voteCounter'][3] + ' commented only':' Amber vote(s)') }" href='#' ${c['yourVote'][0]=='Amber'?'class="text-contentious selected"':''} ><i class="fa fa-question-circle fa-2x"></i></a>&nbsp;
                             <a id="${c['appliedTo']}_${id}_g_positive" title="${c['voteCounter'][2] +  (c['voteCounter'][3]>0? ' Green vote(s) and ' + c['voteCounter'][3] + ' commented only':' Green vote(s)') }" href='#' ${c['yourVote'][0]=='Green'?'class="text-positive selected"':''} ><i class="fa fa-check-circle fa-2x"></i></a>
                         </div>
                     </br></br>
                         <g:if test="${c['otherVotes'].isEmpty()}">
-                            No one else has voted yet
+                            No one else has rated yet
                         </g:if>
                         <g:elseif test="${grailsApplication.config.feature.otherVoters}">
                             <table id="otherVoters" style="margin: 0; padding: 0">
@@ -75,7 +75,7 @@
                                         <td>
                                             <p class="DSVote DSInlineBlock">
                                                 <span id="${c['appliedTo']}_${id}_r_negative" ${o[0]=='Red'?'class="text-negative"':''} ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;
-                                                <span id="${c['appliedTo']}_${id}_a_contentious"  ${o[0]=='Amber'?'class="text-contentious"':''} ><i class="fa fa-info-circle fa-2x"></i></span>&nbsp;
+                                                <span id="${c['appliedTo']}_${id}_a_contentious"  ${o[0]=='Amber'?'class="text-contentious"':''} ><i class="fa fa-question-circle fa-2x"></i></span>&nbsp;
                                                 <span id="${c['appliedTo']}_${id}_g_positive" ${o[0]=='Green'?'class="text-positive"':''} ><i class="fa fa-check-circle fa-2x"></i></span>
                                                 <g:if test="${o[0]=='Unknown'}"><i>(Commented only)</i></g:if>
                                             </p>
@@ -96,7 +96,7 @@
                                     <tbody>
                                     <tr>
                                         <td><a id="otherRed"  href='#' class="text-negative"><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;</td>
-                                        <td><a id="OtherYellow"  href='#' class="text-contentious" ><i class="fa fa-info-circle fa-2x"></i></a>&nbsp;</td>
+                                        <td><a id="OtherYellow"  href='#' class="text-contentious" ><i class="fa fa-question-circle fa-2x"></i></a>&nbsp;</td>
                                         <td><a id="OtherGreen"  href='#' class="text-positive"><i class="fa fa-check-circle fa-2x"></i></a></td>
                                     </tr>
                                     <tr>
