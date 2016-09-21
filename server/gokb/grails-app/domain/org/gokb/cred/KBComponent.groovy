@@ -536,15 +536,20 @@ abstract class KBComponent {
     result
   }
 
+
+  /** Added here so that everyone who wants a normalised component name can
+      call this function, then we have a single place to call or change to pivot the norm rules */
+  public static def generateNormname (str_to_norm) {
+    def r = GOKbTextUtils.norm2(str_to_norm);
+
+    if ( r.length() == 0 )
+      r = null;
+
+    return r
+  }
+
   protected def generateNormname () {
-
-    // Get the norm_name
-    // def nname = GOKbTextUtils.normaliseString(name);
-    // Use alternate normalisation strategy
-    def nname = GOKbTextUtils.norm2(name);
-
-    // Set to null if blank.
-    normname = nname == "" ? null : nname
+    generateNormname(name);
   }
 
   protected def generateComponentHash() {

@@ -185,13 +185,11 @@ class TSVIngestionService {
                            def project = null) {
     // The TitleInstance
     TitleInstance the_title = null
-    // log.debug("lookup or create title :: ${title}(${ingest_cfg})")
 
     if (title == null) return null
 
     // Create the normalised title.
-    // String norm_title = GOKbTextUtils.generateComparableKey(title)
-    String norm_title = GOKbTextUtils.normaliseString(title)
+    String norm_title = KBComponent.generateNormname(title)
 
     if ( ( norm_title == null )  || ( norm_title.length() == 0 ) ) {
       throw new RuntimeException("Null normalsed title based on title ${title}, Identifiers ${identifiers}");
@@ -210,7 +208,6 @@ class TSVIngestionService {
       // No match behaviour.
       // Check for presence of class one ID
       if (results['class_one']) {
-        log.debug ("One or more class 1 IDs supplied so must be a new TI. Create instance of ${ingest_cfg.defaultTypeName}")
         // Create the new TI.
         // the_title = new BookInstance(name:title)
         log.debug("Creating new ${row_specific_config.defaultTypeName} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
@@ -225,11 +222,6 @@ class TSVIngestionService {
 
         the_title == new_inst_clazz.findByNormname(norm_title)
 
-        if ( ( the_title == null ) && ( ingest_cfg.doDistanceMatch == true ) ) {
-          // log.debug("No title match on identifier or normname -- try string match");
-          the_title = attemptStringMatch (norm_title)
-        }
-
         if (the_title) {
           // log.debug("TI ${the_title} matched by name. Partial match")
           // Add the variant.
@@ -243,7 +235,6 @@ class TSVIngestionService {
             )
         } else {
           // log.debug("No TI could be matched by name. New TI, flag for review.")
-          // log.debug("Creating new ${ingest_cfg.defaultType} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
           // Could not match on title either.
           // Create a new TI but attach a Review request to it.
           the_title = new_inst_clazz.newInstance()
@@ -312,10 +303,15 @@ class TSVIngestionService {
         if ( ! the_title.ids.contains(it) ) {
           // We should **NOT** do this in the case where we are creating a new title because the publisher listed a title
           // in the title history group using an identifier in that group.
+          log.debug("Adding id ${it}");
           the_title.ids.add(it);
+        }
+        else {
+          log.debug("Title already contains ${it}");
         }
       }
 
+      log.debug("Saving title");
       // Try and save the result now.
       if ( the_title.save(failOnError:true, flush:true) ) {
         // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
@@ -433,7 +429,8 @@ class TSVIngestionService {
 
     if ( ( clean_pub_name != null ) && ( clean_pub_name.trim().length() > 0 ) ) {
 
-      def norm_pub_name = GOKbTextUtils.normaliseString(clean_pub_name)
+      def norm_pub_name = KBComponent.generateNormname(clean_pub_name)
+
       // log.debug("Org lookup: ${clean_pub_name}/${norm_pub_name}");
       def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
@@ -442,7 +439,7 @@ class TSVIngestionService {
         case 0:
           // log.debug ("Publisher ${clean_pub_name} lookup yielded no matches.")
           Org.withTransaction {
-            def the_publisher = new Org(name:clean_pub_name,normname:norm_pub_name)
+            def the_publisher = new Org(name:clean_pub_name)
             if (the_publisher.save(failOnError:true, flush:true)) {
               // log.debug("saved ${the_publisher.name}")
               ReviewRequest.raise(
@@ -490,40 +487,6 @@ class TSVIngestionService {
     ti
   }
 
-  private TitleInstance attemptStringMatch (String norm_title) {
-
-    // Default to return null.
-    TitleInstance ti = null
-
-    // Try and find a title by matching the norm string.
-    // Default to the min threshold
-    double best_distance = grailsApplication.config.cosine.good_threshold
-
-    // This isn't a good idea -- 1. Loading whole title records in causes loads of memory churn, and list() loads everything into an ArrayList rather than paging
-    // Needs to be a query selecting titles and variant names and then to paginate over them. For now, just not calling this method and using a flag doDistanceMatch in config
-    TitleInstance.list().each { TitleInstance t ->
-
-    // Get the distance and then determine whether to add to the list or
-    // double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.generateComparableKey(t.getName()))
-    double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.normaliseString(t.getName()))
-    if (distance >= best_distance) {
-      ti = t
-      best_distance = distance
-    }
-
-    t.variantNames?.each { vn ->
-      distance = GOKbTextUtils.cosineSimilarity(norm_title, vn.normVariantName)
-      if (distance >= best_distance) {
-      ti = t
-      best_distance = distance
-      }
-    }
-    }
-
-    // Return what we have found... If anything.
-    ti
-  }
-
   /*
    *  Given 2 title strings, see if they might be the same. Used to detect title variants.
    */
@@ -549,7 +512,6 @@ class TSVIngestionService {
     else {
       // Otherwise -- work out if they are roughly close enough to warrant a good matcg
       // log.debug("Comparing ${ti.getName()} and ${norm_title}");
-      // distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), norm_title) ?: 0
       distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.normaliseString(ti.getName()), norm_title) ?: 0
     }
 
@@ -1003,26 +965,37 @@ class TSVIngestionService {
         if ( identifiers.size() > 0 ) {
 
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config)
+          // should be def title = titleLookupService.find([title:the_kbart.publication_title, 
+          //                                                identifiers:identifiers,
+          //                                                publisher_name:the_kbart.publisher_name],
+          //                                                null/*user*/, null/*project*/, row_specific_config.defaultTypeName)
+
 
           if ( title ) {
             title.source=source
-          // log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
-          if (title) {
-            addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
+            log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
+            if (title) {
+              log.debug("addOtherFieldsToTitle");
+              addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
+
+              log.debug("Adding publisher");
               if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
                 addPublisher(the_kbart.publisher_name, title)
 
-              
+              log.debug("Adding first author");
               if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
                 addPerson(the_kbart.first_author, author_role, title);
 
+              log.debug("Adding Person");
               if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
                 addPerson(the_kbart.first_editor, editor_role, title);
 
+              log.debug("Adding subjects");
               addSubjects(the_kbart.subjects, title)
 
+              log.debug("Adding additional authors");
               the_kbart.additional_authors.each { author ->
                 addPerson(author, author_role, title)
               }
@@ -1588,8 +1561,9 @@ class TSVIngestionService {
         }
       }
 
+      
       unmapped_cols.each { unmapped_col_idx ->
-        if ( nl.size() < unmapped_col_idx ) {
+        if ( ( nl.size() < unmapped_col_idx ) && ( header.size() < unmapped_col_idx ) ) {
           log.debug("Setting unmapped column idx ${unmapped_col_idx} ${header[unmapped_col_idx]} to ${nl[unmapped_col_idx]}");
           result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]]);
         }

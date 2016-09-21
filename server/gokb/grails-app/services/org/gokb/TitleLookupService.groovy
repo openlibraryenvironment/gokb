@@ -159,6 +159,12 @@ class TitleLookupService {
     result
   }
 
+
+  /**
+   * @param title
+   * @param publisher_name
+   * @param identifiers : map [ [ type: 'idtype', value:'idvalue' ], [ type:'idtype', value:'idvalue' ] ]
+   */
   def find (String title, 
             String publisher_name, 
             def identifiers, 
