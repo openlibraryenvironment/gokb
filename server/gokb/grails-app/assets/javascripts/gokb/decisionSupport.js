@@ -89,8 +89,7 @@ function addNote(id, username, institution, displayname) {
     url: gokb.config.baseUrl+'/ajaxSupport/criterionComment?comp='+id+'&comment='+v,
     dataType:"json"
   }).done(function(data) {
-        console.log(data);
-      $('#'+id+'_notestable').prepend("<dt> <span class='DSAuthor' data-name="+displayname+"> "+username+"</span>-<i class='DSTimestamp'>"+ data.created +"</i></span> </dt><dd> <p class='DSInlineBlock'>"+i+"</p> <p class='newNoteContainer triangle-border DSInlineBlock"+cssf+"'> <span id='org.gokb.cred.DSNote:"+ data.newNote +":note' class='newNote xEditableValue  editable editable-pre-wrapped editable-click' data-pk='org.gokb.cred.DSNote:"+data.newNote+"' data-name='note' data-tpl='<textarea wrap=\"off\"></textarea>' data-type='textarea' data-url='/gokbLabs/ajaxSupport/editableSetValue'>"+ v +"</span> <a data-comp= "+ id +" data-note= "+ data.newNote + " class='noteDelete text-negative fa fa-times-circle fa-2x'></a></p></dd>");
+      $('#'+id+'_notestable').prepend("<li class=\"list-group-item\"><span id='org.gokb.cred.DSNote:"+ data.newNote +":note' class='newNote xEditableValue  editable editable-pre-wrapped editable-click' data-pk='org.gokb.cred.DSNote:"+data.newNote+"' data-name='note' data-tpl='<textarea wrap=\"off\"></textarea>' data-type='textarea' data-url='/gokbLabs/ajaxSupport/editableSetValue'>"+ v +"</span></li>")
       $('.newNote').editable(); //Xeditable on newly created notes
       $('#'+id+'_newnote').val('');
   });

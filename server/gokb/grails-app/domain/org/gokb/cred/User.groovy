@@ -28,6 +28,12 @@ class User extends Party {
   Long defaultPageSize = new Long(10)
   Org org
 
+  // When did the alerting system last check things on behalf of this user
+  Date last_alert_check
+
+  // seconds user wants between checks - System only checks daily, so values < 24*60*60 don't make much sense at the moment
+  Long alert_check_frequency
+
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
@@ -47,6 +53,8 @@ class User extends Party {
     defaultPageSize blank: true, nullable:true
     curatoryGroups blank: true, nullable:true
     org blank: false, nullable:true
+    date_alert_check blank: false, nullable:true
+    alert_check_frequency blank: false, nullable:true
   }
 
   static mapping = {

@@ -112,13 +112,12 @@
                 </div>
                 <div class="col-md-8">
 
-                    <dl id="${c['appliedTo']}_${id}_notestable">
-
+                    <dl>
                         <div class="panel panel-default">
                           <!-- Default panel contents -->
                           <div class="panel-heading">Comments</div>
                           <!-- List group -->
-                          <ul class="list-group"> 
+                          <ul class="list-group" id="${c['appliedTo']}_${id}_notestable"> 
                             <g:each in="${c['notes']}" var="note">
                               <li class="list-group-item">
                                 <g:if test="${!note.isDeleted && note.criterion.user.id == user.id}" >

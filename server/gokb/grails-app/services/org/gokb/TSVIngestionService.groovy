@@ -332,13 +332,13 @@ class TSVIngestionService {
   def TitleInstance addPerson (person_name, role, ti, user=null, project = null) {
     if ( (person_name) && ( person_name.trim().length() > 0 ) ) {
 
-      def norm_person_name = GOKbTextUtils.normaliseString(person_name)
+      def norm_person_name = KBComponent.generateNormname(person_name)
       def person = org.gokb.cred.Person.findAllByNormname(norm_person_name)
       // log.debug("this was found for person: ${person}");
       switch(person.size()) {
         case 0:
           // log.debug("Person lookup yielded no matches.")
-          def the_person = new Person(name:person_name)
+          def the_person = new Person(name:person_name, normname:norm_person_name)
             if (the_person.save(failOnError:true, flush:true)) {
             // log.debug("saved ${the_person.name}")
             person << the_person
@@ -399,12 +399,12 @@ class TSVIngestionService {
     if (the_subjects) {
       for (the_subject in the_subjects) {
 
-        def norm_subj_name = GOKbTextUtils.normaliseString(the_subject)
+        def norm_subj_name = KBComponent.generateNormname(the_subject)
         def subject = Subject.findAllByNormname(norm_subj_name) //no alt names for subjects
         // log.debug("this was found for subject: ${subject}")
         if (!subject) {
           // log.debug("subject not found, creating a new one")
-          subject = new Subject(name:the_subject)
+          subject = new Subject(name:the_subject, normname:norm_subj_name)
           subject.save(failOnError:true, flush:true)
         }
         boolean done=false
@@ -425,21 +425,19 @@ class TSVIngestionService {
 
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
 
-    def clean_pub_name  = publisher_name?.replaceAll('"','').replaceAll('\'','');
+    if ( ( publisher_name != null ) && ( publisher_name.trim().length() > 0 ) ) {
 
-    if ( ( clean_pub_name != null ) && ( clean_pub_name.trim().length() > 0 ) ) {
+      def norm_pub_name = KBComponent.generateNormname(publisher_name)
 
-      def norm_pub_name = KBComponent.generateNormname(clean_pub_name)
-
-      // log.debug("Org lookup: ${clean_pub_name}/${norm_pub_name}");
+      log.debug("Org lookup: ${publisher_name}/${norm_pub_name}");
       def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
       // log.debug("this was found for publisher: ${publisher}");
       // Found a publisher.
       switch (publisher.size()) {
         case 0:
-          // log.debug ("Publisher ${clean_pub_name} lookup yielded no matches.")
+          log.debug ("Publisher ${publisher_name} lookup yielded no matches via norm search for ${norm_pub_name}.")
           Org.withTransaction {
-            def the_publisher = new Org(name:clean_pub_name)
+            def the_publisher = new Org(name:publisher_name, normname:norm_pub_name)
             if (the_publisher.save(failOnError:true, flush:true)) {
               // log.debug("saved ${the_publisher.name}")
               ReviewRequest.raise(
@@ -512,7 +510,7 @@ class TSVIngestionService {
     else {
       // Otherwise -- work out if they are roughly close enough to warrant a good matcg
       // log.debug("Comparing ${ti.getName()} and ${norm_title}");
-      distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.normaliseString(ti.getName()), norm_title) ?: 0
+      distance = GOKbTextUtils.cosineSimilarity(KBComponent.generateNormname(ti.getName()), norm_title) ?: 0
     }
 
     // Check the distance.
@@ -531,7 +529,7 @@ class TSVIngestionService {
       case {
         ti.variantNames.find {alt ->
           log.debug("Comparing ${alt.variantName} and ${norm_title}");
-          GOKbTextUtils.cosineSimilarity(GOKbTextUtils.normaliseString(alt.variantName), norm_title) >= threshold
+          GOKbTextUtils.cosineSimilarity(KBComponent.generateNormname(alt.variantName), norm_title) >= threshold
         }}:
         // Good match on existing variant titles
         // log.debug("Good match for TI on variant.")
@@ -1264,7 +1262,7 @@ class TSVIngestionService {
   //for this v1, I've made this very simple - probably too simple.
   def handlePackage(packageName, source, providerName) {
     def result;
-    def norm_pkg_name = GOKbTextUtils.normaliseString(packageName)
+    def norm_pkg_name = KBComponent.generateNormname(packageName)
     // def packages=Package.findAllByNormname(norm_pkg_name);
     def packages=Package.executeQuery("select p from Package as p where p.normname=?",[norm_pkg_name],[readonly:false])
     switch (packages.size()) {
@@ -1274,15 +1272,15 @@ class TSVIngestionService {
 
         def newpkgid = null;
 
-        def newpkg = new Package(name:packageName, source:source)
+        def newpkg = new Package(name:packageName, normname:norm_pkg_name, source:source)
         if (newpkg.save(flush:true, failOnError:true)) {
           newpkgid = newpkg.id
           if ( providerName && providerName.length() > 0 ) {
-            def norm_provider_name = GOKbTextUtils.normaliseString(providerName)
+            def norm_provider_name = KBComponent.generateNormname(providerName)
             def provider = null;
             def providers = org.gokb.cred.Org.findAllByNormname(norm_provider_name)
             if ( providers.size() == 0 )
-              provider = new Org(name:providerName,normname:norm_provider_name).save(flush:true, failOnError:true);
+              provider = new Org(name:providerName, normname:norm_provider_name).save(flush:true, failOnError:true);
             else if ( providers.size() == 1 ) 
               provider = providers[0]
             else
