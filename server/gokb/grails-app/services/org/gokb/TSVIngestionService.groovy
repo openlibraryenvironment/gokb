@@ -214,6 +214,7 @@ class TSVIngestionService {
 
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
+        the_title.normname=norm_title
         the_title.ids=[]
       } else {
         // No class 1s supplied we should try and find a match on the title string.
@@ -1381,7 +1382,6 @@ class TSVIngestionService {
     //results=ctb.parse(hcnms, csv)
     //quick check that results aren't null...
 
-
     Map col_positions=[:]
     String[] header = csv.readNext()
     int ctr = 0
@@ -1461,10 +1461,25 @@ class TSVIngestionService {
       log.debug("Got config ${kbart_cfg}");
     }
 
+    org.apache.commons.io.input.BOMInputStream b = new org.apache.commons.io.input.BOMInputStream( new ByteArrayInputStream(data_file.fileData),
+                                                                                                   ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE,ByteOrderMark.UTF_8)
+
+    def ingest_charset = kbart_cfg.charset?:'ISO-8859-1'
+
+    if (b.hasBOM() == false) {
+      // No BOM found
+    } else if (b.hasBOM(ByteOrderMark.UTF_16LE)) {
+      // has a UTF-16LE BOM
+      ingest_charset = 'UTF-16LE'
+    } else if (b.hasBOM(ByteOrderMark.UTF_16BE)) {
+      // has a UTF-16BE BOM
+      ingest_charset = 'UTF-16BE'
+    }
+
+    log.debug("Convert to kbart2 using charset ${ingest_charset}");
+
     CSVReader csv = new CSVReader(
-                      new InputStreamReader(
-                        new org.apache.commons.io.input.BOMInputStream( new ByteArrayInputStream(data_file.fileData)), 
-                        java.nio.charset.Charset.forName(kbart_cfg.charset?:'ISO-8859-1')),
+                      new InputStreamReader( b, java.nio.charset.Charset.forName(ingest_charset)),
                       (kbart_cfg.separator?:'\t') as char,
                       (kbart_cfg.quoteChar?:'\0') as char)
 

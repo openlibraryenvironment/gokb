@@ -202,12 +202,14 @@ class TitleLookupService {
 
           // Create the new TI.
           if ( newTitleClassName == null ) {
-            the_title = new TitleInstance(name:metadata.title, ids:[])
+            the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title),ids:[])
+            the_title.normname = KBComponent.generateNormname(metadata.title);
           }
           else {
             def clazz = Class.forName(newTitleClassName)
             the_title = clazz.newInstance()
             the_title.name = metadata.title
+            the_title.normname = KBComponent.generateNormname(metadata.title);
             // the_title.status = 
             // the_title.editStatus = 
             the_title.ids = []
@@ -253,12 +255,13 @@ class TitleLookupService {
             // Create a new TI but attach a Review request to it.
 
             if ( newTitleClassName == null ) {
-              the_title = new TitleInstance(name:metadata.title, ids:[])
+              the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title), ids:[])
             }
             else {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
               the_title.name = metadata.title
+              the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
             }
 
@@ -390,7 +393,7 @@ class TitleLookupService {
          ( publisher_name.trim().length() > 0 ) ) {
 
       // Lookup our publisher.
-      def norm_pub_name = GOKbTextUtils.norm2(publisher_name);
+      def norm_pub_name = KBComponent.generateNormname(publisher_name);
 
       log.debug("Add publisher \"${publisher_name}\" (${norm_pub_name})");
       Org publisher = Org.findByNormname(norm_pub_name)
@@ -401,7 +404,7 @@ class TitleLookupService {
           publisher = candidate_orgs[0]
         }
         else if ( candidate_orgs.size() == 0 ) {
-          publisher = new Org(name:publisher_name).save(flush:true, failOnError:true);
+          publisher = new Org(name:publisher_name, normname:norm_pub_name).save(flush:true, failOnError:true);
         }
         else {
           log.error("Unable to match unique pub");

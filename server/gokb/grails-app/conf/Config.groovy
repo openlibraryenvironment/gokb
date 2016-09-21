@@ -259,7 +259,7 @@ kbart2.mappings= [
      ],
      'wiley-blackwell-kbart':[
               quoteChar:'\0',  // No quote char - some springer rows start with " for unknown reasons - CRITICALLY IMPORTANT!
-              // separator:',',
+              // separator:',', // tab is the default
               charset:'UTF-8',
               defaultTypeName:'org.gokb.cred.BookInstance',
               identifierMap:[ 'print_identifier':'isbn', 'online_identifier':'isbn' ],
