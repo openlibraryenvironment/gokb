@@ -53,7 +53,7 @@ class User extends Party {
     defaultPageSize blank: true, nullable:true
     curatoryGroups blank: true, nullable:true
     org blank: false, nullable:true
-    date_alert_check blank: false, nullable:true
+    last_alert_check blank: false, nullable:true
     alert_check_frequency blank: false, nullable:true
   }
 
