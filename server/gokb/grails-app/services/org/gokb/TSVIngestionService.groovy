@@ -971,34 +971,47 @@ class TSVIngestionService {
 
 
           if ( title ) {
-            title.source=source
 
             log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
             if (title) {
+
+              // The title.save s are necessary as adding to the combos collection dirties the title object
+              // These should be rewritten to manually create combo objects instead.
+
               log.debug("addOtherFieldsToTitle");
               addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
+              title.save(flush:true, failOnError:true);
 
               log.debug("Adding publisher");
-              if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 )
+              if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 ) {
                 addPublisher(the_kbart.publisher_name, title)
+                title.save(flush:true, failOnError:true);
+              }
 
               log.debug("Adding first author");
-              if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 )
+              if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 ) {
                 addPerson(the_kbart.first_author, author_role, title);
+                title.save(flush:true, failOnError:true);
+              }
 
               log.debug("Adding Person");
-              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 )
+              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 ) {
                 addPerson(the_kbart.first_editor, editor_role, title);
+                title.save(flush:true, failOnError:true);
+              }
 
               log.debug("Adding subjects");
               addSubjects(the_kbart.subjects, title)
+	      title.save(flush:true, failOnError:true);
 
               log.debug("Adding additional authors");
               the_kbart.additional_authors.each { author ->
                 addPerson(author, author_role, title)
+                title.save(flush:true, failOnError:true);
               }
 
+              title.source=source
               title.save(flush:true, failOnError:true);
 
               def pre_create_tipp_time = System.currentTimeMillis();
@@ -1009,6 +1022,7 @@ class TSVIngestionService {
                                platform,
                                ingest_date,
                                ingest_systime)
+
             } else {
                log.warn("problem getting the title...")
             }
