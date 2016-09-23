@@ -190,10 +190,10 @@ class TSVIngestionService {
     // The TitleInstance
     TitleInstance the_title = null
 
-    if (title == null) return null
+    if ((title == null)||(title.trim().length()==0)) return null
 
     // Create the normalised title.
-    String norm_title = KBComponent.generateNormname(title)
+    String norm_title = KBComponent.generateNormname(title) ?: title
 
     if ( ( norm_title == null )  || ( norm_title.length() == 0 ) ) {
       throw new RuntimeException("Null normalsed title based on title ${title}, Identifiers ${identifiers}");
