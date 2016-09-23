@@ -65,6 +65,10 @@ class TSVIngestionService {
     new SimpleDateFormat('yyyy')
   ];
 
+  // Don't update the accessStartDate if we are seeing the tipp again in a file
+  // already loaded.
+  def tipp_properties_to_ignore_when_updating = [ 'accessStartDate' ]
+
 
 
   /* This class is a BIG rip off of the TitleLookupService, it really should be
@@ -1236,10 +1240,17 @@ class TSVIngestionService {
       // Set all properties on the object.
       tipp_values.each { prop, value ->
         // Only update if we actually have a change to make
-        if ( tipp."${prop}" != value ) {
-          // Only set the property if we have a value.
-          if (value != null && value != "") {
-            tipp."${prop}" = value
+
+        // WE SHOULD NOT UPDATE ANY ACCESS_FROM_DATE - as we are seeing the tipp in the file again
+        // Previous functions will add the access from date as today. We need to ignore it.
+        if ( tipp_properties_to_ignore_when_updating.contains(prop) ) {
+        }
+        else {
+          if ( tipp."${prop}" != value ) {
+            // Only set the property if we have a value.
+            if (value != null && value != "") {
+              tipp."${prop}" = value
+            }
           }
         }
       }
