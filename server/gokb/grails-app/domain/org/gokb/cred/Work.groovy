@@ -13,5 +13,9 @@ class Work extends KBComponent {
   getInstances() {
     TitleInstance.executeQuery('select t from TitleInstance as t w where t.work = :work',[work:this]);
   }
+
+  def beforeUpdate() {
+    super.beforeUpdate()
+  }
 }
 

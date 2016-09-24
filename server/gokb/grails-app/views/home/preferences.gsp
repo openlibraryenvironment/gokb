@@ -10,18 +10,23 @@
     class="panel panel-default">
       <div class="panel-body" >
         <dl class="dl-horizontal">
+
 	        <dt>Show Info Icon :</dt>
 	        <dd>
 	          <g:xEditableRefData owner="${user}" field="showInfoIcon"
 	            config="YN" />
 	        </dd>
+
 	        <dt>Show Quick View :</dt>
 	        <dd>
-	          <g:xEditableRefData owner="${user}" field="showQuickView"
-	            config="YN" />
+	          <g:xEditableRefData owner="${user}" field="showQuickView" config="YN" />
 	        </dd>
+
 	        <dt>Default Page Size :</dt>
 	        <dd><g:xEditable owner="${user}" field="defaultPageSize" /></dd>
+
+	        <dt>Send Alert Emails :</dt>
+	        <g:xEditableRefData owner="${user}" field="sendAlertEmails" config="YN" />
 	      </dl>
       </div>
     </div>

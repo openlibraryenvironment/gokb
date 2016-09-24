@@ -34,7 +34,7 @@ class User extends Party {
   // seconds user wants between checks - System only checks daily, so values < 24*60*60 don't make much sense at the moment
   Long alert_check_frequency
 
-
+  RefdataValue send_alert_emails
   RefdataValue showQuickView
   RefdataValue showInfoIcon
     
@@ -55,6 +55,7 @@ class User extends Party {
     org blank: false, nullable:true
     last_alert_check blank: false, nullable:true
     alert_check_frequency blank: false, nullable:true
+    send_alert_emails blank: false, nullable:true
   }
 
   static mapping = {

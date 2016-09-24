@@ -549,7 +549,7 @@ abstract class KBComponent {
   }
 
   protected def generateNormname () {
-    generateNormname(name);
+    normname = generateNormname(name);
   }
 
   protected def generateComponentHash() {

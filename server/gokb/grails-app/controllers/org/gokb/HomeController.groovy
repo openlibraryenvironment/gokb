@@ -12,6 +12,7 @@ class HomeController {
 
   def grailsApplication
   def springSecurityService
+  def userAlertingService
 
   SessionFactory sessionFactory
 
@@ -271,6 +272,15 @@ class HomeController {
     else {
       flash.message = "New password does not match repeat password: not changing"
     }
+    redirect(action:'profile')
+  }
+
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def sendAlerts() {
+    flash.message ="Alerts email sent, please check your email shortly";
+    User user = springSecurityService.currentUser
+    userAlertingService.sendAlertingEmail(user);
     redirect(action:'profile')
   }
 }

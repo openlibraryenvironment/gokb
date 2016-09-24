@@ -20,22 +20,22 @@ class FolderService {
 
   static def columns_config = [
     'list.name':[action:'process',target:'listname'],   // For ingesting into multiple folders
-    'Title':[action:'process',target:'title'],
+    'title':[action:'process',target:'title'],
     'title.title':[action:'process',target:'title'],
-    'Author(s)':[action:'process',target:'author'],
+    'author(s)':[action:'process',target:'author'],
     'title.primary_author':[action:'process',target:'author'],
-    'Editor(s)':[action:'process',target:''],
-    'Importance':[action:'ignore'],
+    'editor(s)':[action:'process',target:''],
+    'importance':[action:'ignore'],
     'title.identifier':[action:'process',target:'title.identifier.isbn'],
-    'ISBN10':[action:'process',target:'title.identifier.isbn'],
-    'ISBN13':[action:'process',target:'title.identifier.isbn'],
-    'Date of Publication':[action:'process',target:'pubdate'],
+    'isbn10':[action:'process',target:'title.identifier.isbn'],
+    'isbn13':[action:'process',target:'title.identifier.isbn'],
+    'date of publication':[action:'process',target:'pubdate'],
     'title.publication_year':[action:'process',target:'pubdate'],
-    'Publisher':[action:'process',target:'publisher.name'],
+    'publisher':[action:'process',target:'publisher.name'],
     'title.publisher':[action:'process',target:'publisher.name'],
-    'Web Address':[action:'process',target:'custom.url'],
-    'Time Period':[action:'ignore'],
-    'CKEY':[action:'process',target:'custom.ckey'],
+    'web address':[action:'process',target:'custom.url'],
+    'time period':[action:'ignore'],
+    'ckey':[action:'process',target:'custom.ckey'],
   ];
 
   def enqueTitleList(file, default_folder, user, org, config) {
@@ -80,9 +80,9 @@ class FolderService {
           log.debug("Got row ${nl}");
           int colctr = 0;
           nl.each {
-            def colname = columns_config[header[colctr].replaceAll("\\s+","")]
+            def colname = header[colctr].trim().toLowerCase();
             def col_cfg = columns_config[colname]
-            log.debug("using column config for \"${header[colctr].trim()}\" \"${header[colctr].trim()}\": ${col_cfg}");
+            log.debug("using column config for \"${colname}\" \"${header[colctr].trim()}\" \"${header[colctr].trim()}\": ${col_cfg}");
 
             if ( ( col_cfg ) && 
                  ( it ) && 
@@ -105,7 +105,7 @@ class FolderService {
             colctr++
           }
 
-          // log.debug("Row result: ${row_result}");
+          log.debug("Row result: ${row_result}");
           if ( row_result.size() > 0 ) {
             processRow(row_result, user, org, default_folder);
           }
@@ -145,10 +145,11 @@ class FolderService {
           def folders = Folder.executeQuery('select f from Folder as f where f.owner=:owner and f.name=:fname',[owner:org, fname:row['listname']]);
           switch ( folders.size() ) {
             case 0:
-              // log.debug("Create new folder or use default if present and no row level name");
+              log.debug("Create new folder or use default if present and no row level name");
               folder = new Folder(name:row['listname'], owner:org).save(flush:true, failOnError:true);
               break;
             case 1:
+              log.debug("Found Folder");
               folder = folders.get(0);
               break;
             default:

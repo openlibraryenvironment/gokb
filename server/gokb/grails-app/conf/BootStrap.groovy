@@ -147,9 +147,8 @@ class BootStrap {
       KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
         KBComponent.withNewTransaction {
           KBComponent kbc = KBComponent.get(kbc_id)
-          log.debug("Repair component with no normalised name.. ${kbc.id} ${kbc.name}");
+          log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}");
           kbc.generateNormname()
-          // kbc.normname = GOKbTextUtils.normaliseString(kbc.name)
           kbc.save();
           kbc.discard()
           ctr++
