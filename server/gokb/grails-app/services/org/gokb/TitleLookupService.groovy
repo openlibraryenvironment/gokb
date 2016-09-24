@@ -596,7 +596,8 @@ class TitleLookupService {
               bindvars.add(the_id[0])
             }
             if ( the_id.size() > 1 ) {
-              applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Multiple Identifiers Matched on lookup id:${id_def}"])
+              // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Multiple Identifiers Matched on lookup id:${id_def}"])
+              // event('DataProblem', [code:'MultipleIdentifierMatch', id:id_def], [ fork:false ] )
             }
           }
         }
