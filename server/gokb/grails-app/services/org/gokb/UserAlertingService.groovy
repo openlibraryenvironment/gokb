@@ -21,8 +21,11 @@ select f, fi, work
 from Folder as f,
      KBComponentFolderEntry as fi,
      TitleInstance as ti join ti.work as work,
-     TitleInstance as title_in_group
+     TitleInstance as title_in_group,
+     Combo as tipp_combo,
+     TitleInstancePackagePlatform as tipp
 where 
+      ( ( tipp_combo.fromComponent = title_in_group ) and ( tipp_combo.type.value = 'TitleInstance.Tipps' ) and ( tipp_combo.toComponent = tipp ) ) AND
       ( title_in_group.work = work ) AND
       ( fi.folder = f ) AND
       ( ti = fi.linkedComponent ) AND
