@@ -11,7 +11,7 @@ class Work extends KBComponent {
 
   @Transient
   getInstances() {
-    TitleInstance.executeQuery('select t from TitleInstance as t w where t.work = :work',[work:this]);
+    TitleInstance.executeQuery('select t from TitleInstance as t where t.work = :work',[work:this]);
   }
 
   def beforeUpdate() {

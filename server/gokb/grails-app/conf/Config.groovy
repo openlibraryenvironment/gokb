@@ -1793,6 +1793,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ],
   'org.gokb.cred.UserOrganisation': [ type:'staticgsp', rendername:'user_org' ],
   'org.gokb.cred.Folder': [ type:'staticgsp', rendername:'folder' ],
+  'org.gokb.cred.Work': [ type:'staticgsp', rendername:'work' ],
 ]
 
 permNames = [
