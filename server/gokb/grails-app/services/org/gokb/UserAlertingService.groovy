@@ -10,9 +10,25 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress
 import groovy.text.SimpleTemplateEngine
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
+import org.gokb.cred.Folder
 
 
 class UserAlertingService implements ApplicationContextAware {
+
+
+  static String USER_ALERT_QRY = '''
+select f, fi, work
+from Folder as f,
+     KBComponentFolderEntry as fi,
+     TitleInstance as ti join ti.work as work,
+     TitleInstance as title_in_group
+where 
+      ( title_in_group.work = work ) AND
+      ( fi.folder = f ) AND
+      ( ti = fi.linkedComponent ) AND
+      ( ( f.owner = :user ) OR ( f.owner in ( select uom.memberOf from UserOrganisationMembership as uom where uom.party = :user ) ) )
+'''
+
 
   def mailService
   ApplicationContext applicationContext
@@ -27,7 +43,15 @@ class UserAlertingService implements ApplicationContextAware {
   }
 
   def sendAlertingEmail(user) {
-    sendEmail(user);
+    try {
+      sendEmail(user);
+    }
+    catch ( Exception e ) {
+      log.error("Error sending user email - ${user.email}",e)
+    }
+    finally {
+      log.debug("Send complete");
+    }
   }
 
   def sendAllAlerts() {
@@ -48,7 +72,7 @@ class UserAlertingService implements ApplicationContextAware {
     log.debug("sendEmail....");
 
     def result = [:]
-    result.msg = 'hello';
+    result.updates = getTippsInUserWatchList(user)
 
     def emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file
     def engine = new SimpleTemplateEngine()
@@ -62,7 +86,16 @@ class UserAlertingService implements ApplicationContextAware {
       html content
     }
 
-    log.debug("Send email");
+    log.debug("Sent email");
+  }
+
+  private getTippsInUserWatchList(user) {
+    // Return a query - Watch List, Watch Title, Watch Work, Changed Title, Changed Tipp
+    // For any tipps that are on the users watch list
+    def result = Folder.executeQuery(USER_ALERT_QRY,[user:user]);
+
+    log.debug("Processing ${result.size} tipp hits for user watch lists");
+    result
   }
 
 
