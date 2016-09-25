@@ -8,6 +8,15 @@
   </dd>
 
   <dt>
+    <g:annotatedLabel owner="${d}" property="status">Work</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:if test="${d.work}">
+      <g:link controller="resource" action="show" id="${d.work.class.name}:${d.work.id}"> ${d.work.name} </g:link>
+    </g:if>
+  </dd>
+
+  <dt>
     <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
   </dt>
   <dd>

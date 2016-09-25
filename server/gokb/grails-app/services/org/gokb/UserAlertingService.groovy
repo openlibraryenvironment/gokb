@@ -16,22 +16,24 @@ import org.gokb.cred.User
 
 class UserAlertingService implements ApplicationContextAware {
 
-
   static String USER_ALERT_QRY = '''
-select f, fi, work, title_in_group, tipp
+select f, fi, work, title_in_group, ti, tipp
 from Folder as f,
      KBComponentFolderEntry as fi,
-     TitleInstance as ti join ti.work as work,
+     TitleInstance as ti,
+     Work as work,
      TitleInstance as title_in_group,
      Combo as tipp_combo,
      TitleInstancePackagePlatform as tipp
 where 
+      ( ( tipp.accessStartDate between :startDate and :endDate ) OR ( tipp.accessEndDate between :startDate and :endDate ) ) AND
       ( ( tipp_combo.fromComponent = title_in_group ) and ( tipp_combo.type.value = 'TitleInstance.Tipps' ) and ( tipp_combo.toComponent = tipp ) ) AND
       ( title_in_group.work = work ) AND
-      ( fi.folder = f ) AND
+      ( work = ti.work ) AND
       ( ti = fi.linkedComponent ) AND
-      ( ( f.owner = :user ) OR ( f.owner in ( select uom.memberOf from UserOrganisationMembership as uom where uom.party = :user ) ) ) AND
-      ( ( tipp.accessStartDate between :startDate and :endDate ) OR ( tipp.accessEndDate between :startDate and :endDate ) )
+      ( fi.folder = f ) AND
+      ( ( f.owner = :user ) OR ( f.owner in ( select uom.memberOf from UserOrganisationMembership as uom where uom.party = :user ) ) )
+order by f.id, ti.id, title_in_group.id
 '''
 
 
@@ -49,7 +51,7 @@ where
 
   def sendAlertingEmail(user) {
     try {
-      Date start_date = new Date(System.currentTimeMillis() - (24*60*60*1000) );
+      Date start_date = new Date(System.currentTimeMillis() - (5*24*60*60*1000) );
       Date end_date = new Date(System.currentTimeMillis());
       sendEmail(user, start_date, end_date);
     }
@@ -83,6 +85,7 @@ where
     def result = [:]
     result.start_date = startDate;
     result.end_date = endDate;
+    result.serverUrl = grailsApplication.config.serverUrl ?: 'http://localhost:8080/gokb'
     result.updates = getTippsInUserWatchList(user, startDate, endDate)
 
     def emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file
@@ -103,18 +106,19 @@ where
   private getTippsInUserWatchList(User user, Date start_date, Date end_date) {
     // Return a query - Watch List, Watch Title, Watch Work, Changed Title, Changed Tipp
     // For any tipps that are on the users watch list
+
     def modified_tipps = Folder.executeQuery(USER_ALERT_QRY,[user:user, startDate:start_date, endDate:end_date]);
     def result = []
     def current_folder = null;
 
-    log.debug("Processing ${result.size} tipp hits for user watch lists");
+    log.debug("Processing ${modified_tipps.size} tipp hits for user watch lists between ${start_date} and ${end_date}");
     modified_tipps.each { mt ->
       if ( current_folder?.id != mt[0].id ) {
         current_folder = [id:mt[0].id, name:mt[0].name, owner:mt[0].owner.displayName, titles:[]]
         result.add(current_folder)
       }
 
-      current_folder.titles.add(watchlist_title:mt[1], watchlist_work:mt[2], matched_title:mt[3], matched_tipp:mt[4])
+      current_folder.titles.add(watchlist_title:mt[4], watchlist_work:mt[2], matched_title:mt[3], tipp:mt[5])
     }
     
     result

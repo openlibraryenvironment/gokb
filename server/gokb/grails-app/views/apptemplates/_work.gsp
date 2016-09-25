@@ -17,7 +17,7 @@
           <tbody>
             <g:each in="${d.instances}" var="i">
               <tr>
-                <td><g:link controller="resource" action="show" id="${i.name}:${i.id}"> ${i.name} </g:link></td>
+                <td><g:link controller="resource" action="show" id="${i.class.name}:${i.id}"> ${i.name} </g:link></td>
               </tr>
             </g:each>
           </tbody>

@@ -512,27 +512,24 @@ class TitleInstance extends KBComponent {
     log.debug('remapWork');
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found
 
-      def nname = GOKbTextUtils.normaliseString(name);
-
-      if ( ( nname ) && 
-           ( nname.length() > 0 ) &&
-           ( ! nname.startsWith('unknown title')) ) {
+      if ( ( normname ) && 
+           ( normname.length() > 0 ) &&
+           ( ! normname.startsWith('unknown title')) ) {
         // book bucket (Work) hashes are based on the normalised name.
-        def h = GOKbTextUtils.generateComponentHash([nname]);
+        def h = GOKbTextUtils.generateComponentHash([normname]);
 
+        log.debug("Searching for bucket matches for ${h}");
         def bucketMatches = Work.executeQuery('select w from Work as w where w.bucketHash = :h',[h:h]);
 
         switch( bucketMatches.size() ) {
           case 0:
             log.debug("No matches - create work");
-            def w = new Work(name: name).save(flush:true, failOnError:true)
-            // TitleInstance.executeUpdate('update TitleInstance ti set ti.work.id = :w where ti.id = :tid',[w:w.id, tid:this.id]);
+            def w = new Work(name: name, bucketHash:h).save(flush:true, failOnError:true)
             this.work = w
             this.save(flush:true, failOnError:true)
             break;
           case 1:
             log.debug("Good enough unique match on bucketHash");
-            // TitleInstance.executeUpdate('update TitleInstance ti set ti.work.id = :w where ti.id = :tid',[w:bucketMatches[0].id, tid:this.id]);
             this.work = bucketMatches[0]
             this.save(flush:true, failOnError:true)
             break;

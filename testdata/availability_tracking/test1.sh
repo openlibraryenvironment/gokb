@@ -1,7 +1,7 @@
 export GOKB_HOST="http://localhost:8080"
 
 curl -v --user admin:admin -X POST \
-  --form content=@./availability_test_1.txt \
+  --form content=@./availiability_test_1.tsv \
   --form source="TESTPROVIDER" \
   --form fmt="elsevier" \
   --form pkg="Availability Test - pakage#1" \
