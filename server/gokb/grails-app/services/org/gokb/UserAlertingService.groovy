@@ -118,7 +118,7 @@ order by f.id, ti.id, title_in_group.id
         result.add(current_folder)
       }
 
-      current_folder.titles.add(watchlist_title:mt[4], watchlist_work:mt[2], matched_title:mt[3], tipp:mt[5])
+      current_folder.titles.add([watchlist_title:mt[4], watchlist_work:mt[2], matched_title:mt[3], tipp:mt[5]])
     }
     
     result
