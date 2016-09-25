@@ -8,10 +8,14 @@ import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.groovy.*
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import groovy.text.SimpleTemplateEngine
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
 
-class UserAlertingService {
+
+class UserAlertingService implements ApplicationContextAware {
 
   def mailService
+  ApplicationContext applicationContext
 
   static transactional = false
 
@@ -23,6 +27,15 @@ class UserAlertingService {
   }
 
   def sendAlertingEmail(user) {
+    sendEmail(user);
+  }
+
+  def sendAllAlerts() {
+    def rq = User.executeQuery('select u from User as u where u.send_alert_emails.value=:yes',[yes:'Yes']);
+    log.debug("User list: ${rq}");
+    rq.each {
+      sendEmail(it);
+    }
   }
 
   @javax.annotation.PreDestroy
@@ -30,26 +43,23 @@ class UserAlertingService {
     log.debug("Destroy");
   }
 
-  private def sendEmail(result) {
+  private def sendEmail(user) {
 
     log.debug("sendEmail....");
 
-    def rq = User.executeQuery('select u.email from User as u where u.recAdminEmails.value=:yes',[yes:'Yes']);
-    log.debug("User list: ${rq}");
+    def result = [:]
+    result.msg = 'hello';
 
     def emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file
     def engine = new SimpleTemplateEngine()
     def tmpl = engine.createTemplate(emailTemplateFile).make(result)
     def content = tmpl.toString()
 
-    if ( rq.size() > 0 ) {
-      mailService.sendMail {
-        // to grailsApplication.config.housekeeping.recipients.toArray()
-        to rq.toArray()
-        from 'GlobalOpenKB@gmail.com'
-        subject "${grailsApplication.config.housekeeping.subject} - ${new Date()}"
-        html content
-      }
+    mailService.sendMail {
+      to user.email
+      from 'GlobalOpenKB@gmail.com'
+      subject "${grailsApplication.config.alerts.subject} - ${new Date()}"
+      html content
     }
 
     log.debug("Send email");

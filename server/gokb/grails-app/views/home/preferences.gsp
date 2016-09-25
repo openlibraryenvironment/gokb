@@ -26,7 +26,7 @@
 	        <dd><g:xEditable owner="${user}" field="defaultPageSize" /></dd>
 
 	        <dt>Send Alert Emails :</dt>
-	        <g:xEditableRefData owner="${user}" field="sendAlertEmails" config="YN" />
+	        <dd><g:xEditableRefData owner="${user}" field="send_alert_emails" config="YN" /></dd>
 	      </dl>
       </div>
     </div>

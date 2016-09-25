@@ -139,6 +139,9 @@ grails.project.dependency.resolution = {
       
       compile ":file-viewer:0.3"
       
+      // This should give us events
+      // compile "org.grails.plugins:platform-core:1.0.0"
+
       /*************************************/
       
       runtime ":jquery:1.11.1"
