@@ -55,4 +55,50 @@ class Source extends KBComponent {
     result
   }
 
+  @Transient
+  static def oaiConfig = [
+    id:'titles',
+    textDescription:'Title repository for GOKb',
+    query:" from TitleInstance as o where o.status.value != 'Deleted'",
+    pageSize:20
+  ]
+
+  /**
+   *  Render this package as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (name)
+    }
+  }
+
+  /**
+   *  Render this package as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder, attr) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    builder.'gokb' (attr) {
+      builder.'name' (name)
+      builder.'editStatus' (editStatus?.value)
+      builder.'url' (url)
+      builder.'defaultAccessURL' (defaultAccessURL)
+      builder.'explanationAtSource' (explanationAtSource)
+      builder.'contextualNotes' (contextualNotes)
+      builder.'frequency' (frequency)
+      builder.'ruleset' (ruleset)
+      if ( defaultSupplyMethod ) {
+        builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )
+      }
+      if ( defaultDataFormat ) {
+        builder.'defaultDataFormat' ( defaultDataFormat.value )
+      }
+      if ( responsibleParty ) {
+        builder.'responsibleParty' {
+          builder.name(responsibleParty.name)
+        }
+      }
+    }
+  }
 }

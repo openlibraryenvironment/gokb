@@ -51,9 +51,18 @@ order by f.id, ti.id, title_in_group.id
 
   def sendAlertingEmail(user) {
     try {
-      Date start_date = new Date(System.currentTimeMillis() - (5*24*60*60*1000) );
+      Date start_date = null
+      if ( user.last_alert_check) {
+        start_date = user.last_alert_check
+      }
+      else {
+        // If the user never checked, give them 5 days worth
+        start_date = new Date(System.currentTimeMillis() - (5*24*60*60*1000) );
+      }
       Date end_date = new Date(System.currentTimeMillis());
       sendEmail(user, start_date, end_date);
+      user.last_alert_check = end_date
+      user.save(flush:true, failOnError:true);
     }
     catch ( Exception e ) {
       log.error("Error sending user email - ${user.email}",e)
