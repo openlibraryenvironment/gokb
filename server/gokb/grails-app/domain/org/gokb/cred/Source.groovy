@@ -57,9 +57,9 @@ class Source extends KBComponent {
 
   @Transient
   static def oaiConfig = [
-    id:'titles',
-    textDescription:'Title repository for GOKb',
-    query:" from TitleInstance as o where o.status.value != 'Deleted'",
+    id:'sources',
+    textDescription:'Source repository for GOKb',
+    query:" from Source as o where o.status.value != 'Deleted'",
     pageSize:20
   ]
 
@@ -81,6 +81,7 @@ class Source extends KBComponent {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     builder.'gokb' (attr) {
       builder.'name' (name)
+      builder.'shortcode' (shortcode)
       builder.'editStatus' (editStatus?.value)
       builder.'url' (url)
       builder.'defaultAccessURL' (defaultAccessURL)
