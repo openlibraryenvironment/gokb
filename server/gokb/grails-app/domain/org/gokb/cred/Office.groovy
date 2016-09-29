@@ -71,4 +71,61 @@ class Office extends KBComponent {
     result
   }
 
+  @Transient
+  static def oaiConfig = [
+    id:'offices',
+    textDescription:'Office repository for GOKb',
+    query:" from Office as o where o.status.value != 'Deleted'",
+    pageSize:20
+  ]
+
+  /**
+   *  Render this package as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (name)
+    }
+  }
+
+  /**
+   *  Render this package as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder, attr) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    builder.'gokb' (attr) {
+      builder.'name' (name)
+      builder.'website' (website)
+      builder.'phoneNumber' (phoneNumber)
+      builder.'otherDetails' (otherDetails)
+      builder.'addressLine1' (addressLine1)
+      builder.'addressLine2' (addressLine2)
+      builder.'city' (city)
+      builder.'zipPostcode' (zipPostcode)
+      builder.'region' (region)
+      builder.'state' (state)
+
+      if ( country ) {
+        builder.'country' ( country.value )
+      }
+
+      if ( org ) {
+        builder.'org' {
+          builder.'name' ( org.name )
+        }
+      }
+
+      builder.curatoryGroups {
+        curatoryGroups.each { cg ->
+          builder.group {
+            builder.owner(cg.owner.username)
+            builder.name(cg.name)
+          }
+        }
+      }
+    }
+  }
+
 }
