@@ -407,6 +407,51 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
       }
     }
 
+    if ( packageHeaderDTO.nominalPlatform ) {
+      def np = Platform.findByName(packageHeaderDTO.nominalPlatform)
+      if ( np ) {
+        result.nominalPlatform = np;
+        changed = true
+      }
+    }
+
+    if ( packageHeaderDTO.nominalProvider ) {
+      def prov = Org.findByName(packageHeaderDTO.nominalProvider)
+      if ( prov ) {
+        result.provider = prov;
+        changed = true
+      }
+    }
+
+    if ( packageHeaderDTO.source?.url ) {
+      def src = Source.findByUrl(packageHeaderDTO.source.url)
+      if ( src ) {
+        result.source = src
+        changed = true
+      }
+    }
+
+    packageHeaderDTO.variantNames.each {
+      if ( it.variantName ) {
+        result.ensureVariantName(it.variantName)
+        changed=true;
+      }
+    }
+
+    packageHeaderDTO.curatoryGroups.each {
+      if ( it.curatoryGroup ) {
+        def cg = CuratoryGroup.findByName(it.curatoryGroup)
+        if ( cg ) {
+          if ( result.curatoryGroups.find(it.name == cg.name) ) {
+          }
+          else {
+            result.curatoryGroups.add(cg)
+            changed=true;
+          }
+        }
+      }
+    }
+    
     if ( changed ) {
       result.save(flush:true, failOnError:true);
     }
