@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import groovy.util.logging.Log4j
+import com.k_int.ClassUtils
 
 
 import org.gokb.refine.*
@@ -379,11 +380,38 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
    */
   @Transient
   public static Package upsertDTO(packageHeaderDTO) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def result = null
     log.debug("Upsert package with name ${packageHeaderDTO.name}");
     result = Package.findByName(packageHeaderDTO.name) ?: new Package(name:packageHeaderDTO.name).save(flush:true, failOnError:true);
+
+    boolean changed = false;
+
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus', 'Package.ListStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status', 'KBComponent.Status')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope', 'Package.Scope')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable', 'Package.Breakable')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent', 'Package.Consistent')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed', 'Package.Fixed')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType', 'Package.PaymentType')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global', 'Package.Global')
+    changed |= ClassUtils.setIfPresent(result, 'listVerifier', packageHeaderDTO.listVerifier)
+    // User userListVerifier
+    changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate', sdf);
+
+    if ( packageHeaderDTO.userListVerifier ) {
+      def looked_up_user = User.findByUsername(packageHeaderDTO.userListVerifier)
+      if ( looked_up_user && ( ( result.userListVerifier == null ) || ( result.userListVerifier?.id != looked_up_user?.id )  ) ) {
+        result.userListVerifier = looked_up_user
+        changed = true
+      }
+    }
+
+    if ( changed ) {
+      result.save(flush:true, failOnError:true);
+    }
+
+
     result
   }
-
-
 }

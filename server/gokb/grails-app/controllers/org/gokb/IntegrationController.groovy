@@ -6,6 +6,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 
 import au.com.bytecode.opencsv.CSVReader
+import com.k_int.ClassUtils
 
 class IntegrationController {
 
@@ -345,14 +346,14 @@ class IntegrationController {
       if ( request.JSON.name ) {
         def located_or_new_source = Source.findByName(request.JSON.name) ?: new Source(name:request.JSON.name)
         // changed |= setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
-        setIfPresent(located_or_new_source,'url',request.JSON.url);
-        setIfPresent(located_or_new_source,'defaultAccessURL',request.JSON.defaultAccessURL);
-        setIfPresent(located_or_new_source,'explanationAtSource',request.JSON.explanationAtSource);
-        setIfPresent(located_or_new_source,'contextualNotes',request.JSON.contextualNotes);
-        setIfPresent(located_or_new_source,'frequency',request.JSON.frequency);
-        setIfPresent(located_or_new_source,'ruleset',request.JSON.ruleset);
-        setRefdataIfPresent(request.JSON.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-        setRefdataIfPresent(request.JSON.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
+        ClassUtils.setIfPresent(located_or_new_source,'url',request.JSON.url);
+        ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',request.JSON.defaultAccessURL);
+        ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',request.JSON.explanationAtSource);
+        ClassUtils.setIfPresent(located_or_new_source,'contextualNotes',request.JSON.contextualNotes);
+        ClassUtils.setIfPresent(located_or_new_source,'frequency',request.JSON.frequency);
+        ClassUtils.setIfPresent(located_or_new_source,'ruleset',request.JSON.ruleset);
+        ClassUtils.setRefdataIfPresent(request.JSON.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+        ClassUtils.setRefdataIfPresent(request.JSON.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
         located_or_new_source.save(flush:true, failOnError:true);
       }
     }
@@ -543,9 +544,9 @@ class IntegrationController {
       }
 
       def changed = false;
-      changed |= setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
-      changed |= setRefdataIfPresent(request.JSON.software, p, 'software', 'Platform.Software')
-      changed |= setRefdataIfPresent(request.JSON.service, p, 'service', 'Platform.Service')
+      changed |= ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
+      changed |= ClassUtils.setRefdataIfPresent(request.JSON.software, p, 'software', 'Platform.Software')
+      changed |= ClassUtils.setRefdataIfPresent(request.JSON.service, p, 'service', 'Platform.Service')
 
       if ( changed ) {
         p.save(flush:true, failOnError:true);
@@ -622,10 +623,10 @@ class IntegrationController {
           }
         }
     
-        title_changed |= setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
-        title_changed |= setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
-        title_changed |= setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
-        title_changed |= setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
+        title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
+        title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
+        title_changed |= ClassUtils.setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
+        title_changed |= ClassUtils.setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
     
         log.debug("Saving title changes");
         title.save(flush:true, failOnError:true);
@@ -814,41 +815,5 @@ class IntegrationController {
     propertyInstanceMap.get().clear()
   }
 
-  private def setDateIfPresent(value, obj, prop, sdf) {
-    //request.JSON.title.publishedFrom, title, 'publishedFrom', sdf)
-    boolean result = false;
-    if ( ( value ) && ( value.toString().trim().length() > 0 ) ) {
-      try {
-        def pd = sdf.parse(value);
-        if (pd) {
-          obj[prop]=pd;
-          result=true;
-        }
-      }
-      catch(Exception e) {
-      }
-    }
-    result;
-  }
-
-  private def setRefdataIfPresent(value, obj, prop, cat) {
-    boolean result = false;
-
-    if ( ( value ) && 
-         ( value.toString().trim().length() > 0 ) &&
-         ( ( obj[prop] == null ) || ( obj[prop].value != value.trim() ) ) ) {
-      def v = RefdataCategory.lookupOrCreate(cat,value);
-      obj[prop] = v
-      result = true;
-    }
-
-    result
-  }
-
-  private def setIfPresent(obj,prop,proposed_value) {
-    if ( ( proposed_value ) && ( proposed_value.toString().trim().length() > 0 ) ) {
-      obj[prop]=proposed_value;
-    }
-  }
 
 }
