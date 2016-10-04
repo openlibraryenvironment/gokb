@@ -345,6 +345,37 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
 
   /**
    * Definitive rules for taking a package header DTO and inserting or updating an existing package based on package name
+   *
+   * listStatus:'Checked',
+   * status:'Current',
+   * breakable:'Unknown',
+   * consistent:'Unknown',
+   * fixed:'Unknown',
+   * paymentType:'Unknown',
+   * global:'Global',
+   * nominalPlatform:'Content Select'
+   * nominalProvider:'Preselect.media'
+   * listVerifier:'',
+   * userListVerifier:'benjamin_ahlborn'
+   * listVerifierDate:'2015-06-19T00:00:00Z'
+   * source:[
+   *   url:'http://www.zeitschriftendatenbank.de'
+   *   defaultAccessURL:''
+   *   explanationAtSource:''
+   *   contextualNotes:''
+   *   frequency:''
+   *   ruleset:''
+   *   defaultSupplyMethod:'Other'
+   *   defaultDataFormat:'Other'
+   *   responsibleParty:''
+   * ]
+   * name:'Campus: All Journals'
+   * curatoryGroups:[
+   *   curatoryGroup:"SuUB Bremen"
+   * ]
+   * variantNames : [
+   *   variantName:"Campus: All Journals"
+   * ]
    */
   @Transient
   public static Package upsertDTO(packageHeaderDTO) {
