@@ -395,7 +395,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed', 'Package.Fixed')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType', 'Package.PaymentType')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global', 'Package.Global')
-    changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier)
+    changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
     changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate', sdf);
 

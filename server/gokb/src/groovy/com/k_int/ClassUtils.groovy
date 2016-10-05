@@ -50,7 +50,7 @@ class ClassUtils {
   public static boolean setStringIfDifferent(obj, prop, value) {
     boolean result = false;
 
-    if ( ( obj != null ) && ( prop != null ) ) {
+    if ( ( obj != null ) && ( prop != null ) && ( value ) && ( value.toString().length() > 0 ) ) {
 
       if ( obj[prop] == value ) {
       }
