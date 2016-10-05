@@ -382,7 +382,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
   public static Package upsertDTO(packageHeaderDTO) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def result = null
-    log.debug("Upsert package with header ${packageHeaderDTO}");
+    log.info("Upsert package with header ${packageHeaderDTO}");
     result = Package.findByName(packageHeaderDTO.name) ?: new Package(name:packageHeaderDTO.name).save(flush:true, failOnError:true);
 
     boolean changed = false;
@@ -406,7 +406,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         changed = true
       }
       else {
-        log.debug("Unable to find username for list verifier ${packageHeaderDTO.userListVerifier}");
+        log.warn("Unable to find username for list verifier ${packageHeaderDTO.userListVerifier}");
       }
     }
 
@@ -417,7 +417,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         changed = true
       }
       else {
-        log.debug("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
+        log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
       }
     }
 
@@ -428,7 +428,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         changed = true
       }
       else {
-        log.debug("Unable to locate nominal provider ${packageHeaderDTO.nominalProvider}");
+        log.warn("Unable to locate nominal provider ${packageHeaderDTO.nominalProvider}");
       }
     }
 
@@ -463,9 +463,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
       }
     }
     
-    if ( changed ) {
-      result.save(flush:true, failOnError:true);
-    }
+    result.save(flush:true, failOnError:true);
 
 
     result

@@ -449,7 +449,7 @@ class IntegrationController {
       if ( valid ) {
         def pkg = Package.upsertDTO(request.JSON.packageHeader)
         def platform_cache = [:]
-        log.debug("\n\n\nPackage: ${pkg}");
+        log.debug("\n\n\nPackage: ${pkg} / ${request.JSON.packageHeader}");
 
         // Validate and upsert titles and platforms
         request.JSON.tipps.each { tipp ->
@@ -500,6 +500,8 @@ class IntegrationController {
           }
         }
 
+        cleanUpGorm()
+
         int tippctr=0;
         if ( valid ) {
           // If valid so far, validate tipps
@@ -515,11 +517,14 @@ class IntegrationController {
           log.warn("Not validating tipps - failed pre validation");
         }
 
+
+        log.debug("\n\nupsert tipp data\n\n");
         tippctr=0
         if ( valid ) {
           def tipp_upsert_start_time = System.currentTimeMillis();
           // If valid, upsert tipps
           request.JSON.tipps.each { tipp ->
+            cleanUpGorm()
             log.debug("Upsert tipp [${tippctr++}] ${tipp}");
             TitleInstancePackagePlatform.upsertDTO(tipp)
           }
