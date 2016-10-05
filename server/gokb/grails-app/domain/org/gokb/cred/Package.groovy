@@ -405,6 +405,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         result.userListVerifier = looked_up_user
         changed = true
       }
+      else {
+        log.debug("Unable to find username for list verifier ${packageHeaderDTO.userListVerifier}");
+      }
     }
 
     if ( packageHeaderDTO.nominalPlatform ) {
@@ -413,6 +416,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         result.nominalPlatform = np;
         changed = true
       }
+      else {
+        log.debug("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
+      }
     }
 
     if ( packageHeaderDTO.nominalProvider ) {
@@ -420,6 +426,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
       if ( prov ) {
         result.provider = prov;
         changed = true
+      }
+      else {
+        log.debug("Unable to locate nominal provider ${packageHeaderDTO.nominalProvider}");
       }
     }
 
@@ -440,7 +449,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
 
     packageHeaderDTO.curatoryGroups.each {
       if ( it.curatoryGroup ) {
-        def cg = CuratoryGroup.findByName(it.curatoryGroup)
+
+        def cg = CuratoryGroup.findByName(it.curatoryGroup) ?: new CuratoryGroup(name:it.curatoryGroup).save(flush:true, failOnError:true)
+
         if ( cg ) {
           if ( result.curatoryGroups.find(it.name == cg.name) ) {
           }
