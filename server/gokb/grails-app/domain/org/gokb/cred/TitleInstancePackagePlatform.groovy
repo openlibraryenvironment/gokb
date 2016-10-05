@@ -162,7 +162,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     result &= tipp_dto.title?.internalId != null
 
     if ( !result ) 
-      log.warn("Tipp failed validation: ${tipp_dto}");
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId}");
 
     result;
   }
