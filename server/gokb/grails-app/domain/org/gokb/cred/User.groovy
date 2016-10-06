@@ -234,6 +234,41 @@ class User extends Party {
       // Identify the different combinations that can be used to identify domain objects for the current row
       // Names columns in the import sheet - importer will map according to config and do the right thing
       targetObjectIdentificationHeuristics:[
+        [
+          ref:'role_user', cls:'org.gokb.Role',
+          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_USER'] ] ] ],
+          creation:[ onMissing:false, ]
+        ],
+        [
+          ref:'role_admin', cls:'org.gokb.Role',
+          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_ADMIN'] ] ] ],
+          creation:[ onMissing:false, ]
+        ],
+        [
+          ref:'role_contributor', cls:'org.gokb.Role',
+          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_CONTRIBUTOR'] ] ] ],
+          creation:[ onMissing:false, ]
+        ],
+        [
+          ref:'role_editor', cls:'org.gokb.Role',
+          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_EDITOR'] ] ] ],
+          creation:[ onMissing:false, ]
+        ],
+        [
+          ref:'role_api', cls:'org.gokb.Role',
+          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_API'] ] ] ],
+          creation:[ onMissing:false, ]
+        ],
+        [
+          ref:'role_refineuser', cls:'org.gokb.Role',
+          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_REFINEUSER'] ] ] ],
+          creation:[ onMissing:false, ]
+        ],
+        [
+          ref:'role_refinetester', cls:'org.gokb.Role',
+          heuristics:[ [ type : 'hql', hql: 'select r from Role as r where r.authority=:user', values : [ user : [type:'static', value:'ROLE_REFINETESTER'] ] ] ],
+          creation:[ onMissing:false, ]
+        ],
       ],
 
       // Determine what this row can create (Referenced objects hanging off the primary User
@@ -251,7 +286,35 @@ class User extends Party {
               [ type:'valueClosure', property:'direct_password', closure: {  colmap, nl, locatedObjects -> true } ],
             ]
           ]
-        ]
+        ],
+        [
+          whenPresent:[[type:'val',colname:'admin_authority']], ref:'admin_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
+            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_admin' ] ] ]
+        ],
+        [
+          whenPresent:[[type:'val',colname:'user_authority']], ref:'user_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
+            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_user' ] ] ]
+        ],
+        [
+          whenPresent:[[type:'val',colname:'contributor_authority']], ref:'contrib_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
+            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_contributor' ] ] ]
+        ],
+        [
+          whenPresent:[[type:'val',colname:'api_authority']], ref:'api_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
+            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_api' ] ] ]
+        ],
+        [
+          whenPresent:[[type:'val',colname:'refine_user_authority']], ref:'refine_user_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
+            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_refineuser' ] ] ]
+        ],
+        [
+          whenPresent:[[type:'val',colname:'refine_tester_authority']], ref:'refine_tester_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
+            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_refinetester' ] ] ]
+        ],
+        [
+          whenPresent:[[type:'val',colname:'editor_authority']], ref:'editor_ur', cls:'org.gokb.cred.UserRole', creation:[properties:[
+            [ type:'ref', property:'user',refname:'MainUserItem' ] , [ type:'ref', property:'role',refname:'role_editor' ] ] ]
+        ],
       ],
 
       cols: [
