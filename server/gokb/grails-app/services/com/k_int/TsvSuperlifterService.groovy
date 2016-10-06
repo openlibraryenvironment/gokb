@@ -3,6 +3,7 @@ package com.k_int
 import java.text.SimpleDateFormat
 import org.springframework.transaction.annotation.*
 import au.com.bytecode.opencsv.CSVReader
+import org.gokb.cred.*
 
 
 class TsvSuperlifterService {
@@ -34,6 +35,8 @@ class TsvSuperlifterService {
     def first = true
 
     while ((nl = r.readNext()) != null) {
+
+     log.debug("Process ${nl}");
 
      def row_information = [ messages:[], error:false]
 
@@ -292,7 +295,7 @@ class TsvSuperlifterService {
           }
         }
         if ( ! error ) {
-          result = TitleInstance.executeQuery(base_qry,qry_params)
+          result = RefdataValue.executeQuery(base_qry,qry_params)
           log.debug("Lookup ${toih.ref} using ${base_qry} and params ${qry_params} result:${result}");
         }
         break;
@@ -322,7 +325,7 @@ class TsvSuperlifterService {
 
         if ( !error ) {
           log.debug("HQL : ${toih_heuristic.hql}, ${qry_params}");
-          result = TitleInstance.executeQuery(toih_heuristic.hql, qry_params);
+          result = RefdataValue.executeQuery(toih_heuristic.hql, qry_params);
         }
         break;
 

@@ -9,10 +9,7 @@ class RefdataValue {
   String description
   String sortKey
   RefdataValue useInstead
-
-  static belongsTo = [
-    owner:RefdataCategory
-  ]
+  RefdataCategory owner
 
   static mapping = {
     id column:'rdv_id'

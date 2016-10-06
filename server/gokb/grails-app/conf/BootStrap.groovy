@@ -803,6 +803,9 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Platform.Roles','Host').save()
 
     RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids').save()
+    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps').save()
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps').save()
+    RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTipps').save()
 
     RefdataCategory.lookupOrCreate('MembershipRole','Administrator').save()
     RefdataCategory.lookupOrCreate('MembershipRole','Member').save()

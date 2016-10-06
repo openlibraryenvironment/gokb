@@ -94,7 +94,7 @@
         <g:if test="${ editable }">
           <g:form controller="ajaxSupport" action="addToCollection"
             class="form-inline">
-            <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
+            <input type="hidden" name="__context" value="${d.class?.name}:${d.id}" />
             <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
             <input type="hidden" name="__addToColl" value="tipps" />
             <dl class="dl-horizontal">
@@ -143,7 +143,7 @@
               <tr>
                 <td>${h[1]}</td>
                 <td>${h[2]}</td>
-                <td>${h[0].title.name}</td>
+                <td>${h[0].title?.name}</td>
               </tr>
             </g:each>
           </tbody>

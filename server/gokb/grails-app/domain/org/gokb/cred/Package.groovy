@@ -382,7 +382,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
   public static Package upsertDTO(packageHeaderDTO) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def result = null
-    log.debug("Upsert package with header ${packageHeaderDTO}");
+    log.info("Upsert package with header ${packageHeaderDTO}");
     result = Package.findByName(packageHeaderDTO.name) ?: new Package(name:packageHeaderDTO.name).save(flush:true, failOnError:true);
 
     boolean changed = false;
@@ -395,7 +395,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed', 'Package.Fixed')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType', 'Package.PaymentType')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global', 'Package.Global')
-    changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier)
+    changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
     changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate', sdf);
 
@@ -405,6 +405,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         result.userListVerifier = looked_up_user
         changed = true
       }
+      else {
+        log.warn("Unable to find username for list verifier ${packageHeaderDTO.userListVerifier}");
+      }
     }
 
     if ( packageHeaderDTO.nominalPlatform ) {
@@ -413,6 +416,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         result.nominalPlatform = np;
         changed = true
       }
+      else {
+        log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
+      }
     }
 
     if ( packageHeaderDTO.nominalProvider ) {
@@ -420,6 +426,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
       if ( prov ) {
         result.provider = prov;
         changed = true
+      }
+      else {
+        log.warn("Unable to locate nominal provider ${packageHeaderDTO.nominalProvider}");
       }
     }
 
@@ -440,7 +449,9 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
 
     packageHeaderDTO.curatoryGroups.each {
       if ( it.curatoryGroup ) {
-        def cg = CuratoryGroup.findByName(it.curatoryGroup)
+
+        def cg = CuratoryGroup.findByName(it.curatoryGroup) ?: new CuratoryGroup(name:it.curatoryGroup).save(flush:true, failOnError:true)
+
         if ( cg ) {
           if ( result.curatoryGroups.find(it.name == cg.name) ) {
           }
@@ -452,9 +463,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
       }
     }
     
-    if ( changed ) {
-      result.save(flush:true, failOnError:true);
-    }
+    result.save(flush:true, failOnError:true);
 
 
     result

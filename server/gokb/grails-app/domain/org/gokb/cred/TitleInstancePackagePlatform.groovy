@@ -162,7 +162,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     result &= tipp_dto.title?.internalId != null
 
     if ( !result ) 
-      log.warn("Tipp failed validation: ${tipp_dto}");
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId}");
 
     result;
   }
@@ -180,43 +180,49 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     if ( pkg && plt && ti ) {
       log.debug("See if we already have a tipp");
-      def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
+      def tipps = TitleInstance.executeQuery('select tipp.id from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
                                            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?'+
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
                                           [pkg,plt,ti])
       def tipp = null;
-      if ( tipps.size() == 1 ) {
-        log.debug("found");
-        tipp = tipps[0]
-      }
-      else {
-        log.debug("not found");
-        tipp=new TitleInstancePackagePlatform()
-        tipp.pkg = pkg;
-        tipp.title = ti;
-        tipp.hostPlatform = plt;
-      }
-      tipp.save(flush:true,failOnError:true);
-      def changed = false
-
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
-
-      tipp_dto.coverage.each { c ->
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startIssue)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endIssue)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-        changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
-        changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
-        // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
+      switch ( tipps.size() ) {
+        case 1:
+          log.debug("found");
+          tipp = TitleInstancePackagePlatform.get(tipps[0])
+          break;
+        case 0:
+          log.debug("not found");
+          tipp=new TitleInstancePackagePlatform()
+          tipp.pkg = pkg;
+          tipp.title = ti;
+          tipp.hostPlatform = plt;
+          break;
+        default:
+          log.error("Multiple matches found for tipp..");
+          break;
       }
 
-      if ( changed )
+      if ( tipp ) {
+        tipp.save(flush:true,failOnError:true);
+        def changed = false
+
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
+
+        tipp_dto.coverage.each { c ->
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
+          changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
+          changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
+          // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
+        }
+
         tipp.save(flush:true, failOnError:true);
-
+      }
       result = tipp;
     }
 
