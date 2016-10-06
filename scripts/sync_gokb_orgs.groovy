@@ -129,8 +129,17 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap['homepage'] = r.metadata.gokb.org.homepage.text()
         resourceFieldMap['mission'] = r.metadata.gokb.org.mission.text()
         resourceFieldMap['customIdentifiers'] = []
-        
+        resourceFieldMap['customIdentifiers'] = []
+        resourceFieldMap['variantNames'] = []
 
+        r.metadata.gokb.org.identifiers.identifier.each {
+           resourceFieldMap['customIdentifiers'].add([identifierType:it.text(),identifierValue:it."@namespace".text()])
+        }
+
+        r.metadata.gokb.org.variantNames.variantName.each {
+          resourceFieldMap['variantNames'].add([variantName:it.text()]);
+        }
+        
         resources << resourceFieldMap
       }
     }
