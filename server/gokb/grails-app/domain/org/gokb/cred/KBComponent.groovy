@@ -355,7 +355,7 @@ abstract class KBComponent {
     tablePerHierarchy false
     id column:'kbc_id'
     version column:'kbc_version'
-    name column:'kbc_name', type:'text'
+    name column:'kbc_name', type:'text', index:'kbc_name_idx'
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
     // create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk);
     normname column:'kbc_normname', type:'text', index:'kbc_normname_idx'

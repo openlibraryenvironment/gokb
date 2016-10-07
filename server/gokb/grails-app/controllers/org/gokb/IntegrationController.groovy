@@ -724,7 +724,8 @@ class IntegrationController {
       }
       else {
         result.message = "No title for ${request.JSON}";
-        applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${request.JSON}"])
+        log.error("Cross Reference Title failed :${request.JSON}");
+        // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${request.JSON}"])
       }
     }
     catch ( Exception e ) {

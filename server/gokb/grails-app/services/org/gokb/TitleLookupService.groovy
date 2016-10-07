@@ -182,7 +182,10 @@ class TitleLookupService {
     // The TitleInstance
     TitleInstance the_title = null
 
-    if (metadata.title == null) return null
+    if (metadata.title == null) {
+      log.error("Request to look up title with no title");
+      return null
+    }
 
     // Lookup any class 1 identifier matches
     def results = class_one_match (metadata.identifiers)
