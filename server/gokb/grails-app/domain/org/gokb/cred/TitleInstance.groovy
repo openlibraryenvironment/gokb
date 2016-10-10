@@ -244,6 +244,8 @@ class TitleInstance extends KBComponent {
       // def thePublisher = getPublisher()
       def publisher_combos = getCombosByPropertyName('publisher')
 
+      // def identifiers = Combo.executeQuery('select c.toComponent from Combo as c where c.fromComponent=:t and c.type.value :idtype and c.status.value != :d',
+      //                                      [t:this,idtype:'KBComponent.ids',d:'Deleted'])
 
       def history = getTitleHistory()
 
