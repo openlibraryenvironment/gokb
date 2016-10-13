@@ -538,7 +538,7 @@ class IntegrationController {
     }
     render result as JSON;
   }
-
+  
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
@@ -563,6 +563,64 @@ class IntegrationController {
 
       result.platform_id = p.id;
     }
+    render result as JSON
+  }
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def crossReferenceLicense() {
+    def result = [ 'result' : 'OK' ]
+    
+    // Add the license.
+    def data = request.JSON
+    if (data && data.name) {
+      // Use the name to either match or create a Licence.
+      License l = License.findOrCreateByName (data.name)
+      
+      // Update the properties on the license.
+      l.with {        
+        url = data.url
+        file = data.file
+        summaryStatement = data.summaryStatement
+      }
+      
+      ClassUtils.setRefdataIfPresent(data.type, l, 'type', 'License.Type')
+      
+      // Add each file upload too!
+      data.fileAttachments.each { fa ->
+        
+        if (fa?.md5) {
+        
+          DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile( guid: fa.guid, md5: fa.md5 )
+          
+          // Single properties.
+          file.with {
+            (uploadName, uploadMimeType, filesize, doctype) = [
+              fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
+            ]
+          
+            // The contents of the file.
+            if (fa.content) {
+              fileData = Base64.getDecoder().decode(fa.content)
+            }
+            
+            // Update.
+            save()
+          }
+          
+          // Grab the attachments.
+          def attachments = l.getFileAttachments()
+          if (!attachments.contains(file)) {
+          
+            // Add to the attached files.
+            attachments.add(file)
+          }
+        }
+        
+      }
+      
+      l.save(flush:true, failOnError:true)
+    }
+    
     render result as JSON
   }
 
