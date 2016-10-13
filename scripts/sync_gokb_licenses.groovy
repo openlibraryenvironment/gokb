@@ -27,7 +27,7 @@ import groovyx.net.http.URIBuilder
 import static groovyx.net.http.ContentType.XML
 import static groovyx.net.http.Method.GET
 import java.util.Base64
-
+import org.apache.commons.io.FilenameUtils
 
 String fileName = "${this.class.getSimpleName().replaceAll(/\_/, "-")}-cfg.json"
 def cfg_file = new File("./${fileName}")
@@ -85,7 +85,7 @@ def importLicenses(host, gokb, config, cfg_file) {
         // println(gt);
       }
 
-      addToGoKB(true, gokb, gt)
+      addToGoKB(false, gokb, gt)
       synchronized(this) {
         Thread.sleep(3000);
       }
@@ -129,9 +129,7 @@ private static getResourcesFromGoKBByPage(URL url) {
     response.success = { resp, body ->
       resumptionToken = body?.ListRecords?.resumptionToken.text()
       
-      resources = body?.ListRecords?.record.collect { r ->
-        
-        r = r.metadata.gokb
+      resources = body?.ListRecords?.record.metadata.gokb.collect { r ->
         
         // Construct each entry
         println("Record ${ctr++}")
@@ -157,15 +155,21 @@ private static getResourcesFromGoKBByPage(URL url) {
           }
           
           // Handle the actual file content by reading it as a byte[]
-          fileMap['content'] = Base64.getEncoder().encodeToString (fa.content.yieldUnescaped.text().trim().replaceAll(/\<\!\[CDATA\[\[(.*)\]\]\]\>/, '$1').split(/\,\s*/).collect ({ String s ->
+          byte[] bytes = fa.content.yieldUnescaped.text().trim().replaceAll(/\<\!\[CDATA\[\[(.*)\]\]\]\>/, '$1').split(/\,\s*/).collect ({ String s ->
             s.toInteger().byteValue()
-          }) as byte[])
+          }) as byte[]
+          
+//          new File("./${FilenameUtils.getName(fileMap['uploadName'])}").withOutputStream {
+//            it.write bytes
+//          }
+          
+          fileMap['content'] = Base64.getEncoder().encodeToString (bytes)
           
           fileMap
         }
         
         // Curatory groups.
-        resourceFieldMap['curatoryGroups'] = r.'curatoryGroups'.'group'
+        resourceFieldMap['curatoryGroups'] = r.'curatoryGroups'.'group'.text()
         
         resourceFieldMap
       } ?: []
@@ -208,7 +212,7 @@ def addToGoKB(dryrun, gokb, title_data) {
     else {
       gokb.request(Method.POST) { req ->
         uri.path='/gokb/integration/crossReferenceLicense'
-        body = title_data
+        body = toJson(title_data)
         requestContentType = ContentType.JSON
 
         response.success = { resp, data ->
