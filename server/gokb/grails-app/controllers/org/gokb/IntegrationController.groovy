@@ -594,8 +594,8 @@ class IntegrationController {
           
           // Single properties.
           file.with {
-            (uploadName, uploadMimeType, filesize, doctype) = [
-              fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
+            (name, uploadName, uploadMimeType, filesize, doctype) = [
+              fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
             ]
           
             // The contents of the file.
