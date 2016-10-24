@@ -39,14 +39,24 @@ import static groovyx.net.http.Method.GET
 
 // Example full record http://gokb.openlibraryfoundation.org/gokb/oai/orgs?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:309298
 
-config = null;
-cfg_file = new File('./sync-gokb-orgs-cfg.json')
+String fileName = "${this.class.getSimpleName().replaceAll(/\_/, "-")}-cfg.json"
+def cfg_file = new File("./${fileName}")
+
+def config = null
 if ( cfg_file.exists() ) {
-  config = new JsonSlurper().parseText(cfg_file.text);
+  config = new JsonSlurper().parseText(cfg_file.text)
 }
 else {
-  config=[:]
-  config.packageData=[:]
+  println("No config found please supply authentication details.")
+  config = [
+    uploadUser: System.console().readLine ('Enter your username: ').toString(),
+    uploadPass: System.console().readPassword ('Enter your password: ').toString()
+  ]
+  
+  // Save to the file.
+  cfg_file << toJson(config)
+  
+  println("Saved config file to ${fileName}")
 }
 
 println("Using config ${config}");
