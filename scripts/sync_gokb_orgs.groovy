@@ -139,7 +139,6 @@ private static getResourcesFromGoKBByPage(URL url) {
         resourceFieldMap['homepage'] = r.metadata.gokb.org.homepage.text()
         resourceFieldMap['mission'] = r.metadata.gokb.org.mission.text()
         resourceFieldMap['customIdentifiers'] = []
-        resourceFieldMap['customIdentifiers'] = []
         resourceFieldMap['variantNames'] = []
 
         r.metadata.gokb.org.identifiers.identifier.each {
