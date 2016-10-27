@@ -183,7 +183,7 @@ class IntegrationController {
    *         name:National Association of Corrosion Engineers, 
    *         description:National Association of Corrosion Engineers,
    *         parent:
-   *         customIdentifers:[[identifierType:"idtype", identifierValue:"value"]], 
+   *         customIdentifiers:[[identifierType:"idtype", identifierValue:"value"]], 
    *         combos:[[linkTo:[identifierType:"ncsu-internal", identifierValue:"ncsu:61929"], linkType:"HasParent"]], 
    *         flags:[[flagType:"Org Role", flagValue:"Content Provider"],
    *                [flagType:"Org Role", flagValue:"Publisher"], 
@@ -198,117 +198,125 @@ class IntegrationController {
     result.status = true;
 
     try {
-      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.customIdentifers);
+      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.customIdentifiers);
 
       if ( located_or_new_org == null ) {
-        log.debug("Create new org with identifiers ${request.JSON.customIdentifers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
-   
-        located_or_new_org = new Org(name:request.JSON.name)
-
-        log.debug("Attempt to save - validate: ${located_or_new_org}");
-
-        if ( located_or_new_org.save(flush:true, failOnError : true) ) {
-          log.debug("Saved ok");
-        }
-        else {
-          log.debug("Save failed ${located_or_new_org}");
-          result.errors = []
-          located_or_new_org.errors.each { e ->
-            log.error("Problem saving new org record",e);
-            result.errors.add("${e}".toString());
-          }
-          result.status = false;
-          return
-        }
+        String orgName = request.JSON.name
         
-        if ( request.JSON.mission ) {
-          log.debug("Mission ${request.JSON.mission}");
-          located_or_new_org.mission = RefdataCategory.lookupOrCreate('Org.Mission','request.JSON.mission');
-        }
-
-        if ( request.JSON.homepage ) {
-          located_or_new_org.homepage = request.JSON.homepage
-        }
-
-        // Add parent.
-        if (request.JSON.parent) {
-          def parentDef = request.JSON.parent;
-          log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
-          def located_component = KBComponent.lookupByIO(parentDef.identifierType,parentDef.identifierValue)
-          if (located_component) {
-            located_or_new_org.parent = located_component
-          }
-        }
+        // No match. One more attempt to match on norm_name only.
+        located_or_new_org = Org.findByNormname( Org.generateNormname (orgName) )
+        
+        if ( located_or_new_org == null ) {
+        
+          log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
+     
+          located_or_new_org = new Org(name:request.JSON.name)
   
-        def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','Org.Ids');
-        // Identifiers
-        log.debug("Identifier processing ${request.JSON.customIdentifers}");
-        request.JSON.customIdentifers.each { ci ->
-          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-          log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
-          located_or_new_org.ids.add(canonical_identifier)
+          log.debug("Attempt to save - validate: ${located_or_new_org}");
+  
+          if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+            log.debug("Saved ok");
+          } else {
+            log.debug("Save failed ${located_or_new_org}");
+            result.errors = []
+            located_or_new_org.errors.each { e ->
+              log.error("Problem saving new org record",e);
+              result.errors.add("${e}".toString());
+            }
+            result.status = false;
+            return
+          }
+        } else {
+          log.debug("Matched Org on norm_name only!");
         }
+      } else {
+        log.debug("Located existing record.. Still update...");
+      }
+        
+      if ( request.JSON.mission ) {
+        log.debug("Mission ${request.JSON.mission}");
+        located_or_new_org.mission = RefdataCategory.lookupOrCreate('Org.Mission',request.JSON.mission);
+      }
+
+      if ( request.JSON.homepage ) {
+        located_or_new_org.homepage = request.JSON.homepage
+      }
+
+      // Add parent.
+      if (request.JSON.parent) {
+        def parentDef = request.JSON.parent;
+        log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
+        def located_component = KBComponent.lookupByIO(parentDef.identifierType,parentDef.identifierValue)
+        if (located_component) {
+          located_or_new_org.parent = located_component
+        }
+      }
+
+      def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','Org.Ids');
+      // Identifiers
+      log.debug("Identifier processing ${request.JSON.customIdentifiers}");
+      request.JSON.customIdentifiers.each { ci ->
+        def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
+        log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
+        located_or_new_org.ids.add(canonical_identifier)
+      }
+  
+      // roles
+      log.debug("Role Processing: ${request.JSON.flags}");
+      request.JSON.roles.each { r ->
+        log.debug("Adding role ${r}");
+        def role = RefdataCategory.lookupOrCreate("Org.Role", r)
+        located_or_new_org.addToRoles(role)
+      }
+
+      // flags
+      log.debug("Flag Processing: ${request.JSON.flags}");
+      request.JSON.flags.each { f ->
+        log.debug("Adding flag ${f.flagType},${f.flagValue}");
+        def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue).save()
+        located_or_new_org.addToTags(
+          flag
+        )
+      }
+
+      log.debug("Combo processing: ${request.JSON.combos}");
+
+      // combos
+      request.JSON.combos.each { c ->
+        log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
+        def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
     
-        // roles
-        log.debug("Role Processing: ${request.JSON.flags}");
-        request.JSON.roles.each { r ->
-          log.debug("Adding role ${r}");
-          def role = RefdataCategory.lookupOrCreate("Org.Role", r)
-          located_or_new_org.addToRoles(role)
-        }
-
-        // flags
-        log.debug("Flag Processing: ${request.JSON.flags}");
-        request.JSON.flags.each { f ->
-          log.debug("Adding flag ${f.flagType},${f.flagValue}");
-          def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue).save()
-          located_or_new_org.addToTags(
-            flag
-          )
-        }
-
-        log.debug("Combo processing: ${request.JSON.combos}");
-
-        // combos
-        request.JSON.combos.each { c ->
-          log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
-          def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
-      
-      // Located a component.
-          if ( ( located_component != null ) ) {
-            def combo = new Combo(
-              type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
-              fromComponent:located_or_new_org,
-              toComponent:located_component,
-              startDate:new Date()).save(flush:true,failOnError:true);
-          }
-          else {
-            log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
-          }
-        }
-        
-        log.debug("Attempt to save - validate: ${located_or_new_org}");
-        
-        if ( located_or_new_org.save(failOnError : true) ) {
-          log.debug("Saved ok");
+        // Located a component.
+        if ( ( located_component != null ) ) {
+          def combo = new Combo(
+            type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
+            fromComponent:located_or_new_org,
+            toComponent:located_component,
+            startDate:new Date()).save(flush:true,failOnError:true);
         }
         else {
-          log.debug("Save failed ${located_or_new_org}");
-          result.errors = []
-          located_or_new_org.errors.each { e ->
-            log.error("Problem saving new org record",e);
-            result.errors.add("${e}".toString());
-          }
-          result.status = false;
-          return
+          log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
         }
-
-        result.msg="Created new org: ${located_or_new_org.id} ${located_or_new_org.name}";
+      }
+      
+      log.debug("Attempt to save - validate: ${located_or_new_org}");
+      
+      if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+        log.debug("Saved ok");
       }
       else {
-        log.debug("Located existing record..");
-        result.msg="Located existing record: ${located_or_new_org.id} ${located_or_new_org.name}";
+        log.debug("Save failed ${located_or_new_org}");
+        result.errors = []
+        located_or_new_org.errors.each { e ->
+          log.error("Problem saving new org record",e);
+          result.errors.add("${e}".toString());
+        }
+        result.status = false;
+        return
       }
+
+      result.msg="Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
+      
     }
     catch ( Exception e ) {
       log.error("Unexpected error importing org",e)
