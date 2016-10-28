@@ -262,7 +262,7 @@ class IntegrationController {
       }
   
       // roles
-      log.debug("Role Processing: ${request.JSON.flags}");
+      log.debug("Role Processing: ${request.JSON.roles}");
       request.JSON.roles.each { r ->
         log.debug("Adding role ${r}");
         def role = RefdataCategory.lookupOrCreate("Org.Role", r)
@@ -278,9 +278,9 @@ class IntegrationController {
           flag
         )
       }
-
-      log.debug("Combo processing: ${request.JSON.combos}");
-
+      
+      log.debug("Combo processing: ${request.JSON.combos}")
+      
       // combos
       request.JSON.combos.each { c ->
         log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
@@ -313,6 +313,13 @@ class IntegrationController {
         }
         result.status = false;
         return
+      }
+
+      log.debug("Variant names processing: ${request.JSON.variantNames}")
+
+      // variants
+      request.JSON.variantNames.each { vn ->
+        addVariantNameToOrg(located_or_new_org, vn.variantName)
       }
 
       result.msg="Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
@@ -376,76 +383,141 @@ class IntegrationController {
   private resolveOrgUsingPrivateIdentifiers(idlist) {
     def located_or_new_org = null;
 
-    // See if we can locate the item using any of the custom identifiers
-    idlist.each { ci ->
-      log.debug("Attempt lookup of ${ci.identifierType}:${ci.identifierValue}");
-      if ( located_or_new_org ) {
-        // We've already located an org for this identifier, the new identifier should be new (And therefore added to this org) or
-        // resolve to this org. If it resolves to some other org, then there is a conflict and we fail!
-        def located_component = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
-        if ( located_component ) {
-          log.debug("Matched something...");
-          if ( !located_or_new_org ) {
-            located_or_new_org = located_component
+    if (idlist?.size() ?:0 > 0) {
+      // Rewritten to perform this as a singel query.
+      def crit = Org.createCriteria()
+      def matched_orgs = crit.list {
+        
+        createAlias('outgoingCombos', 'ogc')
+        createAlias('ogc.type', 'ogcType')
+        createAlias('ogcType.owner', 'ogcOwner')
+        
+        createAlias('ogc.toComponent', 'tc')
+        createAlias('tc.namespace', 'tcNamespace')
+        
+        
+        and {
+          and {
+            eq 'ogcOwner.desc', 'Combo.Type'
+            eq 'ogcType.value', 'KBComponent.Ids'
           }
-          else {
-            if ( located_component.id == located_or_new_org.id ) {
-              log.debug("Matched an identifier");
-            }
-            else {
-              log.error("**CONFLICT**");
+          or {
+            for (def ci : idlist) {
+              and {
+                eq 'tc.value', ci.identifierValue
+                eq 'tcNamespace.value', ci.identifierType
+              }
             }
           }
         }
-        else {
-          // No match.. candidate identifier
-          log.debug("No match for ${ci.identifierType}:${ci.identifierValue}");
+        
+        projections {
+          distinct 'id'
         }
       }
-      else {
-        located_or_new_org = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
+      
+      switch (matched_orgs.size()) {
+        case 0:
+          log.debug("No match for ${ci.identifierType}:${ci.identifierValue}")
+          break
+        case 1: 
+          // Matched one only! This is correct.
+          located_or_new_org = Org.get(matched_orgs[0])
+          break
+        case {it > 1} :
+          log.error("**CONFLICT**")
+          break
+          
       }
     }
+    
+    // See if we can locate the item using any of the custom identifiers
+    
     located_or_new_org
   }
+  
+//  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+//  private resolveOrgUsingPrivateIdentifiers(idlist) {
+//    def located_or_new_org = null;
+//
+//    // See if we can locate the item using any of the custom identifiers
+//    idlist.each { ci ->
+//      
+//      log.debug("Attempt lookup of ${ci.identifierType}:${ci.identifierValue}");
+//      if ( located_or_new_org ) {
+//        // We've already located an org for this identifier, the new identifier should be new (And therefore added to this org) or
+//        // resolve to this org. If it resolves to some other org, then there is a conflict and we fail!
+//        def located_component = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
+//        if ( located_component ) {
+//          log.debug("Matched something...");
+//          if ( !located_or_new_org ) {
+//            located_or_new_org = located_component
+//          }
+//          else {
+//            if ( located_component.id == located_or_new_org.id ) {
+//              log.debug("Matched an identifier");
+//            }
+//            else {
+//              log.error("**CONFLICT**");
+//            }
+//          }
+//        }
+//        else {
+//          // No match.. candidate identifier
+//          log.debug("No match for ${ci.identifierType}:${ci.identifierValue}");
+//        }
+//      }
+//      else {
+//        located_or_new_org = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
+//      }
+//    }
+//    located_or_new_org
+//  }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def registerVariantName() {
-    def result=[:]
-    log.debug("registerVariantName ${params} ${request.JSON}");
+    log.debug("registerVariantName ${params} ${request.JSON}")
 
     // See if we can locate the variant name as a first class component
     
     def variant_org = null;
     if ( request.JSON.variantidns != null && request.JSON.variantidvalue != null ) {
       variant_org = KBComponent.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
-      log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}");
+      log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}")
     }
 
     def org_to_update = KBComponent.lookupByIO(request.JSON.idns,request.JSON.idvalue)
-    log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}");
-
-    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
-    if ( ( org_to_update ) && ( request.JSON.name?.length() > 0 ) ) {
-      boolean found = false
-      org_to_update.variantNames.each { vn ->
-        if ( vn.variantName == request.JSON.name ) {
-          found = true
-        }
-      }
-
-      if ( !found ) {
-        def new_variant_name = new KBComponentVariantName(variantName:request.JSON.name, owner:org_to_update)
-        new_variant_name.save();
-      }
-    }
+    log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}")
 
     // Update any combos that point to the variant so that they now point to the authorized entry
 
     // Delete any remaining variant org combox
     // Delete the variant org
 
-    render result as JSON
+    render addVariantNameToOrg (org_to_update, request.JSON.name)
+  }
+  
+  private addVariantNameToOrg(org_to_update, variant_name) {
+    
+    def result = [:]
+    
+    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
+    if ( ( org_to_update ) && ( variant_name?.length() ?: 0 > 0 ) ) {
+      boolean found = false
+      def variants = org_to_update.variantNames
+      if (variants) {
+        for (int i=0; !found && i<variants.size(); i++) {
+          found = variants[i].variantName == variant_name
+        }
+      }
+
+      if ( !found ) {
+        def new_variant_name = new KBComponentVariantName(variantName: variant_name, owner:org_to_update)
+        new_variant_name.save();
+      }
+    }
+    
+    result
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
