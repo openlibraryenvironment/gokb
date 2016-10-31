@@ -8,7 +8,6 @@ import javax.persistence.Transient
 import org.codehaus.groovy.grails.commons.GrailsDomainClass
 import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
 import org.gokb.GOKbTextUtils
-import org.hibernate.proxy.HibernateProxy
 
 /**
  * Abstract base class for GoKB Components.
@@ -433,7 +432,7 @@ abstract class KBComponent {
 
     result;
   }
-
+  
   @Transient
   static <T extends KBComponent> T lookupByIO(String idtype, String idvalue) {
     // println("lookupByIO(${idtype},${idvalue})");

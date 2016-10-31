@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.converters.JSON
+import grails.transaction.Transactional
 import org.springframework.security.access.annotation.Secured;
 
 import org.gokb.cred.*
@@ -380,6 +381,7 @@ class IntegrationController {
 
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional(readOnly=true)
   private resolveOrgUsingPrivateIdentifiers(idlist) {
     def located_or_new_org = null;
 
@@ -418,14 +420,16 @@ class IntegrationController {
       
       switch (matched_orgs.size()) {
         case 0:
-          log.debug("No match for ${ci.identifierType}:${ci.identifierValue}")
+          log.debug("No match for ${idlist}.")
           break
         case 1: 
+          log.debug("Found single component ID: ${matched_orgs}")
           // Matched one only! This is correct.
-          located_or_new_org = Org.get(matched_orgs[0])
+          located_or_new_org = Org.read(matched_orgs[0])
           break
         case {it > 1} :
           log.error("**CONFLICT**")
+          log.error("Identifiers ${idlist} matched multiple component IDs ${matched_orgs}!")
           break
           
       }
@@ -480,13 +484,13 @@ class IntegrationController {
 
     // See if we can locate the variant name as a first class component
     
-    def variant_org = null;
+    Org variant_org = null;
     if ( request.JSON.variantidns != null && request.JSON.variantidvalue != null ) {
-      variant_org = KBComponent.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
+      variant_org = Org.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
       log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}")
     }
 
-    def org_to_update = KBComponent.lookupByIO(request.JSON.idns,request.JSON.idvalue)
+    Org org_to_update = Org.lookupByIO(request.JSON.idns,request.JSON.idvalue)
     log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}")
 
     // Update any combos that point to the variant so that they now point to the authorized entry
@@ -497,6 +501,7 @@ class IntegrationController {
     render addVariantNameToOrg (org_to_update, request.JSON.name)
   }
   
+  @Transactional
   private addVariantNameToOrg(org_to_update, variant_name) {
     
     def result = [:]
