@@ -498,18 +498,18 @@ class IntegrationController {
     // Delete any remaining variant org combox
     // Delete the variant org
 
-    render addVariantNameToOrg (org_to_update, request.JSON.name)
+    render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
   
   @Transactional
-  private addVariantNameToOrg(org_to_update, variant_name) {
+  private addVariantNameToComponent (component, variant_name) {
     
     def result = [:]
     
     // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
-    if ( ( org_to_update ) && ( variant_name?.length() ?: 0 > 0 ) ) {
+    if ( ( component ) && ( variant_name?.length() ?: 0 > 0 ) ) {
       boolean found = false
-      def variants = org_to_update.variantNames
+      def variants = component.variantNames
       if (variants) {
         for (int i=0; !found && i<variants.size(); i++) {
           found = variants[i].variantName == variant_name
@@ -517,7 +517,7 @@ class IntegrationController {
       }
 
       if ( !found ) {
-        def new_variant_name = new KBComponentVariantName(variantName: variant_name, owner:org_to_update)
+        def new_variant_name = new KBComponentVariantName(variantName: variant_name, owner: component)
         new_variant_name.save();
       }
     }
