@@ -397,7 +397,6 @@ class IntegrationController {
         createAlias('ogc.toComponent', 'tc')
         createAlias('tc.namespace', 'tcNamespace')
         
-        
         and {
           and {
             eq 'ogcOwner.desc', 'Combo.Type'
@@ -501,7 +500,6 @@ class IntegrationController {
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
   
-  @Transactional
   private addVariantNameToComponent (component, variant_name) {
     
     def result = [:]
@@ -860,6 +858,8 @@ class IntegrationController {
             }
           }
         }
+        
+        addPublisherHistory(title, request.JSON.publisher_history)
   
         result.message = "Created/looked up title ${title.id}"
         result.cls = title.class.name
@@ -886,6 +886,62 @@ class IntegrationController {
     }
 
     render result as JSON
+  }
+  
+  private addPublisherHistory ( TitleInstance ti, publishers ) {
+    
+    if (publishers) {
+    
+      def publisher_combos = ti.getCombosByPropertyName('publisher')
+      String propName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      
+      // Go through each Org.
+      for (def pub_to_add : publishers) {
+        
+        // Lookup the publisher.
+        def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
+        Org publisher = Org.findByNormname(norm_pub_name)
+        
+        if (publisher) {
+          
+          boolean found = false
+          for ( int i=0; !found && i<publisher_combos.size(); i++) {
+            Combo pc = publisher_combos[i]
+            found = pc."${propName}".id == publisher.id
+          }
+          
+          // Only add if we havn't found anything.
+          if (!found) {
+            RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
+            Combo combo = new Combo(
+              type          : (type),
+              status        : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+              startDate     : pub_to_add.startDate,
+              endDate       : pub_to_add.endDate,
+              "${propName}" : publisher
+            )
+    
+            // Depending on where the combo is defined we need to add a combo.
+            if (ti.isComboReverse('publisher')) {
+              ti.addToIncomingCombos(combo)
+            } else {
+              ti.addToOutgoingCombos(combo)
+            }
+            ti.save(flush:true, failOnError:true)
+            
+            log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
+              (combo.startDate ? ' from ' + combo.startDate : '') +
+              (combo.endDate ? ' to ' + combo.endDate : '')
+            
+          } else {
+            log.debug "Publisher ${publisher.name} already set against '${ti.name}'"
+          }
+          
+        } else {
+          log.debug "Could not find org name: ${pub_to_add.name}, with normname: ${norm_pub_name}"
+        }
+      }
+    }
   }
 
 
@@ -957,7 +1013,7 @@ class IntegrationController {
     redirect(action:'index');
   }
 
-  def cleanUpGorm() {
+  private def cleanUpGorm() {
     log.debug("Clean up GORM");
 
     // Get the current session.
