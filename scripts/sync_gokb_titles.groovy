@@ -162,8 +162,36 @@ private static getResourcesFromGoKBByPage(URL url) {
             resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
         }
 
-        if ( r.metadata.gokb.title.publisher?.name ) {
-          resourceFieldMap['publisher'] = r.metadata.gokb.title.publisher.name.text()
+        // Might be several publishers each with it's own from and to...
+        resourceFieldMap['previous_publishers'] = []
+        Date highest_end_date = null
+        r.metadata.gokb.title.publisher?.each { pub ->
+          
+          // Only add if we have a name
+          if (pub.name) {
+          
+            def publisher [
+              name      : pub.name.text(),
+              startDate : pub.startDate,
+              endDate   : pub.endDate,
+              status    : pub.status?.text()
+            ]
+            
+            if ( ( pub.endDate == null ) ||
+              ( highest_end_date == null) ||
+              ( pub.endDate > highest_end_date ) ) {
+              
+              resourceFieldMap['publisher'] = publisher
+            }
+              
+            // Always add to the history. 
+            resourceFieldMap['previous_publishers'] << publisher
+          }
+        }
+        
+        // Remove the _current_ publisher from the history to make it easier at teh receiving end.
+        if (resourceFieldMap['publisher']) {
+          resourceFieldMap['previous_publishers'].remove(resourceFieldMap['publisher'])
         }
 
         r.metadata.gokb.title.variantNames?.variantName.each { vn ->
