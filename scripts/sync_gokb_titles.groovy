@@ -164,7 +164,6 @@ private static getResourcesFromGoKBByPage(URL url) {
 
         // Might be several publishers each with it's own from and to...
         resourceFieldMap['publisher_history'] = []
-        def current_publisher = null
         r.metadata.gokb.title.publisher?.each { pub ->
           
           // Only add if we have a name
@@ -176,24 +175,10 @@ private static getResourcesFromGoKBByPage(URL url) {
               endDate   : pub.endDate,
               status    : pub.status?.text()
             ]
-            
-            if ( ( pub.endDate == null ) ||
-              ( current_publisher?.endDate == null) ||
-              ( pub.endDate > current_publisher.endDate ) ) {
-              
-              current_publisher = publisher
-            }
               
             // Always add to the history. 
             resourceFieldMap['publisher_history'] << publisher
           }
-        }
-        
-        if (current_publisher) {          
-          // Adding this here too so as not to break the method in the title service.
-          // The integration controller should handle the full history first, which would,
-          // make this string just match one of the existing entries and do nothing.
-          resourceFieldMap['publisher'].remove(current_publisher.name)
         }
 
         r.metadata.gokb.title.variantNames?.variantName.each { vn ->
