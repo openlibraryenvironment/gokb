@@ -892,7 +892,8 @@ class IntegrationController {
     
     if (publishers) {
     
-      def publisher_combos = ti.getCombosByPropertyName('publisher')
+      def publisher_combos = []
+      publisher_combos.addAll( ti.getCombosByPropertyName('publisher') )
       String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
       String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
       
@@ -905,10 +906,13 @@ class IntegrationController {
         
         if (publisher) {
           
+          Date pub_add_ed = "${pub_to_add.endDate}" != "" ? sdf.parse(pub_to_add.endDate) : null
+          
           boolean found = false
           for ( int i=0; !found && i<publisher_combos.size(); i++) {
             Combo pc = publisher_combos[i]
             found = pc."${propName}".id == publisher.id
+            found = found && pc.endDate == pub_add_ed
           }
           
           // Only add if we havn't found anything.
@@ -918,7 +922,7 @@ class IntegrationController {
               type            : (type),
               status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
               startDate       : "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
-              endDate         : "${pub_to_add.endDate}" != "" ? sdf.parse(pub_to_add.endDate) : null,
+              endDate         : pub_add_ed,
               "${propName}"   : publisher,
               "${tiPropName}" : ti
             )
@@ -932,6 +936,9 @@ class IntegrationController {
 //            publisher.save()
             
             combo.save(flush:true, failOnError:true)
+            
+            // Add the combo to our list to avoid adding duplicates.
+            publisher_combos.add ( combo )
             
             log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
               (combo.startDate ? ' from ' + combo.startDate : '') +
