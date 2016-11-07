@@ -169,15 +169,15 @@ private static getResourcesFromGoKBByPage(URL url) {
           // Only add if we have a name
           if (pub.name) {
           
-            def publisher [
+            def publisher = [
               name      : pub.name.text(),
-              startDate : pub.startDate,
-              endDate   : pub.endDate,
+              startDate : pub.startDate?.text(),
+              endDate   : pub.endDate?.text(),
               status    : pub.status?.text()
             ]
               
             // Always add to the history. 
-            resourceFieldMap['publisher_history'] << publisher
+            resourceFieldMap['publisher_history'].add (publisher)
           }
         }
 

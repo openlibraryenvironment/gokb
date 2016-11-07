@@ -859,7 +859,7 @@ class IntegrationController {
           }
         }
         
-        addPublisherHistory(title, request.JSON.publisher_history)
+        addPublisherHistory(title, request.JSON.publisher_history, sdf)
   
         result.message = "Created/looked up title ${title.id}"
         result.cls = title.class.name
@@ -888,12 +888,13 @@ class IntegrationController {
     render result as JSON
   }
   
-  private addPublisherHistory ( TitleInstance ti, publishers ) {
+  private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
     
     if (publishers) {
     
       def publisher_combos = ti.getCombosByPropertyName('publisher')
-      String propName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+      String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
       
       // Go through each Org.
       for (def pub_to_add : publishers) {
@@ -914,20 +915,23 @@ class IntegrationController {
           if (!found) {
             RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
             Combo combo = new Combo(
-              type          : (type),
-              status        : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-              startDate     : pub_to_add.startDate,
-              endDate       : pub_to_add.endDate,
-              "${propName}" : publisher
+              type            : (type),
+              status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+              startDate       : "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
+              endDate         : "${pub_to_add.endDate}" != "" ? sdf.parse(pub_to_add.endDate) : null,
+              "${propName}"   : publisher,
+              "${tiPropName}" : ti
             )
     
             // Depending on where the combo is defined we need to add a combo.
-            if (ti.isComboReverse('publisher')) {
-              ti.addToIncomingCombos(combo)
-            } else {
-              ti.addToOutgoingCombos(combo)
-            }
-            ti.save(flush:true, failOnError:true)
+//            if (ti.isComboReverse('publisher')) {
+//              ti.addToIncomingCombos(combo)
+//            } else {
+//              ti.addToOutgoingCombos(combo)
+//            }
+//            publisher.save()
+            
+            combo.save(flush:true, failOnError:true)
             
             log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
               (combo.startDate ? ' from ' + combo.startDate : '') +
