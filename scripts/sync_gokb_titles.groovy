@@ -174,6 +174,8 @@ private static getResourcesFromGoKBByPage(URL url) {
               resourceFieldMap['variantNames'] = []
               resourceFieldMap['historyEvents'] = []
               resourceFieldMap['type'] = 'Serial'
+              resourceFieldMap['editStatus'] = r.metadata.gokb.title.editStatus?.text()
+              resourceFieldMap['status'] =  r.metadata.gokb.title.status?.text()
       
               if ( ( resourceFieldMap['medium'] == null ) || ( resourceFieldMap['medium'].length() == 0 ) ) {
                 resourceFieldMap['medium'] = 'Journal'
