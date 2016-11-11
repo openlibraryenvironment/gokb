@@ -135,8 +135,33 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}")
         def resourceFieldMap = [:]
         
+        // Core fields come first.
+        resourceFieldMap['packageHeader']['name'] = r.name?.text()
+        resourceFieldMap['packageHeader']['status'] =  r.status?.text()
+        resourceFieldMap['packageHeader']['editStatus'] = r.editStatus?.text()
+        resourceFieldMap['packageHeader']['shortcode'] = r.shortcode?.text()
+
+        // Identifiers
+        resourceFieldMap['packageHeader']['identifiers'] = []
+        r.identifiers?.identifier?.each {
+          if ( !['originEditUrl'].contains(it.'@namespace') )
+            resourceFieldMap['packageHeader']['identifiers'].add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Additional properties
+        resourceFieldMap['packageHeader']['additionalProperties'] = []
+        r.additionalProperties?.additionalProperty?.each {
+          resourceFieldMap['packageHeader']['additionalProperties'].add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Variant names
+        resourceFieldMap['packageHeader']['variantNames'] = []
+        r.variantNames?.variantName?.each { vn ->
+          resourceFieldMap['packageHeader']['variantNames'].add(vn.text());
+        }
+        
         // Add basic text properties.
-        ['name','url','file','type', 'licensor', 'licensee', 
+        ['url','file','type', 'licensor', 'licensee', 
           'previous', 'successor', 'model'].each {
             def val
             if ((val = r."${it}".text())) resourceFieldMap[it] = val

@@ -141,16 +141,42 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}");
 
         def resourceFieldMap = [:]
-        resourceFieldMap.packageHeader = [:]
+        resourceFieldMap.packageHeader = [:]        
+        
+        // Core fields come first.
+        resourceFieldMap['packageHeader']['name'] = r.metadata.gokb.package.name?.text()
+        resourceFieldMap['packageHeader']['status'] =  r.metadata.gokb.package.status?.text()
+        resourceFieldMap['packageHeader']['editStatus'] = r.metadata.gokb.package.editStatus?.text()
+        resourceFieldMap['packageHeader']['shortcode'] = r.metadata.gokb.package.shortcode?.text()
+
+        // Identifiers
+        resourceFieldMap['packageHeader']['identifiers'] = []
+        r.metadata.gokb.package.identifiers?.identifier?.each {
+          if ( !['originEditUrl'].contains(it.'@namespace') )
+            resourceFieldMap['packageHeader']['identifiers'].add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Additional properties
+        resourceFieldMap['packageHeader']['additionalProperties'] = []
+        r.metadata.gokb.package.additionalProperties?.additionalProperty?.each {
+          resourceFieldMap['packageHeader']['additionalProperties'].add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Variant names
+        resourceFieldMap['packageHeader']['variantNames'] = []
+        r.metadata.gokb.package.variantNames?.variantName?.each { vn ->
+          resourceFieldMap['packageHeader']['variantNames'].add(vn.text());
+        }
+        
         resourceFieldMap.packageHeader.scope = r.metadata.gokb.package.scope.text()
         resourceFieldMap.packageHeader.listStatus = r.metadata.gokb.package.listStatus.text()
-        resourceFieldMap.packageHeader.status = r.metadata.gokb.package.status.text()
+//        resourceFieldMap.packageHeader.status = r.metadata.gokb.package.status.text()
         resourceFieldMap.packageHeader.breakable = r.metadata.gokb.package.breakable.text()
         resourceFieldMap.packageHeader.consistent = r.metadata.gokb.package.consistent.text()
         resourceFieldMap.packageHeader.fixed = r.metadata.gokb.package.fixed.text()
         resourceFieldMap.packageHeader.paymentType = r.metadata.gokb.package.paymentType.text()
         resourceFieldMap.packageHeader.global = r.metadata.gokb.package.global.text()
-        resourceFieldMap.packageHeader.name = r.metadata.gokb.package.name.text()
+//        resourceFieldMap.packageHeader.name = r.metadata.gokb.package.name.text()
         resourceFieldMap.packageHeader.listVerifier = r.metadata.gokb.package.listVerifier.text()
         resourceFieldMap.packageHeader.userListVerifier = r.metadata.gokb.package.userListVerifier.text()
         resourceFieldMap.packageHeader.nominalPlatform = r.metadata.gokb.package.nominalPlatform.text()

@@ -139,19 +139,45 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}");
 
         def resourceFieldMap = [:]
-        resourceFieldMap['name'] = cleanText(r.metadata.gokb.org.name.text())
+//        resourceFieldMap['name'] = cleanText(r.metadata.gokb.org.name.text())
+        
+        // Core fields come first.
+        resourceFieldMap['name'] = r.metadata.gokb.org.name?.text()
+        resourceFieldMap['status'] =  r.metadata.gokb.org.status?.text()
+        resourceFieldMap['editStatus'] = r.metadata.gokb.org.editStatus?.text()
+        resourceFieldMap['shortcode'] = r.metadata.gokb.org.shortcode?.text()
+
+        // Identifiers
+        resourceFieldMap['customIdentifiers'] = []
+        r.metadata.gokb.org.identifiers?.identifier?.each {
+          if ( !['originEditUrl'].contains(it.'@namespace') )
+            resourceFieldMap.customIdentifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Additional properties
+        resourceFieldMap['additionalProperties'] = []
+        r.metadata.gokb.org.additionalProperties?.additionalProperty?.each {
+          resourceFieldMap.additionalProperties.add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Variant names
+        resourceFieldMap['variantNames'] = []
+        r.metadata.gokb.org.variantNames?.variantName?.each { vn ->
+          resourceFieldMap['variantNames'].add(vn.text());
+        }
+        
         resourceFieldMap['homepage'] = cleanText(r.metadata.gokb.org.homepage.text())
         resourceFieldMap['mission'] = cleanText(r.metadata.gokb.org.mission.text())
-        resourceFieldMap['customIdentifiers'] = []
-        resourceFieldMap['variantNames'] = []
-
-        r.metadata.gokb.org.identifiers.identifier.each {
-           resourceFieldMap['customIdentifiers'].add([identifierType:cleanText(it.text()),identifierValue: cleanText(it."@namespace".text())])
-        }
-
-        r.metadata.gokb.org.variantNames.variantName.each {
-          resourceFieldMap['variantNames'].add([variantName:cleanText(it.text())]);
-        }
+//        resourceFieldMap['customIdentifiers'] = []
+//        resourceFieldMap['variantNames'] = []
+//
+//        r.metadata.gokb.org.identifiers.identifier.each {
+//           resourceFieldMap['customIdentifiers'].add([identifierType:cleanText(it.text()),identifierValue: cleanText(it."@namespace".text())])
+//        }
+//
+//        r.metadata.gokb.org.variantNames.variantName.each {
+//          resourceFieldMap['variantNames'].add([variantName:cleanText(it.text())]);
+//        }
         
         resources << resourceFieldMap
       }

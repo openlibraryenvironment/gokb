@@ -141,12 +141,38 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}");
 
         def resourceFieldMap = [:]
+        
+        // Core fields come first.
+        resourceFieldMap['name'] = r.metadata.gokb.platform.name?.text()
+        resourceFieldMap['status'] =  r.metadata.gokb.platform.status?.text()
+        resourceFieldMap['editStatus'] = r.metadata.gokb.platform.editStatus?.text()
+        resourceFieldMap['shortcode'] = r.metadata.gokb.platform.shortcode?.text()
+
+        // Identifiers
+        resourceFieldMap['identifiers'] = []
+        r.metadata.gokb.platform.identifiers?.identifier?.each {
+          if ( !['originEditUrl'].contains(it.'@namespace') )
+            resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Additional properties
+        resourceFieldMap['additionalProperties'] = []
+        r.metadata.gokb.platform.additionalProperties?.additionalProperty?.each {
+          resourceFieldMap.additionalProperties.add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Variant names
+        resourceFieldMap['variantNames'] = []
+        r.metadata.gokb.platform.variantNames?.variantName?.each { vn ->
+          resourceFieldMap['variantNames'].add(vn.text());
+        }
+        
         resourceFieldMap['platformName'] = r.metadata.gokb.platform.name.text()
         resourceFieldMap['platformUrl'] = r.metadata.gokb.platform.primaryUrl.text()
         resourceFieldMap['authentication'] = r.metadata.gokb.platform.authentication.text()
         resourceFieldMap['software'] = r.metadata.gokb.platform.software.text()
         resourceFieldMap['service'] = r.metadata.gokb.platform.service.text()
-        resourceFieldMap['status'] = r.metadata.gokb.status.authentication.text()
+//        resourceFieldMap['status'] = r.metadata.gokb.status.authentication.text()
 
         resources << resourceFieldMap
       }

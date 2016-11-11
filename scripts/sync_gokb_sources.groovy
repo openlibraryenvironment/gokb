@@ -134,9 +134,35 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}");
 
         def resourceFieldMap = [:]
-        resourceFieldMap['name'] = r.metadata.gokb.name.text()
-        resourceFieldMap['shortcode'] = r.metadata.gokb.shortcode.text()
-        resourceFieldMap['editStatus'] = r.metadata.gokb.editStatus.text()
+//        resourceFieldMap['name'] = r.metadata.gokb.name.text()
+//        resourceFieldMap['shortcode'] = r.metadata.gokb.shortcode.text()
+//        resourceFieldMap['editStatus'] = r.metadata.gokb.editStatus.text()
+        
+        // Core fields come first.
+        resourceFieldMap['name'] = r.metadata.gokb.name?.text()
+        resourceFieldMap['status'] =  r.metadata.gokb.status?.text()
+        resourceFieldMap['editStatus'] = r.metadata.gokb.editStatus?.text()
+        resourceFieldMap['shortcode'] = r.metadata.gokb.shortcode?.text()
+
+        // Identifiers
+        resourceFieldMap['identifiers'] = []
+        r.metadata.gokb.identifiers?.identifier?.each {
+          if ( !['originEditUrl'].contains(it.'@namespace') )
+            resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Additional properties
+        resourceFieldMap['additionalProperties'] = []
+        r.metadata.gokb.additionalProperties?.additionalProperty?.each {
+          resourceFieldMap.additionalProperties.add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Variant names
+        resourceFieldMap['variantNames'] = []
+        r.metadata.gokb.variantNames?.variantName?.each { vn ->
+          resourceFieldMap['variantNames'].add(vn.text());
+        }
+        
         resourceFieldMap['url']= r.metadata.gokb.url.text()
         resourceFieldMap['defaultAccessURL']= r.metadata.gokb.defaultAccessURL.text()
         resourceFieldMap['explanationAtSource']= r.metadata.gokb.explanationAtSource.text()

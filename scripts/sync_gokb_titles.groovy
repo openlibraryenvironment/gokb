@@ -162,28 +162,45 @@ private static getResourcesFromGoKBByPage(URL url) {
               println("Record ${ctr++}");
       
               def resourceFieldMap = [:]
-              resourceFieldMap['title'] = r.metadata.gokb.title.name.text()
-              resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
+              
+              // Core fields come first.
+              resourceFieldMap['title'] = r.metadata.gokb.title.name?.text()
+              resourceFieldMap['status'] =  r.metadata.gokb.title.status?.text()
+              resourceFieldMap['editStatus'] = r.metadata.gokb.title.editStatus?.text()
+              resourceFieldMap['shortcode'] = r.metadata.gokb.title.shortcode?.text()
+      
+              // Identifiers
               resourceFieldMap['identifiers'] = []
+              r.metadata.gokb.title.identifiers?.identifier?.each {
+                if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
+                  resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+              }
+              
+              // Additional properties
+              resourceFieldMap['additionalProperties'] = []
+              r.metadata.gokb.title.additionalProperties?.additionalProperty?.each {
+                resourceFieldMap.additionalProperties.add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+              }
+              
+              // Variant names
+              resourceFieldMap['variantNames'] = []
+              r.metadata.gokb.title.variantNames?.variantName?.each { vn ->
+                resourceFieldMap['variantNames'].add(vn.text());
+              }
+              
+              
+              resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
               resourceFieldMap['publishedFrom'] = r.metadata.gokb.title.publishedFrom?.text()
               resourceFieldMap['publishedTo'] = r.metadata.gokb.title.publishedTo?.text()
               resourceFieldMap['continuingSeries'] = r.metadata.gokb.title.continuingSeries?.text()
               resourceFieldMap['OAStatus'] = r.metadata.gokb.title.OAStatus?.text()
               resourceFieldMap['imprint'] = r.metadata.gokb.title.imprint?.text()
               resourceFieldMap['issuer'] = r.metadata.gokb.title.issuer?.text()
-              resourceFieldMap['variantNames'] = []
               resourceFieldMap['historyEvents'] = []
               resourceFieldMap['type'] = 'Serial'
-              resourceFieldMap['editStatus'] = r.metadata.gokb.title.editStatus?.text()
-              resourceFieldMap['status'] =  r.metadata.gokb.title.status?.text()
       
               if ( ( resourceFieldMap['medium'] == null ) || ( resourceFieldMap['medium'].length() == 0 ) ) {
                 resourceFieldMap['medium'] = 'Journal'
-              }
-      
-              r.metadata.gokb.title.identifiers.identifier.each {
-                if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
-                  resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
               }
       
               // Might be several publishers each with it's own from and to...
@@ -203,10 +220,6 @@ private static getResourcesFromGoKBByPage(URL url) {
                   // Always add to the history. 
                   resourceFieldMap['publisher_history'].add (publisher)
                 }
-              }
-      
-              r.metadata.gokb.title.variantNames?.variantName.each { vn ->
-                resourceFieldMap['variantNames'].add(vn.text());
               }
       
               r.metadata.gokb.title.history?.historyEvent.each { he ->
