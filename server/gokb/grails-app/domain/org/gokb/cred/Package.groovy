@@ -389,6 +389,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
 
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus', 'Package.ListStatus')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status', 'KBComponent.Status')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result, 'editStatus', 'KBComponent.EditStatus')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope', 'Package.Scope')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable', 'Package.Breakable')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent', 'Package.Consistent')
