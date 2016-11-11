@@ -212,6 +212,10 @@ class IntegrationController {
           log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
      
           located_or_new_org = new Org(name:request.JSON.name)
+          setAllRefdata ([
+            'status', 'editStatus',
+            'software', 'service'
+          ], request.JSON, located_or_new_org)
   
           log.debug("Attempt to save - validate: ${located_or_new_org}");
   
@@ -252,13 +256,12 @@ class IntegrationController {
           located_or_new_org.parent = located_component
         }
       }
-
-      def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','Org.Ids');
+      
       // Identifiers
       log.debug("Identifier processing ${request.JSON.customIdentifiers}");
       request.JSON.customIdentifiers.each { ci ->
-        def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-        log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
+        def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+        log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})");
         located_or_new_org.ids.add(canonical_identifier)
       }
   
@@ -320,7 +323,7 @@ class IntegrationController {
 
       // variants
       request.JSON.variantNames.each { vn ->
-        addVariantNameToOrg(located_or_new_org, vn.variantName)
+        addVariantNameToComponent(located_or_new_org, vn)
       }
 
       result.msg="Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
@@ -362,15 +365,39 @@ class IntegrationController {
       if ( request.JSON.name ) {
         def located_or_new_source = Source.findByName(request.JSON.name) ?: new Source(name:request.JSON.name)
         // changed |= setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
-        ClassUtils.setIfPresent(located_or_new_source,'url',request.JSON.url);
-        ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',request.JSON.defaultAccessURL);
-        ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',request.JSON.explanationAtSource);
-        ClassUtils.setIfPresent(located_or_new_source,'contextualNotes',request.JSON.contextualNotes);
-        ClassUtils.setIfPresent(located_or_new_source,'frequency',request.JSON.frequency);
-        ClassUtils.setIfPresent(located_or_new_source,'ruleset',request.JSON.ruleset);
+       
+        ClassUtils.setIfPresent(located_or_new_source,'url',request.JSON.url)
+        ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',request.JSON.defaultAccessURL)
+        ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',request.JSON.explanationAtSource)
+        ClassUtils.setIfPresent(located_or_new_source,'contextualNotes',request.JSON.contextualNotes)
+        ClassUtils.setIfPresent(located_or_new_source,'frequency',request.JSON.frequency)
+        ClassUtils.setIfPresent(located_or_new_source,'ruleset',request.JSON.ruleset)
+        
+        setAllRefdata ([
+          'status', 'editStatus',
+          'software', 'service'
+        ], request.JSON, located_or_new_source)
+        
         ClassUtils.setRefdataIfPresent(request.JSON.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
         ClassUtils.setRefdataIfPresent(request.JSON.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
-        located_or_new_source.save(flush:true, failOnError:true);
+        
+        // Identifiers
+        log.debug("Identifier processing ${request.JSON.customIdentifiers}");
+        request.JSON.identifiers.each { ci ->
+          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
+          log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
+          located_or_new_source.ids.add(canonical_identifier)
+        }
+        
+        located_or_new_source.save(flush:true, failOnError:true)
+
+        
+        log.debug("Variant names processing: ${request.JSON.variantNames}")
+  
+        // variants
+        request.JSON.variantNames.each { vn ->
+          addVariantNameToComponent(located_or_new_source, vn)
+        }
       }
     }
     catch ( Exception e ) {
@@ -635,10 +662,11 @@ class IntegrationController {
         p=new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true);
       }
 
-      def changed = false;
+      def changed = setAllRefdata ([
+        'status', 'editStatus',
+        'software', 'service'
+      ], request.JSON, p)
       changed |= ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
-      changed |= ClassUtils.setRefdataIfPresent(request.JSON.software, p, 'software', 'Platform.Software')
-      changed |= ClassUtils.setRefdataIfPresent(request.JSON.service, p, 'service', 'Platform.Service')
 
       if ( changed ) {
         p.save(flush:true, failOnError:true);
@@ -647,6 +675,14 @@ class IntegrationController {
       result.platform_id = p.id;
     }
     render result as JSON
+  }
+  
+  private boolean setAllRefdata (Collection<String> propNames, data, target) {
+    boolean changed = false
+    propNames.each { String prop ->
+      changed |= ClassUtils.setRefdataIfPresent(data.status, target, prop)
+    }
+    changed
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
@@ -666,7 +702,10 @@ class IntegrationController {
         summaryStatement = data.summaryStatement
       }
       
-      ClassUtils.setRefdataIfPresent(data.type, l, 'type', 'License.Type')
+      setAllRefdata ([
+        'status', 'editStatus',
+        'type'
+      ], data, l)
       
       // Add each file upload too!
       data.fileAttachments.each { fa ->
@@ -773,10 +812,13 @@ class IntegrationController {
           }
         }
     
+        title_changed |= setAllRefdata ([
+          'status', 'editStatus',
+          'software', 'service'
+        ], request.JSON, title)
+        
         title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
         title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
-        title_changed |= ClassUtils.setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
-        title_changed |= ClassUtils.setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
     
         log.debug("Saving title changes");
         title.save(flush:true, failOnError:true);
