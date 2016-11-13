@@ -557,60 +557,68 @@ class IntegrationController {
     if ( request.JSON.packageHeader.name ) {
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
-        def pkg = Package.upsertDTO(request.JSON.packageHeader)
-        def platform_cache = [:]
-        log.debug("\n\n\nPackage: ${pkg} / ${request.JSON.packageHeader}");
+        def pkg_id = Package.upsertDTO(request.JSON.packageHeader)?.id
+        Map platform_cache = [:]
+        log.debug("\n\n\nPackage ID: ${pkg_id} / ${request.JSON.packageHeader}");
 
         // Validate and upsert titles and platforms
         request.JSON.tipps.each { tipp ->
+          
+          TitleInstance.withNewSession {
 
-          valid &= TitleInstance.validateDTO(tipp.title);
-
-          if ( !valid ) 
-            log.warn("Not valid after title validation ${tipp.title}");
-
-          def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
-          if ( ti && ( tipp.title.internalId == null ) ) {
-            tipp.title.internalId = ti.id;
-          }
-
-          if ( tipp.title.internalId == null ) {
-            log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
-          }
-
-          valid &= Platform.validateDTO(tipp.platform);
-          if ( !valid ) 
-            log.warn("Not valid after platform validation ${tipp.platform}");
-
-          if ( valid ) {
-
-            def pl = platform_cache[tipp.platform.name]
-            if ( pl == null ) {
-              pl = Platform.upsertDTO(tipp.platform);
-              platform_cache[tipp.platform.name] = pl
+            valid &= TitleInstance.validateDTO(tipp.title);
+  
+            if ( !valid ) 
+              log.warn("Not valid after title validation ${tipp.title}");
+  
+            def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
+            if ( ti && ( tipp.title.internalId == null ) ) {
+              tipp.title.internalId = ti.id;
             }
-
-            if ( pl && ( tipp.platform.internalId == null ) ) {
-              tipp.platform.internalId = pl.id;
+  
+            if ( tipp.title.internalId == null ) {
+              log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
+            }
+  
+            valid &= Platform.validateDTO(tipp.platform);
+            if ( !valid ) 
+              log.warn("Not valid after platform validation ${tipp.platform}");
+  
+            if ( valid ) {
+  
+              def pl = null
+              def pl_id
+              if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                pl = Platform.get(pl_id)
+              } else {
+                // Not in cache.
+                pl = Platform.upsertDTO(tipp.platform);
+                platform_cache[tipp.platform.name] = pl.id
+              }
+  
+              if ( pl && ( tipp.platform.internalId == null ) ) {
+                tipp.platform.internalId = pl.id;
+              }
+              else {
+                log.warn("No platform arising from ${tipp.platform}");
+              }
             }
             else {
-              log.warn("No platform arising from ${tipp.platform}");
+              log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
             }
-          }
-          else {
-            log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
-          }
-
-          if ( ( tipp.package == null ) && ( pkg.id ) ) {
-            tipp.package = [ internalId: pkg.id ]
-          }
-          else {
-            log.warn("No package");
-            valid = false
+//            
+//            def pkg = pkg_id != null ? Package.get(pkg_id) : null
+            if ( ( tipp.package == null ) && ( pkg_id ) ) {
+              tipp.package = [ internalId: pkg_id ]
+            }
+            else {
+              log.warn("No package");
+              valid = false
+            }
           }
         }
 
-        cleanUpGorm()
+//        cleanUpGorm()
 
         int tippctr=0;
         if ( valid ) {
@@ -619,34 +627,35 @@ class IntegrationController {
           request.JSON.tipps.each { tipp ->
             def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
             if ( !validation_result) {
-              log.error("TIPP Validation failed on ${tipp}");
+              log.error("TIPP Validation failed on ${tipp}")
             }
           }
         }
         else {
-          log.warn("Not validating tipps - failed pre validation");
+          log.warn("Not validating tipps - failed pre validation")
         }
 
 
-        log.debug("\n\nupsert tipp data\n\n");
+        log.debug("\n\nupsert tipp data\n\n")
         tippctr=0
         if ( valid ) {
-          def tipp_upsert_start_time = System.currentTimeMillis();
+          def tipp_upsert_start_time = System.currentTimeMillis()
           // If valid, upsert tipps
           request.JSON.tipps.each { tipp ->
-            cleanUpGorm()
-            log.debug("Upsert tipp [${tippctr++}] ${tipp}");
-            TitleInstancePackagePlatform.upsertDTO(tipp)
+            TitleInstancePackagePlatform.withNewSession {
+              log.debug("Upsert tipp [${tippctr++}] ${tipp}")
+              TitleInstancePackagePlatform.upsertDTO(tipp)
+            }
           }
-          log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records");
+          log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
         }
         else {
-          log.warn("Not loading tipps - failed validation");
+          log.warn("Not loading tipps - failed validation")
         }
       }
    
     }
-    render result as JSON;
+    render result as JSON
   }
   
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
