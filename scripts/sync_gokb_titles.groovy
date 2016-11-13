@@ -153,12 +153,12 @@ private static getResourcesFromGoKBByPage(URL url) {
         http.request(GET, XML) { req ->
           response.success = { resp, body ->
             resumptionToken = body?.ListRecords?.resumptionToken.text()
+            
+            // Flag to terminate while loop.
+            success = true
       
             body?.'ListRecords'?.'record'.each { r ->
               
-              // Flag to terminate while loop.
-              success = true
-      
               println("Record ${ctr++}");
       
               def resourceFieldMap = [:]
