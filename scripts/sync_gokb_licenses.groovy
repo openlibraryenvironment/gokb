@@ -133,33 +133,30 @@ private static getResourcesFromGoKBByPage(URL url) {
         
         // Construct each entry
         println("Record ${ctr++}")
-        def resourceFieldMap = [
-          packageHeader: [:]
-        ] 
         
         // Core fields come first.
-        resourceFieldMap['packageHeader']['name'] = r.name?.text()
-        resourceFieldMap['packageHeader']['status'] =  r.status?.text()
-        resourceFieldMap['packageHeader']['editStatus'] = r.editStatus?.text()
-        resourceFieldMap['packageHeader']['shortcode'] = r.shortcode?.text()
+        resourceFieldMap['name'] = r.name?.text()
+        resourceFieldMap['status'] =  r.status?.text()
+        resourceFieldMap['editStatus'] = r.editStatus?.text()
+        resourceFieldMap['shortcode'] = r.shortcode?.text()
 
         // Identifiers
-        resourceFieldMap['packageHeader']['identifiers'] = []
+        resourceFieldMap['identifiers'] = []
         r.identifiers?.identifier?.each {
           if ( !['originEditUrl'].contains(it.'@namespace') )
-            resourceFieldMap['packageHeader']['identifiers'].add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+            resourceFieldMap['identifiers'].add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
         }
         
         // Additional properties
-        resourceFieldMap['packageHeader']['additionalProperties'] = []
+        resourceFieldMap['additionalProperties'] = []
         r.additionalProperties?.additionalProperty?.each {
-          resourceFieldMap['packageHeader']['additionalProperties'].add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+          resourceFieldMap['additionalProperties'].add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
         }
         
         // Variant names
-        resourceFieldMap['packageHeader']['variantNames'] = []
+        resourceFieldMap['variantNames'] = []
         r.variantNames?.variantName?.each { vn ->
-          resourceFieldMap['packageHeader']['variantNames'].add(vn.text());
+          resourceFieldMap['variantNames'].add(vn.text());
         }
         
         // Add basic text properties.
