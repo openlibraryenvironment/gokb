@@ -133,7 +133,9 @@ private static getResourcesFromGoKBByPage(URL url) {
         
         // Construct each entry
         println("Record ${ctr++}")
-        def resourceFieldMap = [:]
+        def resourceFieldMap = [
+          packageHeader: [:]
+        ] 
         
         // Core fields come first.
         resourceFieldMap['packageHeader']['name'] = r.name?.text()
