@@ -178,9 +178,14 @@ class FTUpdateService {
           log.debug("interim:: processed ${++total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
-            latest_ft_record.lastTimestamp = highest_timestamp
-            latest_ft_record.lastId = highest_id
-            latest_ft_record.save(flush:true, failOnError:true);
+            if ( latest_ft_record ) {
+              latest_ft_record.lastTimestamp = highest_timestamp
+              latest_ft_record.lastId = highest_id
+              latest_ft_record.save(flush:true, failOnError:true);
+            }
+            else {
+              log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update");
+            }
           }
           cleanUpGorm();
           synchronized(this) {
@@ -218,11 +223,15 @@ class FTUpdateService {
   }
 
   def clearDownAndInitES() {
-    FTControl.withTransaction {
-      FTControl.executeUpdate("delete FTControl c");
+    if ( running == false ) {
+      FTControl.withTransaction {
+        FTControl.executeUpdate("delete FTControl c");
+      }
+      updateFTIndexes();
     }
-
-    updateFTIndexes();
+    else {
+      log.debug("FTUpdate already running");
+    }
   }
  
 }
