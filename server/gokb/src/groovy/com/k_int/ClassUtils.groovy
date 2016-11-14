@@ -2,6 +2,7 @@ package com.k_int
 
 import org.hibernate.proxy.HibernateProxy
 import org.gokb.cred.RefdataCategory
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
 
 class ClassUtils {
   public static <T> T deproxy(def element) {
@@ -33,15 +34,15 @@ class ClassUtils {
     result;
   }
 
-  private static boolean setRefdataIfPresent(value, obj, prop, cat) {
-    boolean result = false;
+  public static boolean setRefdataIfPresent(value, obj, prop, cat = GrailsClassUtils.getStaticFieldValue(obj.class, 'allComboTypeValues')?.get("${prop}")) {
+    boolean result = false
 
-    if ( ( value ) &&
+    if ( ( value ) && ( cat ) &&
          ( value.toString().trim().length() > 0 ) &&
          ( ( obj[prop] == null ) || ( obj[prop].value != value.trim() ) ) ) {
-      def v = RefdataCategory.lookupOrCreate(cat,value);
+      def v = RefdataCategory.lookupOrCreate(cat,value)
       obj[prop] = v
-      result = true;
+      result = true
     }
 
     result

@@ -39,14 +39,24 @@ import static groovyx.net.http.Method.GET
 
 // Example full record http://gokb.openlibraryfoundation.org/gokb/oai/orgs?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:309298
 
-config = null;
-cfg_file = new File('./sync-gokb-orgs-cfg.json')
+String fileName = "${this.class.getSimpleName().replaceAll(/\_/, "-")}-cfg.json"
+def cfg_file = new File("./${fileName}")
+
+def config = null
 if ( cfg_file.exists() ) {
-  config = new JsonSlurper().parseText(cfg_file.text);
+  config = new JsonSlurper().parseText(cfg_file.text)
 }
 else {
-  config=[:]
-  config.packageData=[:]
+  println("No config found please supply authentication details.")
+  config = [
+    uploadUser: System.console().readLine ('Enter your username: ').toString(),
+    uploadPass: System.console().readPassword ('Enter your password: ').toString()
+  ]
+  
+  // Save to the file.
+  cfg_file << toJson(config)
+  
+  println("Saved config file to ${fileName}")
 }
 
 println("Using config ${config}");
@@ -105,6 +115,10 @@ def importOrgs(host, gokb, config, cfg_file) {
   }
 }
 
+private static cleanText(String text) {
+  text?.trim()?.replaceAll(/\s{2,}/, ' ')
+} 
+
 private static getResourcesFromGoKBByPage(URL url) {
   println "Retrieving: ${url}"
 
@@ -125,20 +139,45 @@ private static getResourcesFromGoKBByPage(URL url) {
         println("Record ${ctr++}");
 
         def resourceFieldMap = [:]
-        resourceFieldMap['name'] = r.metadata.gokb.org.name.text()
-        resourceFieldMap['homepage'] = r.metadata.gokb.org.homepage.text()
-        resourceFieldMap['mission'] = r.metadata.gokb.org.mission.text()
+//        resourceFieldMap['name'] = cleanText(r.metadata.gokb.org.name.text())
+        
+        // Core fields come first.
+        resourceFieldMap['name'] = r.metadata.gokb.org.name?.text()
+        resourceFieldMap['status'] =  r.metadata.gokb.org.status?.text()
+        resourceFieldMap['editStatus'] = r.metadata.gokb.org.editStatus?.text()
+        resourceFieldMap['shortcode'] = r.metadata.gokb.org.shortcode?.text()
+
+        // Identifiers
         resourceFieldMap['customIdentifiers'] = []
-        resourceFieldMap['customIdentifiers'] = []
+        r.metadata.gokb.org.identifiers?.identifier?.each {
+          if ( !['originEditUrl'].contains(it.'@namespace') )
+            resourceFieldMap.customIdentifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Additional properties
+        resourceFieldMap['additionalProperties'] = []
+        r.metadata.gokb.org.additionalProperties?.additionalProperty?.each {
+          resourceFieldMap.additionalProperties.add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+        }
+        
+        // Variant names
         resourceFieldMap['variantNames'] = []
-
-        r.metadata.gokb.org.identifiers.identifier.each {
-           resourceFieldMap['customIdentifiers'].add([identifierType:it.text(),identifierValue:it."@namespace".text()])
+        r.metadata.gokb.org.variantNames?.variantName?.each { vn ->
+          resourceFieldMap['variantNames'].add(vn.text());
         }
-
-        r.metadata.gokb.org.variantNames.variantName.each {
-          resourceFieldMap['variantNames'].add([variantName:it.text()]);
-        }
+        
+        resourceFieldMap['homepage'] = cleanText(r.metadata.gokb.org.homepage.text())
+        resourceFieldMap['mission'] = cleanText(r.metadata.gokb.org.mission.text())
+//        resourceFieldMap['customIdentifiers'] = []
+//        resourceFieldMap['variantNames'] = []
+//
+//        r.metadata.gokb.org.identifiers.identifier.each {
+//           resourceFieldMap['customIdentifiers'].add([identifierType:cleanText(it.text()),identifierValue: cleanText(it."@namespace".text())])
+//        }
+//
+//        r.metadata.gokb.org.variantNames.variantName.each {
+//          resourceFieldMap['variantNames'].add([variantName:cleanText(it.text())]);
+//        }
         
         resources << resourceFieldMap
       }

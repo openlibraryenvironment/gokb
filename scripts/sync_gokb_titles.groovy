@@ -29,6 +29,7 @@ import groovyx.net.http.*
 import org.apache.http.entity.mime.MultipartEntityBuilder /* we'll use the new builder strategy */
 import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulate our file uploads */
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
+import groovyx.net.http.HttpResponseException
 import org.apache.commons.io.IOUtils
 import org.apache.commons.net.ftp.*
 import groovyx.net.http.HTTPBuilder
@@ -45,25 +46,41 @@ import static groovyx.net.http.Method.GET
 // Publisher example
 // Example full record http://gokb.openlibraryfoundation.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:14290
 
-config = null;
-cfg_file = new File('./sync-gokb-titles-cfg.json')
+String fileName = "${this.class.getSimpleName().replaceAll(/\_/, "-")}-cfg.json"
+def cfg_file = new File("./${fileName}")
+
+def config = null
 if ( cfg_file.exists() ) {
-  config = new JsonSlurper().parseText(cfg_file.text);
+  config = new JsonSlurper().parseText(cfg_file.text)
 }
 else {
-  config=[:]
-  config.packageData=[:]
+  println("No config found please supply authentication details.")
+  config = [
+    uploadUser: System.console().readLine ('Enter your username: ').toString(),
+    uploadPass: System.console().readPassword ('Enter your password: ').toString()
+  ]
+  
+  // Save to the file.
+  cfg_file << toJson(config)
+  
+  println("Saved config file to ${fileName}")
 }
 
 println("Using config ${config}");
 
 def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
-httpbuilder.auth.basic config.uploadUser, config.uploadPass
-
-
-println("Pulling latest messages");
-pullLatest(config, httpbuilder, cfg_file)
-println("All done");
+try {
+  httpbuilder.auth.basic config.uploadUser, config.uploadPass
+  
+  
+  println("Pulling latest messages");
+  pullLatest(config, httpbuilder, cfg_file)
+  println("All done")
+  
+} finally {
+  // Cleanup.
+  httpbuilder.shutdown()
+}
 
 def pullLatest(config,httpbuilder, cfg_file) {
   importJournals('http://gokb.openlibraryfoundation.org', httpbuilder, config, cfg_file);
@@ -114,87 +131,152 @@ private static getResourcesFromGoKBByPage(URL url) {
   println "Retrieving: ${url}"
 
   def http = new HTTPBuilder(url, XML)
+  
+  int timeout_retry = 3
+  long timeout_retry_wait = 5 * 1000 // (5 seconds)
+    
+  boolean success = false // flag to terminate loop.
+  
+  try {
 
-  http.headers = [Accept: 'application/xml']
-
-  def resources = []
-  def resumptionToken = null
-  def ctr = 0;
-
-  http.request(GET, XML) { req ->
-    response.success = { resp, body ->
-      resumptionToken = body?.ListRecords?.resumptionToken.text()
-
-      body?.'ListRecords'?.'record'.each { r ->
-
-        println("Record ${ctr++}");
-
-        def resourceFieldMap = [:]
-        resourceFieldMap['title'] = r.metadata.gokb.title.name.text()
-        resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
-        resourceFieldMap['identifiers'] = []
-        resourceFieldMap['publishedFrom'] = r.metadata.gokb.title.publishedFrom?.text()
-        resourceFieldMap['publishedTo'] = r.metadata.gokb.title.publishedTo?.text()
-        resourceFieldMap['continuingSeries'] = r.metadata.gokb.title.continuingSeries?.text()
-        resourceFieldMap['OAStatus'] = r.metadata.gokb.title.OAStatus?.text()
-        resourceFieldMap['imprint'] = r.metadata.gokb.title.imprint?.text()
-        resourceFieldMap['issuer'] = r.metadata.gokb.title.issuer?.text()
-        resourceFieldMap['variantNames'] = []
-        resourceFieldMap['historyEvents'] = []
-        resourceFieldMap['type'] = 'Serial'
-
-        if ( ( resourceFieldMap['medium'] == null ) || ( resourceFieldMap['medium'].length() == 0 ) ) {
-          resourceFieldMap['medium'] = 'Journal'
-        }
-
-        r.metadata.gokb.title.identifiers.identifier.each {
-          if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
-            resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
-        }
-
-        if ( r.metadata.gokb.title.publisher?.name ) {
-          resourceFieldMap['publisher'] = r.metadata.gokb.title.publisher.name.text()
-        }
-
-        r.metadata.gokb.title.variantNames?.variantName.each { vn ->
-          resourceFieldMap['variantNames'].add(vn.text());
-        }
-
-        r.metadata.gokb.title.history?.historyEvent.each { he ->
-          println("Handle history event");
-          def history_event = 
-            [
-              from:[ ],
-              to:[ ]
-            ];
-
-          he.from.each { fr ->
-            println("Convert from title in history event : ${fr}");
-            history_event.from.add(convertHistoryEvent(fr));
+    http.headers = [Accept: 'application/xml']
+  
+    def resources = []
+    def resumptionToken = null
+    def ctr = 0;
+    
+    
+    while (!success) {
+      
+      try {
+  
+        http.request(GET, XML) { req ->
+          response.success = { resp, body ->
+            resumptionToken = body?.ListRecords?.resumptionToken.text()
+            
+            // Flag to terminate while loop.
+            success = true
+      
+            body?.'ListRecords'?.'record'.each { r ->
+              
+              println("Record ${ctr++}");
+      
+              def resourceFieldMap = [:]
+              
+              // Core fields come first.
+              resourceFieldMap['title'] = r.metadata.gokb.title.name?.text()
+              resourceFieldMap['status'] =  r.metadata.gokb.title.status?.text()
+              resourceFieldMap['editStatus'] = r.metadata.gokb.title.editStatus?.text()
+              resourceFieldMap['shortcode'] = r.metadata.gokb.title.shortcode?.text()
+      
+              // Identifiers
+              resourceFieldMap['identifiers'] = []
+              r.metadata.gokb.title.identifiers?.identifier?.each {
+                if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
+                  resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
+              }
+              
+              // Additional properties
+              resourceFieldMap['additionalProperties'] = []
+              r.metadata.gokb.title.additionalProperties?.additionalProperty?.each {
+                resourceFieldMap.additionalProperties.add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
+              }
+              
+              // Variant names
+              resourceFieldMap['variantNames'] = []
+              r.metadata.gokb.title.variantNames?.variantName?.each { vn ->
+                resourceFieldMap['variantNames'].add(vn.text());
+              }
+              
+              
+              resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
+              resourceFieldMap['publishedFrom'] = r.metadata.gokb.title.publishedFrom?.text()
+              resourceFieldMap['publishedTo'] = r.metadata.gokb.title.publishedTo?.text()
+              resourceFieldMap['continuingSeries'] = r.metadata.gokb.title.continuingSeries?.text()
+              resourceFieldMap['OAStatus'] = r.metadata.gokb.title.OAStatus?.text()
+              resourceFieldMap['imprint'] = r.metadata.gokb.title.imprint?.text()
+              resourceFieldMap['issuer'] = r.metadata.gokb.title.issuer?.text()
+              resourceFieldMap['historyEvents'] = []
+              resourceFieldMap['type'] = 'Serial'
+      
+              if ( ( resourceFieldMap['medium'] == null ) || ( resourceFieldMap['medium'].length() == 0 ) ) {
+                resourceFieldMap['medium'] = 'Journal'
+              }
+      
+              // Might be several publishers each with it's own from and to...
+              resourceFieldMap['publisher_history'] = []
+              r.metadata.gokb.title.publisher?.each { pub ->
+                
+                // Only add if we have a name
+                if (pub.name) {
+                
+                  def publisher = [
+                    name      : pub.name.text(),
+                    startDate : pub.startDate?.text(),
+                    endDate   : pub.endDate?.text(),
+                    status    : pub.status?.text()
+                  ]
+                    
+                  // Always add to the history. 
+                  resourceFieldMap['publisher_history'].add (publisher)
+                }
+              }
+      
+              r.metadata.gokb.title.history?.historyEvent.each { he ->
+                println("Handle history event");
+                def history_event = 
+                  [
+                    from:[ ],
+                    to:[ ]
+                  ];
+      
+                he.from.each { fr ->
+                  println("Convert from title in history event : ${fr}");
+                  history_event.from.add(convertHistoryEvent(fr));
+                }
+      
+                he.to.each { to ->
+                  println("Convert to title in history event : ${to}");
+                  history_event.to.add(convertHistoryEvent(to));
+                }
+      
+                history_event.date = he.date.text();
+      
+                resourceFieldMap['historyEvents'].add (history_event);
+              }
+      
+              resources << resourceFieldMap
+            }
           }
-
-          he.to.each { to ->
-            println("Convert to title in history event : ${to}");
-            history_event.to.add(convertHistoryEvent(to));
+      
+          response.error = { err ->
+            println "Failed http request"
+            println(err)
           }
-
-          history_event.date = he.date.text();
-
-          resourceFieldMap['historyEvents'].add (history_event);
         }
-
-        resources << resourceFieldMap
+      } catch (HttpResponseException ex) {
+        def resp = ex.getResponse()
+        println "Got response code ${resp.status}"
+        
+        if (resp.status == 504 && timeout_retry > 0) {
+          timeout_retry --
+          // Retry...
+          println ("Retrying (${timeout_retry} remaining attempts) after ${timeout_retry_wait} delay")
+          Thread.sleep(timeout_retry_wait)
+        } else {
+          // Throw the exception...
+          throw ex
+        }
       }
     }
-
-    response.error = { err ->
-      println "Failed http request"
-      println(err)
-    }
+  
+    println("Fetched ${resources.size()} titles in oai page");
+    return [resources, resumptionToken]
+    
+  } finally {
+    // Cleanup.
+    http.shutdown()
   }
-
-  println("Fetched ${resources.size()} titles in oai page");
-  [resources, resumptionToken]
 }
 
 private static convertHistoryEvent(evt) {
