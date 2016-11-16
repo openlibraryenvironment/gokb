@@ -105,7 +105,7 @@ abstract class GOKbSyncBase extends Script {
     def returnData
     try {
       if ( dryRun ) {
-        println "${parameters['body']}"
+        println "${toJson(parameters['body'])}"
       } else {
     
         getTarget().request(POST, JSON) { req ->
