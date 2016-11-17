@@ -4,7 +4,7 @@
 import GOKbSyncBase
 
 // Dry run first until we are sorted!
-setDryRun (true)
+//setDryRun (true)
 
 while ( moredata ) {
   
@@ -17,10 +17,7 @@ while ( moredata ) {
       def data = r.metadata.gokb.org
 
       def resourceFieldMap = addCoreItems ( data )
-      resourceFieldMap['homepage'] = cleanText(data.homepage?.text())
-      resourceFieldMap['mission'] = cleanText(data.mission?.text())
-//        resourceFieldMap['customIdentifiers'] = []
-//        resourceFieldMap['variantNames'] = []
+      directAddFields (data, ['homepage', 'mission'], resourceFieldMap)
       
       resources.add(resourceFieldMap)
     }
