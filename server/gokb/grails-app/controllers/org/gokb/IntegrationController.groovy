@@ -199,7 +199,7 @@ class IntegrationController {
     result.status = true;
 
     try {
-      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.customIdentifiers);
+      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.identifiers)
 
       if ( located_or_new_org == null ) {
         String orgName = request.JSON.name
@@ -212,10 +212,6 @@ class IntegrationController {
           log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
      
           located_or_new_org = new Org(name:request.JSON.name)
-          setAllRefdata ([
-            'status', 'editStatus',
-            'software', 'service'
-          ], request.JSON, located_or_new_org)
   
           log.debug("Attempt to save - validate: ${located_or_new_org}");
   
@@ -237,6 +233,10 @@ class IntegrationController {
       } else {
         log.debug("Located existing record.. Still update...");
       }
+      
+      setAllRefdata ([
+        'software', 'service'
+      ], request.JSON, located_or_new_org)
         
       if ( request.JSON.mission ) {
         log.debug("Mission ${request.JSON.mission}");
@@ -255,32 +255,6 @@ class IntegrationController {
         if (located_component) {
           located_or_new_org.parent = located_component
         }
-      }
-      
-      // Identifiers
-      log.debug("Identifier processing ${request.JSON.customIdentifiers}");
-      request.JSON.customIdentifiers.each { ci ->
-        def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
-        log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})");
-        located_or_new_org.ids.add(canonical_identifier)
-      }
-  
-      // roles
-      log.debug("Role Processing: ${request.JSON.roles}");
-      request.JSON.roles.each { r ->
-        log.debug("Adding role ${r}");
-        def role = RefdataCategory.lookupOrCreate("Org.Role", r)
-        located_or_new_org.addToRoles(role)
-      }
-
-      // flags
-      log.debug("Flag Processing: ${request.JSON.flags}");
-      request.JSON.flags.each { f ->
-        log.debug("Adding flag ${f.flagType},${f.flagValue}");
-        def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue).save()
-        located_or_new_org.addToTags(
-          flag
-        )
       }
       
       log.debug("Combo processing: ${request.JSON.combos}")
@@ -303,6 +277,17 @@ class IntegrationController {
         }
       }
       
+      // roles
+      log.debug("Role Processing: ${request.JSON.roles}");
+      request.JSON.roles.each { r ->
+        log.debug("Adding role ${r}");
+        def role = RefdataCategory.lookupOrCreate("Org.Role", r)
+        located_or_new_org.addToRoles(role)
+      }
+
+      // Core data...
+      ensureCoreData(located_or_new_org, request.JSON)
+      
       log.debug("Attempt to save - validate: ${located_or_new_org}");
       
       if ( located_or_new_org.save(flush:true, failOnError : true) ) {
@@ -317,13 +302,6 @@ class IntegrationController {
         }
         result.status = false;
         return
-      }
-
-      log.debug("Variant names processing: ${request.JSON.variantNames}")
-
-      // variants
-      request.JSON.variantNames.each { vn ->
-        addVariantNameToComponent(located_or_new_org, vn)
       }
 
       result.msg="Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
@@ -356,54 +334,50 @@ class IntegrationController {
    *      ]
    */
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
-  def assertSource() { 
-    log.debug("assertSource, request.json = ${request.JSON}");
+  def assertSource() {
+    createOrUpdateSource ( request.JSON )
+  }
+  
+  private def createOrUpdateSource( data ) { 
+    log.debug("assertSource, data = ${data}");
     def result=[:]
     result.status = true;
 
     try {
-      if ( request.JSON.name ) {
-        def located_or_new_source = Source.findByName(request.JSON.name) ?: new Source(name:request.JSON.name)
-        // changed |= setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
+      if ( data.name ) {
+        def located_or_new_source = Source.findByName(data.name) ?: new Source(name:data.name)
        
-        ClassUtils.setIfPresent(located_or_new_source,'url',request.JSON.url)
-        ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',request.JSON.defaultAccessURL)
-        ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',request.JSON.explanationAtSource)
-        ClassUtils.setIfPresent(located_or_new_source,'contextualNotes',request.JSON.contextualNotes)
-        ClassUtils.setIfPresent(located_or_new_source,'frequency',request.JSON.frequency)
-        ClassUtils.setIfPresent(located_or_new_source,'ruleset',request.JSON.ruleset)
+        ClassUtils.setIfPresent(located_or_new_source,'url',data.url)
+        ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
+        ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
+        ClassUtils.setIfPresent(located_or_new_source,'contextualNotes',data.contextualNotes)
+        ClassUtils.setIfPresent(located_or_new_source,'frequency',data.frequency)
+        ClassUtils.setIfPresent(located_or_new_source,'ruleset',data.ruleset)
         
         setAllRefdata ([
-          'status', 'editStatus',
           'software', 'service'
-        ], request.JSON, located_or_new_source)
+        ], data, located_or_new_source)
         
-        ClassUtils.setRefdataIfPresent(request.JSON.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-        ClassUtils.setRefdataIfPresent(request.JSON.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
+        ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+        ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
         
-        // Identifiers
-        log.debug("Identifier processing ${request.JSON.customIdentifiers}");
-        request.JSON.identifiers.each { ci ->
-          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-          log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
-          located_or_new_source.ids.add(canonical_identifier)
-        }
+        ensureCoreData(located_or_new_source, data)
         
-        located_or_new_source.save(flush:true, failOnError:true)
-
-        
-        log.debug("Variant names processing: ${request.JSON.variantNames}")
+        log.debug("Variant names processing: ${data.variantNames}")
   
         // variants
-        request.JSON.variantNames.each { vn ->
+        data.variantNames.each { vn ->
           addVariantNameToComponent(located_or_new_source, vn)
         }
+        
+        result['component'] = located_or_new_source
       }
     }
     catch ( Exception e ) {
       e.printStackTrace()
     }
 
+    result
   }
 
 
@@ -526,6 +500,56 @@ class IntegrationController {
 
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
+  
+  private ensureCoreData ( KBComponent component, data ) {
+    
+    // Set the name.
+    component.name = data.name
+    
+    // Core refdata.
+    setAllRefdata ([
+      'status', 'editStatus',
+    ], data, component)
+    
+    // Identifiers
+    log.debug("Identifier processing ${data.identifiers}")
+    data.identifiers.each { ci ->
+      def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+      log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
+      component.ids.add(canonical_identifier)
+    }
+
+    // Flags
+    log.debug("Tag Processing: ${data.tags}");
+    data.tags?.each { t ->
+      log.debug("Adding tag ${t.type},${t.value}")
+      component.addToTags(
+        RefdataCategory.lookupOrCreate(t.type, t.value)
+      )
+    }
+    
+    // handle the source.
+    if (data.source && data.source?.size() > 0) {
+      component.source = createOrUpdateSource (data.source)?.get('component')
+    }
+    
+    // Save the component so we have something to set the names against.
+    component.save(failOnError: true, flush: true)
+    
+    // Variant names.
+    Set<String> variants = component.variantNames.collect { it.variantName }
+    data.variantNames?.each { String name ->
+      if (!variants.contains(name)) {
+        // Add the variant name.
+        def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
+        new_variant_name.save(failOnError: true)
+        
+        // Add to collection.
+        variants << name
+      }
+    }
+  }
+  
   
   private addVariantNameToComponent (component, variant_name) {
     
