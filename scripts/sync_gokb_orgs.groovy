@@ -3,10 +3,6 @@
 @groovy.transform.BaseScript(GOKbSyncBase)
 import GOKbSyncBase
 
-//println("Pulling latest messages");
-//pullLatest(config, httpbuilder, cfg_file)
-//println("All done");
-
 // Dry run first until we are sorted!
 setDryRun (true)
 
@@ -31,6 +27,6 @@ while ( moredata ) {
   }
   
   resources.each {
-    sendToTarget (path: '/gokb/oai/orgs', body: it) 
+    sendToTarget (path: '/gokb/integration/assertOrg', body: it) 
   }
 }

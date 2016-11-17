@@ -105,7 +105,7 @@ abstract class GOKbSyncBase extends Script {
     def returnData
     try {
       if ( dryRun ) {
-        println "${toJson(parameters['body'])}"
+        println "${prettyPrint(toJson(parameters['body']))}"
       } else {
     
         getTarget().request(POST, JSON) { req ->
@@ -271,32 +271,39 @@ abstract class GOKbSyncBase extends Script {
       
       directAddFields (data, ['name', 'status', 'editStatus', 'shortcode'], addTo)
     
-      // Identifiers
-      addTo['identifiers'] = []
-      data.identifiers?.identifier?.each {
+      if (data.identifiers && data.identifiers.size() > 0) {
         
-        // Only include namespaces that are not 'originEditUrl'
-        if ( !['originEditUrl'].contains(it.'@namespace') )
-          addTo.identifiers.add( [ type:it.'@namespace'.text(), value: cleanText(it.'@value'?.text()) ] )
+        def ids = []
+        data.identifiers?.identifier?.each {
+          
+          // Only include namespaces that are not 'originEditUrl'
+          if ( !['originEditUrl'].contains(it.'@namespace') )
+            ids.add( [ type:it.'@namespace'.text(), value: cleanText(it.'@value'?.text()) ] )
+        }
+        
+        if (ids) {
+          // Identifiers
+          addTo['identifiers'] = ids
+        }
       }
       
       // Additional properties.
-      if (data.additionalProperties) {
-        addTo['additionalProperties'] = data.additionalProperties?.additionalProperty?.collect ({
+      if (data.additionalProperties && data.additionalProperties.size() > 0) {
+        addTo['additionalProperties'] = data.additionalProperties.additionalProperty?.collect ({
           [ name:it.'@name'.text(), value: cleanText(it.'@value'?.text()) ]
         }) ?: []
       }
       
       // Variant names.
-      if (data.variantNames) {
-        addTo['variantNames'] = data.variantNames?.variantName?.collect ({
+      if (data.variantNames && data.variantNames.size() > 0) {
+        addTo['variantNames'] = data.variantNames.variantName?.collect ({
           cleanText( it.text() )
         }) ?: []
       }
       
       // File attachments.
-      if (data.fileAttachments) {
-        addTo['fileAttachments'] = data.fileAttachments?.fileAttachment?.collect ( handleFile )
+      if (data.fileAttachments && data.fileAttachments.size() > 0) {
+        addTo['fileAttachments'] = data.fileAttachments.fileAttachment?.collect ( handleFile )
       }
       
       // Source.
@@ -328,6 +335,7 @@ abstract class GOKbSyncBase extends Script {
       
     } finally {
       cleanup()
+      println "Done!"
     }
   }
   

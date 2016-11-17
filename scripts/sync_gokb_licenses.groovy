@@ -1,263 +1,33 @@
 #!groovy
 
-@Grapes([
-  @GrabResolver(name='mvnRepository', root='http://central.maven.org/maven2/'),
-  @Grab(group='net.sourceforge.nekohtml', module='nekohtml', version='1.9.14'),
-  @Grab(group='javax.mail', module='mail', version='1.4.7'),
-  @Grab(group='net.sourceforge.htmlunit', module='htmlunit', version='2.21'),
-  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.2'),
-  @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
-  @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
-  @Grab(group='commons-net', module='commons-net', version='3.5'),
-  @GrabExclude('org.codehaus.groovy:groovy-all')
-])
+@groovy.transform.BaseScript(GOKbSyncBase)
+import GOKbSyncBase
 
+// Custom source host.
+setSourceBase('http://localhost:8090/')
 
-import javax.mail.*
-import javax.mail.search.*
-import static groovy.json.JsonOutput.*
-import groovy.json.JsonSlurper
-import com.gargoylesoftware.htmlunit.*
-import groovyx.net.http.HTTPBuilder
-import org.apache.http.entity.mime.content.StringBody
-import groovyx.net.http.*
-import org.apache.commons.net.ftp.*
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.URIBuilder
-import static groovyx.net.http.ContentType.XML
-import static groovyx.net.http.Method.GET
-import java.util.Base64
-import org.apache.commons.io.FilenameUtils
+// Dry run first until we are sorted!
+setDryRun (true)
 
-String fileName = "${this.class.getSimpleName().replaceAll(/\_/, "-")}-cfg.json"
-def cfg_file = new File("./${fileName}")
-
-def config = null
-if ( cfg_file.exists() ) {
-  config = new JsonSlurper().parseText(cfg_file.text)
-}
-else {
-  println("No config found please supply authentication details.")
-  config = [
-    uploadUser: System.console().readLine ('Enter your username: ').toString(),
-    uploadPass: System.console().readPassword ('Enter your password: ').toString()
-  ]
+while ( moredata ) {
   
-  // Save to the file.
-  cfg_file << toJson(config)
-  
-  println("Saved config file to ${fileName}")
-}
-
-def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
-httpbuilder.auth.basic config.uploadUser, config.uploadPass
-
-
-println("Pulling latest messages");
-pullLatest(config, httpbuilder, cfg_file)
-println("All done");
-
-def pullLatest(config, httpbuilder, cfg_file) {
-  importLicenses('http://gokb.openlibraryfoundation.org', httpbuilder, config, cfg_file);
-}
-
-def importLicenses(host, gokb, config, cfg_file) {
-  def resumptionToken = config.resumptionToken
-  def resourcesFromPage
-  
-
-  def moredata = true;
-
-  while ( moredata ) {
-    def first_resource = false;
-    def ctr = 0;
-    println("Request resources...");
-    (resourcesFromPage, resumptionToken) = getResourcesFromGoKBByPage(gokbUrl(host, resumptionToken))
-    println("Got resources, processing...");
-
-    resourcesFromPage.each { gt ->
-      ctr++
-      if ( first_resource ) {
-        // println(gt);
-        first_resource = false;
-      }
-      else {
-        // println(gt);
-      }
-
-      addToGoKB(false, gokb, gt)
-      synchronized(this) {
-        Thread.sleep(3000);
-      }
-    }
-
-    if ( resumptionToken ) {
-      println("Requesting another page...");
-      moredata = true
-      config.resumptionToken = resumptionToken
-    }
-    else {
-      moredata = false;
-      resumptionToken = null;
-      config.resumptionToken = null;
-    }
-
-    println("Updating config - processed ${ctr} records");
-    cfg_file.delete()
-    cfg_file << toJson(config)
-
-    synchronized(this) {
-      println("Quick Sleep");
-      Thread.sleep(4000);
-    }
-  }
-}
-
-
-private static getResourcesFromGoKBByPage(URL url) {
-  println "Retrieving: ${url}"
-
-  def http = new HTTPBuilder(url, XML)
-
-  http.headers = [Accept: 'application/xml']
-
   def resources = []
-  def resumptionToken = null
-  def ctr = 0
+  fetchFromSource (path: '/gokb/oai/licenses') { resp, body ->
 
-  http.request(GET, XML) { req ->
-    response.success = { resp, body ->
-      resumptionToken = body?.ListRecords?.resumptionToken.text()
+    body?.'ListRecords'?.'record'.metadata.gokb.eachWithIndex { data, index ->
+
+      println("Record ${index + 1}")
+
+      def resourceFieldMap = addCoreItems ( data )
+      directAddFields (data, [
+        'url','file','type', 'licensor', 'licensee', 
+        'previous', 'successor', 'model', 'summaryStatement'], resourceFieldMap)
       
-      resources = body?.ListRecords?.record.metadata.gokb.collect { r ->
-        
-        // Construct each entry
-        println("Record ${ctr++}")
-        
-        // Core fields come first.
-        resourceFieldMap['name'] = r.name?.text()
-        resourceFieldMap['status'] =  r.status?.text()
-        resourceFieldMap['editStatus'] = r.editStatus?.text()
-        resourceFieldMap['shortcode'] = r.shortcode?.text()
-
-        // Identifiers
-        resourceFieldMap['identifiers'] = []
-        r.identifiers?.identifier?.each {
-          if ( !['originEditUrl'].contains(it.'@namespace') )
-            resourceFieldMap['identifiers'].add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
-        }
-        
-        // Additional properties
-        resourceFieldMap['additionalProperties'] = []
-        r.additionalProperties?.additionalProperty?.each {
-          resourceFieldMap['additionalProperties'].add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
-        }
-        
-        // Variant names
-        resourceFieldMap['variantNames'] = []
-        r.variantNames?.variantName?.each { vn ->
-          resourceFieldMap['variantNames'].add(vn.text());
-        }
-        
-        // Add basic text properties.
-        ['url','file','type', 'licensor', 'licensee', 
-          'previous', 'successor', 'model'].each {
-            def val
-            if ((val = r."${it}".text())) resourceFieldMap[it] = val
-        }
-        
-        // Summary statement.
-        resourceFieldMap['summaryStatement'] = r.summaryStatement.yieldUnescaped.text()
-        
-        // Attatched files need special attention.
-        resourceFieldMap['fileAttachments'] = r.fileAttachments.fileAttachment.collect { fa ->
-          
-          def fileMap = [:]
-          ['guid','md5', 'uploadName', 'uploadMimeType', 'filesize', 'doctype'].each {
-            def val
-            if ((val = fa."${it}".text())) fileMap[it] = val
-          }
-          
-          // Handle the actual file content by reading it as a byte[]
-          byte[] bytes = fa.content.yieldUnescaped.text().trim().replaceAll(/\<\!\[CDATA\[\[(.*)\]\]\]\>/, '$1').split(/\,\s*/).collect ({ String s ->
-            s.toInteger().byteValue()
-          }) as byte[]
-          
-//          new File("./${FilenameUtils.getName(fileMap['uploadName'])}").withOutputStream {
-//            it.write bytes
-//          }
-          
-          fileMap['content'] = Base64.getEncoder().encodeToString (bytes)
-          
-          fileMap
-        }
-        
-        // Curatory groups.
-        resourceFieldMap['curatoryGroups'] = r.'curatoryGroups'.'group'.text()
-        
-        resourceFieldMap
-      } ?: []
-      
-      
-    }
-
-    response.error = { err ->
-      println "OAI GET Failed http request"
-      println(err)
+      resources.add(resourceFieldMap)
     }
   }
-
-  println("Fetched ${resources.size()} packages in oai page");
-  [resources, resumptionToken]
-}
-
-private static URL gokbUrl(host, resumptionToken = null) {
-  final path = '/gokb/oai/licenses', prefix = 'gokb'
-
-  def qry = [verb: 'ListRecords', metadataPrefix: prefix]
-
-  if(resumptionToken) qry.resumptionToken = resumptionToken
-
-  new URIBuilder(host)
-      .setPath(path)
-      .addQueryParams(qry)
-      .toURL()
-}
-
-
-
-def addToGoKB(dryrun, gokb, title_data) {
-
-  try {
-    println("addToGoKB..... ${new Date()}");
-    if ( dryrun ) {
-      println(toJson(title_data))
-    }
-    else {
-      gokb.request(Method.POST) { req ->
-        uri.path='/gokb/integration/crossReferenceLicense'
-        body = toJson(title_data)
-        requestContentType = ContentType.JSON
-
-        response.success = { resp, data ->
-          println "Success! ${resp.status} ${data.message}"
-        }
-
-        response.failure = { resp ->
-          println "GOKB crossReferenceLicense Request failed with status ${resp.status}"
-          // println (title_data);
-        }
-      }
-    }
+  
+  resources.each {
+    sendToTarget (path: '/gokb/integration/crossReferenceLicense', body: it) 
   }
-  catch ( Exception e ) {
-    println("Fatal error loading ${title_data}\nNot loaded");
-    e.printStackTrace();
-    System.exit(0);
-  }
-  finally {
-    println("addToGoKB complete ${new Date()}");
-  }
-
-
 }
