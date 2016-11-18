@@ -4,7 +4,7 @@
 import GOKbSyncBase
 
 // Dry run first until we are sorted!
-//setDryRun (true)
+setDryRun (true)
 
 while ( moredata ) {
   
