@@ -513,10 +513,17 @@ class IntegrationController {
     
     // Identifiers
     log.debug("Identifier processing ${data.identifiers}")
+    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}" }
     data.identifiers.each { ci ->
-      def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
-      log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-      component.ids.add(canonical_identifier)
+      String testKey = "${ci.type}|${ci.value}"
+      if (!ids.contains(testKey)) {
+        def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+        log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
+        component.ids.add(canonical_identifier)
+        
+        // Add the value for comparison.
+        ids << testKey
+      }
     }
 
     // Flags
