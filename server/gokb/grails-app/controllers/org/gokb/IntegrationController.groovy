@@ -729,20 +729,24 @@ class IntegrationController {
          ( request.JSON.platformUrl.trim().length() > 0 ) &&
          ( request.JSON.platformName ) &&
          ( request.JSON.platformName.trim().length() > 0 ) ) {
-      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl);
+      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl)
       if ( p == null ) {
-        p=new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true);
+        
+        // Attempt normname lookup.
+        p = Platform.findByNormname( Org.generateNormname (request.JSON.name) ) ?: new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.name)
       }
 
-      def changed = setAllRefdata ([
-        'status', 'editStatus',
+      setAllRefdata ([
         'software', 'service'
       ], request.JSON, p)
-      changed |= ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
+      ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
 
-      if ( changed ) {
-        p.save(flush:true, failOnError:true);
-      }
+      // Add the core data.
+      ensureCoreData(p, request.JSON)
+      
+//      if ( changed ) {
+//        p.save(flush:true, failOnError:true);
+//      }
 
       result.platform_id = p.id;
     }
@@ -765,7 +769,7 @@ class IntegrationController {
     def data = request.JSON
     if (data && data.name) {
       // Use the name to either match or create a Licence.
-      License l = License.findByNormname( License.generateNormname (data.name) ) ?: new License (name: data.name)
+      License l = License.findOrCreateByName( License.generateNormname (data.name) ) ?: new License (name: data.name)
       
       // Update the properties on the license.
       l.with {        
@@ -855,15 +859,18 @@ class IntegrationController {
         }
     
         title_changed |= setAllRefdata ([
-          'status', 'editStatus',
+//          'status', 'editStatus',
           'software', 'service'
         ], request.JSON, title)
         
         title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
-        title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
-    
-        log.debug("Saving title changes");
-        title.save(flush:true, failOnError:true);
+        title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)        
+        
+        // Add the core data.
+        ensureCoreData(title, request.JSON)
+        
+        
+//        title.save(flush:true, failOnError:true)
     
         if ( request.JSON.historyEvents?.size() > 0 ) {
           request.JSON.historyEvents.each { jhe ->
