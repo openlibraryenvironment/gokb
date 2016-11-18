@@ -1,340 +1,91 @@
 #!groovy
 
-@Grapes([
-  @GrabResolver(name='mvnRepository', root='http://central.maven.org/maven2/'),
-  @Grab(group='net.sourceforge.nekohtml', module='nekohtml', version='1.9.14'),
-  @Grab(group='javax.mail', module='mail', version='1.4.7'),
-  @Grab(group='net.sourceforge.htmlunit', module='htmlunit', version='2.21'),
-  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.2'),
-  @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
-  @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
-  @Grab(group='commons-net', module='commons-net', version='3.5'),
-  @GrabExclude('org.codehaus.groovy:groovy-all')
-])
+@groovy.transform.BaseScript(GOKbSyncBase)
+import GOKbSyncBase
 
+// Custom source host.
+//setSourceBase('http://localhost:8090/')
 
-import javax.mail.*
-import javax.mail.search.*
-import java.util.Properties
-import static groovy.json.JsonOutput.*
-import groovy.json.JsonSlurper
-import java.security.MessageDigest
-import com.gargoylesoftware.htmlunit.*
-import groovyx.net.http.HTTPBuilder
-import org.apache.http.entity.mime.MultipartEntity
-import org.apache.http.entity.mime.HttpMultipartMode
-import org.apache.http.entity.mime.content.InputStreamBody
-import org.apache.http.entity.mime.content.StringBody
-import groovyx.net.http.*
-import org.apache.http.entity.mime.MultipartEntityBuilder /* we'll use the new builder strategy */
-import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulate our file uploads */
-import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
-import groovyx.net.http.HttpResponseException
-import org.apache.commons.io.IOUtils
-import org.apache.commons.net.ftp.*
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.URIBuilder
-import static groovyx.net.http.ContentType.XML
-import static groovyx.net.http.Method.GET
+// Dry run first until we are sorted!
+setDryRun (true)
 
-
-// Example full record http://gokb.openlibraryfoundation.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:309298
-
-// Alternate names
-// Example full record http://gokb.openlibraryfoundation.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:232360
-
-// Publisher example
-// Example full record http://gokb.openlibraryfoundation.org/gokb/oai/titles?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.TitleInstance:14290
-
-String fileName = "${this.class.getSimpleName().replaceAll(/\_/, "-")}-cfg.json"
-def cfg_file = new File("./${fileName}")
-
-def config = null
-if ( cfg_file.exists() ) {
-  config = new JsonSlurper().parseText(cfg_file.text)
-}
-else {
-  println("No config found please supply authentication details.")
-  config = [
-    uploadUser: System.console().readLine ('Enter your username: ').toString(),
-    uploadPass: System.console().readPassword ('Enter your password: ').toString()
-  ]
+// This script is different from the rest. During the first pass we will only act on titles with identifiers present.
+for (config.pass = config.pass ?: 1; config.pass<=2; config.pass++) {
   
-  // Save to the file.
-  cfg_file << toJson(config)
+  // Save to persist pass number.
+  saveConfig()
   
-  println("Saved config file to ${fileName}")
-}
-
-println("Using config ${config}");
-
-def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
-try {
-  httpbuilder.auth.basic config.uploadUser, config.uploadPass
-  
-  
-  println("Pulling latest messages");
-  pullLatest(config, httpbuilder, cfg_file)
-  println("All done")
-  
-} finally {
-  // Cleanup.
-  httpbuilder.shutdown()
-}
-
-def pullLatest(config,httpbuilder, cfg_file) {
-  importJournals('http://gokb.openlibraryfoundation.org', httpbuilder, config, cfg_file);
-}
-
-def importJournals(host, gokb, config, cfg_file) {
-  def resumptionToken
-  def resourcesFromPage
-
-  resumptionToken = config.resumptionToken
-
-  def moredata = true;
-
   while ( moredata ) {
-    def first_resource = false;
-    def ctr = 0;
-    (resourcesFromPage, resumptionToken) = getResourcesFromGoKBByPage(gokbUrl(host, resumptionToken))
-
-    resourcesFromPage.each { gt ->
-      ctr++
-      if ( first_resource ) {
-        println(gt);
-        first_resource = false;
-      }
-      else {
-        println(gt);
-      }
-
-      addToGoKB(false, gokb, gt)
-    }
-
-    if ( resumptionToken ) {
-      moredata = true 
-      config.resumptionToken = resumptionToken
-    } 
-    else {
-      moredata = false;
-      resumptionToken = null;
-    }
-
-    println("Updating config - processed ${ctr} records");
-    cfg_file.delete()
-    cfg_file << toJson(config);
-  }
-}
-
-private static getResourcesFromGoKBByPage(URL url) {
-  println "Retrieving: ${url}"
-
-  def http = new HTTPBuilder(url, XML)
-  
-  int timeout_retry = 3
-  long timeout_retry_wait = 5 * 1000 // (5 seconds)
     
-  boolean success = false // flag to terminate loop.
-  
-  try {
-
-    http.headers = [Accept: 'application/xml']
-  
     def resources = []
-    def resumptionToken = null
-    def ctr = 0;
-    
-    
-    while (!success) {
-      
-      try {
+    fetchFromSource (path: '/gokb/oai/titles') { resp, body ->
   
-        http.request(GET, XML) { req ->
-          response.success = { resp, body ->
-            resumptionToken = body?.ListRecords?.resumptionToken.text()
-            
-            // Flag to terminate while loop.
-            success = true
-      
-            body?.'ListRecords'?.'record'.each { r ->
-              
-              println("Record ${ctr++}");
-      
-              def resourceFieldMap = [:]
-              
-              // Core fields come first.
-              resourceFieldMap['title'] = r.metadata.gokb.title.name?.text()
-              resourceFieldMap['status'] =  r.metadata.gokb.title.status?.text()
-              resourceFieldMap['editStatus'] = r.metadata.gokb.title.editStatus?.text()
-              resourceFieldMap['shortcode'] = r.metadata.gokb.title.shortcode?.text()
-      
-              // Identifiers
-              resourceFieldMap['identifiers'] = []
-              r.metadata.gokb.title.identifiers?.identifier?.each {
-                if ( ['issn', 'eissn', 'DOI', 'isbn'].contains(it.'@namespace') )
-                  resourceFieldMap.identifiers.add( [ type:it.'@namespace'.text(),value:it.'@value'.text() ] )
-              }
-              
-              // Additional properties
-              resourceFieldMap['additionalProperties'] = []
-              r.metadata.gokb.title.additionalProperties?.additionalProperty?.each {
-                resourceFieldMap.additionalProperties.add( [ name:it.'@name'.text(),value:it.'@value'.text() ] )
-              }
-              
-              // Variant names
-              resourceFieldMap['variantNames'] = []
-              r.metadata.gokb.title.variantNames?.variantName?.each { vn ->
-                resourceFieldMap['variantNames'].add(vn.text());
-              }
-              
-              
-              resourceFieldMap['medium'] = r.metadata.gokb.title.medium.text()
-              resourceFieldMap['publishedFrom'] = r.metadata.gokb.title.publishedFrom?.text()
-              resourceFieldMap['publishedTo'] = r.metadata.gokb.title.publishedTo?.text()
-              resourceFieldMap['continuingSeries'] = r.metadata.gokb.title.continuingSeries?.text()
-              resourceFieldMap['OAStatus'] = r.metadata.gokb.title.OAStatus?.text()
-              resourceFieldMap['imprint'] = r.metadata.gokb.title.imprint?.text()
-              resourceFieldMap['issuer'] = r.metadata.gokb.title.issuer?.text()
-              resourceFieldMap['historyEvents'] = []
-              resourceFieldMap['type'] = 'Serial'
-      
-              if ( ( resourceFieldMap['medium'] == null ) || ( resourceFieldMap['medium'].length() == 0 ) ) {
-                resourceFieldMap['medium'] = 'Journal'
-              }
-      
-              // Might be several publishers each with it's own from and to...
-              resourceFieldMap['publisher_history'] = []
-              r.metadata.gokb.title.publisher?.each { pub ->
-                
-                // Only add if we have a name
-                if (pub.name) {
-                
-                  def publisher = [
-                    name      : pub.name.text(),
-                    startDate : pub.startDate?.text(),
-                    endDate   : pub.endDate?.text(),
-                    status    : pub.status?.text()
-                  ]
-                    
-                  // Always add to the history. 
-                  resourceFieldMap['publisher_history'].add (publisher)
-                }
-              }
-      
-              r.metadata.gokb.title.history?.historyEvent.each { he ->
-                println("Handle history event");
-                def history_event = 
-                  [
-                    from:[ ],
-                    to:[ ]
-                  ];
-      
-                he.from.each { fr ->
-                  println("Convert from title in history event : ${fr}");
-                  history_event.from.add(convertHistoryEvent(fr));
-                }
-      
-                he.to.each { to ->
-                  println("Convert to title in history event : ${to}");
-                  history_event.to.add(convertHistoryEvent(to));
-                }
-      
-                history_event.date = he.date.text();
-      
-                resourceFieldMap['historyEvents'].add (history_event);
-              }
-      
-              resources << resourceFieldMap
-            }
-          }
-      
-          response.error = { err ->
-            println "Failed http request"
-            println(err)
-          }
-        }
-      } catch (HttpResponseException ex) {
-        def resp = ex.getResponse()
-        println "Got response code ${resp.status}"
+      body?.'ListRecords'?.'record'.metadata.gokb.title.eachWithIndex { data, index ->
         
-        if (resp.status == 504 && timeout_retry > 0) {
-          timeout_retry --
-          // Retry...
-          println ("Retrying (${timeout_retry} remaining attempts) after ${timeout_retry_wait} delay")
-          Thread.sleep(timeout_retry_wait)
-        } else {
-          // Throw the exception...
-          throw ex
-        }
-      }
-    }
-  
-    println("Fetched ${resources.size()} titles in oai page");
-    return [resources, resumptionToken]
+        println("Record ${index + 1}")
+        if ((config.pass > 1 && data?.identifiers?.size() ?: 0 == 0 ) || (config.pass == 1 && data?.identifiers?.size() ?: 0 > 0)) {
     
-  } finally {
-    // Cleanup.
-    http.shutdown()
-  }
-}
-
-private static convertHistoryEvent(evt) {
-  // convert the evt structure to a json object and add to lst
-  def result = [:]
-  result.title=evt.title[0].text()
-  result.identifiers=[]
-  evt.identifiers.identifier.each { id ->
-    result.identifiers.add( [ type: id.'@namespace'.text(), value: id.'@value'.text() ] );
-  }
-
-  println("Result of convertHistoryEvent : ${result}");
-
-  result
-}
-
-private static URL gokbUrl(host, resumptionToken = null) {
-  final path = '/gokb/oai/titles', prefix = 'gokb'
-
-  def qry = [verb: 'ListRecords', metadataPrefix: prefix]
-
-  if(resumptionToken) qry.resumptionToken = resumptionToken
-
-  new URIBuilder(host)
-            .setPath(path)
-            .addQueryParams(qry)
-            .toURL()
-}
-
-
-
-def addToGoKB(dryrun, gokb, title_data) {
-  
-  try {
-    if ( dryrun ) {
-      println(title_data)
-    }
-    else {
-      gokb.request(Method.POST) { req ->
-        uri.path='/gokb/integration/crossReferenceTitle'
-        body = title_data
-        requestContentType = ContentType.JSON
-
-        response.success = { resp, data ->
-          println "Success! ${resp.status} ${data.message}"
-        }
-
-        response.failure = { resp ->
-          println "Request failed with status ${resp.status}"
-          println (title_data);
+          def resourceFieldMap = addCoreItems ( data, ['type': 'Serial'])
+          directAddFields (data, ['defaultAccessURL', 'publishedFrom', 'publishedTo', 
+            'continuingSeries', 'OAStatus', 'imprint', 'issuer'], resourceFieldMap)
+    
+          String medium = "${cleanText(data.medium?.text())}"
+          resourceFieldMap['medium'] = (medium != "" ? medium : 'Journal')
+    
+          // Might be several publishers each with it's own from and to...
+          resourceFieldMap['publisher_history'] = data.publisher?.collect { pub ->
+            directAddFields (pub, ['name','startDate','endDate','status'])
+          } ?: []
+          
+          resourceFieldMap['historyEvents'] = data.history?.historyEvent?.collect { he ->
+            println("\tHandle history event")
+            [
+              'date': cleanText(he.date.text()),
+              'from': he?.from?.collect { fr ->
+                println("\tConvert from title in history event : ${fr}")
+                convertHistoryEvent(fr)
+              } ?: [],
+              'to': he?.to?.collect { to ->
+                println("\tConvert to title in history event : ${to}")
+                convertHistoryEvent(to)
+              } ?: []
+            ]
+          } ?: []
+          
+          resources.add(resourceFieldMap)
+        } else {
+          if (config.pass == 1) {
+            println("\tSkipping title without identifiers.")
+          } else {
+            println("\tSkipping identified title on second pass.")
+          }
         }
       }
     }
+    
+    resources.each {
+      sendToTarget (path: '/gokb/integration/crossReferenceTitle', body: it)
+    }
   }
-  catch ( Exception e ) {
-    println("Fatal error loading ${title_data}");
-    e.printStackTrace();
-    System.exit(0);
-  }
+  
+  // Remove this here so we start from the beginning every time.
+  config.remove('resumptionToken')
+}
 
+// Also clear pass number.
+config.remove('pass')
+
+private convertHistoryEvent(evt) {
+  // convert the evt structure to a json object and add to lst
+  def result = [
+    'title' : cleanText(evt.title[0].text()),
+    'identifiers' : evt.identifiers.identifier.collect { id ->
+      [
+        type: cleanText(id.'@namespace'.text()),
+        value: cleanText(id.'@value'.text())
+      ]
+    }
+  ]
+  println("\tResult of convertHistoryEvent : ${result}")
+  result
 }
