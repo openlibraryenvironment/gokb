@@ -329,8 +329,7 @@ abstract class GOKbSyncBase extends Script {
     source?.shutdown()
     source = null
     
-    // We should save the config here to save the null token
-    config.remove('resumptionToken')
+    // We should save the config here...
     saveConfig()
   }
   
