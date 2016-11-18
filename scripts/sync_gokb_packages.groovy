@@ -200,7 +200,7 @@ private static getResourcesFromGoKBByPage(URL url) {
               resourceFieldMap.packageHeader.userListVerifier = r.metadata.gokb.package.userListVerifier.text()
               resourceFieldMap.packageHeader.nominalPlatform = r.metadata.gokb.package.nominalPlatform.text()
               resourceFieldMap.packageHeader.nominalProvider = r.metadata.gokb.package.nominalProvider.text()
-              resourceFieldMap.packageHeader.listVerifierDate = r.metadata.gokb.package.listVerifierDate.text()
+              resourceFieldMap.packageHeader.listVerifiedDate = r.metadata.gokb.package.listVerifiedDate.text()
               resourceFieldMap.packageHeader.source = [url:r.metadata.gokb.package.source?.url.text()]
       
               resourceFieldMap.packageHeader.curatoryGroups = []
