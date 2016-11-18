@@ -540,6 +540,38 @@ class IntegrationController {
       component.source = createOrUpdateSource (data.source)?.get('component')
     }
     
+    // Add each file upload too!
+    data.fileAttachments.each { fa ->
+      
+      if (fa?.md5) {
+      
+        DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile( guid: fa.guid, md5: fa.md5 )
+        
+        // Single properties.
+        file.with {
+          (name, uploadName, uploadMimeType, filesize, doctype) = [
+            fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
+          ]
+        
+          // The contents of the file.
+          if (fa.content) {
+            fileData = fa.content.decodeBase64()
+          }
+          
+          // Update.
+          save()
+        }
+        
+        // Grab the attachments.
+        def attachments = component.getFileAttachments()
+        if (!attachments.contains(file)) {
+        
+          // Add to the attached files.
+          attachments.add(file)
+        }
+      }
+    }
+    
     // Save the component so we have something to set the names against.
     component.save(failOnError: true, flush: true)
     
@@ -733,7 +765,7 @@ class IntegrationController {
     def data = request.JSON
     if (data && data.name) {
       // Use the name to either match or create a Licence.
-      License l = License.findOrCreateByName (data.name)
+      License l = License.findByNormname( License.generateNormname (data.name) ) ?: new License (name: data.name)
       
       // Update the properties on the license.
       l.with {        
@@ -743,44 +775,14 @@ class IntegrationController {
       }
       
       setAllRefdata ([
-        'status', 'editStatus',
         'type'
       ], data, l)
       
-      // Add each file upload too!
-      data.fileAttachments.each { fa ->
-        
-        if (fa?.md5) {
-        
-          DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile( guid: fa.guid, md5: fa.md5 )
-          
-          // Single properties.
-          file.with {
-            (name, uploadName, uploadMimeType, filesize, doctype) = [
-              fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
-            ]
-          
-            // The contents of the file.
-            if (fa.content) {
-              fileData = Base64.getDecoder().decode(fa.content)
-            }
-            
-            // Update.
-            save()
-          }
-          
-          // Grab the attachments.
-          def attachments = l.getFileAttachments()
-          if (!attachments.contains(file)) {
-          
-            // Add to the attached files.
-            attachments.add(file)
-          }
-        }
-        
-      }
       
-      l.save(flush:true, failOnError:true)
+      // Add the core data.
+      ensureCoreData(l, data)
+      
+//      l.save(flush:true, failOnError:true)
     }
     
     render result as JSON
