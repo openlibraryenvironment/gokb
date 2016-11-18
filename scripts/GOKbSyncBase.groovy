@@ -268,7 +268,6 @@ abstract class GOKbSyncBase extends Script {
     
     if (data) {
       
-      
       directAddFields (data, ['name', 'status', 'editStatus', 'shortcode'], addTo)
     
       if (data.identifiers && data.identifiers.size() > 0) {
@@ -309,6 +308,13 @@ abstract class GOKbSyncBase extends Script {
       // Source.
       if (data.source && data.source.size() > 0) {
         addTo['source'] = handleSource ( data.source )
+      }
+      
+      // Curatory groups are not against KBComponent but are used accross a few types.
+      if (data.curatoryGroups?.group?.name?.size() ?: 0 > 0) {
+        addTo['curatoryGroups'] = data.curatoryGroups.group.name.collect {
+          it.text()
+        }
       }
       
     }
