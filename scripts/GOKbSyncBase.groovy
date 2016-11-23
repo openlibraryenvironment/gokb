@@ -190,14 +190,14 @@ abstract class GOKbSyncBase extends Script {
             config.resumptionToken = body?.ListRecords?.resumptionToken?.text()
             
             // Also use the token to flag more data...
-            if (dryRun) {
-              moredata = false
-            } else {
+//            if (dryRun) {
+//              moredata = false
+//            } else {
               moredata = config.resumptionToken
               
               // Save the config.
               saveConfig()
-            }
+//            }
           }
           
           // Fail with error.
@@ -276,7 +276,7 @@ abstract class GOKbSyncBase extends Script {
         data.identifiers?.identifier?.each {
           
           // Only include namespaces that are not 'originEditUrl'
-          if ( !['originEditUrl'].contains(it.'@namespace') )
+          if ( !['originEditUrl'].contains(cleanText(it.'@namespace'.text())) )
             ids.add( [ type:it.'@namespace'.text(), value: cleanText(it.'@value'?.text()) ] )
         }
         
@@ -329,8 +329,10 @@ abstract class GOKbSyncBase extends Script {
     source?.shutdown()
     source = null
     
-    // We should save the config here...
-    saveConfig()
+    // We should save the config here if clean exit...
+    if (!moreData) {
+      saveConfig()
+    }
   }
   
   def run() {

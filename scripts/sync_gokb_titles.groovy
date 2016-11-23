@@ -4,10 +4,10 @@
 import GOKbSyncBase
 
 // Custom source host.
-//setSourceBase('http://localhost:8090/')
 
-// Dry run first until we are sorted!
-setDryRun (true)
+setSourceBase('http://localhost:8090/')
+long added = 0
+long skipped = 0
 
 // This script is different from the rest. During the first pass we will only act on titles with identifiers present.
 for (config.pass = config.pass ?: 1; config.pass<=2; config.pass++) {
@@ -23,9 +23,14 @@ for (config.pass = config.pass ?: 1; config.pass<=2; config.pass++) {
       body?.'ListRecords'?.'record'.metadata.gokb.title.eachWithIndex { data, index ->
         
         println("Record ${index + 1}")
-        if ((config.pass > 1 && data?.identifiers?.size() ?: 0 == 0 ) || (config.pass == 1 && data?.identifiers?.size() ?: 0 > 0)) {
     
-          def resourceFieldMap = addCoreItems ( data, ['type': 'Serial'])
+        // The basic record.
+        def resourceFieldMap = addCoreItems ( data, ['type': 'Serial'])
+        
+        // Identifier count should be calculated after the irrelevant ones have been stripped.
+        int identifier_count = resourceFieldMap?.identifiers?.size() ?: 0
+        
+        if ((config.pass > 1 && (identifier_count == 0) ) || (config.pass == 1 && (identifier_count > 0))) {
           directAddFields (data, ['defaultAccessURL', 'publishedFrom', 'publishedTo', 
             'continuingSeries', 'OAStatus', 'imprint', 'issuer'], resourceFieldMap)
     
@@ -53,27 +58,33 @@ for (config.pass = config.pass ?: 1; config.pass<=2; config.pass++) {
           } ?: []
           
           resources.add(resourceFieldMap)
+          added ++
         } else {
           if (config.pass == 1) {
             println("\tSkipping title without identifiers.")
           } else {
             println("\tSkipping identified title on second pass.")
           }
+          skipped ++
         }
       }
     }
-    
+    int sleep = 2000
     resources.each {
       sendToTarget (path: '/gokb/integration/crossReferenceTitle', body: it)
+      sleep = 50
     }
+    Thread.sleep(sleep)
   }
   
   // Remove this here so we start from the beginning every time.
   config.remove('resumptionToken')
+  moreData = true
 }
 
 // Also clear pass number.
 config.remove('pass')
+println "Added: ${added}, Skipped: ${skipped}"
 
 private convertHistoryEvent(evt) {
   // convert the evt structure to a json object and add to lst

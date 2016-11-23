@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.converters.JSON
+
 import grails.transaction.Transactional
 import org.springframework.security.access.annotation.Secured;
 
@@ -8,7 +9,10 @@ import org.gokb.cred.*
 
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
+import groovy.util.logging.Log4j
 
+
+@Log4j
 class IntegrationController {
 
   def grailsApplication
@@ -345,8 +349,8 @@ class IntegrationController {
 
     try {
       if ( data.name ) {
-        def located_or_new_source = Source.findByName(data.name) ?: new Source(name:data.name)
-       
+        def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
+        
         ClassUtils.setIfPresent(located_or_new_source,'url',data.url)
         ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
         ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
@@ -501,7 +505,7 @@ class IntegrationController {
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
   
-  private ensureCoreData ( KBComponent component, data ) {
+  private static def ensureCoreData ( KBComponent component, data ) {
     
     // Set the name.
     component.name = data.name
@@ -573,7 +577,7 @@ class IntegrationController {
     }
     
     // Save the component so we have something to set the names against.
-    component.save(failOnError: true, flush: true)
+    component.save(failOnError: true)
     
     // Variant names.
     Set<String> variants = component.variantNames.collect { it.variantName }
@@ -753,7 +757,7 @@ class IntegrationController {
     render result as JSON
   }
   
-  private boolean setAllRefdata (Collection<String> propNames, data, target) {
+  private static boolean setAllRefdata (Collection<String> propNames, data, target) {
     boolean changed = false
     propNames.each { String prop ->
       changed |= ClassUtils.setRefdataIfPresent(data.status, target, prop)
@@ -829,7 +833,7 @@ class IntegrationController {
     try {
   
       User user = springSecurityService.currentUser
-      def title = titleLookupService.find(request.JSON.title, 
+      def title = titleLookupService.find(request.JSON.name, 
                                           request.JSON.publisher, 
                                           request.JSON.identifiers, 
                                           user,
@@ -997,7 +1001,7 @@ class IntegrationController {
         
         if (publisher) {
           
-          Date pub_add_ed = "${pub_to_add.endDate}" != "" ? sdf.parse(pub_to_add.endDate) : null
+          Date pub_add_ed = pub_to_add?.endDate && "${pub_to_add.endDate}" != "" ? sdf.parse(pub_to_add.endDate) : null
           
           boolean found = false
           for ( int i=0; !found && i<publisher_combos.size(); i++) {
@@ -1012,7 +1016,7 @@ class IntegrationController {
             Combo combo = new Combo(
               type            : (type),
               status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-              startDate       : "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
+              startDate       : pub_to_add?.startDate && "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
               endDate         : pub_add_ed,
               "${propName}"   : publisher,
               "${tiPropName}" : ti
