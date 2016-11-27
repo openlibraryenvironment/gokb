@@ -34,8 +34,11 @@ class ClassUtils {
     result;
   }
 
-  public static boolean setRefdataIfPresent(value, obj, prop, cat = GrailsClassUtils.getStaticFieldValue(obj.class, 'allComboTypeValues')?.get("${prop}")) {
+  public static boolean setRefdataIfPresent(value, obj, prop, cat = null) {
     boolean result = false
+    if (!cat) {
+      cat = RefdataCategory.derriveCategoryForProperty(obj, prop)
+    }
 
     if ( ( value ) && ( cat ) &&
          ( value.toString().trim().length() > 0 ) &&
