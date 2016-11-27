@@ -14,7 +14,7 @@ while ( moredata ) {
 
       println("Record ${index + 1}")
 
-      def resourceFieldMap = addCoreItems ( data )      
+      def resourceFieldMap = addCoreItems ( data )
       
       resourceFieldMap['platformName'] = cleanText(data.name.text())
       resourceFieldMap['platformUrl'] = cleanText(data.primaryUrl.text())
@@ -30,4 +30,7 @@ while ( moredata ) {
   resources.each {
     sendToTarget (path: '/gokb/integration/crossReferencePlatform', body: it)
   }
+  
+  // Save the config.
+  saveConfig()
 }

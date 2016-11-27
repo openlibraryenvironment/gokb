@@ -33,8 +33,10 @@ abstract class GOKbSyncBase extends Script {
   String sourceBase = 'http://gokb.openlibraryfoundation.org/'
   int source_timeout_retry = 3
   long source_timeout_wait = 5 * 1000 // (5 seconds)
+  def sourceResponseType = XML
   
   String targetBase = 'http://localhost:8080/'
+  def targetResponseType = JSON
   
   // More data defaults to true.
   def moredata = true
@@ -49,7 +51,7 @@ abstract class GOKbSyncBase extends Script {
   protected HTTPBuilder getTarget () {
     if (!target) {
       // Create the target.
-      target = new HTTPBuilder(targetBase)
+      target = new HTTPBuilder(targetBase, targetResponseType)
       target.auth.basic config.uploadUser, config.uploadPass
     }
     
@@ -59,7 +61,7 @@ abstract class GOKbSyncBase extends Script {
   protected HTTPBuilder getSource () {
     if (!source) {
       // Create the source.
-      source = new HTTPBuilder(sourceBase, XML)
+      source = new HTTPBuilder(sourceBase, sourceResponseType)
       source.headers = [Accept: 'application/xml']
     }
     
@@ -166,7 +168,7 @@ abstract class GOKbSyncBase extends Script {
     boolean success = false // flag to terminate loop.
     while (!success) {
       try {
-        getSource().request(GET, XML) { req ->
+        getSource().request(GET, getSourceResponseType()) { req ->
           
           if (parameters['path']) {
             uri.path = parameters['path']
@@ -190,14 +192,11 @@ abstract class GOKbSyncBase extends Script {
             config.resumptionToken = body?.ListRecords?.resumptionToken?.text()
             
             // Also use the token to flag more data...
-//            if (dryRun) {
-//              moredata = false
-//            } else {
+            if (dryRun) {
+              moredata = false
+            } else {
               moredata = config.resumptionToken
-              
-              // Save the config.
-              saveConfig()
-//            }
+            }
           }
           
           // Fail with error.
@@ -330,7 +329,7 @@ abstract class GOKbSyncBase extends Script {
     source = null
     
     // We should save the config here if clean exit...
-    if (!moreData) {
+    if (!moredata) {
       saveConfig()
     }
   }

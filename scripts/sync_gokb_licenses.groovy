@@ -30,4 +30,7 @@ while ( moredata ) {
   resources.each {
     sendToTarget (path: '/gokb/integration/crossReferenceLicense', body: it) 
   }
+  
+  // Save the config.
+  saveConfig()
 }

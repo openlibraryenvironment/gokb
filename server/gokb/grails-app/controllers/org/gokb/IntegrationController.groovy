@@ -44,6 +44,39 @@ class IntegrationController {
     }
     render result as JSON
   }
+  
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def assertGroup() {
+    def result = [result:'OK']
+    def name = request.JSON.name
+    def normname = CuratoryGroup.generateNormname(name)
+    def group = CuratoryGroup.findByNormname(normname) ?: new CuratoryGroup (name: name)
+    
+    // Defaults first.
+    ensureCoreData(group, request.JSON)
+    
+    // Find by username but do not create missing entries.
+    def owner = request.JSON.owner
+    if (owner) {
+      group.owner = User.findByUsername(owner)
+    }
+    
+    // Need to add all users to the group.
+    def memberNames = request.JSON.users
+    if (memberNames) {
+      def members = User.createCriteria().list {
+        'in' ('username', memberNames)
+      }
+      
+      members.each {
+        group.addToUsers(it)
+      }
+    }
+    
+    group.save(flush: true, failOnError:true)
+    
+    render result as JSON
+  }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertJsonldOrg() { 
@@ -760,7 +793,7 @@ class IntegrationController {
   private static boolean setAllRefdata (Collection<String> propNames, data, target) {
     boolean changed = false
     propNames.each { String prop ->
-      changed |= ClassUtils.setRefdataIfPresent(data.status, target, prop)
+      changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop)
     }
     changed
   }

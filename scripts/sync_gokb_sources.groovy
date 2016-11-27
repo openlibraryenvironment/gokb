@@ -29,4 +29,7 @@ while ( moredata ) {
   resources.each {
     sendToTarget (path: '/gokb/integration/assertSource', body: it)
   }
+  
+  // Save the config.
+  saveConfig()
 }
