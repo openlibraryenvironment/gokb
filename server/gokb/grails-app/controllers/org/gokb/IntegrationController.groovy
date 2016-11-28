@@ -375,7 +375,7 @@ class IntegrationController {
     createOrUpdateSource ( request.JSON )
   }
   
-  private def createOrUpdateSource( data ) { 
+  private static def createOrUpdateSource( data ) { 
     log.debug("assertSource, data = ${data}");
     def result=[:]
     result.status = true;
@@ -609,6 +609,19 @@ class IntegrationController {
       }
     }
     
+    // If this is a component that supports curatoryGroups we should check for them.
+    if (component.respondsTo('addToCuratoryGroups')) {
+    
+      data.curatoryGroups?.each { String name ->
+        
+        def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
+        // Only add if we have the group already in the system.
+        if (group) {
+          component.addToCuratoryGroups ( group )
+        }
+      }
+    }
+    
     // Save the component so we have something to set the names against.
     component.save(failOnError: true)
     
@@ -624,6 +637,7 @@ class IntegrationController {
         variants << name
       }
     }
+    
   }
   
   
