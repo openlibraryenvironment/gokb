@@ -783,7 +783,7 @@ class IntegrationController {
       if ( p == null ) {
         
         // Attempt normname lookup.
-        p = Platform.findByNormname( Org.generateNormname (request.JSON.name) ) ?: new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.name)
+        p = Platform.findByNormname( Platform.generateNormname (request.JSON.name) ) ?: new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.name)
       }
 
       setAllRefdata ([
@@ -791,6 +791,13 @@ class IntegrationController {
       ], request.JSON, p)
       ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
 
+      if (request?.JSON?.provider) {
+        def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
+        if (prov) {
+          p.provider = prov
+        }
+      } 
+      
       // Add the core data.
       ensureCoreData(p, request.JSON)
       

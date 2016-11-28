@@ -3,7 +3,6 @@
 @groovy.transform.BaseScript(GOKbSyncBase)
 import GOKbSyncBase
 
-setSourceBase("http://localhost:8090/")
 
 while ( moredata ) {
   
@@ -20,8 +19,7 @@ while ( moredata ) {
       resourceFieldMap['platformUrl'] = cleanText(data.primaryUrl.text())
       
       
-      directAddFields (data, ['authentication', 'software', 'service'], resourceFieldMap)
-//        resourceFieldMap['status'] = r.metadata.gokb.status.authentication.text()
+      directAddFields (data, ['authentication', 'software', 'service', 'provider'], resourceFieldMap)
       
       resources.add(resourceFieldMap)
     }
