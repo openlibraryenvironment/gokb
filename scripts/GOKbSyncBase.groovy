@@ -317,8 +317,8 @@ abstract class GOKbSyncBase extends Script {
       }
       
       // Roles.
-      if (data.roles?.role?.name?.size() ?: 0 > 0) {
-        addTo['roles'] = data.roles.role.name.collect {
+      if (data.roles?.role?.size() ?: 0 > 0) {
+        addTo['roles'] = data.roles.role.collect {
           it.text()
         }
       }
