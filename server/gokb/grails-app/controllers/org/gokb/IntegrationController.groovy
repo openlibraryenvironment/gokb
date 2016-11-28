@@ -384,12 +384,12 @@ class IntegrationController {
       if ( data.name ) {
         def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
         
-        ClassUtils.setIfPresent(located_or_new_source,'url',data.url)
-        ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
-        ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
-        ClassUtils.setIfPresent(located_or_new_source,'contextualNotes',data.contextualNotes)
-        ClassUtils.setIfPresent(located_or_new_source,'frequency',data.frequency)
-        ClassUtils.setIfPresent(located_or_new_source,'ruleset',data.ruleset)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
         
         setAllRefdata ([
           'software', 'service'
@@ -413,7 +413,6 @@ class IntegrationController {
     catch ( Exception e ) {
       e.printStackTrace()
     }
-
     result
   }
 
@@ -641,7 +640,7 @@ class IntegrationController {
   }
   
   
-  private addVariantNameToComponent (component, variant_name) {
+  private static addVariantNameToComponent (component, variant_name) {
     
     def result = [:]
     
