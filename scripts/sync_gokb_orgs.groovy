@@ -3,7 +3,6 @@
 @groovy.transform.BaseScript(GOKbSyncBase)
 import GOKbSyncBase
 
-setSourceBase("http://localhost:8090/")
 
 while ( moredata ) {
   
