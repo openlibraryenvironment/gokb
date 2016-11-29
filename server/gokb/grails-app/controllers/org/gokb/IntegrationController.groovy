@@ -1,13 +1,18 @@
 package org.gokb
 
 import grails.converters.JSON
+
+import grails.transaction.Transactional
 import org.springframework.security.access.annotation.Secured;
 
 import org.gokb.cred.*
 
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
+import groovy.util.logging.Log4j
 
+
+@Log4j
 class IntegrationController {
 
   def grailsApplication
@@ -37,6 +42,39 @@ class IntegrationController {
     else {
       result.message="Entity with that name already exists.."
     }
+    render result as JSON
+  }
+  
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def assertGroup() {
+    def result = [result:'OK']
+    def name = request.JSON.name
+    def normname = CuratoryGroup.generateNormname(name)
+    def group = CuratoryGroup.findByNormname(normname) ?: new CuratoryGroup (name: name)
+    
+    // Defaults first.
+    ensureCoreData(group, request.JSON)
+    
+    // Find by username but do not create missing entries.
+    def owner = request.JSON.owner
+    if (owner) {
+      group.owner = User.findByUsername(owner)
+    }
+    
+    // Need to add all users to the group.
+    def memberNames = request.JSON.users
+    if (memberNames) {
+      def members = User.createCriteria().list {
+        'in' ('username', memberNames)
+      }
+      
+      members.each {
+        group.addToUsers(it)
+      }
+    }
+    
+    group.save(flush: true, failOnError:true)
+    
     render result as JSON
   }
 
@@ -183,7 +221,7 @@ class IntegrationController {
    *         name:National Association of Corrosion Engineers, 
    *         description:National Association of Corrosion Engineers,
    *         parent:
-   *         customIdentifers:[[identifierType:"idtype", identifierValue:"value"]], 
+   *         customIdentifiers:[[identifierType:"idtype", identifierValue:"value"]], 
    *         combos:[[linkTo:[identifierType:"ncsu-internal", identifierValue:"ncsu:61929"], linkType:"HasParent"]], 
    *         flags:[[flagType:"Org Role", flagValue:"Content Provider"],
    *                [flagType:"Org Role", flagValue:"Publisher"], 
@@ -198,117 +236,113 @@ class IntegrationController {
     result.status = true;
 
     try {
-      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.customIdentifers);
+      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.identifiers)
 
       if ( located_or_new_org == null ) {
-        log.debug("Create new org with identifiers ${request.JSON.customIdentifers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
-   
-        located_or_new_org = new Org(name:request.JSON.name)
-
-        log.debug("Attempt to save - validate: ${located_or_new_org}");
-
-        if ( located_or_new_org.save(flush:true, failOnError : true) ) {
-          log.debug("Saved ok");
-        }
-        else {
-          log.debug("Save failed ${located_or_new_org}");
-          result.errors = []
-          located_or_new_org.errors.each { e ->
-            log.error("Problem saving new org record",e);
-            result.errors.add("${e}".toString());
-          }
-          result.status = false;
-          return
-        }
+        String orgName = request.JSON.name
         
-        if ( request.JSON.mission ) {
-          log.debug("Mission ${request.JSON.mission}");
-          located_or_new_org.mission = RefdataCategory.lookupOrCreate('Org.Mission','request.JSON.mission');
-        }
-
-        if ( request.JSON.homepage ) {
-          located_or_new_org.homepage = request.JSON.homepage
-        }
-
-        // Add parent.
-        if (request.JSON.parent) {
-          def parentDef = request.JSON.parent;
-          log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
-          def located_component = KBComponent.lookupByIO(parentDef.identifierType,parentDef.identifierValue)
-          if (located_component) {
-            located_or_new_org.parent = located_component
-          }
-        }
+        // No match. One more attempt to match on norm_name only.
+        located_or_new_org = Org.findByNormname( Org.generateNormname (orgName) )
+        
+        if ( located_or_new_org == null ) {
+        
+          log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
+     
+          located_or_new_org = new Org(name:request.JSON.name)
   
-        def identifier_combo_type = RefdataCategory.lookupOrCreate('Combo.Type','Org.Ids');
-        // Identifiers
-        log.debug("Identifier processing ${request.JSON.customIdentifers}");
-        request.JSON.customIdentifers.each { ci ->
-          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.identifierType,ci.identifierValue)
-          log.debug("adding identifier(${ci.identifierType},${ci.identifierValue})(${canonical_identifier.id})");
-          located_or_new_org.ids.add(canonical_identifier)
+          log.debug("Attempt to save - validate: ${located_or_new_org}");
+  
+          if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+            log.debug("Saved ok");
+          } else {
+            log.debug("Save failed ${located_or_new_org}");
+            result.errors = []
+            located_or_new_org.errors.each { e ->
+              log.error("Problem saving new org record",e);
+              result.errors.add("${e}".toString());
+            }
+            result.status = false;
+            return
+          }
+        } else {
+          log.debug("Matched Org on norm_name only!");
         }
-    
-        // roles
-        log.debug("Role Processing: ${request.JSON.flags}");
-        request.JSON.roles.each { r ->
-          log.debug("Adding role ${r}");
-          def role = RefdataCategory.lookupOrCreate("Org.Role", r)
-          located_or_new_org.addToRoles(role)
-        }
-
-        // flags
-        log.debug("Flag Processing: ${request.JSON.flags}");
-        request.JSON.flags.each { f ->
-          log.debug("Adding flag ${f.flagType},${f.flagValue}");
-          def flag = RefdataCategory.lookupOrCreate(f.flagType,f.flagValue).save()
-          located_or_new_org.addToTags(
-            flag
-          )
-        }
-
-        log.debug("Combo processing: ${request.JSON.combos}");
-
-        // combos
-        request.JSON.combos.each { c ->
-          log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
-          def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
+      } else {
+        log.debug("Located existing record.. Still update...");
+      }
       
-      // Located a component.
-          if ( ( located_component != null ) ) {
-            def combo = new Combo(
-              type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
-              fromComponent:located_or_new_org,
-              toComponent:located_component,
-              startDate:new Date()).save(flush:true,failOnError:true);
-          }
-          else {
-            log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
-          }
+      setAllRefdata ([
+        'software', 'service'
+      ], request.JSON, located_or_new_org)
+        
+      if ( request.JSON.mission ) {
+        log.debug("Mission ${request.JSON.mission}");
+        located_or_new_org.mission = RefdataCategory.lookupOrCreate('Org.Mission',request.JSON.mission);
+      }
+
+      if ( request.JSON.homepage ) {
+        located_or_new_org.homepage = request.JSON.homepage
+      }
+
+      // Add parent.
+      if (request.JSON.parent) {
+        def parentDef = request.JSON.parent;
+        log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
+        def located_component = KBComponent.lookupByIO(parentDef.identifierType,parentDef.identifierValue)
+        if (located_component) {
+          located_or_new_org.parent = located_component
         }
-        
-        log.debug("Attempt to save - validate: ${located_or_new_org}");
-        
-        if ( located_or_new_org.save(failOnError : true) ) {
-          log.debug("Saved ok");
+      }
+      
+      log.debug("Combo processing: ${request.JSON.combos}")
+      
+      // combos
+      request.JSON.combos.each { c ->
+        log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
+        def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
+    
+        // Located a component.
+        if ( ( located_component != null ) ) {
+          def combo = new Combo(
+            type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
+            fromComponent:located_or_new_org,
+            toComponent:located_component,
+            startDate:new Date()).save(flush:true,failOnError:true);
         }
         else {
-          log.debug("Save failed ${located_or_new_org}");
-          result.errors = []
-          located_or_new_org.errors.each { e ->
-            log.error("Problem saving new org record",e);
-            result.errors.add("${e}".toString());
-          }
-          result.status = false;
-          return
+          log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
         }
+      }
+      
+      // roles
+      log.debug("Role Processing: ${request.JSON.roles}");
+      request.JSON.roles.each { r ->
+        log.debug("Adding role ${r}");
+        def role = RefdataCategory.lookupOrCreate("Org.Role", r)
+        located_or_new_org.addToRoles(role)
+      }
 
-        result.msg="Created new org: ${located_or_new_org.id} ${located_or_new_org.name}";
+      // Core data...
+      ensureCoreData(located_or_new_org, request.JSON)
+      
+      log.debug("Attempt to save - validate: ${located_or_new_org}");
+      
+      if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+        log.debug("Saved ok");
       }
       else {
-        log.debug("Located existing record..");
-        result.msg="Located existing record: ${located_or_new_org.id} ${located_or_new_org.name}";
+        log.debug("Save failed ${located_or_new_org}");
+        result.errors = []
+        located_or_new_org.errors.each { e ->
+          log.error("Problem saving new org record",e);
+          result.errors.add("${e}".toString());
+        }
+        result.status = false;
+        return
       }
+
+      result.msg="Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
+      
     }
     catch ( Exception e ) {
       log.error("Unexpected error importing org",e)
@@ -337,107 +371,296 @@ class IntegrationController {
    *      ]
    */
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
-  def assertSource() { 
-    log.debug("assertSource, request.json = ${request.JSON}");
+  def assertSource() {
+    createOrUpdateSource ( request.JSON )
+  }
+  
+  private static def createOrUpdateSource( data ) { 
+    log.debug("assertSource, data = ${data}");
     def result=[:]
     result.status = true;
 
     try {
-      if ( request.JSON.name ) {
-        def located_or_new_source = Source.findByName(request.JSON.name) ?: new Source(name:request.JSON.name)
-        // changed |= setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
-        ClassUtils.setIfPresent(located_or_new_source,'url',request.JSON.url);
-        ClassUtils.setIfPresent(located_or_new_source,'defaultAccessURL',request.JSON.defaultAccessURL);
-        ClassUtils.setIfPresent(located_or_new_source,'explanationAtSource',request.JSON.explanationAtSource);
-        ClassUtils.setIfPresent(located_or_new_source,'contextualNotes',request.JSON.contextualNotes);
-        ClassUtils.setIfPresent(located_or_new_source,'frequency',request.JSON.frequency);
-        ClassUtils.setIfPresent(located_or_new_source,'ruleset',request.JSON.ruleset);
-        ClassUtils.setRefdataIfPresent(request.JSON.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-        ClassUtils.setRefdataIfPresent(request.JSON.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
-        located_or_new_source.save(flush:true, failOnError:true);
+      if ( data.name ) {
+        def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
+        
+        ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
+        ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
+        
+        setAllRefdata ([
+          'software', 'service'
+        ], data, located_or_new_source)
+        
+        ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+        ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
+        
+        ensureCoreData(located_or_new_source, data)
+        
+        log.debug("Variant names processing: ${data.variantNames}")
+  
+        // variants
+        data.variantNames.each { vn ->
+          addVariantNameToComponent(located_or_new_source, vn)
+        }
+        
+        result['component'] = located_or_new_source
       }
     }
     catch ( Exception e ) {
       e.printStackTrace()
     }
-
+    result
   }
 
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional(readOnly=true)
   private resolveOrgUsingPrivateIdentifiers(idlist) {
     def located_or_new_org = null;
 
-    // See if we can locate the item using any of the custom identifiers
-    idlist.each { ci ->
-      log.debug("Attempt lookup of ${ci.identifierType}:${ci.identifierValue}");
-      if ( located_or_new_org ) {
-        // We've already located an org for this identifier, the new identifier should be new (And therefore added to this org) or
-        // resolve to this org. If it resolves to some other org, then there is a conflict and we fail!
-        def located_component = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
-        if ( located_component ) {
-          log.debug("Matched something...");
-          if ( !located_or_new_org ) {
-            located_or_new_org = located_component
+    if (idlist?.size() ?:0 > 0) {
+      // Rewritten to perform this as a singel query.
+      def crit = Org.createCriteria()
+      def matched_orgs = crit.list {
+        
+        createAlias('outgoingCombos', 'ogc')
+        createAlias('ogc.type', 'ogcType')
+        createAlias('ogcType.owner', 'ogcOwner')
+        
+        createAlias('ogc.toComponent', 'tc')
+        createAlias('tc.namespace', 'tcNamespace')
+        
+        and {
+          and {
+            eq 'ogcOwner.desc', 'Combo.Type'
+            eq 'ogcType.value', 'KBComponent.Ids'
           }
-          else {
-            if ( located_component.id == located_or_new_org.id ) {
-              log.debug("Matched an identifier");
-            }
-            else {
-              log.error("**CONFLICT**");
+          or {
+            for (def ci : idlist) {
+              and {
+                eq 'tc.value', ci.identifierValue
+                eq 'tcNamespace.value', ci.identifierType
+              }
             }
           }
         }
-        else {
-          // No match.. candidate identifier
-          log.debug("No match for ${ci.identifierType}:${ci.identifierValue}");
+        
+        projections {
+          distinct 'id'
         }
       }
-      else {
-        located_or_new_org = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
+      
+      switch (matched_orgs.size()) {
+        case 0:
+          log.debug("No match for ${idlist}.")
+          break
+        case 1: 
+          log.debug("Found single component ID: ${matched_orgs}")
+          // Matched one only! This is correct.
+          located_or_new_org = Org.read(matched_orgs[0])
+          break
+        case {it > 1} :
+          log.error("**CONFLICT**")
+          log.error("Identifiers ${idlist} matched multiple component IDs ${matched_orgs}!")
+          break
+          
       }
     }
+    
+    // See if we can locate the item using any of the custom identifiers
+    
     located_or_new_org
   }
+  
+//  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+//  private resolveOrgUsingPrivateIdentifiers(idlist) {
+//    def located_or_new_org = null;
+//
+//    // See if we can locate the item using any of the custom identifiers
+//    idlist.each { ci ->
+//      
+//      log.debug("Attempt lookup of ${ci.identifierType}:${ci.identifierValue}");
+//      if ( located_or_new_org ) {
+//        // We've already located an org for this identifier, the new identifier should be new (And therefore added to this org) or
+//        // resolve to this org. If it resolves to some other org, then there is a conflict and we fail!
+//        def located_component = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
+//        if ( located_component ) {
+//          log.debug("Matched something...");
+//          if ( !located_or_new_org ) {
+//            located_or_new_org = located_component
+//          }
+//          else {
+//            if ( located_component.id == located_or_new_org.id ) {
+//              log.debug("Matched an identifier");
+//            }
+//            else {
+//              log.error("**CONFLICT**");
+//            }
+//          }
+//        }
+//        else {
+//          // No match.. candidate identifier
+//          log.debug("No match for ${ci.identifierType}:${ci.identifierValue}");
+//        }
+//      }
+//      else {
+//        located_or_new_org = KBComponent.lookupByIO(ci.identifierType,ci.identifierValue)
+//      }
+//    }
+//    located_or_new_org
+//  }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def registerVariantName() {
-    def result=[:]
-    log.debug("registerVariantName ${params} ${request.JSON}");
+    log.debug("registerVariantName ${params} ${request.JSON}")
 
     // See if we can locate the variant name as a first class component
     
-    def variant_org = null;
+    Org variant_org = null;
     if ( request.JSON.variantidns != null && request.JSON.variantidvalue != null ) {
-      variant_org = KBComponent.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
-      log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}");
+      variant_org = Org.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
+      log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}")
     }
 
-    def org_to_update = KBComponent.lookupByIO(request.JSON.idns,request.JSON.idvalue)
-    log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}");
-
-    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
-    if ( ( org_to_update ) && ( request.JSON.name?.length() > 0 ) ) {
-      boolean found = false
-      org_to_update.variantNames.each { vn ->
-        if ( vn.variantName == request.JSON.name ) {
-          found = true
-        }
-      }
-
-      if ( !found ) {
-        def new_variant_name = new KBComponentVariantName(variantName:request.JSON.name, owner:org_to_update)
-        new_variant_name.save();
-      }
-    }
+    Org org_to_update = Org.lookupByIO(request.JSON.idns,request.JSON.idvalue)
+    log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}")
 
     // Update any combos that point to the variant so that they now point to the authorized entry
 
     // Delete any remaining variant org combox
     // Delete the variant org
 
-    render result as JSON
+    render addVariantNameToComponent (org_to_update, request.JSON.name)
+  }
+  
+  private static def ensureCoreData ( KBComponent component, data ) {
+    
+    // Set the name.
+    component.name = data.name
+    
+    // Core refdata.
+    setAllRefdata ([
+      'status', 'editStatus',
+    ], data, component)
+    
+    // Identifiers
+    log.debug("Identifier processing ${data.identifiers}")
+    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}" }
+    data.identifiers.each { ci ->
+      String testKey = "${ci.type}|${ci.value}"
+      if (!ids.contains(testKey)) {
+        def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+        log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
+        component.ids.add(canonical_identifier)
+        
+        // Add the value for comparison.
+        ids << testKey
+      }
+    }
+
+    // Flags
+    log.debug("Tag Processing: ${data.tags}");
+    data.tags?.each { t ->
+      log.debug("Adding tag ${t.type},${t.value}")
+      component.addToTags(
+        RefdataCategory.lookupOrCreate(t.type, t.value)
+      )
+    }
+    
+    // handle the source.
+    if (data.source && data.source?.size() > 0) {
+      component.source = createOrUpdateSource (data.source)?.get('component')
+    }
+    
+    // Add each file upload too!
+    data.fileAttachments.each { fa ->
+      
+      if (fa?.md5) {
+      
+        DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile( guid: fa.guid, md5: fa.md5 )
+        
+        // Single properties.
+        file.with {
+          (name, uploadName, uploadMimeType, filesize, doctype) = [
+            fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
+          ]
+        
+          // The contents of the file.
+          if (fa.content) {
+            fileData = fa.content.decodeBase64()
+          }
+          
+          // Update.
+          save()
+        }
+        
+        // Grab the attachments.
+        def attachments = component.getFileAttachments()
+        if (!attachments.contains(file)) {
+        
+          // Add to the attached files.
+          attachments.add(file)
+        }
+      }
+    }
+    
+    // If this is a component that supports curatoryGroups we should check for them.
+    if (component.respondsTo('addToCuratoryGroups')) {
+    
+      data.curatoryGroups?.each { String name ->
+        
+        def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
+        // Only add if we have the group already in the system.
+        if (group) {
+          component.addToCuratoryGroups ( group )
+        }
+      }
+    }
+    
+    // Save the component so we have something to set the names against.
+    component.save(failOnError: true)
+    
+    // Variant names.
+    Set<String> variants = component.variantNames.collect { it.variantName }
+    data.variantNames?.each { String name ->
+      if (!variants.contains(name)) {
+        // Add the variant name.
+        def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
+        new_variant_name.save(failOnError: true)
+        
+        // Add to collection.
+        variants << name
+      }
+    }
+    
+  }
+  
+  
+  private static addVariantNameToComponent (component, variant_name) {
+    
+    def result = [:]
+    
+    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
+    if ( ( component ) && ( variant_name?.length() ?: 0 > 0 ) ) {
+      boolean found = false
+      def variants = component.variantNames
+      if (variants) {
+        for (int i=0; !found && i<variants.size(); i++) {
+          found = variants[i].variantName == variant_name
+        }
+      }
+
+      if ( !found ) {
+        def new_variant_name = new KBComponentVariantName(variantName: variant_name, owner: component)
+        new_variant_name.save();
+      }
+    }
+    
+    result
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
@@ -447,60 +670,68 @@ class IntegrationController {
     if ( request.JSON.packageHeader.name ) {
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
-        def pkg = Package.upsertDTO(request.JSON.packageHeader)
-        def platform_cache = [:]
-        log.debug("\n\n\nPackage: ${pkg} / ${request.JSON.packageHeader}");
+        def pkg_id = Package.upsertDTO(request.JSON.packageHeader)?.id
+        Map platform_cache = [:]
+        log.debug("\n\n\nPackage ID: ${pkg_id} / ${request.JSON.packageHeader}");
 
         // Validate and upsert titles and platforms
         request.JSON.tipps.each { tipp ->
+          
+          TitleInstance.withNewSession {
 
-          valid &= TitleInstance.validateDTO(tipp.title);
-
-          if ( !valid ) 
-            log.warn("Not valid after title validation ${tipp.title}");
-
-          def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
-          if ( ti && ( tipp.title.internalId == null ) ) {
-            tipp.title.internalId = ti.id;
-          }
-
-          if ( tipp.title.internalId == null ) {
-            log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
-          }
-
-          valid &= Platform.validateDTO(tipp.platform);
-          if ( !valid ) 
-            log.warn("Not valid after platform validation ${tipp.platform}");
-
-          if ( valid ) {
-
-            def pl = platform_cache[tipp.platform.name]
-            if ( pl == null ) {
-              pl = Platform.upsertDTO(tipp.platform);
-              platform_cache[tipp.platform.name] = pl
+            valid &= TitleInstance.validateDTO(tipp.title);
+  
+            if ( !valid ) 
+              log.warn("Not valid after title validation ${tipp.title}");
+  
+            def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
+            if ( ti && ( tipp.title.internalId == null ) ) {
+              tipp.title.internalId = ti.id;
             }
-
-            if ( pl && ( tipp.platform.internalId == null ) ) {
-              tipp.platform.internalId = pl.id;
+  
+            if ( tipp.title.internalId == null ) {
+              log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
+            }
+  
+            valid &= Platform.validateDTO(tipp.platform);
+            if ( !valid ) 
+              log.warn("Not valid after platform validation ${tipp.platform}");
+  
+            if ( valid ) {
+  
+              def pl = null
+              def pl_id
+              if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                pl = Platform.get(pl_id)
+              } else {
+                // Not in cache.
+                pl = Platform.upsertDTO(tipp.platform);
+                platform_cache[tipp.platform.name] = pl.id
+              }
+  
+              if ( pl && ( tipp.platform.internalId == null ) ) {
+                tipp.platform.internalId = pl.id;
+              }
+              else {
+                log.warn("No platform arising from ${tipp.platform}");
+              }
             }
             else {
-              log.warn("No platform arising from ${tipp.platform}");
+              log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
             }
-          }
-          else {
-            log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
-          }
-
-          if ( ( tipp.package == null ) && ( pkg.id ) ) {
-            tipp.package = [ internalId: pkg.id ]
-          }
-          else {
-            log.warn("No package");
-            valid = false
+//            
+//            def pkg = pkg_id != null ? Package.get(pkg_id) : null
+            if ( ( tipp.package == null ) && ( pkg_id ) ) {
+              tipp.package = [ internalId: pkg_id ]
+            }
+            else {
+              log.warn("No package");
+              valid = false
+            }
           }
         }
 
-        cleanUpGorm()
+//        cleanUpGorm()
 
         int tippctr=0;
         if ( valid ) {
@@ -509,36 +740,37 @@ class IntegrationController {
           request.JSON.tipps.each { tipp ->
             def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
             if ( !validation_result) {
-              log.error("TIPP Validation failed on ${tipp}");
+              log.error("TIPP Validation failed on ${tipp}")
             }
           }
         }
         else {
-          log.warn("Not validating tipps - failed pre validation");
+          log.warn("Not validating tipps - failed pre validation")
         }
 
 
-        log.debug("\n\nupsert tipp data\n\n");
+        log.debug("\n\nupsert tipp data\n\n")
         tippctr=0
         if ( valid ) {
-          def tipp_upsert_start_time = System.currentTimeMillis();
+          def tipp_upsert_start_time = System.currentTimeMillis()
           // If valid, upsert tipps
           request.JSON.tipps.each { tipp ->
-            cleanUpGorm()
-            log.debug("Upsert tipp [${tippctr++}] ${tipp}");
-            TitleInstancePackagePlatform.upsertDTO(tipp)
+            TitleInstancePackagePlatform.withNewSession {
+              log.debug("Upsert tipp [${tippctr++}] ${tipp}")
+              TitleInstancePackagePlatform.upsertDTO(tipp)
+            }
           }
-          log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records");
+          log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
         }
         else {
-          log.warn("Not loading tipps - failed validation");
+          log.warn("Not loading tipps - failed validation")
         }
       }
    
     }
-    render result as JSON;
+    render result as JSON
   }
-
+  
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
@@ -547,22 +779,73 @@ class IntegrationController {
          ( request.JSON.platformUrl.trim().length() > 0 ) &&
          ( request.JSON.platformName ) &&
          ( request.JSON.platformName.trim().length() > 0 ) ) {
-      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl);
+      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl)
       if ( p == null ) {
-        p=new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true);
+        
+        // Attempt normname lookup.
+        p = Platform.findByNormname( Platform.generateNormname (request.JSON.name) ) ?: new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.name)
       }
 
-      def changed = false;
-      changed |= ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
-      changed |= ClassUtils.setRefdataIfPresent(request.JSON.software, p, 'software', 'Platform.Software')
-      changed |= ClassUtils.setRefdataIfPresent(request.JSON.service, p, 'service', 'Platform.Service')
+      setAllRefdata ([
+        'software', 'service'
+      ], request.JSON, p)
+      ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
 
-      if ( changed ) {
-        p.save(flush:true, failOnError:true);
-      }
+      if (request?.JSON?.provider) {
+        def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
+        if (prov) {
+          p.provider = prov
+        }
+      } 
+      
+      // Add the core data.
+      ensureCoreData(p, request.JSON)
+      
+//      if ( changed ) {
+//        p.save(flush:true, failOnError:true);
+//      }
 
       result.platform_id = p.id;
     }
+    render result as JSON
+  }
+  
+  private static boolean setAllRefdata (Collection<String> propNames, data, target) {
+    boolean changed = false
+    propNames.each { String prop ->
+      changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop)
+    }
+    changed
+  }
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def crossReferenceLicense() {
+    def result = [ 'result' : 'OK' ]
+    
+    // Add the license.
+    def data = request.JSON
+    if (data && data.name) {
+      // Use the name to either match or create a Licence.
+      License l = License.findOrCreateByName( License.generateNormname (data.name) ) ?: new License (name: data.name)
+      
+      // Update the properties on the license.
+      l.with {        
+        url = data.url
+        file = data.file
+        summaryStatement = data.summaryStatement
+      }
+      
+      setAllRefdata ([
+        'type'
+      ], data, l)
+      
+      
+      // Add the core data.
+      ensureCoreData(l, data)
+      
+//      l.save(flush:true, failOnError:true)
+    }
+    
     render result as JSON
   }
 
@@ -603,7 +886,7 @@ class IntegrationController {
     try {
   
       User user = springSecurityService.currentUser
-      def title = titleLookupService.find(request.JSON.title, 
+      def title = titleLookupService.find(request.JSON.name, 
                                           request.JSON.publisher, 
                                           request.JSON.identifiers, 
                                           user,
@@ -632,13 +915,19 @@ class IntegrationController {
           }
         }
     
+        title_changed |= setAllRefdata ([
+//          'status', 'editStatus',
+          'software', 'service'
+        ], request.JSON, title)
+        
         title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
-        title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)
-        title_changed |= ClassUtils.setRefdataIfPresent(request.JSON.editStatus, title, 'editStatus', 'KBComponent.EditStatus')
-        title_changed |= ClassUtils.setRefdataIfPresent(request.JSON.status, title, 'status', 'KBComponent.Status')
-    
-        log.debug("Saving title changes");
-        title.save(flush:true, failOnError:true);
+        title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedTo, title, 'publishedTo', sdf)        
+        
+        // Add the core data.
+        ensureCoreData(title, request.JSON)
+        
+        
+//        title.save(flush:true, failOnError:true)
     
         if ( request.JSON.historyEvents?.size() > 0 ) {
           request.JSON.historyEvents.each { jhe ->
@@ -717,6 +1006,8 @@ class IntegrationController {
             }
           }
         }
+        
+        addPublisherHistory(title, request.JSON.publisher_history, sdf)
   
         result.message = "Created/looked up title ${title.id}"
         result.cls = title.class.name
@@ -743,6 +1034,73 @@ class IntegrationController {
     }
 
     render result as JSON
+  }
+  
+  private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
+    
+    if (publishers) {
+    
+      def publisher_combos = []
+      publisher_combos.addAll( ti.getCombosByPropertyName('publisher') )
+      String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+      String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      
+      // Go through each Org.
+      for (def pub_to_add : publishers) {
+        
+        // Lookup the publisher.
+        def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
+        Org publisher = Org.findByNormname(norm_pub_name)
+        
+        if (publisher) {
+          
+          Date pub_add_ed = pub_to_add?.endDate && "${pub_to_add.endDate}" != "" ? sdf.parse(pub_to_add.endDate) : null
+          
+          boolean found = false
+          for ( int i=0; !found && i<publisher_combos.size(); i++) {
+            Combo pc = publisher_combos[i]
+            found = pc."${propName}".id == publisher.id
+            found = found && pc.endDate == pub_add_ed
+          }
+          
+          // Only add if we havn't found anything.
+          if (!found) {
+            RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
+            Combo combo = new Combo(
+              type            : (type),
+              status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+              startDate       : pub_to_add?.startDate && "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
+              endDate         : pub_add_ed,
+              "${propName}"   : publisher,
+              "${tiPropName}" : ti
+            )
+    
+            // Depending on where the combo is defined we need to add a combo.
+//            if (ti.isComboReverse('publisher')) {
+//              ti.addToIncomingCombos(combo)
+//            } else {
+//              ti.addToOutgoingCombos(combo)
+//            }
+//            publisher.save()
+            
+            combo.save(flush:true, failOnError:true)
+            
+            // Add the combo to our list to avoid adding duplicates.
+            publisher_combos.add ( combo )
+            
+            log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
+              (combo.startDate ? ' from ' + combo.startDate : '') +
+              (combo.endDate ? ' to ' + combo.endDate : '')
+            
+          } else {
+            log.debug "Publisher ${publisher.name} already set against '${ti.name}'"
+          }
+          
+        } else {
+          log.debug "Could not find org name: ${pub_to_add.name}, with normname: ${norm_pub_name}"
+        }
+      }
+    }
   }
 
 
@@ -814,7 +1172,7 @@ class IntegrationController {
     redirect(action:'index');
   }
 
-  def cleanUpGorm() {
+  private def cleanUpGorm() {
     log.debug("Clean up GORM");
 
     // Get the current session.

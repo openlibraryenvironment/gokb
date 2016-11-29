@@ -1,5 +1,5 @@
 package org.gokb.cred
-
+import org.apache.commons.lang.builder.HashCodeBuilder
 class DataFile extends KBComponent {
 
   String guid
@@ -44,8 +44,8 @@ class DataFile extends KBComponent {
     attachedToComponents : 'fileAttachments'
   ]
 
-    /**
-   *  Override so that we only return DataFiles that are editable on the 
+  /**
+   * Override so that we only return DataFiles that are editable on the 
    * typedown searches
    */
   @Override
@@ -63,5 +63,23 @@ class DataFile extends KBComponent {
 
     result
   }
+  
+  @Override
+  public boolean equals(Object obj) {
+    Object o = KBComponent.deproxy(obj)
+    if ( o != null ) {
+      // Deproxy the object first to ensure it isn't a hibernate proxy.
+      return (this.getClassName() == o.getClass().name) && (this.hashCode() == o.hashCode())
+    }
 
+    // Return false if we get here.
+    false
+  }
+  
+  @Override
+  public int hashCode () {
+    new HashCodeBuilder(1, 3).
+      append(md5).
+      toHashCode()
+  }
 }

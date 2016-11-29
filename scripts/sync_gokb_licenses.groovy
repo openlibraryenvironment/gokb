@@ -12,22 +12,23 @@ setDryRun (true)
 while ( moredata ) {
   
   def resources = []
-  fetchFromSource (path: '/gokb/oai/sources') { resp, body ->
+  fetchFromSource (path: '/gokb/oai/licenses') { resp, body ->
 
     body?.'ListRecords'?.'record'.metadata.gokb.eachWithIndex { data, index ->
 
       println("Record ${index + 1}")
 
       def resourceFieldMap = addCoreItems ( data )
-      directAddFields (data, ['url', 'defaultAccessURL', 'explanationAtSource', 'contextualNotes', 
-        'frequency', 'ruleset', 'defaultSupplyMethod', 'defaultDataFormat'], resourceFieldMap)
+      directAddFields (data, [
+        'url','file','type', 'licensor', 'licensee', 
+        'previous', 'successor', 'model', 'summaryStatement'], resourceFieldMap)
       
       resources.add(resourceFieldMap)
     }
   }
   
   resources.each {
-    sendToTarget (path: '/gokb/integration/assertSource', body: it)
+    sendToTarget (path: '/gokb/integration/crossReferenceLicense', body: it) 
   }
   
   // Save the config.

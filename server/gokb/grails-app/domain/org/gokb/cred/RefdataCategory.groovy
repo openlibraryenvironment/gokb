@@ -2,6 +2,7 @@ package org.gokb.cred
 
 
 import groovy.util.logging.*
+import grails.util.GrailsNameUtils
 
 @Log4j
 class RefdataCategory {
@@ -120,5 +121,27 @@ class RefdataCategory {
         result = "org.gokb.cred.RefdataValue:${v.id}"
       }
     }
+  }
+  
+  static String derriveCategoryForProperty ( obj, String propName ) {
+    String propertyDef
+    
+    // Default to this class.
+    def moreTests = obj.domainClass.clazz
+    while (moreTests) {
+        
+      // Read the property...
+      if (moreTests.metaClass.properties.find {it.name == propName}) {
+        propertyDef = "${moreTests.simpleName}"
+      
+        // Get the superclass.
+        moreTests = moreTests.getSuperclass()
+      } else {
+        moreTests = false
+      }
+    }
+    
+    propertyDef ? "${propertyDef}.${GrailsNameUtils.getClassName(propName)}" : null
+    
   }
 }

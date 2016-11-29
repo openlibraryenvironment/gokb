@@ -387,14 +387,15 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
 
     boolean changed = false;
 
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus', 'Package.ListStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status', 'KBComponent.Status')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope', 'Package.Scope')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable', 'Package.Breakable')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent', 'Package.Consistent')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed', 'Package.Fixed')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType', 'Package.PaymentType')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global', 'Package.Global')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result, 'editStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global')
     changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
     changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate', sdf);
