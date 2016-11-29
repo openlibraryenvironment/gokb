@@ -452,6 +452,7 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save()
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Full OA").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Hibrid OA").save()
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "No OA").save()
 
     RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes").save()
