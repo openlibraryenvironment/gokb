@@ -5,7 +5,6 @@ import GOKbSyncBase
 
 // Custom source host.
 
-setSourceBase('http://localhost:8090/')
 
 config.deferred = config.deferred ?: [:]
 
@@ -79,6 +78,7 @@ while ( moredata ) {
 // We can send them now.
 config.deferred.each { k, v ->
   sendToTarget (path: '/gokb/integration/crossReferenceTitle', body: v)
+  Thread.sleep(25)
 }
 
 // Remove this here so we start from the beginning every time.

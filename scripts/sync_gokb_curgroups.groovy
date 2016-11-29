@@ -15,7 +15,6 @@ import static groovyx.net.http.ContentType.JSON
 
 setSourceBase('http://localhost:8090/')
 setSourceResponseType (JSON)
-//setDryRun ( true )
 
 // Add some auth info to the request...
 def sourceUser = config.sourceUser

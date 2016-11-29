@@ -286,7 +286,7 @@ abstract class GOKbSyncBase extends Script {
       }
       
       // Additional properties.
-      if (data.additionalProperties && data.additionalProperties.size() > 0) {
+      if (data.additionalProperties?.additionalProperty && data.additionalProperties?.additionalProperty.size() > 0) {
         addTo['additionalProperties'] = data.additionalProperties.additionalProperty?.collect ({
           [ name:it.'@name'.text(), value: cleanText(it.'@value'?.text()) ]
         }) ?: []

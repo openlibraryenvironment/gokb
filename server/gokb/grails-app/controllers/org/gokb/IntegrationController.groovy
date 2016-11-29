@@ -1,14 +1,15 @@
 package org.gokb
 
 import grails.converters.JSON
-
 import grails.transaction.Transactional
-import org.springframework.security.access.annotation.Secured;
 
+import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 
 import au.com.bytecode.opencsv.CSVReader
+
 import com.k_int.ClassUtils
+
 import groovy.util.logging.Log4j
 
 
@@ -549,9 +550,9 @@ class IntegrationController {
     
     // Identifiers
     log.debug("Identifier processing ${data.identifiers}")
-    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}" }
+    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     data.identifiers.each { ci ->
-      String testKey = "${ci.type}|${ci.value}"
+      String testKey = "${ci.type}|${ci.value}".toString()
       if (!ids.contains(testKey)) {
         def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
         log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
@@ -610,33 +611,64 @@ class IntegrationController {
     
     // If this is a component that supports curatoryGroups we should check for them.
     if (component.respondsTo('addToCuratoryGroups')) {
-    
+      Set<String> groups = component.curatoryGroups.collect { "${it.name}".toString() }
       data.curatoryGroups?.each { String name ->
+        if (!groups.contains(name)) {
         
-        def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
-        // Only add if we have the group already in the system.
-        if (group) {
-          component.addToCuratoryGroups ( group )
+          def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
+          // Only add if we have the group already in the system.
+          if (group) {
+            component.addToCuratoryGroups ( group )
+            groups << name
+          }
         }
       }
     }
     
     // Save the component so we have something to set the names against.
-    component.save(failOnError: true)
+    component.save(failOnError: true, flush:true)
     
-    // Variant names.
-    Set<String> variants = component.variantNames.collect { it.variantName }
-    data.variantNames?.each { String name ->
-      if (!variants.contains(name)) {
-        // Add the variant name.
-        def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
-        new_variant_name.save(failOnError: true)
+    if (data.additionalProperties) {
+      Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
+      for (Map it : data.additionalProperties) {
         
-        // Add to collection.
-        variants << name
+        if (it.name && it.value) {
+          String testKey = "${it.name}|${it.value}".toString()
+          
+          if (!props.contains(testKey)) {
+            def pType = AdditionalPropertyDefinition.findByPropertyName (it.name)
+            if (!pType) {
+              pType = new AdditionalPropertyDefinition ()
+              pType.propertyName = it.name
+              pType.save(failOnError: true)
+            }
+            
+            component.refresh()
+            def prop = new KBComponentAdditionalProperty ()
+            prop.propertyDefn = pType
+            prop.apValue = it.value
+            component.addToAdditionalProperties(prop)
+            component.save(failOnError: true)
+            props << testKey
+          }
+        }
       }
     }
     
+    // Variant names.
+    if (data.variantNames) {
+      Set<String> variants = component.variantNames.collect { "${it.variantName}".toString() }
+      for (String name : data.variantNames) {
+        if (!variants.contains(name)) {
+          // Add the variant name.
+          def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
+          new_variant_name.save(failOnError: true)
+          
+          // Add to collection.
+          variants << name
+        }
+      }
+    }
   }
   
   
@@ -895,12 +927,12 @@ class IntegrationController {
   
       if ( title ) {
     
-        if ( request.JSON.variantNames?.size() > 0 ) {
-          request.JSON.variantNames.each { vn ->
-            log.debug("Ensure variant name ${vn}");
-            title.addVariantTitle(vn);
-          }
-        }
+//        if ( request.JSON.variantNames?.size() > 0 ) {
+//          request.JSON.variantNames.each { vn ->
+//            log.debug("Ensure variant name ${vn}");
+//            title.addVariantTitle(vn);
+//          }
+//        }
         
         def title_changed = false;
     

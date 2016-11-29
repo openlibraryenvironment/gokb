@@ -3,11 +3,6 @@
 @groovy.transform.BaseScript(GOKbSyncBase)
 import GOKbSyncBase
 
-// Custom source host.
-setSourceBase('http://localhost:8090/')
-
-// Dry run first until we are sorted!
-setDryRun (true)
 
 while ( moredata ) {
   
