@@ -12,12 +12,12 @@ class ClassUtils {
     return (T) element;
   }
 
-  private static boolean setDateIfPresent(value, obj, prop) {
+  public static boolean setDateIfPresent(value, obj, prop) {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     return setDateIfPresent(value, obj, prop, sdf)
   }
 
-  private static boolean setDateIfPresent(value, obj, prop, sdf) {
+  public static boolean setDateIfPresent(value, obj, prop, sdf) {
     //request.JSON.title.publishedFrom, title, 'publishedFrom', sdf)
     boolean result = false;
     if ( ( value ) && ( value.toString().trim().length() > 0 ) ) {
