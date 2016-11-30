@@ -441,14 +441,14 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
       }
     }
 
-    packageHeaderDTO.variantNames.each {
+    packageHeaderDTO.variantNames?.each {
       if ( it.variantName ) {
         result.ensureVariantName(it.variantName)
         changed=true;
       }
     }
 
-    packageHeaderDTO.curatoryGroups.each {
+    packageHeaderDTO.curatoryGroups?.each {
       if ( it.curatoryGroup ) {
 
         def cg = CuratoryGroup.findByName(it.curatoryGroup) ?: new CuratoryGroup(name:it.curatoryGroup).save(flush:true, failOnError:true)
