@@ -442,10 +442,8 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     }
 
     packageHeaderDTO.variantNames?.each {
-      if ( it.variantName ) {
-        result.ensureVariantName(it.variantName)
-        changed=true;
-      }
+      result.ensureVariantName(it)
+      changed=true
     }
 
     packageHeaderDTO.curatoryGroups?.each {

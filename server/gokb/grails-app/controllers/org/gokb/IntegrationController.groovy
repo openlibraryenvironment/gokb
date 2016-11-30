@@ -672,27 +672,9 @@ class IntegrationController {
   }
   
   
-  private static addVariantNameToComponent (component, variant_name) {
+  private static addVariantNameToComponent (KBComponent component, variant_name) {
     
-    def result = [:]
-    
-    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
-    if ( ( component ) && ( variant_name?.length() ?: 0 > 0 ) ) {
-      boolean found = false
-      def variants = component.variantNames
-      if (variants) {
-        for (int i=0; !found && i<variants.size(); i++) {
-          found = variants[i].variantName == variant_name
-        }
-      }
-
-      if ( !found ) {
-        def new_variant_name = new KBComponentVariantName(variantName: variant_name, owner: component)
-        new_variant_name.save();
-      }
-    }
-    
-    result
+    component.ensureVariantName(variant_name)
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])

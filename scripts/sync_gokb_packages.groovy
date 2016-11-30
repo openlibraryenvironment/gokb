@@ -17,13 +17,6 @@ while ( moredata ) {
         'global', 'listVerifier', 'userListVerifier', 'nominalPlatform', 'nominalProvider', 'listVerifiedDate'], addCoreItems ( data ) )
       ]
       
-      // Packages handle variant names differently to the others.
-      if (resourceFieldMap.packageHeader.variantNames) {
-        resourceFieldMap.packageHeader.variantNames = resourceFieldMap.packageHeader.variantNames.collect {
-          [variantName: "${it}"]
-        }
-      }
-      
       // TIPPs
       resourceFieldMap.tipps = []
 
