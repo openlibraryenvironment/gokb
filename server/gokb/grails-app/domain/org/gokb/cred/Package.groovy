@@ -447,17 +447,17 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     }
 
     packageHeaderDTO.curatoryGroups?.each {
-      if ( it.curatoryGroup ) {
 
-        def cg = CuratoryGroup.findByName(it.curatoryGroup) ?: new CuratoryGroup(name:it.curatoryGroup).save(flush:true, failOnError:true)
+      String normname = CuratoryGroup.generateNormname(it)
+      
+      def cg = CuratoryGroup.findByNormname(normname)
 
-        if ( cg ) {
-          if ( result.curatoryGroups.find(it.name == cg.name) ) {
-          }
-          else {
-            result.curatoryGroups.add(cg)
-            changed=true;
-          }
+      if ( cg ) {
+        if ( result.curatoryGroups.find {it.name == cg.name } ) {
+        }
+        else {
+          result.curatoryGroups.add(cg)
+          changed=true;
         }
       }
     }
