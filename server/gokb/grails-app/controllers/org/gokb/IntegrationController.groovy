@@ -930,8 +930,10 @@ class IntegrationController {
         }
     
         title_changed |= setAllRefdata ([
-//          'status', 'editStatus',
-          'software', 'service'
+          'software', 'service',
+          'OAStatus', 'medium',
+          'pureOA', 'continuingSeries',
+          'reasonRetired'
         ], request.JSON, title)
         
         title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)

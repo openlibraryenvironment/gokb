@@ -3,6 +3,7 @@ package com.k_int
 import org.hibernate.proxy.HibernateProxy
 import org.gokb.cred.RefdataCategory
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import java.text.SimpleDateFormat
 
 class ClassUtils {
   public static <T> T deproxy(def element) {
@@ -12,12 +13,27 @@ class ClassUtils {
     return (T) element;
   }
 
-  public static boolean setDateIfPresent(value, obj, prop) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
-    return setDateIfPresent(value, obj, prop, sdf)
+  /**
+   * Attempt automatic parsing.
+   */
+  public static boolean setDateIfPresent(String value, obj, prop) {
+    def sdfs = [
+      "yyyy-MM-dd' 'HH:mm:ss.SSS",
+      "yyyy-MM-dd'T'HH:mm:ss'Z'"
+    ]
+    int num = 0
+    SimpleDateFormat sdf = new SimpleDateFormat(sdfs[num])
+    
+    boolean parsed = setDateIfPresent(value, obj, prop, sdf)
+    while (!parsed && ((num++) < (sdfs.size() - 1))) {
+      sdf.applyPattern(sdfs[num])
+      parsed = setDateIfPresent(value, obj, prop, sdf)
+    }
+    
+    return parsed
   }
 
-  public static boolean setDateIfPresent(value, obj, prop, sdf) {
+  public static boolean setDateIfPresent(String value, obj, prop, SimpleDateFormat sdf) {
     //request.JSON.title.publishedFrom, title, 'publishedFrom', sdf)
     boolean result = false;
     if ( ( value ) && ( value.toString().trim().length() > 0 ) ) {

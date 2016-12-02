@@ -380,7 +380,6 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
    */
   @Transient
   public static Package upsertDTO(packageHeaderDTO) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def result = null
     log.info("Upsert package with header ${packageHeaderDTO}");
     result = Package.findByName(packageHeaderDTO.name) ?: new Package(name:packageHeaderDTO.name).save(flush:true, failOnError:true);
@@ -398,7 +397,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global')
     changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
-    changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate', sdf);
+    changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate');
 
     if ( packageHeaderDTO.userListVerifier ) {
       def looked_up_user = User.findByUsername(packageHeaderDTO.userListVerifier)
