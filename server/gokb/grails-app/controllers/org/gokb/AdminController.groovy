@@ -1,8 +1,13 @@
 package org.gokb
 
 import org.gokb.cred.*
+
 import grails.converters.JSON
+
 import org.hibernate.criterion.CriteriaSpecification
+
+import com.k_int.ConcurrencyManagerService;
+import com.k_int.ConcurrencyManagerService.Job
 
 
 class AdminController {
@@ -13,7 +18,8 @@ class AdminController {
   def grailsCacheAdminService
   def refineService
   def titleAugmentService
-  def concurrencyManagerService
+  ConcurrencyManagerService concurrencyManagerService
+  CleanupService cleanupService
 
   def tidyOrgData() {
 
@@ -222,31 +228,10 @@ class AdminController {
   }
 
   def housekeeping() {
-    log.debug("Housekeeping");
-    concurrencyManagerService.createJob {
-      try {
-        def ctr = 0;
-        def start_time = System.currentTimeMillis();
-        log.debug("Remove any ISSN identifiers where an eISSN with the same value is also present");
-        // Find all identifier occurrences where the component attached also has an issn with the same value.
-        // select combo from Combo as combo where combo.toComponent in (select identifier from Identifier as identifier where identifier.ns.ns = 'eissn' )
-        //    and exists (
-        log.debug("Query");
-        def q1 = Identifier.executeQuery('select i1 from Identifier as i1 where i1.namespace.value = :n1 and exists ( select i2 from Identifier as i2 where i2.namespace.value=:n2 and i2.value = i1.value )',
-                                         [n1:'issn', n2:'eissn']);
-        log.debug("Query complete, elapsed = ${System.currentTimeMillis() - start_time}");
-        def id_combo_type = RefdataValue.findByValue('KBComponent.Ids');
-        q1.each { issn ->
-          log.debug("cleaning up ${issn.namespace.value}:${issn.value}");
-          Combo.executeUpdate('delete from Combo c where c.type=:tp and ( c.fromComponent = :f or c.toComponent=:t )',[f:issn, t:issn, tp:id_combo_type]);
-          ctr++;
-        }
-        log.debug("ISSN/eISSN cleanup complete ctr=${ctr}, elapsed = ${System.currentTimeMillis() - start_time}");
-      }
-      catch ( Exception e ) {
-        e.printStackTrace();
-      }
+    Job j = concurrencyManagerService.createJob {
+      cleanupService.housekeeping()
     }.startOrQueue()
+    log.debug "Triggering housekeeping task. Started job #${j.id}"
     render(view: "logViewer", model: logViewer())
   }
   
