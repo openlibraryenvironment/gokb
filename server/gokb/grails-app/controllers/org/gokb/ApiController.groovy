@@ -21,6 +21,7 @@ import com.k_int.TsvSuperlifterService
 
 import au.com.bytecode.opencsv.CSVReader
 import org.springframework.web.multipart.MultipartHttpServletRequest
+import org.hibernate.criterion.CriteriaSpecification
 
 
 /**
@@ -703,179 +704,7 @@ class ApiController {
     }
   }
 
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def lookup() {
-    
-    // Results per page.
-    def perPage = 10;
-
-    // Get the "term" parameter for performing a search.
-    def term = params.term
-    
-    // Object attributes to search.
-    def match_in = ["name"]
-    
-    // Lists from jQuery come through with brackets...
-    match_in += params.list("match")
-    match_in += params.list("match[]")
-    
-    // Trim any display entities.
-    match_in = match_in.collect { "${it}".split("\\:")[0] }
-    
-    // Attributes to return.
-    def attr = ["label"]
-    attr += params.list("attr")
-    attr += params.list("attr[]")
-    
-    def page = params.int("page")
-
-    // Should take a type parameter and do the right thing.
-    try {
-      Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
-        "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
-      )
-      
-      // If we have a page then we should add a max and offset.
-      def criteria = ComboCriteria.createFor(c.createCriteria())
-      def results
-      if (page) {
-        
-        // Offset.
-        def offset = (page - 1) * perPage
-        results = criteria.list ("max": (perPage), "offset": (offset)) {
-          not {
-            or {
-              criteria.add (
-                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
-              )
-              criteria.add (
-                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-              )
-            }
-          }
-          if (term) {
-            // Add a condition for each parameter we wish to search.
-            or {
-              match_in.each { String param_name ->
-                switch (param_name) {
-                  
-                  case "id" : criteria.add ("${param_name}", "eq", term.toLong());break;
-                  // Like for strings.
-                  default : criteria.add ("${param_name}", "ilike", "%${term}%")
-                }
-              }
-            }
-          }
-          order ("name", "asc")
-        }
-        
-      } else {
-        results = criteria.list {
-          not {
-            or {
-              criteria.add (
-                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
-              )
-              criteria.add (
-                "status", "eq", RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-              )
-            }
-          }
-          if (term) {
-            // Add a condition for each parameter we wish to search.
-            or {
-              match_in.each { String param_name ->
-                switch (param_name) {
-                  
-                  case "id" : criteria.add ("${param_name}", "eq", term.toLong());break;
-                  // Like for strings.
-                  default : criteria.add ("${param_name}", "ilike", "%${term}%")
-                }
-              }
-            }
-          }
-          
-          order ("name", "asc")
-        } 
-      }
-      
-      // SO: listDistinct will not work with pagination, so we are forcing a linked HashSet here which will maintain the order from the
-      // the query but strip out the duplicates.
-      LinkedHashSet formattedResults = []
-      formattedResults.addAll results.collect { KBComponent comp ->
-            
-        // Add each requested parameter to the return map. Label is a special case as we return "name"
-        // for this. This is to keep backwards compatibility with the JQuery autocomplete default behaviour.
-        def item = [ "value" : "${comp.name}::{${c.getSimpleName()}:${comp.id}}"]
-        
-        // Go through the list.
-        attr.each { String attribute_name ->
-          
-          // We may have supplied a nice name for the property.
-          String[] names = attribute_name.split("\\:")
-          String niceName
-          if (names.length > 1) {
-            niceName = names[1]
-          } else {
-            niceName = names[0]
-          }
-          
-          if (names[0] == "label") {
-            item["${niceName}"] = comp.name
-          } else {
-          
-            // Support deep properties using dot notation.
-            String[] props = "${names[0]}".split(/\./)
-            
-            def target = comp
-            
-            // Each property.
-            props.each { String prop ->
-              if (target instanceof Collection) {
-                
-                List col = []
-                target?.each {
-                  def val = it?."${prop}"
-                  if (val) {
-                    col << val
-                  }
-                }
-                target = col
-              } else {
-                target = target?."${prop}"
-              }
-            }
-            // Once here we have the final target.
-            item["${niceName}"] = target
-          }
-        }
-        
-        // Return the map entry.
-        item
-      }
-      
-      // Add the total if we have a page.
-      def resp
-      if (page) {
-        // Return the page of results with a total.
-        resp = [
-          "total" : results.totalCount,
-          "list"  : formattedResults
-        ]
-      } else {
-        // Just return the formatted results.
-        resp = formattedResults
-      }
-      
-      // Return the response.
-      apiReturn (resp)
-
-    } catch (Throwable t) {
-      log.error(t);
-      /* Just return an empty list. */
-      apiReturn ([])
-    }
-  }
+  
   
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def quickCreate() {
@@ -1110,5 +939,198 @@ class ApiController {
 
     render result as JSON
   }
+  
+  private Closure lookupCriteria = { String term, match_in, filters, attr =[] ->
+    final Map<String, String> aliasStack = [:]
+    final def checkAlias = { String dotNotationString ->
+      def str = aliasStack[dotNotationString]
+      if (!str) {
 
+        // No alias found for exact match.
+        // Start from the front and build up aliases.
+        String[] props = dotNotationString.split("\\.")
+        String propStr = "${props[0]}"
+        String alias = aliasStack[propStr];
+        int counter = 1
+        while (alias && counter < props.length) {
+          str = "${alias}"
+          String test = propStr + ".${props[counter]}"
+          
+          alias = aliasStack[test]
+          if (alias) {
+            propStr += test
+          }
+          counter ++
+        }
+
+        // At this point we should have a dot notated alias string, where the aliases already been created for this query.
+        // Any none existent aliases will need creating but also adding to the map for traversing.
+        if (counter <= props.length) {
+          // The counter denotes how many aliases were present, so we should start at the counter and create the missing
+          // aliases.
+          propStr = null
+          for (int i=(counter-1); i<props.length; i++) {
+            String aliasVal = alias ? "${alias}.${props[i]}" : "${props[i]}"
+            alias = "alias${aliasStack.size()}"
+            
+            // Create the alias.
+            log.debug ("Creating alias: ${aliasVal} ->  ${alias}")
+            createAlias(aliasVal, alias)
+            
+            // Add to the map.
+            propStr = propStr ? "${propStr}.${props[i]}" : "${props[i]}"
+            aliasStack[propStr] = alias
+            log.debug ("Added quick string: ${propStr} -> ${alias}")
+          }
+        }
+        
+        // Set the string to the alias we ended on.
+        str = alias
+      }
+
+      str
+    }
+    
+    
+    and {
+      if (term && match_in) {
+        // Add a condition for each parameter we wish to search.
+        
+        or {
+          match_in.each { String propname ->
+  
+            // Split at the dot.
+            String[] levels = propname.split("\\.")
+  
+            String propName
+            if (levels.length > 1) {
+              String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.') )
+              String finalPropName = levels[levels.size()-1]
+              String op = finalPropName == 'id' ? 'eq' : 'ilike'
+              String toFind = finalPropName == 'id' ? "${term}".toLong() : "%${term}%"
+              
+              log.debug ("Testing  ${aliasName}.${finalPropName} ${op} ${toFind}")
+              "${op}" "${aliasName}.${finalPropName}", toFind
+            } else {
+              String op = propname == 'id' ? 'eq' : 'ilike'
+              String toFind = propname == 'id' ? "${term}".toLong() : "%${term}%"
+              
+              log.debug ("Testing  ${propname} ${op} ${toFind}")
+              "${op}" "${propname}", toFind
+            }
+          }
+        }
+      }
+
+      // Filters...
+      if (filters) {
+        filters.eachWithIndex { String filter, idx ->
+          String[] parts =  filter.split("\\=")
+
+          if ( parts.length == 2 && parts[0].length() > 0 && parts[1].length() > 0 ) {
+            
+            // The prop name.
+            String propname = parts[0]
+            String op = "eq"
+            
+            if (propname.startsWith("!")) {
+              propname = propname.substring(1)
+              op = "ne"
+            }
+
+            // Split at the dot.
+            String[] levels = propname.split("\\.")
+
+            String propName
+            if (levels.length > 1) {
+              String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.') )
+              String finalPropName = levels[levels.size()-1]
+              
+              log.debug ("Testing  ${aliasName}.${finalPropName} ${op == 'eq' ? '=' : '!='} ${parts[1]}")
+              "${op}" "${aliasName}.${finalPropName}", finalPropName == 'id' ? parts[1].toLong() : parts[1]
+            } else {
+              log.debug ("Testing  ${propname} ${op == 'eq' ? '=' : '!='} ${parts[1]}")
+              "${op}" propname, parts[1] == 'id' ? parts[1].toLong() : parts[1]
+            }
+          }
+        }
+      }
+    }
+    
+    // If we have a list of return attributes then we should add projections here.
+    if (attr) {
+      resultTransformer CriteriaSpecification.ALIAS_TO_ENTITY_MAP
+      projections {
+        attr.each { String propname ->
+
+          // Split at the dot.
+          String[] levels = propname.split("\\.")
+
+          String propName
+          if (levels.length > 1) {
+            String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.') )
+            String finalPropName = levels[levels.size()-1]
+            
+            String[] propAliasParts = finalPropName.split("\\:")
+            finalPropName = propAliasParts[0]
+            String propAlias = propAliasParts.length > 1 ? propAliasParts[1] : propAliasParts[0]
+            
+            log.debug ("Returning ${aliasName}.${finalPropName} as ${propAlias}")
+            property "${aliasName}.${finalPropName}", "${propAlias}"
+          } else {
+            String[] propAliasParts = propname.split("\\:")
+            String finalPropName = propAliasParts[0]
+            String propAlias = propAliasParts.length > 1 ? propAliasParts[1] : propAliasParts[0]
+            
+            log.debug ("Returning ${finalPropName} as ${propAlias}")
+            property "${finalPropName}", "${propAlias}"
+          }
+        }
+      }
+    }
+  };
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  synchronized def lookup () {
+    long start = System.currentTimeMillis()
+    Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
+      "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
+    )
+
+    // Get the "term" parameter for performing a search.
+    def term = params.term
+    
+    // Results per page.
+    def perPage = Math.min(params.int('perPage') ?: 100, 100)
+    
+    // Object attributes to search.
+    def match_in = ["name"]
+    
+    // Lists from jQuery come through with brackets...
+    match_in += params.list("match")
+    match_in += params.list("match[]")
+    
+    // Ensure we only include the none label part.
+    match_in = match_in.collect { "${it}".split("\\:")[0] }    
+
+    def filters = params.list("filters")
+    
+    // Attributes to return.
+    List attr = ["name:label"]
+    attr += params.list("attr")
+    attr += params.list("attr[]")
+
+    // Page number.
+    def page = params.int("page")
+
+    // If we have a page then we should add a max and offset.
+    def query_params = ["max": (perPage)]
+    if (page) {
+      query_params["offset"] = ((page - 1) * perPage)
+    }
+    
+    def results = c.createCriteria().list (query_params, lookupCriteria.curry(term, match_in, filters, attr))
+    apiReturn (results as LinkedHashSet)
+    log.debug "lookup took ${System.currentTimeMillis() - start} milliseconds"
+  }
 }
