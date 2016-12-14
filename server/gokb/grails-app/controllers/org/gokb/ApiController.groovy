@@ -1101,7 +1101,7 @@ class ApiController {
     def term = params.term
     
     // Results per page.
-    def perPage = Math.min(params.int('perPage') ?: 100, 100)
+    def perPage = Math.min(params.int('perPage') ?: 10, 10)
     
     // Object attributes to search.
     def match_in = ["name"]
