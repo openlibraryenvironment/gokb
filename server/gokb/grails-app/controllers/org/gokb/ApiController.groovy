@@ -1130,6 +1130,22 @@ class ApiController {
     }
     
     def results = c.createCriteria().list (query_params, lookupCriteria.curry(term, match_in, filters, attr))
+    
+    def resp
+    if (page) {
+      // Return the page of results with a total.
+      resp = [
+        "total" : results.totalCount,
+        "list"  : results
+      ]
+    } else {
+      // Just return the formatted results.
+      resp = results
+    }
+    
+    // Return the response.
+    apiReturn (resp)
+    
     apiReturn (results as LinkedHashSet)
     log.debug "lookup took ${System.currentTimeMillis() - start} milliseconds"
   }
