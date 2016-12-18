@@ -104,6 +104,19 @@ class FTUpdateService {
       return result
     }
 
+    updateES(esclient, org.gokb.cred.Org.class) { kbc ->
+      def result = [:]
+      result._id = "${kbc.class.name}:${kbc.id}"
+      result.name = kbc.name
+      result.altname = []
+      kbc.variantNames.each { vn ->
+        result.altname.add(vn.variantName)
+      }
+      result.componentType=kbc.class.simpleName
+
+      result
+    }
+
     running = false;
   }
 
