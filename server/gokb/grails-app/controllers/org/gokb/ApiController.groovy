@@ -1144,20 +1144,18 @@ class ApiController {
         "list"  : results.collect { 
           it.value = "${it.label}::{${classType}:${it.id}}"
           it
-        }
+        } as LinkedHashSet
       ]
     } else {
       // Just return the formatted results.
       resp = results.collect { 
         it.value = "${it.label}::{${classType}:${it.id}}"
         it
-      }
+      } as LinkedHashSet
     }
     
     // Return the response.
     apiReturn (resp)
-    
-    apiReturn (results as LinkedHashSet)
     log.debug "lookup took ${System.currentTimeMillis() - start} milliseconds"
   }
 }
