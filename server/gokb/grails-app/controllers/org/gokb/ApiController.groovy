@@ -940,7 +940,7 @@ class ApiController {
     render result as JSON
   }
   
-  private Closure lookupCriteria = { String term, match_in, filters, attr =[] ->
+  private Closure lookupCriteria = { String term, match_in, filters, attr = [] ->
     final Map<String, String> aliasStack = [:]
     final def checkAlias = { String dotNotationString ->
       def str = aliasStack[dotNotationString]
@@ -1093,8 +1093,9 @@ class ApiController {
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   synchronized def lookup () {
     long start = System.currentTimeMillis()
+    String classType = GrailsNameUtils.getClassNameRepresentation(params.type)
     Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
-      "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(params.type)}"
+      "org.gokb.cred.${classType}"
     )
 
     // Get the "term" parameter for performing a search.
@@ -1113,10 +1114,14 @@ class ApiController {
     // Ensure we only include the none label part.
     match_in = match_in.collect { "${it}".split("\\:")[0] }    
 
-    def filters = params.list("filters")
+    def filters = [
+      "!status.id=${RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED).id}",
+      "!status.id=${RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED).id}"
+    ]
+    filters += params.list("filters")    
     
     // Attributes to return.
-    List attr = ["name:label"]
+    List attr = ["name:label", 'id']
     attr += params.list("attr")
     attr += params.list("attr[]")
 
@@ -1136,11 +1141,17 @@ class ApiController {
       // Return the page of results with a total.
       resp = [
         "total" : results.totalCount,
-        "list"  : results
+        "list"  : results.collect { 
+          it.value = "${it.label}::{${classType}:${it.id}}"
+          it
+        }
       ]
     } else {
       // Just return the formatted results.
-      resp = results
+      resp = results.collect { 
+        it.value = "${it.label}::{${classType}:${it.id}}"
+        it
+      }
     }
     
     // Return the response.
