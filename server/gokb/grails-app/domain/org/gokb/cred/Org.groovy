@@ -153,17 +153,9 @@ class Org extends KBComponent {
     
     builder.'gokb' (attr) {
       builder.'org' (['id':(id)]) {
-        builder.'name' (name)
+       
+        addCoreGOKbXmlFields ( builder, attr )
         builder.'homepage' (homepage)
-        builder.'mission' (mission?.value)
-
-        if (identifiers) {
-          builder.'identifiers' {
-            identifiers.each { tid ->
-              builder.'identifier' (['namespace':tid.namespace.value, 'datatype':tid.namespace.datatype?.value], tid.value) 
-            }
-          }
-        }
 
         if ( roles ) {
           builder.'roles' {
@@ -173,12 +165,8 @@ class Org extends KBComponent {
           }
         }
 
-        if ( variantNames ) {
-          builder.'variantNames' {
-            variantNames.each { vn ->
-              builder.'variantName' ( vn.variantName )
-            }
-          }
+        if ( mission ) {
+          builder.mission ( mission.value )
         }
         
         if (publishes) {

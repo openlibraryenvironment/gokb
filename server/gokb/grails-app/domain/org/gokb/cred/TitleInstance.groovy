@@ -252,32 +252,15 @@ class TitleInstance extends KBComponent {
       builder.'gokb' (attr) {
         builder.'title' (['id':(id)]) {
 
-          builder.'name' (name)
+          addCoreGOKbXmlFields(builder, attr)
+          
           builder.'imprint' (imprint?.name)
-          builder.'editStatus' (editStatus?.value)
           builder.'medium' (medium?.value)
           builder.'OAStatus' (OAStatus?.value)
           builder.'continuingSeries' (continuingSeries?.value)
           builder.'publishedFrom' (publishedFrom)
           builder.'publishedTo' (publishedTo)
           builder.'issuer' (issuer?.name)
-
-          builder.'identifiers' {
-            tids?.each { tid ->
-              builder.'identifier' ('namespace':tid?.namespace?.value, 'value':tid?.value)
-            }
-            if ( grailsApplication.config.serverUrl != null ) {
-              builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.TitleInstance:${id}")
-            }
-          }
-
-          if ( variantNames ) {
-            builder.'variantNames' {
-              variantNames.each { vn ->
-                builder.'variantName' ( vn.variantName )
-              }
-            }
-          }
 
           publisher_combos?.each { Combo pc ->
             def pub_org = null
@@ -291,6 +274,15 @@ class TitleInstance extends KBComponent {
             if ( pub_org ) {
               builder."publisher" (['id': pub_org?.id]) {
                 "name" (pub_org?.name)
+                if ( pc.startDate ) {
+                  "startDate" (pc.startDate)
+                }
+                if ( pc.endDate ) {
+                  "endDate" (pc.endDate)
+                }
+                if (pc.status) {
+                  "status" (pc.status)
+                }
               }
             }
           }

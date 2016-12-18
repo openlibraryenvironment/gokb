@@ -1,5 +1,8 @@
 package org.gokb.cred
 
+import javax.persistence.Transient
+
+
 class License extends KBComponent {
   String     url
   String    file
@@ -63,4 +66,68 @@ class License extends KBComponent {
     result
   }
 
+  static def oaiConfig = [
+    id:'licenses',
+    textDescription:'Office repository for GOKb',
+    query:" from License as o where o.status.value != 'Deleted'",
+    pageSize:3
+  ]
+
+  /**
+   *  Render this package as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (name)
+    }
+  }
+
+  /**
+   *  Render this license as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder, attr) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    builder.'gokb' (attr) {
+      addCoreGOKbXmlFields(builder, attr)
+
+      builder.'url' (url)
+      builder.'file' (file)
+      if ( type ) {
+        builder.'type' (type.value)
+      }
+      builder.'summaryStatement' {
+        builder.mkp.yieldUnescaped "<![CDATA[${summaryStatement}]]>"
+      }
+
+      if ( licensor ) {
+        builder.'licensor' (licensor.name)
+      }
+
+      if ( licensee ) {
+        builder.'licensee' (licensee.name)
+      }
+
+      if ( previous ) {
+        builder.'previous' (previous.name)
+      }
+
+      if ( successor ) {
+        builder.'successor' (successor.name)
+      }
+
+      if ( model ) {
+        builder.'model' (model.name)
+      }
+
+      builder.'curatoryGroups' {
+        curatoryGroups.each { cg ->
+          builder.group {
+            builder.name(cg.name)
+          }
+        }
+      }
+    }
+  }
 }

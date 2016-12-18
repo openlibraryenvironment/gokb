@@ -1221,4 +1221,98 @@ abstract class KBComponent {
     result;
   }
 
+  @Transient
+  def addCoreGOKbXmlFields(builder, attr) {
+    def cids = getIds() ?: []
+    String cName = this.class.name
+    
+    // Singel props.
+    builder.'name' (name)
+    builder.'status' (status?.value)
+    builder.'editStatus' (editStatus?.value)
+    builder.'shortcode' (shortcode)
+    
+    // Identifiers
+    builder.'identifiers' {
+      cids?.each { tid ->
+        builder.'identifier' ('namespace':tid?.namespace?.value, 'value':tid?.value)
+      }
+      if ( grailsApplication.config.serverUrl ) {
+        builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${cName}:${id}")
+      }
+    }
+    
+    // Variant Names
+    if ( variantNames ) {
+      builder.'variantNames' {
+        variantNames.each { vn ->
+          builder.'variantName' ( vn.variantName )
+        }
+      }
+    }
+    
+    // Tags
+    if ( tags ) {
+      builder.'tags' {
+        tags.each { tag ->
+          builder.'tag' (tag.value)
+        }
+      }
+    }
+    
+    if (additionalProperties) {
+      builder.'additionalProperties' {
+        additionalProperties.each { prop ->
+          String pName = prop.propertyDefn?.propertyName
+          if (pName && prop.apValue) {
+            builder.'additionalProperty' ('name':pName, 'value':prop.apValue)
+          }
+        }
+      }
+    }
+    if (fileAttachments) {
+      builder.fileAttachments {
+        fileAttachments.each { fa ->
+          builder.fileAttachment {
+            builder.guid(fa.guid)
+            builder.md5(fa.md5)
+            builder.uploadName(fa.uploadName)
+            builder.uploadMimeType(fa.uploadMimeType)
+            builder.filesize(fa.filesize)
+            builder.doctype(fa.doctype)
+            builder.content {
+              builder.mkp.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
+            }
+          }
+        }
+      }
+    }
+    
+    if (source) {
+      
+      source.with {
+      
+        addCoreGOKbXmlFields(builder, attr)
+        
+        builder.'url' (url)
+        builder.'defaultAccessURL' (defaultAccessURL)
+        builder.'explanationAtSource' (explanationAtSource)
+        builder.'contextualNotes' (contextualNotes)
+        builder.'frequency' (frequency)
+        builder.'ruleset' (ruleset)
+        if ( defaultSupplyMethod ) {
+          builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )
+        }
+        if ( defaultDataFormat ) {
+          builder.'defaultDataFormat' ( defaultDataFormat.value )
+        }
+        if ( responsibleParty ) {
+          builder.'responsibleParty' {
+            builder.name(responsibleParty.name)
+          }
+        }
+      }
+    }
+  }
+
 }

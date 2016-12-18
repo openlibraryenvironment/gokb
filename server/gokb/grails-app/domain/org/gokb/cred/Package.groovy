@@ -222,9 +222,10 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
+        addCoreGOKbXmlFields(builder, attr)
+        
         'scope' ( scope?.value )
         'listStatus' ( listStatus?.value )
-        'status' ( status?.value )
         'breakable' ( breakable?.value )
         'consistent' ( consistent?.value )
         'fixed' ( fixed?.value )
@@ -233,32 +234,15 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         'nominalPlatform' ( nominalPlatform?.name )
         'nominalProvider' ( nominalPlatform?.provider?.name )
         'listVerifier' ( listVerifier?.username )
-        'listVerifierDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
-        'source' {
-          'url' (source?.url)
-          'defaultAccessURL' (source?.defaultAccessURL)
-          'explanationAtSource' (source?.explanationAtSource)
-          'contextualNotes' (source?.contextualNotes)
-          'frequency' (source?.frequency)
-          'ruleset' (source?.ruleset)
-          'defaultSupplyMethod' (source?.defaultSupplyMethod?.value)
-          'defaultDataFormat' (source?.defaultSupplyMethod?.value)
-          'responsibleParty' (source?.responsibleParty?.name)
-        }
-        'name' (name)
-        if ( curatoryGroups ) {
-           builder.'curatoryGroups' {
-             curatoryGroups.each { cg ->
-               builder.'curatoryGroup' ( cg.name )
-             }
-           }
-        }
-        if ( variantNames ) {
-           builder.'variantNames' {
-             variantNames.each { vn ->
-               builder.'variantName' ( vn.variantName )
-             }
-           }
+        'userListVerifier' ( userListVerifier?.username )
+        'listVerifiedDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
+
+        builder.curatoryGroups {
+          curatoryGroups.each { cg ->
+            builder.group {
+              builder.name(cg.name)
+            }
+          }
         }
         'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {

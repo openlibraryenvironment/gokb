@@ -78,11 +78,10 @@ class Source extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     builder.'gokb' (attr) {
-      builder.'name' (name)
-      builder.'shortcode' (shortcode)
-      builder.'editStatus' (editStatus?.value)
+      
+      addCoreGOKbXmlFields(builder, attr)
+      
       builder.'url' (url)
       builder.'defaultAccessURL' (defaultAccessURL)
       builder.'explanationAtSource' (explanationAtSource)
@@ -102,4 +101,5 @@ class Source extends KBComponent {
       }
     }
   }
+  
 }
