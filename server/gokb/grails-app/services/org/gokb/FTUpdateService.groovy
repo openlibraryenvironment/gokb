@@ -42,79 +42,83 @@ class FTUpdateService {
 
     def esclient = ESWrapperService.getClient()
 
-    updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
-
-      def result = null
-
-      result = [:]
-      result._id = "${kbc.class.name}:${kbc.id}"
-      result.name = kbc.name
-      result.publisher = kbc.currentPublisher?.name
-      result.publisherId = kbc.currentPublisher?.id
-      result.altname = []
-      kbc.variantNames.each { vn ->
-        result.altname.add(vn.variantName)
-      }
-
-      result.identifiers = []
-      kbc.ids.each { identifier ->
-        result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+    try {
+  
+      updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
+  
+        def result = null
+  
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.name = kbc.name
+        result.publisher = kbc.currentPublisher?.name
+        result.publisherId = kbc.currentPublisher?.id
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+  
+        result.identifiers = []
+        kbc.ids.each { identifier ->
+          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        }
+    
+        result.componentType=kbc.class.simpleName
+  
+        // log.debug("process ${result}");
+        result
       }
   
-      result.componentType=kbc.class.simpleName
-
-      // log.debug("process ${result}");
-
-      return result
-    }
-
-
-    updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
-
-      def result = null
-
-      result = [:]
-      result._id = "${kbc.class.name}:${kbc.id}"
-      result.name = kbc.name
-      // result.publisher = kbc.currentPublisher?.name
-      result.publisherId = kbc.currentPublisher?.id
-      result.altname = []
-      kbc.variantNames.each { vn ->
-        result.altname.add(vn.variantName)
+  
+      updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
+  
+        def result = null
+  
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.name = kbc.name
+        // result.publisher = kbc.currentPublisher?.name
+        result.publisherId = kbc.currentPublisher?.id
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+  
+        result.identifiers = []
+        kbc.ids.each { identifier ->
+          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        }
+  
+        result.componentType=kbc.class.simpleName
+  
+        // log.debug("process ${result}");
+        result
       }
-
-      result.identifiers = []
-      kbc.ids.each { identifier ->
-        result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+  
+      updateES(esclient, org.gokb.cred.Package.class) { kbc ->
+        def result = null
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.name = kbc.name
+        result.componentType=kbc.class.simpleName
+        result
       }
-
-      result.componentType=kbc.class.simpleName
-
-      // log.debug("process ${result}");
-
-      return result
-    }
-
-    updateES(esclient, org.gokb.cred.Package.class) { kbc ->
-      def result = null
-      result = [:]
-      result._id = "${kbc.class.name}:${kbc.id}"
-      result.name = kbc.name
-      result.componentType=kbc.class.simpleName
-      return result
-    }
-
-    updateES(esclient, org.gokb.cred.Org.class) { kbc ->
-      def result = [:]
-      result._id = "${kbc.class.name}:${kbc.id}"
-      result.name = kbc.name
-      result.altname = []
-      kbc.variantNames.each { vn ->
-        result.altname.add(vn.variantName)
+  
+      updateES(esclient, org.gokb.cred.Org.class) { kbc ->
+        def result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.name = kbc.name
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+        result.componentType=kbc.class.simpleName
+  
+        result
       }
-      result.componentType=kbc.class.simpleName
-
-      result
+    }
+    catch ( Exception e ) {
+      log.error("Problem",e);
     }
 
     running = false;
