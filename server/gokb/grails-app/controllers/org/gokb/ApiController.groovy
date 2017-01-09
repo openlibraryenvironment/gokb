@@ -942,7 +942,8 @@ class ApiController {
   
   private Closure lookupCriteria = { String term, match_in, filters, attr = [] ->
     final Map<String, String> aliasStack = [:]
-    final def checkAlias = { String dotNotationString ->
+    
+    final def checkAlias = { String dotNotationString, int joint_type = CriteriaSpecification.INNER_JOIN ->
       def str = aliasStack[dotNotationString]
       if (!str) {
 
@@ -975,7 +976,7 @@ class ApiController {
             
             // Create the alias.
             log.debug ("Creating alias: ${aliasVal} ->  ${alias}")
-            createAlias(aliasVal, alias)
+            createAlias(aliasVal, alias, joint_type)
             
             // Add to the map.
             propStr = propStr ? "${propStr}.${props[i]}" : "${props[i]}"
@@ -1004,7 +1005,9 @@ class ApiController {
   
             String propName
             if (levels.length > 1) {
-              String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.') )
+              
+              // Optional joins use LEFT_JOIN
+              String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.'), CriteriaSpecification.LEFT_JOIN)
               String finalPropName = levels[levels.size()-1]
               String op = finalPropName == 'id' ? 'eq' : 'ilike'
               String toFind = finalPropName == 'id' ? "${term}".toLong() : "%${term}%"
