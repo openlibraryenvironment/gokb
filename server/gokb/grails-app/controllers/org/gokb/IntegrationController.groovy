@@ -1119,6 +1119,53 @@ class IntegrationController {
     }
   }
 
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def loadMacroList() {
+    
+    def cleanData = { String data ->
+      String d = data.trim()
+      d != '' && d != '\\N' ? d : null
+    }
+    
+    def title_file = request.getFile("macros")?.inputStream
+    char del = '\t'
+    char quote = '"'
+    def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), del, quote )
+
+    def col_positions = [ 'id':0, 'name':1, 'desc':2, 'transformations':3 ]
+    String [] nl = r.readNext()
+
+    int rowctr = 0
+    def ret = [:]
+    while ( nl != null) {
+      rowctr ++
+      try {
+        if (nl.length >= col_positions.size() && cleanData (nl[col_positions.'name']) ) {
+          
+          String name = cleanData(nl[col_positions.'name'])
+          Macro m = Macro.findByNormname( Macro.generateNormname (name) ) ?: new Macro()
+          
+          // Update
+          m.name = name
+          m.description = cleanData (nl[col_positions.'desc'])
+          m.refineTransformations = cleanData (nl[col_positions.'transformations'])
+          
+          // Save to DB
+          m.save(flush: true, failOnError: true)
+          log.info "Created/Updated macro with id ${m.id}"
+          ret["Row ${rowctr}"] = "Created Macro with ID ${m.id}"
+        } else {
+          log.error("Unable to parse row ${rowctr}..")
+          ret["Row ${rowctr}"] = "Failed to parse"
+        } 
+      } catch ( Exception e ) {
+        log.error("Unable to process row ${rowctr}..",e)
+        ret["Row ${rowctr}"] = "Exception thrown ${e}"
+      }
+      nl = r.readNext()
+    }
+    render ret as JSON
+  }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def loadTitleList() {
