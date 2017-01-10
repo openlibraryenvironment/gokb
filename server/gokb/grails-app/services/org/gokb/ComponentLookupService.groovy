@@ -4,10 +4,11 @@ import grails.util.GrailsNameUtils
 
 import org.gokb.cred.KBComponent
 import org.gokb.validation.types.LookedUpValue
+import grails.util.Holders
+
 
 class ComponentLookupService {
-
-  def grailsApplication
+  
 
   public <T extends KBComponent> Map<String, T> lookupComponents(String... comp_name_strings) {
     Map<String, T> results = [:]
@@ -77,7 +78,7 @@ class ComponentLookupService {
           log.debug("Try and lookup ${cls_name} with ID ${component_match[0][2]}")
           
           // We have a match.
-          Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass("${cls_name}")
+          Class<? extends KBComponent> c = Holders.grailsApplication.getClassLoader().loadClass("${cls_name}")
 
           // Parse the long.
           long the_id = Long.parseLong( component_match[0][2] )
