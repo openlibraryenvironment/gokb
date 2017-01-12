@@ -281,20 +281,30 @@ GOKb.handlers.lookup = function(element, namespace, match, attr, title, quickCre
     title ? title : "Lookup"
   );
 
-  // Now we have our lookup object we can now open it with a custom renderer set.  
-  lookup.open(function( ul, item ) {
-    
+  // Now we have our lookup object we can now open it with a custom renderer set.
+  var last_value = null;
+  var link = null;
+  var listItem = null;
+  var renderer = function( ul, item ) {
+	    
     // Regex for highlighting.
     var highlight = new RegExp('(' + RegExp.escape(this.term) + ')', "i");
     
     // Create a link.
-    var link = $("<a />")
-      .append(
-        $("<span class='item-name' />").html(
-          item.label.replace(highlight, "<span class='highlight' >$1</span>")
+    if (link == null || item.value != last_value) {
+      last_value = item.value; 
+      link = $("<a />")
+        .append(
+          $("<span class='item-name' />").html(
+            item.label.replace(highlight, "<span class='highlight' >$1</span>")
+          )
         )
-      )
-    ;
+      ;
+      listItem = $( "<li>" )
+	    .append(link)
+	    .data( "item.autocomplete", item )
+	    .appendTo( ul );
+    }
     
     // Include in display the attributes only where the term was searched for.
     var include = function (key) {
@@ -343,12 +353,9 @@ GOKb.handlers.lookup = function(element, namespace, match, attr, title, quickCre
     });
 
     // Return the list item with the link.
-    return $( "<li>" )
-      .append(link)
-      .data( "item.autocomplete", item )
-      .appendTo( ul )
-    ;
-  });
+    return listItem;
+  };
+  lookup.open(renderer);
   
   return lookup;
 };
