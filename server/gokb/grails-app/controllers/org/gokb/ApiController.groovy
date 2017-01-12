@@ -18,10 +18,13 @@ import com.k_int.ConcurrencyManagerService
 import com.k_int.TextUtils
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.TsvSuperlifterService
+import com.k_int.ExtendedHibernateDetachedCriteria
 
 import au.com.bytecode.opencsv.CSVReader
 import org.springframework.web.multipart.MultipartHttpServletRequest
 import org.hibernate.criterion.CriteriaSpecification
+import grails.gorm.DetachedCriteria
+import org.hibernate.criterion.Subqueries
 
 
 /**
@@ -940,58 +943,57 @@ class ApiController {
     render result as JSON
   }
   
-  private Closure lookupCriteria = { String term, match_in, filters, attr = [] ->
-    final Map<String, String> aliasStack = [:]
-    
-    final def checkAlias = { String dotNotationString, int joint_type = CriteriaSpecification.INNER_JOIN ->
-      def str = aliasStack[dotNotationString]
-      if (!str) {
+  private final def checkAlias = { def criteria, Map aliasStack, String dotNotationString, int joint_type = CriteriaSpecification.INNER_JOIN ->
+    def str = aliasStack[dotNotationString]
+    if (!str) {
 
-        // No alias found for exact match.
-        // Start from the front and build up aliases.
-        String[] props = dotNotationString.split("\\.")
-        String propStr = "${props[0]}"
-        String alias = aliasStack[propStr];
-        int counter = 1
-        while (alias && counter < props.length) {
-          str = "${alias}"
-          String test = propStr + ".${props[counter]}"
-          
-          alias = aliasStack[test]
-          if (alias) {
-            propStr += test
-          }
-          counter ++
-        }
-
-        // At this point we should have a dot notated alias string, where the aliases already been created for this query.
-        // Any none existent aliases will need creating but also adding to the map for traversing.
-        if (counter <= props.length) {
-          // The counter denotes how many aliases were present, so we should start at the counter and create the missing
-          // aliases.
-          propStr = null
-          for (int i=(counter-1); i<props.length; i++) {
-            String aliasVal = alias ? "${alias}.${props[i]}" : "${props[i]}"
-            alias = "alias${aliasStack.size()}"
-            
-            // Create the alias.
-            log.debug ("Creating alias: ${aliasVal} ->  ${alias}")
-            createAlias(aliasVal, alias, joint_type)
-            
-            // Add to the map.
-            propStr = propStr ? "${propStr}.${props[i]}" : "${props[i]}"
-            aliasStack[propStr] = alias
-            log.debug ("Added quick string: ${propStr} -> ${alias}")
-          }
-        }
+      // No alias found for exact match.
+      // Start from the front and build up aliases.
+      String[] props = dotNotationString.split("\\.")
+      String propStr = "${props[0]}"
+      String alias = aliasStack[propStr];
+      int counter = 1
+      while (alias && counter < props.length) {
+        str = "${alias}"
+        String test = propStr + ".${props[counter]}"
         
-        // Set the string to the alias we ended on.
-        str = alias
+        alias = aliasStack[test]
+        if (alias) {
+          propStr += test
+        }
+        counter ++
       }
 
-      str
+      // At this point we should have a dot notated alias string, where the aliases already been created for this query.
+      // Any none existent aliases will need creating but also adding to the map for traversing.
+      if (counter <= props.length) {
+        // The counter denotes how many aliases were present, so we should start at the counter and create the missing
+        // aliases.
+        propStr = null
+        for (int i=(counter-1); i<props.length; i++) {
+          String aliasVal = alias ? "${alias}.${props[i]}" : "${props[i]}"
+          alias = "alias${aliasStack.size()}"
+          
+          // Create the alias.
+          log.debug ("Creating alias: ${aliasVal} ->  ${alias}")
+          criteria.createAlias(aliasVal, alias, joint_type)
+          
+          // Add to the map.
+          propStr = propStr ? "${propStr}.${props[i]}" : "${props[i]}"
+          aliasStack[propStr] = alias
+          log.debug ("Added quick string: ${propStr} -> ${alias}")
+        }
+      }
+      
+      // Set the string to the alias we ended on.
+      str = alias
     }
-    
+
+    str
+  }
+  
+  private Closure theQueryCriteria = {  String term, match_in, filters, boolean unique, crit = null ->
+    final Map<String, String> aliasStack = [:]
     
     and {
       if (term && match_in) {
@@ -1007,7 +1009,7 @@ class ApiController {
             if (levels.length > 1) {
               
               // Optional joins use LEFT_JOIN
-              String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.'), CriteriaSpecification.LEFT_JOIN)
+              String aliasName = checkAlias ( delegate, aliasStack, levels[0..(levels.size() - 2)].join('.'), CriteriaSpecification.LEFT_JOIN)
               String finalPropName = levels[levels.size()-1]
               String op = finalPropName == 'id' ? 'eq' : 'ilike'
               String toFind = finalPropName == 'id' ? "${term}".toLong() : "%${term}%"
@@ -1046,7 +1048,7 @@ class ApiController {
 
             String propName
             if (levels.length > 1) {
-              String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.') )
+              String aliasName = checkAlias ( delegate, aliasStack, levels[0..(levels.size() - 2)].join('.') )
               String finalPropName = levels[levels.size()-1]
               
               log.debug ("Testing  ${aliasName}.${finalPropName} ${op == 'eq' ? '=' : '!='} ${parts[1]}")
@@ -1058,6 +1060,29 @@ class ApiController {
           }
         }
       }
+      
+      if (unique) {
+        projections {
+          distinct('id') 
+        }
+      }
+    }
+  }
+  
+  private Closure lookupCriteria = { String term, match_in, filters, attr = [], boolean unique = true ->
+    final Map<String, String> aliasStack = [:]
+    
+    if (unique) {
+      
+      // Use the closure as a subquery so we can return unique ids.
+      // We need to deal directly with Hibernate here.
+      ExtendedHibernateDetachedCriteria subQ = new ExtendedHibernateDetachedCriteria(targetClass.createCriteria().buildCriteria (theQueryCriteria.curry(term, match_in, filters, unique)))
+      
+      criteria.add(Subqueries.propertyIn('id', subQ));
+    } else {
+    
+      // Execute the queryCriteria in this context.
+      (theQueryCriteria.rehydrate(delegate, owner, thisObject))(term, match_in, filters, unique)
     }
     
     // If we have a list of return attributes then we should add projections here.
@@ -1071,7 +1096,7 @@ class ApiController {
 
           String propName
           if (levels.length > 1) {
-            String aliasName = checkAlias ( levels[0..(levels.size() - 2)].join('.') )
+            String aliasName = checkAlias (delegate, aliasStack, levels[0..(levels.size() - 2)].join('.') )
             String finalPropName = levels[levels.size()-1]
             
             String[] propAliasParts = finalPropName.split("\\:")
@@ -1137,6 +1162,7 @@ class ApiController {
       query_params["offset"] = ((page - 1) * perPage)
     }
     
+    // Build the detached criteria.
     def results = c.createCriteria().list (query_params, lookupCriteria.curry(term, match_in, filters, attr))
     
     def resp
