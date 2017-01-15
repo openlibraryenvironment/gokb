@@ -261,6 +261,7 @@ class HomeController {
     if ( params.newpass == params.repeatpass ) {
       User user = springSecurityService.currentUser
       if ( user.password?.equals(springSecurityService.encodePassword(params.origpass)) ) {
+        log.debug("${user.password} not same as new password when encoded: ${springSecurityService.encodePassword(params.origpass)}");
         user.password = params.newpass
         user.save();
         flash.message = "Password Changed!"
