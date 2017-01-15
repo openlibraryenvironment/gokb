@@ -260,7 +260,7 @@ class HomeController {
   def changePass() {
     if ( params.newpass == params.repeatpass ) {
       User user = springSecurityService.currentUser
-      if ( user.password == springSecurityService.encodePassword(params.origpass) ) {
+      if ( user.password?.equals(springSecurityService.encodePassword(params.origpass)) ) {
         user.password = params.newpass
         user.save();
         flash.message = "Password Changed!"
