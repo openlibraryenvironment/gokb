@@ -1,51 +1,50 @@
 <html>
 <head>
-  <meta name='layout' content='register'/>
-  <title><g:message code='spring.security.ui.forgotPassword.title'/></title>
+  <meta name='layout' content='sb-admin'/>
+  <title><g:message code='spring.security.ui.register.title'/></title>
 </head>
 
 <body>
 
-<div class="container">
-  <div class="row"
-    <div class='col-md-12'>
+  <div class="container">
+    <div class="row">
+      <div class='col-md-12'>
+        &nbsp;
+      </div>
+    </div>
+    <div class="row">
+      <div class='col-md-12'>
 
+      <g:form action='forgotPassword' name="forgotPasswordForm" autocomplete='off' class="form" role="form">
 
+        <g:if test='${emailSent}'>
+          <br/>
+          <g:message code='spring.security.ui.forgotPassword.sent'/>
+        </g:if>
 
-<s2ui:form width='350' height='220' elementId='forgotPasswordFormContainer' titleCode='spring.security.ui.forgotPassword.header' center='true'>
+        <g:else>
+          <br/>
+          <h4><g:message code='spring.security.ui.forgotPassword.description'/></h4>
 
-	<g:form action='forgotPassword' name="forgotPasswordForm" autocomplete='off'>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <g:textField class="form-control" id="username"  placeholder="Requested Username" name="username" size="25" />
+          </div>
 
-	<g:if test='${emailSent}'>
-	<br/>
-	<g:message code='spring.security.ui.forgotPassword.sent'/>
-	</g:if>
+          <div class="form-group">
+            <button type="submit" value="Submit" class="btn btn-success">Send Password Recovery Email...</button>
+          </div>
 
-	<g:else>
+        </g:else>
 
-	<br/>
-	<h4><g:message code='spring.security.ui.forgotPassword.description'/></h4>
-
-	<table>
-		<tr>
-			<td><label for="username"><g:message code='spring.security.ui.forgotPassword.username'/></label></td>
-			<td><g:textField name="username" size="25" /></td>
-		</tr>
-	</table>
-
-	<s2ui:submitButton elementId='reset' form='forgotPasswordForm' messageCode='spring.security.ui.forgotPassword.submit' value="Submit" />
-
-	</g:else>
-
-	</g:form>
-</s2ui:form>
+      </g:form>
     </div>
   </div>
 </div>
 
 <script>
 $(document).ready(function() {
-	$('#username').focus();
+  $('#username').focus();
 });
 </script>
 
