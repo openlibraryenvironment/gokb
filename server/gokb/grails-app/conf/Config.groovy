@@ -607,6 +607,14 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/api/checkUpdate':         ['permitAll'],
   '/api/isUp':                ['permitAll'],
   '/api/userData':            ['permitAll'],
+  '/user/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/role/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/securityInfo/**':         ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/registrationCode/**':     ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/aclClass/**':             ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/aclSid/**':               ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/aclObjectIdentity/**':    ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/aclEntry/**':             ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/oai':                     ['permitAll'],
   '/oai/**':                  ['permitAll']
 ]
