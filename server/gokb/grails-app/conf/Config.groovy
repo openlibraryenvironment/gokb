@@ -607,6 +607,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/api/checkUpdate':         ['permitAll'],
   '/api/isUp':                ['permitAll'],
   '/api/userData':            ['permitAll'],
+  '/oai':                     ['permitAll'],
   '/oai/**':                  ['permitAll']
 ]
 
