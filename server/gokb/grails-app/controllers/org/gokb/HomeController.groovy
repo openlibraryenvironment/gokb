@@ -263,7 +263,7 @@ class HomeController {
       User user = springSecurityService.currentUser
       if ( passwordEncoder.isPasswordValid(user.password, params.origpass, null) ) {
         user.password = params.newpass
-        user.save();
+        user.save(flush:true, failOnError:true);
         flash.message = "Password Changed!"
       }
       else {
