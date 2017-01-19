@@ -23,13 +23,13 @@
           <h4><g:message code='spring.security.ui.resetPassword.description'/></h4>
 
           <div class="form-group">
-            <label for="username">Password</label>
-            <g:textField class="form-control" type="password" id="username"  name="password" size="25" />
+            <label for="password">Password</label>
+            <g:textField class="form-control" type="password" id="password"  name="password" size="25" />
           </div>
 
           <div class="form-group">
-            <label for="username">Repeat Password</label>
-            <g:textField class="form-control" type="password" id="username"  name="password2" size="25" />
+            <label for="password2">Repeat Password</label>
+            <g:textField class="form-control" type="password" id="password2"  name="password2" size="25" />
           </div>
 
           <div class="form-group">
