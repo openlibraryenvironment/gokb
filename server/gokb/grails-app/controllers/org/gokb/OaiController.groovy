@@ -214,12 +214,12 @@ class OaiController {
       query += ' and o.lastUpdated < ?'
       query_params.add(sdf.parse(params.until))
     }
-    query += ' order by o.lastUpdated'
+    def order_by_clause = 'order by o.lastUpdated'
 
     def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
-    def records = Package.executeQuery("select o ${query}",query_params,[offset:offset,max:3])
+    def records = Package.executeQuery("select o ${query} ${order_by_clause}",query_params,[offset:offset,max:3])
 
-    log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
+    log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
     if ( offset + records.size() < rec_count ) {
       // Query returns more records than sent, we will need a resumption token
@@ -341,13 +341,13 @@ class OaiController {
         query_params.add(params.set)
       }
 
-      def sort_clause = 'order by o.lastUpdated'
+      def order_by_clause = 'order by o.lastUpdated'
 
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
       def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
-      def records = Package.executeQuery("select o ${query} ${sort_clause}",query_params,[offset:offset,max:max])
+      def records = Package.executeQuery("select o ${query} ${order_by_clause}",query_params,[offset:offset,max:max])
 
-      log.debug("rec_count is ${rec_count}, records_size=${records.size()}");
+      log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
       if ( offset + records.size() < rec_count ) {
         // Query returns more records than sent, we will need a resumption token
