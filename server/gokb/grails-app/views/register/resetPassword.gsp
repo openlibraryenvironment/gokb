@@ -15,6 +15,14 @@
     <div class="row">
       <div class='col-md-12'>
 
+        <g:if test="${flash.error}">
+          <div class="alert alert-error" style="display: block">${flash.error}</div>
+        </g:if>
+
+        <g:if test="${flash.message}">
+          <div class="info alert-info" style="display: block">${flash.message}</div>
+        </g:if>
+
         <g:form action='forgotPassword' name="forgotPasswordForm" autocomplete='off' class="form" role="form">
           <g:hiddenField name='t' value='${token}'/>
           <div class="sign-in">
