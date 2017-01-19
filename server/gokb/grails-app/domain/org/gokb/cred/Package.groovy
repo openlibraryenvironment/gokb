@@ -104,6 +104,45 @@ class Package extends KBComponent {
     result
   }
   
+  private static OAI_PKG_CONTENTS_QRY = '''
+select tipp.id, 
+       title.name, 
+       title.id, 
+       plat.name, 
+       plat.id, 
+       tipp.startDate, 
+       tipp.startVolume, 
+       tipp.startIssue, 
+       tipp.endDate, 
+       tipp.endVolume, 
+       tipp.endIssue, 
+       tipp.coverageDepth, 
+       tipp.coverageNote, 
+       tipp.url, 
+       tipp.status, 
+       tipp.accessStartDate, 
+       tipp.accessEndDate, 
+       tipp.format, 
+       tipp.embargo, 
+       plat.primaryUrl 
+    from TitleInstancePackagePlatform as tipp, 
+         Combo as hostPlatformCombo, 
+         Combo as titleCombo,  
+         Combo as pkgCombo,
+         Platform as plat,
+         TitleInstance as title
+    where pkgCombo.toComponent=tipp 
+      and pkgCombo.fromComponent= ?  
+      and pkgCombo.type= ?  
+      and hostPlatformCombo.toComponent=tipp 
+      and hostPlatformCombo.type = ?  
+      and hostPlatformCombo.fromComponent = plat
+      and titleCombo.toComponent=tipp 
+      and titleCombo.type = ?
+      and titleCombo.fromComponent=title
+      and tipp.status != ?  
+    order by tipp.id''';
+
   public void deleteSoft (context) {
     // Call the delete method on the superClass.
     super.deleteSoft(context)
@@ -205,18 +244,10 @@ class Package extends KBComponent {
     def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps');
     def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
 
+    log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
+
     // Get the tipps manually rather than iterating over the collection - For better management
-    // def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status.value != 'Deleted' and exists ( select ic from tipp.incomingCombos as ic where ic.fromComponent = ? ) order by tipp.id",this);
-    def tipps = TitleInstancePackagePlatform.executeQuery("""select tipp.id, titleCombo.fromComponent.name, titleCombo.fromComponent.id, hostPlatformCombo.fromComponent.name, hostPlatformCombo.fromComponent.id, tipp.startDate, tipp.startVolume, tipp.startIssue, tipp.endDate, tipp.endVolume, tipp.endIssue, tipp.coverageDepth, tipp.coverageNote, tipp.url, tipp.status, tipp.accessStartDate, tipp.accessEndDate, tipp.format, tipp.embargo, hostPlatformCombo.fromComponent.primaryUrl from TitleInstancePackagePlatform as tipp, Combo as hostPlatformCombo, Combo as titleCombo, Combo as pkgCombo
-where pkgCombo.toComponent=tipp
-  and pkgCombo.fromComponent= ?
-  and pkgCombo.type= ?
-  and hostPlatformCombo.toComponent=tipp 
-  and hostPlatformCombo.type = ?
-  and titleCombo.toComponent=tipp 
-  and titleCombo.type = ?
-  and tipp.status != ?
-order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true]); // , fetchSize:250]);
+    def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true]); // , fetchSize:250]);
 
     log.debug("Query complete...");
     
@@ -233,7 +264,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         'global' ( global?.value )
         'nominalPlatform' ( nominalPlatform?.name )
         'nominalProvider' ( nominalPlatform?.provider?.name )
-        'listVerifier' ( listVerifier?.username )
+        'listVerifier' ( listVerifier )
         'userListVerifier' ( userListVerifier?.username )
         'listVerifiedDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
 
