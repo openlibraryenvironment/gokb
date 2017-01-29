@@ -396,7 +396,7 @@ class TitleLookupService {
          ( publisher_name.trim().length() > 0 ) ) {
 
       // Lookup our publisher.
-      def norm_pub_name = KBComponent.generateNormname(publisher_name);
+      def norm_pub_name = Org.generateNormname(publisher_name);
 
       log.debug("Add publisher \"${publisher_name}\" (${norm_pub_name})");
       Org publisher = Org.findByNormname(norm_pub_name)
