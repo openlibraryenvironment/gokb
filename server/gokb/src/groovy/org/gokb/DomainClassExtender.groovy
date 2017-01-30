@@ -525,6 +525,14 @@ class DomainClassExtender {
       (lookupComboMapping (Combo.MAPPED_BY, propertyName) != null)
     }
   }
+  
+  private static addIsComboReverseFor = { DefaultGrailsDomainClass domainClass ->
+    final ExpandoMetaClass mc = domainClass.getMetaClass()
+    mc.static.isComboReverseFor = { Class forClass, String propertyName ->
+      log.debug("isComboReverseFor called on ${delegate} with args ${[propertyName]}")
+      (lookupComboMappingFor (forClass, Combo.MAPPED_BY, propertyName) != null)
+    }
+  }
 
   private static addLookupComboMapping = { DefaultGrailsDomainClass domainClass ->
 
@@ -896,6 +904,7 @@ class DomainClassExtender {
         DomainClassExtender.addGetAllComboTypeValuesFor (domainClass)
         DomainClassExtender.addIsComboPropertyFor (domainClass)
         DomainClassExtender.addCombineInheritedMapFor (domainClass)
+        DomainClassExtender.addIsComboReverseFor (domainClass)
         DomainClassExtender.addGetCardinalityFor (domainClass)
         DomainClassExtender.addComboPropertyGettersAndSetters(domainClass)
 //        DomainClassExtender.overrideGORMMethods(domainClass)
