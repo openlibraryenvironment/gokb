@@ -396,7 +396,7 @@ class TitleLookupService {
          ( publisher_name.trim().length() > 0 ) ) {
          
       log.debug("Add publisher \"${publisher_name}\"")
-      Org publisher = componentLookupService.lookupComponent()
+      Org publisher = componentLookupService.lookupComponent(publisher_name)
       
       if (publisher == null) {
         // Lookup using norm name.
