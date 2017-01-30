@@ -24,6 +24,11 @@ class AdminController {
   def tidyOrgData() {
 
     concurrencyManagerService.createJob {
+    
+      // Cleanup our problem orgs.
+      cleanupService.tidyMissnamedPublishers()
+      
+      
       def result = [:]
 
       def publisher_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Publisher');
