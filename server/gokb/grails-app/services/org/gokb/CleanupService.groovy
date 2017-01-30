@@ -6,77 +6,88 @@ class CleanupService {
   def sessionFactory
   
   def tidyMissnamedPublishers () {
-    log.debug "Tidy the missnamed publishers"
-    def matches = Org.executeQuery('from Org as o where o.name LIKE :pattern', [pattern: '%::{Org:%}'])
-    final def toDelete = []
     
-    for (final Org original : matches) {
+    try {
+    
+      log.debug "Tidy the missnamed publishers"
+      def matches = Org.executeQuery('from Org as o where o.name LIKE :pattern', [pattern: '%::{Org:%}'])
+      final def toDelete = []
       
-      Org.withNewTransaction {
-        String name = original.name
-        log.debug "Considering ${name}"
+      for (Org original : matches) {
         
-        // Strip the formatting noise.
-        String idStr = name.replaceAll(/.*\:\:\{Org\:(\d+)\}/, '$1')
-        Long theId = (idStr.isLong() ? idStr.toLong() : null )
-        
-        if (theId) {
-          if (theId != original.id) {
+        Org.withNewTransaction {
+          String name = original.name
+          log.debug "Considering ${name}"
           
-            Org newTarget = Org.read(theId)
+          // Strip the formatting noise.
+          String idStr = name.replaceAll(/.*\:\:\{Org\:(\d+)\}/, '$1')
+          Long theId = (idStr.isLong() ? idStr.toLong() : null )
+          
+          if (theId) {
+            if (theId != original.id) {
             
-            log.debug "Move the publisher entries to ${newTarget}"
-            
-            // Unsaved components can't have combo relations
-            final RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, Org.getComboTypeValueFor(TitleInstance, "publisher"))
-            final String direction = Org.isComboReverseFor(TitleInstance, 'publisher') ? 'from' : 'to'
-            final String opp_dir = direction == 'to' ? 'from' : 'to'
-            String hql_query = "from Combo where type=:type and ${direction}Component=:original"
-            
-            def hql_params = ['type': type, 'original': original]
-            def allCombos = Combo.executeQuery(hql_query,hql_params)
-            
-            // In most cases we don't want to update the target of the combo, but instead reinstate the previous entry and completely remove this
-            // entry.
-            for (Combo c : allCombos) {
-              // Lets see if there is a combo already existing that points to the intended target that was mistakenly replace during ingest.
-              Date start = c.startDate.clearTime()
+              Org newTarget = Org.read(theId)
               
-              // Query for the combo that was replaced.
-              hql_query = "from Combo where type=:type and ${opp_dir}Component=:linkComp and ${direction}Component=:newTarget and endDate >= :dayStart AND endDate < :nextDay"
-              hql_params = ['type': type, 'linkComp': c."${opp_dir}Component", 'newTarget': newTarget, 'dayStart': start, 'nextDay': (start + 1)]
-              def toReinstate = Combo.executeQuery(hql_query,hql_params)
+              log.debug "Move the publisher entries to ${newTarget}"
               
-              if (toReinstate) {
-                // Just reinstate the first.
-                toReinstate[0].endDate = null
-                toReinstate[0].save( failOnError:true )
+              // Unsaved components can't have combo relations
+              final RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, Org.getComboTypeValueFor(TitleInstance, "publisher"))
+              final String direction = Org.isComboReverseFor(TitleInstance, 'publisher') ? 'from' : 'to'
+              final String opp_dir = direction == 'to' ? 'from' : 'to'
+              String hql_query = "from Combo where type=:type and ${direction}Component=:original"
+              
+              def hql_params = ['type': type, 'original': original]
+              def allCombos = Combo.executeQuery(hql_query,hql_params)
+              
+              // In most cases we don't want to update the target of the combo, but instead reinstate the previous entry and completely remove this
+              // entry.
+              for (Combo c : allCombos) {
+                // Lets see if there is a combo already existing that points to the intended target that was mistakenly replace during ingest.
+                Date start = c.startDate.clearTime()
                 
-                // This combo should be removed by the expunge process later on.
-    //            c.delete( flush: true, failOnError:true )
-              } else {
-                // This combo didn't replace an existing one but still points to the wrong component.
-                c."${direction}Component" = newTarget
-                c.save(  flush: true, failOnError:true )
+                // Query for the combo that was replaced.
+                hql_query = "from Combo where type=:type and ${opp_dir}Component=:linkComp and ${direction}Component=:newTarget and endDate >= :dayStart AND endDate < :nextDay"
+                hql_params = ['type': type, 'linkComp': c."${opp_dir}Component", 'newTarget': newTarget, 'dayStart': start, 'nextDay': (start + 1)]
+                def toReinstate = Combo.executeQuery(hql_query,hql_params)
+                
+                if (toReinstate) {
+                  // Just reinstate the first.
+                  toReinstate[0].endDate = null
+                  toReinstate[0].save( failOnError:true )
+                  
+                  // This combo should be removed by the expunge process later on.
+      //            c.delete( flush: true, failOnError:true )
+                } else {
+                  // This combo didn't replace an existing one but still points to the wrong component.
+                  c."${direction}Component" = newTarget
+                  c.save(  flush: true, failOnError:true )
+                }
               }
+              
+              // Remove the duplicate publisher.
+              toDelete << original.id
+              
+            } else {
+              // Publisher was a brand new one. Just rename the publisher.
+              log.debug "Correct component with incorrect title. Leave the relationship in place but rename the org."
+              String theName = name.replaceAll(/(.*)\:\:\{Org\:\d+\}/, '$1')
+              
+              // Strange things happening when attempting to rename "original" reload from the id.
+              Org rnm = Org.get(original.id)
+              rnm.name = theName
+              rnm.save( flush: true, failOnError:true )
             }
-            
-            // Remove the duplicate publisher.
-            toDelete << original.id
-            
           } else {
-            // Publisher was a brand new one. Just rename the publisher.
-            log.debug "Brand new component with incorrect title. Leave the relationship in place but rename the org."
-            original.name = name.replaceAll(/(.*)\:\:\{Org\:\d+\}/, '$1')
-            original.save(flush: true, failOnError:true )
+            log.debug "'${name}' does not contain an identifier, so we are ignoring this match." 
           }
-        } else {
-          log.debug "'${name}' does not contain an identifier, so we are ignoring this match." 
         }
       }
+      
+      expungeByIds(toDelete)
+      
+    } catch (Throwable t) {
+      log.error "Error tidying duplicated (missnamed) orgs.", t
     }
-    
-    expungeByIds(toDelete)
   }
   
   private def expungeByIds ( ids ) {
