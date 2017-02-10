@@ -394,12 +394,17 @@ class TitleLookupService {
 
     if ( ( publisher_name != null ) && 
          ( publisher_name.trim().length() > 0 ) ) {
-
-      // Lookup our publisher.
-      def norm_pub_name = KBComponent.generateNormname(publisher_name);
-
-      log.debug("Add publisher \"${publisher_name}\" (${norm_pub_name})");
-      Org publisher = Org.findByNormname(norm_pub_name)
+         
+      log.debug("Add publisher \"${publisher_name}\"")
+      Org publisher = componentLookupService.lookupComponent(publisher_name)
+      
+      if (publisher == null) {
+        // Lookup using norm name.
+        def norm_pub_name = Org.generateNormname(publisher_name);
+        
+        log.debug("Using normname \"${norm_pub_name}\" for lookup")
+        publisher = Org.findByNormname(norm_pub_name)
+      }      
 
       if ( publisher == null ) {
         def candidate_orgs = Org.executeQuery("select o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);

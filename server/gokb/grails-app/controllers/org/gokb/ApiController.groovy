@@ -1060,11 +1060,10 @@ class ApiController {
           }
         }
       }
-      
-      if (unique) {
-        projections {
-          distinct('id') 
-        }
+    }
+    if (unique) {
+      projections {
+        distinct('id') 
       }
     }
   }
@@ -1096,7 +1095,7 @@ class ApiController {
 
           String propName
           if (levels.length > 1) {
-            String aliasName = checkAlias (delegate, aliasStack, levels[0..(levels.size() - 2)].join('.') )
+            String aliasName = checkAlias (delegate, aliasStack, levels[0..(levels.size() - 2)].join('.'), CriteriaSpecification.LEFT_JOIN )
             String finalPropName = levels[levels.size()-1]
             
             String[] propAliasParts = finalPropName.split("\\:")

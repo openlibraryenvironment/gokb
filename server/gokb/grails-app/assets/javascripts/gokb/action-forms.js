@@ -87,7 +87,7 @@ if (typeof jQuery !== 'undefined') {
           gokb.confirm (
             function() {
               // Submit the form that is attached to the dropdown.
-              var form = selectedLink.closest("form")
+              var form = selectedLink.closest(".navbar").siblings('form.action-form');
               var workflowValue = $('<input>',{type:'hidden',name:'selectedBulkAction',value:selectedLink.attr('bulkaction')})
               workflowValue.appendTo(form);
               form.submit();
