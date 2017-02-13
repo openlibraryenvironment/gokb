@@ -293,7 +293,7 @@ public class HQLBuilder {
         hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}lower(${scoped_property}) like :${crit.defn.qparam}");
         def base_value = crit.value.toLowerCase().trim()
         if ( crit.defn.contextTree.normalise == true ) {
-          base_value = org.gokb.GOKbTextUtils.normaliseString(base_value)
+          base_value = org.gokb.GOKbTextUtils.norm2(base_value)
         }
         hql_builder_context.bindvars[crit.defn.qparam] = ( ( crit.defn.contextTree.wildcard=='L' || crit.defn.contextTree.wildcard=='B') ? '%' : '') +
                                                          base_value +
@@ -304,7 +304,7 @@ public class HQLBuilder {
         hql_builder_context.query_clauses.add("${crit.defn.contextTree.negate?'not ':''}${scoped_property} like :${crit.defn.qparam}");
         def base_value = crit.value.trim()
         if ( crit.defn.contextTree.normalise == true ) {
-          base_value = org.gokb.GOKbTextUtils.normaliseString(base_value)
+          base_value = org.gokb.GOKbTextUtils.norm2(base_value)
         }
         hql_builder_context.bindvars[crit.defn.qparam] = ( ( crit.defn.contextTree.wildcard=='L' || crit.defn.contextTree.wildcard=='B') ? '%' : '') +
                                                          base_value +
