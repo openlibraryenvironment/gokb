@@ -351,7 +351,8 @@ identifiers = [
     "eissn",
     "doi",
     "isbn",
-    "issnl"
+    "issnl",
+    "zdb"
   ],
 
   // Class ones that need to be cross-checked. If an Identifier supplied as an ISSN,
@@ -549,6 +550,7 @@ log4j = {
             'grails.app.jobs',
             'com.k_int',
             'org.gokb.cred.RefdataCategory',
+            'org.gokb.IntegrationController',
             'com.k_int.apis',
             'com.k_int.asset.pipeline.groovy',
             'asset.pipeline.less.compilers',
@@ -607,6 +609,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/api/checkUpdate':         ['permitAll'],
   '/api/isUp':                ['permitAll'],
   '/api/userData':            ['permitAll'],
+  '/integration/**':          ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/user/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/role/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/securityInfo/**':         ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
@@ -616,7 +619,8 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/aclObjectIdentity/**':    ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/aclEntry/**':             ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/oai':                     ['permitAll'],
-  '/oai/**':                  ['permitAll']
+  '/oai/**':                  ['permitAll'],
+  '/coreference/**':          ['permitAll']
 ]
 
 

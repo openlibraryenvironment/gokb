@@ -10,7 +10,7 @@ import au.com.bytecode.opencsv.CSVReader
 
 import com.k_int.ClassUtils
 
-import groovy.util.logging.Log4j
+import groovy.util.logging.*
 
 
 @Log4j
@@ -32,7 +32,7 @@ class IntegrationController {
   def assertJsonldPlatform() { 
     def result = [result:'OK']
     def name = request.JSON.'skos:prefLabel'
-    def normname = GOKbTextUtils.normaliseString(name)
+    def normname = GOKbTextUtils.norm2(name)
     def located_entries = KBComponent.findAllByNormname(normname)
     log.debug("assertJsonldPlatform ${name}/${normname}");
     if ( located_entries.size() == 0 ) {
@@ -114,7 +114,7 @@ class IntegrationController {
   
           if ( located_entries?.size() == 0 ) {
             log.debug("Failed to match on same-as. Attempting primary name match");
-            def normname = GOKbTextUtils.normaliseString(name)
+            def normname = GOKbTextUtils.norm2(name)
             located_entries = KBComponent.findAllByNormname(normname)
             if ( located_entries?.size() == 0 ) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
@@ -1067,6 +1067,11 @@ class IntegrationController {
         // Lookup the publisher.
         def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
         Org publisher = Org.findByNormname(norm_pub_name)
+        def candidate_orgs = Org.executeQuery("select o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
+
+        if(candidate_orgs.size() == 1 && !publisher){
+          publisher = candidate_orgs[0]
+        }
         
         if (publisher) {
           
