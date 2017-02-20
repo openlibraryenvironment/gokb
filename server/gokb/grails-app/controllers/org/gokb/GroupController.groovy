@@ -21,13 +21,25 @@ class GroupController {
     if ( params.id ) {
       User user = springSecurityService.currentUser
 
+      log.debug("Entering GroupController:index ${params}");
+
       result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 20 );
       result.pkg_offset = params.pkg_offset ? Integer.parseInt(params.pkg_offset) : 0;
       result.rr_offset = params.rr_offset ? Integer.parseInt(params.rr_offset) : 0;
 
+      if( params.pkg_jumpToPage ){
+        result.pkg_offset = ( ( Integer.parseInt(params.pkg_jumpToPage) - 1 ) * result.max )
+      }
+      params.pkg_offset = result.pkg_offset
+      params.remove('pkg_jumpToPage')
+
+      if( params.rr_jumpToPage ){
+        result.rr_offset = ( ( Integer.parseInt(params.rr_jumpToPage) - 1 ) * result.max )
+      }
+      params.rr_offset = result.rr_offset
+      params.remove('rr_jumpToPage')
+
       result.group = CuratoryGroup.get(params.id);
-
-
 
       def rr_sort= params.rr_sort?:'displayName'
       def rr_sort_order = params.rr_sort_order?:'desc'
@@ -58,6 +70,12 @@ class GroupController {
       result.pkg_page_max = (result.package_count / result.max).toInteger() + (result.package_count % result.max > 0 ? 1 : 0)
 
       result.pkg_page = (result.pkg_offset / result.max) + 1
+
+      result.withoutJump = params.clone()
+      result.remove('pkg_jumpToPage');
+      result.remove('rr_jumpToPage');
+      result.withoutJump.remove('pkg_jumpToPage');
+      result.withoutJump.remove('rr_jumpToPage');
     }
     return result
   }

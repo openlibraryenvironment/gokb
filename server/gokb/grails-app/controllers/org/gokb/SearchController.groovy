@@ -30,9 +30,10 @@ class SearchController {
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
     if ( params.jumpToPage ) {
-      result.offset = ( ( params.int('jumpToPage') - 1 ) * result.max )
+      result.offset = ( ( Integer.parseInt(params.jumpToPage) - 1 ) * result.max )
     }
-    
+    params.remove('jumpToPage')
+    params.offset = result.offset
     result.hide = params.list("hide") ?: []
 
     if ( params.searchAction == 'save' ) {
@@ -148,6 +149,7 @@ class SearchController {
     }
 
     result.withoutJump = params.clone()
+    result.remove('jumpToPage');
     result.withoutJump.remove('jumpToPage');
 
     // log.debug("leaving SearchController::index...");
