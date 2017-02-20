@@ -176,7 +176,7 @@ class Org extends KBComponent {
                 builder.'name' (title.name)
                 builder.'identifiers' {
                   title.ids?.each { tid ->
-                    builder.'identifier' (['namespace':tid.namespace.value], tid.value)
+                    builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
                   }
                 }
               }
@@ -191,7 +191,7 @@ class Org extends KBComponent {
                 builder.'name' (title.name)
                 builder.'identifiers' {
                   title.ids?.each { tid ->
-                    builder.'identifier' (['namespace':tid.namespace.value], tid.value)
+                    builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
                   }
                 }
               }
@@ -206,7 +206,7 @@ class Org extends KBComponent {
                 builder.'name' (pkg.name)
                 builder.'identifiers' {
                   pkg.ids?.each { tid ->
-                    builder.'identifier' (['namespace':tid.namespace.value], tid.value)
+                    builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
                   }
                 }
               }
