@@ -34,10 +34,10 @@ class KBComponentVariantName {
 
   def beforeInsert() {
     // Generate the any necessary values.
-    normVariantName = GOKbTextUtils.normaliseString(variantName);
+    normVariantName = GOKbTextUtils.norm2(variantName);
   }
 
   def beforeUpdate() {
-    normVariantName = GOKbTextUtils.normaliseString(variantName);
+    normVariantName = GOKbTextUtils.norm2(variantName);
   }
 }

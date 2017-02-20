@@ -1,7 +1,7 @@
 <g:if test="${recset != null}">
 <g:set var="s_action" value="${s_action?:'index'}"/>
 <g:set var="s_controller" value="${s_controller?:'search'}"/>
-
+<g:set var="jumpToPage" value="${jumpToPage?:'jumpToPage'}"/>
 <g:set var="custom_offset" value="${offset_param?:'offset'}"/>
   <nav class="navbar navbar-inverse">
     <div class="container-fluid">
@@ -9,6 +9,7 @@
         <span class="navbar-text">
           Showing records ${offset.toInteger() +1} to ${lasthit.toInteger() as int} of
           ${reccount.toInteger() as int}
+          ${params}
         </span>
       </div>
       <ul class="nav navbar-nav navbar-right">
@@ -22,7 +23,7 @@
             <li class="divider-vertical"></li>
           </g:if>
 
-          <li><span class="navbar-text" style="white-space: nowrap; display:inline-block;"><g:form controller="${s_controller}" action="${s_action}" params="${withoutJump}" method="post">Page <input type="text" name="jumpToPage" size="5" value="${page}" style="color:#000000;" /> of ${page_max}</g:form></span></li>
+          <li><span class="navbar-text" style="white-space: nowrap; display:inline-block;"><g:form controller="${s_controller}" action="${s_action}" params="${withoutJump}" method="post">Page <input type="text" name="${jumpToPage}" size="5" value="${page}" style="color:#000000;" /> of ${page_max}</g:form></span></li>
         </g:if>
 
         <g:if test="${ page == 1 }">
