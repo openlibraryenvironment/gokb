@@ -9,7 +9,6 @@
         <span class="navbar-text">
           Showing records ${offset.toInteger() +1} to ${lasthit.toInteger() as int} of
           ${reccount.toInteger() as int}
-          ${params}
         </span>
       </div>
       <ul class="nav navbar-nav navbar-right">
