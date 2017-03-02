@@ -4,6 +4,7 @@ import org.gokb.cred.*
 
 class CleanupService {
   def sessionFactory
+  def ESWrapperService
   
   def tidyMissnamedPublishers () {
     
@@ -93,14 +94,21 @@ class CleanupService {
   private def expungeByIds ( ids ) {
     
     def result = [report: []]
+    def esclient = ESWrapperService.getClient()
     
     ids.each { component_id ->
       try {
         KBComponent.withNewTransaction {
           log.debug("Expunging ${component_id}");
           def component = KBComponent.get(component_id);
+          def c_id = "${component.class.name}:${component.id}"
           def expunge_result = component.expunge();
           log.debug(expunge_result);
+          esclient.deleteAsync {
+            index 'gokb'
+            type 'component'
+            id c_id
+          }
           result.report.add(expunge_result)
         }
       }

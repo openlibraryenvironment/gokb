@@ -379,6 +379,8 @@ project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResou
 
 refine_min_version = "3.0.0"
 
+// ftupdate_enabled = true
+
 // Config for the refine extension build process.
 refine = [
   refineRepoURL           : "https://github.com/OpenRefine/OpenRefine.git",
@@ -598,6 +600,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/packages/**':             ['permitAll'],
   '/public/**':               ['permitAll'],
   '/globalSearch/**':         ['ROLE_USER'],
+  '/home/**':                 ['ROLE_USER'],
   '/assets/**':               ['permitAll'],
   '/**/js/**':                ['permitAll'],
   '/**/css/**':               ['permitAll'],
@@ -1628,24 +1631,24 @@ globalSearchTemplates = [
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
           hide:true
         ],
-	[
-	  type:'lookup',
-	  baseClass:'org.gokb.cred.Person',
-	  prompt:'Person',
-	  qparam:'qp_person',
-	  placeholder:'Person',
-	  contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'people.person'],
-	  hide:true
-	],
-	[
-	  type:'lookup',
-	  baseClass:'org.gokb.cred.Subject',
-	  prompt:'Subject',
-	  qparam:'qp_subject',
-	  placeholder:'Subject',
-	  contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'subjects.subject'],
-	  hide:true
-	],
+	      [
+	        type:'lookup',
+	        baseClass:'org.gokb.cred.Person',
+	        prompt:'Person',
+	        qparam:'qp_person',
+	        placeholder:'Person',
+	        contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'people.person'],
+	        hide:true
+	      ],
+	      [
+	        type:'lookup',
+	        baseClass:'org.gokb.cred.Subject',
+	        prompt:'Subject',
+	        qparam:'qp_subject',
+	        placeholder:'Subject',
+	        contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'subjects.subject'],
+	        hide:true
+	      ],
         [
           type:'lookup',
           baseClass:'org.gokb.cred.Org',

@@ -240,6 +240,14 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
   
+  def cleanup() {
+    Job j = concurrencyManagerService.createJob {
+      cleanupService.expungeDeletedComponents()
+    }.startOrQueue()
+    log.debug "Triggering cleanup task. Started job #${j.id}"
+    render(view: "logViewer", model: logViewer())
+  }
+
   def exportGroups () {
     def result = [:]
     CuratoryGroup.createCriteria().list ({
