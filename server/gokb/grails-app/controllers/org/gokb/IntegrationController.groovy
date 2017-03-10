@@ -895,184 +895,205 @@ class IntegrationController {
    */
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferenceTitle() {	  
-	  def result
-	  def json = request.JSON
-	  
-	  if(org.codehaus.groovy.grails.web.json.JSONArray != json.getClass()){
-		  
-		  result = crossReferenceSingleTitle(json)
-	  }
-	  else {
-		  result = []
-		  
-		  json.eachWithIndex{ e, i ->
-			  result <<  crossReferenceSingleTitle(e)
-		  }
-	  }  
-	  render result as JSON
+    def result
+    def json = request.JSON
+
+    if(org.codehaus.groovy.grails.web.json.JSONArray != json.getClass()){
+
+      result = crossReferenceSingleTitle(json)
+    }
+    else {
+      result = []
+
+      json.eachWithIndex{ e, i ->
+        result <<  crossReferenceSingleTitle(e)
+      }
+    }
+    render result as JSON
   }
   
   private crossReferenceSingleTitle(Object titleObj) {
 	  
-	  def result = [ 'result' : 'OK' ]
-  
-	  def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
-  
-	  log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
-  
-	  try {
-		User user = springSecurityService.currentUser
-		def title = titleLookupService.find(titleObj.name,
-											titleObj.publisher,
-											titleObj.identifiers,
-											user,
-											null,
-											titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )  // project
-	
-		if ( title ) {
-	  
-  //        if ( titleObj.variantNames?.size() > 0 ) {
-  //          titleObj.variantNames.each { vn ->
-  //            log.debug("Ensure variant name ${vn}");
-  //            title.addVariantTitle(vn);
-  //          }
-  //        }
-		  
-		  def title_changed = false;
-	  
-		  if ( titleObj.imprint ) {
-			if ( title.imprint?.name == titleObj.imprint ) {
-			  // Imprint already set
-			}
-			else {
-			  def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name:titleObj.imprint).save(flush:true, failOnError:true);
-			  title.imprint = imprint;
-			  title_changed = true
-			}
-		  }
-	  
-		  title_changed |= setAllRefdata ([
-			'software', 'service',
-			'OAStatus', 'medium',
-			'pureOA', 'continuingSeries',
-			'reasonRetired'
-		  ], titleObj, title)
-		  
-		  title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
-		  title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
-		  
-		  // Add the core data.
-		  ensureCoreData(title, titleObj)
-		  
-		  
-  //        title.save(flush:true, failOnError:true)
-	  
-		  if ( titleObj.historyEvents?.size() > 0 ) {
-			titleObj.historyEvents.each { jhe ->
-			  // 1971-01-01 00:00:00.0
-			  log.debug("Handling title history");
-			  try {
-				def inlist = []
-				def outlist = []
-				def cont = true
-				jhe.from.each { fhe ->
-				  def p = titleLookupService.find(fhe.title,
-												  null,
-												  fhe.identifiers,
-												  user,
-												  null,
-												  titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
-				  if ( p ) { inlist.add(p); } else { cont = false; }
-				}
-				jhe.to.each { fhe ->
-				  def p =  titleLookupService.find(fhe.title,
-															   null,
-															   fhe.identifiers,
-															   user,
-															   null,
-															   titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' );
-				  if ( p ) { outlist.add(p); } else { cont = false; }
-				}
-	  
-				def first = true;
-				// See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
-				def che_check_qry_sw  = new StringWriter();
-				def qparams = []
-				che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
-	  
-				inlist.each { fhe ->
-				  if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-				  che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-				  qparams.add(fhe)
-				}
-				outlist.each { fhe ->
-				  if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-				  che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-				  qparams.add(fhe)
-				}
-	  
-				def che_check_qry = che_check_qry_sw.toString()
-				log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
-				def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
-				if ( qr.size() > 0 )
-				  cont = false;
-	  
-				if ( cont ) {
-		
-				  def he = new ComponentHistoryEvent()
-				  if ( jhe.date ) {
-					he.eventDate = sdf.parse(jhe.date);
-				  }
-				  he.save(flush:true, failOnError:true);
-		  
-				  inlist.each {
-					def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
-					hep.save(flush:true, failOnError:true);
-				  }
-	  
-				  outlist.each {
-					def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
-					hep.save(flush:true, failOnError:true);
-				  }
-				}
-				else {
-				  // Matched an existing TH event, not creating a duplicate
-				}
-			  }
-			  catch ( Exception e ) {
-				log.error("Problem processing title history",e);
-			  }
-			}
-		  }
-		  
-		  addPublisherHistory(title, titleObj.publisher_history, sdf)
-	
-		  result.message = "Created/looked up title ${title.id}"
-		  result.cls = title.class.name
-		  result.titleId = title.id
-		}
-		else {
-		  result.message = "No title for ${titleObj}";
-		  log.error("Cross Reference Title failed :${titleObj}");
-		  // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
-		  event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
-			// Event callback closure
-		  }
-		}
-	  }
-	  catch ( Exception e ) {
-		log.error("Exception attempting to cross reference title",e);
-		result.result="ERROR"
-		result.message=e.toString()
-		result.baddata=titleObj
-		log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
-	  }
-	  finally {
-		log.debug("Result of cross ref title: ${result}");
-	  }
-  
-	  result
-	}
+    def result = [ 'result' : 'OK' ]
+
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
+
+    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
+
+    try {
+      User user = springSecurityService.currentUser
+      def title = titleLookupService.find(
+        titleObj.name,
+        titleObj.publisher,
+        titleObj.identifiers,
+        user,
+        null,
+        titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance'
+      );  // project
+
+      if ( title ) {
+
+//        if ( titleObj.variantNames?.size() > 0 ) {
+//          titleObj.variantNames.each { vn ->
+//            log.debug("Ensure variant name ${vn}");
+//            title.addVariantTitle(vn);
+//          }
+//        }
+
+        def title_changed = false;
+
+        if ( titleObj.imprint ) {
+          if ( title.imprint?.name == titleObj.imprint ) {
+            // Imprint already set
+          }
+          else {
+            def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name:titleObj.imprint).save(flush:true, failOnError:true);
+            title.imprint = imprint;
+            title_changed = true
+          }
+        }
+
+        title_changed |= setAllRefdata ([
+              'software', 'service',
+              'OAStatus', 'medium',
+              'pureOA', 'continuingSeries',
+              'reasonRetired'
+        ], titleObj, title)
+
+        title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
+        title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
+
+        // Add the core data.
+        ensureCoreData(title, titleObj)
+
+//        title.save(flush:true, failOnError:true)
+
+        if ( titleObj.historyEvents?.size() > 0 ) {
+
+          titleObj.historyEvents.each { jhe ->
+                // 1971-01-01 00:00:00.0
+            log.debug("Handling title history");
+            try {
+              def inlist = []
+              def outlist = []
+              def cont = true
+
+              jhe.from.each { fhe ->
+
+                def p = titleLookupService.find(
+                  fhe.title,
+                  null,
+                  fhe.identifiers,
+                  user,
+                  null,
+                  titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance'
+                );
+
+                if ( p ) { inlist.add(p); } else { cont = false; }
+              }
+
+              jhe.to.each { fhe ->
+
+                def p =  titleLookupService.find(
+                  fhe.title,
+                  null,
+                  fhe.identifiers,
+                  user,
+                  null,
+                  titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance'
+                );
+
+                if ( p ) { outlist.add(p); } else { cont = false; }
+              }
+
+              def first = true;
+              // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
+              def che_check_qry_sw  = new StringWriter();
+              def qparams = []
+
+              che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
+
+              inlist.each { fhe ->
+                if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+
+                che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                qparams.add(fhe)
+              }
+
+              outlist.each { fhe ->
+                if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+
+                che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                qparams.add(fhe)
+              }
+
+              def che_check_qry = che_check_qry_sw.toString()
+
+              log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
+
+              def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
+
+              if ( qr.size() > 0 )
+                cont = false;
+
+              if ( cont ) {
+
+                def he = new ComponentHistoryEvent()
+
+                if ( jhe.date ) {
+                  he.eventDate = sdf.parse(jhe.date);
+                }
+
+                he.save(flush:true, failOnError:true);
+
+                inlist.each {
+                  def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
+                  hep.save(flush:true, failOnError:true);
+                }
+
+                outlist.each {
+                  def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
+                  hep.save(flush:true, failOnError:true);
+                }
+              }
+              else {
+                // Matched an existing TH event, not creating a duplicate
+              }
+            }
+            catch ( Exception e ) {
+                  log.error("Problem processing title history",e);
+            }
+          }
+        }
+
+        addPublisherHistory(title, titleObj.publisher_history, sdf)
+
+        result.message = "Created/looked up title ${title.id}"
+        result.cls = title.class.name
+        result.titleId = title.id
+      }
+      else {
+        result.message = "No title for ${titleObj}";
+        log.error("Cross Reference Title failed :${titleObj}");
+        // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
+        event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
+              // Event callback closure
+        }
+      }
+    }
+    catch ( Exception e ) {
+      log.error("Exception attempting to cross reference title",e);
+      result.result="ERROR"
+      result.message=e.toString()
+      result.baddata=titleObj
+      log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+    }
+    finally {
+      log.debug("Result of cross ref title: ${result}");
+    }
+
+    result
+  }
   
   private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
     
