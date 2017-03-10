@@ -246,24 +246,32 @@ class IntegrationController {
         located_or_new_org = Org.findByNormname( Org.generateNormname (orgName) )
         
         if ( located_or_new_org == null ) {
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
+
+          if(candidate_orgs.size() == 1){
+            located_or_new_org = candidate_orgs[0]
+
+            log.debug("Matched Org on variant name!");
+          }else{
         
-          log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
-     
-          located_or_new_org = new Org(name:request.JSON.name)
+            log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
+
+            located_or_new_org = new Org(name:request.JSON.name)
+
+            log.debug("Attempt to save - validate: ${located_or_new_org}");
   
-          log.debug("Attempt to save - validate: ${located_or_new_org}");
-  
-          if ( located_or_new_org.save(flush:true, failOnError : true) ) {
-            log.debug("Saved ok");
-          } else {
-            log.debug("Save failed ${located_or_new_org}");
-            result.errors = []
-            located_or_new_org.errors.each { e ->
-              log.error("Problem saving new org record",e);
-              result.errors.add("${e}".toString());
+            if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+              log.debug("Saved ok");
+            } else {
+              log.debug("Save failed ${located_or_new_org}");
+              result.errors = []
+              located_or_new_org.errors.each { e ->
+                log.error("Problem saving new org record",e);
+                result.errors.add("${e}".toString());
+              }
+              result.status = false;
+              return
             }
-            result.status = false;
-            return
           }
         } else {
           log.debug("Matched Org on norm_name only!");
@@ -1067,10 +1075,14 @@ class IntegrationController {
         // Lookup the publisher.
         def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
         Org publisher = Org.findByNormname(norm_pub_name)
-        def candidate_orgs = Org.executeQuery("select o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
 
-        if(candidate_orgs.size() == 1 && !publisher){
-          publisher = candidate_orgs[0]
+
+        if(!publisher){
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
+
+          if(candidate_orgs.size() == 1){
+            publisher = candidate_orgs[0]
+          }
         }
         
         if (publisher) {

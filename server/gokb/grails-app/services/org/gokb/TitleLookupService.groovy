@@ -407,7 +407,7 @@ class TitleLookupService {
       }      
 
       if ( publisher == null ) {
-        def candidate_orgs = Org.executeQuery("select o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
         if ( candidate_orgs.size() == 1 ) {
           publisher = candidate_orgs[0]
         }
