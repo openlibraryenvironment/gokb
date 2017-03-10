@@ -242,7 +242,8 @@ class IntegrationController {
         located_or_new_org = Org.findByNormname( Org.generateNormname (orgName) )
         
         if ( located_or_new_org == null ) {
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
+          def candidate_normname = Org.generateNormname( orgName )
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[candidate_normname]);
 
           if(candidate_orgs.size() == 1){
             located_or_new_org = candidate_orgs[0]
