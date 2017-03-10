@@ -1002,7 +1002,7 @@ abstract class KBComponent {
     if ( existing_component == null ) {
       
       // Variant names use different normalisation method.
-      normname = GOKbTextUtils.normaliseString(name)
+      normname = GOKbTextUtils.norm2(name)
       
       // not already a name
       // Make sure not already a variant name
