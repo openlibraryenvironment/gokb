@@ -262,26 +262,28 @@ class TitleInstance extends KBComponent {
           builder.'publishedTo' (publishedTo)
           builder.'issuer' (issuer?.name)
 
-          publisher_combos?.each { Combo pc ->
-            def pub_org = null
-            if (isComboReverse('publisher')) {
-              pub_org = pc.fromComponent
-            }
-            else {
-              pub_org = pc.toComponent
-            }
+          builder.'publishers' {
+            publisher_combos?.each { Combo pc ->
+              def pub_org = null
+              if (isComboReverse('publisher')) {
+                pub_org = pc.fromComponent
+              }
+              else {
+                pub_org = pc.toComponent
+              }
 
-            if ( pub_org ) {
-              builder."publisher" (['id': pub_org?.id]) {
-                "name" (pub_org?.name)
-                if ( pc.startDate ) {
-                  "startDate" (pc.startDate)
-                }
-                if ( pc.endDate ) {
-                  "endDate" (pc.endDate)
-                }
-                if (pc.status) {
-                  "status" (pc.status)
+              if ( pub_org ) {
+                builder."publisher" (['id': pub_org?.id]) {
+                  "name" (pub_org?.name)
+                  if ( pc.startDate ) {
+                    "startDate" (pc.startDate)
+                  }
+                  if ( pc.endDate ) {
+                    "endDate" (pc.endDate)
+                  }
+                  if (pc.status) {
+                    "status" (pc.status)
+                  }
                 }
               }
             }

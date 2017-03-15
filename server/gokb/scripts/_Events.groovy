@@ -6,7 +6,7 @@ eventCompileStart = { kind ->
   else
     buildNumber = Integer.valueOf(buildNumber) + 1
 
-  def formatter = new java.text.SimpleDateFormat("MMM dd, yyyy")
+  def formatter = new java.text.SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH)
   def buildDate = formatter.format(new Date(System.currentTimeMillis()))
   metadata.'app.buildDate' = buildDate
   metadata.'app.buildProfile' = grailsEnv
