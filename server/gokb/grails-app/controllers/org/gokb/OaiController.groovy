@@ -306,6 +306,7 @@ class OaiController {
             from=rtc[0]
           }
           if ( rtc[1].length() > 0 ) {
+            until=rtc[1]
           }
           if ( rtc[2].length() > 0 ) {
             offset=Long.parseLong(rtc[2]);
@@ -333,13 +334,16 @@ class OaiController {
       if ((params.from != null)&&(params.from.length()>0)) {
         query += ' and o.lastUpdated > ?'
         query_params.add(sdf.parse(params.from))
-      }else if(from){
+      }else if(from && from.length()>0){
         query += ' and o.lastUpdated > ?'
         query_params.add(sdf.parse(from))
       }
       if ((params.until != null)&&(params.until.length()>0)) {
         query += ' and o.lastUpdated < ?'
         query_params.add(sdf.parse(params.until))
+      }else if(until && until.length()>0){
+        query += ' and o.lastUpdated < ?'
+        query_params.add(sdf.parse(until))
       }
 
       if ( params.set != null ) {
@@ -357,6 +361,14 @@ class OaiController {
 
       if ( offset + records.size() < rec_count ) {
         // Query returns more records than sent, we will need a resumption token
+
+        if(from && !params.from){
+          params.from = from
+        }
+        if(until && !params.until){
+          params.until = until
+        }
+
         resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}|${metadataPrefix}"
       }
 
