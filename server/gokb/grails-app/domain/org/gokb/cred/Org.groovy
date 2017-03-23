@@ -166,7 +166,7 @@ class Org extends KBComponent {
         }
 
         if ( mission ) {
-          builder.mission ( mission.value )
+          builder.'mission' ( mission.value )
         }
         
         if (publishes) {
