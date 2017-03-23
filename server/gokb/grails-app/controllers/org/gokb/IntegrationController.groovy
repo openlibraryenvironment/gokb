@@ -118,7 +118,20 @@ class IntegrationController {
             located_entries = KBComponent.findAllByNormname(normname)
             if ( located_entries?.size() == 0 ) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
-              createJsonLDOrg(request.JSON);
+              def variant_normname = GOKbTextUtils.normaliseString( name )
+              def located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+
+              if ( located_entries?.size() == 0 ) {
+
+                createJsonLDOrg(request.JSON);
+              }
+              else if( located_entries?.size() == 1 ){
+                log.debug("Exact match on normalised variantname ${variant_normname} - good enough");
+                enrichJsonLDOrg(located_entries[0], request.JSON)
+              }
+              else{
+                log.error("Multiple matches on normalised variant name... abandon all hope");
+              }
             }
             else if ( located_entries?.size() == 1 ) {
                log.debug("Exact match on normalised name ${normname} - good enough");
@@ -246,7 +259,7 @@ class IntegrationController {
         located_or_new_org = Org.findByNormname( Org.generateNormname (orgName) )
         
         if ( located_or_new_org == null ) {
-          def candidate_normname = Org.generateNormname( orgName )
+
           def variant_normname = GOKbTextUtils.normaliseString( orgName )
           def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
 
