@@ -294,6 +294,8 @@ class OaiController {
       def offset = 0;
       def resumption = null
       def metadataPrefix = null
+      def from = null
+      def until = null
       def max = result.oaiConfig.pageSize ?: 10
 
       if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
@@ -301,6 +303,7 @@ class OaiController {
         log.debug("Got resumption: ${rtc}")
         if ( rtc.length == 4 ) {
           if ( rtc[0].length() > 0 ) {
+            from=rtc[0]
           }
           if ( rtc[1].length() > 0 ) {
           }
@@ -330,6 +333,9 @@ class OaiController {
       if ((params.from != null)&&(params.from.length()>0)) {
         query += ' and o.lastUpdated > ?'
         query_params.add(sdf.parse(params.from))
+      }else if(from){
+        query += ' and o.lastUpdated > ?'
+        query_params.add(sdf.parse(from))
       }
       if ((params.until != null)&&(params.until.length()>0)) {
         query += ' and o.lastUpdated < ?'
