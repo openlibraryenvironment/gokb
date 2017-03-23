@@ -4,6 +4,7 @@ import org.gokb.cred.*
 
 class CleanupService {
   def sessionFactory
+  def ESWrapperService
   
   def tidyMissnamedPublishers () {
     
@@ -93,14 +94,21 @@ class CleanupService {
   private def expungeByIds ( ids ) {
     
     def result = [report: []]
+    def esclient = ESWrapperService.getClient()
     
     ids.each { component_id ->
       try {
         KBComponent.withNewTransaction {
           log.debug("Expunging ${component_id}");
           def component = KBComponent.get(component_id);
+          def c_id = "${component.class.name}:${component.id}"
           def expunge_result = component.expunge();
           log.debug(expunge_result);
+          esclient.deleteAsync {
+            index 'gokb'
+            type 'component'
+            id c_id
+          }
           result.report.add(expunge_result)
         }
       }
@@ -220,18 +228,25 @@ class CleanupService {
         
         query = 'DELETE FROM Combo c WHERE c.combo_id IN (:delete_ids)'
         
-        // Create native SQL query.
-        sqlQuery = session.createSQLQuery(query)
-        def dres = sqlQuery.with {
-          
-           // Set value for parameter startId.
-           setParameterList('delete_ids', to_delete)
-           
-           // Get all results.
-           executeUpdate()
-         }
-    
-         log.debug "Delete query returned ${dres} duplicated identifier instances removed."
+        while(to_delete.size() > 0){
+          def to_delete_size = to_delete.size();
+          def qrySize = (to_delete.size() > 50) ? 50 : to_delete.size();
+          log.debug "${to_delete_size} identifiers remaining."
+          def to_delete_part = to_delete.take(qrySize);
+          to_delete = to_delete.drop(qrySize);
+
+          // Create native SQL query.
+          sqlQuery = session.createSQLQuery(query)
+          def dres = sqlQuery.with {
+
+            // Set value for parameter startId.
+            setParameterList('delete_ids', to_delete_part)
+
+            // Get all results.
+            executeUpdate()
+          }
+          log.debug "Delete query returned ${dres} duplicated identifier instances removed."
+        }
       } else {
         log.debug "No duplicates to delete..."
       }
