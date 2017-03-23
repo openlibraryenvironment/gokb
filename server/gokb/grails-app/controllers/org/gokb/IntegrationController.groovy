@@ -6,10 +6,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
-<<<<<<< HEAD
-=======
 
->>>>>>> check_variantnames
 import groovy.util.logging.*
 
 
