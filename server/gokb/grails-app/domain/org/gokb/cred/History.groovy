@@ -11,7 +11,7 @@ class History {
 
   static mapping = {
     id column:'hist_id'
-    controller column:'hist_title'
+    title column:'hist_title', type:'text'
     controller column:'hist_controller'
     action column:'hist_action'
     actionid column:'hist_actionid'
@@ -20,5 +20,6 @@ class History {
   }
 
   static constraints = {
+    title(nullable:true, blank:false, maxSize:2048);
   }
 }
