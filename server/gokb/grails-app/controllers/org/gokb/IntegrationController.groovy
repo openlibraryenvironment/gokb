@@ -10,7 +10,7 @@ import au.com.bytecode.opencsv.CSVReader
 
 import com.k_int.ClassUtils
 
-import groovy.util.logging.Log4j
+import groovy.util.logging.*
 
 
 @Log4j
@@ -32,7 +32,7 @@ class IntegrationController {
   def assertJsonldPlatform() { 
     def result = [result:'OK']
     def name = request.JSON.'skos:prefLabel'
-    def normname = GOKbTextUtils.normaliseString(name)
+    def normname = GOKbTextUtils.norm2(name)
     def located_entries = KBComponent.findAllByNormname(normname)
     log.debug("assertJsonldPlatform ${name}/${normname}");
     if ( located_entries.size() == 0 ) {
@@ -114,11 +114,24 @@ class IntegrationController {
   
           if ( located_entries?.size() == 0 ) {
             log.debug("Failed to match on same-as. Attempting primary name match");
-            def normname = GOKbTextUtils.normaliseString(name)
+            def normname = GOKbTextUtils.norm2(name)
             located_entries = KBComponent.findAllByNormname(normname)
             if ( located_entries?.size() == 0 ) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
-              createJsonLDOrg(request.JSON);
+              def variant_normname = GOKbTextUtils.normaliseString( name )
+              def located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+
+              if ( located_entries?.size() == 0 ) {
+
+                createJsonLDOrg(request.JSON);
+              }
+              else if( located_entries?.size() == 1 ){
+                log.debug("Exact match on normalised variantname ${variant_normname} - good enough");
+                enrichJsonLDOrg(located_entries[0], request.JSON)
+              }
+              else{
+                log.error("Multiple matches on normalised variant name... abandon all hope");
+              }
             }
             else if ( located_entries?.size() == 1 ) {
                log.debug("Exact match on normalised name ${normname} - good enough");
@@ -246,24 +259,34 @@ class IntegrationController {
         located_or_new_org = Org.findByNormname( Org.generateNormname (orgName) )
         
         if ( located_or_new_org == null ) {
+
+          def variant_normname = GOKbTextUtils.normaliseString( orgName )
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+
+          if(candidate_orgs.size() == 1){
+            located_or_new_org = candidate_orgs[0]
+
+            log.debug("Matched Org on variant name!");
+          }else{
         
-          log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
-     
-          located_or_new_org = new Org(name:request.JSON.name)
+            log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
+
+            located_or_new_org = new Org(name:request.JSON.name)
+
+            log.debug("Attempt to save - validate: ${located_or_new_org}");
   
-          log.debug("Attempt to save - validate: ${located_or_new_org}");
-  
-          if ( located_or_new_org.save(flush:true, failOnError : true) ) {
-            log.debug("Saved ok");
-          } else {
-            log.debug("Save failed ${located_or_new_org}");
-            result.errors = []
-            located_or_new_org.errors.each { e ->
-              log.error("Problem saving new org record",e);
-              result.errors.add("${e}".toString());
+            if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+              log.debug("Saved ok");
+            } else {
+              log.debug("Save failed ${located_or_new_org}");
+              result.errors = []
+              located_or_new_org.errors.each { e ->
+                log.error("Problem saving new org record",e);
+                result.errors.add("${e}".toString());
+              }
+              result.status = false;
+              return
             }
-            result.status = false;
-            return
           }
         } else {
           log.debug("Matched Org on norm_name only!");
@@ -1067,6 +1090,16 @@ class IntegrationController {
         // Lookup the publisher.
         def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
         Org publisher = Org.findByNormname(norm_pub_name)
+
+
+        if(!publisher){
+          def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+
+          if(candidate_orgs.size() == 1){
+            publisher = candidate_orgs[0]
+          }
+        }
         
         if (publisher) {
           
