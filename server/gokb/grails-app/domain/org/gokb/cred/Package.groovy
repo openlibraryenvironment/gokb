@@ -315,7 +315,7 @@ select tipp.id,
   }
 
   @Transient
-  private static getTitleIds(Long title_id) {
+  private static getTitleIds  (Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
     def result = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value from Identifier as i, Combo as c left join i.namespace.datatype as datatype where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
     result
@@ -445,7 +445,8 @@ select tipp.id,
         result.provider = prov;
         changed = true
       }else{
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_prov_name]);
+        def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.nominalProvider)
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
 
         if ( candidate_orgs.size() == 1 ) {
           result.provider = candidate_orgs[0]

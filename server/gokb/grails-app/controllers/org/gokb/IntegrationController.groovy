@@ -247,7 +247,8 @@ class IntegrationController {
         
         if ( located_or_new_org == null ) {
           def candidate_normname = Org.generateNormname( orgName )
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[candidate_normname]);
+          def variant_normname = GOKbTextUtils.normaliseString( orgName )
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
 
           if(candidate_orgs.size() == 1){
             located_or_new_org = candidate_orgs[0]
@@ -1079,7 +1080,8 @@ class IntegrationController {
 
 
         if(!publisher){
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_pub_name]);
+          def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
 
           if(candidate_orgs.size() == 1){
             publisher = candidate_orgs[0]
