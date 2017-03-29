@@ -2,6 +2,8 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import groovy.util.logging.Log4j
+import org.gokb.GOKbTextUtils
+import org.gokb.DomainClassExtender
 import com.k_int.ClassUtils
 
 
@@ -263,7 +265,7 @@ select tipp.id,
         'paymentType' ( paymentType?.value )
         'global' ( global?.value )
         'nominalPlatform' ( nominalPlatform?.name )
-        'nominalProvider' ( nominalPlatform?.provider?.name )
+        'nominalProvider' ( provider?.name )
         'listVerifier' ( listVerifier )
         'userListVerifier' ( userListVerifier?.username )
         'listVerifiedDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
@@ -433,6 +435,39 @@ select tipp.id,
       }
       else {
         log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
+      }
+    }
+
+    packageHeaderDTO.identifiers?.each { it ->
+      if ( it.type && it.value && it.type != "originEditUrl") {
+        log.debug("Trying to add identifier ${it} to package ${result}");
+
+        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(it.type, it.value)
+
+        if ( the_id ) {
+          def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+          def existing_identifier = Combo.executeQuery("Select c.id from Combo as c where c.fromComponent.id = ? and c.type.id = ? and c.toComponent.id = ?",[result.id,id_combo_type.id,the_id.id]);
+
+          if(existing_identifier.size() > 0){
+            log.debug("Identifier ${it} is already present for package!")
+          }
+          else{
+            Combo new_id = new Combo(toComponent:the_id, fromComponent:result, type:id_combo_type).save(flush:true, failOnError:true);
+            if( new_id ){
+              log.debug("Added new identifier combo succesfully!")
+              changed = true
+            }
+            else{
+              log.error("Unable to create new identifier combo!")
+            }
+          }
+        }
+        else {
+          log.error("Error processing identifier ${it}!")
+        }
+      }
+      else {
+        log.error("Non-valid identifier provided!")
       }
     }
 

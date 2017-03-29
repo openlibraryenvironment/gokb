@@ -116,7 +116,7 @@ class IntegrationController {
             if ( located_entries?.size() == 0 ) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
               def variant_normname = GOKbTextUtils.normaliseString( name )
-              def located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
 
               if ( located_entries?.size() == 0 ) {
 

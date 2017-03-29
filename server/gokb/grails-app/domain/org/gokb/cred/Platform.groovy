@@ -155,7 +155,7 @@ class Platform extends KBComponent {
   @Transient
   public static Platform upsertDTO(platformDTO) {
     // Ideally this should be done on platformUrl, but we fall back to name here
-    def result = Platform.findByName(platformDTO.name) ?: new Platform(name:platformDTO.name).save(flush:true,failOnError:true)
+    def result = Platform.findByName(platformDTO.name) ?: new Platform(name:platformDTO.name, primaryUrl: (platformDTO.primaryUrl ?: null )).save(flush:true,failOnError:true)
     result;
   }
 
