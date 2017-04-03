@@ -83,8 +83,8 @@
         <dt> <g:annotatedLabel owner="${d}" property="shibbolethAuthentication">Shibboleth Supported</g:annotatedLabel> </dt>
         <dd> <g:xEditableRefData owner="${d}" field="shibbolethAuthentication" config='YN' /> </dd>
 
-        <dt> <g:annotatedLabel owner="${d}" property="passwordAuthenitcation">User/Pass Supported</g:annotatedLabel> </dt>
-        <dd> <g:xEditableRefData owner="${d}" field="passwordAuthenitcation" config='YN' /> </dd>
+        <dt> <g:annotatedLabel owner="${d}" property="passwordAuthentication">User/Pass Supported</g:annotatedLabel> </dt>
+        <dd> <g:xEditableRefData owner="${d}" field="passwordAuthentication" config='YN' /> </dd>
 
 
       </dl>

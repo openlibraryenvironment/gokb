@@ -90,7 +90,7 @@ class Platform extends KBComponent {
         builder.'authentication' (authentication?.value)
         if (ipAuthentication) builder.'ipAuthentication' (ipAuthentication.value)
         if (shibbolethAuthentication) builder.'shibbolethAuthentication' (shibbolethAuthentication.value)
-        if (passwordAuthenitcation) builder.'passwordAuthenitcation' (passwordAuthenitcation.value)
+        if (passwordAuthentication) builder.'passwordAuthentication' (passwordAuthentication.value)
         
         builder.'provider' (provider?.name)
         if ( roles ) {

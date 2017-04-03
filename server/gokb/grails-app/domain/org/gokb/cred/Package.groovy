@@ -270,10 +270,10 @@ select tipp.id,
         'userListVerifier' ( userListVerifier?.username )
         'listVerifiedDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
 
-        builder.curatoryGroups {
+        builder.'curatoryGroups' {
           curatoryGroups.each { cg ->
-            builder.group {
-              builder.name(cg.name)
+            builder.'group' {
+              builder.'name'(cg.name)
             }
           }
         }
