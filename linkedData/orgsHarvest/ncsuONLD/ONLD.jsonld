@@ -1501,7 +1501,8 @@
         "@id": "http://www.lib.ncsu.edu/ld/onld/00002275" ,
         "skos:prefLabel": "Adam Matthew Digital" ,
             "skos:altLabel": [  
-            "Adam Matthew Publications Ltd."
+            "Adam Matthew Publications Ltd." ,
+            "Adam Matthew Publications"
             ] ,
             "foaf:homepage": "http://www.amdigital.co.uk/" ,
             "skos:closeMatch": [
@@ -19970,7 +19971,8 @@
             "The Economist Intelligence Unit" ,
             "Economic Intelligence Unit" ,
             "Economist Intelligence Unit Ltd" ,
-            "EIU"
+            "EIU" ,
+            "EIU - Economist Intelligence Unit"
             ] ,
             "foaf:homepage": "http://www.eiu.com/" ,
             "skos:closeMatch": [
@@ -30801,7 +30803,8 @@
             "Kluwer B.V" ,
             "Kluwer Academic Pub" ,
             "Kluwer Academic" ,
-            "Kluwer Academic/Human Sciences Press"
+            "Kluwer Academic/Human Sciences Press" ,
+            "Kluwer Law"
             ] ,
             "skos:closeMatch": [
                 "http://viaf.org/viaf/129908034" ,
@@ -55842,7 +55845,8 @@
             "Walter de Gruyter GmbH & Co. KG" ,
             "Walter de Gruyter & Co" ,
             "Walter de Gruyter GmbH & Co. KG" ,
-            "Mouton de Gruyter"
+            "Mouton de Gruyter" ,
+            "Walter de Gruyter Verlag"
             ] ,
             "foaf:homepage": "http://www.degruyter.com/" ,
             "skos:closeMatch": [

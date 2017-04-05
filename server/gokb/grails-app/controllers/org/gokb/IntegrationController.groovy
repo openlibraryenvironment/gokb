@@ -245,15 +245,17 @@ class IntegrationController {
     log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[:]
     result.status = true;
+    def assert_errors = false;
 
     try {
       def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.identifiers)
 
       if ( located_or_new_org == null ) {
         String orgName = request.JSON.name
+        String orgNormName = Org.generateNormname (orgName)
         
         // No match. One more attempt to match on norm_name only.
-        located_or_new_org = Org.findByNormname( Org.generateNormname (orgName) )
+        located_or_new_org = Org.findByNormname( orgNormName )
         
         if ( located_or_new_org == null ) {
 
@@ -264,32 +266,42 @@ class IntegrationController {
             located_or_new_org = candidate_orgs[0]
 
             log.debug("Matched Org on variant name!");
-          }else{
+          }
+          else if(candidate_orgs.size() == 0){
         
-            log.debug("Create new org with identifiers ${request.JSON.customIdentifiers} name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
+            log.debug("Create new org name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
 
-            located_or_new_org = new Org(name:request.JSON.name)
+            located_or_new_org = new Org(name:request.JSON.name, normname:orgNormName)
 
             log.debug("Attempt to save - validate: ${located_or_new_org}");
   
             if ( located_or_new_org.save(flush:true, failOnError : true) ) {
               log.debug("Saved ok");
             } else {
-              log.debug("Save failed ${located_or_new_org}");
-              result.errors = []
-              located_or_new_org.errors.each { e ->
-                log.error("Problem saving new org record",e);
-                result.errors.add("${e}".toString());
-              }
-              result.status = false;
-              return
+              assert_errors = true;
             }
           }
-        } else {
-          log.debug("Matched Org on norm_name only!");
+          else {
+            log.debug("Multiple matches via variant name, skipping Org!");
+            assert_errors = true;
+          }
+        }
+        else {
+          log.debug("Matched Org by normname!")
         }
       } else {
         log.debug("Located existing record.. Still update...");
+      }
+
+      if(assert_errors){
+        log.debug("Save failed ${located_or_new_org}");
+        result.errors = []
+        located_or_new_org.errors.each { e ->
+          log.error("Problem saving new org record",e);
+          result.errors.add("${e}".toString());
+        }
+        result.status = false;
+        return
       }
       
       setAllRefdata ([
