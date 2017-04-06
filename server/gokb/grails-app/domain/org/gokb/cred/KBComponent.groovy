@@ -1271,16 +1271,16 @@ abstract class KBComponent {
       }
     }
     if (fileAttachments) {
-      builder.fileAttachments {
+      builder.'fileAttachments' {
         fileAttachments.each { fa ->
-          builder.fileAttachment {
-            builder.guid(fa.guid)
-            builder.md5(fa.md5)
-            builder.uploadName(fa.uploadName)
-            builder.uploadMimeType(fa.uploadMimeType)
-            builder.filesize(fa.filesize)
-            builder.doctype(fa.doctype)
-            builder.content {
+          builder.'fileAttachment' {
+            builder.'guid' (fa.guid)
+            builder.'md5' (fa.md5)
+            builder.'uploadName' (fa.uploadName)
+            builder.'uploadMimeType' (fa.uploadMimeType)
+            builder.'filesize' (fa.filesize)
+            builder.'doctype' (fa.doctype)
+            builder.'content' {
               builder.mkp.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
             }
           }
@@ -1289,26 +1289,27 @@ abstract class KBComponent {
     }
     
     if (source) {
-      
-      source.with {
-      
-        addCoreGOKbXmlFields(builder, attr)
-        
-        builder.'url' (url)
-        builder.'defaultAccessURL' (defaultAccessURL)
-        builder.'explanationAtSource' (explanationAtSource)
-        builder.'contextualNotes' (contextualNotes)
-        builder.'frequency' (frequency)
-        builder.'ruleset' (ruleset)
-        if ( defaultSupplyMethod ) {
-          builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )
-        }
-        if ( defaultDataFormat ) {
-          builder.'defaultDataFormat' ( defaultDataFormat.value )
-        }
-        if ( responsibleParty ) {
-          builder.'responsibleParty' {
-            builder.name(responsibleParty.name)
+      builder.'source' {
+        source.with {
+
+          addCoreGOKbXmlFields(builder, attr)
+
+          builder.'url' (url)
+          builder.'defaultAccessURL' (defaultAccessURL)
+          builder.'explanationAtSource' (explanationAtSource)
+          builder.'contextualNotes' (contextualNotes)
+          builder.'frequency' (frequency)
+          builder.'ruleset' (ruleset)
+          if ( defaultSupplyMethod ) {
+            builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )
+          }
+          if ( defaultDataFormat ) {
+            builder.'defaultDataFormat' ( defaultDataFormat.value )
+          }
+          if ( responsibleParty ) {
+            builder.'responsibleParty' {
+              builder.'name' (responsibleParty.name)
+            }
           }
         }
       }
