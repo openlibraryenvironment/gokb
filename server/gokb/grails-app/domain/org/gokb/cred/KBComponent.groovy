@@ -1281,7 +1281,7 @@ abstract class KBComponent {
             builder.'filesize' (fa.filesize)
             builder.'doctype' (fa.doctype)
             builder.'content' {
-              builder.'mkp'.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
+              builder.mkp.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
             }
           }
         }
