@@ -251,43 +251,59 @@ class IntegrationController {
       def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.identifiers)
 
       if ( located_or_new_org == null ) {
-        String orgName = request.JSON.name
-        String orgNormName = Org.generateNormname (orgName)
-        
-        // No match. One more attempt to match on norm_name only.
-        located_or_new_org = Org.findByNormname( orgNormName )
-        
-        if ( located_or_new_org == null ) {
+        if ( request.JSON.name ) {
+          String orgName = request.JSON.name
+          String orgNormName = Org.generateNormname (orgName)
 
-          def variant_normname = GOKbTextUtils.normaliseString( orgName )
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+          // No match. One more attempt to match on norm_name only.
+          def org_by_name = Org.findAllByNormname( orgNormName )
 
-          if(candidate_orgs.size() == 1){
-            located_or_new_org = candidate_orgs[0]
-
-            log.debug("Matched Org on variant name!");
+          if ( org_by_name.size() == 1 ) {
+            located_or_new_org = org_by_name[0]
           }
-          else if(candidate_orgs.size() == 0){
-        
-            log.debug("Create new org name will be \"${request.JSON.name}\" (${request.JSON.name.length()})");
 
-            located_or_new_org = new Org(name:request.JSON.name, normname:orgNormName)
+          if ( located_or_new_org == null && org_by_name.size() == 0 ) {
 
-            log.debug("Attempt to save - validate: ${located_or_new_org}");
-  
-            if ( located_or_new_org.save(flush:true, failOnError : true) ) {
-              log.debug("Saved ok");
-            } else {
+            def variant_normname = GOKbTextUtils.normaliseString( orgName )
+            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+
+            if(candidate_orgs.size() == 1){
+              located_or_new_org = candidate_orgs[0]
+
+              log.debug("Matched Org on variant name!");
+            }
+            else if( candidate_orgs.size() == 0 ){
+
+              log.debug("Create new org name will be \"${request.JSON.name}\" (${request.JSON.name?.length()})");
+
+              located_or_new_org = new Org(name:request.JSON.name, normname:orgNormName)
+
+              log.debug("Attempt to save - validate: ${located_or_new_org}");
+
+              if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+                log.debug("Saved ok");
+              } else {
+                assert_errors = true;
+              }
+            }
+
+            else {
+              log.debug("Multiple matches via variant name, skipping Org!");
               assert_errors = true;
             }
           }
+
+          else if ( org_by_name.size == 1 ) {
+            log.debug("Matched Org by normname!")
+          }
+
           else {
-            log.debug("Multiple matches via variant name, skipping Org!");
+            log.debug("Multiple matches for org via normname!")
             assert_errors = true;
           }
-        }
-        else {
-          log.debug("Matched Org by normname!")
+        } else {
+          log.warn("Provided Org has no name!");
+          assert_errors = true;
         }
       } else {
         log.debug("Located existing record.. Still update...");
@@ -587,8 +603,14 @@ class IntegrationController {
       String testKey = "${ci.type}|${ci.value}".toString()
       if (!ids.contains(testKey)) {
         def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
-        log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-        component.ids.add(canonical_identifier)
+        log.debug("Checking identifiers of component ${component.id}")
+        def duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+        if(duplicate.size() == 0){
+          log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
+          component.ids.add(canonical_identifier)
+        }else{
+          log.debug("Identifier combo is already present, probably via titleLookupService.")
+        }
         
         // Add the value for comparison.
         ids << testKey
@@ -1031,7 +1053,7 @@ class IntegrationController {
                   titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance'
                 );
 
-                if ( p ) { outlist.add(p); } else { cont = false; }
+                if ( p && !inlist.contains(p) ) { outlist.add(p); } else { cont = false; }
               }
 
               def first = true;

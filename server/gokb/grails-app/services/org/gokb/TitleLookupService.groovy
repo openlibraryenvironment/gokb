@@ -296,6 +296,30 @@ class TitleLookupService {
             project
           )
         }
+
+        // If one identifier matches, but all other class ones are different, it is probably not a real match.
+
+        def id_mismatches = []
+
+        results['ids'].each { rid ->
+          matches[0].ids.each { mid ->
+            if ( rid.namespace == mid.namespace && rid.value != mid.value ) {
+              if ( !matches[0].ids.contains(rid) ) {
+                id_mismatches.add(rid)
+              }
+            }
+          }
+        }
+
+//         if( id_mismatches > 0 ) {
+//           ReviewRequest.raise(
+//             matches[0],
+//             "Identifier mismatch.",
+//             "Ingest identifier differs from existing one in the same namespace.",
+//             user,
+//             project
+//           )
+//         }
         
         // Take whatever we can get if what we have is an unknown title
         if ( metadata.title.startsWith("Unknown Title") ) {
@@ -312,12 +336,45 @@ class TitleLookupService {
           }
           else {
             if ( matches[0].name.equals(metadata.title) ) { 
-              // Perfect match - do nothing  
+              // Perfect match - do nothing
               the_title = matches[0]
+
+              if( id_mismatches.size() > 0 ){
+                ReviewRequest.raise(
+                  matches[0],
+                  "Identifier mismatch.",
+                  "Titles match, but ingest identifiers ${id_mismatches} differ from existing ones in the same namespaces.",
+                  user,
+                  project
+                )
+              }
             }
             else {
-              // Now we can examine the text of the title.
-              the_title = singleTIMatch(metadata.title,matches[0], user, project)
+              if( id_mismatches.size() > 0 && id_mismatches.size() >= results['ids'].size() - 1 ){
+                // All other class one identifiers as well as the title are different. This looks like a new title.
+
+                if ( newTitleClassName == null ) {
+                  the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title), ids:[])
+                }
+                else {
+                  def clazz = Class.forName(newTitleClassName)
+                  the_title = clazz.newInstance()
+                  the_title.name = metadata.title
+                  the_title.normname = KBComponent.generateNormname(metadata.title)
+                  the_title.ids = []
+
+                  ReviewRequest.raise(
+                    the_title,
+                    "New TI created.",
+                    "TitleInstance ${matches[0]} was matched on one identifier, but the title is different and all other ingest identifiers differ from existing ones in the same namespace.",
+                    user,
+                    project
+                  )
+                }
+              }else{
+                // Now we can examine the text of the title.
+                the_title = singleTIMatch(metadata.title,matches[0], user, project)
+              }
             }
           }
         }
@@ -325,7 +382,81 @@ class TitleLookupService {
 
       default :
         // Multiple matches.
-        log.debug ("Title class one identifier lookup yielded ${matches.size()} matches - ${matches.collect{it.id}}. This is a bad match. Ingest should skip this row.")
+        log.debug ("Title class one identifier lookup yielded ${matches.size()} matches - ${matches.collect{it.id}}.")
+        def all_matched = []
+
+        matches.each { mti ->
+
+          def full_match = true
+
+          results['ids'].each { rid ->
+            mti.ids.each { mid ->
+              if ( rid.namespace == mid.namespace && rid.value != mid.value ) {
+                if ( !mti.ids.contains(rid) ) {
+                  full_match = false
+                }
+              }
+            }
+          }
+
+          if ( full_match ) {
+            all_matched.add(mti)
+          }
+
+        }
+
+        switch ( all_matched.size() ) {
+          case 0 :
+            log.debug("Multiple matches for a single identifier. No matches for all class ones. Creating new TI!")
+
+            if ( newTitleClassName == null ) {
+              the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title), ids:[])
+            }
+            else {
+              def clazz = Class.forName(newTitleClassName)
+              the_title = clazz.newInstance()
+              the_title.name = metadata.title
+              the_title.normname = KBComponent.generateNormname(metadata.title)
+              the_title.ids = []
+
+              ReviewRequest.raise(
+                the_title,
+                "New TI created.",
+                "TitleInstance ${matches[0]} was matched on one identifier, but all other ingest identifiers differ from existing ones in the same namespace.",
+                user,
+                project
+              )
+            }
+            break;
+
+          case 1 :
+            log.debug("One match for all identifiers")
+            the_title = all_matched[0]
+            if(!the_title.name.equals(metadata.title)){
+              the_title.addVariantTitle(metadata.title)
+            }
+            break;
+
+          default :
+            log.debug("Multiple matches for given ingest identifiers. Trying to match by name..")
+
+            def matched_with_name = []
+
+            all_matched.each { mti ->
+              if ( mti.name.equals(metadata.title) ) {
+                matched_with_name.add(mti)
+              }
+            }
+
+            if ( matched_with_name.size() == 1 ){
+              log.debug("Only one matched TI (${matched_with_name[0]}) has the same name!")
+              the_title = matched_with_name[0]
+            }
+            else {
+              log.debug("Could not match a specific title. Skipping..")
+            }
+            break;
+        }
         break;
     }
 
@@ -345,7 +476,7 @@ class TitleLookupService {
       ids_to_add.addAll(results['other_identifiers'])
 
       ids_to_add.each {
-        if ( ! the_title.ids.contains(it) ) {
+        if ( !the_title.ids.contains(it) ) {
 
           log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
 
@@ -356,13 +487,14 @@ class TitleLookupService {
           if ( existing_identifier.size() > 0 ) {
             ReviewRequest.raise(
               the_title,
-              "Adding an identifier(${it.id}) to this title would create a duplicate record",
-              "The ingest file suggested an identifier (${it.id}) for a title which conflicts with a record already in the system (combo ${existing_identifier[0]})",
+              "Identifier not unique",
+              "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (combo ${existing_identifier[0]})",
               user,
               project
             )
             // We have to save the title as this modifies the revreq collections
-            the_title.save(flush:true, failOnError:true);
+            log.debug("Adding identifier to title");
+            Combo new_id = new Combo(toComponent:it, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
           }
           else {
             log.debug("Adding identifier to title");

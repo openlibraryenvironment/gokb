@@ -129,8 +129,6 @@ class CleanupService {
     def result = expungeByIds(delete_candidates)
 
     log.debug("Done");
-
-    return result
   }
   
   def housekeeping() {

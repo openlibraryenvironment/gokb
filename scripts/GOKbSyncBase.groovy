@@ -254,9 +254,11 @@ abstract class GOKbSyncBase extends Script {
   
   protected directAddFields (def data, Collection<String> fields = [], Map addTo = [:]) {
     if (data) {
-      fields?.each {
-        def val = cleanText ( data?."${it}"?.text() )
-        if (val) addTo[it] = val
+      fields?.each { f ->
+        data[f]?.each { d ->
+          def val = cleanText ( d.text() )
+          if (val && !addTo[f]) addTo[f] = val; else println("skipping duplicate field ${f}")
+        }
       }
     }
     
