@@ -105,6 +105,24 @@ class Package extends KBComponent {
 
     result
   }
+  @Transient
+  public getTitles() {
+    def titles = []
+    def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp',[this]);
+
+    tipps.each { def tipp ->
+
+      def linked_title = TitleInstancePackagePlatform.executeQuery('select ti from TitleInstance as ti, Combo as c where c.fromComponent=ti and c.toComponent=?',[tipp]);
+
+      if (linked_title){
+        if (!titles.contains(linked_title)) {
+          titles.add(linked_title)
+        }
+      }
+    }
+
+    return titles;
+  }
   
   private static OAI_PKG_CONTENTS_QRY = '''
 select tipp.id, 

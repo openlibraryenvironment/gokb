@@ -26,26 +26,27 @@
           <th>Last Modified</th>
           <th>Scope</th>
           <th>ListStatus</th>
-          <th>Number of Titles</th>
+          <th>Number of Titles (TIPPs)</th>
         </tr>
       </thead>
       <tbody>
         <g:each in="${packages}" var="pkg">
+          <g:set var="titles" value="${pkg.getTitles().size()}" />
           <tr>
             <td>
-        <g:link controller="resource" action="show" id="${pkg?.getClassName()+':'+pkg?.id}">
-           ${pkg.name}
-        </g:link>
-          </td>
+              <g:link controller="resource" action="show" id="${pkg?.getClassName()+':'+pkg?.id}">
+                ${pkg.name}
+              </g:link>
+            </td>
             <td>${pkg.status?.value}</td>
-            <td>        
-            <g:link controller="resource" action="show" id="${pkg?.userListVerifier?.getClassName()+':'+pkg?.userListVerifier?.id}">${pkg.userListVerifier?.displayName} </g:link>
-         </td>
+            <td>
+              <g:link controller="resource" action="show" id="${pkg?.userListVerifier?.getClassName()+':'+pkg?.userListVerifier?.id}">${pkg.userListVerifier?.displayName} </g:link>
+            </td>
             <td>${pkg.listVerifiedDate}</td>
             <td>${pkg.lastUpdated}</td>
             <td>${pkg.scope?.value}</td>
             <td>${pkg.listStatus?.value}</td>
-            <td>${pkg.tipps.size()}</td>
+            <td>${titles} (${pkg.tipps.size()})</td>
           </tr>
         </g:each>
       </tbody>

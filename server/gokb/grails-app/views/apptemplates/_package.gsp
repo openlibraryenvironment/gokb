@@ -59,7 +59,7 @@
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li><a href="#titledetails" data-toggle="tab">Titles <span class="badge badge-warning"> ${d.tipps?.size()} </span></a></li>
+      <li><a href="#titledetails" data-toggle="tab">TIPPs <span class="badge badge-warning"> ${d.tipps?.size()} </span></a></li>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size()} </span></a></li>      
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
         <span class="badge badge-warning"> ${d.variantNames?.size()}</span>

@@ -738,9 +738,16 @@ class IntegrationController {
     if ( request.JSON.packageHeader.name ) {
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
-        def pkg_id = Package.upsertDTO(request.JSON.packageHeader)?.id
+        def the_pkg = Package.upsertDTO(request.JSON.packageHeader)
+
+        def existing_tipps = []
+
+        if ( the_pkg.tipps?.size() > 0 ) {
+          existing_tipps = the_pkg.tipps
+        }
+
         Map platform_cache = [:]
-        log.debug("\n\n\nPackage ID: ${pkg_id} / ${request.JSON.packageHeader}");
+        log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
 
         // Validate and upsert titles and platforms
         request.JSON.tipps.each { tipp ->
@@ -788,9 +795,9 @@ class IntegrationController {
               log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
             }
 //            
-//            def pkg = pkg_id != null ? Package.get(pkg_id) : null
-            if ( ( tipp.package == null ) && ( pkg_id ) ) {
-              tipp.package = [ internalId: pkg_id ]
+//            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+            if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
+              tipp.package = [ internalId: the_pkg.id ]
             }
             else {
               log.warn("No package");
@@ -819,15 +826,44 @@ class IntegrationController {
 
         log.debug("\n\nupsert tipp data\n\n")
         tippctr=0
+
+        def tipps_to_delete = existing_tipps
+        def status_current = RefdataCategory.lookupOrCreate("KBComponent.Status","Current")
+
         if ( valid ) {
           def tipp_upsert_start_time = System.currentTimeMillis()
           // If valid, upsert tipps
           request.JSON.tipps.each { tipp ->
             TitleInstancePackagePlatform.withNewSession {
               log.debug("Upsert tipp [${tippctr++}] ${tipp}")
-              TitleInstancePackagePlatform.upsertDTO(tipp)
+
+              def ups_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
+
+              if ( existing_tipps.size() > 0 && ups_tipp && existing_tipps.contains(ups_tipp) ) {
+                log.debug("Existing TIPP matched!")
+                tipps_to_delete.remove(ups_tipp)
+              }
             }
           }
+          log.debug("Found ${tipps_to_delete.size()} TIPPS to retire from the matched package!")
+
+          tipps_to_delete.each { ttd ->
+
+            if ( ttd.status == status_current ) {
+
+              ttd.accessEndDate = new Date()
+              ttd.retire()
+              ttd.save(failOnError: true)
+
+              ReviewRequest.raise(
+                  ttd,
+                  "TIPP retired.",
+                  "An update to this package did not contain this TIPP.",
+                  user
+              )
+            }
+          }
+
           log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
         }
         else {
