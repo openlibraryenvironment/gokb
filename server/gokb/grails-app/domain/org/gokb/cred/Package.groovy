@@ -446,7 +446,7 @@ select tipp.id,
     }
 
     if ( packageHeaderDTO.nominalPlatform ) {
-      def np = Platform.findByName(packageHeaderDTO.nominalPlatform)
+      def np = Platform.findByNameOrPrimaryUrlIlike(packageHeaderDTO.nominalPlatform, packageHeaderDTO.nominalPlatform)
       if ( np ) {
         result.nominalPlatform = np;
         changed = true

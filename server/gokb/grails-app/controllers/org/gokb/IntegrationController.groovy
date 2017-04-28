@@ -739,11 +739,11 @@ class IntegrationController {
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
         def the_pkg = Package.upsertDTO(request.JSON.packageHeader)
-
         def existing_tipps = []
 
         if ( the_pkg.tipps?.size() > 0 ) {
           existing_tipps = the_pkg.tipps
+          log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
         }
 
         Map platform_cache = [:]
@@ -828,7 +828,7 @@ class IntegrationController {
         tippctr=0
 
         def tipps_to_delete = existing_tipps
-        def status_current = RefdataCategory.lookupOrCreate("KBComponent.Status","Current")
+        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
 
         if ( valid ) {
           def tipp_upsert_start_time = System.currentTimeMillis()
@@ -845,22 +845,24 @@ class IntegrationController {
               }
             }
           }
-          log.debug("Found ${tipps_to_delete.size()} TIPPS to retire from the matched package!")
+          if ( existing_tipps.size() > 0 ) {
+            log.debug("Found ${tipps_to_delete.size()} TIPPS to retire from the matched package!")
 
-          tipps_to_delete.each { ttd ->
+            tipps_to_delete.each { ttd ->
 
-            if ( ttd.status == status_current ) {
+              if ( ttd.status == status_current ) {
 
-              ttd.accessEndDate = new Date()
-              ttd.retire()
-              ttd.save(failOnError: true)
+                ttd.accessEndDate = new Date()
+                ttd.retire()
+                ttd.save(failOnError: true)
 
-              ReviewRequest.raise(
-                  ttd,
-                  "TIPP retired.",
-                  "An update to this package did not contain this TIPP.",
-                  user
-              )
+                ReviewRequest.raise(
+                    ttd,
+                    "TIPP retired.",
+                    "An update to this package did not contain this TIPP.",
+                    user
+                )
+              }
             }
           }
 
