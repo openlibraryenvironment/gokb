@@ -107,21 +107,23 @@ class Package extends KBComponent {
   }
   @Transient
   public getTitles() {
-    def titles = []
-    def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp',[this]);
 
-    tipps.each { def tipp ->
+    def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
+    def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
 
-      def linked_title = TitleInstancePackagePlatform.executeQuery('select ti from TitleInstance as ti, Combo as c where c.fromComponent=ti and c.toComponent=?',[tipp]);
+    def all_titles = TitleInstancePackagePlatform.executeQuery('''select distinct title from TitleInstance as title,
+          Combo as pkgCombo,
+          Combo as titleCombo,
+          TitleInstancePackagePlatform as tipp
+        where pkgCombo.toComponent=tipp
+          and pkgCombo.fromComponent=?
+          and titleCombo.toComponent=tipp
+          and titleCombo.fromComponent=title
+          and tipp.status != ?
+          and title.status != ?'''
+          ,[this,refdata_retired,refdata_deleted]);
 
-      if (linked_title){
-        if (!titles.contains(linked_title)) {
-          titles.add(linked_title)
-        }
-      }
-    }
-
-    return titles;
+    return all_titles;
   }
   
   private static OAI_PKG_CONTENTS_QRY = '''
