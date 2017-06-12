@@ -1,35 +1,35 @@
-<div id="content">
+<dl class="dl-horizontal">
+      <dt>
+              <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
+      </dt>
+      <dd>
+              <g:xEditable class="ipe" owner="${d}" field="name" />
+      </dd>
+      <dt>
+              <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
+      </dt>
+      <dd>
+              <g:xEditableRefData owner="${d}" field="status"
+                      config="KBComponent.Status" />
+      </dd>
+      <dt>
+              <g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel>
+      </dt>
+      <dd>
+              <g:xEditable class="ipe" owner="${d}" field="reference" />
+      </dd>
+      <dt>
+              <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
+      </dt>
+      <dd>
+              <g:manyToOneReferenceTypedown owner="${d}" field="source"
+                      baseClass="org.gokb.cred.Source">
+                      ${d.source?.name}
+              </g:manyToOneReferenceTypedown>
+      </dd>
+</dl>
 
-	<dl class="dl-horizontal">
-		<dt>
-			<g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
-		</dt>
-		<dd>
-			<g:xEditable class="ipe" owner="${d}" field="name" />
-		</dd>
-		<dt>
-			<g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
-		</dt>
-		<dd>
-			<g:xEditableRefData owner="${d}" field="status"
-				config="KBComponent.Status" />
-		</dd>
-		<dt>
-			<g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel>
-		</dt>
-		<dd>
-			<g:xEditable class="ipe" owner="${d}" field="reference" />
-		</dd>
-		<dt>
-			<g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
-		</dt>
-		<dd>
-			<g:manyToOneReferenceTypedown owner="${d}" field="source"
-				baseClass="org.gokb.cred.Source">
-				${d.source?.name}
-			</g:manyToOneReferenceTypedown>
-		</dd>
-	</dl>
+<div id="content">
 	<g:if test="${d.id != null}">
 		<ul id="tabs" class="nav nav-tabs">
 			<li class="active"><a href="#orgdetails" data-toggle="tab">Organization</a></li>

@@ -273,6 +273,8 @@ class TitleInstance extends KBComponent {
               }
 
               if ( pub_org ) {
+                def org_ids = pub_org.getIds()
+
                 builder."publisher" (['id': pub_org?.id]) {
                   "name" (pub_org?.name)
                   if ( pc.startDate ) {
@@ -283,6 +285,14 @@ class TitleInstance extends KBComponent {
                   }
                   if (pc.status) {
                     "status" (pc.status)
+                  }
+                  builder."identifiers" {
+                    org_ids?.each { org_id ->
+                      builder.'identifier' ('namespace':org_id?.namespace?.value, 'value':org_id?.value)
+                    }
+                    if ( grailsApplication.config.serverUrl ) {
+                      builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.Org:${pub_org?.id}")
+                    }
                   }
                 }
               }

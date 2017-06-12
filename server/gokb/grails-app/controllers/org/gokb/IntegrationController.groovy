@@ -1048,8 +1048,10 @@ class IntegrationController {
               'reasonRetired'
         ], titleObj, title)
 
-        title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
-        title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
+        if (titleObj.type == 'Serial') {
+          title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
+          title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
+        }
 
         // Add the core data.
         ensureCoreData(title, titleObj)
@@ -1151,6 +1153,15 @@ class IntegrationController {
             catch ( Exception e ) {
                   log.error("Problem processing title history",e);
             }
+          }
+        }
+        if(titleObj.type == 'Book' || titleObj.type == 'Monograph'){
+
+          def mg_change = addMonographFields(title, titleObj, sdf)
+
+          // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
+          if(mg_change){
+            title_changed = true
           }
         }
 
@@ -1258,6 +1269,31 @@ class IntegrationController {
         }
       }
     }
+  }
+
+  private addMonographFields ( BookInstance bi, titleObj, sdf ) {
+
+    def book_changed = false
+
+    def bookStringAttrs = ["editionNumber","editionDifferentiator",
+                            "editionStatement","volumeNumber",
+                            "summaryOfContent"]
+
+    bookStringAttrs.each {
+      if(titleObj[it] && titleObj[it].toString().trim().length() > 0){
+        bi[it] = titleObj[it].toString().trim()
+        book_changed = true
+      }
+    }
+
+    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint', sdf)
+    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstOnline, bi, 'dateFirstOnline', sdf)
+
+    if ( book_changed ) {
+      bi.save(flush: true, failOnError:true)
+    }
+
+    book_changed
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])

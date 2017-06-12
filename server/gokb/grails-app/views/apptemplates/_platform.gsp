@@ -1,41 +1,41 @@
+<dl class="dl-horizontal">
+  <dt>
+    <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:xEditable class="ipe" owner="${d}" field="name" />
+  </dd>
+  <dt>
+    <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:xEditableRefData owner="${d}" field="status"
+      config="KBComponent.Status" />
+  </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel> </dt>
+  <dd> <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"> ${d.source?.name} </g:manyToOneReferenceTypedown> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="source">Provider</g:annotatedLabel> </dt>
+  <dd> <g:manyToOneReferenceTypedown owner="${d}" field="provider" baseClass="org.gokb.cred.Org"> ${d.provider?.name} </g:manyToOneReferenceTypedown> </dd>
+
+  <dt>
+    <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:xEditableRefData owner="${d}" field="editStatus"
+      config='KBComponent.EditStatus' />
+  </dd>
+
+  <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
+  <dd>
+      <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
+  </dd>
+
+
+</dl>
+
 <div id="content">
-
-  <dl class="dl-horizontal">
-    <dt>
-      <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:xEditable class="ipe" owner="${d}" field="name" />
-    </dd>
-    <dt>
-      <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:xEditableRefData owner="${d}" field="status"
-        config="KBComponent.Status" />
-    </dd>
-
-    <dt> <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel> </dt>
-    <dd> <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"> ${d.source?.name} </g:manyToOneReferenceTypedown> </dd>
-
-    <dt> <g:annotatedLabel owner="${d}" property="source">Provider</g:annotatedLabel> </dt>
-    <dd> <g:manyToOneReferenceTypedown owner="${d}" field="provider" baseClass="org.gokb.cred.Org"> ${d.provider?.name} </g:manyToOneReferenceTypedown> </dd>
-
-    <dt>
-      <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:xEditableRefData owner="${d}" field="editStatus"
-        config='KBComponent.EditStatus' />
-    </dd>
-
-    <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
-    <dd>
-       <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
-    </dd>
-
-
-  </dl>
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>

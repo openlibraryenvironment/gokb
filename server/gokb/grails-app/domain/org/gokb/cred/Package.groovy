@@ -105,13 +105,15 @@ class Package extends KBComponent {
 
     result
   }
+
   @Transient
   public getTitles() {
 
     def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
     def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
 
-    def all_titles = TitleInstancePackagePlatform.executeQuery('''select distinct title from TitleInstance as title,
+    def all_titles = TitleInstancePackagePlatform.executeQuery('''select distinct title
+        from TitleInstance as title,
           Combo as pkgCombo,
           Combo as titleCombo,
           TitleInstancePackagePlatform as tipp

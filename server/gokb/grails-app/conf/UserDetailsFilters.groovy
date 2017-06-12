@@ -86,11 +86,13 @@ class UserDetailsFilters {
                     // Suppress for now.
                     log.error ("TitleInstancePackagePlatform.isTypeCreatable() is testing true!!")
                   }
-                  menus["create"]["${d.type.value}"] << [
-                    text : d.displayName,
-                    link : ['controller' : 'create', 'action' : 'index', 'params' : [tmpl:d.dcName]],
-                    attr : ['title' : "New ${d.displayName}"]
-                  ]
+                  if(grailsApplication.config.globalDisplayTemplates[d.dcName]){
+                    menus["create"]["${d.type.value}"] << [
+                      text : d.displayName,
+                      link : ['controller' : 'create', 'action' : 'index', 'params' : [tmpl:d.dcName]],
+                      attr : ['title' : "New ${d.displayName}"]
+                    ]
+                  }
                 }
               }
             }
