@@ -362,15 +362,14 @@ class TitleLookupService {
                   the_title.name = metadata.title
                   the_title.normname = KBComponent.generateNormname(metadata.title)
                   the_title.ids = []
-
-                  ReviewRequest.raise(
-                    the_title,
-                    "New TI created.",
-                    "TitleInstance ${matches[0]} was matched on one identifier, but the title is different and all other ingest identifiers differ from existing ones in the same namespace.",
-                    user,
-                    project
-                  )
                 }
+                ReviewRequest.raise(
+                  the_title,
+                  "New TI created.",
+                  "TitleInstance ${matches[0]} was matched on one identifier, but the title is different and all other ingest identifiers differ from existing ones in the same namespace.",
+                  user,
+                  project
+                )
               }else{
                 // Now we can examine the text of the title.
                 the_title = singleTIMatch(metadata.title,matches[0], user, project)
@@ -423,7 +422,7 @@ class TitleLookupService {
             ReviewRequest.raise(
               the_title,
               "New TI created.",
-              "TitleInstance ${matches[0]} was matched on one identifier, but all other ingest identifiers differ from existing ones in the same namespace.",
+              "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
               user,
               project
             )
