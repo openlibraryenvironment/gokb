@@ -418,15 +418,15 @@ class TitleLookupService {
               the_title.name = metadata.title
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
-
-              ReviewRequest.raise(
-                the_title,
-                "New TI created.",
-                "TitleInstance ${matches[0]} was matched on one identifier, but all other ingest identifiers differ from existing ones in the same namespace.",
-                user,
-                project
-              )
             }
+
+            ReviewRequest.raise(
+              the_title,
+              "New TI created.",
+              "TitleInstance ${matches[0]} was matched on one identifier, but all other ingest identifiers differ from existing ones in the same namespace.",
+              user,
+              project
+            )
             break;
 
           case 1 :
