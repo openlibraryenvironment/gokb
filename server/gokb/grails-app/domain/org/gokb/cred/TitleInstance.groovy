@@ -318,7 +318,9 @@ class TitleInstance extends KBComponent {
                         hti.getIds()?.each { tid ->
                           builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                         }
-
+                        if ( grailsApplication.config.serverUrl ) {
+                          builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
+                        }
                       }
                     }
                   }
@@ -331,6 +333,9 @@ class TitleInstance extends KBComponent {
                       "identifiers" {
                         hti.getIds()?.each { tid ->
                           builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                        }
+                        if ( grailsApplication.config.serverUrl ) {
+                          builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
                         }
                       }
                     }
