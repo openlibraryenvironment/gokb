@@ -487,7 +487,7 @@ class TitleLookupService {
             ReviewRequest.raise(
               the_title,
               "Identifier not unique",
-              "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (combo ${existing_identifier[0]})",
+              "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (component ${existing_identifier[0].fromComponent})",
               user,
               project
             )

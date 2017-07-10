@@ -1140,6 +1140,8 @@ globalSearchTemplates = [
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r?.class?.name+\':\'+x.r?.id'],sort:'name' ],
         [heading:'Type', property:'class?.simpleName'],
         [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Date Created', property:'dateCreated',sort:'dateCreated'],
+        [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
       ]
     ]
   ],

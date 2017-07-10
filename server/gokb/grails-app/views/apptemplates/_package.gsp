@@ -23,6 +23,13 @@
     <dd>
       <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
     </dd>
+    
+    <dt>
+      <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
+    </dt>
+    <dd>
+      ${d.status.value}
+    </dd>
 
     <g:if test="${d.lastProject}">
       <dt>
@@ -148,6 +155,11 @@
             </g:each>
           </tbody>
         </table>
+      </div>
+      
+      <div class="tab-pane" id="review">
+        <g:render template="revreqtab" contextPath="../apptemplates"
+          model="${[d:d]}" />
       </div>
 
 
