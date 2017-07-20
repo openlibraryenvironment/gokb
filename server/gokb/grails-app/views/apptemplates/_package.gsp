@@ -150,7 +150,7 @@
               <tr>
                 <td>${h[1]}</td>
                 <td>${h[2]}</td>
-                <td>${h[0].title?.name}</td>
+                <td>${h[0].title?.name} (<g:link controller="resource" action="show" id="${h[0].getClassName()+':'+h[0].id}">TIPP ${h[0].id}</g:link>)</td>
               </tr>
             </g:each>
           </tbody>

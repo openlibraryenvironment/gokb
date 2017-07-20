@@ -5,6 +5,7 @@ import groovy.util.logging.Log4j
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
 import com.k_int.ClassUtils
+import groovy.time.TimeCategory
 
 
 import org.gokb.refine.*
@@ -237,7 +238,7 @@ select tipp.id,
   static def oaiConfig = [
     id:'packages',
     textDescription:'Package repository for GOKb',
-    query:" from Package as o where o.status.value != 'Deleted'",
+    query:" from Package as o",
     pageSize:3
   ]
 
@@ -350,22 +351,42 @@ select tipp.id,
     def result = [];
 
     if ( this.id ) {
+      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
 
       // select tipp, accessStartDate, 'Added' from tipps UNION select tipp, accessEndDate, 'Removed' order by date
 
-      def additions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.dateCreated, \'Added\' ' +
-                       'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                       'where c.fromComponent=? and c.toComponent=tipp order by tipp.dateCreated DESC',
-                      [this], [max:n]);
-      def deletions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessEndDate, \'Removed\' ' +
-                       'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                       'where c.fromComponent=? and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.accessEndDate DESC',
-                       [this], [max:n]);
+//       def additions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessStartDate, \'Added\' ' +
+//                        'from TitleInstancePackagePlatform as tipp, Combo as c '+
+//                        'where c.fromComponent=? and c.toComponent=tipp and tipp.accessStartDate is not null order by tipp.dateCreated DESC',
+//                       [this], [max:n]);
+//       def deletions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessEndDate, \'Removed\' ' +
+//                        'from TitleInstancePackagePlatform as tipp, Combo as c '+
+//                        'where c.fromComponent= :pkg and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.lastUpdated DESC',
+//                        [pkg: this], [max:n]);
+                       
+      def changes =   TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c '+
+                       'where c.fromComponent= ? and c.toComponent=tipp order by tipp.lastUpdated DESC',
+                       [this]);
+      use( TimeCategory ) {
+        changes.each {
+          if ( it.accessEndDate || it.isDeleted() ){
+            result.add([it,it.accessEndDate ?: it.lastUpdated, it.accessEndDate ? 'Removed (accessEndDate)' : 'Deleted (status)'])
+          }
+          if ( it.lastUpdated <= it.dateCreated + 5.seconds || it.accessStartDate ){
+            result.add([it, it.accessStartDate ?: it.dateCreated, it.accessStartDate ? 'Added (accessStartDate)' : 'Added (dateCreated)'])
+          }
+          
+          if ( it.lastUpdated >= it.dateCreated + 5.seconds && !it.isDeleted() && !it.accessEndDate ) {
+            result.add([it, it.lastUpdated, 'Changed'])
+          }
+        }
+      }
 
-      result.addAll(additions)
-      result.addAll(deletions)
+//       result.addAll(additions)
+//       result.addAll(deletions)
       result.sort {it[1]}
       result = result.reverse();
+      result = result.take(n);
     }
 
     return result;

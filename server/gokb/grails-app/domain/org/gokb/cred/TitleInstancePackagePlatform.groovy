@@ -197,6 +197,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           tipp.pkg = pkg;
           tipp.title = ti;
           tipp.hostPlatform = plt;
+          
           break;
         default:
           log.error("Multiple matches found for tipp..");
@@ -205,9 +206,21 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( tipp ) {
         tipp.save(flush:true,failOnError:true);
+        def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
+        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
         def changed = false
+        
+        if ( tipp.isDeleted() || tipp.isRetired() ) {
+          tipp.status = status_current
+          if( tipp.accessEndDate ){
+            tipp.accessEndDate = null
+          }
+          changed = true
+        }
 
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
+        changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate,tipp,'accessStartDate')
+        changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessStartDate')
 
         tipp_dto.coverage.each { c ->
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)

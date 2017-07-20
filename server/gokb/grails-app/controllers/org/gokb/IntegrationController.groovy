@@ -837,22 +837,23 @@ class IntegrationController {
             TitleInstancePackagePlatform.withNewSession {
               log.debug("Upsert tipp [${tippctr++}] ${tipp}")
 
-              def ups_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
+              def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
 
-              if ( existing_tipps.size() > 0 && ups_tipp && existing_tipps.contains(ups_tipp) ) {
+              if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp) ) {
                 log.debug("Existing TIPP matched!")
-                tipps_to_delete.remove(ups_tipp)
+                tipps_to_delete.remove(upserted_tipp)
               }
             }
           }
+          def num_deleted_tipps = 0;
+          
           if ( existing_tipps.size() > 0 ) {
-            log.debug("Found ${tipps_to_delete.size()} TIPPS to retire from the matched package!")
+
 
             tipps_to_delete.each { ttd ->
 
-              if ( ttd.status == status_current ) {
-
-                ttd.accessEndDate = new Date()
+              if ( ttd.isCurrent() ) {
+                
                 ttd.deleteSoft()
                 ttd.save(failOnError: true)
 
@@ -862,15 +863,19 @@ class IntegrationController {
 //                     "An update to this package did not contain this TIPP.",
 //                     user
 //                 )
+                num_deleted_tipps++;
               }
             }
-            ReviewRequest.raise(
-                the_pkg,
-                "TIPPs retired.",
-                "An update to package ${the_pkg.id} did not contain ${tipp_to_delete.size()} previously existing TIPPs.",
-                user
-            )
+            if( num_deleted_tipps > 0 ) {
+              ReviewRequest.raise(
+                  the_pkg,
+                  "TIPPs retired.",
+                  "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
+                  user
+              )
+            }
           }
+          log.debug("Found ${num_deleted_tipps} TIPPS to delete from the matched package!")
 
           log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
         }
