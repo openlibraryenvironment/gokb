@@ -12,7 +12,7 @@ class Platform extends KBComponent {
   RefdataValue service
   RefdataValue ipAuthentication
   RefdataValue shibbolethAuthentication
-  RefdataValue passwordAuthenitcation
+  RefdataValue passwordAuthentication
 
   static hasMany = [roles: RefdataValue]
   
@@ -39,7 +39,7 @@ class Platform extends KBComponent {
     service column:'plat_svc_fk_rv'
     ipAuthentication column:'plat_auth_by_ip_fk_rv'
     shibbolethAuthentication column:'plat_auth_by_shib_fk_rv'
-    passwordAuthenitcation column:'plat_auth_by_pass_fk_rv'
+    passwordAuthentication column:'plat_auth_by_pass_fk_rv'
   }
 
   static constraints = {
@@ -49,7 +49,7 @@ class Platform extends KBComponent {
     service  (nullable:true, blank:false)
     ipAuthentication  (nullable:true, blank:false)
     shibbolethAuthentication  (nullable:true, blank:false)
-    passwordAuthenitcation  (nullable:true, blank:false)
+    passwordAuthentication  (nullable:true, blank:false)
   }
 
   @Transient
@@ -87,7 +87,6 @@ class Platform extends KBComponent {
         builder.'software' (software?.value)
         builder.'service' (service?.value)
         
-        builder.'authentication' (authentication?.value)
         if (ipAuthentication) builder.'ipAuthentication' (ipAuthentication.value)
         if (shibbolethAuthentication) builder.'shibbolethAuthentication' (shibbolethAuthentication.value)
         if (passwordAuthentication) builder.'passwordAuthentication' (passwordAuthentication.value)
@@ -155,7 +154,52 @@ class Platform extends KBComponent {
   @Transient
   public static Platform upsertDTO(platformDTO) {
     // Ideally this should be done on platformUrl, but we fall back to name here
-    def result = Platform.findByName(platformDTO.name) ?: new Platform(name:platformDTO.name, primaryUrl: (platformDTO.primaryUrl ?: null )).save(flush:true,failOnError:true)
+    
+    def result = false;
+    def skip = false;
+    def name_candidates = Platform.findAllByNameIlike(platformDTO.name);
+    def url_candidates = [];
+    
+    if(platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0){
+      def inc_url = new URI(platformDTO.primaryUrl);
+      
+      if(inc_url){
+        String urlHost = inc_url.getHost();
+        
+        if(urlHost.startsWith("www")){
+          urlHost = urlHost.substring(4)
+        }
+        
+        url_candidates = Platform.findAllByPrimaryUrlOrNameIlike(platformDTO.primaryUrl, urlHost);
+      }
+    }
+    
+    if(name_candidates.size() == 0){
+      log.debug("No platforms matched by name!")
+    }else if(name_candidates.size() == 1){
+      log.debug("Platform ${platformDTO.name} matched by name!")
+      result = name_candidates[0];
+    }else{
+      log.warn("Multiple platforms matched for ${platformDTO.name}!");
+    }
+    
+    if(!result){
+      log.debug("Trying to match platform by primary URL..")
+      
+      if(url_candidates.size == 0){
+        log.debug("Could not match an existing platform!")
+      }else if(url_candidates.size() == 1){
+        log.debug("Matched existing platform by URL!")
+        result = url_candidates[0];
+      }else{
+        log.warn("Matched multiple platforms by URL! Skipping ingest..")
+        skip = true;
+      }
+    }
+    if(!result && !skip){
+      log.debug("Creating new platform for: ${platformDTO}")
+      result = new Platform(name:platformDTO.name, primaryUrl: (platformDTO.primaryUrl ?: null )).save(flush:true,failOnError:true)
+    }
     result;
   }
 

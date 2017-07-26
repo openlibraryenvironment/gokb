@@ -367,6 +367,7 @@ select tipp.id,
       def changes =   TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c '+
                        'where c.fromComponent= ? and c.toComponent=tipp order by tipp.lastUpdated DESC',
                        [this]);
+                       
       use( TimeCategory ) {
         changes.each {
           if ( it.accessEndDate || it.isDeleted() ){
@@ -374,10 +375,6 @@ select tipp.id,
           }
           if ( it.lastUpdated <= it.dateCreated + 5.seconds || it.accessStartDate ){
             result.add([it, it.accessStartDate ?: it.dateCreated, it.accessStartDate ? 'Added (accessStartDate)' : 'Added (dateCreated)'])
-          }
-          
-          if ( it.lastUpdated >= it.dateCreated + 5.seconds && !it.isDeleted() && !it.accessEndDate ) {
-            result.add([it, it.lastUpdated, 'Changed'])
           }
         }
       }

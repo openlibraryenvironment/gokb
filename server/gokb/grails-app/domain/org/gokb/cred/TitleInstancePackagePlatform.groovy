@@ -212,7 +212,12 @@ class TitleInstancePackagePlatform extends KBComponent {
         
         if ( tipp.isDeleted() || tipp.isRetired() ) {
           tipp.status = status_current
-          if( tipp.accessEndDate ){
+          
+          if ( !tipp.accessStartDate ) {
+            tipp.accessStartDate = new Date()
+          }
+          
+          if ( tipp.accessEndDate ) {
             tipp.accessEndDate = null
           }
           changed = true
