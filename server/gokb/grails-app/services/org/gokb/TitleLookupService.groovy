@@ -350,8 +350,8 @@ class TitleLookupService {
               }
             }
             else {
-              if( id_mismatches.size() > 0 && id_mismatches.size() >= results['ids'].size() - 1 ){
-                // All other class one identifiers as well as the title are different. This looks like a new title.
+              if( id_mismatches.size() > 0 ){
+                // Another class one identifier of the matched title is different. This looks like a new title.
 
                 if ( newTitleClassName == null ) {
                   the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title), ids:[])
@@ -366,7 +366,7 @@ class TitleLookupService {
                 ReviewRequest.raise(
                   the_title,
                   "New TI created.",
-                  "TitleInstance ${matches[0]} was matched on one identifier, but the title is different and all other ingest identifiers differ from existing ones in the same namespace.",
+                  "TitleInstance ${matches[0].id} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
                   user,
                   project
                 )
@@ -482,7 +482,7 @@ class TitleLookupService {
           // Double check the identifier we are about to add does not already exist attached to another item in the system
           // Combo.Type : KBComponent.Ids
           def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-          def existing_identifier = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = ? and c.type.id = ?",[it.id,id_combo_type.id]);
+          def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
           if ( existing_identifier.size() > 0 ) {
             ReviewRequest.raise(
               the_title,

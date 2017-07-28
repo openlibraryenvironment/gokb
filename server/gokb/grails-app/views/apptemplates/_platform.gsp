@@ -54,7 +54,12 @@
         <dd>
           <g:xEditable class="ipe" owner="${d}" field="primaryUrl">${d.primaryUrl}</g:xEditable>
           <g:if test="${d.primaryUrl}">
-            &nbsp; <a href="${d.primaryUrl}" target="new">Follow Link</a>
+            <g:if test="${d.primaryUrl.startsWith('http')}">
+              &nbsp; <a href="${d.primaryUrl}" target="new">Follow Link</a>
+            </g:if>
+            <g:else>
+              &nbsp; <span class="badge badge-warning">Unknown URL format</span>
+            </g:else>
           </g:if>
         </dd>
 

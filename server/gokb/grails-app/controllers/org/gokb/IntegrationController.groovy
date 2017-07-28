@@ -1134,7 +1134,7 @@ class IntegrationController {
 
               def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
 
-              if ( qr.size() > 0 )
+              if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
                 cont = false;
 
               if ( cont ) {

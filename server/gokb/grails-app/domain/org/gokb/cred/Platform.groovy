@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import groovy.util.logging.*
+import org.gokb.GOKbTextUtils
 
 @Log4j
 class Platform extends KBComponent {
@@ -176,6 +177,16 @@ class Platform extends KBComponent {
     
     if(name_candidates.size() == 0){
       log.debug("No platforms matched by name!")
+
+      def variant_normname = GOKbTextUtils.normaliseString(platformDTO.name)
+
+      def varname_candidates = Platform.executeQuery("select distinct pl from Platform as pl join pl.variantNames as v where v.normVariantName = ?",[variant_normname])
+
+      if(varname_candidates.size() == 1){
+        log.debug("Platform matched by variant name!")
+        result = varname_candidates[0]
+      }
+
     }else if(name_candidates.size() == 1){
       log.debug("Platform ${platformDTO.name} matched by name!")
       result = name_candidates[0];
