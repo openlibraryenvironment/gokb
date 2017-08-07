@@ -489,10 +489,7 @@ class TitleLookupService {
 
           def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
 
-          if ( dupes.size() > 0 ) {
-            log.debug("Identifier ${it} is already connected to the title!");
-          }
-          else if ( existing_identifier.size() > 0 ) {
+          if ( existing_identifier.size() > 0 ) {
             ReviewRequest.raise(
               the_title,
               "Identifier not unique",
@@ -510,6 +507,9 @@ class TitleLookupService {
             // the_title.ids.add(it);
             // the_title.save(flush:true, failOnError:true);
           }
+        }
+        else {
+          log.debug("Identifier ${it} is already connected to the title!");
         }
       }
 
