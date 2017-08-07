@@ -455,18 +455,20 @@ select tipp.id,
     if( !result && packageHeaderDTO.variantNames?.size() > 0 ){
       packageHeaderDTO.variantNames.each {
 
-        result = Package.findByName(it)
+        if(it.trim().size() > 0){
+          result = Package.findByName(it)
 
-        if ( result ){
-          log.debug("Found existing package name for variantName ${it}")
-        }else{
+          if ( result ){
+            log.debug("Found existing package name for variantName ${it}")
+          }else{
 
-          def variant_normname = GOKbTextUtils.normaliseString(it)
-          def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ?",[variant_normname]);
+            def variant_normname = GOKbTextUtils.normaliseString(it)
+            def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ?",[variant_normname]);
 
-          if ( candidate_pkgs.size() == 1 ){
-            log.debug("Found existing package variant name for variantName ${it}")
-            result = candidate_pkgs[0]
+            if ( candidate_pkgs.size() == 1 ){
+              log.debug("Found existing package variant name for variantName ${it}")
+              result = candidate_pkgs[0]
+            }
           }
         }
       }

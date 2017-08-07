@@ -781,7 +781,12 @@ class IntegrationController {
               } else {
                 // Not in cache.
                 pl = Platform.upsertDTO(tipp.platform);
-                platform_cache[tipp.platform.name] = pl.id
+
+                if(pl){
+                  platform_cache[tipp.platform.name] = pl.id
+                }else{
+                  log.error("Could not find/create ${tipp.platform}")
+                }
               }
 
               if ( pl && ( tipp.platform.internalId == null ) ) {

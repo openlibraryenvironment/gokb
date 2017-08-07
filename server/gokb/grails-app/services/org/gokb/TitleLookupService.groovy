@@ -474,16 +474,25 @@ class TitleLookupService {
       ids_to_add.addAll(results['ids'])
       ids_to_add.addAll(results['other_identifiers'])
 
+      def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+
       ids_to_add.each {
-        if ( !the_title.ids.contains(it) ) {
+
+        def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,the_title.id,id_combo_type.id]);
+
+        if ( !dupes || dupes.size() == 0) {
 
           log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
 
           // Double check the identifier we are about to add does not already exist attached to another item in the system
           // Combo.Type : KBComponent.Ids
-          def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+
           def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
-          if ( existing_identifier.size() > 0 ) {
+
+          if ( dupes.size() > 0 ) {
+            log.debug("Identifier ${it} is already connected to the title!");
+          }
+          else if ( existing_identifier.size() > 0 ) {
             ReviewRequest.raise(
               the_title,
               "Identifier not unique",

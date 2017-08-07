@@ -160,11 +160,13 @@ class Platform extends KBComponent {
     def skip = false;
     def name_candidates = Platform.findAllByNameIlike(platformDTO.name);
     def url_candidates = [];
+    def viable_url = false;
     
     if(platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0){
       def inc_url = new URI(platformDTO.primaryUrl);
       
       if(inc_url){
+        viable_url = true;
         String urlHost = inc_url.getHost();
         
         if(urlHost.startsWith("www")){
@@ -194,17 +196,21 @@ class Platform extends KBComponent {
       log.warn("Multiple platforms matched for ${platformDTO.name}!");
     }
     
-    if(!result){
+    if(!result && viable_url){
       log.debug("Trying to match platform by primary URL..")
       
-      if(url_candidates.size == 0){
+      if(url_candidates.size() == 0){
         log.debug("Could not match an existing platform!")
       }else if(url_candidates.size() == 1){
         log.debug("Matched existing platform by URL!")
         result = url_candidates[0];
       }else{
-        log.warn("Matched multiple platforms by URL! Skipping ingest..")
-        skip = true;
+        log.warn("Matched multiple platforms by URL!")
+
+        // Picking randomly from multiple results is bad, but right now a result is always expected. Maybe this should be skipped...
+        // skip = true
+
+        result = url_candidates[0];
       }
     }
     if(!result && !skip){
