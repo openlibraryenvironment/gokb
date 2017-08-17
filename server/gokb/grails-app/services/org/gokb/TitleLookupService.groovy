@@ -431,6 +431,7 @@ class TitleLookupService {
           case 1 :
             log.debug("One match for all identifiers")
             the_title = all_matched[0]
+
             if(!the_title.name.equals(metadata.title)){
               the_title.addVariantTitle(metadata.title)
             }
@@ -538,7 +539,7 @@ class TitleLookupService {
       log.debug("Add publisher \"${publisher_name}\"")
       Org publisher = componentLookupService.lookupComponent(publisher_name)
       
-      if (publisher == null) {
+      if ( !publisher ) {
         // Lookup using norm name.
         def norm_pub_name = Org.generateNormname(publisher_name);
         
@@ -546,9 +547,9 @@ class TitleLookupService {
         publisher = Org.findByNormname(norm_pub_name)
       }      
 
-      if ( publisher == null ) {
+      if ( !publisher || publisher.status.value == 'Deleted') {
         def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
         if ( candidate_orgs.size() == 1 ) {
           publisher = candidate_orgs[0]
         }

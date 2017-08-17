@@ -90,10 +90,10 @@ class ApiController {
     else {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
-      
+
       if (gokbVersion != 'development') {
         if (!gokbVersion || TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
-          apiReturn([errorType : "versionError"], "The refine extension you are using is not compaitble with this instance of the service.",
+          apiReturn([errorType : "versionError"], "The refine extension you are using is not compatible with this instance of the service.",
           "error")
           
           return false

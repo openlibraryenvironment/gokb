@@ -182,18 +182,18 @@ class Platform extends KBComponent {
 
       def variant_normname = GOKbTextUtils.normaliseString(platformDTO.name)
 
-      def varname_candidates = Platform.executeQuery("select distinct pl from Platform as pl join pl.variantNames as v where v.normVariantName = ?",[variant_normname])
+      def varname_candidates = Platform.executeQuery("select distinct pl from Platform as pl join pl.variantNames as v where v.normVariantName = ? and pl.status.value = 'Current'",[variant_normname])
 
       if(varname_candidates.size() == 1){
         log.debug("Platform matched by variant name!")
         result = varname_candidates[0]
       }
 
-    }else if(name_candidates.size() == 1){
+    }else if(name_candidates.size() == 1 && name_candidates[0].status.value == 'Current'){
       log.debug("Platform ${platformDTO.name} matched by name!")
       result = name_candidates[0];
     }else{
-      log.warn("Multiple platforms matched for ${platformDTO.name}!");
+      log.warn("Could not match a current platform for ${platformDTO.name}!");
     }
     
     if(!result && viable_url){
@@ -201,16 +201,19 @@ class Platform extends KBComponent {
       
       if(url_candidates.size() == 0){
         log.debug("Could not match an existing platform!")
-      }else if(url_candidates.size() == 1){
+      }else if(url_candidates.size() == 1 && url_candidates[0].status.value == 'Current'){
         log.debug("Matched existing platform by URL!")
         result = url_candidates[0];
-      }else{
+      }else if(url_candidates.size() > 1) {
         log.warn("Matched multiple platforms by URL!")
 
         // Picking randomly from multiple results is bad, but right now a result is always expected. Maybe this should be skipped...
         // skip = true
+        def current_platforms = url_candidates.findAll { it.status.value == 'Current' }
 
-        result = url_candidates[0];
+        if(current_platforms.size() > 0){
+          result = current_platforms[0]
+        }
       }
     }
     if(!result && !skip){

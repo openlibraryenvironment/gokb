@@ -116,7 +116,7 @@ class IntegrationController {
             if ( located_entries?.size() == 0 ) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
               def variant_normname = GOKbTextUtils.normaliseString( name )
-              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
 
               if ( located_entries?.size() == 0 ) {
 
@@ -265,7 +265,7 @@ class IntegrationController {
           if ( located_or_new_org == null && org_by_name.size() == 0 ) {
 
             def variant_normname = GOKbTextUtils.normaliseString( orgName )
-            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
 
             if(candidate_orgs.size() == 1){
               located_or_new_org = candidate_orgs[0]
@@ -859,7 +859,7 @@ class IntegrationController {
 
               if ( ttd.isCurrent() ) {
                 
-                ttd.deleteSoft()
+                ttd.retire()
                 ttd.save(failOnError: true)
 
 //                 ReviewRequest.raise(
@@ -880,7 +880,7 @@ class IntegrationController {
               )
             }
           }
-          log.debug("Found ${num_deleted_tipps} TIPPS to delete from the matched package!")
+          log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
 
           log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
         }
@@ -1227,9 +1227,9 @@ class IntegrationController {
         Org publisher = Org.findByNormname(norm_pub_name)
 
 
-        if(!publisher){
+        if(!publisher || publisher.status.value == 'Deleted'){
           def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
 
           if(candidate_orgs.size() == 1){
             publisher = candidate_orgs[0]

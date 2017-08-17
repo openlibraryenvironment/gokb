@@ -180,7 +180,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     if ( pkg && plt && ti ) {
       log.debug("See if we already have a tipp");
-      def tipps = TitleInstance.executeQuery('select tipp.id from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
+      def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
                                            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?'+
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
@@ -189,19 +189,32 @@ class TitleInstancePackagePlatform extends KBComponent {
       switch ( tipps.size() ) {
         case 1:
           log.debug("found");
-          tipp = TitleInstancePackagePlatform.get(tipps[0])
+
+          if( tipps[0].url && tipp_dto.url && tipps[0].url == tipp_dto.url ){
+            tipp = tipps[0]
+          }
           break;
         case 0:
           log.debug("not found");
-          tipp=new TitleInstancePackagePlatform()
-          tipp.pkg = pkg;
-          tipp.title = ti;
-          tipp.hostPlatform = plt;
           
           break;
         default:
-          log.error("Multiple matches found for tipp..");
+          tipps.each {
+            if ( tipp_dto.url && it.url == tipp_dto.url ){
+              if(tipp){
+                log.warn("found multiple TIPPs with the same URL!")
+              }
+              tipp = it
+            }
+          }
           break;
+      }
+
+      if ( !tipp ) {
+        tipp=new TitleInstancePackagePlatform()
+        tipp.pkg = pkg;
+        tipp.title = ti;
+        tipp.hostPlatform = plt;
       }
 
       if ( tipp ) {

@@ -438,13 +438,44 @@ select tipp.id,
   @Transient
   public static Package upsertDTO(packageHeaderDTO) {
     log.info("Upsert package with header ${packageHeaderDTO}");
+
     def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
-    def result = Package.findByNormname(pkg_normname)
+    def name_candidates = Package.executeQuery("select p from Package as p where p.normname = ? and p.status.value <> 'Deleted' ",[pkg_normname])
+    def full_matches = []
+    def result = false;
+
+    if(name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0){
+      name_candidates.each { mp ->
+        if(mp.ids.size() > 0){
+          def full_match = true;
+
+          packageHeaderDTO.identifiers.each { rid ->
+
+            Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(rid.type, rid.value);
+
+            if( !mp.ids.contains(the_id) ) {
+              full_match = false
+            }
+          }
+
+          if(full_match){
+            full_matches.add(mp)
+          }
+        }
+      }
+
+      if(full_matches.size() == 1){
+        result = full_matches[0]
+      }
+    }
+    else if (name_candidates.size() == 1) {
+      result = name_candidates[0]
+    }
 
     if( !result ){
 
       def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
-      def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ?",[variant_normname]);
+      def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status.value <> 'Deleted' ",[variant_normname]);
 
       if ( candidate_pkgs.size() == 1 ){
         result = candidate_pkgs[0]
@@ -463,7 +494,7 @@ select tipp.id,
           }else{
 
             def variant_normname = GOKbTextUtils.normaliseString(it)
-            def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ?",[variant_normname]);
+            def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status.value <> 'Deleted' ",[variant_normname]);
 
             if ( candidate_pkgs.size() == 1 ){
               log.debug("Found existing package variant name for variantName ${it}")
@@ -508,13 +539,26 @@ select tipp.id,
     }
 
     if ( packageHeaderDTO.nominalPlatform ) {
-      def np = Platform.findByNameOrPrimaryUrlIlike(packageHeaderDTO.nominalPlatform, packageHeaderDTO.nominalPlatform)
-      if ( np ) {
-        result.nominalPlatform = np;
-        changed = true
+      def platformDTO = [:];
+
+      if (packageHeaderDTO.nominalPlatform instanceof String){
+        platformDTO['name'] = packageHeaderDTO.nominalPlatform
+      }else if(packageHeaderDTO.nominalPlatform.name){
+        platformDTO = packageHeaderDTO.nominalPlatform
+      }
+
+      if(platformDTO){
+        def np = Platform.upsertDTO(platformDTO)
+        if ( np ) {
+          result.nominalPlatform = np;
+          changed = true
+        }
+        else {
+          log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
+        }
       }
       else {
-        log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
+        log.warn("Could not extract platform information from JSON!")
       }
     }
 
@@ -565,7 +609,7 @@ select tipp.id,
         changed = true
       }else{
         def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.nominalProvider)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ?",[variant_normname]);
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value = 'Current'",[variant_normname]);
 
         if ( candidate_orgs.size() == 1 ) {
           result.provider = candidate_orgs[0]

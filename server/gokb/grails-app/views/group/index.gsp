@@ -23,7 +23,12 @@
           <th>Status</th>
           <th>List verified by</th>
           <th>List verified date</th>
-          <th>Last Modified</th>
+          <th>
+            <g:link params="${params+[pkg_sort:'lastUpdated',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
+              Last Modified
+              <i class="glyphicon glyphicon-sort"></i>
+            </g:link>
+          </th>
           <th>Scope</th>
           <th>ListStatus</th>
           <th>Number of Titles (TIPPs)</th>
