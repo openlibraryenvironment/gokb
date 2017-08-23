@@ -177,6 +177,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     def pkg = Package.get(tipp_dto.package?.internalId)
     def plt = Platform.get(tipp_dto.platform?.internalId)
     def ti = TitleInstance.get(tipp_dto.title?.internalId)
+    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+    def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
 
     if ( pkg && plt && ti ) {
       log.debug("See if we already have a tipp");
@@ -190,27 +192,51 @@ class TitleInstancePackagePlatform extends KBComponent {
         case 1:
           log.debug("found");
 
-          if( tipps[0].url && tipp_dto.url && tipps[0].url == tipp_dto.url ){
-            tipp = tipps[0]
+          if( tipp_dto.url && tipp_dto.url.trim().size() > 0 ) {
+            if( !tipps[0].url || tipps[0].url == tipp_dto.url ){
+              tipp = tipps[0]
+            }
+            else{
+              log.debug("matched tipp has a different url..")
+            }
           }
+          else {
+            tipp = tipps[0]
+          } 
           break;
         case 0:
           log.debug("not found");
           
           break;
         default:
-          tipps.each {
-            if ( tipp_dto.url && it.url == tipp_dto.url ){
-              if(tipp){
-                log.warn("found multiple TIPPs with the same URL!")
-              }
-              tipp = it
-            }
+          if ( tipp_dto.url && tipp_dto.url.trim().size() > 0 ) {
+            tipps = tipps.findAll { !it.url || it.url == tipp_dto.url };
+            log.debug("found ${tipps.size()} tipps for URL ${tipp_dto.url}")
           }
+        
+          def cur_tipps = tipps.findAll { it.status == status_current };
+          def ret_tipps = tipps.findAll { it.status == status_retired };
+          
+          if ( cur_tipps.size() > 0 ){
+            tipp = cur_tipps[0]
+            
+            log.warn("found ${cur_tipps.size()} current TIPPs!")
+          }
+          else if ( ret_tipps.size() > 0 ) {
+            tipp = ret_tipps[0]
+            
+            log.warn("found ${ret_tipps.size()} current TIPPs!")
+          }
+          else {
+            log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
+          }
+            
           break;
       }
 
       if ( !tipp ) {
+      
+        log.debug("Creating new TIPP..")
         tipp=new TitleInstancePackagePlatform()
         tipp.pkg = pkg;
         tipp.title = ti;
@@ -219,8 +245,6 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( tipp ) {
         tipp.save(flush:true,failOnError:true);
-        def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
-        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
         def changed = false
         
         if ( tipp.isDeleted() || tipp.isRetired() ) {

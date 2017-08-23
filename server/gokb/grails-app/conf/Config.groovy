@@ -552,6 +552,8 @@ log4j = {
             'grails.app.jobs',
             'com.k_int',
             'org.gokb.cred.RefdataCategory',
+            'org.gokb.cred.TitleInstancePackagePlatform',
+            'org.gokb.cred.Platform',
             'org.gokb.IntegrationController',
             'com.k_int.apis',
             'com.k_int.asset.pipeline.groovy',
@@ -1232,10 +1234,19 @@ globalSearchTemplates = [
           placeholder:'Platform',
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'hostPlatform']
         ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'KBComponent.Status',
+          prompt:'Status',
+          qparam:'qp_status',
+          placeholder:'Name or title of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status'],
+          // II: Default not yet implemented
+          default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
+        ],
       ],
       qbeGlobals:[
-        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
-         'qparam':'qp_showDeleted', 'default':'on']
       ],
       qbeResults:[
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],

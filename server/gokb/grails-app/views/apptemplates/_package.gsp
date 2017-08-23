@@ -95,7 +95,7 @@
 
       <div class="tab-pane" id="titledetails">
         <g:link class="display-inline" controller="search" action="index"
-          params="[qbe:'g:3tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat']]"
+          params="[qbe:'g:3tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat', 'qp_status']]"
           id="">Titles in this package</g:link>
 
         <g:if test="${ editable }">

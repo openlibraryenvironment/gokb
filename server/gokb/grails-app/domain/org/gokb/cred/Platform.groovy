@@ -119,7 +119,9 @@ class Platform extends KBComponent {
 
     if ( ql ) { 
       ql.each { t ->
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        if( !params.status || t.status.value != params.status ){
+          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        }
       }   
     }   
 
@@ -158,38 +160,73 @@ class Platform extends KBComponent {
     
     def result = false;
     def skip = false;
-    def name_candidates = Platform.findAllByNameIlike(platformDTO.name);
+    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+    
+    try {
+      log.debug("checking if platform name is an URL..")
+      
+      def url_as_name = new URL(platformDTO.name)
+      
+      if(url_as_name.getProtocol()){ 
+        if(!platformDTO.primaryUrl || platformDTO.primaryUrl.trim.size() == 0){
+          log.debug("identified URL as platform name")
+          platformDTO.primaryUrl = platformDTO.name
+        }
+        
+        platformDTO.name = url_as_name.getHost()
+        log.debug("New platform name is ${platformDTO.name}.")
+      }
+    } catch( MalformedURLException ){
+      log.debug("Platform name is no URL")
+    }
+    
+    def name_candidates = Platform.executeQuery("from Platform where name = ? and status = ?", [platformDTO.name, status_current]);
     def url_candidates = [];
     def viable_url = false;
     
     if(platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0){
-      def inc_url = new URI(platformDTO.primaryUrl);
-      
-      if(inc_url){
-        viable_url = true;
-        String urlHost = inc_url.getHost();
+      try {
+        def inc_url = new URL(platformDTO.primaryUrl);
         
-        if(urlHost.startsWith("www")){
-          urlHost = urlHost.substring(4)
+        if(inc_url){
+          viable_url = true;
+          String urlHost = inc_url.getHost();
+          
+          if(urlHost.startsWith("www")){
+            urlHost = urlHost.substring(4)
+          }
+          
+          url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.status = ? and ( pl.primaryUrl = ? or pl.name = ? ) ", [status_current, platformDTO.primaryUrl, urlHost]);
+          
+          if( url_candidates.size() == 0 && inc_url.getProtocol() == "http" ){
+            URL alt_scheme = new URL("https", inc_url.getHost(), inc_url.getPort(), inc_url.getFile(), inc_url.getRef());
+            log.debug("Also trying URL: ${alt_scheme.toString()}")
+            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.status = ? and pl.primaryUrl = ? ", [status_current, alt_scheme.toString()]);
+          }
+          else if( url_candidates.size() == 0 && inc_url.getProtocol() == "https" ){
+            URL alt_scheme = new URL("http", inc_url.getHost(), inc_url.getPort(), inc_url.getFile(), inc_url.getRef());
+            log.debug("Also trying URL: ${alt_scheme.toString()}")
+            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.status = ? and pl.primaryUrl = ? ", [status_current, alt_scheme.toString()]);
+          }
         }
-        
-        url_candidates = Platform.findAllByPrimaryUrlOrNameIlike(platformDTO.primaryUrl, urlHost);
+      } catch( MalformedURLException ex ) {
+        log.error("URL of ingest Platform ${platformDTO} is broken!")
       }
     }
     
     if(name_candidates.size() == 0){
-      log.debug("No platforms matched by name!")
+      log.debug("No active platforms matched by name!")
 
       def variant_normname = GOKbTextUtils.normaliseString(platformDTO.name)
 
-      def varname_candidates = Platform.executeQuery("select distinct pl from Platform as pl join pl.variantNames as v where v.normVariantName = ? and pl.status.value = 'Current'",[variant_normname])
+      def varname_candidates = Platform.executeQuery("select distinct pl from Platform as pl join pl.variantNames as v where v.normVariantName = ? and pl.status = ? ",[variant_normname, status_current])
 
       if(varname_candidates.size() == 1){
         log.debug("Platform matched by variant name!")
         result = varname_candidates[0]
       }
 
-    }else if(name_candidates.size() == 1 && name_candidates[0].status.value == 'Current'){
+    }else if(name_candidates.size() == 1 && name_candidates[0].status == status_current){
       log.debug("Platform ${platformDTO.name} matched by name!")
       result = name_candidates[0];
     }else{
@@ -201,7 +238,7 @@ class Platform extends KBComponent {
       
       if(url_candidates.size() == 0){
         log.debug("Could not match an existing platform!")
-      }else if(url_candidates.size() == 1 && url_candidates[0].status.value == 'Current'){
+      }else if(url_candidates.size() == 1 && url_candidates[0].status == status_current){
         log.debug("Matched existing platform by URL!")
         result = url_candidates[0];
       }else if(url_candidates.size() > 1) {
@@ -209,7 +246,7 @@ class Platform extends KBComponent {
 
         // Picking randomly from multiple results is bad, but right now a result is always expected. Maybe this should be skipped...
         // skip = true
-        def current_platforms = url_candidates.findAll { it.status.value == 'Current' }
+        def current_platforms = url_candidates.findAll { it.status == status_current }
 
         if(current_platforms.size() > 0){
           result = current_platforms[0]
@@ -218,7 +255,7 @@ class Platform extends KBComponent {
     }
     if(!result && !skip){
       log.debug("Creating new platform for: ${platformDTO}")
-      result = new Platform(name:platformDTO.name, primaryUrl: (platformDTO.primaryUrl ?: null )).save(flush:true,failOnError:true)
+      result = new Platform(name:platformDTO.name, primaryUrl: (viable_url ? platformDTO.primaryUrl : null )).save(flush:true,failOnError:true)
     }
     result;
   }

@@ -541,9 +541,9 @@ select tipp.id,
     if ( packageHeaderDTO.nominalPlatform ) {
       def platformDTO = [:];
 
-      if (packageHeaderDTO.nominalPlatform instanceof String){
+      if (packageHeaderDTO.nominalPlatform instanceof String && packageHeaderDTO.nominalPlatform.trim().size() > 0){
         platformDTO['name'] = packageHeaderDTO.nominalPlatform
-      }else if(packageHeaderDTO.nominalPlatform.name){
+      }else if(packageHeaderDTO.nominalPlatform.name && packageHeaderDTO.nominalPlatform.name.trim().size() > 0){
         platformDTO = packageHeaderDTO.nominalPlatform
       }
 

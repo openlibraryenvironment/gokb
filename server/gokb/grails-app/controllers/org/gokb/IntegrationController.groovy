@@ -742,7 +742,7 @@ class IntegrationController {
         def existing_tipps = []
 
         if ( the_pkg.tipps?.size() > 0 ) {
-          existing_tipps = the_pkg.tipps
+          existing_tipps = the_pkg.tipps.collect { it.id }
           log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
         }
 
@@ -844,9 +844,9 @@ class IntegrationController {
 
               def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
 
-              if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp) ) {
+              if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
                 log.debug("Existing TIPP matched!")
-                tipps_to_delete.remove(upserted_tipp)
+                tipps_to_delete.remove(upserted_tipp.id)
               }
             }
           }
@@ -856,14 +856,16 @@ class IntegrationController {
 
 
             tipps_to_delete.each { ttd ->
-
-              if ( ttd.isCurrent() ) {
+              
+              def to_retire = TitleInstancePackagePlatform.get(ttd)
+              
+              if ( to_retire.isCurrent() ) {
                 
-                ttd.retire()
-                ttd.save(failOnError: true)
+                to_retire.retire()
+                to_retire.save(failOnError: true)
 
 //                 ReviewRequest.raise(
-//                     ttd,
+//                     to_retire,
 //                     "TIPP retired.",
 //                     "An update to this package did not contain this TIPP.",
 //                     user
