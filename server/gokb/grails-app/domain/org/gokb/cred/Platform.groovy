@@ -162,22 +162,24 @@ class Platform extends KBComponent {
     def skip = false;
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     
-    try {
-      log.debug("checking if platform name is an URL..")
-      
-      def url_as_name = new URL(platformDTO.name)
-      
-      if(url_as_name.getProtocol()){ 
-        if(!platformDTO.primaryUrl || platformDTO.primaryUrl.trim.size() == 0){
-          log.debug("identified URL as platform name")
-          platformDTO.primaryUrl = platformDTO.name
-        }
+    if(platformDTO.name.startsWith("http")){
+      try {
+        log.debug("checking if platform name is an URL..")
         
-        platformDTO.name = url_as_name.getHost()
-        log.debug("New platform name is ${platformDTO.name}.")
+        def url_as_name = new URL(platformDTO.name)
+        
+        if(url_as_name.getProtocol()){ 
+          if(!platformDTO.primaryUrl || platformDTO.primaryUrl.trim.size() == 0){
+            log.debug("identified URL as platform name")
+            platformDTO.primaryUrl = platformDTO.name
+          }
+          
+          platformDTO.name = url_as_name.getHost()
+          log.debug("New platform name is ${platformDTO.name}.")
+        }
+      } catch( MalformedURLException ){
+        log.debug("Platform name is no valid URL")
       }
-    } catch( MalformedURLException ){
-      log.debug("Platform name is no URL")
     }
     
     def name_candidates = Platform.executeQuery("from Platform where name = ? and status = ?", [platformDTO.name, status_current]);
