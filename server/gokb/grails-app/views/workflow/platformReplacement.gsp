@@ -37,7 +37,7 @@
 					<dd>
 						<div class="input-group">
 							<g:simpleReferenceTypedown class="form-control"
-								name="newplatform" baseClass="org.gokb.cred.Platform" status="Current"/>
+								name="newplatform" baseClass="org.gokb.cred.Platform" filter1="Current"/>
 							<div class="input-group-btn">
 								<button type="submit" class="btn btn-default btn-sm">Update</button>
 							</div>

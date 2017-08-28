@@ -119,7 +119,7 @@ class Platform extends KBComponent {
 
     if ( ql ) { 
       ql.each { t ->
-        if( !params.status || t.status.value != params.status ){
+        if( !params.filter1 || t.status.value == params.filter1 ){
           result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
         }
       }   

@@ -118,6 +118,7 @@
                  <tr>
                    <td> <g:link controller="resource" action="show" id="${hit.id}">${hit.source.name}</g:link></td>
                    <td> ${hit.source.componentType} </td>
+                   <td> ${hit.source}</td>
                  </tr>
                </g:each>
              </tbody>
