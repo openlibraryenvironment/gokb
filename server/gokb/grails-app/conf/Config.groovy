@@ -1238,6 +1238,12 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg']
         ],
         [
+          prompt:'Platform ID',
+          qparam:'qp_plat_id',
+          placeholder:'Platform ID',
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'hostPlatform.id', 'type' : 'java.lang.Long']
+        ],
+        [
           type:'lookup',
           baseClass:'org.gokb.cred.Platform',
           prompt:'Platform',

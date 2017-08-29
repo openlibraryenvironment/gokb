@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <%
   def addFacet = { params, facet, val ->
@@ -111,14 +112,16 @@
                <tr>
                  <th>Component Name</th>
                  <th>Component Type</th>
+                 <th style="width:10%">Status</th>
                </tr>
              </thead>
              <tbody>
                <g:each in="${hits}" var="hit">
+                <g:set var="hitInst" value="${org.gokb.cred.KBComponent.get(hit.id.split(':')[1].toLong())}" />
                  <tr>
-                   <td> <g:link controller="resource" action="show" id="${hit.id}">${hit.source.name}</g:link></td>
+                   <td> <g:if test="${hitInst}"><g:link controller="resource" action="show" id="${hit.id}">${hit.source.name ?: "- Not Set -"}</g:link></g:if><g:else>${hit.source.name ?: "- Not Set -"}</g:else></td>
                    <td> ${hit.source.componentType} </td>
-                   <td> ${hit.source}</td>
+                   <td> ${hitInst?.status?.value ?: 'Unknown'}</td>
                  </tr>
                </g:each>
              </tbody>

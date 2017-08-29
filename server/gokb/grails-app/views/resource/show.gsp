@@ -3,8 +3,13 @@
 <head>
 <meta name="layout" content="sb-admin" />
 <title>GOKb: ${displayobj?.getNiceName() ?: 'Component'} 
+<g:if test="${displayobj}">
 &lt;${ displayobj?.isEditable() ? 'Editable' : 'Read Only' }&gt; 
 &lt;${ displayobj?.isCreatable() ? 'Creatable' : 'Not Creatable' }&gt;
+</g:if>
+<g:else>
+&lt;Not found&gt;
+</g:else>
 </title>
 </head>
 <body>
@@ -23,26 +28,27 @@
         </g:else>
       </span>
     </div>
+    <g:if test="${displayobj}">
+      <ul class="nav navbar-nav navbar-right">
+        <g:if test="${d instanceof org.gokb.cred.KBComponent}">
+          <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
+                id="watchToggleLink"
+                title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
+                  ><i id="watchIcon" class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
+        </g:if>
+        <li><a data-toggle="modal" data-cache="false"
+              title="Show History"
+              data-remote='<g:createLink controller="fwk" action="history" oid="${displayobj.class.name}:${displayobj.id}"/>'
+              data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
 
-    <ul class="nav navbar-nav navbar-right">
-      <g:if test="${d instanceof org.gokb.cred.KBComponent}">
-        <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
-               id="watchToggleLink"
-               title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
-                ><i id="watchIcon" class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
-      </g:if>
-      <li><a data-toggle="modal" data-cache="false"
-             title="Show History"
-             data-remote='<g:createLink controller="fwk" action="history" oid="${displayobj.class.name}:${displayobj.id}"/>'
-             data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
-
-      <li><a data-toggle="modal" data-cache="false"
-             title="Show Notes"
-             data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>'
-             data-target="#modal"><i class="glyphicon glyphicon-comment"></i>
-              <span class="badge badge-warning"> ${num_notes}</span>
-          </a></li>
-    </ul>
+        <li><a data-toggle="modal" data-cache="false"
+              title="Show Notes"
+              data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>'
+              data-target="#modal"><i class="glyphicon glyphicon-comment"></i>
+                <span class="badge badge-warning"> ${num_notes}</span>
+            </a></li>
+      </ul>
+    </g:if>
   </div>
 </nav>
   <div id="mainarea" class="panel panel-default">

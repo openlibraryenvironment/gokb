@@ -39,6 +39,7 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
+    <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps.size()}</span> </a></li>
     <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size()}</span> </a></li>
     <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
   </ul>
@@ -58,7 +59,7 @@
               &nbsp; <a href="${d.primaryUrl}" target="new">Follow Link</a>
             </g:if>
             <g:else>
-              &nbsp; <span class="badge badge-warning">Unknown URL format</span>
+              &nbsp; <span class="badge badge-warning">!Unknown URL format!</span>
             </g:else>
           </g:if>
         </dd>
@@ -94,6 +95,13 @@
 
       </dl>
     </div>
+    
+    <div class="tab-pane" id="titledetails">
+      <g:link class="display-inline" controller="search" action="index"
+        params="[qbe:'g:3tipps', qp_plat_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat', 'qp_plat_id']]"
+        id="">TIPPs on this Platform</g:link>
+    </div>
+        
     <g:render template="showVariantnames" contextPath="../tabTemplates"
       model="${[d:displayobj, showActions:true]}" />
             
