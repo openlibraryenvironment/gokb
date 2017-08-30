@@ -84,7 +84,9 @@ class Org extends KBComponent {
 
     if ( ql ) {
       ql.each { t ->
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        if( !params.filter1 || t.status.value == params.filter1 ){
+          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        }
       }
     }
 

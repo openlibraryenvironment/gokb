@@ -28,7 +28,8 @@
       <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
     </dt>
     <dd>
-      ${d.status.value}
+      <g:xEditableRefData owner="${d}" field="status"
+        config="KBComponent.Status" />
     </dd>
 
     <g:if test="${d.lastProject}">

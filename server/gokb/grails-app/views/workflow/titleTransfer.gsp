@@ -39,9 +39,9 @@
 						</table>
 					</div>
 					<div class="col-md-6">
-						<h3>Trasfer to:</h3>
+						<h3>Transfer to:</h3>
 						<label>New Publisher:</label>
-						<g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.Org" />
+						<g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.Org" filter1="Current"/>
 					</div>
 
 				</div>
