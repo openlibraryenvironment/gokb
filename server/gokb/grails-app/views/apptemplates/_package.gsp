@@ -23,14 +23,14 @@
     <dd>
       <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
     </dd>
-    
-    <dt>
-      <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
-    </dt>
-    <dd>
-      <g:xEditableRefData owner="${d}" field="status"
-        config="KBComponent.Status" />
-    </dd>
+    <g:if test="${d.status}">
+      <dt>
+        <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
+      </dt>
+      <dd>
+        ${d.status.value}
+      </dd>
+    </g:if>
 
     <g:if test="${d.lastProject}">
       <dt>
