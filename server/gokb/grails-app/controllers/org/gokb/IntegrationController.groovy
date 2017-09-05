@@ -759,7 +759,7 @@ class IntegrationController {
             if ( !valid )
               log.warn("Not valid after title validation ${tipp.title}");
 
-            def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title);
+            def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
             if ( ti && ( tipp.title.internalId == null ) ) {
               tipp.title.internalId = ti.id;
             }

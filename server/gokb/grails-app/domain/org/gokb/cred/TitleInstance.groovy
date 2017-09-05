@@ -503,12 +503,12 @@ class TitleInstance extends KBComponent {
   }
 
   @Transient
-  public static TitleInstance upsertDTO(titleLookupService,titleDTO) {
+  public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null) {
     def result = null;
     result = titleLookupService.find(titleDTO.name,
                                      titleDTO.publisher,
                                      titleDTO.identifiers,
-                                     null,
+                                     user,
                                      null,
                                      titleDTO.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )
 
