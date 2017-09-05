@@ -330,24 +330,48 @@ class OaiController {
       def query_params = []
       // def query = " from Package as p where p.status.value != 'Deleted'"
       def query = result.oaiConfig.query
+      
+      def status_filter = result.oaiConfig.statusFilter
+      
+      if(!status_filter){
+        query += 'where '
+      }
+      else{
+        query += result.oaiConfig.statusFilter
+      }
 
       if ((params.from != null)&&(params.from.length()>0)) {
-        query += ' and o.lastUpdated > ?'
+        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+          query += ' and '
+        }
+        query += 'o.lastUpdated > ?'
         query_params.add(sdf.parse(params.from))
       }else if(from && from.length()>0){
-        query += ' and o.lastUpdated > ?'
+        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+          query += ' and '
+        }
+        query += 'o.lastUpdated > ?'
         query_params.add(sdf.parse(from))
       }
       if ((params.until != null)&&(params.until.length()>0)) {
-        query += ' and o.lastUpdated < ?'
+        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+          query += ' and '
+        }
+        query += 'o.lastUpdated < ?'
         query_params.add(sdf.parse(params.until))
       }else if(until && until.length()>0){
-        query += ' and o.lastUpdated < ?'
+        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+          query += ' and '
+        }
+        query += 'o.lastUpdated < ?'
         query_params.add(sdf.parse(until))
       }
 
       if ( params.set != null ) {
-        query += ' and o.identifier = ? '
+        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+          query += ' and '
+        }
+        query += 'o.identifier = ? '
         query_params.add(params.set)
       }
 

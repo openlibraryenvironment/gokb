@@ -216,7 +216,8 @@ class TitleInstance extends KBComponent {
   static def oaiConfig = [
     id:'titles',
     textDescription:'Title repository for GOKb',
-    query:" from TitleInstance as o where o.status.value != 'Expected'",
+    query:" from TitleInstance as o ",
+    statusFilter:"where o.status.value != 'Expected'",
     pageSize:20
   ]
 

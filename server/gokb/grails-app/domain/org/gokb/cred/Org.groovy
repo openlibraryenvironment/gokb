@@ -128,7 +128,8 @@ class Org extends KBComponent {
   static def oaiConfig = [
     id:'orgs',
     textDescription:'Organization repository for GOKb',
-    query:" from Org as o where o.status.value != 'Deleted'",
+    query:" from Org as o ",
+    statusFilter:"where o.status.value != 'Deleted'",
     pageSize:10
   ]
 

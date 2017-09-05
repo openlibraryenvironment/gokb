@@ -57,7 +57,8 @@ class Platform extends KBComponent {
   static def oaiConfig = [
     id:'platforms',
     textDescription:'Platform repository for GOKb',
-    query:" from Platform as o where o.status.value != 'Deleted'"
+    query:" from Platform as o ",
+    statusFilter:"where o.status.value != 'Deleted'"
   ]
 
   /**
