@@ -238,7 +238,7 @@ select tipp.id,
   static def oaiConfig = [
     id:'packages',
     textDescription:'Package repository for GOKb',
-    query:" from Package as o",
+    query:" from Package as o where o.status.value != 'Expected'",
     pageSize:3
   ]
 
