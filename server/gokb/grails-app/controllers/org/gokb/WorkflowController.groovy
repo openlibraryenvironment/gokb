@@ -27,6 +27,7 @@ class WorkflowController {
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
     'method::RRClose':[actionType:'simple' ],
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
+    'title::merge':[actionType:'workflow', view:'titleMerge' ],
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
@@ -245,6 +246,133 @@ class WorkflowController {
     //   redirect(controller:'home', action:'index');
 
     redirect(action:'editTitleChange',id:new_activity.id)
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def startTitleMerge() {
+
+    log.debug("startTitleMerge(${params})");
+
+    def user = springSecurityService.currentUser
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
+    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleMerge').save()
+    def first_title = null
+    
+    def result = [:]
+    result.oldTitles = []
+    
+    def activity_data = [:]
+    
+    def oldIds = params.list('beforeTitles')
+    
+    activity_data.oldTitles = params.list('beforeTitles')
+    activity_data.newTitle = params.newTitle
+    
+    def sw = new StringWriter();
+    
+    log.debug("Titles to replace: ${oldIds}");
+    
+    oldIds.each { oid ->
+      if ( first_title == null ) {
+        first_title = oid
+      }
+      else {
+        sw.write(', ');
+      }
+      
+      def title_obj = genericOIDService.resolveOID2(oid)
+      
+      sw.write(title_obj.name);
+      
+      result.oldTitles.add(title_obj)
+    }
+    
+    result.newTitle = genericOIDService.resolveOID2(params.newTitle)
+    
+    def builder = new JsonBuilder()
+    builder(activity_data)
+
+    def new_activity = new Activity(
+                                    activityName:"Title Merge ${sw.toString()}",
+                                    activityData:builder.toString(),
+                                    owner:user,
+                                    status:active_status,
+                                    type:transfer_type).save()
+
+    log.debug("redirect to edit activity (Really title) ${builder.toString()}");
+
+    // if ( first_title )
+    //   redirect(controller:'resource', action:'show', id:first_title);
+    // else
+    //   redirect(controller:'home', action:'index');
+
+    redirect(action:'editTitleMerge',id:new_activity.id)
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def editTitleMerge() {
+    log.debug("editTitleTransfer() - ${params}");
+    
+    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def activity_record = Activity.get(params.id)
+    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
+    def merge_params = [:]
+
+    request.getParameterNames().each { pn ->
+      merge_params[pn] = getParameter(pn)
+    }
+
+    if ( params.update ) {
+      log.debug("Update...");
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+    }
+    else if ( params.process ) {
+      log.debug("Process...");
+
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+
+      processTitleMerge(activity_record, activity_data, merge_params);
+      if ( activity_data.newTitle?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:activity_data.newTitle);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+    else if ( params.abandon ) {
+      log.debug("**ABANDON**...");
+      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
+      activity_record.save()
+      if ( activity_data.oldTitles?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:activity_data.oldTitles[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+
+    log.debug("Processing...");
+
+    def result = [:]
+    result.oldTitles = []
+    result.newTitle = genericOIDService.resolveOID2(activity_data.newTitle)
+    result.d = activity_record
+
+    activity_data.oldTitles.each { oid ->
+      result.oldTitles.add(genericOIDService.resolveOID2(oid))
+    }
+
+    result.id = params.id
+
+    result
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -783,6 +911,50 @@ class WorkflowController {
     }
 
 
+    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
+    activity_record.save()
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def processTitleMerge(activity_record, activity_data, merge_params) {
+    log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
+    
+    def new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
+    
+    activity_data.oldTitles.each { oid ->
+      def old_ti = genericOIDService.resolveOID2(oid)
+      
+      if( merge_params['merge_ids'] ){
+        log.debug("Looking for new IDs to add")
+        old_ti.ids.each { old_id ->
+          if ( !newTitle.ids.contains(old_id) ){
+            newTitle.ids.add(old_id)
+          }else{
+            log.debug("Identifier ${old_id} is already connected to ${newTitle}..")
+          }
+        }
+      }
+      
+      if( merge_params['merge_vn'] ){ 
+        old_title.variantNames.each{ old_vn ->
+          if ( !newTitle.variantNames.contains(old_vn) ){
+            newTitle.variantNames.add(old_vn)
+          }
+        }
+      }
+      
+      if( merge_params['merge_pb'] ){ 
+        old_title.publisher.each{ old_pb ->
+          if ( !newTitle.publisher.contains(old_pb) ){
+            newTitle.publisher.add(old_pb)
+          }
+        }
+      }
+      
+      if( merge_params['merge_he'] ){ 
+      }
+    }
+    
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
     activity_record.save()
   }
