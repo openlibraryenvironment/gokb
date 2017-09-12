@@ -32,7 +32,7 @@
               <th>Identifiers <span class="pull-right">(Include <input style="vertical-align:text-top;" type="checkbox" name="merge_ids" checked="checked" />)</span></th>
               <th>Alternate Names <span class="pull-right">(Include <input style="vertical-align:text-top;" type="checkbox" name="merge_vn" checked="checked" />)</span></th>
               <th>Publishers <span class="pull-right">(Include <input style="vertical-align:text-top;" type="checkbox" name="merge_pubs" checked="checked" />)</span></th>
-              <th>History <span class="pull-right">(Include <input style="vertical-align:text-top;" type="checkbox" name="merge_he" />)</span></th>
+              <th>History <span class="pull-right">(Include <input style="vertical-align:text-top;" type="checkbox" name="merge_he" disabled />)</span></th>
             </tr>
             <tr>
               <th colspan="4">TIPPs (Include <input style="vertical-align:text-top;" type="checkbox" name="merge_tipps" checked="checked" />)</th>
