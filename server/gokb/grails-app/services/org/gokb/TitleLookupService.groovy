@@ -335,7 +335,7 @@ class TitleLookupService {
             the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
           }
           else {
-            if ( matches[0].name.equals(metadata.title) ) { 
+            if ( matches[0].name.equals(metadata.title) || matches[0].normname?.equals(KBComponent.generateNormname(metadata.title)) ) { 
               // Perfect match - do nothing
               the_title = matches[0]
 
@@ -443,7 +443,7 @@ class TitleLookupService {
             def matched_with_name = []
 
             all_matched.each { mti ->
-              if ( mti.name.equals(metadata.title) ) {
+              if ( mti.name.equals(metadata.title) || mti.normname?.equals(KBComponent.generateNormname(metadata.title)) ) {
                 matched_with_name.add(mti)
               }
             }
