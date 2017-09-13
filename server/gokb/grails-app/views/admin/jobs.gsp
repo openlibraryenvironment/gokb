@@ -15,6 +15,7 @@
         <th>Description</th>
         <th>Has Started</th>
         <th>Start Time</th>
+        <th>Has Ended</th>
         <th>End Time</th>
         <th>Progress%</th>
       </tr>
@@ -26,11 +27,12 @@
           <td>${v.description}</td>
           <td>${v.begun}</td>
           <td>${v.startTime}</td>
+          <td>${v.isDone()}</td>
           <td>${v.endTime}</td>
           <td>${v.progress}</td>
         </tr>
         <tr>
-          <td colspan="5">
+          <td colspan="6">
             messages: 
             <ul>
               <g:each in="${v.messages}" var="m">

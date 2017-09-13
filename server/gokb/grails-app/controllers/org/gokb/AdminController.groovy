@@ -23,7 +23,7 @@ class AdminController {
 
   def tidyOrgData() {
 
-    concurrencyManagerService.createJob {
+    Job j = concurrencyManagerService.createJob {
     
       // Cleanup our problem orgs.
       cleanupService.tidyMissnamedPublishers()
@@ -86,6 +86,9 @@ class AdminController {
         }
       }
     }.startOrQueue()
+    
+    j.description = "Tidy Orgs Data"
+    
     render(view: "logViewer", model: logViewer())
   }
 
@@ -97,7 +100,7 @@ class AdminController {
 
   def reSummariseLicenses() {
 
-    concurrencyManagerService.createJob {
+    Job j = concurrencyManagerService.createJob {
       DataFile.executeQuery("select d from DataFile as d where d.doctype=?",['http://www.editeur.org/onix-pl:PublicationsLicenseExpression']).each { df ->
         log.debug(df);
         df.incomingCombos.each { ic ->
@@ -124,6 +127,10 @@ class AdminController {
         }
       }
     }.startOrQueue()
+    
+    j.description = "Regenerate License Summaries"
+    j.startTime = new Date()
+    
     render(view: "logViewer", model: logViewer())
   }
 
@@ -168,25 +175,38 @@ class AdminController {
 
   def updateTextIndexes() {
     log.debug("Call to update indexe");
-    concurrencyManagerService.createJob {
+    
+    Job j = concurrencyManagerService.createJob {
       FTUpdateService.updateFTIndexes();
     }.startOrQueue()
+    
+    j.description = "Update Free Text Indexes"
+    j.startTime = new Date()
+    
     render(view: "logViewer", model: logViewer())
   }
 
   def resetTextIndexes() {
     log.debug("Call to update indexe")
-    concurrencyManagerService.createJob {
+    Job j = concurrencyManagerService.createJob {
       FTUpdateService.clearDownAndInitES()
     }.startOrQueue()
+    
+    j.description = "Reset Free Text Indexes"
+    j.startTime = new Date()
+    
     render(view: "logViewer", model: logViewer())
   }
 
   def masterListUpdate() {
     log.debug("Force master list update")
-    concurrencyManagerService.createJob {
+    Job j = concurrencyManagerService.createJob {
       packageService.updateAllMasters(true)
     }.startOrQueue()
+    
+    j.description = "Master List Update"
+    j.startTime = new Date()
+    
     render(view: "logViewer", model: logViewer())
   }
 
@@ -200,17 +220,25 @@ class AdminController {
 
     // Run the task in the background so we can show the logs in this thread without having to wait
     // for the task to finish.
-    concurrencyManagerService.createJob {
+    Job j = concurrencyManagerService.createJob {
       refineService.buildExtension()
     }.startOrQueue()
+    
+    j.description = "Build Extension"
+    j.startTime = new Date()
+    
     render(view: "logViewer", model: logViewer())
   }
 
   def triggerEnrichments() {
-    concurrencyManagerService.createJob {
+    Job j = concurrencyManagerService.createJob {
       log.debug("manually trigger enrichment service");
       titleAugmentService.doEnrichment();
     }.startOrQueue()
+    
+    j.description = "Enrichment Service"
+    j.startTime = new Date()
+    
     render(view: "logViewer", model: logViewer())
   }
 
@@ -236,7 +264,12 @@ class AdminController {
     Job j = concurrencyManagerService.createJob {
       cleanupService.housekeeping()
     }.startOrQueue()
+    
+    j.description = "Housekeeping"
+    j.startTime = new Date()
+    
     log.debug "Triggering housekeeping task. Started job #${j.id}"
+    
     render(view: "logViewer", model: logViewer())
   }
   
@@ -244,7 +277,12 @@ class AdminController {
     Job j = concurrencyManagerService.createJob {
       cleanupService.expungeDeletedComponents()
     }.startOrQueue()
+    
     log.debug "Triggering cleanup task. Started job #${j.id}"
+    
+    j.description = "Cleanup"
+    j.startTime = new Date()
+    
     render(view: "logViewer", model: logViewer())
   }
 
