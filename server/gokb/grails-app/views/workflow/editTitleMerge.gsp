@@ -21,7 +21,9 @@
           <div><span class="glyphicon glyphicon-ok"></span> Item is already connected to the new title</div>
           <div><span class="glyphicon glyphicon-plus" style="color:green;"></span> Item will be added to the new title, if the item type is <b>included</b></div>
         </div>
-          <div style="display:inline-block;font-size:1.1em;padding:8px;margin:10px 0;background-color:#fcf8e3;border:1px solid;border-color:#faebcc;">Please note: Once processed, the status of the replaced titles and their TIPPs will be set to <b>Deleted</b>!</div>
+          <div style="display:inline-block;font-size:1.1em;padding:8px;margin:10px 0;background-color:#fcf8e3;border:1px solid;border-color:#faebcc;">
+            Please note: Once processed, the status of the replaced titles and their TIPPs will be set to <b>Deleted</b> and all of their open ReviewRequests will be closed!
+          </div>
         <table class="table table-bordered no-select-all">
           <thead>
             <tr>
@@ -121,7 +123,10 @@
                     <table class="table table-bordered no-select-all">
                       <thead>
                         <tr>
-                          <th rowspan="2" style="vertical-align:top;text-align:center">TIPP-ID</th>
+                          <th rowspan="2" style="vertical-align:top;text-align:center">
+                            <div>TIPP-ID</div>
+                            <div style="margin-top:1.4em;">Status</div>
+                          </th>
                           <th>Package</th>
                           <th>Platform</th>
                           <th>Start Date</th>
@@ -140,12 +145,12 @@
                           <tr>
                             <td rowspan="2" style="text-align:center">
                               <div>${tipp.id}</div>
-                              <div style="margin-top:0.5em;">
-                                <g:if test="${tipp in newTitle.tipps}">
-                                  <span class="glyphicon glyphicon-ok"></span>
+                              <div style="margin-top:1.4em;font-weight:bold;">
+                                <g:if test="${tipp.status?.value == 'Current'}">
+                                  <span style="color:green;">${tipp.status.value}</span>
                                 </g:if>
                                 <g:else>
-                                  <span class="glyphicon glyphicon-plus" style="color:green;"></span>
+                                  <span>${tipp.status?.value ?: 'Status Unknown'}</span>
                                 </g:else>
                               </div>
                             </td>
@@ -216,11 +221,13 @@
             </tr>
             <tr>
               <td colspan="4">
-                <g:each in="${newTitle.tipps}" var="tipp">
                   <table class="table table-bordered no-select-all">
                     <thead>
                       <tr>
-                        <th rowspan="2" style="vertical-align:top;text-align:center;">TIPP-ID</th>
+                        <th rowspan="2" style="vertical-align:top;text-align:center;">
+                            <div>TIPP-ID</div>
+                            <div style="margin-top:1.4em;">Status</div>
+                        </th>
                         <th>Package</th>
                         <th>Platform</th>
                         <th>Start Date</th>
@@ -235,23 +242,35 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td rowspan="2" style="text-align:center;">${tipp.id}</td>
-                        <td> ${tipp.pkg.name} </td>
-                        <td> ${tipp.hostPlatform.name} </td>
-                        <td> ${tipp.startDate} </td>
-                        <td> ${tipp.startVolume} </td>
-                        <td> ${tipp.startIssue} </td>
-                        <td> ${tipp.endDate} </td>
-                        <td> ${tipp.endVolume} </td>
-                        <td> ${tipp.endIssue} </td>
-                      </tr>
-                      <tr>
-                        <td colspan="8"> ${tipp.url ?: 'TIPP URL not present'} </td>
-                      </tr>
+                      <g:each in="${newTitle.tipps}" var="tipp">
+                          <tr>
+                            <td rowspan="2" style="text-align:center;">
+                              <div>${tipp.id}</div>
+                              <div style="margin-top:1.4em;font-weight:bold;">
+                                <g:if test="${tipp.status?.value == 'Current'}">
+                                  <span style="color:green;">${tipp.status.value}</span>
+                                </g:if>
+                                <g:else>
+                                  <span>${tipp.status?.value ?: 'Status Unknown'}</span>
+                                </g:else>
+                              </div>
+                            </td>
+                            
+                            <td> ${tipp.pkg.name} </td>
+                            <td> ${tipp.hostPlatform.name} </td>
+                            <td> ${tipp.startDate} </td>
+                            <td> ${tipp.startVolume} </td>
+                            <td> ${tipp.startIssue} </td>
+                            <td> ${tipp.endDate} </td>
+                            <td> ${tipp.endVolume} </td>
+                            <td> ${tipp.endIssue} </td>
+                          </tr>
+                          <tr>
+                            <td colspan="8"> ${tipp.url ?: 'TIPP URL not present'} </td>
+                          </tr>
+                      </g:each>
                     </tbody>
                   </table>
-                </g:each>
               </td>
             </tr>
           </tbody>

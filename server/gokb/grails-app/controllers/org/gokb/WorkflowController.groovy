@@ -312,7 +312,7 @@ class WorkflowController {
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editTitleMerge() {
-    log.debug("editTitleTransfer() - ${params}");
+    log.debug("editTitleMerge() - ${params}");
     
     // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
@@ -321,7 +321,9 @@ class WorkflowController {
     def merge_params = [:]
 
     request.getParameterNames().each { pn ->
-      merge_params[pn] = getParameter(pn)
+      if( pn.startsWith("merge_") ){
+        merge_params[pn] = request.getParameter(pn)
+      }
     }
 
     if ( params.update ) {
@@ -917,36 +919,47 @@ class WorkflowController {
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleMerge(activity_record, activity_data, merge_params) {
-    log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
+    log.debug("processTitleMerge ${params}\n\n ${activity_data}");
     
     def new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
+    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+    def rr_status_current = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open')
     
     activity_data.oldTitles.each { oid ->
       def old_ti = genericOIDService.resolveOID2(oid)
       
+      if( !old_ti.name.equals(new_ti.name) ) {
+        new_ti.addVariantTitle(old_ti.name)
+      }
+      
       if( merge_params['merge_ids'] ){
         log.debug("Looking for new IDs to add")
+        def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+        
         old_ti.ids.each { old_id ->
-          if ( !newTitle.ids.contains(old_id) ){
-            newTitle.ids.add(old_id)
+        
+          def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[old_id.id,new_ti.id,id_combo_type.id]);
+          
+          if ( !dupes || dupes.size() == 0 ){
+            log.debug("Adding Identifier ${old_id} to ${new_ti}")
+            Combo new_id = new Combo(toComponent:old_id, fromComponent:new_ti, type:id_combo_type).save(flush:true, failOnError:true);
           }else{
-            log.debug("Identifier ${old_id} is already connected to ${newTitle}..")
+            log.debug("Identifier ${old_id} is already connected to ${new_ti}..")
           }
         }
       }
       
       if( merge_params['merge_vn'] ){ 
-        old_title.variantNames.each{ old_vn ->
-          if ( !newTitle.variantNames.contains(old_vn) ){
-            newTitle.variantNames.add(old_vn)
-          }
+        old_ti.variantNames.each{ old_vn ->
+          new_ti.addVariantTitle(old_vn.variantName)
         }
       }
       
       if( merge_params['merge_pb'] ){ 
-        old_title.publisher.each{ old_pb ->
-          if ( !newTitle.publisher.contains(old_pb) ){
-            newTitle.publisher.add(old_pb)
+        old_ti.publisher.each{ old_pb ->
+          if ( !new_ti.publisher.contains(old_pb) ){
+            new_ti.publisher.add(old_pb)
           }
         }
       }
@@ -954,6 +967,46 @@ class WorkflowController {
       if( merge_params['merge_he'] ){ 
         
       }
+      
+      old_ti.tipps.each { old_tipp ->
+        
+        if( merge_params['merge_tipps'] && old_tipp.status == status_current ){
+          def dupe = false
+          
+          new_ti.tipps.each { new_tipp ->
+            if ( new_tipp.pkg == old_tipp.pkg && new_tipp.hostPlatform == old_tipp.hostPlatform && new_tipp.url == old_tipp.url ) {
+              dupe = true
+            }
+          }
+          
+          if ( !dupe ) {
+            def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
+                                    pkg:old_tipp.pkg,
+                                    hostPlatform:old_tipp.hostPlatform,
+                                    title:new_ti,
+                                    startDate:old_tipp.startDate,
+                                    startVolume:old_tipp.startVolume,
+                                    startIssue:old_tipp.startIssue,
+                                    endDate:old_tipp.endDate,
+                                    endVolume:old_tipp.endVolume,
+                                    endIssue:old_tipp.endIssue,
+                                    url:old_tipp.url,
+                                    ]).save()
+            log.debug("Added new TIPP ${new_tipp} to TI ${new_ti}")
+          }
+        }
+        old_tipp.status = status_deleted
+      }
+      old_ti.reviewRequests.each { rr ->
+        def rr_context = [:]
+        rr_context['user'] = request.user
+        
+        if ( rr.status == rr_status_current ) {
+          rr.RRClose(rr_context)
+        }
+      }
+      
+      old_ti.status = status_deleted
     }
     
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
