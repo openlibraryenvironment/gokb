@@ -921,10 +921,13 @@ class WorkflowController {
   def processTitleMerge(activity_record, activity_data, merge_params) {
     log.debug("processTitleMerge ${params}\n\n ${activity_data}");
     
-    def new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def rr_status_current = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open')
+    
+    def new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
+    def new_he = new_ti.getTitleHistory()
     
     activity_data.oldTitles.each { oid ->
       def old_ti = genericOIDService.resolveOID2(oid)
@@ -964,9 +967,72 @@ class WorkflowController {
         }
       }
       
-      if( merge_params['merge_he'] ){ 
+      if( merge_params['merge_he'] ){
+        def ti_history = old_ti.getTitleHistory()
         
+        ti_history.each { ohe -> 
+        
+          def new_from = []
+          def new_to = []
+          def dupe = false
+        
+          if ( ohe.to.contains(old_ti) ) {
+            
+            new_to = ohe.to.removeIf { it == old_ti }.add(new_ti)
+            
+            ohe.from.each { hep ->
+              def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)",[fromPart:hep,toPart:new_ti])
+              
+              if (he_match) {
+                dupe = true
+              } 
+            }
+            
+            new_from = ohe.from
+          }
+          else if ( ohe.from.contains(old_ti) ) {
+          
+            new_from = ohe.from.removeIf { it == old_ti }.add(new_ti)
+          
+            ohe.from.each { hep ->
+              def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)",[fromPart:new_ti,toPart:hep])
+              
+              if (he_match) {
+                dupe = true
+              } 
+            }
+            
+            new_to = ohe.to
+          }
+          
+          if( !dupe ) {
+            def he = new ComponentHistoryEvent()
+            
+            if ( ohe.date ) {
+              he.eventDate = sdf.parse(ohe.date);
+            }
+            
+            he.save(flush:true, failOnError:true);
+            
+            new_from.each {
+              def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
+              hep.save(flush:true, failOnError:true);
+            }
+            
+            new_to.each {
+              def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
+              hep.save(flush:true, failOnError:true);
+            }
+          }
+        }
       }
+      
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:old_ti])
+
+      events_to_delete.each {
+        it.delete(flush:true)
+      }
+
       
       old_ti.tipps.each { old_tipp ->
         

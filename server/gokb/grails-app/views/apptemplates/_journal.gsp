@@ -2,9 +2,10 @@
   <dt>
     <g:annotatedLabel owner="${d}" property="name">Title</g:annotatedLabel>
   </dt>
-  <dd style="max-width:60%">
-    ${d.name}
-    (Modify title through variants below)
+  <dd style="max-width:55%">
+    <div>
+      <span>${d.name}</span> <span style="white-space:nowrap;">(Modify title through variants below)</span>
+    </div>
   </dd>
 
   <dt>

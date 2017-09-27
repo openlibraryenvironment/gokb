@@ -422,7 +422,7 @@ class TitleLookupService {
             ReviewRequest.raise(
               the_title,
               "New TI created.",
-              "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
+              "Multiple TitleInstances ${matches} were matched on one identifier, but none matched for all given IDs.",
               user,
               project
             )

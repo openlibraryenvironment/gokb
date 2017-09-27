@@ -39,7 +39,7 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
-    <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps?.size()}</span> </a></li>
+    <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps?.findAll{ it.status.value == 'Current'}.size()}</span> </a></li>
     <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size()}</span> </a></li>
     <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
   </ul>
