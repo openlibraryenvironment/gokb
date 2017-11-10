@@ -67,7 +67,7 @@
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li><a href="#titledetails" data-toggle="tab">TIPPs <span class="badge badge-warning"> ${d.tipps?.size()} </span></a></li>
+      <li><a href="#titledetails" data-toggle="tab">TIPPs <span class="badge badge-warning"> ${d.tipps?.findAll{ it.status.value == 'Current'}.size()} </span></a></li>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size()} </span></a></li>      
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
         <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
@@ -95,9 +95,14 @@
       </div>
 
       <div class="tab-pane" id="titledetails">
-        <g:link class="display-inline" controller="search" action="index"
-          params="[qbe:'g:3tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat']]"
-          id="">Titles in this package</g:link>
+        <g:if test="${params.controller != 'create'}">
+          <g:link class="display-inline" controller="search" action="index"
+            params="[qbe:'g:3tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat', 'qp_status']]"
+            id="">Titles in this package</g:link>
+        </g:if>
+        <g:else>
+          TIPPs can be added after the creation process has been finished.
+        </g:else>
 
         <g:if test="${ editable }">
           <g:form controller="ajaxSupport" action="addToCollection"

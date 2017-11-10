@@ -13,17 +13,17 @@ class CuratoryGroup extends KBComponent {
   static mappedBy = [users: "curatoryGroups", ]
   
   static manyByCombo = [
-  	licenses 	: License,
-  	packages  : Package,
-  	platforms : Platform,
-  	offices  	: Office,
+  	licenses: License,
+  	packages: Package,
+  	platforms: Platform,
+  	offices: Office,
   ]
   
   static mappedByCombo = [
-  	licenses 	: 'curatoryGroups',
-  	packages  : 'curatoryGroups',
-  	platforms : 'curatoryGroups',
-  	offices  	: 'curatoryGroups',
+  	licenses: 'curatoryGroups',
+  	packages: 'curatoryGroups',
+  	platforms: 'curatoryGroups',
+  	offices: 'curatoryGroups',
   ]
 
   static constraints = {
@@ -35,8 +35,8 @@ class CuratoryGroup extends KBComponent {
     def ql = null;
     ql = CuratoryGroup.findAllByNameIlike("${params.q}%",params)
 
-    if ( ql ) {
-      ql.each { t ->
+    ql.each { t ->
+      if( !params.filter1 || t.status.value == params.filter1 ){
         result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
       }
     }

@@ -343,7 +343,7 @@ class TitleLookupService {
                 ReviewRequest.raise(
                   matches[0],
                   "Identifier mismatch.",
-                  "Titles match, but ingest identifiers ${id_mismatches} differ from existing ones in the same namespaces.",
+                  "Title ${matches[0]} matched, but ingest identifiers ${id_mismatches} differ from existing ones in the same namespaces.",
                   user,
                   project
                 )
@@ -422,7 +422,7 @@ class TitleLookupService {
             ReviewRequest.raise(
               the_title,
               "New TI created.",
-              "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
+              "Multiple TitleInstances ${matches} were matched on one identifier, but none matched for all given IDs.",
               user,
               project
             )
@@ -483,31 +483,25 @@ class TitleLookupService {
 
         if ( !dupes || dupes.size() == 0) {
 
-          log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
+//           log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
 
           // Double check the identifier we are about to add does not already exist attached to another item in the system
           // Combo.Type : KBComponent.Ids
 
-          def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
+//           def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
 
-          if ( existing_identifier.size() > 0 ) {
-            ReviewRequest.raise(
-              the_title,
-              "Identifier not unique",
-              "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (component ${existing_identifier[0].fromComponent})",
-              user,
-              project
-            )
-            // We have to save the title as this modifies the revreq collections
-            log.debug("Adding identifier to title");
-            Combo new_id = new Combo(toComponent:it, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
-          }
-          else {
-            log.debug("Adding identifier to title");
-            Combo new_id = new Combo(toComponent:it, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
-            // the_title.ids.add(it);
-            // the_title.save(flush:true, failOnError:true);
-          }
+//           if ( existing_identifier.size() > 0 ) {
+//             ReviewRequest.raise(
+//               the_title,
+//               "Identifier not unique",
+//               "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (component ${existing_identifier[0].fromComponent})",
+//               user,
+//               project
+//             )
+//           }
+          
+          log.debug("Adding new identifier ${it} to title ${the_title}");
+          Combo new_id = new Combo(toComponent:it, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
         }
         else {
           log.debug("Identifier ${it} is already connected to the title!");

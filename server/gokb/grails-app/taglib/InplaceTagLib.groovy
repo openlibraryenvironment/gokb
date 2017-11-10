@@ -297,7 +297,7 @@ class InplaceTagLib {
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
 
     def follow_link = null;
-    if ( owner != null && owner[attrs.field] != null ) {
+    if ( owner != null && owner[attrs.field] != null && grailsApplication.config.globalDisplayTemplates[owner.class.name]) {
       follow_link = createLink(controller:'resource', action: 'show')
       follow_link = follow_link + '/' + owner[attrs.field].class.name + ':' + owner[attrs.field].id;
     }
@@ -314,8 +314,10 @@ class InplaceTagLib {
     out << "data-type=\"select2\" data-name=\"${attrs.field}\" data-url=\"${update_link}\" >"
     out << body()
     out << "</a>";
-
-    out << ' &nbsp; <a href="'+follow_link+'">Follow Link</a>'
+    
+    if( follow_link ){
+      out << ' &nbsp; <a href="'+follow_link+'">Follow Link</a>'
+    }
   }
 
   def manyToOneReferenceTypedownOld = { attrs, body ->

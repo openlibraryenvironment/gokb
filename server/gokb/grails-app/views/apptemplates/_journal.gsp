@@ -2,9 +2,10 @@
   <dt>
     <g:annotatedLabel owner="${d}" property="name">Title</g:annotatedLabel>
   </dt>
-  <dd style="max-width:60%">
-    ${d.name}
-    (Modify title through variants below)
+  <dd style="max-width:55%">
+    <div>
+      <span>${d.name}</span> <span style="white-space:nowrap;">(Modify title through variants below)</span>
+    </div>
   </dd>
 
   <dt>
@@ -259,10 +260,12 @@
       <dt>
         <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
       </dt>
-      <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers" params="${params.findAll{k, v -> k != 'publisher_status'}}">
+      <div style="margin:5px 0px;">
+        <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers" params="${params.findAll{k, v -> k != 'publisher_status'}}">
 
-       Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
-      </g:form>
+        Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
+        </g:form>
+      </div>
 
      <dd>
         <table class="table table-striped table-bordered">

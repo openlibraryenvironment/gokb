@@ -27,6 +27,7 @@ class WorkflowController {
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
     'method::RRClose':[actionType:'simple' ],
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
+    'title::merge':[actionType:'workflow', view:'titleMerge' ],
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
@@ -245,6 +246,135 @@ class WorkflowController {
     //   redirect(controller:'home', action:'index');
 
     redirect(action:'editTitleChange',id:new_activity.id)
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def startTitleMerge() {
+
+    log.debug("startTitleMerge(${params})");
+
+    def user = springSecurityService.currentUser
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
+    def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleMerge').save()
+    def first_title = null
+    
+    def result = [:]
+    result.oldTitles = []
+    
+    def activity_data = [:]
+    
+    def oldIds = params.list('beforeTitles')
+    
+    activity_data.oldTitles = params.list('beforeTitles')
+    activity_data.newTitle = params.newTitle
+    
+    def sw = new StringWriter();
+    
+    log.debug("Titles to replace: ${oldIds}");
+    
+    oldIds.each { oid ->
+      if ( first_title == null ) {
+        first_title = oid
+      }
+      else {
+        sw.write(', ');
+      }
+      
+      def title_obj = genericOIDService.resolveOID2(oid)
+      
+      sw.write(title_obj.name);
+      
+      result.oldTitles.add(title_obj)
+    }
+    
+    result.newTitle = genericOIDService.resolveOID2(params.newTitle)
+    
+    def builder = new JsonBuilder()
+    builder(activity_data)
+
+    def new_activity = new Activity(
+                                    activityName:"Title Merge ${sw.toString()}",
+                                    activityData:builder.toString(),
+                                    owner:user,
+                                    status:active_status,
+                                    type:transfer_type).save()
+
+    log.debug("redirect to edit activity (Really title) ${builder.toString()}");
+
+    // if ( first_title )
+    //   redirect(controller:'resource', action:'show', id:first_title);
+    // else
+    //   redirect(controller:'home', action:'index');
+
+    redirect(action:'editTitleMerge',id:new_activity.id)
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def editTitleMerge() {
+    log.debug("editTitleMerge() - ${params}");
+    
+    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def activity_record = Activity.get(params.id)
+    def activity_data = new JsonSlurper().parseText(activity_record.activityData)
+    def merge_params = [:]
+
+    request.getParameterNames().each { pn ->
+      if( pn.startsWith("merge_") ){
+        merge_params[pn] = request.getParameter(pn)
+      }
+    }
+
+    if ( params.update ) {
+      log.debug("Update...");
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+    }
+    else if ( params.process ) {
+      log.debug("Process...");
+
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
+
+      processTitleMerge(activity_record, activity_data, merge_params);
+      if ( activity_data.newTitle?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:activity_data.newTitle);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+    else if ( params.abandon ) {
+      log.debug("**ABANDON**...");
+      activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
+      activity_record.save()
+      if ( activity_data.oldTitles?.size() > 0 ) {
+        redirect(controller:'resource',action:'show', id:activity_data.oldTitles[0]);
+      }
+      else {
+        redirect(controller:'home', action:'index');
+      }
+    }
+
+    log.debug("Processing...");
+
+    def result = [:]
+    result.oldTitles = []
+    result.newTitle = genericOIDService.resolveOID2(activity_data.newTitle)
+    result.d = activity_record
+
+    activity_data.oldTitles.each { oid ->
+      result.oldTitles.add(genericOIDService.resolveOID2(oid))
+    }
+
+    result.id = params.id
+
+    result
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -783,6 +913,168 @@ class WorkflowController {
     }
 
 
+    activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
+    activity_record.save()
+  }
+  
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def processTitleMerge(activity_record, activity_data, merge_params) {
+    log.debug("processTitleMerge ${params}\n\n ${activity_data}");
+    
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
+    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+    def rr_status_current = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open')
+    
+    def new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
+    def new_he = new_ti.getTitleHistory()
+    
+    activity_data.oldTitles.each { oid ->
+      def old_ti = genericOIDService.resolveOID2(oid)
+      
+      if( !old_ti.name.equals(new_ti.name) ) {
+        new_ti.addVariantTitle(old_ti.name)
+      }
+      
+      if( merge_params['merge_ids'] ){
+        log.debug("Looking for new IDs to add")
+        def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+        
+        old_ti.ids.each { old_id ->
+        
+          def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[old_id.id,new_ti.id,id_combo_type.id]);
+          
+          if ( !dupes || dupes.size() == 0 ){
+            log.debug("Adding Identifier ${old_id} to ${new_ti}")
+            Combo new_id = new Combo(toComponent:old_id, fromComponent:new_ti, type:id_combo_type).save(flush:true, failOnError:true);
+          }else{
+            log.debug("Identifier ${old_id} is already connected to ${new_ti}..")
+          }
+        }
+      }
+      
+      if( merge_params['merge_vn'] ){ 
+        old_ti.variantNames.each{ old_vn ->
+          new_ti.addVariantTitle(old_vn.variantName)
+        }
+      }
+      
+      if( merge_params['merge_pb'] ){ 
+        old_ti.publisher.each{ old_pb ->
+          if ( !new_ti.publisher.contains(old_pb) ){
+            new_ti.publisher.add(old_pb)
+          }
+        }
+      }
+      
+      if( merge_params['merge_he'] ){
+        def ti_history = old_ti.getTitleHistory()
+        
+        ti_history.each { ohe -> 
+        
+          def new_from = []
+          def new_to = []
+          def dupe = false
+        
+          if ( ohe.to.contains(old_ti) ) {
+            
+            new_to = ohe.to.removeIf { it == old_ti }.add(new_ti)
+            
+            ohe.from.each { hep ->
+              def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)",[fromPart:hep,toPart:new_ti])
+              
+              if (he_match) {
+                dupe = true
+              } 
+            }
+            
+            new_from = ohe.from
+          }
+          else if ( ohe.from.contains(old_ti) ) {
+          
+            new_from = ohe.from.removeIf { it == old_ti }.add(new_ti)
+          
+            ohe.from.each { hep ->
+              def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)",[fromPart:new_ti,toPart:hep])
+              
+              if (he_match) {
+                dupe = true
+              } 
+            }
+            
+            new_to = ohe.to
+          }
+          
+          if( !dupe ) {
+            def he = new ComponentHistoryEvent()
+            
+            if ( ohe.date ) {
+              he.eventDate = sdf.parse(ohe.date);
+            }
+            
+            he.save(flush:true, failOnError:true);
+            
+            new_from.each {
+              def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
+              hep.save(flush:true, failOnError:true);
+            }
+            
+            new_to.each {
+              def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
+              hep.save(flush:true, failOnError:true);
+            }
+          }
+        }
+      }
+      
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:old_ti])
+
+      events_to_delete.each {
+        it.delete(flush:true)
+      }
+
+      
+      old_ti.tipps.each { old_tipp ->
+        
+        if( merge_params['merge_tipps'] && old_tipp.status == status_current ){
+          def dupe = false
+          
+          new_ti.tipps.each { new_tipp ->
+            if ( new_tipp.pkg == old_tipp.pkg && new_tipp.hostPlatform == old_tipp.hostPlatform && new_tipp.url == old_tipp.url ) {
+              dupe = true
+            }
+          }
+          
+          if ( !dupe ) {
+            def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
+                                    pkg:old_tipp.pkg,
+                                    hostPlatform:old_tipp.hostPlatform,
+                                    title:new_ti,
+                                    startDate:old_tipp.startDate,
+                                    startVolume:old_tipp.startVolume,
+                                    startIssue:old_tipp.startIssue,
+                                    endDate:old_tipp.endDate,
+                                    endVolume:old_tipp.endVolume,
+                                    endIssue:old_tipp.endIssue,
+                                    url:old_tipp.url,
+                                    ]).save()
+            log.debug("Added new TIPP ${new_tipp} to TI ${new_ti}")
+          }
+        }
+        old_tipp.status = status_deleted
+      }
+      old_ti.reviewRequests.each { rr ->
+        def rr_context = [:]
+        rr_context['user'] = request.user
+        
+        if ( rr.status == rr_status_current ) {
+          rr.RRClose(rr_context)
+        }
+      }
+      
+      old_ti.status = status_deleted
+    }
+    
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
     activity_record.save()
   }

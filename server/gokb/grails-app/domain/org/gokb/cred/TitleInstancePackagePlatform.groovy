@@ -266,9 +266,9 @@ class TitleInstancePackagePlatform extends KBComponent {
 
         tipp_dto.coverage.each { c ->
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')

@@ -9,6 +9,11 @@
   </head>
   <body>
     <h1 class="page-header">Welcome to GOKb</h1>
+    <g:if test="${params.status == '404'}">
+      <div class="alert alert-danger">
+        The page you requested does not exist!
+      </div>
+    </g:if>
     <cache:block>
       <!-- Full rows -->
       <g:each var="name, widget" in="${widgets}" status="wcount" >

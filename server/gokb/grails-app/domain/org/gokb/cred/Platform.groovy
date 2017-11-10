@@ -251,8 +251,13 @@ class Platform extends KBComponent {
         // skip = true
         def current_platforms = url_candidates.findAll { it.status == status_current }
 
-        if(current_platforms.size() == 1){
+        if (current_platforms.size() == 1){
           result = current_platforms[0]
+          
+          if ( !result.primaryUrl ) {
+            result.primaryUrl = platformDTO.primaryUrl
+            result.save(flush:true,failOnError:true)
+          }
         }else{
           log.debug("Could not decide on a Platform, skipping..")
           skip = true;
@@ -261,7 +266,7 @@ class Platform extends KBComponent {
     }
     if(!result && !skip){
       log.debug("Creating new platform for: ${platformDTO}")
-      result = new Platform(name:platformDTO.name, primaryUrl: (viable_url ? platformDTO.primaryUrl : null )).save(flush:true,failOnError:true)
+      result = new Platform(name:platformDTO.name, normname: KBComponent.generateNormname(platformDTO.name), primaryUrl: (viable_url ? platformDTO.primaryUrl : null )).save(flush:true,failOnError:true)
     }
     result;
   }

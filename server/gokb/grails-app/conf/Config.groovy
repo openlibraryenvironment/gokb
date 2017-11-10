@@ -592,8 +592,8 @@ grails.plugin.springsecurity.filterChain.chainMap = [
 ]
 
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
-  '/admin/**':                ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/file/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/admin/**':                ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'],
+  '/file/**':                 ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'],
   '/monitoring/**':           ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/':                        ['permitAll'],
   '/index':                   ['permitAll'],
@@ -614,7 +614,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/api/checkUpdate':         ['permitAll'],
   '/api/isUp':                ['permitAll'],
   '/api/userData':            ['permitAll'],
-  '/integration/**':          ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/fwk/**':                  ['ROLE_USER'],
   '/user/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/role/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/securityInfo/**':         ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
@@ -965,7 +965,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Type', property:'class.simpleName'],
@@ -1007,7 +1007,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Provider', property:'provider?.name'],
@@ -1038,7 +1038,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -1074,7 +1074,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name',link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -1146,7 +1146,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'ID', property:'id', link:[controller:'resource',action:'show',id:'x.r?.class?.name+\':\'+x.r?.id'],sort:'name' ],
@@ -1265,7 +1265,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -1371,7 +1371,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -1394,7 +1394,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -1439,7 +1439,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -1468,6 +1468,26 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'UserOrganisation':[
+    baseclass:'org.gokb.cred.UserOrganisation',
+    title:'User Organisations',
+    group:'Secondary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Name',
+          qparam:'qp_name',
+          placeholder:'Username',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'username']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'displayName', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+      ]
+    ]
+  ],
   'Sources':[
     baseclass:'org.gokb.cred.Source',
     title:'Source',
@@ -1483,7 +1503,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'ID', property:'id', sort:'id', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
@@ -1698,7 +1718,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
@@ -1732,7 +1752,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
@@ -1757,7 +1777,7 @@ globalSearchTemplates = [
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
-         'qparam':'qp_onlyCurrent', 'default':'off']
+         'qparam':'qp_onlyCurrent', 'default':'on']
       ],
       qbeResults:[
         [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],

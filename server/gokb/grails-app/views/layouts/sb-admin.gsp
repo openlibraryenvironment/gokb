@@ -171,18 +171,18 @@
               <sec:ifAnyGranted roles="ROLE_ADMIN">
                 <li class="${params?.controller == "admin" ? 'active' : ''}"><a href="#"><i class="fa fa-wrench fa-fw"></i> Admin<span class="fa arrow"></span></a>
                   <ul class="nav nav-second-level">
-                    <li><g:link controller="admin" action="tidyOrgData"><i class="fa fa-angle-double-right fa-fw"></i> Tidy Orgs Data</g:link></li>
-                    <li><g:link controller="admin" action="reSummariseLicenses"><i class="fa fa-angle-double-right fa-fw"></i> Regenerate License Summaries</g:link></li>
-                    <li><g:link controller="admin" action="updateTextIndexes"><i class="fa fa-angle-double-right fa-fw"></i> Update Free Text Indexes</g:link></li>
-                    <li><g:link controller="admin" action="resetTextIndexes"><i class="fa fa-angle-double-right fa-fw"></i> Reset Free Text Indexes</g:link></li>
-                    <li><g:link controller="admin" action="masterListUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Force Master List Update</g:link></li>
-                    <li><g:link controller="admin" action="clearBlockCache"><i class="fa fa-angle-double-right fa-fw"></i> Clear Block Cache (eg Stats)</g:link></li>
-                    <li><g:link controller="admin" action="cleanup"><i class="fa fa-angle-double-right fa-fw"></i> Expunge Deleted Records</g:link></li>
-                    <li><g:link controller="admin" action="triggerEnrichments"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
-                    <li><g:link controller="admin" action="buildExtension"><i class="fa fa-angle-double-right fa-fw"></i> Build Refine Extensions</g:link></li>
+                    <li><g:link controller="admin" action="tidyOrgData" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Tidy Orgs Data</g:link></li>
+                    <li><g:link controller="admin" action="reSummariseLicenses" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Regenerate License Summaries</g:link></li>
+                    <li><g:link controller="admin" action="updateTextIndexes" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Update Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="resetTextIndexes" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Reset Free Text Indexes</g:link></li>
+                    <li><g:link controller="admin" action="masterListUpdate" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Force Master List Update</g:link></li>
+                    <li><g:link controller="admin" action="clearBlockCache" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Clear Block Cache (eg Stats)</g:link></li>
+                    <li><g:link controller="admin" action="cleanup" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Expunge Deleted Records</g:link></li>
+                    <li><g:link controller="admin" action="triggerEnrichments" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
+                    <li><g:link controller="admin" action="buildExtension" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Build Refine Extensions</g:link></li>
                     <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
                     <li><g:link controller="admin" action="jobs"><i class="fa fa-angle-double-right fa-fw"></i> Manage Jobs</g:link></li>
-                    <li><g:link controller="admin" action="housekeeping"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li>
+                    <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li>
                     <li><g:link controller="user" action="search"><i class="fa fa-angle-double-right fa-fw"></i> User Management Console</g:link></li>
                     <!--
                     <li><g:link controller="api" action="downloadUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Get Refine Extension</g:link></li>
@@ -225,12 +225,14 @@
 
   </div>
   <!-- /#wrapper -->
+      <g:if test="${!grailsApplication.config.zendesk_disabled}">
 	<asset:script type="text/javascript">
 <!-- Start of gokb Zendesk Widget script -->
 /*<![CDATA[*/window.zEmbed||function(e,t){var n,o,d,i,s,a=[],r=document.createElement("iframe");window.zEmbed=function(){a.push(arguments)},window.zE=window.zE||window.zEmbed,r.src="javascript:false",r.title="",r.role="presentation",(r.frameElement||r).style.cssText="display: none",d=document.getElementsByTagName("script"),d=d[d.length-1],d.parentNode.insertBefore(r,d),i=r.contentWindow,s=i.document;try{o=s}catch(c){n=document.domain,r.src='javascript:var d=document.open();d.domain="'+n+'";void(0);',o=s}o.open()._l=function(){var o=this.createElement("script");n&&(this.domain=n),o.id="js-iframe-async",o.src=e,this.t=+new Date,this.zendeskHost=t,this.zEQueue=a,this.body.appendChild(o)},o.write('<body onload="document._l();">'),o.close()}("https://assets.zendesk.com/embeddable_framework/main.js","gokb.zendesk.com");
 /*]]>*/
 <!-- End of gokb Zendesk Widget script -->
 	</asset:script>
+      </g:if>
 
   <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
     <asset:script type="text/javascript">

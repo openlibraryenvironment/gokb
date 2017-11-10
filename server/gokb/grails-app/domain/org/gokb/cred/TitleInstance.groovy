@@ -103,7 +103,8 @@ class TitleInstance extends KBComponent {
     [ [code:'method::deleteSoft', label:'Delete'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
-      // [code:'title::reconcile', label:'Title Reconcile']
+      [code:'title::merge', label:'Title Merge']
+//       [code:'title::reconcile', label:'Title Reconcile']
     ]
   }
 

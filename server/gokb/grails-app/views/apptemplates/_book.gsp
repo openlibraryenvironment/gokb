@@ -2,15 +2,16 @@
   <dt>
     <g:annotatedLabel owner="${d}" property="name">Title</g:annotatedLabel>
   </dt>
-  <dd>
-    ${d.name}
-    (Modify title through variants below)
+  <dd style="max-width:55%">
+    <div>
+      <span>${d.name}</span> <span style="white-space:nowrap;">(Modify title through variants below)</span>
+    </div>
   </dd>
 
   <dt>
     <g:annotatedLabel owner="${d}" property="status">Work</g:annotatedLabel>
   </dt>
-  <dd>
+  <dd style="width:50%">
     <g:if test="${d.work}">
       <g:link controller="resource" action="show" id="${d.work.class.name}:${d.work.id}"> ${d.work.name} </g:link>
     </g:if>
