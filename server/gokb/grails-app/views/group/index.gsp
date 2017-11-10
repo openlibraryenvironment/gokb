@@ -11,7 +11,7 @@
     <g:render template="/search/pagination" model="${[s_controller:'group',offset_param:'pkg_offset',offset:pkg_offset,records:packages,jumpToPage:'pkg_jumpToPage',page:pkg_page,page_max:pkg_page_max,lasthit:(pkg_offset.toInteger() + packages.size()),recset:true,max:max,params:params,reccount:package_count,hideActions:true]}"/>
 
     <table class="table table-striped table-condensed table-bordered">
-      <thead>
+      <thead style="white-space:nowrap;">
         <tr class="inline-nav">
           <th>
             <g:link params="${params+[pkg_sort:'name',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
@@ -49,9 +49,9 @@
             </td>
             <td>${pkg.listVerifiedDate}</td>
             <td>${pkg.lastUpdated}</td>
-            <td>${pkg.scope?.value}</td>
-            <td>${pkg.listStatus?.value}</td>
-            <td>${titles} (${pkg.tipps.size()})</td>
+            <td style="white-space:nowrap;">${pkg.scope?.value}</td>
+            <td style="white-space:nowrap;">${pkg.listStatus?.value}</td>
+            <td style="white-space:nowrap;">${titles} (${pkg.tipps.size()})</td>
           </tr>
         </g:each>
       </tbody>

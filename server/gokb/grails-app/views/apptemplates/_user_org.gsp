@@ -11,7 +11,7 @@
       <thead>
         <tr>
           <td>User</td>
-          <td>Membershop Status</td>
+          <td>Membership Status</td>
           <td>Role</td>
           <td>Actions</td>
         </tr>

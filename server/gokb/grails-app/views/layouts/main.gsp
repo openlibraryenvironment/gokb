@@ -16,15 +16,20 @@
     type="image/x-icon">
   
   <g:layoutHead />
-  <g:javascript library="application" />
-  <r:layoutResources />
+  <asset:javascript src="gokb/application.grass.js" />
+  <asset:stylesheet src="gokb/sb-admin-2.css"/>
+  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
+  <asset:stylesheet src="gokb/application.css"/>
+  
+	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/extras/modernizr-custom.js"></asset:script>
+	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/polyfiller.js"></asset:script>
 </head>
 
-<body>
+<body class="theme-${ grailsApplication.config.gokb.theme }">
   <div class="navbar navbar-default navbar-fixed-top">
     <div class="container-fuid">
       <div class="navbar-header">
-        <g:link controller="home" action="index" class="navbar-brand">GOKb</g:link>
+        <g:link controller="home" action="index" class="navbar-brand">GOKb ${params} ${error}</g:link>
       </div>
       <div class="navbar-collapse collapse" id="navbar-main">
         <ul class="nav navbar-nav navbar-right">

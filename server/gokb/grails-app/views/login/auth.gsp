@@ -11,9 +11,18 @@
 		<div class="panel-heading">
 			<h3 class="panel-title">User details</h3>
 		</div>
-		<div class="panel-body">
-			<p>Use the form below to sign into GOKb. If you don't have an account yet, please create one by using the register link in the top menu.</p>
-		</div>
+                <g:if test="${params.login_error == '1' && flash.message}">
+                  <div class="panel-body">
+                    <div class="alert alert-danger">
+                      ${flash.message}
+                    </div>
+                  </div>
+                </g:if>
+                <g:else>
+                  <div class="panel-body">
+                          <p>Use the form below to sign into GOKb. If you don't have an account yet, please create one by using the register link in the top menu.</p>
+                  </div>
+                </g:else>
 		<div class="panel-footer clearfix" >
 			<form action='${postUrl}' method='POST' id='loginForm'
 				class='form-horizontal col-md-6 col-md-offset-3' autocomplete='off' role="form">

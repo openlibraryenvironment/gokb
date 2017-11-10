@@ -592,8 +592,8 @@ grails.plugin.springsecurity.filterChain.chainMap = [
 ]
 
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
-  '/admin/**':                ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/file/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
+  '/admin/**':                ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'],
+  '/file/**':                 ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'],
   '/monitoring/**':           ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/':                        ['permitAll'],
   '/index':                   ['permitAll'],
@@ -615,7 +615,6 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/api/isUp':                ['permitAll'],
   '/api/userData':            ['permitAll'],
   '/fwk/**':                  ['ROLE_USER'],
-  '/integration/**':          ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/user/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/role/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
   '/securityInfo/**':         ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],

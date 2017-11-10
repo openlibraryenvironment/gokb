@@ -42,7 +42,7 @@ environments {
     test {
         dataSource {
             dbCreate = "create-drop"
-            url = "jdbc:postgresql://pghost:5432/ebookstest"
+            url = "jdbc:postgresql://pghost:5432/gokbtest"
             username = "knowint"
             password = "knowint"
             driverClassName = "org.postgresql.Driver"

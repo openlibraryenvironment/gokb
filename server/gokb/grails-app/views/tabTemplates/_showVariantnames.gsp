@@ -78,4 +78,7 @@
       </dd>
     </dl>
   </g:if>
+  <g:else>
+    Alternate names can be added after the creation process is finished.
+  </g:else>
 </div>

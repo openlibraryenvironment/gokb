@@ -1,5 +1,9 @@
 package org.gokb
 
+import grails.converters.*
+import grails.plugin.gson.converters.GSON
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
+
 class GlobalSearchController {
 
   static def reversemap = ['subject':'subjectKw','componentType':'componentType']
@@ -11,6 +15,7 @@ class GlobalSearchController {
 
   def index() { 
     def result = [:]
+    def apiresponse = null
 
     def esclient = ESWrapperService.getClient()
 
@@ -77,12 +82,33 @@ class GlobalSearchController {
             result.facets[entry.getName()] = facet_values
           }
         }
+        if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
+          apiresponse = [:]
+          apiresponse.count = result.resultsTotal
+          apiresponse.max = result.max
+          apiresponse.offset = result.offset
+          apiresponse.records = []
+          result.hits.each { r ->
+            def response_record = [:]
+            response_record.id = r.id
+            response_record.score = r.score
+            response_record.name = r.source.name
+            response_record.identifiers = r.source.identifiers
+            response_record.altNames = r.source.altname
+            
+            apiresponse.records.add(response_record);
+          }
+        }
       }
     }
     finally {
     }
 
-    result;
+    withFormat {
+      html result
+      json { render apiresponse as JSON }
+      xml { render apiresponse as XML }
+    }
   }
 
   private def buildQuery(params) {

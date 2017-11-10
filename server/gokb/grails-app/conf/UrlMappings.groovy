@@ -13,5 +13,7 @@ class UrlMappings {
     "/rules"(controller:'home',action:'showRules')
     "/nourl"(view:'/NoUrl')
     "500"(view:'/error')
+    "404"(controller:'home', action:'index') { status = '404' }
+    "403"(controller:'login', action:'denied')
   }
 }

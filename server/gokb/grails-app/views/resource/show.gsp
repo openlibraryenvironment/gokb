@@ -34,6 +34,7 @@
           <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
                 id="watchToggleLink"
                 title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
+                style="cursor:pointer;"
                   ><i id="watchIcon" class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
         </g:if>
         <li><a data-toggle="modal" data-cache="false"
@@ -97,7 +98,7 @@
         </g:if>
       </g:if>
       <g:else>
-        <h1>Unable to find record in database : Please notify support</h1>
+        <div class="alert alert-danger" style="display:inline-block;">Unable to find record in database : Please verify your input or notify support</div>
       </g:else>
     </div>
   </div>

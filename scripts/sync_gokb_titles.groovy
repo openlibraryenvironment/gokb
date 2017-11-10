@@ -12,6 +12,8 @@ while ( moredata ) {
   
   def resources = []
   fetchFromSource (path: '/gokb/oai/titles') { resp, body ->
+  
+    println("Cursor: ${body?.'ListRecords'?.'resumptionToken'?.'@cursor'} RT: ${body?.'ListRecords'?.'resumptionToken'?.text()} ")
 
     body?.'ListRecords'?.'record'.metadata.gokb.title.eachWithIndex { data, index ->
       
@@ -31,7 +33,7 @@ while ( moredata ) {
       resourceFieldMap['medium'] = (medium != "" ? medium : 'Journal')
 
       // Might be several publishers each with it's own from and to...
-      resourceFieldMap['publisher_history'] = data.publisher?.collect { pub ->
+      resourceFieldMap['publisher_history'] = data.publishers?.collect { pub ->
         directAddFields (pub, ['name','startDate','endDate','status'])
       } ?: []
       
@@ -55,7 +57,7 @@ while ( moredata ) {
         resources.add(resourceFieldMap)
         
       } else {
-        if ("${resourceFieldMap.name}" != "") {
+        if ("${resourceFieldMap.name}" != "" && resourceFieldMap.name) {
           println("\tDefer processing of ${resourceFieldMap.name} due to lack of identifiers.")
           config.deferred[resourceFieldMap.name] = resourceFieldMap
         } else {
@@ -70,6 +72,7 @@ while ( moredata ) {
   }
   
   // Save the config.
+  println("Current config: ${config}")
   saveConfig()
   Thread.sleep(1000)
 }
@@ -82,7 +85,7 @@ config.deferred.each { k, v ->
 }
 
 // Remove this here so we start from the beginning every time.
-config.remove('resumptionToken')
+// config.remove('resumptionToken')
 
 private convertHistoryEvent(evt) {
   // convert the evt structure to a json object and add to lst

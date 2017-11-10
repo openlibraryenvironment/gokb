@@ -231,7 +231,7 @@ window.gokb = {
         },
         initSelection : function (element, callback) {
           var idv=$(element).val();
-          console.log("initSelection..%o"+idv,element);
+          // console.log("initSelection..%o"+idv,element);
           var txt=$(element).context.dataset.displayvalue;
           var data = {id: idv, text: txt};
           callback(data);

@@ -101,7 +101,7 @@ class SecurityController {
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def rolePermissions() {
-    log.error("rolePermissions");
+    log.debug("rolePermissions");
     
     // The result.
     def result = [:]

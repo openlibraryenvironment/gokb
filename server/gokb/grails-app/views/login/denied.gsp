@@ -1,10 +1,11 @@
 <head>
-<meta name='layout' content='main' />
+<meta name='layout' content='sb-admin' />
 <title><g:message code="springSecurity.denied.title" /></title>
 </head>
 
 <body>
-<div class='body'>
-	<div class='errors'><g:message code="springSecurity.denied.message" /></div>
+  <div id="mainarea">
+    <h2><g:message code="springSecurity.denied.message" /></h2>
+  </div>
 </div>
 </body>

@@ -95,6 +95,8 @@ abstract class GOKbSyncBase extends Script {
   
   protected saveConfig () {
     cfg_file.delete()
+    config.deferred?.retainAll { it }
+    
     cfg_file << toJson(config)
   }
   
@@ -257,7 +259,15 @@ abstract class GOKbSyncBase extends Script {
       fields?.each { f ->
         data[f]?.each { d ->
           def val = cleanText ( d.text() )
-          if (val && !addTo[f]) addTo[f] = val; else println("skipping duplicate field ${f}")
+          if ( val && !addTo[f] ) { 
+            addTo[f] = val;
+          } 
+          else if ( !val ) { 
+            println("skipping empty field ${f}")
+          }
+          else if ( addTo[f] ) {
+            println("skipping duplicate field ${f}")
+          }
         }
       }
     }
@@ -339,6 +349,7 @@ abstract class GOKbSyncBase extends Script {
     
     // We should save the config here if clean exit...
     if (!moredata) {
+      config.remove('resumptionToken')
       saveConfig()
     }
   }
