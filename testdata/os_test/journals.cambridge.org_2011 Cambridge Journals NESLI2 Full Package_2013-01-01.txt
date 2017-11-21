@@ -1,0 +1,264 @@
+publication_title	print_identifier	online_identifier	date_first_issue_online	num_first_vol_online	num_first_issue_online	date_last_issue_online	num_last_vol_online	num_last_issue_online	title_url	first_author	title_id	embargo_info	coverage_depth	coverage_notes	publisher_name	
+Behavioural and Cognitive Psychotherapy	1352-4658	1469-1833	1998-01-01	26	01	2012-10-01	40	05	http://journals.cambridge.org/jid_BCP		BCP		fulltext	 		
+Economics and Philosophy	0266-2671	1474-0028	2000-04-01	16	01	2012-11-01	28	03	http://journals.cambridge.org/jid_EAP		EAP		fulltext	 		
+Journal of Social Policy	0047-2794	1469-7823	1997-01-01	26	01	2012-10-01	41	04	http://journals.cambridge.org/jid_JSP		JSP		fulltext	 		
+European Journal of Sociology / Archives Européennes de Sociologie	0003-9756	1474-0583	2001-05-01	42	01	2012-08-01	53	02	http://journals.cambridge.org/jid_EUR		EUR		fulltext	 		
+Religious Studies	0034-4125	1469-901X	1997-03-01	33	01	2012-12-01	48	04	http://journals.cambridge.org/jid_RES		RES		fulltext	 		
+Tempo	0040-2982	1478-2286	2003-01-01	57	223	2012-10-01	66		http://journals.cambridge.org/jid_TEM		TEM		fulltext	 		
+The Journal of Economic History	0022-0507	1471-6372	2001-03-01	61	01	2012-12-01	72	04	http://journals.cambridge.org/jid_JEH		JEH		fulltext	 		
+Behavioral and Brain Sciences	0140-525X	1469-1825	1997-03-01	20	01	2012-12-01	35	06	http://journals.cambridge.org/jid_BBS		BBS		fulltext	 		
+Parasitology	0031-1820	1469-8161	1997-01-01	114	01	2012-12-01	139	14	http://journals.cambridge.org/jid_PAR		PAR		fulltext	 		
+Scottish Journal of Theology	0036-9306	1475-3065	2002-02-01	55	01	2012-11-01	65	04	http://journals.cambridge.org/jid_SJT		SJT		fulltext	 		
+Journal of Helminthology	0022-149X	1475-2697	1999-03-01	73	01	2012-12-01	86	04	http://journals.cambridge.org/jid_JHL		JHL		fulltext	 		
+Camden Fifth Series	0960-1163	1478-5110	2003-12-01	22		2012-12-01	42		http://journals.cambridge.org/jid_RHC		RHC		fulltext	 		
+Cambridge Opera Journal	0954-5867	1474-0621	2000-03-01	12	01	2012-11-01	24	03	http://journals.cambridge.org/jid_OPR		OPR		fulltext	 		
+The Journal of African History	0021-8537	1469-5138	1997-03-01	38	01	2012-07-01	53	02	http://journals.cambridge.org/jid_AFH		AFH		fulltext	 		
+Expert Reviews in Molecular Medicine		1462-3994	2002-02-11	4	01	2012-01-01	14		http://journals.cambridge.org/jid_ERM		ERM		fulltext	 		
+Antarctic Science	0954-1020	1365-2079	1991-03-01	3	01	2012-12-01	24	06	http://journals.cambridge.org/jid_ANS		ANS		fulltext	 		
+World Politics	0043-8871	1086-3338	2009-01-01	61	01	2012-10-01	64	04	http://journals.cambridge.org/jid_WPO		WPO		fulltext	 		
+Annual of the British School at Athens	0068-2454	2045-2403	2008-11-01	103		2012-11-01	107		http://journals.cambridge.org/jid_ATH		ATH		fulltext	 		
+Speculum	0038-7134	2040-8072	2005-01-01	80	01	2012-10-01	87	04	http://journals.cambridge.org/jid_SPC		SPC		fulltext	 		
+Continuity and Change	0268-4160	1469-218X	1997-05-01	12	01	2012-12-01	27	03	http://journals.cambridge.org/jid_CON		CON		fulltext	 		
+European Review	1062-7987	1474-0575	2001-02-01	9	01	2012-10-01	20	04	http://journals.cambridge.org/jid_ERW		ERW		fulltext	 		
+International Organization	0020-8183	1531-5088	1947-02-01	1	01	2012-10-01	66	04	http://journals.cambridge.org/jid_INO		INO		fulltext	 		
+arq: Architectural Research Quarterly	1359-1355	1474-0516	2001-03-01	5	01	2012-06-01	16	02	http://journals.cambridge.org/jid_ARQ		ARQ		fulltext	 		
+Early Music History	0261-1279	1474-0559	2001-09-01	20		2012-01-01	31		http://journals.cambridge.org/jid_EMH		EMH		fulltext	 		
+Mathematical Proceedings of the Cambridge Philosophical Society	0305-0041	1469-8064	1924-02-01	22	01	2012-11-01	153	03	http://journals.cambridge.org/jid_PSP		PSP		fulltext	 		
+European Constitutional Law Review (EuConst)	1574-0196	1744-5515	2005-01-01	1	01	2012-10-01	8	03	http://journals.cambridge.org/jid_ECL		ECL		fulltext	 		
+European Political Science Review	1755-7739	1755-7747	2009-03-01	1	01	2012-11-01	4	03	http://journals.cambridge.org/jid_EPR		EPR		fulltext	 		
+The International Journal of Asian Studies	1479-5914	1479-5922	2004-01-01	1	01	2012-07-01	9	02	http://journals.cambridge.org/jid_ASI		ASI		fulltext	 		
+Microscopy and Microanalysis	1431-9276	1435-8115	1995-02-01	1	01	2012-12-01	18	06	http://journals.cambridge.org/jid_MAM		MAM		fulltext	 		
+International Theory	1752-9719	1752-9727	2009-03-01	1	01	2012-11-01	4	03	http://journals.cambridge.org/jid_INT		INT		fulltext	 		
+Journal of Functional Programming	0956-7968	1469-7653	1997-01-01	7	01	2012-11-01	22	4-5	http://journals.cambridge.org/jid_JFP		JFP		fulltext	 		
+Primary Health Care Research & Development	1463-4236	1477-1128	2000-01-01	1	01	2012-12-01	13	S1	http://journals.cambridge.org/jid_PHC		PHC		fulltext	 		
+Revista de Historia Económica	0212-6109	2041-3335	2006-01-01	24	01	2012-09-01	30	02	http://journals.cambridge.org/jid_RHE		RHE		fulltext	 		
+Ageing & Society	0144-686X	1469-1779	1997-01-01	17	01	2012-11-01	32	08	http://journals.cambridge.org/jid_ASO		ASO		fulltext	 		
+Mathematika	0025-5793	2041-7942	1954-06-01	1	01	2012-07-01	58	02	http://journals.cambridge.org/jid_MTK		MTK		fulltext	 		
+Social Policy and Society	1474-7464	1475-3073	2002-01-01	1	01	2012-10-01	11	04	http://journals.cambridge.org/jid_SPS		SPS		fulltext	 		
+Urban History	0963-9268	1469-8706	1999-05-01	26	01	2012-11-01	39	04	http://journals.cambridge.org/jid_UHY		UHY		fulltext	 		
+Epidemiology and Psychiatric Sciences	2045-7960	2045-7979	2006-03-01	15	01	2012-12-01	21	04	http://journals.cambridge.org/jid_EPS		EPS		fulltext	Previous Titles: Epidemiologia e Psichiatria Sociale		
+International Labor and Working-Class History	0147-5479	1471-6445	1999-04-01	55		2012-03-01	81		http://journals.cambridge.org/jid_ILW		ILW		fulltext	 		
+Archaeological Dialogues	1380-2038	1478-2294	2003-10-01	10	01	2012-12-01	19	02	http://journals.cambridge.org/jid_ARD		ARD		fulltext	 		
+Reviews in Clinical Gerontology	0959-2598	1469-9036	1997-01-01	7	01	2012-11-01	22	04	http://journals.cambridge.org/jid_RCG		RCG		fulltext	 		
+Glasgow Mathematical Journal	0017-0895	1469-509X	1999-03-01	41	01	2012-09-01	54	03	http://journals.cambridge.org/jid_GMJ		GMJ		fulltext	 		
+Journal of the Marine Biological Association of the United Kingdom	0025-3154	1469-7769	1999-02-01	79	01	2012-12-01	92	08	http://journals.cambridge.org/jid_MBI		MBI		fulltext	 		
+Utilitas	0953-8208	1741-6183	2004-03-01	16	01	2012-12-01	24	04	http://journals.cambridge.org/jid_UTI		UTI		fulltext	 		
+Legal Theory	1352-3252	1469-8048	1999-03-01	5	01	2012-12-01	18	04	http://journals.cambridge.org/jid_LEG		LEG		fulltext	 		
+New Testament Studies	0028-6885	1469-8145	1999-01-01	45	01	2012-10-01	58	04	http://journals.cambridge.org/jid_NTS		NTS		fulltext	 		
+Environmental Biosafety Research	1635-7922	1635-7930	2002-10-01	1	01	2011-10-01	10	04	http://journals.cambridge.org/jid_EBS		EBS		fulltext	 		
+The Review of Politics	0034-6705	1748-6858	2006-02-01	68	01	2012-12-01	74	04	http://journals.cambridge.org/jid_ROP		ROP		fulltext	 		
+Bulletin of the School of Oriental and African Studies	0041-977X	1474-0699	2001-02-01	64	01	2012-10-01	75	03	http://journals.cambridge.org/jid_BSO		BSO		fulltext	 		
+Social Philosophy and Policy	0265-0525	1471-6437	2002-01-01	19	01	2012-07-01	29	02	http://journals.cambridge.org/jid_SOY		SOY		fulltext	 		
+The Journal of Modern African Studies	0022-278X	1469-7777	1997-03-01	35	01	2012-12-01	50	04	http://journals.cambridge.org/jid_MOA		MOA		fulltext	 		
+Robotica	0263-5747	1469-8668	1997-01-01	15	01	2012-12-01	30	07	http://journals.cambridge.org/jid_ROB		ROB		fulltext	 		
+Canadian Journal of Political Science/Revue canadienne de science politique	0008-4239	1744-9324	2000-03-01	33	01	2012-09-01	45	03	http://journals.cambridge.org/jid_CJP		CJP		fulltext	 		
+International Journal of Cultural Property	0940-7391	1465-7317	1992-01-01	1	01	2012-08-01	19	03	http://journals.cambridge.org/jid_JCP		JCP		fulltext	 		
+Public Health Nutrition	1368-9800	1475-2727	2007-01-01	10	01	2012-12-01	15	8A	http://journals.cambridge.org/jid_PHN		PHN		fulltext	 		
+Natural Language Engineering	1351-3249	1469-8110	1996-03-01	2	01	2012-10-01	18	04	http://journals.cambridge.org/jid_NLE		NLE		fulltext	 		
+Phonology	0952-6757	1469-8188	1997-05-01	14	01	2012-12-01	29	03	http://journals.cambridge.org/jid_PHO		PHO		fulltext	 		
+Netherlands Yearbook of International Law	0167-6768	1574-0951	2004-12-01	35		2011-12-01	42		http://journals.cambridge.org/jid_NYL		NYL		fulltext	 		
+Africa Bibliography	0266-6731	1757-1642	2007-03-01	2005		2012-11-01	2011		http://journals.cambridge.org/jid_AFB		AFB		fulltext	 		
+Rural History	0956-7933	1474-0656	2002-04-01	13	01	2012-10-01	23	02	http://journals.cambridge.org/jid_RUH		RUH		fulltext	 		
+Business History Review	0007-6805	2044-768X	2009-03-01	83	01	2012-09-01	86	03	http://journals.cambridge.org/jid_BHR		BHR		fulltext	 		
+Fruits	0248-1294	1625-967X	2001-01-01	56	01	2012-11-01	67	06	http://journals.cambridge.org/jid_FRU		FRU		fulltext	 		
+Bird Conservation International	0959-2709	1474-0001	2000-03-01	10	01	2012-12-01	22	04	http://journals.cambridge.org/jid_BCI		BCI		fulltext	 		
+Acta Numerica	0962-4929	1474-0508	2000-01-01	9		2012-05-01	21		http://journals.cambridge.org/jid_ANU		ANU		fulltext	 		
+Journal of Pension Economics and Finance	1474-7472	1475-3022	2002-03-01	1	01	2012-10-01	11	04	http://journals.cambridge.org/jid_PEF		PEF		fulltext	 		
+Modern Intellectual History	1479-2443	1479-2451	2004-04-01	1	01	2012-11-01	9	03	http://journals.cambridge.org/jid_MIH		MIH		fulltext	 		
+Hague Journal on the Rule of Law	1876-4045	1876-4053	2009-03-01	1	01	2012-09-01	4	02	http://journals.cambridge.org/jid_ROL		ROL		fulltext	 		
+Papers of the British School at Rome	0068-2462	2045-239X	1902-01-01	1	01	2012-10-01	80		http://journals.cambridge.org/jid_ROM		ROM		fulltext	 		
+Annual Review of Applied Linguistics	0267-1905	1471-6356	1999-01-01	19		2012-03-01	32		http://journals.cambridge.org/jid_APL		APL		fulltext	 		
+The Journal of Laryngology & Otology	0022-2151	1748-5460	1887-01-01	1	01	2012-12-01	126	S2	http://journals.cambridge.org/jid_JLO		JLO		fulltext	Previous Titles: The Journal of Laryngology and Rhinology~The Journal of Laryngology, Rhinology, and Otology		
+Bulletin of Entomological Research	0007-4853	1475-2670	1999-01-01	89	01	2012-12-01	102	06	http://journals.cambridge.org/jid_BER		BER		fulltext	 		
+Review of International Studies	0260-2105	1469-9044	1997-01-01	23	01	2012-12-01	38	05	http://journals.cambridge.org/jid_RIS		RIS		fulltext	 		
+The Knowledge Engineering Review	0269-8889	1469-8005	1997-01-01	12	01	2012-12-01	27	04	http://journals.cambridge.org/jid_KER		KER		fulltext	 		
+Journal of the Royal Asiatic Society	1356-1863	1474-0591	2001-04-01	11		2012-10-01	22	3-4	http://journals.cambridge.org/jid_JRA		JRA		fulltext	 		
+Language Variation and Change	0954-3945	1469-8021	1999-03-01	11	01	2012-10-01	24	03	http://journals.cambridge.org/jid_LVC		LVC		fulltext	 		
+British Journal of Political Science	0007-1234	1469-2112	1997-01-01	27	01	2012-10-01	42	04	http://journals.cambridge.org/jid_JPS		JPS		fulltext	 		
+Cambridge Archaeological Journal	0959-7743	1474-0540	2000-04-01	10	01	2012-10-01	22	03	http://journals.cambridge.org/jid_CAJ		CAJ		fulltext	 		
+The British Journal for the History of Science	0007-0874	1474-001X	2001-03-01	34	01	2012-09-01	45	03	http://journals.cambridge.org/jid_BJH		BJH		fulltext	 		
+International Journal of Tropical Insect Science	1742-7584	1742-7592	2004-03-01	24	01	2012-12-01	32	04	http://journals.cambridge.org/jid_JTI		JTI		fulltext	 		
+American Political Science Review	0003-0554	1537-5943	2001-03-01	95	01	2012-11-01	106	04	http://journals.cambridge.org/jid_PSR		PSR		fulltext	 		
+Aquatic Living Resources	0990-7440	1765-2952	2001-01-01	14	01	2012-10-01	25	04	http://journals.cambridge.org/jid_ALR		ALR		fulltext	 		
+Plainsong and Medieval Music	0961-1371	1474-0087	2000-04-01	9	01	2012-10-01	21	02	http://journals.cambridge.org/jid_PMM		PMM		fulltext	 		
+Britannia	0068-113X	1753-5352	2005-11-01	36		2012-11-01	43		http://journals.cambridge.org/jid_BRI		BRI		fulltext	 		
+Itinerario	0165-1153	2041-2827	2007-03-01	31	01	2012-08-01	36	02	http://journals.cambridge.org/jid_ITI		ITI		fulltext	 		
+Ecclesiastical Law Journal	0956-618X	1751-8539	2007-01-01	9	01	2012-09-01	14	03	http://journals.cambridge.org/jid_ELJ		ELJ		fulltext	 		
+The Lichenologist	0024-2829	1096-1135	1958-11-01	1	01	2012-11-01	44	06	http://journals.cambridge.org/jid_LIC		LIC		fulltext	 		
+Journal of American Studies	0021-8758	1469-5154	1997-04-01	31	01	2012-11-01	46	04	http://journals.cambridge.org/jid_AMS		AMS		fulltext	 		
+The European Physical Journal - Applied Physics	1286-0042	1286-0050	2001-01-01	13	01	2012-12-01	60	03	http://journals.cambridge.org/jid_JAP		JAP		fulltext	 		
+Applied Psycholinguistics	0142-7164	1469-1817	1999-03-01	20	01	2012-10-01	33	04	http://journals.cambridge.org/jid_APS		APS		fulltext	 		
+British Journal of Anaesthetic and Recovery Nursing	1742-6456	1744-2192	2005-03-01	6	01	2012-08-01	13	3-4	http://journals.cambridge.org/jid_ARN		ARN		fulltext	 		
+Victorian Literature and Culture	1060-1503	1470-1553	1999-03-01	27	01	2012-09-01	40	02	http://journals.cambridge.org/jid_VLC		VLC		fulltext	Previous Titles: Browning Institute Studies		
+The Journal of Agricultural Science	0021-8596	1469-5146	1997-02-01	128	01	2012-12-01	150	06	http://journals.cambridge.org/jid_AGS		AGS		fulltext	 		
+Journal of Institutional Economics	1744-1374	1744-1382	2005-06-01	1	01	2012-12-01	8	04	http://journals.cambridge.org/jid_JOI		JOI		fulltext	 		
+Asian Journal of International Law	2044-2513	2044-2521	2011-01-25	1	01	2012-07-01	2	02	http://journals.cambridge.org/jid_AJL		AJL		fulltext	 		
+International Psychogeriatrics	1041-6102	1741-203X	1989-03-01	1	01	2013-02-01	25	02	http://journals.cambridge.org/jid_IPG		IPG		fulltext	 		
+Journal of Radiotherapy in Practice	1460-3969	1467-1131	1999-04-01	1	01	2012-12-01	11	04	http://journals.cambridge.org/jid_JRP		JRP		fulltext	 		
+Journal of French Language Studies	0959-2695	1474-0079	2000-03-01	10	01	2012-11-01	22	03	http://journals.cambridge.org/jid_JFL		JFL		fulltext	 		
+AI EDAM	0890-0604	1469-1760	1998-01-01	12	01	2012-11-01	26	04	http://journals.cambridge.org/jid_AIE		AIE		fulltext	 		
+Theatre Survey	0040-5574	1475-4533	1960-05-01	1		2012-09-01	53	02	http://journals.cambridge.org/jid_TSY		TSY		fulltext	 		
+The Classical Review	0009-840X	1464-3561	1998-04-01	48	01	2012-10-01	62	3-4	http://journals.cambridge.org/jid_CAR		CAR		fulltext	 		
+Geological Magazine	0016-7568	1469-5081	1997-01-01	134	01	2012-11-01	149	06	http://journals.cambridge.org/jid_GEO		GEO		fulltext	 		
+Compositio Mathematica	0010-437X	1570-5846	2006-01-01	142	01	2012-11-01	148	06	http://journals.cambridge.org/jid_COM		COM		fulltext	 		
+Legal Information Management	1472-6696	1741-2021	2004-03-01	4	01	2012-12-01	12	04	http://journals.cambridge.org/jid_LIM		LIM		fulltext	 		
+International Review of Social History	0020-8590	1469-512X	1998-04-01	43	01	2012-12-01	57	S20	http://journals.cambridge.org/jid_ISH		ISH		fulltext	 		
+Journal of Plasma Physics	0022-3778	1469-7807	1997-01-01	57	01	2012-12-01	78	06	http://journals.cambridge.org/jid_PLA		PLA		fulltext	 		
+Journal of the Australian Mathematical Society	1446-7887	1446-8107	2007-02-01	82	01	2012-04-01	92	02	http://journals.cambridge.org/jid_JAZ		JAZ		fulltext	 		
+Proceedings of the Edinburgh Mathematical Society	0013-0915	1464-3839	2002-02-01	45	01	2012-10-01	55	03	http://journals.cambridge.org/jid_PEM		PEM		fulltext	 		
+Oryx	0030-6053	1365-3008	2002-01-01	36	01	2012-10-01	46	04	http://journals.cambridge.org/jid_ORX		ORX		fulltext	 		
+Transactions of the Royal Historical Society	0080-4401	1474-0648	2000-12-01	10		2012-12-01	22	01	http://journals.cambridge.org/jid_RHT		RHT		fulltext	 		
+Development and Psychopathology	0954-5794	1469-2198	1997-03-01	9	01	2012-11-01	24	04	http://journals.cambridge.org/jid_DPP		DPP		fulltext	 		
+Mathematical Structures in Computer Science	0960-1295	1469-8072	1997-02-01	7	01	2012-12-01	22	06	http://journals.cambridge.org/jid_MSC		MSC		fulltext	 		
+British Journal of Music Education	0265-0517	1469-2104	1999-03-01	16	01	2012-11-01	29	03	http://journals.cambridge.org/jid_BME		BME		fulltext	 		
+The Journal of Navigation	0373-4633	1469-7785	1998-01-01	51	01	2012-10-01	65	04	http://journals.cambridge.org/jid_NAV		NAV		fulltext	 		
+Canadian Journal on Aging/La Revue canadienne du vieillissement	0714-9808	1710-1107	2005-01-01	24	01	2012-12-01	31	04	http://journals.cambridge.org/jid_CJG		CJG		fulltext	 		
+Ergodic Theory and Dynamical Systems	0143-3857	1469-4417	1997-02-01	17	01	2012-12-01	32	06	http://journals.cambridge.org/jid_ETS		ETS		fulltext	 		
+Financial History Review	0968-5650	1474-0052	2000-04-01	7	01	2012-12-01	19	03	http://journals.cambridge.org/jid_FHR		FHR		fulltext	 		
+Animal Genetic Resources / Resources génétiques animales / Recursos genéticos animales	1014-2339	2076-4022	2006-04-01	38		2012-12-01	51		http://journals.cambridge.org/jid_AGR		AGR		fulltext	Previous Titles: Animal Genetic Resources Information		
+Combinatorics, Probability and Computing	0963-5483	1469-2163	1997-03-01	6	01	2012-11-01	21	1-2	http://journals.cambridge.org/jid_CPC		CPC		fulltext	 		
+Journal of the International Neuropsychological Society	1355-6177	1469-7661	1997-01-01	3	01	2012-11-01	18	S2	http://journals.cambridge.org/jid_INS		INS		fulltext	 		
+Journal of Southeast Asian Studies	0022-4634	1474-0680	2001-02-01	32	01	2012-10-01	43	03	http://journals.cambridge.org/jid_SEA		SEA		fulltext	 		
+European Business Organization Law Review (EBOR)	1566-7529	1741-6205	2003-07-01	4	01	2012-12-01	13	04	http://journals.cambridge.org/jid_EBR		EBR		fulltext	 		
+European Journal of Applied Mathematics	0956-7925	1469-4425	1997-02-01	8	01	2012-12-01	23	06	http://journals.cambridge.org/jid_EJM		EJM		fulltext	 		
+World Trade Review	1474-7456	1475-3138	2002-03-01	1	01	2012-10-01	11	04	http://journals.cambridge.org/jid_WTR		WTR		fulltext	 		
+Plant Genetic Resources	1479-2621	1479-263X	2003-04-01	1	01	2012-12-01	10	03	http://journals.cambridge.org/jid_PGR		PGR		fulltext	 		
+Eighteenth-Century Music	1478-5706	1478-5714	2004-03-01	1	01	2012-09-01	9	02	http://journals.cambridge.org/jid_ECM		ECM		fulltext	 		
+Renewable Agriculture and Food Systems	1742-1705	1742-1713	2004-03-01	19	01	2012-12-01	27	04	http://journals.cambridge.org/jid_RAF		RAF		fulltext	 		
+the Cognitive Behaviour Therapist		1754-470X	2008-04-01	1	01	2012-09-01	5	2-3	http://journals.cambridge.org/jid_CBT		CBT		fulltext	 		
+European Review of Economic History	1361-4916	1474-0044	1997-04-01	1	01	2011-12-01	15	03	http://journals.cambridge.org/jid_ERE		ERE		fulltext	 		
+The Journal of Politics	0022-3816	1468-2508	2000-02-01	62	01	2012-10-01	74	04	http://journals.cambridge.org/jid_JOP		JOP		fulltext	 		
+Language in Society	0047-4045	1469-8013	1998-03-01	27	01	2012-11-01	41	05	http://journals.cambridge.org/jid_LSY		LSY		fulltext	 		
+Language Teaching	0261-4448	1475-3049	2002-01-01	35	01	2012-10-01	45	04	http://journals.cambridge.org/jid_LTA		LTA		fulltext	 		
+Journal of Fluid Mechanics	0022-1120	1469-7645	1997-01-10	330		2012-12-25	713		http://journals.cambridge.org/jid_FLM		FLM		fulltext	 		
+The Journal of Roman Studies	0075-4358	1753-528X	2005-11-01	95		2012-11-01	102		http://journals.cambridge.org/jid_JRS		JRS		fulltext	 		
+PS: Political Science & Politics	1049-0965	1537-5935	2001-03-01	34	01	2012-10-01	45	04	http://journals.cambridge.org/jid_PSC		PSC		fulltext	 		
+Journal of Biosocial Science	0021-9320	1469-7599	1997-01-01	29	01	2012-11-01	44	06	http://journals.cambridge.org/jid_JBS		JBS		fulltext	 		
+Organised Sound	1355-7718	1469-8153	1996-04-01	1	01	2012-12-01	17	03	http://journals.cambridge.org/jid_OSO		OSO		fulltext	 		
+Bulletin of the Australian Mathematical Society	0004-9727	1755-1633	2007-02-01	75	01	2012-12-01	86	03	http://journals.cambridge.org/jid_BAZ		BAZ		fulltext	 		
+ESAIM: Probability and Statistics	1292-8100	1262-3318	2001-01-01	5		2012-01-01	16		http://journals.cambridge.org/jid_PSS		PSS		fulltext	 		
+International Journal of Middle East Studies	0020-7438	1471-6380	2000-02-01	32	01	2012-11-01	44	04	http://journals.cambridge.org/jid_MES		MES		fulltext	 		
+Law and History Review	0738-2480	1939-9022	2005-03-01	23	01	2012-11-01	30	04	http://journals.cambridge.org/jid_LHR		LHR		fulltext	 		
+RAIRO - Operations Research	0399-0559	1290-3868	2001-01-01	35	01	2012-11-01	46	04	http://journals.cambridge.org/jid_ROE		ROE		fulltext	 		
+ESAIM: Control, Optimisation and Calculus of Variations	1292-8119	1262-3377	2001-01-01	6		2012-10-01	18	04	http://journals.cambridge.org/jid_COV		COV		fulltext	 		
+Africa	0001-9720	1750-0184	2000-02-01	70	01	2012-11-01	82	04	http://journals.cambridge.org/jid_AFR		AFR		fulltext	 		
+Studies in American Political Development	0898-588X	1469-8692	1998-04-01	12	01	2012-10-01	26	02	http://journals.cambridge.org/jid_SAP		SAP		fulltext	 		
+Church History: Studies in Christianity and Culture	0009-6407	1755-2613	1932-03-01	1	01	2012-12-01	81	04	http://journals.cambridge.org/jid_CHH		CHH		fulltext	 		
+Science in Context	0269-8897	1474-0664	2001-06-01	14	03	2012-12-01	25	04	http://journals.cambridge.org/jid_SIC		SIC		fulltext	 		
+Journal of Policy History	0898-0306	1528-4190	1999-01-01	11	01	2012-10-01	24	04	http://journals.cambridge.org/jid_JPH		JPH		fulltext	 		
+Mathematical Modelling of Natural Phenomena	0973-5348	1760-6101	2006-01-01	1	01	2012-01-01	7	06	http://journals.cambridge.org/jid_MNP		MNP		fulltext	 		
+Econometric Theory	0266-4666	1469-4360	1998-02-01	14	01	2012-12-01	28	06	http://journals.cambridge.org/jid_ECT		ECT		fulltext	 		
+Anglo-Saxon England	0263-6751	1474-0532	2001-12-01	30		2011-12-01	40		http://journals.cambridge.org/jid_ASE		ASE		fulltext	 		
+International Journal of Technology Assessment in Health Care	0266-4623	1471-6348	1999-01-01	15	01	2012-10-01	28	04	http://journals.cambridge.org/jid_THC		THC		fulltext	 		
+Experimental Agriculture	0014-4797	1469-4441	1997-01-01	33	01	2012-10-01	48	04	http://journals.cambridge.org/jid_EAG		EAG		fulltext	 		
+Leiden Journal of International Law	0922-1565	1478-9698	1996-03-01	9	01	2012-12-01	25	04	http://journals.cambridge.org/jid_LJL		LJL		fulltext	 		
+The ANZIAM Journal	1446-1811	1446-8735	2007-01-01	48	01	2012-01-01	53	03	http://journals.cambridge.org/jid_ANZ		ANZ		fulltext	 		
+Environmental Conservation	0376-8929	1469-4387	1997-03-01	24	01	2012-12-01	39	04	http://journals.cambridge.org/jid_ENC		ENC		fulltext	 		
+Proceedings of the Royal Society of Edinburgh, Section: A Mathematics	0308-2105	1473-7124	2000-02-01	130	01	2012-12-01	142	06	http://journals.cambridge.org/jid_PRM		PRM		fulltext	 		
+International Review of the Red Cross	1816-3831	1607-5889	2006-03-01	88	861	2012-03-01	94	885	http://journals.cambridge.org/jid_IRC		IRC		fulltext	 		
+Politics & Gender	1743-923X	1743-9248	2005-03-01	1	01	2012-12-01	8	04	http://journals.cambridge.org/jid_PAG		PAG		fulltext	 		
+International Journal of Astrobiology	1473-5504	1475-3006	2002-01-01	1	01	2013-01-01	12	01	http://journals.cambridge.org/jid_IJA		IJA		fulltext	 		
+Politics and Religion	1755-0483	1755-0491	2008-04-01	1	01	2012-12-01	5	03	http://journals.cambridge.org/jid_RAP		RAP		fulltext	 		
+Bilingualism: Language and Cognition	1366-7289	1469-1841	1998-04-01	1	01	2013-01-01	16	01	http://journals.cambridge.org/jid_BIL		BIL		fulltext	 		
+Health Economics, Policy and Law	1744-1331	1744-134X	2006-01-01	1	01	2012-10-01	7	04	http://journals.cambridge.org/jid_HEP		HEP		fulltext	 		
+Journal of Materials Research	0884-2914	2044-5326	1986-02-01	1	01	2012-12-28	27	24	http://journals.cambridge.org/jid_JMR		JMR		fulltext	 		
+Harvard Theological Review	0017-8160	1475-4517	2002-01-01	95	01	2012-10-01	105	04	http://journals.cambridge.org/jid_HTR		HTR		fulltext	 		
+ESAIM: Mathematical Modelling and Numerical Analysis	0764-583X	1290-3841	2001-01-01	35	01	2012-11-01	46	06	http://journals.cambridge.org/jid_MZA		MZA		fulltext	 		
+Kantian Review	1369-4154	2044-2394	2006-03-01	11		2012-11-01	17	03	http://journals.cambridge.org/jid_KRV		KRV		fulltext	 		
+The Journal of Asian Studies	0021-9118	1752-0401	2004-02-01	63	01	2012-11-01	71	04	http://journals.cambridge.org/jid_JAS		JAS		fulltext	 		
+Environment and Development Economics	1355-770X	1469-4395	1997-02-01	2	01	2012-12-01	17	06	http://journals.cambridge.org/jid_EDE		EDE		fulltext	 		
+Journal of Latin American Studies	0022-216X	1469-767X	1997-02-01	29	01	2012-11-01	44	04	http://journals.cambridge.org/jid_LAS		LAS		fulltext	 		
+Epidemiology & Infection	0950-2688	1469-4409	1997-02-01	118	01	2012-12-01	140	12	http://journals.cambridge.org/jid_HYG		HYG		fulltext	Previous Titles: Journal of Hygiene		
+Animal Health Research Reviews	1466-2523	1475-2654	2002-06-01	3	01	2012-12-01	13	02	http://journals.cambridge.org/jid_AHR		AHR		fulltext	 		
+animal	1751-7311	1751-732X	2007-02-01	1	01	2012-12-01	6	12	http://journals.cambridge.org/jid_ANM		ANM		fulltext	 		
+Annals of Actuarial Science	1748-4995	1748-5002	2006-03-01	1	01	2012-09-01	6	02	http://journals.cambridge.org/jid_AAS		AAS		fulltext	 		
+Comparative Studies in Society and History	0010-4175	1475-2999	1997-01-01	39	01	2012-10-01	54	04	http://journals.cambridge.org/jid_CSS		CSS		fulltext	 		
+Nutrition Research Reviews	0954-4224	1475-2700	2005-06-01	18	01	2012-12-01	25	02	http://journals.cambridge.org/jid_NRR		NRR		fulltext	 		
+The Cambridge Law Journal	0008-1973	1469-2139	1998-03-01	57	01	2012-11-01	71	03	http://journals.cambridge.org/jid_CLJ		CLJ		fulltext	 		
+AJS Review	0364-0094	1475-4541	2002-04-01	26	01	2012-11-01	36	02	http://journals.cambridge.org/jid_AJS		AJS		fulltext	 		
+Probability in the Engineering and Informational Sciences	0269-9648	1469-8951	1999-01-01	13	01	2012-10-01	26	04	http://journals.cambridge.org/jid_PES		PES		fulltext	 		
+Contemporary European History	0960-7773	1469-2171	1999-03-01	8	01	2012-11-01	21	04	http://journals.cambridge.org/jid_CEH		CEH		fulltext	 		
+Prehospital and Disaster Medicine	1049-023X	1945-1938	2002-03-01	17	01	2012-12-01	27	06	http://journals.cambridge.org/jid_PDM		PDM		fulltext	 		
+Greece & Rome	0017-3835	1477-4550	2001-04-01	48	01	2012-10-01	59	02	http://journals.cambridge.org/jid_GAR		GAR		fulltext	 		
+The Journal of the Gilded Age and Progressive Era	1537-7814	1943-3557	2003-01-01	2	01	2012-10-01	11	04	http://journals.cambridge.org/jid_JGA		JGA		fulltext	 		
+Arabic Sciences and Philosophy	0957-4239	1474-0524	2000-03-01	10	01	2012-09-01	22	02	http://journals.cambridge.org/jid_ASP		ASP		fulltext	 		
+Journal of the History of Economic Thought	1053-8372	1469-9656	2000-03-01	22	01	2012-12-01	34	04	http://journals.cambridge.org/jid_HET		HET		fulltext	 		
+The Classical Quarterly	0009-8388	1471-6844	2001-07-01	51	01	2012-12-01	62	02	http://journals.cambridge.org/jid_CAQ		CAQ		fulltext	 		
+Polar Record	0032-2474	1475-3057	2003-01-01	39	01	2012-10-01	48	04	http://journals.cambridge.org/jid_POL		POL		fulltext	 		
+Visual Neuroscience	0952-5238	1469-8714	1998-01-01	15	01	2012-11-01	29	4-5	http://journals.cambridge.org/jid_VNS		VNS		fulltext	 		
+Genetics Research	0016-6723	1469-5073	1997-02-01	69	01	2012-08-01	94	04	http://journals.cambridge.org/jid_GRH		GRH		fulltext	Previous Titles: Genetical Research		
+The Journal of Ecclesiastical History	0022-0469	1469-7637	1998-01-01	49	01	2012-10-01	63	04	http://journals.cambridge.org/jid_ECH		ECH		fulltext	 		
+Cambridge Quarterly of Healthcare Ethics	0963-1801	1469-2147	1998-01-01	7	01	2012-10-01	21	04	http://journals.cambridge.org/jid_CQH		CQH		fulltext	 		
+Journal of Developmental Origins of Health and Disease	2040-1744	2040-1752	2009-11-01	1	01	2013-02-01	4	01	http://journals.cambridge.org/jid_DOH		DOH		fulltext	 		
+Journal of Psychiatric Intensive Care	1742-6464	1744-2206	2005-09-01	1	01	2012-08-01	8	02	http://journals.cambridge.org/jid_JPI		JPI		fulltext	 		
+Palliative & Supportive Care	1478-9515	1478-9523	2003-03-01	1	01	2012-12-01	10	04	http://journals.cambridge.org/jid_PAX		PAX		fulltext	 		
+International Journal of Law in Context	1744-5523	1744-5531	2005-03-01	1	01	2012-12-01	8	04	http://journals.cambridge.org/jid_IJC		IJC		fulltext	 		
+Theory and Practice of Logic Programming	1471-0684	1475-3081	2001-01-01	1	01	2012-11-01	12	06	http://journals.cambridge.org/jid_TLP		TLP		fulltext	 		
+Comparative Exercise Physiology	1755-2540	1755-2559	2008-02-01	5	01	2010-11-01	7	04	http://journals.cambridge.org/jid_CEP		CEP		fulltext	 		
+Du Bois Review: Social Science Research on Race	1742-058X	1742-0598	2004-03-01	1	01	2012-09-01	9	02	http://journals.cambridge.org/jid_DBR		DBR		fulltext	 		
+MRS Bulletin	0883-7694	1938-1425	2000-03-01	25	03	2012-12-01	37	12	http://journals.cambridge.org/jid_MRS		MRS		fulltext	 		
+Modern Asian Studies	0026-749X	1469-8099	1998-02-01	32	01	2012-11-01	46	06	http://journals.cambridge.org/jid_ASS		ASS		fulltext	 		
+English Today	0266-0784	1474-0567	2001-01-01	17	01	2012-12-01	28	04	http://journals.cambridge.org/jid_ENG		ENG		fulltext	 		
+Neuron Glia Biology	1740-925X	1741-0533	2004-02-01	1	01	2011-05-01	7	2-4	http://journals.cambridge.org/jid_NGB		NGB		fulltext	 		
+Archaeological Reports	0570-6084	2041-4102	2007-11-01	53		2012-11-01	58		http://journals.cambridge.org/jid_ARE		ARE		fulltext	 		
+Edinburgh Journal of Botany	0960-4286	1474-0036	2000-03-01	57	01	2012-11-01	69	03	http://journals.cambridge.org/jid_EJB		EJB		fulltext	 		
+Zygote	0967-1994	1469-8730	1998-02-01	6	01	2012-11-01	20	04	http://journals.cambridge.org/jid_ZYG		ZYG		fulltext	 		
+Central European History	0008-9389	1569-1616	2000-03-01	33	01	2012-12-01	45	04	http://journals.cambridge.org/jid_CCC		CCC		fulltext	 		
+Journal of Financial and Quantitative Analysis	0022-1090	1756-6916	2004-03-01	39	01	2012-08-01	47	05	http://journals.cambridge.org/jid_JFQ		JFQ		fulltext	 		
+Proceedings of the Nutrition Society	0029-6651	1475-2719	2007-02-01	66	01	2012-11-01	71	OCE2	http://journals.cambridge.org/jid_PNS		PNS		fulltext	 		
+Popular Music	0261-1430	1474-0095	2000-01-01	19	01	2012-10-01	31	03	http://journals.cambridge.org/jid_PMU		PMU		fulltext	 		
+Dialogue: Canadian Philosophical Review/Revue canadienne de philosophie	0012-2173	1759-0949	2005-03-01	44	01	2012-06-01	51	02	http://journals.cambridge.org/jid_DIA		DIA		fulltext	 		
+Foreign Policy Bulletin	1052-7036	1745-1302	2005-02-01	15	01	2012-12-01	22	04	http://journals.cambridge.org/jid_FPB		FPB		fulltext	 		
+Journal of Mechanics	1727-7191	1811-8216	2009-03-01	25	01	2012-12-01	28	04	http://journals.cambridge.org/jid_JOM		JOM		fulltext	 		
+British Actuarial Journal	1357-3217	2044-0456	1995-04-01	1	01	2012-07-01	17	02	http://journals.cambridge.org/jid_BAJ		BAJ		fulltext	 		
+The China Quarterly	0305-7410	1468-2648	2001-03-01	165		2012-09-01	211		http://journals.cambridge.org/jid_CQY		CQY		fulltext	 		
+World's Poultry Science Journal	0043-9339	1743-4777	2004-03-01	60	01	2012-12-01	68	04	http://journals.cambridge.org/jid_WPS		WPS		fulltext	 		
+Austrian History Yearbook	0067-2378	1558-5255	2005-01-01	36		2012-04-01	43		http://journals.cambridge.org/jid_AHY		AHY		fulltext	 		
+Yearbook of International Humanitarian Law	1389-1359	1574-096X	2004-12-01	7		2011-12-01	14		http://journals.cambridge.org/jid_YHL		YHL		fulltext	 		
+The Antiquaries Journal	0003-5815	1758-5309	2006-09-01	86		2012-09-01	92		http://journals.cambridge.org/jid_ANT		ANT		fulltext	 		
+The Journal of Hellenic Studies	0075-4269	2041-4099	2007-11-01	127		2012-11-01	132		http://journals.cambridge.org/jid_JHS		JHS		fulltext	 		
+Ancient Mesoamerica	0956-5361	1469-1787	1999-01-01	10	01	2012-09-01	23	02	http://journals.cambridge.org/jid_ATM		ATM		fulltext	 		
+RAIRO - Theoretical Informatics and Applications	0988-3754	1290-385X	2008-01-01	42	01	2012-10-01	46	04	http://journals.cambridge.org/jid_ITA		ITA		fulltext	 		
+Earth and Environmental Science Transactions of the Royal Society of Edinburgh	1755-6910	1755-6929	2001-03-01	92	01	2011-12-01	102	04	http://journals.cambridge.org/jid_TRE		TRE		fulltext	Previous Titles: Transactions of the Royal Society of Edinburgh: Earth Sciences (1980 - 2007)~Transactions of the Royal Society of Edinburgh (1788 - 1979)		
+Journal of the International Phonetic Association	0025-1003	1475-3502	2001-06-01	31	01	2012-12-01	42	03	http://journals.cambridge.org/jid_IPA		IPA		fulltext	 		
+International & Comparative Law Quarterly	0020-5893	1471-6895	1996-01-01	45	01	2012-10-01	61	04	http://journals.cambridge.org/jid_ILQ		ILQ		fulltext	 		
+Journal of Public Policy	0143-814X	1469-7815	1998-01-01	18	01	2012-12-01	32	03	http://journals.cambridge.org/jid_PUP		PUP		fulltext	 		
+Journal of Linguistics	0022-2267	1469-7742	1997-03-01	33	01	2012-11-01	48	03	http://journals.cambridge.org/jid_LIN		LIN		fulltext	 		
+Annales de Limnologie - International Journal of Limnology	0003-4088	2100-000X	2001-03-01	37	01	2012-01-01	48	04	http://journals.cambridge.org/jid_ANL		ANL		fulltext	 		
+Quarterly Reviews of Biophysics	0033-5835	1469-8994	1997-02-01	30	01	2012-11-01	45	04	http://journals.cambridge.org/jid_QRB		QRB		fulltext	 		
+Philosophy	0031-8191	1469-817X	1998-01-01	73	01	2012-10-01	87	04	http://journals.cambridge.org/jid_PHI		PHI		fulltext	 		
+The Review of Symbolic Logic	1755-0203	1755-0211	2008-06-01	1	01	2012-12-01	5	04	http://journals.cambridge.org/jid_RSL		RSL		fulltext	 		
+International Journal of Microwave and Wireless Technologies	1759-0787	1759-0795	2009-02-01	1	01	2012-12-01	4	06	http://journals.cambridge.org/jid_MRF		MRF		fulltext	 		
+Proceedings of the International Astronomical Union	1743-9213	1743-9221	2004-03-01	2004	IAUC195	2012-01-01	8	S287	http://journals.cambridge.org/jid_IAU		IAU		fulltext	 		
+Perspectives on Politics	1537-5927	1541-0986	2003-03-01	1	01	2012-12-01	10	04	http://journals.cambridge.org/jid_PPS		PPS		fulltext	 		
+Journal of Global History	1740-0228	1740-0236	2006-03-01	1	01	2012-11-01	7	03	http://journals.cambridge.org/jid_JGH		JGH		fulltext	 		
+The International Journal of Neuropsychopharmacology	1461-1457	1469-5111	1998-07-01	1	01	2013-02-01	16	01	http://journals.cambridge.org/jid_PNP		PNP		fulltext	 		
+Think 	1477-1756	1755-1196	2008-03-01	6	11	2012-09-01	11	32	http://journals.cambridge.org/jid_THI		THI		fulltext	 		
+Journal of Dairy Research	0022-0299	1469-7629	1997-02-01	64	01	2012-11-01	79	04	http://journals.cambridge.org/jid_DAR		DAR		fulltext	 		
+Laser and Particle Beams	0263-0346	1469-803X	1999-01-01	17	01	2012-12-01	30	04	http://journals.cambridge.org/jid_LPB		LPB		fulltext	 		
+The Historical Journal	0018-246X	1469-5103	1997-03-01	40	01	2012-12-01	55	04	http://journals.cambridge.org/jid_HIS		HIS		fulltext	 		
+Journal of Tropical Ecology	0266-4674	1469-7831	1998-01-01	14	01	2012-11-01	28	06	http://journals.cambridge.org/jid_TRO		TRO		fulltext	 		
+Environmental Practice	1466-0466	1466-0474	2002-03-01	4	01	2012-12-01	14	04	http://journals.cambridge.org/jid_ENP		ENP		fulltext	 		
+English Language and Linguistics	1360-6743	1469-4379	1999-05-01	3	01	2012-11-01	16	03	http://journals.cambridge.org/jid_ELL		ELL		fulltext	 		
+Psychological Medicine	0033-2917	1469-8978	1997-01-01	27	01	2012-12-01	42	12	http://journals.cambridge.org/jid_PSM		PSM		fulltext	 		
+Journal of Germanic Linguistics	1470-5427	1475-3014	1989-01-01	1	01	2012-12-01	24	04	http://journals.cambridge.org/jid_JGL		JGL		fulltext	 		
+British Journal of Nutrition	0007-1145	1475-2662	2007-01-01	97	01	2012-12-28	108	S2	http://journals.cambridge.org/jid_BJN		BJN		fulltext	 		
+Fetal and Maternal Medicine Review	0965-5395	1469-5065	1996-02-01	8	01	2012-11-01	23	3-4	http://journals.cambridge.org/jid_FMR		FMR		fulltext	 		
+Seed Science Research	0960-2585	1475-2735	1999-01-01	9	01	2012-12-01	22	S1	http://journals.cambridge.org/jid_SSR		SSR		fulltext	 		
+Theatre Research International	0307-8833	1474-0672	2001-03-01	26	01	2012-10-01	37	03	http://journals.cambridge.org/jid_TRI		TRI		fulltext	 		
+New Theatre Quarterly	0266-464X	1474-0613	2002-02-01	18	01	2012-11-01	28	04	http://journals.cambridge.org/jid_NTQ		NTQ		fulltext	 		
+Marine Biodiversity Records		1755-2672	2008-01-01	1		2012-01-01	5		http://journals.cambridge.org/jid_MBD		MBD		fulltext	 		
+Journal of African Law	0021-8553	1464-3731	2001-04-01	45	01	2012-10-01	56	02	http://journals.cambridge.org/jid_JAL		JAL		fulltext	 		
+Nordic Journal of Linguistics	0332-5865	1502-4717	2003-06-01	26	01	2012-10-01	35	02	http://journals.cambridge.org/jid_NJL		NJL		fulltext	 		
+Ethics & International Affairs	0892-6794	1747-7093	2009-03-01	23	01	2012-12-01	26	04	http://journals.cambridge.org/jid_EIA		EIA		fulltext	 		
+Studies in Second Language Acquisition	0272-2631	1470-1545	1997-03-01	19	01	2012-12-01	34	04	http://journals.cambridge.org/jid_SLA		SLA		fulltext	 		
+Journal of Anglican Studies	1740-3553	1745-5278	2008-06-01	6	01	2012-11-01	10	02	http://journals.cambridge.org/jid_AST		AST		fulltext	 		
+Journal of Child Language	0305-0009	1469-7602	1997-02-01	24	01	2012-11-01	39	05	http://journals.cambridge.org/jid_JCL		JCL		fulltext	 		
+ReCALL	0958-3440	1474-0109	2000-05-01	12	01	2012-09-01	24	03	http://journals.cambridge.org/jid_REC		REC		fulltext	 		
+Cardiology in the Young	1047-9511	1467-1107	2001-01-01	11	01	2012-10-01	22	S1	http://journals.cambridge.org/jid_CTY		CTY		fulltext	 		
+Japanese Journal of Political Science	1468-1099	1474-0060	2000-05-01	1	01	2012-12-01	13	04	http://journals.cambridge.org/jid_JJP		JJP		fulltext	 		
+Macroeconomic Dynamics	1365-1005	1469-8056	1997-01-01	1	01	2013-01-01	17	01	http://journals.cambridge.org/jid_MDY		MDY		fulltext	 		
+Journal of the Institute of Mathematics of Jussieu	1474-7480	1475-3030	2002-01-01	1	01	2013-01-01	12	01	http://journals.cambridge.org/jid_JMJ		JMJ		fulltext	 		
+Nineteenth-Century Music Review	1479-4098	2044-8414	2004-06-01	1	01	2012-06-01	9	01	http://journals.cambridge.org/jid_NCM		NCM		fulltext	 		
+Journal of the Society for American Music	1752-1963	1752-1971	2007-02-01	1	01	2012-11-01	6	04	http://journals.cambridge.org/jid_SAM		SAM		fulltext	 		
+twentieth-century music	1478-5722	1478-5730	2004-03-01	1	01	2011-09-01	8	02	http://journals.cambridge.org/jid_TCM		TCM		fulltext	 		

@@ -1,0 +1,24 @@
+{
+  "packageGroups":[
+    {
+      "groupPlatformUrl":"http://www.sciencedirect.com/science",
+      "groupProvider":"elsevier",
+      "groupSource":"ELSEVIER",
+      "groupFormat":"elsevier",
+      "groupIdentifierNamespace":"ELSEVIER",
+      "packages":[
+        { 
+          "url":"http://holdings.sciencedirect.com/holdings/productReport.url?packageId=&productId=34",
+          "packageName":"Elsevier Global All Titles",
+          "lastChecksum":"0"
+        },
+        { 
+          "url":"http://holdings.sciencedirect.com/holdings/productReport.url?packageId=312&productId=34",
+          "packageName":"Elsevier Global Agriculture and Biological Sciences Pre 2007",
+          "lastChecksum":""
+        }
+      ]
+    }
+  ]
+}
+

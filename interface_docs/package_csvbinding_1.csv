@@ -1,0 +1,7 @@
+DataSpecification,SpecVersion,P_OrgName,P_OrgID,P_OrgURI,PackageName,PackageID,PackageURI,SOName,SOID,SubURI,SubTermStartDate,SubTermEndDate,C_OrgName,C_OrgID,C_OrgURI,,,,,
+package,3.0,Springer,springer,uri://kbplus/org/springer,Open Access Hybrid,springer.open_access_hybrid,,Springer Open Access 2011-2012 NESLI2,springer_open_access_2011-2012_nesli2,,2011-01-01,2012-12-31,NESLi2,nesli2,uri://kbplus/org/nesli2,,,,,
+TIPPNumber,PublicationTitle,TitleIdentifierNamespace,TitleIdentifier,DateFirstPackageIssue,VolumeFirstPackageIssue,NumberFirstPackageIssue,DateLastPackageIssue,VolumeLastPackageIssue,NumberLastPackageIssue,KBARTEmbargo,CoverageDepth,CoverageNotes,pub_OrgName,pub_OrgID,pub_OrgURI,PlatformName,PlatformID,PlatformURI,PlatformRole,PlatformTitleURL
+1,3 Biotech,eissn,2190-5738,2011-01-01,1,,,,,,,,Springer Berlin Heidelberg,springer_berlin_heidelberg,uri://kbplus/org/springer_berlin_heidelberg,SpringerLink,springerlink,uri://kbplus/platform/springerlink,host,http://www.springerlink.com/content/2190-5738/
+1,,springer,13205,,,,,,,,,,,,,SpringerLink,springerlink,uri://kbplus/platform/springerlink,administrative,
+2,Advances in Difference Equations,eissn,1687-1847,2011-01-01,2011,,,,,,,,"Springer International Publishing, CH","springer_international_publishering,_ch","uri://kbplus/org/springer_international_publishering,_ch",SpringerLink,springerlink,uri://kbplus/platform/springerlink,host,http://www.springerlink.com/content/1687-1847/
+2,,,,,,,,,,,,,,,,SpringerLink,springerlink,uri://kbplus/platform/springerlink,administrative,

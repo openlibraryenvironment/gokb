@@ -1,0 +1,42 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "dbpass": "",
+    "canonicalName": "",
+    "gokbsysid":""
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "eu-west-1",
+    "source_ami": "ami-00b11177",
+    "instance_type": "t1.micro",
+    "ssh_username": "ubuntu",
+    "ami_name": "gokb-server {{timestamp}}"
+  }],
+  "provisioners": [{
+    "type": "shell",
+    "inline": [
+      "sleep 30",
+      "sudo apt-get update",
+      "echo Updated",
+      "sudo rm /boot/grub/menu.lst",
+      "echo Removed old grub menu",
+      "sudo update-grub-legacy-ec2 -y",
+      "echo updated grub - do dist-upgrade",
+      "sudo apt-get -y --force-yes dist-upgrade",
+      "echo upgrade completed",
+      "sudo apt-get -y install unzip git puppet wget puppet-module-puppetlabs-apt",
+      "echo Puppet installed",
+      "sudo wget https://github.com/k-int/gokb-phase1/raw/dev/deployment/puppet/gokb_baseline.pp",
+      "echo Got puppet file",
+      "echo {{user `dbpass`}} > /tmp/dbpass",
+      "echo {{user `canonicalName`}} > /tmp/canonicalName",
+      "echo {{user `gokbsysid`}} > /tmp/sysid",
+      "sudo puppet apply -v ./gokb_baseline.pp",
+      "echo Puppet file applied"
+    ]
+  }]
+}

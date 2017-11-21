@@ -1,0 +1,3 @@
+http://www.packer.io/intro/getting-started/build-image.html
+packer build -var-file="/home/ibbo/gokb_test_packer_vars.json" ./test1.json 
+

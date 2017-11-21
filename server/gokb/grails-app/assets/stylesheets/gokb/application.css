@@ -1,0 +1,32 @@
+/**
+ * GOKb application CSS.
+ */
+/*
+*= require font-awesome
+*= require metisMenu.min
+*= require summernote
+*= require summernote-bs3
+*= require annotations
+*= require security-styles
+*= require select2
+*= require select2-bootstrap3
+*= require bootstrap-editable
+*= require morris
+*= require jquery.textcomplete
+*= encoding UTF-8
+*/
+
+.threeColGrid > div:nth-child(4n+5) {
+    clear: left;
+}
+
+body .modal-dialog {
+    /* new custom width */
+    width: 750px;
+    /* must be half of the width, minus scrollbar on the left (30px) */
+    /* margin-left: -375px; */
+}
+
+.textcomplete-dropdown {
+	z-index: 9999 !important;
+}
