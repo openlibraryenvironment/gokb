@@ -36,7 +36,7 @@ class TitleInstance extends KBComponent {
   @Transient
   public title_status_properties = [:]
 
-  public void addVariantTitle (String title, String locale = "EN-us") {
+  public void addVariantTitle (String title, String locale = null) {
 
     // Check that the variant is not equal to the name of this title first.
     if (!title.equalsIgnoreCase(this.name)) {
@@ -44,7 +44,10 @@ class TitleInstance extends KBComponent {
       // Need to compare the existing variant names here. Rather than use the equals method,
       // we are going to compare certain attributes here.
       RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
-      RefdataValue locale_rd = RefdataCategory.lookupOrCreate("KBComponentVariantName.Locale", (locale))
+      
+      if(locale){
+        RefdataValue locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
+      }
 
       // Each of the variants...
       def existing = variantNames.find {

@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.Callable
 import org.codehaus.groovy.grails.commons.GrailsApplication
 
 /**
@@ -79,7 +80,7 @@ class ConcurrencyManagerService {
         // Check for a parameter on this closure.
         work = work.rcurry(this)
 
-        task = executorService.submit(work)
+        task = executorService.submit(work as Callable<Date>)
 
         begun = true
       }
@@ -99,7 +100,7 @@ class ConcurrencyManagerService {
         // Check for a parameter on this closure.
         work = work.rcurry(this)
 
-        task = grailsApplication.mainContext."${poolName}ExecutorService".submit(work)
+        task = grailsApplication.mainContext."${poolName}ExecutorService".submit(work as Callable<Date>)
 
         begun = true
       }

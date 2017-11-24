@@ -7,7 +7,9 @@
     <dd><g:xEditable class="ipe" owner="${d}" field="displayName"/></dd>
   
     <dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
-    <dd><g:xEditable class="ipe" owner="${d}" field="email"/></dd>
+    <dd>
+      <g:xEditable class="ipe" owner="${d}" field="email"/>
+    </dd>
     
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd>

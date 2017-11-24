@@ -1,4 +1,4 @@
-<h1>NC Ebooks :: Package Change Notifications and Other Alerts...</h1>
+<h1>GOKb :: Package Change Notifications and Other Alerts...</h1>
 
   <% if ( updates.size() == 0 ) { %>
     <p> There were no changes detected on your watch list between ${start_date} and ${end_date} </p>

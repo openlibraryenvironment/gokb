@@ -751,8 +751,15 @@ class BootStrap {
 
 
 
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-us').save()
-    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','EN-gb').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','en_US').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','en_GB').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','en').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','de').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','es').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','it').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','ru').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','pt').save()
+    RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale','la').save()
 
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT).save()
     RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_DELETED).save()

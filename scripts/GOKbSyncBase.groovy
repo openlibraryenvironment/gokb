@@ -95,7 +95,7 @@ abstract class GOKbSyncBase extends Script {
   
   protected saveConfig () {
     cfg_file.delete()
-    config.deferred?.retainAll { it }
+    config.remove('deferred')
     
     cfg_file << toJson(config)
   }

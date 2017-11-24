@@ -5,6 +5,7 @@ import org.elasticsearch.node.Node
 import static org.elasticsearch.node.NodeBuilder.nodeBuilder
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
+import org.apache.commons.validator.routines.EmailValidator
 import org.elasticsearch.groovy.*
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import groovy.text.SimpleTemplateEngine
@@ -101,15 +102,21 @@ order by f.id, ti.id, title_in_group.id
     def engine = new SimpleTemplateEngine()
     def tmpl = engine.createTemplate(emailTemplateFile).make(result)
     def content = tmpl.toString()
+    
+    if (user.email && EmailValidator.isValid(user.email)) {
 
-    mailService.sendMail {
-      to user.email
-      from 'GlobalOpenKB@gmail.com'
-      subject "${grailsApplication.config.alerts.subject} - ${new Date()}"
-      html content
+      mailService.sendMail {
+        to user.email
+        from "${grailsApplication.config.alerts.emailFrom ?: 'GOKb <user-alerts@gokb.org>'"
+        subject "${grailsApplication.config.alerts.subject ?: 'GOKb User Alerts'} - ${new Date()}"
+        html content
+      }
+
+      log.debug("Sent email")
     }
-
-    log.debug("Sent email");
+    else {
+      log.debug("User ${user.name} has no valid email!")
+    }
   }
 
   private getTippsInUserWatchList(User user, Date start_date, Date end_date) {

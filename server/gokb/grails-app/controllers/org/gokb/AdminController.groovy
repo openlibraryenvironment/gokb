@@ -249,6 +249,14 @@ class AdminController {
     result.jobs = concurrencyManagerService.jobs.sort { it.key }
     log.debug("concurrency manager service");
     result.cms = concurrencyManagerService
+    
+    result.jobs.each { k, j ->
+      if ( j.isDone() && !j.endTime) {
+        def job_res = j.get()
+        log.debug("${job_res}")
+        j.endTime = j.get()
+      }
+    }
 
     log.debug("Render");
     if ( request.format == 'JSON' ) {
@@ -262,7 +270,8 @@ class AdminController {
 
   def housekeeping() {
     Job j = concurrencyManagerService.createJob {
-      cleanupService.housekeeping()
+      def et = cleanupService.housekeeping()
+      return et
     }.startOrQueue()
     
     j.description = "Housekeeping"

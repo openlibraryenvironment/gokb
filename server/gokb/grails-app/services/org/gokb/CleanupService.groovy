@@ -158,6 +158,7 @@ class CleanupService {
     catch ( Exception e ) {
       e.printStackTrace()
     }
+    return new Date();
   }
   
   private final def duplicateIdentifierCleanup = {

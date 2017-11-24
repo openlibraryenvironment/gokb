@@ -608,6 +608,8 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   '/**/css/**':               ['permitAll'],
   '/**/images/**':            ['permitAll'],
   '/**/favicon.ico':          ['permitAll'],
+  '/api/find':                ['permitAll'],
+  '/api/suggest':             ['permitAll'],
   '/api/esconfig':            ['permitAll'],
   '/api/capabilities':        ['permitAll'],
   '/api/downloadUpdate':      ['permitAll'],
@@ -1088,7 +1090,7 @@ globalSearchTemplates = [
     group:'Secondary',
     // defaultSort:'name',
     // defaultOrder:'asc',
-    // useDistinct=true,
+    useDistinct: true,
     qbeConfig:[
       qbeForm:[
         [
@@ -1884,7 +1886,7 @@ grails.plugin.springsecurity.ui.password.maxLength = 64
 grails.plugin.springsecurity.ui.password.validationRegex = '^.*$'
 
 //configure register
-grails.plugin.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.k-int.com>"
+grails.plugin.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.org>"
 grails.plugin.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
 grails.plugin.springsecurity.ui.register.defaultRoleNames = [
   "ROLE_USER"

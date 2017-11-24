@@ -71,10 +71,11 @@ grails.project.dependency.resolution = {
         runtime 'org.apache.tika:tika-parsers:1.6'
         
 
-        runtime 'org.elasticsearch:elasticsearch:2.1.1'
-        runtime ('org.elasticsearch:elasticsearch-groovy:2.1.1') {
+        compile 'org.elasticsearch:elasticsearch:2.1.2'
+        runtime ('org.elasticsearch:elasticsearch-groovy:2.1.2') {
           excludes "org.codehaus.groovy:groovy-all"
         }
+        runtime 'com.vividsolutions:jts:1.13'
 
         // runtime ('org.elasticsearch:elasticsearch:1.7.1')
         // runtime ('org.elasticsearch:elasticsearch-groovy:1.7.0') {

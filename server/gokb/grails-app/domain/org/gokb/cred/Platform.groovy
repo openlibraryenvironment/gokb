@@ -156,7 +156,7 @@ class Platform extends KBComponent {
   }
 
   @Transient
-  public static Platform upsertDTO(platformDTO) {
+  public static Platform upsertDTO(platformDTO, def user = null, def project = null) {
     // Ideally this should be done on platformUrl, but we fall back to name here
     
     def result = false;
@@ -264,10 +264,19 @@ class Platform extends KBComponent {
         }
       }
     }
+    
     if(!result && !skip){
       log.debug("Creating new platform for: ${platformDTO}")
       result = new Platform(name:platformDTO.name, normname: KBComponent.generateNormname(platformDTO.name), primaryUrl: (viable_url ? platformDTO.primaryUrl : null )).save(flush:true,failOnError:true)
+      
+      ReviewRequest.raise(
+        result,
+        "The platform ${result} did not exist and was newly created.",
+        "New platform created",
+        user, project
+      )
     }
+    
     result;
   }
 

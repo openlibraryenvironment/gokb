@@ -589,12 +589,16 @@ class IntegrationController {
   private static def ensureCoreData ( KBComponent component, data ) {
 
     // Set the name.
-    component.name = data.name
+    if(!component.name && data.name) {
+      component.name = data.name
+    }
 
     // Core refdata.
-    setAllRefdata ([
-      'status', 'editStatus',
-    ], data, component)
+    if (!component.status) {
+      setAllRefdata ([
+        'status', 'editStatus',
+      ], data, component)
+    }
 
     // Identifiers
     log.debug("Identifier processing ${data.identifiers}")
@@ -627,7 +631,7 @@ class IntegrationController {
     }
 
     // handle the source.
-    if (data.source && data.source?.size() > 0) {
+    if (!component.source && data.source && data.source?.size() > 0) {
       component.source = createOrUpdateSource (data.source)?.get('component')
     }
 
@@ -780,7 +784,7 @@ class IntegrationController {
                 pl = Platform.get(pl_id)
               } else {
                 // Not in cache.
-                pl = Platform.upsertDTO(tipp.platform);
+                pl = Platform.upsertDTO(tipp.platform, user);
 
                 if(pl){
                   platform_cache[tipp.platform.name] = pl.id

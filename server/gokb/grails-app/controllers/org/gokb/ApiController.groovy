@@ -26,6 +26,11 @@ import org.hibernate.criterion.CriteriaSpecification
 import grails.gorm.DetachedCriteria
 import org.hibernate.criterion.Subqueries
 
+import grails.plugin.gson.converters.GSON
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import org.elasticsearch.index.query.*
+import org.elasticsearch.action.search.*
+
 
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
@@ -39,6 +44,10 @@ class ApiController {
   RefineService refineService
   SecureRandom rand = new SecureRandom()
   UploadAnalysisService uploadAnalysisService
+  def ESWrapperService
+  
+  static def reversemap = ['subject':'subjectKw','componentType':'componentType']
+  static def non_analyzed_fields = ['componentType']
   
   private static final Closure TRANSFORMER_USER = {User u ->
     [
@@ -81,7 +90,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig', 'bulkLoadUsers']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig', 'bulkLoadUsers', 'find']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -837,6 +846,234 @@ class ApiController {
 
     render result as JSON
   }
+  
+  def suggest() {
+    def result = [:]
+    def esclient = ESWrapperService.getClient()
+    def search_action = null
+    def errors = [:]
+    
+    result.query = request.queryString 
+    
+    try {
+    
+    }finally{}
+  }
+  
+  def find() {
+    def result = [:]
+    def esclient = ESWrapperService.getClient()
+    def search_action = null
+    def errors = [:]
+    
+    result.query = request.queryString 
+    
+    try {
+    
+      if ( !params.q ) {
+      
+        QueryBuilder exactQuery = QueryBuilders.boolQuery()
+        
+        def singleParams = [:]
+        
+        if (params.componentType) {
+          singleParams['componentType'] = params.componentType
+        }
+        if (params.identifier) { 
+          singleParams['identifier'] = params.identifier
+        }
+        if (params.name) {
+          singleParams['name'] = params.name
+        }
+        if (params.altname) {
+          singleParams['altname'] = params.altname
+        }
+      
+        if (singleParams) {
+          singleParams.each { k,v ->
+            exactQuery.must(QueryBuilders.matchQuery(k,v))
+          }
+        }
+        
+        if (params.label){
+          exactQuery.should(QueryBuilders.matchQuery('name', params.label))
+          exactQuery.should(QueryBuilders.matchQuery('altname', params.label))
+          exactQuery.minimumNumberShouldMatch(1)
+        }
+        
+        SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
+        
+        es_request.setIndices(grailsApplication.config.globalSearch.indices)
+        es_request.setTypes(grailsApplication.config.globalSearch.types)
+        es_request.setQuery(exactQuery)
+        
+        if ( params.max ) {
+          def max = null
+          try {
+            max = params.max as Integer
+          }catch (all){
+            errors['max'] = "Could not convert ${params.max} to Int."
+          }
+        
+          if (max) {
+            es_request.setSize(max)
+            result.max = params.max
+          }
+        }
+        
+        if ( params.from ) {
+          def from = null
+          
+          try {
+            from = params.from as Integer
+          }catch (all){
+            errors['from'] = "Could not convert ${params.from} to Int."
+          }
+          
+          if (from) {
+            es_request.setFrom(from)
+            result.offset = params.from
+          }
+        }
+        
+        if ( params.offset ) {
+          def from = null
+          
+          try {
+            from = params.offset as Integer
+          }catch (all){
+            errors['from'] = "Could not convert ${params.offset} to Int."
+          }
+          
+          if (from) {
+            es_request.setFrom(from)
+            result.offset = params.offset
+          }
+        }
+        
+        search_action = es_request.execute()
+          
+      }
+      
+      else {
+      
+        result.max = params.max ? Integer.parseInt(params.max) : 10;
+        result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+      
+        if ( params.q && params.q.length() > 0) {
+        
+          params.q = params.q.replace('[',"(")
+          params.q = params.q.replace(']',")")
+          
+          def query_str = buildQuery(params)
+          
+          search_action = esclient.search {
+            indices grailsApplication.config.globalSearch.indices
+            types grailsApplication.config.globalSearch.types
+            source {
+              from = result.offset
+              size = result.max
+              query {
+                query_string (query: query_str)
+              }
+            }
+          }
+          
+        }
+        
+      }
+      
+      def search = search_action.actionGet()
+
+      if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
+        search.hits.maxScore = 0;
+      }
+      
+      result.count = search.hits.totalHits
+      result.records = []
+      
+      search.hits.each { r ->
+        def response_record = [:]
+        response_record.id = r.id
+        response_record.score = r.score
+        response_record.name = r.source.name
+        response_record.identifiers = r.source.identifiers
+        response_record.altNames = r.source.altname
+        
+        result.records.add(response_record);
+      }
+      
+    }finally {
+      if (errors) {
+        result.errors = errors
+      }
+    }
+    
+    render result as JSON
+  }
+  
+  private def buildQuery(params) {
+
+    StringWriter sw = new StringWriter()
+
+    if ( ( params != null ) && ( params.q != null ) )
+      if(params.q.equals("*")){
+        sw.write(params.q)
+      }
+      else{
+        sw.write("(${params.q})")
+      }
+    else
+      sw.write("*:*")
+
+    // For each reverse mapping
+    reversemap.each { mapping ->
+
+      // log.debug("testing ${mapping.key}");
+
+      // If the query string supplies a value for that mapped parameter
+      if ( params[mapping.key] != null ) {
+
+        // If we have a list of values, rather than a scalar
+        if ( params[mapping.key].class == java.util.ArrayList) {
+          params[mapping.key].each { p ->
+            sw.write(" AND ")
+            sw.write(mapping.value)
+            sw.write(":")
+
+            if(non_analyzed_fields.contains(mapping.value)) {
+              sw.write("${p}")
+            }
+            else {
+              sw.write("\"${p}\"")
+            }
+          }
+        }
+        else {
+          // We are dealing with a single value, this is "a good thing" (TM)
+          // Only add the param if it's length is > 0 or we end up with really ugly URLs
+          // II : Changed to only do this if the value is NOT an *
+          if ( params[mapping.key].length() > 0 && ! ( params[mapping.key].equalsIgnoreCase('*') ) ) {
+            sw.write(" AND ")
+            // Write out the mapped field name, not the name from the source
+            sw.write(mapping.value)
+            sw.write(":")
+  
+            if(non_analyzed_fields.contains(mapping.value)) {
+              sw.write("${params[mapping.key]}")
+            }
+            else {
+              sw.write("\"${params[mapping.key]}\"")
+            }
+          }
+        }
+      }
+    }
+
+    def result = sw.toString();
+    result;
+  }
+  
 
   def private doQuery (qbetemplate, params, result) {
     log.debug("doQuery ${result}");
