@@ -42,7 +42,7 @@ class HomeController {
         forward (action: "userdash", params: (params))
       }
       else {
-        forward (action: "profile")
+        forward (action: "dashboard", params: (params))
       }
     }
   }
