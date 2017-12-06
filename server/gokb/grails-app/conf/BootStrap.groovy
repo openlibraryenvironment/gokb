@@ -28,7 +28,7 @@ import static org.springframework.security.acls.domain.BasePermission.WRITE
 import static org.springframework.security.acls.domain.BasePermission.CREATE
 
 import org.springframework.security.core.context.SecurityContextHolder as SCH
-import org.springframework.security.authentication. UsernamePasswordAuthenticationToken
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.AuthorityUtils
 
 import org.elasticsearch.client.Client

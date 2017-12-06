@@ -93,7 +93,7 @@
     </li>
     <li>
       <a href="#review" data-toggle="tab">Review Requests 
-        <span class="badge badge-warning"> ${d.reviewRequests ? d.reviewRequests.size()}</span>
+        <span class="badge badge-warning"> ${d.reviewRequests ? d.reviewRequests.size() : '0'}</span>
       </a>
     </li>
   </g:if>

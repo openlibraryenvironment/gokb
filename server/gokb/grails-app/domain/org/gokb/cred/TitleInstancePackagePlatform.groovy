@@ -259,6 +259,13 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
           changed = true
         }
+        
+        if ( tipp_dto.paymentType && tipp_dto.paymentType.length() > 0 ) {
+          
+          def payment_ref = RefdataCategory.getOID("TitleInstancePackagePlatform.PaymentType", tipp_dto.paymentType)
+          
+          if (payment_ref) tipp.paymentType = RefdataValue.get(payment_ref)
+        }
 
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate,tipp,'accessStartDate')
