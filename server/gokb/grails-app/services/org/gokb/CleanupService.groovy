@@ -104,11 +104,12 @@ class CleanupService {
           def c_id = "${component.class.name}:${component.id}"
           def expunge_result = component.expunge();
           log.debug(expunge_result);
-          esclient.deleteAsync {
+          def es_response = esclient.delete {
             index 'gokb'
             type 'component'
             id c_id
           }
+          log.debug(es_response)
           result.report.add(expunge_result)
         }
       }

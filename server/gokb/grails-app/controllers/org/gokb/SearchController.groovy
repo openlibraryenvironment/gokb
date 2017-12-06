@@ -3,6 +3,8 @@ package org.gokb
 import grails.converters.*
 import org.springframework.security.acls.model.NotFoundException
 import org.springframework.security.access.annotation.Secured;
+import com.k_int.apis.SecurityApi
+import org.springframework.security.acls.model.Permission
 
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.gokb.cred.*
@@ -66,14 +68,24 @@ class SearchController {
 
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate ) {
-        log.debug("Execute query");
-        doQuery(result.qbetemplate, params, result)
-        log.debug("Query complete");
-        result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
+      
+        Class target_class = Class.forName(result.qbetemplate.baseclass);
+        def read_perm = target_class.isTypeReadable()
         
-        // Add the page information.
-        result.page_current = (result.offset / result.max) + 1
-        result.page_total = (result.reccount / result.max).toInteger() + (result.reccount % result.max > 0 ? 1 : 0)
+        if (read_perm) {
+        
+          log.debug("Execute query");
+          doQuery(result.qbetemplate, params, result)
+          log.debug("Query complete");
+          result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
+          
+          // Add the page information.
+          result.page_current = (result.offset / result.max) + 1
+          result.page_total = (result.reccount / result.max).toInteger() + (result.reccount % result.max > 0 ? 1 : 0)
+          
+        }else{
+          response.sendError(403);
+        }
       }
       else {
         log.error("no template ${result?.qbetemplate}");

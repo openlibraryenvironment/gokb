@@ -34,23 +34,23 @@
 		<ul id="tabs" class="nav nav-tabs">
 			<li class="active"><a href="#orgdetails" data-toggle="tab">Organization</a></li>
 			<li><a href="#altnames" data-toggle="tab">Alternate Names <span
-					class="badge badge-warning"> ${d.variantNames?.size()}
+					class="badge badge-warning"> ${d.variantNames ? d.variantNames.size() : '0'}
 				</span></a></li>
 			<li><a href="#ids" data-toggle="tab">IDs <span
-					class="badge badge-warning"> ${d.ids?.size()}
+					class="badge badge-warning"> ${d.ids ? d.ids.size() : '0'}
 				</span></a></li>
 			<li><a href="#licenses" data-toggle="tab">Licenses</a></li>
 			<li><a href="#packages" data-toggle="tab">Packages</a></li>
 			<li><a href="#titles" data-toggle="tab">Published Titles</a></li>
 			<li><a href="#platforms" data-toggle="tab">Platforms</a></li>
 			<li><a href="#addprops" data-toggle="tab">Custom Fields <span
-					class="badge badge-warning"> ${d.additionalProperties?.size()}
+					class="badge badge-warning"> ${d.additionalProperties ? d.additionalProperties.size() : '0'}
 				</span></a></li>
 			<li><a href="#review" data-toggle="tab">Review Tasks <span
-					class="badge badge-warning"> ${d.reviewRequests?.size()}
+					class="badge badge-warning"> ${d.reviewRequests ? d.reviewRequests.size() : '0'}
 				</span></a></li>
 			<li><a href="#offices" data-toggle="tab">Offices <span
-					class="badge badge-warning"> ${d.offices?.size()}
+					class="badge badge-warning"> ${d.offices ? d.offices.size() : '0'}
 				</span></a></li>
 		</ul>
 

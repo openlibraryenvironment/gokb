@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest
 
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
+import org.gokb.ESWrapperService
 import org.gokb.cred.*
 import org.gokb.refine.RefineProject
 import org.gokb.validation.Validation
@@ -30,6 +31,19 @@ import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.authentication. UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.AuthorityUtils
 
+import org.elasticsearch.client.Client
+import org.elasticsearch.client.AdminClient
+import org.elasticsearch.client.IndicesAdminClient
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse 
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
+import static org.elasticsearch.common.xcontent.XContentFactory.*
+import org.elasticsearch.common.xcontent.XContentBuilder
+
 
 
 class BootStrap {
@@ -37,6 +51,7 @@ class BootStrap {
   GrailsApplication grailsApplication
   def aclUtilService
   def gokbAclService
+  def ESWrapperService
   //def titleLookupService
 
   def init = { servletContext ->
@@ -193,8 +208,11 @@ class BootStrap {
 
     log.debug("Register users and override default admin password");
     registerUsers()
+    
+    log.debug("Ensuring ElasticSearch index")
+    ensureESIndex()
 
-    log.info("GoKB Initi complete");
+    log.info("GoKB Init complete");
   }
 
   def defaultBulkLoaderConfig() {
@@ -947,5 +965,116 @@ class BootStrap {
         }
       }
     }
+  }
+  
+  def ensureESIndex() {
+    def indexName = grailsApplication.config.searchApi.indices ?: "gokb"
+    def esclient = ESWrapperService.getClient()
+    IndicesAdminClient adminClient = esclient.admin().indices();
+    
+    if (!adminClient.prepareExists(indexName).execute().actionGet().isExists()) {
+      log.debug("ES index ${indexName} did not exist, creating..")
+      
+      CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName);
+      
+      log.debug("Adding index setttings..")
+      createIndexRequestBuilder.setSettings(indexSettings());
+      log.debug("Adding index mappings..")
+      createIndexRequestBuilder.addMapping("component", indexMapping());
+      
+      CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet();
+      
+      if ( indexResponse.isAcknowledged() ) {
+        log.debug("Index ${indexName} successfully created!")
+      }else{
+        log.debug("Index creation failed: ${indexResponse}")
+      }
+    }
+    else{
+      log.debug("ES index ${indexName} already exists..")
+      // Validate settings & mappings
+    }
+  }
+  
+  def indexSettings() {
+    // get from File?
+    
+    XContentBuilder settings = jsonBuilder()
+      .startObject()
+        .field("number_of_shards", 1) 
+        .startObject("analysis")
+          .startObject("filter")
+            .startObject("autocomplete_filter") 
+              .field("type","edge_ngram")
+              .field("min_gram", 1)
+              .field("max_gram", 20)
+            .endObject()
+          .endObject()
+          .startObject("analyzer")
+            .startObject("autocomplete")
+              .field("type","custom")
+              .field("tokenizer","standard")
+              .startArray("filter")
+                .value("lowercase")
+                .value("autocomplete_filter") 
+              .endArray()
+            .endObject()
+          .endObject()
+        .endObject()
+      .endObject()
+      
+    return settings
+  }
+  
+  def indexMapping() {
+    // get from File?
+    
+    XContentBuilder mapping = jsonBuilder()
+      .startObject()
+        .startObject("component")
+          .startObject("properties")
+            .startObject("name")
+              .field("type", "multi_field")
+              .startObject("fields")
+                .startObject("name")
+                  .field("type", "string")
+                  .field("analyzer", "snowball")
+                  .field("copy_to", "suggest")
+                .endObject()
+                .startObject("altname")
+                  .field("type", "string")
+                  .field("analyzer", "snowball")
+                .endObject()
+              .endObject()
+            .endObject()
+            .startObject("identifiers")
+              .startObject("properties")
+                .startObject("namespace")
+                  .field("type","string")
+                  .field("index","not_analyzed")
+                .endObject()
+                .startObject("value")
+                  .field("type","string")
+                  .field("index","not_analyzed")
+                .endObject()
+              .endObject()
+            .endObject()
+            .startObject("componentType") 
+              .field("type","string") 
+              .field("index","not_analyzed") 
+            .endObject()
+            .startObject("status")
+              .field("type","string")
+              .field("index","not_analyzed")
+            .endObject()
+            .startObject("suggest")
+              .field("type","string")
+              .field("analyzer","autocomplete")
+              .field("search_analyzer","standard")
+            .endObject()
+        .endObject()
+      .endObject()
+      
+    return mapping
   }
 }

@@ -213,9 +213,6 @@ class TitleLookupService {
             the_title = clazz.newInstance()
             the_title.name = metadata.title
             the_title.normname = KBComponent.generateNormname(metadata.title);
-            if(metadata.status){
-              the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, metadata.status)
-            }
             // the_title.editStatus = 
             the_title.ids = []
           }
@@ -267,9 +264,6 @@ class TitleLookupService {
               the_title = clazz.newInstance()
               the_title.name = metadata.title
               the_title.normname = KBComponent.generateNormname(metadata.title)
-              if(metadata.status){
-                the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, metadata.status)
-              }
               the_title.ids = []
             }
 
@@ -288,7 +282,7 @@ class TitleLookupService {
         
         // We should raise a review request here if the match was made by cross checking
         // different identifier namespaces.
-        if (results['x_check_matches'].size() == 1) {
+        if (results['x_check_matches'].size() == 1 && results['x_check_matches'][0]['suppliedNS'] != 'issnl') {
           
           def data = results['x_check_matches'][0]
           
@@ -367,9 +361,6 @@ class TitleLookupService {
                   the_title = clazz.newInstance()
                   the_title.name = metadata.title
                   the_title.normname = KBComponent.generateNormname(metadata.title)
-                  if(metadata.status){
-                    the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, metadata.status)
-                  }
                   the_title.ids = []
                 }
                 ReviewRequest.raise(
@@ -425,9 +416,6 @@ class TitleLookupService {
               the_title = clazz.newInstance()
               the_title.name = metadata.title
               the_title.normname = KBComponent.generateNormname(metadata.title)
-              if(metadata.status){
-                the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, metadata.status)
-              }
               the_title.ids = []
             }
 
@@ -477,6 +465,10 @@ class TitleLookupService {
 
       // Make sure we're all saved before looking up the publisher
       the_title.save(flush:true, failOnError:true);
+      
+      if(the_title.name.startsWith("Unknown Title")){
+        the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
+      }
 
       // Add the publisher.
       addPublisher(metadata.publisher_name, the_title, user, project)

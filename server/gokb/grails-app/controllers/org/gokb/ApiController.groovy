@@ -90,7 +90,7 @@ class ApiController {
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig', 'bulkLoadUsers', 'find']]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig', 'bulkLoadUsers', 'find', 'suggest']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -846,66 +846,32 @@ class ApiController {
 
     render result as JSON
   }
-  
+
   def suggest() {
     def result = [:]
     def esclient = ESWrapperService.getClient()
     def search_action = null
     def errors = [:]
     
-    result.query = request.queryString 
+    result.endpoint = request.forwardURI
     
     try {
-    
-    }finally{}
-  }
-  
-  def find() {
-    def result = [:]
-    def esclient = ESWrapperService.getClient()
-    def search_action = null
-    def errors = [:]
-    
-    result.query = request.queryString 
-    
-    try {
-    
-      if ( !params.q ) {
       
-        QueryBuilder exactQuery = QueryBuilders.boolQuery()
+      if ( params.q && params.q.size() > 0 ) {
+    
+        QueryBuilder suggestQuery = QueryBuilders.boolQuery()
         
-        def singleParams = [:]
+        suggestQuery.must(QueryBuilders.matchQuery('suggest', params.q))
         
-        if (params.componentType) {
-          singleParams['componentType'] = params.componentType
-        }
-        if (params.identifier) { 
-          singleParams['identifier'] = params.identifier
-        }
-        if (params.name) {
-          singleParams['name'] = params.name
-        }
-        if (params.altname) {
-          singleParams['altname'] = params.altname
-        }
-      
-        if (singleParams) {
-          singleParams.each { k,v ->
-            exactQuery.must(QueryBuilders.matchQuery(k,v))
-          }
+        if ( params.componentType ) {
+          suggestQuery.must(QueryBuilders.matchQuery('componentType', params.componentType))
         }
         
-        if (params.label){
-          exactQuery.should(QueryBuilders.matchQuery('name', params.label))
-          exactQuery.should(QueryBuilders.matchQuery('altname', params.label))
-          exactQuery.minimumNumberShouldMatch(1)
-        }
-        
-        SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
+        SearchRequestBuilder es_request =  esclient.prepareSearch("suggest")
         
         es_request.setIndices(grailsApplication.config.globalSearch.indices)
         es_request.setTypes(grailsApplication.config.globalSearch.types)
-        es_request.setQuery(exactQuery)
+        es_request.setQuery(suggestQuery)
         
         if ( params.max ) {
           def max = null
@@ -918,6 +884,8 @@ class ApiController {
           if (max) {
             es_request.setSize(max)
             result.max = params.max
+          }else{
+            result.max = 10;
           }
         }
         
@@ -933,6 +901,8 @@ class ApiController {
           if (from) {
             es_request.setFrom(from)
             result.offset = params.from
+          } else {
+            result.offset = 0;
           }
         }
         
@@ -942,16 +912,163 @@ class ApiController {
           try {
             from = params.offset as Integer
           }catch (all){
-            errors['from'] = "Could not convert ${params.offset} to Int."
+            errors['offset'] = "Could not convert ${params.offset} to Int."
           }
           
           if (from) {
             es_request.setFrom(from)
             result.offset = params.offset
+          }else{
+            result.offset = 0;
           }
         }
         
         search_action = es_request.execute()
+        
+        def search = search_action.actionGet()
+
+        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
+          search.hits.maxScore = 0;
+        }
+        
+        result.count = search.hits.totalHits
+        result.records = []
+        
+        search.hits.each { r ->
+          def response_record = [:]
+          response_record.id = r.id
+          response_record.score = r.score
+          response_record.name = r.source.name
+          response_record.status = r.source.status
+          response_record.identifiers = r.source.identifiers
+          response_record.altNames = r.source.altname
+          
+          result.records.add(response_record);
+        }
+      }
+      else{
+        errors['fatal'] = "No query parameter 'q=' provided"
+      }
+      
+    }finally {
+      if (errors) {
+        result.errors = errors
+      }
+    }
+    
+    render result as JSON
+  }
+  
+  def find() {
+    def result = [:]
+    def esclient = ESWrapperService.getClient()
+    def search_action = null
+    def errors = [:]
+    
+    result.endpoint = request.forwardURI
+    
+    try {
+    
+      if ( !params.q ) {
+      
+        QueryBuilder exactQuery = QueryBuilders.boolQuery()
+        
+        def singleParams = [:]
+        def unknown_fields = []
+        def other_fields = ["controller","action","max","offset","from"]
+        
+        params.each { k, v ->
+          if ( k == "componentType" ) {
+            singleParams['componentType'] = v
+          }
+          else if ( k == "identifier" ) { 
+            singleParams['identifiers.value'] = v
+          }
+          
+          else if (k == 'label'){
+            exactQuery.should(QueryBuilders.matchQuery('name', v))
+            exactQuery.should(QueryBuilders.matchQuery('altname', v))
+            exactQuery.minimumNumberShouldMatch(1)
+          }
+          else if (!params.label && k == "name") {
+            singleParams['name'] = v
+          }
+        
+          else if (!params.label && k == "altname") {
+            singleParams['altname'] = v
+          }
+          else if (!other_fields.contains(k)){
+            unknown_fields.add(k)
+          }
+        }
+        
+        if(unknown_fields.size() > 0){
+          errors['unknown'] = "Unknown parameter(s): ${unknown_fields}"
+        }
+      
+        if (singleParams) {
+          singleParams.each { k,v ->
+            exactQuery.must(QueryBuilders.matchQuery(k,v))
+          }
+        }
+        
+        if(singleParams || params.label) {
+          SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
+          
+          es_request.setIndices(grailsApplication.config.globalSearch.indices)
+          es_request.setTypes(grailsApplication.config.globalSearch.types)
+          es_request.setQuery(exactQuery)
+          
+          if ( params.max ) {
+            def max = null
+            try {
+              max = params.max as Integer
+            }catch (all){
+              errors['max'] = "Could not convert ${params.max} to Int."
+            }
+          
+            if (max) {
+              es_request.setSize(max)
+              result.max = params.max
+            }
+          }
+          
+          if ( params.from ) {
+            def from = null
+            
+            try {
+              from = params.from as Integer
+            }catch (all){
+              errors['from'] = "Could not convert ${params.from} to Int."
+            }
+            
+            if (from) {
+              es_request.setFrom(from)
+              result.offset = params.from
+            }
+          }
+          
+          if ( params.offset ) {
+            def from = null
+            
+            try {
+              from = params.offset as Integer
+            }catch (all){
+              errors['offset'] = "Could not convert ${params.offset} to Int."
+            }
+            
+            if (from) {
+              es_request.setFrom(from)
+              result.offset = params.offset
+            }
+          }
+          
+          search_action = es_request.execute()
+          
+        }
+        else{
+          errors['params'] = "No valid parameters found"
+        }
           
       }
       
@@ -982,25 +1099,30 @@ class ApiController {
         }
         
       }
+      def search = null
       
-      def search = search_action.actionGet()
-
-      if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-        search.hits.maxScore = 0;
-      }
-      
-      result.count = search.hits.totalHits
-      result.records = []
-      
-      search.hits.each { r ->
-        def response_record = [:]
-        response_record.id = r.id
-        response_record.score = r.score
-        response_record.name = r.source.name
-        response_record.identifiers = r.source.identifiers
-        response_record.altNames = r.source.altname
+      if (search_action) {
+        search = search_action.actionGet()
         
-        result.records.add(response_record);
+
+        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
+          search.hits.maxScore = 0;
+        }
+        
+        result.count = search.hits.totalHits
+        result.records = []
+        
+        search.hits.each { r ->
+          def response_record = [:]
+          response_record.id = r.id
+          response_record.score = r.score
+          response_record.name = r.source.name
+          response_record.status = r.source.status
+          response_record.identifiers = r.source.identifiers
+          response_record.altNames = r.source.altname
+          
+          result.records.add(response_record);
+        }
       }
       
     }finally {

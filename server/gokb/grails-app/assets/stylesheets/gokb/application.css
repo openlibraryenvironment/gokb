@@ -30,3 +30,59 @@ body .modal-dialog {
 .textcomplete-dropdown {
 	z-index: 9999 !important;
 }
+
+.title-merge-info {
+  display:inline-block;
+  font-size:1.1em;
+  padding:8px;
+  margin:10px 0;
+  background-color:#fcf8e3;
+  border:1px solid;
+  border-color:#faebcc;
+}
+
+.title-merge-heading {
+  font-weight:bold;
+}
+
+.title-merge-title {
+  font-weight:bold;font-size:1.1em;
+}
+
+.title-merge-heading-old {
+  background-color: #ebccd1;
+}
+.title-merge-heading-new {
+  background-color: #d6e9c6;
+}
+
+.title-merge-body-old {
+  background-color: #fff7f8;
+}
+.title-merge-body-new {
+  background-color: #f6ffef;
+}
+
+.title-merge-ids {
+  margin:2px;
+  font-size:1.2em;
+  font-weight:bold;
+}
+
+.title-merge-status {
+  margin-top:1.4em;
+  font-weight:bold;
+}
+
+.title-merge-heading-sub > th > span > input{
+  vertical-align:text-top;
+}
+
+.title-merge-space {
+  background-color:#ffffff;
+}
+
+.title-merge-space > td {
+  text-align:center;
+  font-size:2em;
+}

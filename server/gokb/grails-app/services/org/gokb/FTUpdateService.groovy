@@ -57,6 +57,8 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        
+        result.status = kbc.status?.value
   
         result.identifiers = []
         kbc.ids.each { identifier ->
@@ -83,6 +85,8 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        
+        result.status = kbc.status?.value
   
         result.identifiers = []
         kbc.ids.each { identifier ->
@@ -104,6 +108,8 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        
+        result.status = kbc.status?.value
 
         result.identifiers = []
         kbc.ids.each { identifier ->
@@ -123,6 +129,8 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        
+        result.status = kbc.status?.value
 
         result.identifiers = []
         kbc.ids.each { identifier ->
@@ -142,6 +150,12 @@ class FTUpdateService {
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
+        }
+        result.status = kbc.status?.value
+        
+        result.identifiers = []
+        kbc.ids.each { identifier ->
+          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
         }
 
         result.componentType=kbc.class.simpleName
@@ -189,10 +203,10 @@ class FTUpdateService {
       def total = 0;
       Date from = new Date(latest_ft_record.lastTimestamp);
   
-      def countq = domain.executeQuery('select count(o.id) from '+domain.name+' as o where ( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts ) ',[ts: from], [readonly:true])[0];
+      def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND o.status.value = 'Current'",[ts: from], [readonly:true])[0];
       log.debug("Will process ${countq} records");
 
-      def q = domain.executeQuery("select o.id from "+domain.name+" as o where (o.lastUpdated > :ts ) OR ( o.dateCreated > :ts ) and o.status.value != 'Expected' order by o.lastUpdated, o.id",[ts: from], [readonly:true]);
+      def q = domain.executeQuery("select o.id from "+domain.name+" as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND o.status.value = 'Current' order by o.lastUpdated, o.id",[ts: from], [readonly:true]);
     
       log.debug("Query completed.. processing rows...");
 

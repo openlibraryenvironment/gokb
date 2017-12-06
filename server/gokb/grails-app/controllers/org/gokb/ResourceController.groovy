@@ -29,48 +29,54 @@ class ResourceController {
 
     if ( params.id ) {
       result.displayobj = genericOIDService.resolveOID(params.id)
-
-      if ( result.displayobj ) {
-        
-        
-        // Need to figure out whether the current user has curatorial rights (or is an admin).
-        // Defaults to true as not all components have curatorial groups defined.
-        if (result.displayobj.respondsTo("getCuratoryGroups") && result.displayobj.curatoryGroups) {
+      
+      def read_perm = result.displayobj.isTypeReadable()
+      if (read_perm) {
+        if ( result.displayobj ) {
           
-          def cur = user.curatoryGroups?.id.intersect(result.displayobj.curatoryGroups?.id) ?: []
-          request.curator = cur
-        } else {
-          request.curator = null
+          
+          // Need to figure out whether the current user has curatorial rights (or is an admin).
+          // Defaults to true as not all components have curatorial groups defined.
+          if (result.displayobj.respondsTo("getCuratoryGroups") && result.displayobj.curatoryGroups) {
+            
+            def cur = user.curatoryGroups?.id.intersect(result.displayobj.curatoryGroups?.id) ?: []
+            request.curator = cur
+          } else {
+            request.curator = null
+          }
+
+          def new_history_entry = new History(controller:params.controller,
+          action:params.action,
+          actionid:params.id,
+          owner:user,
+          title:"View ${result.displayobj.toString()}").save()
+
+          result.displayobjclassname = result.displayobj.class.name
+          result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
+          result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
+
+          // Add any refdata property names for this class to the result.
+          result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
+          result.displayobjclassname_short = result.displayobj.class.simpleName
+
+          result.isComponent = (result.displayobj instanceof KBComponent)
+          result.acl = gokbAclService.readAclSilently(result.displayobj)
+
+          def oid_components = params.id.split(':');
+          def qry_params = [oid_components[0],Long.parseLong(oid_components[1])];
+          result.ownerClass = oid_components[0]
+          result.ownerId = oid_components[1]
+          result.num_notes = KBComponent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];
+          // How many people are watching this object
+          result.num_watch = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=?",result.displayobj)[0];
+          result.user_watching = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=? and n.user=?",[result.displayobj, user])[0] == 1 ? true : false;
         }
-
-        def new_history_entry = new History(controller:params.controller,
-        action:params.action,
-        actionid:params.id,
-        owner:user,
-        title:"View ${result.displayobj.toString()}").save()
-
-        result.displayobjclassname = result.displayobj.class.name
-        result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
-        result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
-
-        // Add any refdata property names for this class to the result.
-        result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
-        result.displayobjclassname_short = result.displayobj.class.simpleName
-
-        result.isComponent = (result.displayobj instanceof KBComponent)
-        result.acl = gokbAclService.readAclSilently(result.displayobj)
-
-        def oid_components = params.id.split(':');
-        def qry_params = [oid_components[0],Long.parseLong(oid_components[1])];
-        result.ownerClass = oid_components[0]
-        result.ownerId = oid_components[1]
-        result.num_notes = KBComponent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];
-        // How many people are watching this object
-        result.num_watch = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=?",result.displayobj)[0];
-        result.user_watching = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=? and n.user=?",[result.displayobj, user])[0] == 1 ? true : false;
+        else {
+          log.debug("unable to resolve object");
+        }
       }
       else {
-        log.debug("unable to resolve object");
+        response.sendError(403);
       }
     }
     result

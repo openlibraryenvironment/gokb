@@ -39,8 +39,8 @@
 
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
-    <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps ? d.hostedTipps?.findAll{ it.status.value == 'Current'}.size() : '0'}</span> </a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames ? d.variantNames?.size() : '0'}</span> </a></li>
+    <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps ? d.hostedTipps.findAll{ it.status.value == 'Current'}.size() : '0'}</span> </a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames ? d.variantNames.size() : '0'}</span> </a></li>
     <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
   </ul>
 

@@ -88,7 +88,7 @@
           <g:annotatedLabel owner="${d}" property="projectStatus">Project Status</g:annotatedLabel>
         </dt>
         <dd>
-          ${d.projectStatus.name ?: "&nbsp;"}
+          ${d.projectStatus.name ?: ''}
         </dd>
 
         <g:if test="${ d.projectStatus == org.gokb.refine.RefineProject.Status.CHECKED_OUT }" >

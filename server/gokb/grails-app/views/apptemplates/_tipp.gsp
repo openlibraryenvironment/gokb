@@ -70,25 +70,32 @@
 </dl>
 
 <ul id="tabs" class="nav nav-tabs">
-  <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP
-      Details</a></li>
-  <li><a href="#altnames" data-toggle="tab">Alternate Names 
-    <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
-  </a></li>
+  <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP Details</a></li>
+  <li>
+    <a href="#altnames" data-toggle="tab">Alternate Names 
+      <span class="badge badge-warning"> ${d.variantNames ? d.variantNames.size() : '0'}</span>
+    </a>
+  </li>
 
   <g:if test="${ d.isEditable() }">
-    <li><a href="#tippcoverage" data-toggle="tab">Coverage</a></li>
+    <li>
+      <a href="#tippcoverage" data-toggle="tab">Coverage</a>
+    </li>
   </g:if>
-  <li><a href="#tipplists" data-toggle="tab">Lists</a></li>
+  <li>
+    <a href="#tipplists" data-toggle="tab">Lists</a>
+  </li>
   <g:if test="${ d.isEditable() }">
-    <li><a href="#addprops" data-toggle="tab">Additional
-        Properties <span class="badge badge-warning"> ${d.additionalProperties?.size()}
-      </span>
-    </a></li>
-    <li><a href="#review" data-toggle="tab">Review Requests <span
-        class="badge badge-warning">
-          ${d.reviewRequests?.size()}
-      </span></a></li>
+    <li>
+      <a href="#addprops" data-toggle="tab">Additional Properties 
+        <span class="badge badge-warning"> ${d.additionalProperties ? d.additionalProperties.size() : '0'}</span>
+      </a>
+    </li>
+    <li>
+      <a href="#review" data-toggle="tab">Review Requests 
+        <span class="badge badge-warning"> ${d.reviewRequests ? d.reviewRequests.size()}</span>
+      </a>
+    </li>
   </g:if>
 </ul>
 

@@ -1208,6 +1208,7 @@ abstract class KBComponent {
     def result = [deleteType:this.class.name, deleteId:this.id]
     log.debug("Removing all components");
     Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component",[component:this])
+    ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component",[component:this])
     KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent=:component",[component:this]);
     KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component",[component:this]);
 
