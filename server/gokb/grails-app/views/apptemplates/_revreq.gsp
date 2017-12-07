@@ -67,7 +67,7 @@
           </dd>
         </g:if>
         <g:else>
-          Additional fields will be available once the record is saved
+          &nbsp;Additional fields will be available once the record is saved
         </g:else>
 
         <g:if test="${d.additional}">

@@ -77,28 +77,28 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames ? d.variantNames.size() : '0'}</span> </a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
 
     <g:if test="${ d.isEditable() }">
       <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     </g:if>
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span
         class="badge badge-warning">
-          ${d.ids ? d.ids.size() : '0'}
+          ${d.ids?.size() ?: '0'}
       </span></a></li>
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
-          ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status) ? d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status).size() : '0'}
+          ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
       </span></a></li>
     <li><a href="#availability" data-toggle="tab">Availability <span
         class="badge badge-warning">
-          ${d.tipps ? d.tipps.size() : '0'}
+          ${d.tipps?.size() ?: '0'}
       </span></a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span
         class="badge badge-warning">
-          ${d.additionalProperties ? d.additionalProperties.size() : '0'}
+          ${d.additionalProperties?.size() ?: '0'}
       </span></a></li>
-    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests ? d.reviewRequests.size() : '0'} </span></a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'} </span></a></li>
 
   </ul>
   <div id="my-tab-content" class="tab-content">

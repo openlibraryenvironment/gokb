@@ -28,7 +28,7 @@
         <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
       </dt>
       <dd>
-        ${d.status.value}
+        ${d.status?.value}
       </dd>
     </g:if>
 
@@ -48,7 +48,7 @@
       <g:annotatedLabel owner="${d}" property="userListVerifier">List Verifier</g:annotatedLabel>
     </dt>
     <dd>
-      <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier ? d.userListVerifier.displayName : ''}</g:manyToOneReferenceTypedown>
+      <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier?.displayName ?: ''}</g:manyToOneReferenceTypedown>
     </dd>
     <dt> <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /> </dd>
@@ -67,10 +67,10 @@
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li><a href="#titledetails" data-toggle="tab">TIPPs <span class="badge badge-warning"> ${d.tipps ? d.tipps.findAll{ it.status.value == 'Current'}.size() : '0'} </span></a></li>
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids ? d.ids.size() : '0'} </span></a></li>      
+      <li><a href="#titledetails" data-toggle="tab">TIPPs <span class="badge badge-warning"> ${d.tipps?.findAll{ it.status.value == 'Current'}?.size() ?: '0'} </span></a></li>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size() ?: '0'} </span></a></li>      
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
-        <span class="badge badge-warning"> ${d.variantNames ? d.variantNames.size() : '0'}</span>
+        <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
       </a></li>
       <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       <li><a href="#activity" data-toggle="tab">Activity</a></li>
