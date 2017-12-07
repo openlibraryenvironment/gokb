@@ -46,8 +46,8 @@ class ApiController {
   UploadAnalysisService uploadAnalysisService
   def ESWrapperService
   
-  static def reversemap = ['subject':'subjectKw','componentType':'componentType']
-  static def non_analyzed_fields = ['componentType']
+  static def reversemap = ['subject':'subjectKw','componentType':'componentType','identifier':'identifiers.value']
+  static def non_analyzed_fields = ['componentType','identifiers.value']
   
   private static final Closure TRANSFORMER_USER = {User u ->
     [
@@ -976,27 +976,37 @@ class ApiController {
         def singleParams = [:]
         def unknown_fields = []
         def other_fields = ["controller","action","max","offset","from"]
+        def id_params = [:]
         
         params.each { k, v ->
-          if ( k == "componentType" ) {
+          if ( k == "componentType" && v instanceof String) {
             singleParams['componentType'] = v
           }
-          else if ( k == "identifier" ) { 
-            singleParams['identifiers.value'] = v
-          }
           
-          else if (k == 'label'){
+          else if (k == 'label' && v instanceof String) {
             exactQuery.should(QueryBuilders.matchQuery('name', v))
             exactQuery.should(QueryBuilders.matchQuery('altname', v))
             exactQuery.minimumNumberShouldMatch(1)
           }
-          else if (!params.label && k == "name") {
+          else if (!params.label && k == "name" && v instanceof String) {
             singleParams['name'] = v
           }
         
-          else if (!params.label && k == "altname") {
+          else if (!params.label && k == "altname" && v instanceof String) {
             singleParams['altname'] = v
           }
+          
+          else if ( k == "identifier" ) {
+            if (v instanceof String) {
+              id_params['identifiers.value'] = v
+            }else if (v instanceof ArrayList && v.size() == 2) {
+              id_params['identifiers.value'] = v[1]
+              id_params['identifiers.namespace'] = v[0]
+            }else{
+              errors['identifier'] = "No String or ArrayList for param identifier found."
+            }
+          }
+          
           else if (!other_fields.contains(k)){
             unknown_fields.add(k)
           }
@@ -1012,7 +1022,13 @@ class ApiController {
           }
         }
         
-        if(singleParams || params.label) {
+        if (id_params) {
+          exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params)))
+        }
+        
+
+        
+        if( singleParams || params.label || id_params ) {
           SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
           
           es_request.setIndices(grailsApplication.config.globalSearch.indices)
@@ -1132,6 +1148,17 @@ class ApiController {
     }
     
     render result as JSON
+  }
+  
+  private def addIdQueries(params) {
+  
+    QueryBuilder idQuery = QueryBuilders.boolQuery()
+    
+    params.each { k,v ->
+      idQuery.must(QueryBuilders.matchQuery(k, v))
+    }
+    
+    return idQuery
   }
   
   private def buildQuery(params) {
