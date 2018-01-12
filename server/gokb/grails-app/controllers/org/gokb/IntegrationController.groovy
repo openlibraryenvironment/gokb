@@ -742,77 +742,95 @@ class IntegrationController {
     if ( request.JSON.packageHeader.name ) {
       def valid = Package.validateDTO(request.JSON.packageHeader)
       if ( valid ) {
-        def the_pkg = Package.upsertDTO(request.JSON.packageHeader)
+        def the_pkg = Package.upsertDTO(request.JSON.packageHeader, user)
         def existing_tipps = []
-
-        if ( the_pkg.tipps?.size() > 0 ) {
-          existing_tipps = the_pkg.tipps.collect { it.id }
-          log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
+        def is_curator = null;
+        
+        if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
+          is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
         }
+        
+        if (is_curator) {
+          if ( the_pkg.tipps?.size() > 0 ) {
+            existing_tipps = the_pkg.tipps.collect { it.id }
+            log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
+          }
 
-        Map platform_cache = [:]
-        log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
+          Map platform_cache = [:]
+          log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
 
-        // Validate and upsert titles and platforms
-        request.JSON.tipps.each { tipp ->
+          // Validate and upsert titles and platforms
+          request.JSON.tipps.each { tipp ->
 
-          TitleInstance.withNewSession {
+            TitleInstance.withNewSession {
 
-            valid &= TitleInstance.validateDTO(tipp.title);
+              valid &= TitleInstance.validateDTO(tipp.title);
 
-            if ( !valid )
-              log.warn("Not valid after title validation ${tipp.title}");
+              if ( !valid )
+                log.warn("Not valid after title validation ${tipp.title}");
 
-            def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
-            if ( ti && ( tipp.title.internalId == null ) ) {
-              tipp.title.internalId = ti.id;
-            }
+              def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+              
+              if ( ti && ( tipp.title.internalId == null ) ) {
+                tipp.title.internalId = ti.id;
+              }
 
-            if ( tipp.title.internalId == null ) {
-              log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
-            }
+              if ( tipp.title.internalId == null ) {
+                log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
+              }
 
-            valid &= Platform.validateDTO(tipp.platform);
-            if ( !valid )
-              log.warn("Not valid after platform validation ${tipp.platform}");
+              valid &= Platform.validateDTO(tipp.platform);
+              if ( !valid )
+                log.warn("Not valid after platform validation ${tipp.platform}");
 
-            if ( valid ) {
+              if ( valid ) {
 
-              def pl = null
-              def pl_id
-              if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
-                pl = Platform.get(pl_id)
-              } else {
-                // Not in cache.
-                pl = Platform.upsertDTO(tipp.platform, user);
+                def pl = null
+                def pl_id
+                if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                  pl = Platform.get(pl_id)
+                } else {
+                  // Not in cache.
+                  pl = Platform.upsertDTO(tipp.platform, user);
 
-                if(pl){
-                  platform_cache[tipp.platform.name] = pl.id
-                }else{
-                  log.error("Could not find/create ${tipp.platform}")
+                  if(pl){
+                    platform_cache[tipp.platform.name] = pl.id
+                  }else{
+                    log.error("Could not find/create ${tipp.platform}")
+                    result['errors'].add(['code': 500, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                    valid = false
+                  }
+                }
+
+                if ( pl && ( tipp.platform.internalId == null ) ) {
+                  tipp.platform.internalId = pl.id;
+                }
+                else {
+                  log.warn("No platform arising from ${tipp.platform}");
                 }
               }
-
-              if ( pl && ( tipp.platform.internalId == null ) ) {
-                tipp.platform.internalId = pl.id;
+              else {
+                log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
+              }
+  //
+  //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+              if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
+                tipp.package = [ internalId: the_pkg.id ]
               }
               else {
-                log.warn("No platform arising from ${tipp.platform}");
+                log.warn("No package");
+                valid = false
               }
             }
-            else {
-              log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
-            }
-//
-//            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
-            if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-              tipp.package = [ internalId: the_pkg.id ]
-            }
-            else {
-              log.warn("No package");
-              valid = false
-            }
           }
+        }
+        else{
+          valid = false
+          log.warn("Package update denied!")
+          response.status = 403
+          result['result'] = 'ERROR'
+          result['errors'] = []
+          result['errors'].add(['code': 403, 'message': "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."])
         }
 
 //        cleanUpGorm()

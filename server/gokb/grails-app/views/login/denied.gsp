@@ -6,6 +6,7 @@
 <body>
   <div id="mainarea">
     <h2><g:message code="springSecurity.denied.message" /></h2>
+    ${params}
   </div>
 </div>
 </body>

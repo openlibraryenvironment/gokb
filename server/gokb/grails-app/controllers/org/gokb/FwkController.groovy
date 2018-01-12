@@ -11,19 +11,27 @@ class FwkController {
     log.debug("FwkController::history...");
     def result = [:]
     result.user = User.get(springSecurityService.principal.id)
-    def oid_components = params.id.split(':');
-    def qry_params = [oid_components[0],oid_components[1]];
 
-    result.max = params.max ?: 20;
-    result.offset = params.offset ?: 0;
+    def obj = resolveOID2(params.id)
+    
+    if(obj) {
+      def qry_params = [obj.getClass().getSimpleName(),Objects.toString(obj.id, null)];
+      log.debug("Params: ${qry_params}")
 
-    result.historyLines = AuditLogEvent.executeQuery("select e from AuditLogEvent as e where className=? and persistedObjectId=? order by id desc", 
-                                                                             qry_params, 
-                                                                             [max:result.max, offset:result.offset]);
+      result.max = params.max ?: 20;
+      result.offset = params.offset ?: 0;
+      log.debug("${AuditLogEvent.class.name}")
 
-    result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from AuditLogEvent as e where className=? and persistedObjectId=?",
-                                                                                  qry_params)[0];
+      result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className=? and e.persistedObjectId=? order by id desc", 
+                                                                              qry_params, 
+                                                                              [max:result.max, offset:result.offset]);
 
+      result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className=? and e.persistedObjectId=?",
+                                                                              qry_params)[0];
+    }else{
+      log.error("resolve OID failed to identify a domain class. Input was ${params.id}")
+    }
+    
     result
   }
 

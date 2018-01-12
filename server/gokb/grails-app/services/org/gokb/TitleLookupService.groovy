@@ -433,7 +433,7 @@ class TitleLookupService {
             the_title = all_matched[0]
 
             if(!the_title.name.equals(metadata.title)){
-              the_title.addVariantTitle(metadata.title)
+              the_title.ensureVariantName(metadata.title)
             }
             break;
 

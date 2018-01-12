@@ -67,20 +67,27 @@ public class HQLBuilder {
       // log.debug("Adding query global: ${global_prop_def}");
       // create a contextTree so we can process the filter just like something added to the query tree
       // Is this global user selectable
-      if ( global_prop_def.qparam != null ) {  // Yes
-        if ( params[global_prop_def.qparam] == null ) { // If it's not be set
-          if ( global_prop_def.default == 'on' ) { // And the default is set
-            // log.debug("Adding prop ${global_prop_def.prop} ${global_prop_def.prop.replaceAll('\\.','_')}");
-            criteria.add([defn:[ qparam:global_prop_def.prop.replaceAll('\\.','_'), contextTree:global_prop_def],
-                          value:interpretGlobalValue(grailsApplication,global_prop_def.value)])
+      
+      def interpretedValue = interpretGlobalValue(grailsApplication,global_prop_def)
+      
+      if( interpretedValue ) {
+        if ( global_prop_def.qparam != null) {  // Yes
+          if ( params[global_prop_def.qparam] == null ) { // If it's not be set
+            if ( global_prop_def.default == 'on' ) { // And the default is set
+              // log.debug("Adding prop ${global_prop_def.prop} ${global_prop_def.prop.replaceAll('\\.','_')}");
+              criteria.add([defn:[ qparam:global_prop_def.prop.replaceAll('\\.','_'), contextTree:global_prop_def],
+                            value:interpretedValue])
+            }
+          }
+          else if ( params[global_prop_def.qparam] == 'on' ) { // It's set explicitly, if its on, add the criteria
+            criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('\\.','_'),contextTree:global_prop_def],value:interpretedValue])
           }
         }
-        else if ( params[global_prop_def.qparam] == 'on' ) { // It's set explicitly, if its on, add the criteria
-          criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('\\.','_'),contextTree:global_prop_def],value:global_prop_def.value])
+        else {
+          criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('\\.','_'),contextTree:global_prop_def],value:interpretedValue])
         }
-      }
-      else {
-        criteria.add([defn:[qparam:global_prop_def.prop.replaceAll('\\.','_'),contextTree:global_prop_def],value:global_prop_def.value])
+      }else{
+        log.error("Could not interpret global filter ${global_prop_def}.. ignoring!")
       }
     }
 
@@ -133,13 +140,14 @@ public class HQLBuilder {
       fetch_hql += " order by o.${hql_builder_context.sort} ${hql_builder_context.order}";
     }
 
-    // log.debug("Attempt count qry ${count_hql}");
-    // log.debug("Attempt qry ${fetch_hql}");
-    // log.debug("Params ${hql_builder_context.bindvars}");
-
-    // result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars,[readOnly:true])[0]
-    result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
+    log.debug("Attempt count qry ${count_hql}");
+    log.debug("Attempt qry ${fetch_hql}");
+    log.debug("Params ${hql_builder_context.bindvars}");
+    def count_start_time = System.currentTimeMillis();
+    result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars,[readOnly:true])[0]
+    // result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
     // log.debug("Got count result: ${result.reccount}");
+    log.debug("Count completed after ${System.currentTimeMillis() - count_start_time}");
 
     def query_params = [:]
     if ( result.max )
@@ -147,11 +155,13 @@ public class HQLBuilder {
     if ( result.offset )
       query_params.offset = result.offset
 
-    // query_params.readOnly = true;
+    query_params.readOnly = true;
 
+    def query_start_time = System.currentTimeMillis();
     // log.debug("Get data rows..");
     result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,query_params);
     // log.debug("Returning..");
+    log.debug("Fetch completed after ${System.currentTimeMillis() - query_start_time}");
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
@@ -360,17 +370,28 @@ public class HQLBuilder {
   }
 
   // If a value begins __ then it's a special value and needs to be interpreted, otherwise just return the value
-  static def interpretGlobalValue(grailsApplication,value) {
+  static def interpretGlobalValue(grailsApplication,prop) {
     // log.debug("interpretGlobalValue(ctx,${value})");
     def result=null;
-    switch(value?.toString()) {
-      case '__USERID':
-        def springSecurityService = grailsApplication.getMainContext().getBean('springSecurityService')
-        result=''+springSecurityService?.currentUser?.id;
-        break;
-      default:
-        result=value;
-        break;
+    if ( prop.cat && prop.cat.size() > 0) {
+      def rdc = RefdataCategory.findByDesc(prop.cat)
+      
+      if ( rdc ) {
+        result = RefdataValue.findByOwnerAndValue(rdc, prop.value)
+      }else{
+        log.error("Could not resolve RefdataCategory for filtering!")
+      }
+    }
+    else {
+      switch(prop.value?.toString()) {
+        case '__USERID':
+          def springSecurityService = grailsApplication.getMainContext().getBean('springSecurityService')
+          result=''+springSecurityService?.currentUser?.id;
+          break;
+        default:
+          result=prop.value;
+          break;
+      }
     }
     // log.debug("Returning ${result} ${result.class.name}");
     return result;

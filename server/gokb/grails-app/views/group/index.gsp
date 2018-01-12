@@ -45,7 +45,9 @@
             </td>
             <td>${pkg.status?.value}</td>
             <td>
-              <g:link controller="resource" action="show" id="${pkg?.userListVerifier?.getClassName()+':'+pkg?.userListVerifier?.id}">${pkg.userListVerifier?.displayName} </g:link>
+              <g:if test="${pkg?.userListVerifier}">
+                <g:link controller="resource" action="show" id="${pkg.userListVerifier.getClassName()+':'+pkg.userListVerifier.id}">${pkg.userListVerifier.displayName} </g:link>
+              </g:if>
             </td>
             <td>${pkg.listVerifiedDate}</td>
             <td>${pkg.lastUpdated}</td>

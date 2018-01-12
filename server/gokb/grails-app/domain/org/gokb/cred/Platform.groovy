@@ -160,8 +160,11 @@ class Platform extends KBComponent {
     // Ideally this should be done on platformUrl, but we fall back to name here
     
     def result = false;
-    def skip = false;
+    Boolean skip = false;
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+    def name_candidates = []
+    def url_candidates = [];
+    Boolean viable_url = false;
     
     if(platformDTO.name.startsWith("http")){
       try {
@@ -176,40 +179,54 @@ class Platform extends KBComponent {
           }
           
           platformDTO.name = url_as_name.getHost()
+          
+          if (platformDTO.name.startsWith("www.")) {
+            platformDTO.name = platformDTO.name.substring(4)
+          }
+          
           log.debug("New platform name is ${platformDTO.name}.")
         }
       } catch( MalformedURLException ){
         log.debug("Platform name is no valid URL")
       }
+      name_candidates = Platform.executeQuery("from Platform where name = ?", [platformDTO.name]);
     }
-    
-    def name_candidates = Platform.executeQuery("from Platform where name = ? and status = ?", [platformDTO.name, status_current]);
-    def url_candidates = [];
-    def viable_url = false;
     
     if(platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0){
       try {
         def inc_url = new URL(platformDTO.primaryUrl);
+        def other_candidates = []
         
         if(inc_url){
           viable_url = true;
           String urlHost = inc_url.getHost();
           
-          if(urlHost.startsWith("www")){
+          if(urlHost.startsWith("www.")){
             urlHost = urlHost.substring(4)
+            def url_no_schema = (platformDTO.primaryUrl - ~/www\./)
+            other_candidates = Platform.executeQuery("select distinct pl from Platform as pl where ( pl.primaryUrl = ? or pl.name = ? ) ", [url_no_schema, urlHost]);
           }
           
-          url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.status = ? and ( pl.primaryUrl = ? or pl.name = ? ) ", [status_current, platformDTO.primaryUrl, urlHost]);
+          url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where ( pl.primaryUrl = ? or pl.name = ? ) ", [platformDTO.primaryUrl, urlHost]);
+          
+          
+          // Use platform found without 'www.' in URL
+          
+          if ( url_candidates.size() == 0 && other_candidates.size() > 0) {
+            url_candidates = other_candidates
+          }
+          
+          // Cross-check for alternative schema
           
           if( url_candidates.size() == 0 && inc_url.getProtocol() == "http" ){
             URL alt_scheme = new URL("https", inc_url.getHost(), inc_url.getPort(), inc_url.getFile(), inc_url.getRef());
             log.debug("Also trying URL: ${alt_scheme.toString()}")
-            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.status = ? and pl.primaryUrl = ? ", [status_current, alt_scheme.toString()]);
+            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.primaryUrl = ? ", [alt_scheme.toString()]);
           }
           else if( url_candidates.size() == 0 && inc_url.getProtocol() == "https" ){
             URL alt_scheme = new URL("http", inc_url.getHost(), inc_url.getPort(), inc_url.getFile(), inc_url.getRef());
             log.debug("Also trying URL: ${alt_scheme.toString()}")
-            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.status = ? and pl.primaryUrl = ? ", [status_current, alt_scheme.toString()]);
+            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.primaryUrl = ? ", [alt_scheme.toString()]);
           }
         }
       } catch( MalformedURLException ex ) {
@@ -218,7 +235,7 @@ class Platform extends KBComponent {
     }
     
     if(name_candidates.size() == 0){
-      log.debug("No active platforms matched by name!")
+      log.debug("No platforms matched by name!")
 
       def variant_normname = GOKbTextUtils.normaliseString(platformDTO.name)
 
@@ -229,11 +246,13 @@ class Platform extends KBComponent {
         result = varname_candidates[0]
       }
 
-    }else if(name_candidates.size() == 1 && name_candidates[0].status == status_current){
+    }
+    else if(name_candidates.size() == 1 && name_candidates[0].status == status_current){
       log.debug("Platform ${platformDTO.name} matched by name!")
       result = name_candidates[0];
-    }else{
-      log.warn("Could not match a current platform for ${platformDTO.name}!");
+    }
+    else{
+      log.warn("Could not match a specific current platform for ${platformDTO.name}!");
     }
     
     if(!result && viable_url){
@@ -241,14 +260,14 @@ class Platform extends KBComponent {
       
       if(url_candidates.size() == 0){
         log.debug("Could not match an existing platform!")
-      }else if(url_candidates.size() == 1 && url_candidates[0].status == status_current){
+      }
+      else if(url_candidates.size() == 1){
         log.debug("Matched existing platform by URL!")
         result = url_candidates[0];
-      }else if(url_candidates.size() > 1) {
+      }
+      else if(url_candidates.size() > 1) {
         log.warn("Matched multiple platforms by URL!")
 
-        // Picking randomly from multiple results is bad, but right now a result is always expected. Maybe this should be skipped...
-        // skip = true
         def current_platforms = url_candidates.findAll { it.status == status_current }
 
         if (current_platforms.size() == 1){
@@ -258,9 +277,18 @@ class Platform extends KBComponent {
             result.primaryUrl = platformDTO.primaryUrl
             result.save(flush:true,failOnError:true)
           }
-        }else{
-          log.debug("Could not decide on a Platform, skipping..")
-          skip = true;
+        }
+        else if ( current_platforms.size() == 0 ) {
+          log.error("Matched only non-current platforms by URL!")
+          result = url_candidates[0]
+        }
+        else{
+        
+          // Picking randomly from multiple results is bad, but right now a result is always expected. Maybe this should be skipped...
+          // skip = true
+        
+          log.error("Multiple matched current platforms: ${current_platforms}")
+          result = current_platforms[0]
         }
       }
     }

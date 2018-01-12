@@ -247,6 +247,14 @@ class TitleInstancePackagePlatform extends KBComponent {
         tipp.save(flush:true,failOnError:true);
         def changed = false
         
+        if (plt.status != status_current) {
+          ReviewRequest.raise(
+            tipp,
+            "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! Please review the URL/Platform for validity.",
+            "Platform not marked as current."
+          )
+        }
+        
         if ( tipp.isDeleted() || tipp.isRetired() ) {
           tipp.status = status_current
           

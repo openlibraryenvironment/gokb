@@ -112,7 +112,8 @@ class SearchController {
           // log.debug("Trying to display record ${recno}");
   
           result.displayobj = result.recset.get(recno)
-  
+          
+          def display_start_time = System.currentTimeMillis();
           if ( result.displayobj != null ) {
   
             result.displayobjclassname = result.displayobj.class.name
@@ -136,6 +137,7 @@ class SearchController {
           else { 
             log.error("Result row for display was NULL");
           }
+          log.debug("Display completed after ${System.currentTimeMillis() - display_start_time}");
         }
         else {
           log.error("Record display request out of range");

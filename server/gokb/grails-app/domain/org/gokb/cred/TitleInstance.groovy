@@ -40,6 +40,8 @@ class TitleInstance extends KBComponent {
 
     // Check that the variant is not equal to the name of this title first.
     if (!title.equalsIgnoreCase(this.name)) {
+    
+      def normTitle = GOKbTextUtils.normaliseString(title)
 
       // Need to compare the existing variant names here. Rather than use the equals method,
       // we are going to compare certain attributes here.
@@ -53,7 +55,7 @@ class TitleInstance extends KBComponent {
       def existing = variantNames.find {
         KBComponentVariantName name = it
         return (name.locale == locale_rd && name.variantType == title_type
-        && name.getVariantName().equalsIgnoreCase(title))
+        && name.getNormVariantName().equals(normTitle))
       }
 
       if (!existing) {

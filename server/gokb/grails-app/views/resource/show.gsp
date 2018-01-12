@@ -39,7 +39,7 @@
         </g:if>
         <li><a data-toggle="modal" data-cache="false"
               title="Show History"
-              data-remote='<g:createLink controller="fwk" action="history" oid="${displayobj.class.name}:${displayobj.id}"/>'
+              data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>'
               data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
 
         <li><a data-toggle="modal" data-cache="false"
@@ -108,7 +108,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h3 class="modal-title">Modal header</h3>
+          <h3 class="modal-title">Loading Content..</h3>
         </div>
         <div class="modal-body"></div>
           <div class="modal-footer">
@@ -119,6 +119,13 @@
     </div>
 
    <asset:script type="text/javascript" >
+        $(document).ready(function(){
+          $("#modal").on('show.bs.modal', function(){
+            $(".modal-content").empty()
+            $(".modal-content").append("<div>Loading..</div>")
+          })
+        })
+   
         function toggleWatch(oid) {
           $.ajax({
             url: '/gokb/fwk/toggleWatch?oid='+oid,

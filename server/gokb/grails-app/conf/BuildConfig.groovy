@@ -65,10 +65,10 @@ grails.project.dependency.resolution = {
         runtime 'org.apache.commons:commons-compress:1.9'
         // runtime 'commons-collections:commons-collections:3.2.2'
         // runtime 'org.apache.commons:commons-collections4:4.1'
-        runtime 'org.apache.tika:tika-core:1.6'
+        runtime 'org.apache.tika:tika-core:1.17'
         
         // Must get parsers as well as core or we can only detect generic types.
-        runtime 'org.apache.tika:tika-parsers:1.6'
+        runtime 'org.apache.tika:tika-parsers:1.17'
         
 
         compile 'org.elasticsearch:elasticsearch:2.1.2'

@@ -63,7 +63,7 @@ class ResourceController {
           result.acl = gokbAclService.readAclSilently(result.displayobj)
 
           def oid_components = params.id.split(':');
-          def qry_params = [oid_components[0],Long.parseLong(oid_components[1])];
+          def qry_params = [result.displayobjclassname,Long.parseLong(oid_components[1])];
           result.ownerClass = oid_components[0]
           result.ownerId = oid_components[1]
           result.num_notes = KBComponent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];

@@ -143,16 +143,22 @@ class CreateController {
           } else {
           
             log.debug("Saving..");
-            if ( !result.newobj.save(flush:true) ) {
+            log.debug("Obj: ${result.newobj}")
+            if ( result.newobj.hasErrors() || !result.newobj.id) {
               log.error("Problem saving new object")
-              flash.error = "Problem saving new object"
+              flash.error = "Problem saving new object!"
               
+              log.error("${result.newobj.errors}")
               // render view: 'index', model: [d: result.newobj]
               result.newobj.errors.allErrors.each { e ->
                 log.error(e)
               }
+              
+              result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
+            }else {
+              result.newobj.save(flush:true)
+              result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
             }
-            result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
           }
         }
         catch ( Exception e ) {

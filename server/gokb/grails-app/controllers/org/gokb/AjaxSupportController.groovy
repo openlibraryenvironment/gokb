@@ -430,6 +430,7 @@ class AjaxSupportController {
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
     def target_object = resolveOID2(params.pk)
+    def errors = null
     if ( target_object ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.format ?: 'yyyy-MM-dd')
@@ -439,12 +440,23 @@ class AjaxSupportController {
         binding_properties[ params.name ] = params.value
         bindData(target_object, binding_properties)
       }
-      target_object.save(flush:true);
+      
+      if (!target_object.hasErrors()) {
+        target_object.save(flush:true);
+      }
+      else {
+        errors = target_object.errors.allErrors()
+      }
     }
 
     response.setContentType('text/plain')
     def outs = response.outputStream
-    outs << params.value
+    if (!errors) {
+      outs << params.value
+    }
+    else {
+      outs << errors
+    }
     outs.flush()
     outs.close()
   }
