@@ -744,13 +744,15 @@ class IntegrationController {
       if ( valid ) {
         def the_pkg = Package.upsertDTO(request.JSON.packageHeader, user)
         def existing_tipps = []
+        Boolean curated_pkg = false;
         def is_curator = null;
         
         if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
           is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+          curated_pkg = true;
         }
         
-        if (is_curator) {
+        if ( is_curator || !curated_pkg ) {
           if ( the_pkg.tipps?.size() > 0 ) {
             existing_tipps = the_pkg.tipps.collect { it.id }
             log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")

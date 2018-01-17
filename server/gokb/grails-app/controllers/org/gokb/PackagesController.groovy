@@ -50,6 +50,28 @@ class PackagesController {
     result
   }
 
+  def connectedRRs() {
+    log.debug("connectedRRs::${params}")
+    def result = [:]
+    if ( params.id ) {
+      def pkg = Package.get(params.id)
+      def open_only = true
+      def restr = false
+      result.restriction = 'open'
+
+      if (params.getAll) {
+        open_only = false
+        result.restriction = 'all'
+      }
+      if (params.restriction == 'Current'){
+        restr = true
+      }
+
+      result.reviewRequests = pkg.getReviews(open_only, restr)
+    }
+    render template: 'revreqtabpkg', model: [d:result], contentType:'text/html'
+  }
+
 
   def index() {
     def result = [:]

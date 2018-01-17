@@ -8,7 +8,7 @@
         <dt>
           <g:annotatedLabel owner="${d}" property="cause">Cause</g:annotatedLabel>
         </dt>
-        <dd>
+        <dd style="max-width:60%">
           <g:xEditable class="ipe" owner="${d}" field="descriptionOfCause" />
         </dd>
         <dt>

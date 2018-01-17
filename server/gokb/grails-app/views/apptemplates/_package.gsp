@@ -3,9 +3,9 @@
     <dt>
       <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
     </dt>
-    <dd>
-      ${d.name}
-      <g:if test="${ editable }">(Modify name through variants below)</g:if><br/>
+    <dd style="max-width:60%">
+      ${d.name}<br/>
+      <g:if test="${ editable }">(Modify name through <i>Alternate Names</i> below)</g:if><br/>
       <g:link controller="packages" action="kbart" id="${params.id}">KBart File</g:link> &nbsp;
       <g:link controller="packages" action="packageTSVExport" id="${params.id}">GOKb File</g:link>
     </dd>
@@ -74,6 +74,7 @@
       </a></li>
       <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       <li><a href="#activity" data-toggle="tab">Activity</a></li>
+      <li><a href="#review" data-toggle="tab">Review Requests</a></li>
     </ul>
 
     <div id="my-tab-content" class="tab-content">
@@ -168,10 +169,75 @@
       <div class="tab-pane" id="review">
         <g:render template="revreqtab" contextPath="../apptemplates"
           model="${[d:d]}" />
+
+        <div class="connected-rr">
+          <h3>Review Requests for connected Titles</h3>
+          <div>
+            <span style="margin-right:10px;">
+              <button id="rr-only-open">Load Open Requests</button>
+              <button id="rr-all">Load All Requests</button>
+            </span>
+            <span style="white-space:nowrap;">
+              <span>TIPP status restriction: </span>
+              <select id="rr-tipp-status">
+                <option>None</option>
+                <option>Current</option>
+              </select>
+            </span>
+          </div>
+          <div id="rr-loaded"></div>
+        </div>
       </div>
 
 
     </div>
+
     <g:render template="componentStatus" contextPath="../apptemplates"
       model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+
+    <g:javascript>
+      $(document).ready(function(){
+        $("#rr-only-open").click(function(e) {
+          e.preventDefault();
+
+          var tipp_restrict = $("#rr-tipp-status").val();
+
+          $.ajax({
+            url: "/gokb/packages/connectedRRs",
+            data: {id: "${d.id}", restrict: tipp_restrict},
+            beforeSend: function() {
+              $('#rr-loaded').empty();
+              $('#rr-loaded').after('<div id="rr-loading" style="height:50px;vertical-align:middle;text-align:center;"><span>Loading list <asset:image src="img/loading.gif" /></span></div>');
+            },
+            complete: function() {
+              $('#rr-loading').remove();
+            },
+            success: function(result) {
+              $("#rr-loaded").html(result);
+            }
+          });
+        });
+        $("#rr-all").click(function(e) {
+          e.preventDefault();
+
+          var tipp_restrict = $("#rr-tipp-status").val();
+
+          $.ajax({
+            url: "/gokb/packages/connectedRRs",
+            data: {id: "${d.id}", getAll: true, restrict: tipp_restrict},
+            beforeSend: function() {
+              $('#rr-loaded').empty();
+              $('#rr-loaded').after('<div id="rr-loading" style="height:50px;vertical-align:middle;text-align:center;"><span>Loading list <asset:image src="img/loading.gif" /></span></div>');
+            },
+            complete: function() {
+              $('#rr-loading').remove();
+            },
+            success: function(result) {
+              $("#rr-loaded").html(result);
+            }
+          });
+        });
+      });
+    </g:javascript>
+
   </div>

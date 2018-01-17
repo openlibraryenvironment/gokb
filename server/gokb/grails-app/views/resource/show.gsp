@@ -120,11 +120,12 @@
 
    <asset:script type="text/javascript" >
         $(document).ready(function(){
+          var loading_spinner =
           $("#modal").on('show.bs.modal', function(){
-            $(".modal-content").empty()
-            $(".modal-content").append("<div>Loading..</div>")
-          })
-        })
+            $(".modal-content").empty();
+            $(".modal-content").append('<div class="modal-loading"><h4>Loading <asset:image src="img/loading.gif" /></h4></div>');
+          });
+        });
    
         function toggleWatch(oid) {
           $.ajax({
