@@ -30,8 +30,8 @@ class ESWrapperService {
     if ( esclient == null ) {
 
 
-      def es_cluster_name = grailsApplication.config?.escluster ?: 'kbplusg3'
-      def es_host_name = grailsApplication.config?.eshost ?: 'eskbplusg3'
+      def es_cluster_name = grailsApplication.config?.gokb?.es?.cluster ?: 'elasticsearch'
+      def es_host_name = grailsApplication.config?.eshost ?: 'eshost'
 
       log.debug("esclient is null, creating now... host: ${grailsApplication.config?.eshost} cluster:${es_cluster_name}");
 
