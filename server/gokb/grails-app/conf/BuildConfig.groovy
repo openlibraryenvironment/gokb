@@ -58,10 +58,10 @@ grails.project.dependency.resolution = {
     }
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
-        // r untime 'mysql:mysql-connector-java:5.1.38'
-        // runtime 'org.mariadb.jdbc:mariadb-java-client:1.4.5'
-        runtime  group: 'org.postgresql', name: 'postgresql', version: '9.4-1206-jdbc4'
+        // runtime  group: 'org.postgresql', name: 'postgresql', version: '9.4-1206-jdbc4'
+        runtime group: 'org.postgresql', name: 'postgresql', version: '42.2.0'
         // To allow us to un-tgz uploaded data files
+ 
         runtime 'org.apache.commons:commons-compress:1.9'
         // runtime 'commons-collections:commons-collections:3.2.2'
         // runtime 'org.apache.commons:commons-collections4:4.1'
@@ -71,16 +71,16 @@ grails.project.dependency.resolution = {
         runtime 'org.apache.tika:tika-parsers:1.17'
         
 
-        compile 'org.elasticsearch:elasticsearch:2.4.6'
-        runtime ('org.elasticsearch:elasticsearch-groovy:2.1.2') {
-          excludes "org.codehaus.groovy:groovy-all"
-        }
-        runtime 'com.vividsolutions:jts:1.13'
+        compile 'org.elasticsearch:elasticsearch:5.2.0'
+        compile 'org.elasticsearch.client:transport:5.2.0'
 
-        // runtime ('org.elasticsearch:elasticsearch:1.7.1')
-        // runtime ('org.elasticsearch:elasticsearch-groovy:1.7.0') {
-        //     excludes "org.codehaus.groovy:groovy-all:2.4.3"
-        // }
+        // log4j deps for es5 above
+        compile 'org.apache.logging.log4j:log4j-api:2.7'
+        compile 'org.apache.logging.log4j:log4j-core:2.7'
+
+
+
+        runtime 'com.vividsolutions:jts:1.13'
 
         runtime 'xalan:xalan:2.7.1'
         runtime 'net.sf.opencsv:opencsv:2.0'
@@ -94,9 +94,6 @@ grails.project.dependency.resolution = {
         build 'org.apache.httpcomponents:httpcore:4.4.4'
 
         test("org.seleniumhq.selenium:selenium-htmlunit-driver:$seleniumHtmlunitDriverVersion")
-        // test("org.seleniumhq.selenium:selenium-htmlunit-driver:$seleniumHtmlunitDriverVersion") {
-        //     excludes 'xml-apis', 'commons-collections'
-        // }
         test "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
         test "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
 
