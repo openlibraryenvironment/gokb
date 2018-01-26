@@ -31,24 +31,24 @@ curl -X PUT "localhost:9200/gokb/component/_mapping" -d '{
   "component" : {
     "properties" : {
       "name" : {
-        type : "multi_field",
-        fields : {
-          name : { type : "string", analyzer : "snowball", copy_to : "suggest" },
-          altname : { type : "string", analyzer : "snowball" }
+        "type" : "multi_field",
+        "fields" : {
+          "name" : { "type" : "string", "analyzer" : "snowball", "copy_to" : "suggest" },
+          "altname" : { "type" : "string", "analyzer" : "snowball" }
         }
       },
       "componentType" : { 
-        type:"string", 
-        index:"not_analyzed" 
+        "type":"string", 
+        "index":"not_analyzed" 
       },
       "status" : {
-        type:"string",
-        index:"not_analyzed"
+        "type":"string",
+        "index":"not_analyzed"
       },
       "suggest" : {
-        type : "string",
-        analyzer : "autocomplete",
-        search_analyzer : "standard"
+        "type" : "string",
+        "analyzer" : "autocomplete",
+        "search_analyzer" : "standard"
       }
     }
   }
