@@ -169,11 +169,11 @@ grails.project.dependency.resolution = {
       compile ":quartz:1.0.1"
 
       /** Moved plugins from the properties file to here **/
-      compile ':audit-logging:1.1.0'
+      compile ':audit-logging:1.1.3'
       compile ':executor:0.3'
       compile ':famfamfam:1.0.1'
       compile ':rest:0.8'
-      compile ":twitter-bootstrap:3.2.0.2"
+      compile ":twitter-bootstrap:3.3.4"
 
       compile ":gson:1.1.4"
       

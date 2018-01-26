@@ -144,7 +144,7 @@ class CreateController {
           
             log.debug("Saving..");
             log.debug("Obj: ${result.newobj}")
-            if ( result.newobj.hasErrors() || !result.newobj.id) {
+            if ( result.newobj.hasErrors() ) {
               log.error("Problem saving new object")
               flash.error = "Problem saving new object!"
               

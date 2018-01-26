@@ -206,7 +206,7 @@ window.gokb = {
     results = $(".simpleReferenceTypedown");
     
     results.each(function() {
-      
+
       var conf = {
         placeholder: "Search for...",
         allowClear: true,

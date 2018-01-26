@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
 import org.gokb.ESWrapperService
+import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
 import org.gokb.refine.RefineProject
 import org.gokb.validation.Validation
@@ -51,6 +52,7 @@ class BootStrap {
   GrailsApplication grailsApplication
   def aclUtilService
   def gokbAclService
+  def ComponentStatisticService
   def ESWrapperService
   //def titleLookupService
 
@@ -211,6 +213,9 @@ class BootStrap {
     
     log.debug("Ensuring ElasticSearch index")
     ensureESIndex()
+
+    log.debug("Checking for missing component statistics")
+    ComponentStatisticService.ensureStats()
 
     log.info("GoKB Init complete");
   }
@@ -1034,6 +1039,24 @@ class BootStrap {
       .startObject()
         .startObject("component")
           .startObject("properties")
+            .startArray("dynamic_templates")
+              .startObject("publisher")
+                .field("match", "publisher")
+                .field("match_mapping_type", "string")
+                .startObject("mapping")
+                  .field("type", "string")
+                  .field("index","not_analyzed")
+                .endObject()
+              .endObject()
+              .startObject("roles")
+                .field("match", "roles")
+                .field("match_mapping_type", "string")
+                .startObject("mapping")
+                  .field("type", "string")
+                  .field("index","not_analyzed")
+                .endObject()
+              .endObject()
+            .endArray()
             .startObject("name")
               .field("type", "multi_field")
               .startObject("fields")

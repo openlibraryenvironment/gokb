@@ -30,15 +30,15 @@ class ResourceController {
     if ( params.id ) {
       result.displayobj = genericOIDService.resolveOID(params.id)
       
-      def read_perm = result.displayobj.isTypeReadable()
-      if (read_perm) {
-        if ( result.displayobj ) {
-          
-          
+      if ( result.displayobj ) {
+
+        def read_perm = result.displayobj?.isTypeReadable()
+        if (read_perm) {
+
           // Need to figure out whether the current user has curatorial rights (or is an admin).
           // Defaults to true as not all components have curatorial groups defined.
           if (result.displayobj.respondsTo("getCuratoryGroups") && result.displayobj.curatoryGroups) {
-            
+
             def cur = user.curatoryGroups?.id.intersect(result.displayobj.curatoryGroups?.id) ?: []
             request.curator = cur
           } else {
@@ -72,11 +72,12 @@ class ResourceController {
           result.user_watching = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=? and n.user=?",[result.displayobj, user])[0] == 1 ? true : false;
         }
         else {
-          log.debug("unable to resolve object");
+          response.sendError(403);
         }
       }
       else {
-        response.sendError(403);
+        log.debug("unable to resolve object");
+        response.sendError(404);
       }
     }
     result

@@ -28,6 +28,10 @@ class SearchController {
 
     def result = [:]
 
+    if ( params.init ) {
+      result.init = true
+    }
+
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
@@ -57,7 +61,7 @@ class SearchController {
     if ( params.det )
       result.det = Integer.parseInt(params.det)
 
-    if ( params.qbe ) {
+    if ( params.qbe) {
       if ( params.qbe.startsWith('g:') ) {
         // Global template, look in config
         def global_qbe_template_shortcode = params.qbe.substring(2,params.qbe.length());
@@ -67,12 +71,12 @@ class SearchController {
       }
 
       // Looked up a template from somewhere, see if we can execute a search
-      if ( result.qbetemplate ) {
+      if ( result.qbetemplate) {
       
         Class target_class = Class.forName(result.qbetemplate.baseclass);
         def read_perm = target_class.isTypeReadable()
         
-        if (read_perm) {
+        if (read_perm && !params.init) {
         
           log.debug("Execute query");
           doQuery(result.qbetemplate, params, result)
@@ -83,7 +87,7 @@ class SearchController {
           result.page_current = (result.offset / result.max) + 1
           result.page_total = (result.reccount / result.max).toInteger() + (result.reccount % result.max > 0 ? 1 : 0)
           
-        }else{
+        }else if (!read_perm){
           response.sendError(403);
         }
       }

@@ -33,15 +33,15 @@
 						model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide),cfg:qbetemplate.qbeConfig]}" />
 				</div>
 				<!-- panel-body -->
-				<g:if test="${recset}">
+				<g:if test="${recset && !init}">
 					<g:render template="qberesult" contextPath="."
 						model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, jumpToPage:'jumpToPage', det:det, page:page_current, page_max:page_total]}" />
 				</g:if>
-				<g:else>
+				<g:elseif test="${!init}">
 					<div class="panel-footer">
 						<g:render template="qbeempty" contextPath="." />
 					</div>
-				</g:else>
+				</g:elseif>
 			</g:else>
 	 </div>
   </div>

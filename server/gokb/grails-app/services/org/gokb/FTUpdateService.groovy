@@ -6,6 +6,7 @@ import org.gokb.FTControl
 import org.hibernate.ScrollMode
 import java.nio.charset.Charset
 import java.util.GregorianCalendar
+import org.gokb.cred.*
 
 
 @Transactional
@@ -129,7 +130,12 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        
+
+        result.roles = []
+        kbc.roles.each { role ->
+          result.roles.add(role.value)
+        }
+
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -151,6 +157,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.primaryUrl = kbc.primaryUrl
         result.status = kbc.status?.value
         
         result.identifiers = []
@@ -197,16 +204,18 @@ class FTUpdateService {
           log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}");
         }
       }
+      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+      def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
 
       log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}");
 
       def total = 0;
       Date from = new Date(latest_ft_record.lastTimestamp);
   
-      def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND o.status.value = 'Current'",[ts: from], [readonly:true])[0];
+      def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND ( o.status = :current OR o.status = :retired )",[ts: from, current: status_current, retired: status_retired], [readonly:true])[0];
       log.debug("Will process ${countq} records");
 
-      def q = domain.executeQuery("select o.id from "+domain.name+" as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND o.status.value = 'Current' order by o.lastUpdated, o.id",[ts: from], [readonly:true]);
+      def q = domain.executeQuery("select o.id from "+domain.name+" as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND ( o.status = :current OR o.status = :retired ) order by o.lastUpdated, o.id",[ts: from, current: status_current, retired: status_retired], [readonly:true]);
     
       log.debug("Query completed.. processing rows...");
 

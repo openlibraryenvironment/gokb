@@ -276,6 +276,9 @@ class InplaceTagLib {
       out << "data-displayValue=\"${o.toString()}\" ";
     }
 
+    if ( attrs.elastic ) {
+      out << "data-elastic=\"${attrs.elastic}\""
+    }
 
     if ( attrs.filter1 ) {
       out << "data-filter1=\"${attrs.filter1}\" "

@@ -59,60 +59,25 @@ class HomeController {
     log.debug("Calculating stats...");
 
     // The defaults for these widgets.
+    def colors=[numNew: '#FF0000', numTotal: '#0000FF']
     def result=[:].withDefault {[
 
         xkey:'month',
         hideHover: 'auto',
-        resize: true
+        resize: true,
+        type: 'line'
 
       ].withDefault {[]}}
 
     def widgets = [
       'Titles' : [
-        'type'      : 'line',
-        'datasets'  : [
-          [
-            'query'     :
-            'select count(p.id) as titlesall, '+
-            'sum(case when p.dateCreated > :startdate then 1 else 0 end) as titlesnew ' +
-            'from TitleInstance as p where p.dateCreated < :enddate',
-            'ykeys'      : ['titlesall', 'titlesnew'],
-            'labels'     : ['Total Titles','New Titles'],
-            'lineColors' : ['#0000FF', '#FF0000']
-          ],
-        ]
+        'componentName' : 'TitleInstance',
       ],
       'Organizations' : [
-        'type'      : 'line',
-        'datasets'  : [
-          [
-            'query'     : 'select count(p.id) as orgsnew from Org as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
-            'ykeys'      : 'orgsnew',
-            'labels'     : 'New Organizations',
-            'lineColors' : '#FF0000'
-          ],[
-            'query'     : 'select count(p.id) as orgsall from Org as p where p.dateCreated < :enddate',
-            'ykeys'      : 'orgsall',
-            'labels'     : 'Total Organizations',
-            'lineColors' : '#0000FF'
-          ]
-        ]
+        'componentName' : 'Org',
       ],
       'Packages' : [
-        'type'      : 'line',
-        'datasets'  : [
-          [
-            'query'     : 'select count(p.id) as pkgsnew from Package as p where p.dateCreated > :startdate and p.dateCreated < :enddate',
-            'ykeys'      : 'pkgsnew',
-            'labels'     : 'New Packages',
-            'lineColors' : '#FF0000'
-          ],[
-            'query'     : 'select count(p.id) as pkgsall from Package as p where p.dateCreated < :enddate',
-            'ykeys'      : 'pkgsall',
-            'labels'     : 'Total Packages',
-            'lineColors' : '#0000FF'
-          ]
-        ]
+        'componentName' : 'Package'
       ],
     ]
 
@@ -137,69 +102,46 @@ class HomeController {
       }
 
       // The datasets.
-      def ds = widget_data.remove("datasets")
+      def component_name = widget_data.remove("componentName")
 
       result."${widget_name}" << (widget_data + [
         'element' : GrailsNameUtils.getPropertyName(widget_name),
       ])
 
-      ds.each { Map d ->
+      def widget_element = GrailsNameUtils.getPropertyName(widget_name)
 
-        String q = d.remove("query")
+      // Clear the calendar.
+      calendar.clear();
+      calendar.set(Calendar.MONTH, start_month);
+      calendar.set(Calendar.YEAR, start_year);
 
-        // Clear the calendar.
-        calendar.clear();
-        calendar.set(Calendar.MONTH, start_month);
-        calendar.set(Calendar.YEAR, start_year);
+      for ( int i=0; i<12; i++ ) {
 
-        // Merge in the singles into their plural container.
-        d.each { String pName, pVal ->
-          result."${widget_name}"."${pName}" += pVal
-        }
+        log.debug("Period ${i}")
 
-        for ( int i=0; i<12; i++ ) {
+        calendar.add(Calendar.MONTH, 1)
 
-          log.debug("Period ${i}");
+        // X-axis key and val.
+        String xkey = result."${widget_name}"."xkey"
+        def xVal = "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
 
-          def period_start_date = calendar.getTime()
-          calendar.add(Calendar.MONTH, 1)
-          def period_end_date = calendar.getTime()
+        def comp_stats = ComponentStatistic.executeQuery("from ComponentStatistic where componentType = ? and year = ? and month = ?", [component_name, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH)], [readOnly: true])[0]
+        def ykeyAll = "${widget_element}all"
+        def ykeyNew = "${widget_element}new"
 
-          def query_params = [:]
-          if ( q.contains(':startdate') ) {
-            query_params.startdate = period_start_date
-          }
-          if ( q.contains(':enddate') ) {
-            query_params.enddate = period_end_date
-          }
+        result."${widget_name}".'ykeys' = [ykeyAll, ykeyNew]
+        result."${widget_name}".'labels' = ["Total ${widget_name}", "New ${widget_name}"]
+        result."${widget_name}".'lineColors' = [colors.numTotal, colors.numNew]
 
-          // log.debug("Finding ${widget_name} from ${period_start_date} to ${period_end_date}")
+        // Construct an entry for this xValue
+        def entry = [
+          "${xkey}" : "${xVal}",
+          "${ykeyAll}" : comp_stats.numTotal,
+          "${ykeyNew}" : comp_stats.numNew
+        ]
 
-          // Execute the query directly with Hibernate so we can just get a list of Maps.
-          List<Map> qres = sessionFactory.getCurrentSession().createQuery(q).with {
-            setProperties(query_params)
-            setReadOnly(true)
-            setResultTransformer (AliasToEntityMapResultTransformer.INSTANCE)
-            list()
-          }
-
-          // X-axis key and val.
-          String xkey = result."${widget_name}"."xkey"
-          def xVal = "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
-
-          // Construct an entry for this xValue
-          def entry = [
-            "${xkey}" : "${xVal}"
-          ]
-
-          // Might be multiple Y vals per row.
-          ([] + d."ykeys").each {String ykey ->
-            entry."${ykey}" = qres[0]."${ykey}"
-          }
-
-          // Add to the data.
-          wData."${xVal}".putAll(entry)
-        }
+        // Add to the data.
+        wData."${xVal}".putAll(entry)
       }
 
       log.debug("Completed Processing counts for ${widget_name}");
@@ -208,7 +150,7 @@ class HomeController {
       result."${widget_name}"."data" = wData.values()
     }
 
-    // log.debug("${result}")
+    log.debug("${result}")
     ["widgets" : result]
   }
 

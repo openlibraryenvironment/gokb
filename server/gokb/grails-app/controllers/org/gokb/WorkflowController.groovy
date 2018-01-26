@@ -1280,11 +1280,16 @@ class WorkflowController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteVariant() {
     log.debug(params);
+    User user = springSecurityService.currentUser
     def result = [:]
     result.ref=request.getHeader('referer')
     def variant = KBComponentVariantName.get(params.id)
+    def variantOwner = variant.owner
+    def variantName = variant.variantName
     if (variant != null ) {
       variant.delete()
+      variantOwner.lastUpdateComment = "Deleted Alternate Name ${variantName}."
+      variantOwner.save(flush: true)
     }
     redirect(url: result.ref)
   }
