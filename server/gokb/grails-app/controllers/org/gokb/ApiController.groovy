@@ -857,6 +857,10 @@ class ApiController {
 
         if ( params.componentType ) {
           suggestQuery.must(QueryBuilders.matchQuery('componentType', params.componentType))
+
+          if( params.componentType == 'Org' && params.role ) {
+            suggestQuery.must(QueryBuilders.matchQuery('roles', params.role))
+          }
         }
 
         SearchRequestBuilder es_request =  esclient.prepareSearch("suggest")
@@ -970,10 +974,15 @@ class ApiController {
         def unknown_fields = []
         def other_fields = ["controller","action","max","offset","from"]
         def id_params = [:]
+        def orgRoleParam = ""
 
         params.each { k, v ->
-          if ( k == "componentType" && v instanceof String) {
+          if ( k == 'componentType' && v instanceof String ) {
             singleParams['componentType'] = v
+          }
+
+          else if( k == 'role' && v instanceof String ) {
+            orgRoleParam = v
           }
 
           else if (k == 'label' && v instanceof String) {
@@ -981,6 +990,7 @@ class ApiController {
             exactQuery.should(QueryBuilders.matchQuery('altname', v))
             exactQuery.minimumNumberShouldMatch(1)
           }
+
           else if (!params.label && k == "name" && v instanceof String) {
             singleParams['name'] = v
           }
@@ -1007,6 +1017,15 @@ class ApiController {
 
         if(unknown_fields.size() > 0){
           errors['unknown'] = "Unknown parameter(s): ${unknown_fields}"
+        }
+
+        if ( orgRoleParam ) {
+          if ( singleParams['componentType'] ) {
+            singleParams['roles'] = orgRoleParam
+          }
+          else {
+            errors['role'] = "To filter by Org Roles, please add filter componentType=Org to the query"
+          }
         }
 
         if (singleParams) {
