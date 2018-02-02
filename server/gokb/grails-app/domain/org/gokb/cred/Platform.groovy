@@ -203,30 +203,15 @@ class Platform extends KBComponent {
           
           if(urlHost.startsWith("www.")){
             urlHost = urlHost.substring(4)
-            def url_no_schema = (platformDTO.primaryUrl - ~/www\./)
-            other_candidates = Platform.executeQuery("select distinct pl from Platform as pl where ( pl.primaryUrl = ? or pl.name = ? ) ", [url_no_schema, urlHost]);
           }
           
-          url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where ( pl.primaryUrl = ? or pl.name = ? ) ", [platformDTO.primaryUrl, urlHost]);
+          def platform_crit = Platform.createCriteria()
           
-          
-          // Use platform found without 'www.' in URL
-          
-          if ( url_candidates.size() == 0 && other_candidates.size() > 0) {
-            url_candidates = other_candidates
-          }
-          
-          // Cross-check for alternative schema
-          
-          if( url_candidates.size() == 0 && inc_url.getProtocol() == "http" ){
-            URL alt_scheme = new URL("https", inc_url.getHost(), inc_url.getPort(), inc_url.getFile(), inc_url.getRef());
-            log.debug("Also trying URL: ${alt_scheme.toString()}")
-            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.primaryUrl = ? ", [alt_scheme.toString()]);
-          }
-          else if( url_candidates.size() == 0 && inc_url.getProtocol() == "https" ){
-            URL alt_scheme = new URL("http", inc_url.getHost(), inc_url.getPort(), inc_url.getFile(), inc_url.getRef());
-            log.debug("Also trying URL: ${alt_scheme.toString()}")
-            url_candidates = Platform.executeQuery("select distinct pl from Platform as pl where pl.primaryUrl = ? ", [alt_scheme.toString()]);
+          url_candidates = platform_crit.list {
+            or {
+              like("name", "${urlHost}")
+              like("primaryUrl", "%${urlHost}%")
+            }
           }
         }
       } catch( MalformedURLException ex ) {
