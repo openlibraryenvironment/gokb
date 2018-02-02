@@ -29,7 +29,7 @@
 	        <g:else>
                   <div class="${fld.contextTree.wildcard!=null?'input-group':''}">
                     <g:if test="${fld.contextTree.wildcard=='B' || fld.contextTree.wildcard=='L'}"><span class="input-group-addon">*</span></g:if>
-                    <input class="form-control" type="text" name="${fld.qparam}" id="${fld.qparam}" placeholder="${fld.placeholder}" value="${params[fld.qparam]}" />
+                    <input class="form-control" type="${fld.contextTree.type == 'java.lang.Long' ? 'number' : 'text'}" name="${fld.qparam}" id="${fld.qparam}" placeholder="${fld.placeholder}" value="${params[fld.qparam]}" />
                     <g:if test="${fld.contextTree.wildcard=='B' || fld.contextTree.wildcard=='R'}"><span class="input-group-addon">*</span></g:if>
                   </div>
 	        </g:else>

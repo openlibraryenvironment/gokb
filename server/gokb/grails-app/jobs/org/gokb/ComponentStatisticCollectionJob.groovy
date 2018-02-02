@@ -16,11 +16,11 @@ class ComponentStatisticCollectionJob {
     log.debug("Beginning scheduled statistics update job.")
     if (grailsApplication.config.enable_statsrewrite) {
       log.debug("Also updating existing stats.")
-      ComponentStatisticService.ensureStats(12,0,true)
+      ComponentStatisticService.updateCompStats(12,0,true)
     }
     else{
       log.debug("Not updating existing stats.")
-      ComponentStatisticService.ensureStats()
+      ComponentStatisticService.updateCompStats()
     }
   }
 }

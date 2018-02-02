@@ -6,16 +6,18 @@ import com.k_int.ClassUtils
 
 class ComponentStatisticService {
 
+  def executorService
+
   public static components = ["TitleInstance", "Org", "Package"]
   public static boolean running = false;
 
-  def synchronized updateCompStats() {
+  def synchronized updateCompStats(int months = 12, int offset = 0, boolean force_update = false) {
     log.debug("updateCompStats");
 
     if ( running == false ) {
       running = true;
       def future = executorService.submit({
-        ensureStats()
+        ensureStats(months, offset, force_update)
       } as java.util.concurrent.Callable)
       log.debug("updateCompStats returning");
     }

@@ -215,7 +215,7 @@ class BootStrap {
     ensureESIndex()
 
     log.debug("Checking for missing component statistics")
-    ComponentStatisticService.ensureStats()
+    ComponentStatisticService.updateCompStats()
 
     log.info("GoKB Init complete");
   }

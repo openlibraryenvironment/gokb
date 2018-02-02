@@ -65,6 +65,12 @@
 							<g:xEditableRefData owner="${d}" field="mission"
 								config='Org.Mission' />
 						</dd>
+                        <dt>
+                          <g:annotatedLabel owner="${d}" property="homepage">Homepage</g:annotatedLabel>
+                        </dt>
+                        <dd>
+                          <g:xEditable class="ipe" owner="${d}" field="homepage" />
+                        </dd>
 						<dt>
 							<g:annotatedLabel owner="${d}" property="roles">Roles</g:annotatedLabel>
 						</dt>
@@ -93,8 +99,8 @@
 								</g:if>
 							</g:if>
 							<g:else>
-	                Record must be saved before roles can be edited.
-	              </g:else>
+                              Record must be saved before roles can be edited.
+                            </g:else>
 						</dd>
 					</dl>
 				</g:if>
