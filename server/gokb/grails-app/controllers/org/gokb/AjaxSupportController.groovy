@@ -166,7 +166,7 @@ class AjaxSupportController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
-
+    User user = springSecurityService.currentUser
     def contextObj = resolveOID2(params.__context)
     def domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
 
@@ -222,6 +222,8 @@ class AjaxSupportController {
           log.debug("Saving ${new_obj}");
           if ( new_obj.save() ) {
             log.debug("Saved OK");
+            contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
+            contextObj.save(flush: true)
           }
           else {
             new_obj.errors.each { e ->

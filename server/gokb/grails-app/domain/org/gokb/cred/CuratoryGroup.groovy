@@ -47,23 +47,21 @@ class CuratoryGroup extends KBComponent {
   def beforeInsert() {
     def user = springSecurityService?.currentUser
     this.owner = user
-    println log.name
+    
     log.debug("Checking for duplicate CuratoryGroup: ${this.name}")
     
     if (CuratoryGroup.findByNameIlike(this.name)){
       this.errors.reject ("Name is not unique","A group with this name alread exists" )
-      this.errors.rejectValue ( "name", "default.notunique" ,"A group with this name alread exists" )
       log.debug("CuratoryGroup: ${this.errors}")
       return false
     }
   }
 
   def beforeUpdate() {
-    log.debug("Checking for duplicate CuratoryGroup: ${this.name}")
-    println log.name
+    log.debug("UPDATE: Checking for duplicate CuratoryGroup: ${this.name}")
+
     if (CuratoryGroup.findByNameIlike(this.name)){
       this.errors.reject ("Name is not unique", "A group with this name alread exists" )
-      this.errors.rejectValue ( "name", "default.notunique" ,"A group with this name alread exists" )
       log.debug("CuratoryGroup: ${this.errors}")
       return false
     }

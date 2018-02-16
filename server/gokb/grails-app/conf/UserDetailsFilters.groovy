@@ -74,7 +74,7 @@ class UserDetailsFilters {
                     // Add a menu item.
                     menus["search"]["${d.type.value}"] << [
                       text : val.title,
-                      link : ['controller' : 'search', 'action' : 'index', 'params' : [qbe:'g:'+ key]],
+                      link : ['controller' : 'search', 'action' : 'index', 'params' : [qbe:'g:'+ key, init: 'true']],
                       attr : ['title' : "Search ${val.title}"]
                     ]
                   }

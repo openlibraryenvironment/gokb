@@ -21,7 +21,7 @@
           <g:link controller="resource" action="show" id="org.gokb.cred.ReviewRequest:${rr.id}">${rr.reviewRequest}</g:link>
         </td>
         <td>
-          <g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${rr.componentToReview}">${rr.componentToReview?.name}</g:link>
+          <g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${rr.componentToReview.id}">${rr.componentToReview?.name}</g:link>
         </td>
         <td>
           <g:xEditableRefData owner="${rr}" field="status" config='ReviewRequest.Status' />

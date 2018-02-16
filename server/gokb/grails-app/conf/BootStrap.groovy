@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest
 import org.gokb.DomainClassExtender
 import org.gokb.IngestService
 import org.gokb.ESWrapperService
+import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
 import org.gokb.refine.RefineProject
 import org.gokb.validation.Validation
@@ -51,6 +52,7 @@ class BootStrap {
   GrailsApplication grailsApplication
   def aclUtilService
   def gokbAclService
+  def ComponentStatisticService
   def ESWrapperService
   //def titleLookupService
 
@@ -211,6 +213,9 @@ class BootStrap {
     
     log.debug("Ensuring ElasticSearch index")
     ensureESIndex()
+
+    log.debug("Checking for missing component statistics")
+    ComponentStatisticService.updateCompStats()
 
     log.info("GoKB Init complete");
   }
@@ -1033,14 +1038,36 @@ class BootStrap {
     XContentBuilder mapping = jsonBuilder()
       .startObject()
         .startObject("component")
+          .startArray("dynamic_templates")
+            .startObject()
+              .startObject("publisher")
+                .field("match", "publisher")
+                .field("match_mapping_type", "string")
+                .startObject("mapping")
+                  .field("type", "string")
+                  .field("index","not_analyzed")
+                .endObject()
+              .endObject()
+            .endObject()
+            .startObject()
+              .startObject("roles")
+                .field("match", "roles")
+                .field("match_mapping_type", "string")
+                .startObject("mapping")
+                  .field("type", "string")
+                  .field("index","not_analyzed")
+                .endObject()
+              .endObject()
+            .endObject()
+          .endArray()
           .startObject("properties")
             .startObject("name")
-              .field("type", "multi_field")
+              .field("type", "string")
+              .field("copy_to", "suggest")
               .startObject("fields")
                 .startObject("name")
                   .field("type", "string")
                   .field("analyzer", "snowball")
-                  .field("copy_to", "suggest")
                 .endObject()
                 .startObject("altname")
                   .field("type", "string")

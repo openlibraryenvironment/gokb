@@ -1,54 +1,44 @@
 package org.gokb
 
-import static java.util.UUID.randomUUID
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+import com.k_int.ExtendedHibernateDetachedCriteria
+import com.k_int.TextUtils
+import com.k_int.TsvSuperlifterService
 import grails.converters.JSON
-import org.springframework.security.access.annotation.Secured;
 import grails.util.GrailsNameUtils
 import grails.util.Holders
-
-import java.security.SecureRandom
-
-import org.apache.commons.codec.binary.Base64
+import org.elasticsearch.action.search.*
+import org.elasticsearch.index.query.*
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import org.gokb.validation.Validation
-
-import com.k_int.ConcurrencyManagerService
-import com.k_int.TextUtils
-import com.k_int.ConcurrencyManagerService.Job
-import com.k_int.TsvSuperlifterService
-import com.k_int.ExtendedHibernateDetachedCriteria
-
-import au.com.bytecode.opencsv.CSVReader
-import org.springframework.web.multipart.MultipartHttpServletRequest
 import org.hibernate.criterion.CriteriaSpecification
-import grails.gorm.DetachedCriteria
 import org.hibernate.criterion.Subqueries
+import org.springframework.security.access.annotation.Secured
+import org.springframework.web.multipart.MultipartHttpServletRequest
 
-import grails.plugin.gson.converters.GSON
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
-import org.elasticsearch.index.query.*
-import org.elasticsearch.action.search.*
+import java.security.SecureRandom
 
-
+import static java.util.UUID.randomUUID
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
- * 
+ *
  * @author Steve Osguthorpe
  */
 
 class ApiController {
-  
+
   TsvSuperlifterService tsvSuperlifterService
   RefineService refineService
   SecureRandom rand = new SecureRandom()
   UploadAnalysisService uploadAnalysisService
   def ESWrapperService
-  
+
   static def reversemap = ['subject':'subjectKw','componentType':'componentType','identifier':'identifiers.value']
   static def non_analyzed_fields = ['componentType','identifiers.value']
-  
+
   private static final Closure TRANSFORMER_USER = {User u ->
     [
       "id"      : "${u.id}",
@@ -104,7 +94,7 @@ class ApiController {
         if (!gokbVersion || TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
           apiReturn([errorType : "versionError"], "The refine extension you are using is not compatible with this instance of the service.",
           "error")
-          
+
           return false
         }
       }
@@ -120,34 +110,34 @@ class ApiController {
 
   // Internal API return object that ensures consistent formatting of API return objects
   private def apiReturn = {result, String message = "", String status = (result instanceof Throwable) ? "error" : "success" ->
-    
+
     // If the status is error then we should log an entry.
     if (status == 'error') {
-      
+
       // Generate 6bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
       byte[] randomBytes = new byte[6]
       rand.nextBytes(randomBytes)
       def ticket = Base64.encodeBase64String(randomBytes);
-      
+
       // Let's see if we have a throwable.
       if (result && result instanceof Throwable) {
-        
+
         // Log the error with the stack...
         log.error("[[${ticket}]] - ${message == "" ? result.getLocalizedMessage() : message}", result)
-      } else {        
+      } else {
         log.error("[[${ticket}]] - ${message == "" ? 'An error occured, but no message or exception was supplied. Check preceding log entries.' : message}")
       }
-      
+
       // Ensure we have something to send back to the user.
       if (message == "") {
         message = "An unknow error occurred."
       } else {
-      
+
         // We should now send the message along with the ticket.
         message = "${message}".replaceFirst("\\.\\s*\$", ". The error has been logged with the reference '${ticket}'")
       }
     }
-    
+
     def data = [
       code    : (status),
       result    : (result),
@@ -212,7 +202,7 @@ class ApiController {
     def f = request.getFile('dataZip')
     def result = [:]
 
-    if (f && !f.empty) {
+    if (!(f?.empty)) {
 
       log.debug ("Got file saving and parsing.")
       // Save the file temporarily...
@@ -231,7 +221,7 @@ class ApiController {
         result = ingestService.estimateChanges(parsed_project_file, params.projectID, (params.boolean("incremental") != false))
 
       } catch (Exception e) {
-        
+
         apiReturn(e, null, "error")
       } finally {
         if ( temp_data_zipfile ) {
@@ -273,12 +263,12 @@ class ApiController {
 
     apiReturn( null, "Succesfully saved the operations.")
   }
-  
+
   @Secured(['IS_AUTHENTICATED_FULLY'])
   def checkLogin() {
     apiReturn(["login": true])
   }
-  
+
   def userData() {
     if (!springSecurityService.currentUser) {
       return
@@ -316,7 +306,7 @@ class ApiController {
           response.setContentType("application/x-gzip")
           response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
           response.outputStream << file.newInputStream()
-          
+
           project.setLastCheckedOutBy(user)
           project.setProjectStatus(RefineProject.Status.CHECKED_OUT)
 
@@ -343,8 +333,8 @@ class ApiController {
 
     def f = request.getFile('projectFile')
 
-    if (f && !f.empty) {
-      
+    if (!(f?.empty)) {
+
       boolean new_project = false;
 
       // Get the project.
@@ -361,7 +351,7 @@ class ApiController {
         project = new RefineProject()
         project.setCreatedBy(user)
         project.setLastCheckedOutBy(user)
-        
+
         new_project = true
       }
 
@@ -375,19 +365,19 @@ class ApiController {
             project.provider = org
           }
         }
-        
+
         if (params.source) {
           // Need to set the source here.
           Source src = componentLookupService.lookupComponent(params.source)
-          
+
           if (!src.name || src.name == "") {
             // Replace the component regex to just leave the string, and set as the name.
             src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
           }
-          
+
           // Set the source of this project.
           project.setSource(src)
-          
+
           // Save the object.
           src.save (failOnError:true)
           project.save(failOnError:true, flush:true)
@@ -423,13 +413,13 @@ class ApiController {
 
         if ( parsed_project_file == null )
           throw new Exception("Problem parsing project file");
-          
+
         // We now need to save the embeded source-file (if one is present)
         if (new_project) {
           log.debug("First time checking in the project. Let's add the source file.")
           final String source_file_str = parsed_project_file?.metadata?.customMetadata?."source-file"
           if (source_file_str) {
-            
+
             log.debug("Found source file in metadata. Decoding and adding to project.")
             // We need to decode it (base64).
             def source_tgz = Base64.decodeBase64(source_file_str)
@@ -444,9 +434,9 @@ class ApiController {
 
         // Save and flush the project
         project.save(flush:true, failOnError:true)
-        
+
         if (params.ingest) {
-          
+
           // Is this an incremental update.
           boolean incremental = (params.boolean("incremental") != false)
 
@@ -507,7 +497,7 @@ class ApiController {
     def f = request.getFile('dataZip')
     def validationResult = [:]
 
-    if (f && !f.empty) {
+    if (!(f?.empty)) {
 
       // Save the file temporarily...
       def temp_data_zipfile
@@ -540,12 +530,12 @@ class ApiController {
 
   private def doIngest(parsed_data, project, boolean incremental, user) {
     log.debug("ingesting refine project.. kicking off background task")
-    
+
     // The concurrency manager returns a Job that can be used to track progress of this,
     // Background task.
     Job background_job = concurrencyManagerService.createJob { Job job ->
       // Create a new session to run the ingest.
-      
+
       ingestService.ingest(parsed_data, project.id, incremental, user.id, job)
       log.debug ("Finished data insert.")
     }
@@ -574,7 +564,7 @@ class ApiController {
           result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
         }
         break;
-        
+
       case 'org' :
         def oq = Org.createCriteria()
         def orgs = oq.listDistinct {
@@ -597,7 +587,7 @@ class ApiController {
 
       // Get the project.
       def project = RefineProject.get(params.projectID)
-      
+
       // Also checking job 1...
       log.debug ("Job 1: " + concurrencyManagerService.getJob(1)?.progress ?: "Undefined")
 
@@ -671,7 +661,7 @@ class ApiController {
 
     def f = request.getFile('dataZip')
     def rules = [:]
-    if (f && !f.empty) {
+    if (!(f?.empty)) {
       Org provider = null;
       if (params.providerID) {
         provider = Org.get(params.providerID)
@@ -716,27 +706,27 @@ class ApiController {
     }
   }
 
-  
-  
+
+
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def quickCreate() {
     // Get the type of component we are going to attempt to create.
     def type = params.qq_type
-    
+
     try {
       Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
         "org.gokb.cred.${GrailsNameUtils.getClassNameRepresentation(type)}"
       )
-      
+
       // Try and create a new instance passing in the supplied parameters.
       def comp = c.newInstance()
-      
+
       // Set all the parameters passed in.
       params.each { prop, value ->
         // Only set the property if we have a value.
         if (value != null && value != "") {
           try {
-            
+
             // We may get a component ID here now. Just run it through the component
             // lookup service. If it isn't the correct format it will return quickly.
             KBComponent com = componentLookupService.lookupComponent(value)
@@ -746,17 +736,17 @@ class ApiController {
             } else {
               comp."${prop}" = value
             }
-            
+
           } catch (Throwable t) {
             /* Suppress the error */
           }
         }
       }
-      
+
       switch (c) {
-        
-        case Package : 
-        
+
+        case Package :
+
           // We may also need to create a review request against Packages created here.
           if ( !comp.provider ) {
             ReviewRequest.raise (
@@ -768,33 +758,33 @@ class ApiController {
           }
           break;
       }
-      
+
       // Save.
       comp.save(failOnError: true)
-      
+
       // Now that the object has been saved we need to return the string.
       apiReturn("${comp.name}::{${c.getSimpleName()}:${comp.id}}")
-      
+
     } catch (Throwable t) {
       apiReturn (t, "There was an error creating a new Component of ${type}")
     }
   }
-  
+
   def checkUpdate () {
-    
+
     def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
-    
+
     // Add the api version to the result. We will actually use this to circumvent a degrade taking place in the refine client.
     result."api-version" = getCapabilities()."app"."version"
     apiReturn (result)
   }
-  
+
   def downloadUpdate () {
     return downloadUpdateFile (springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
   }
-    
+
   private def downloadUpdateFile(boolean tester = false) {
-    
+
     // Grab the download.
     def file = refineService.extensionDownloadFile (params."requested-version", tester)
     if (file) {
@@ -831,7 +821,7 @@ class ApiController {
           result.rows = doQuery(result.qbetemplate, params, qresult)
           log.debug("Query complete");
           result.lasthit = result.offset + result.max > qresult.reccount ? qresult.reccount : ( result.offset + result.max )
-  
+
           // Add the page information.
           result.page_current = (result.offset / result.max) + 1
           result.page_total = (qresult.reccount / result.max).toInteger() + (qresult.reccount % result.max > 0 ? 1 : 0)
@@ -850,152 +840,165 @@ class ApiController {
   def suggest() {
     def result = [:]
     def esclient = ESWrapperService.getClient()
-    def search_action = null
     def errors = [:]
-    
+    def offsetDefault = 0
+    def maxDefault = 10
+
+
     result.endpoint = request.forwardURI
-    
+
     try {
-      
-      if ( params.q && params.q.size() > 0 ) {
-    
+
+      if ( params.q?.size() > 0 ) {
+
         QueryBuilder suggestQuery = QueryBuilders.boolQuery()
-        
+
         suggestQuery.must(QueryBuilders.matchQuery('suggest', params.q))
-        
+
         if ( params.componentType ) {
           suggestQuery.must(QueryBuilders.matchQuery('componentType', params.componentType))
+
+          if( params.componentType == 'Org' && params.role ) {
+            suggestQuery.must(QueryBuilders.matchQuery('roles', params.role))
+          }
         }
-        
+
         SearchRequestBuilder es_request =  esclient.prepareSearch("suggest")
-        
+
         es_request.setIndices(grailsApplication.config.globalSearch.indices)
         es_request.setTypes(grailsApplication.config.globalSearch.types)
         es_request.setQuery(suggestQuery)
-        
-        if ( params.max ) {
-          def max = null
-          try {
-            max = params.max as Integer
-          }catch (all){
-            errors['max'] = "Could not convert ${params.max} to Int."
-          }
-        
-          if (max) {
-            es_request.setSize(max)
-            result.max = params.max
-          }else{
-            result.max = 10;
-          }
-        }
-        
-        if ( params.from ) {
-          def from = null
-          
-          try {
-            from = params.from as Integer
-          }catch (all){
-            errors['from'] = "Could not convert ${params.from} to Int."
-          }
-          
-          if (from) {
-            es_request.setFrom(from)
-            result.offset = params.from
-          } else {
-            result.offset = 0;
-          }
-        }
-        
-        if ( params.offset ) {
-          def from = null
-          
-          try {
-            from = params.offset as Integer
-          }catch (all){
-            errors['offset'] = "Could not convert ${params.offset} to Int."
-          }
-          
-          if (from) {
-            es_request.setFrom(from)
-            result.offset = params.offset
-          }else{
-            result.offset = 0;
-          }
-        }
-        
-        search_action = es_request.execute()
-        
-        def search = search_action.actionGet()
 
-        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          search.hits.maxScore = 0;
+        setQueryMax(errors, result, 10)
+        setQueryFrom(errors, result, 0)
+        setQueryOffset(errors, result, 0)
+        if (result.offset != offsetDefault){
+          es_request.setFrom(result.offset)
         }
-        
+        if (result.max != maxDefault){
+          es_request.setSize(result.max)
+        }
+
+        def search = es_request.execute().actionGet()
+
+        if (search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
+          search.hits.maxScore = 0
+        }
+
         result.count = search.hits.totalHits
         result.records = []
-        
+
         search.hits.each { r ->
           def response_record = [:]
           response_record.id = r.id
           response_record.score = r.score
-          response_record.name = r.source.name
-          response_record.status = r.source.status
-          response_record.identifiers = r.source.identifiers
-          response_record.altNames = r.source.altname
-          
-          result.records.add(response_record);
+
+          r.source.each { field, val ->
+            response_record."${field}" = val
+          }
+
+          result.records.add(response_record)
         }
+
       }
       else{
         errors['fatal'] = "No query parameter 'q=' provided"
       }
-      
+
     }finally {
       if (errors) {
         result.errors = errors
       }
     }
-    
+
     render result as JSON
   }
-  
+
+  /*
+   * Alternate method to setQueryFrom, reading from params.offset instead of from params.from
+   */
+  private void setQueryOffset(LinkedHashMap errors, LinkedHashMap result, def defaultValue) {
+    setQueryParameterAsInt('offset', 'offset', defaultValue, errors, result)
+  }
+
+  /*
+   * Alternate method to setQueryOffset, reading from params.from instead of from params.offset
+   */
+  private void setQueryFrom(LinkedHashMap errors, LinkedHashMap result, def defaultValue) {
+    setQueryParameterAsInt('from', 'offset', defaultValue, errors, result)
+  }
+
+  private void setQueryMax(LinkedHashMap errors, LinkedHashMap result, def defaultValue) {
+    setQueryParameterAsInt('max', 'max', defaultValue, errors, result)
+  }
+
+  private void setQueryParameterAsInt(def param, def resultField, def defaultValue,
+                                      LinkedHashMap errors, LinkedHashMap result){
+    Integer value = convertToInt(param, errors)
+    if (value != null) {
+      result."$resultField" = value
+    }
+    else if (defaultValue != null) {
+      result."$resultField" = defaultValue
+    }
+  }
+
+  private Integer convertToInt(def param, LinkedHashMap errors){
+    if (params."$param") {
+      def value = null
+      try {
+        value = params."$param" as Integer
+        return value
+      } catch (all) {
+        errors."$param" = "Could not convert ${params."$param"} to Int."
+      }
+    }
+    return null
+  }
+
   def find() {
     def result = [:]
     def esclient = ESWrapperService.getClient()
     def search_action = null
     def errors = [:]
-    
+
     result.endpoint = request.forwardURI
-    
+
     try {
-    
+
       if ( !params.q ) {
-      
+
         QueryBuilder exactQuery = QueryBuilders.boolQuery()
-        
+
         def singleParams = [:]
         def unknown_fields = []
         def other_fields = ["controller","action","max","offset","from"]
         def id_params = [:]
-        
+        def orgRoleParam = ""
+
         params.each { k, v ->
-          if ( k == "componentType" && v instanceof String) {
+          if ( k == 'componentType' && v instanceof String ) {
             singleParams['componentType'] = v
           }
-          
+
+          else if( k == 'role' && v instanceof String ) {
+            orgRoleParam = v
+          }
+
           else if (k == 'label' && v instanceof String) {
             exactQuery.should(QueryBuilders.matchQuery('name', v))
             exactQuery.should(QueryBuilders.matchQuery('altname', v))
             exactQuery.minimumNumberShouldMatch(1)
           }
+
           else if (!params.label && k == "name" && v instanceof String) {
             singleParams['name'] = v
           }
-        
+
           else if (!params.label && k == "altname" && v instanceof String) {
             singleParams['altname'] = v
           }
-          
+
           else if ( k == "identifier" ) {
             if (v instanceof String) {
               id_params['identifiers.value'] = v
@@ -1006,100 +1009,73 @@ class ApiController {
               errors['identifier'] = "No String or ArrayList for param identifier found."
             }
           }
-          
+
           else if (!other_fields.contains(k)){
             unknown_fields.add(k)
           }
         }
-        
+
         if(unknown_fields.size() > 0){
           errors['unknown'] = "Unknown parameter(s): ${unknown_fields}"
         }
-      
+
+        if ( orgRoleParam ) {
+          if ( singleParams['componentType'] ) {
+            singleParams['roles'] = orgRoleParam
+          }
+          else {
+            errors['role'] = "To filter by Org Roles, please add filter componentType=Org to the query"
+          }
+        }
+
         if (singleParams) {
           singleParams.each { k,v ->
             exactQuery.must(QueryBuilders.matchQuery(k,v))
           }
         }
-        
+
         if (id_params) {
           exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params)))
         }
-        
 
-        
+
+
         if( singleParams || params.label || id_params ) {
           SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
-          
+
           es_request.setIndices(grailsApplication.config.globalSearch.indices)
           es_request.setTypes(grailsApplication.config.globalSearch.types)
           es_request.setQuery(exactQuery)
-          
-          if ( params.max ) {
-            def max = null
-            try {
-              max = params.max as Integer
-            }catch (all){
-              errors['max'] = "Could not convert ${params.max} to Int."
-            }
-          
-            if (max) {
-              es_request.setSize(max)
-              result.max = params.max
-            }
+
+          setQueryMax(errors, result, null)
+          setQueryFrom(errors, result, null)
+          setQueryOffset(errors, result, null)
+
+          if (result.max) {
+            es_request.setSize(result.max)
           }
-          
-          if ( params.from ) {
-            def from = null
-            
-            try {
-              from = params.from as Integer
-            }catch (all){
-              errors['from'] = "Could not convert ${params.from} to Int."
-            }
-            
-            if (from) {
-              es_request.setFrom(from)
-              result.offset = params.from
-            }
+          if (result.offset) {
+            es_request.setFrom(result.offset)
           }
-          
-          if ( params.offset ) {
-            def from = null
-            
-            try {
-              from = params.offset as Integer
-            }catch (all){
-              errors['offset'] = "Could not convert ${params.offset} to Int."
-            }
-            
-            if (from) {
-              es_request.setFrom(from)
-              result.offset = params.offset
-            }
-          }
-          
+
           search_action = es_request.execute()
-          
         }
         else{
           errors['params'] = "No valid parameters found"
         }
-          
       }
-      
+
       else {
-      
         result.max = params.max ? Integer.parseInt(params.max) : 10;
         result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
-      
-        if ( params.q && params.q.length() > 0) {
-        
+
+        if ( params.q?.length() > 0) {
+
           params.q = params.q.replace('[',"(")
           params.q = params.q.replace(']',")")
-          
+
           def query_str = buildQuery(params)
-          
+
           search_action = esclient.search {
             indices grailsApplication.config.globalSearch.indices
             types grailsApplication.config.globalSearch.types
@@ -1111,61 +1087,61 @@ class ApiController {
               }
             }
           }
-          
+
         }
-        
+
       }
       def search = null
-      
+
       if (search_action) {
         search = search_action.actionGet()
-        
+
 
         if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
           search.hits.maxScore = 0;
         }
-        
+
         result.count = search.hits.totalHits
         result.records = []
-        
+
         search.hits.each { r ->
           def response_record = [:]
           response_record.id = r.id
           response_record.score = r.score
-          response_record.name = r.source.name
-          response_record.status = r.source.status
-          response_record.identifiers = r.source.identifiers
-          response_record.altNames = r.source.altname
-          
+
+          r.source.each { field, val ->
+            response_record."${field}" = val
+          }
+
           result.records.add(response_record);
         }
       }
-      
+
     }finally {
       if (errors) {
         result.errors = errors
       }
     }
-    
+
     render result as JSON
   }
-  
+
   private def addIdQueries(params) {
-  
+
     QueryBuilder idQuery = QueryBuilders.boolQuery()
-    
+
     params.each { k,v ->
       idQuery.must(QueryBuilders.matchQuery(k, v))
     }
-    
+
     return idQuery
   }
-  
+
   private def buildQuery(params) {
 
     StringWriter sw = new StringWriter()
 
-    if ( ( params != null ) && ( params.q != null ) )
+    if ( params?.q != null )
       if(params.q.equals("*")){
         sw.write(params.q)
       }
@@ -1207,7 +1183,7 @@ class ApiController {
             // Write out the mapped field name, not the name from the source
             sw.write(mapping.value)
             sw.write(":")
-  
+
             if(non_analyzed_fields.contains(mapping.value)) {
               sw.write("${params[mapping.key]}")
             }
@@ -1222,7 +1198,7 @@ class ApiController {
     def result = sw.toString();
     result;
   }
-  
+
 
   def private doQuery (qbetemplate, params, result) {
     log.debug("doQuery ${result}");
@@ -1252,32 +1228,32 @@ class ApiController {
     "es-recon"            : true,
     "macros"              : true,
   ]
-  
+
   private static def getCapabilities() {
-    
+
     if (!CAPABILITIES."app") {
       CAPABILITIES."app" = [:]
-      
+
       Holders.grailsApplication.metadata.each { String k, v ->
         if ( k.startsWith ("app.") ) {
-          
+
           String prop_name = "${k.substring(4)}"
           if (!prop_name.contains('.')) {
             CAPABILITIES."app"."${prop_name}" = v
           }
         }
       }
-      
+
       // Also add the required columns here.
       CAPABILITIES."app"."required-cols" = Validation.getRequiredColumns()
     }
-    
+
     CAPABILITIES
   }
-  
+
   def capabilities () {
-    
-    // If etag matches then we can just return the 304 to denote that the resource is unchanged.    
+
+    // If etag matches then we can just return the 304 to denote that the resource is unchanged.
     withCacheHeaders {
       etag ( SERVER_VERSION_ETAG_DSL )
       generate {
@@ -1285,10 +1261,10 @@ class ApiController {
       }
     }
   }
-  
-  
+
+
   def esconfig () {
-    
+
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.
     withCacheHeaders {
       etag ( SERVER_VERSION_ETAG_DSL )
@@ -1297,10 +1273,10 @@ class ApiController {
       }
     }
   }
-  
+
   private static final Closure SERVER_VERSION_ETAG_DSL = {
     def capabilities = getCapabilities()
-    
+
     // ETag DSL must return a String and not a GString due to GStringImpl.equals(String) failing even if their character sequences are equal.
     // See: https://jira.grails.org/browse/GPCACHEHEADERS-14
     "${capabilities.app.version}${capabilities.app.buildNumber}".toString()
@@ -1328,7 +1304,7 @@ class ApiController {
 
     render result as JSON
   }
-  
+
   private final def checkAlias = { def criteria, Map aliasStack, String dotNotationString, int joint_type = CriteriaSpecification.INNER_JOIN ->
     def str = aliasStack[dotNotationString]
     if (!str) {
@@ -1342,7 +1318,7 @@ class ApiController {
       while (alias && counter < props.length) {
         str = "${alias}"
         String test = propStr + ".${props[counter]}"
-        
+
         alias = aliasStack[test]
         if (alias) {
           propStr += test
@@ -1359,53 +1335,53 @@ class ApiController {
         for (int i=(counter-1); i<props.length; i++) {
           String aliasVal = alias ? "${alias}.${props[i]}" : "${props[i]}"
           alias = "alias${aliasStack.size()}"
-          
+
           // Create the alias.
           log.debug ("Creating alias: ${aliasVal} ->  ${alias}")
           criteria.createAlias(aliasVal, alias, joint_type)
-          
+
           // Add to the map.
           propStr = propStr ? "${propStr}.${props[i]}" : "${props[i]}"
           aliasStack[propStr] = alias
           log.debug ("Added quick string: ${propStr} -> ${alias}")
         }
       }
-      
+
       // Set the string to the alias we ended on.
       str = alias
     }
 
     str
   }
-  
+
   private Closure theQueryCriteria = {  String term, match_in, filters, boolean unique, crit = null ->
     final Map<String, String> aliasStack = [:]
-    
+
     and {
       if (term && match_in) {
         // Add a condition for each parameter we wish to search.
-        
+
         or {
           match_in.each { String propname ->
-  
+
             // Split at the dot.
             String[] levels = propname.split("\\.")
-  
+
             String propName
             if (levels.length > 1) {
-              
+
               // Optional joins use LEFT_JOIN
               String aliasName = checkAlias ( delegate, aliasStack, levels[0..(levels.size() - 2)].join('.'), CriteriaSpecification.LEFT_JOIN)
               String finalPropName = levels[levels.size()-1]
               String op = finalPropName == 'id' ? 'eq' : 'ilike'
               String toFind = finalPropName == 'id' ? "${term}".toLong() : "%${term}%"
-              
+
               log.debug ("Testing  ${aliasName}.${finalPropName} ${op} ${toFind}")
               "${op}" "${aliasName}.${finalPropName}", toFind
             } else {
               String op = propname == 'id' ? 'eq' : 'ilike'
               String toFind = propname == 'id' ? "${term}".toLong() : "%${term}%"
-              
+
               log.debug ("Testing  ${propname} ${op} ${toFind}")
               "${op}" "${propname}", toFind
             }
@@ -1419,11 +1395,11 @@ class ApiController {
           String[] parts =  filter.split("\\=")
 
           if ( parts.length == 2 && parts[0].length() > 0 && parts[1].length() > 0 ) {
-            
+
             // The prop name.
             String propname = parts[0]
             String op = "eq"
-            
+
             if (propname.startsWith("!")) {
               propname = propname.substring(1)
               op = "ne"
@@ -1436,7 +1412,7 @@ class ApiController {
             if (levels.length > 1) {
               String aliasName = checkAlias ( delegate, aliasStack, levels[0..(levels.size() - 2)].join('.') )
               String finalPropName = levels[levels.size()-1]
-              
+
               log.debug ("Testing  ${aliasName}.${finalPropName} ${op == 'eq' ? '=' : '!='} ${parts[1]}")
               "${op}" "${aliasName}.${finalPropName}", finalPropName == 'id' ? parts[1].toLong() : parts[1]
             } else {
@@ -1449,27 +1425,27 @@ class ApiController {
     }
     if (unique) {
       projections {
-        distinct('id') 
+        distinct('id')
       }
     }
   }
-  
+
   private Closure lookupCriteria = { String term, match_in, filters, attr = [], boolean unique = true ->
     final Map<String, String> aliasStack = [:]
-    
+
     if (unique) {
-      
+
       // Use the closure as a subquery so we can return unique ids.
       // We need to deal directly with Hibernate here.
       ExtendedHibernateDetachedCriteria subQ = new ExtendedHibernateDetachedCriteria(targetClass.createCriteria().buildCriteria (theQueryCriteria.curry(term, match_in, filters, unique)))
-      
+
       criteria.add(Subqueries.propertyIn('id', subQ));
     } else {
-    
+
       // Execute the queryCriteria in this context.
       (theQueryCriteria.rehydrate(delegate, owner, thisObject))(term, match_in, filters, unique)
     }
-    
+
     // If we have a list of return attributes then we should add projections here.
     if (attr) {
       resultTransformer CriteriaSpecification.ALIAS_TO_ENTITY_MAP
@@ -1483,25 +1459,25 @@ class ApiController {
           if (levels.length > 1) {
             String aliasName = checkAlias (delegate, aliasStack, levels[0..(levels.size() - 2)].join('.'), CriteriaSpecification.LEFT_JOIN )
             String finalPropName = levels[levels.size()-1]
-            
+
             String[] propAliasParts = finalPropName.split("\\:")
             finalPropName = propAliasParts[0]
             String propAlias = propAliasParts.length > 1 ? propAliasParts[1] : propAliasParts[0]
-            
+
             log.debug ("Returning ${aliasName}.${finalPropName} as ${propAlias}")
             property "${aliasName}.${finalPropName}", "${propAlias}"
           } else {
             String[] propAliasParts = propname.split("\\:")
             String finalPropName = propAliasParts[0]
             String propAlias = propAliasParts.length > 1 ? propAliasParts[1] : propAliasParts[0]
-            
+
             log.debug ("Returning ${finalPropName} as ${propAlias}")
             property "${finalPropName}", "${propAlias}"
           }
         }
       }
     }
-  };
+  }
 
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   synchronized def lookup () {
@@ -1513,26 +1489,26 @@ class ApiController {
 
     // Get the "term" parameter for performing a search.
     def term = params.term
-    
+
     // Results per page.
     def perPage = Math.min(params.int('perPage') ?: 10, 10)
-    
+
     // Object attributes to search.
     def match_in = ["name"]
-    
+
     // Lists from jQuery come through with brackets...
     match_in += params.list("match")
     match_in += params.list("match[]")
-    
+
     // Ensure we only include the none label part.
-    match_in = match_in.collect { "${it}".split("\\:")[0] }    
+    match_in = match_in.collect { "${it}".split("\\:")[0] }
 
     def filters = [
       "!status.id=${RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED).id}",
       "!status.id=${RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED).id}"
     ]
-    filters += params.list("filters")    
-    
+    filters += params.list("filters")
+
     // Attributes to return.
     List attr = ["name:label", 'id']
     attr += params.list("attr")
@@ -1546,28 +1522,28 @@ class ApiController {
     if (page) {
       query_params["offset"] = ((page - 1) * perPage)
     }
-    
+
     // Build the detached criteria.
     def results = c.createCriteria().list (query_params, lookupCriteria.curry(term, match_in, filters, attr))
-    
+
     def resp
     if (page) {
       // Return the page of results with a total.
       resp = [
         "total" : results.totalCount,
-        "list"  : results.collect { 
+        "list"  : results.collect {
           it.value = "${it.label}::{${classType}:${it.id}}"
           it
         } as LinkedHashSet
       ]
     } else {
       // Just return the formatted results.
-      resp = results.collect { 
+      resp = results.collect {
         it.value = "${it.label}::{${classType}:${it.id}}"
         it
       } as LinkedHashSet
     }
-    
+
     // Return the response.
     apiReturn (resp)
     log.debug "lookup took ${System.currentTimeMillis() - start} milliseconds"
