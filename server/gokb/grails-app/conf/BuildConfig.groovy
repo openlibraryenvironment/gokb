@@ -107,6 +107,7 @@ grails.project.dependency.resolution = {
       compile ":spring-security-core:2.0.0"
       compile ":spring-security-ui:1.0-RC3"
       compile ":spring-security-acl:2.0.1"
+      // build ':migrate2-grails3:0.3.2'
 
       runtime( ":cors:1.1.8" ) { 
         excludes 'spring-security-core' 

@@ -1,0 +1,62 @@
+.annotated {
+  cursor:help;
+}
+
+.annotated .fa-info-circle {
+  color:#3D57A6;
+}
+
+div.annotation {
+  display:none;
+}
+
+div.annotation-editable {
+  cursor: text;
+}
+
+div.annotation-editable:hover {
+  border: 1px dashed #989898;
+}
+
+div.annotation-empty {
+  color: #dd1144;
+  font-style: italic;
+}
+
+.popover {
+	color: #000;
+}
+
+.popover .note-toolbar {
+	margin-left:0;
+}
+.popover div.editor-buttons {
+  padding: 10px 0 0 0;
+  text-align:right;
+}
+
+.popover div.editor-buttons .btn {
+  margin-left: 10px;
+}
+
+/* Styles for the popup itself */
+.popover {
+  font-weight:normal;
+  font-size:14px;
+  min-width:350px;
+}
+
+/* Fix for modal backdrop rendering over modal from editor */
+.modal-backdrop {
+    z-index: 1009;
+}
+
+.note-editor [class*=" icon-"] {
+  background-image:none;
+}
+
+.note-editor .note-editable {
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 10px;
+}
