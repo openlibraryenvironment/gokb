@@ -12,7 +12,6 @@ import org.gokb.GOKbTextUtils
 import javax.servlet.http.HttpServletRequest
 
 import org.gokb.DomainClassExtender
-import org.gokb.IngestService
 import org.gokb.ESWrapperService
 import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
