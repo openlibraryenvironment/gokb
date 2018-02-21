@@ -5,8 +5,8 @@ import groovy.util.logging.*
 
 import javax.persistence.Transient
 
-import org.codehaus.groovy.grails.commons.GrailsDomainClass
-import org.codehaus.groovy.grails.commons.GrailsDomainClassProperty
+import org.grails.datastore.mapping.model.PersistentEntity
+import org.grails.datastore.mapping.model.PersistentProperty
 import org.gokb.GOKbTextUtils
 
 /**
@@ -162,7 +162,7 @@ abstract class KBComponent {
         KBComponent thisComponent = this
 
         // DomainClassArtefactHandler for this class
-        GrailsDomainClass dClass = thisComponent.domainClass
+        PersistentEntity dClass = thisComponent.domainClass
 
         defaultsForThis.each { String className, defaults ->
 
@@ -172,7 +172,7 @@ abstract class KBComponent {
             if (thisComponent."${property}" == null) {
 
               // Get the type defined against the class.
-              GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
+              PersistentProperty propertyDef = dClass.getPropertyByName(property)
               String propType = propertyDef?.getReferencedPropertyType()?.getName()
   
               if (propType) {

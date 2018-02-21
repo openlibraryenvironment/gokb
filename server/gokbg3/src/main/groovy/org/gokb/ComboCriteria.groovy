@@ -2,7 +2,7 @@ package org.gokb
 import groovy.lang.Closure
 import grails.orm.HibernateCriteriaBuilder
 import org.gokb.cred.*
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import grails.util.GrailsClassUtils
 import org.hibernate.criterion.CriteriaSpecification
 
 class ComboCriteria {

@@ -2,7 +2,7 @@ package com.k_int
 
 import org.hibernate.proxy.HibernateProxy
 import org.gokb.cred.RefdataCategory
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import grails.util.GrailsClassUtils
 import java.text.SimpleDateFormat
 
 class ClassUtils {

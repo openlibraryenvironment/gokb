@@ -1,7 +1,7 @@
 package org.gokb
 
-import org.codehaus.groovy.grails.io.support.GrailsResourceUtils
-import org.codehaus.groovy.grails.web.pages.GroovyPage
+import org.grails.io.support.GrailsResourceUtils
+import org.grails.gsp.GroovyPage
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.RefdataCategory

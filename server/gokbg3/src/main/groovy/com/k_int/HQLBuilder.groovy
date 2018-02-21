@@ -2,7 +2,7 @@ package com.k_int
 
 import groovy.util.logging.*
 import org.gokb.cred.*;
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import grails.util.GrailsClassUtils
 
 @Log4j
 public class HQLBuilder {

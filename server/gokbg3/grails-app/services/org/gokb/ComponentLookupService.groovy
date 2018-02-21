@@ -3,12 +3,13 @@ package org.gokb
 import grails.util.GrailsNameUtils
 
 import org.gokb.cred.KBComponent
-import org.gokb.validation.types.LookedUpValue
 import grails.util.Holders
 
 
 class ComponentLookupService {
   
+  public static final def ID_REGEX_TEMPLATE = ["^gokb::\\{", "\\:(\\d+)\\}\$"]
+
 
   public <T extends KBComponent> Map<String, T> lookupComponents(String... comp_name_strings) {
     Map<String, T> results = [:]
@@ -62,8 +63,8 @@ class ComponentLookupService {
     if (comp_name_string) {
       def component_match
 
-      if ((component_match = comp_name_string =~ "${LookedUpValue.ID_REGEX_TEMPLATE[0]}([^\\:]+)${LookedUpValue.ID_REGEX_TEMPLATE[1]}\$") || 
-        (component_match = comp_name_string =~ "${LookedUpValue.REGEX_TEMPLATE[0]}([^\\:]+)${LookedUpValue.REGEX_TEMPLATE[1]}\$")) {
+      if ((component_match = comp_name_string =~ "${ID_REGEX_TEMPLATE[0]}([^\\:]+)${ID_REGEX_TEMPLATE[1]}\$") || 
+        (component_match = comp_name_string =~ "${REGEX_TEMPLATE[0]}([^\\:]+)${REGEX_TEMPLATE[1]}\$")) {
 
         log.debug ("Matched the component syntax \"Display Text::{ComponentType:ID}\".")
 

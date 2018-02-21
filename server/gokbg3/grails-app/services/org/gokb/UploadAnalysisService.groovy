@@ -3,7 +3,6 @@ package org.gokb
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.stream.StreamResult
 import javax.xml.transform.stream.StreamSource
-import grails.util.holders.ServletContextHolder as SCH
 
 import org.gokb.cred.*
 

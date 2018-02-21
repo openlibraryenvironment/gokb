@@ -16,7 +16,6 @@ import org.gokb.ESWrapperService
 import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
 import org.gokb.refine.RefineProject
-import org.gokb.validation.Validation
 import org.gokb.validation.types.*
 
 import com.k_int.apis.A_Api;
@@ -144,8 +143,6 @@ class BootStrap {
     KBComponent.withTransaction() {
       registerDomainClasses()
     }
-
-    addValidationRules()
 
     KBComponent.withTransaction() {
       failAnyIngestingProjects()
@@ -338,27 +335,6 @@ class BootStrap {
       p.save(flush:true);
     }
 
-  }
-
-  def addValidationRules() {
-
-    // Get the config for the validation.
-    grailsApplication.config.validation.rules.each { String columnName, ruleDefs ->
-      ruleDefs.each { ruleDef ->
-
-        // Any extra args?
-        def args = ruleDef.args
-        if (args == null) {
-          args = []
-        }
-
-        // Add the (columnName, severity) default args.
-        args = [(columnName), (ruleDef.severity)] + args
-
-        // Add the rule now we have the args build.
-        Validation.addRule(ruleDef.type, (args as Object[]))
-      }
-    }
   }
 
   def defaultSortKeys () {

@@ -7,9 +7,6 @@ import org.springframework.security.access.annotation.Secured;
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.gokb.cred.*
 
-import grails.plugin.gson.converters.GSON
-
-
 class SavedItemsController {
 
   def genericOIDService

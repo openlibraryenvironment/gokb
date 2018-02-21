@@ -1,7 +1,6 @@
 package org.gokb
 
 import grails.converters.*
-import grails.plugin.gson.converters.GSON
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 
 class GlobalSearchController {

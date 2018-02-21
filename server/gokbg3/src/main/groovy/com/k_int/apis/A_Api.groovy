@@ -5,8 +5,7 @@ import groovy.util.logging.Log4j
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
-import grails.util.Holders.ServletContextHolder as SCH
-import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
+import grails.util.Holders as holders;
 import org.grails.datastore.gorm.AbstractGormApi
 import org.springframework.context.ApplicationContext
 
@@ -56,7 +55,7 @@ abstract class A_Api <T> {
    * @return ApplicationContext the app context
    */
   protected static ApplicationContext getApplicationContext() {
-    if (!appContext) appContext = SCH.servletContext.getAttribute(GA.APPLICATION_CONTEXT)
+    if (!appContext) appContext = holders.getApplicationContext()
     appContext
   }
 

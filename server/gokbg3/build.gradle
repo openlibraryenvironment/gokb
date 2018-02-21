@@ -26,7 +26,9 @@ apply plugin:"org.grails.grails-gsp"
 
 repositories {
     mavenLocal()
+    mavenCentral()
     maven { url "https://repo.grails.org/grails/core" }
+    maven { url "http://nexus.k-int.com/content/repositories/releases" }
 }
 
 dependencies {
@@ -62,7 +64,8 @@ dependencies {
     compile group: 'net.sf.opencsv', name: 'opencsv', version: '2.3'
     compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
     compile 'org.elasticsearch:elasticsearch:5.2.0'
-    compile group: 'org.apache.tika', name: 'tika-core', version: '1.17'
+    compile 'org.apache.tika:tika-core:1.17'
+    // compile 'org.grails.plugins:gson:1.1.4'
 
 
 

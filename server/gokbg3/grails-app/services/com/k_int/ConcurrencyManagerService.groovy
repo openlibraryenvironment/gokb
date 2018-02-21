@@ -7,7 +7,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
-import org.codehaus.groovy.grails.commons.GrailsApplication
+import grails.core.GrailsApplication
 
 /**
  * This service will allocate tasks to the Executor service while maintaining a list of current tasks

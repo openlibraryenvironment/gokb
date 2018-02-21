@@ -3,8 +3,9 @@ package org.gokb
 import grails.converters.JSON
 import org.springframework.security.access.annotation.Secured;
 import org.codehaus.groovy.grails.commons.*
-import org.codehaus.groovy.grails.plugins.web.taglib.ApplicationTagLib
+import org.grails.plugins.web.taglib.ApplicationTagLib
 import org.gokb.cred.*
+import org.grails.datastore.mapping.model.PersistentProperty
 
 class CreateController {
 
@@ -79,7 +80,7 @@ class CreateController {
               // Ensure that blank values actually null the value instead of trying to use an empty string.
               if (p.value == "") p.value = null
 
-              GrailsDomainClassProperty pdef = newclass.getPersistentProperty(p.key)
+              PersistentProperty pdef = newclass.getPersistentProperty(p.key)
               log.debug(pdef);
               if ( pdef.association ) {
                 if ( pdef.isOneToOne() ) {

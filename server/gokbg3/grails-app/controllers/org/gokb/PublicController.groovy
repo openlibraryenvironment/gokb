@@ -5,7 +5,6 @@ import org.springframework.security.acls.model.NotFoundException
 import org.springframework.security.access.annotation.Secured;
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.gokb.cred.*
-import grails.plugin.gson.converters.GSON
 import org.springframework.web.multipart.MultipartHttpServletRequest
 import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
