@@ -109,7 +109,6 @@ environments:
             dialect: org.hibernate.dialect.PostgreSQLDialect
             defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
             pooled: true
-            configClass: com.k_int.KIGormConfiguration
             properties:
                 maxActive: 100
                 minEvictableIdleTimeMillis: 1800000

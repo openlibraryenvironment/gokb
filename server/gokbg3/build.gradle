@@ -53,6 +53,12 @@ dependencies {
 
     compile 'org.grails.plugins:spring-security-core:3.2.1'
     compile 'org.grails.plugins:spring-security-acl:3.2.1'
+    compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.9'
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
+    compile group: 'org.aspectj', name: 'aspectjweaver', version: '1.8.13'
+
+
+
 
     console "org.grails:grails-console"
     profile "org.grails.profiles:web"
