@@ -1,4 +1,11 @@
 
+
+Connecting to docker postgres in testing::
+
+docker exec -it pg psql -U postgres
+
+
+
 See
 
 https://github.com/domurtag/migrate-2-grails3
