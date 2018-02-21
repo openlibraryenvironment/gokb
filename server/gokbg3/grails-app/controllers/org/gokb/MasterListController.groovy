@@ -4,9 +4,6 @@ import org.gokb.cred.*
 import grails.converters.*
 import org.springframework.security.access.annotation.Secured;
 
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
-
-
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
 class MasterListController {
 

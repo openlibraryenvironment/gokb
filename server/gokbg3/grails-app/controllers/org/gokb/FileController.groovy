@@ -1,7 +1,5 @@
 package org.gokb
 
-import org.grails.plugins.fileviewer.FileViewerUtils
-
 class FileController {
 
   def fileLocations
@@ -53,7 +51,8 @@ class FileController {
     byte[] assetContent = file.readBytes();
     response.setContentLength(assetContent.size())
     response.setHeader("Content-disposition", "attachment; filename=${file.name}")
-    String contentType = FileViewerUtils.getMimeContentType(file.name.tokenize(".").last().toString())
+    // String contentType = FileViewerUtils.getMimeContentType(file.name.tokenize(".").last().toString())
+    String contentType = "text"
     response.setContentType(contentType)
     OutputStream out = response.getOutputStream()
     out.write(assetContent)

@@ -1,7 +1,6 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
-import grails.plugin.gson.converters.GSON
 
 class SavedSearch {
 

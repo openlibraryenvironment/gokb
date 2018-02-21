@@ -1,7 +1,6 @@
 package org.gokb
 
 import grails.converters.*
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import groovy.xml.MarkupBuilder

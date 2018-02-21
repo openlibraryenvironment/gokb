@@ -6,10 +6,8 @@ import org.springframework.security.access.annotation.Secured;
 import com.k_int.apis.SecurityApi
 import org.springframework.security.acls.model.Permission
 
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import grails.util.GrailsClassUtils
 import org.gokb.cred.*
-
-import grails.plugin.gson.converters.GSON
 
 class SearchController {
 
@@ -49,7 +47,7 @@ class SearchController {
 
       try {
         log.debug("Saving..");
-        def saved_search = new SavedSearch(name:params.searchName,owner:user,searchDescriptor:(defn as GSON).toString())
+        def saved_search = new SavedSearch(name:params.searchName,owner:user,searchDescriptor:(defn as JSON).toString())
         saved_search.save(flush:true, failOnError:true)
         log.debug("Saved.. ${saved_search.id}");
       }

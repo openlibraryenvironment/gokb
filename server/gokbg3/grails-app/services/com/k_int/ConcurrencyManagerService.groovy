@@ -1,6 +1,5 @@
 package com.k_int
 
-import grails.plugin.executor.PersistenceContextExecutorWrapper
 import grails.transaction.Transactional
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
@@ -150,7 +149,7 @@ class ConcurrencyManagerService {
   /**
    * Executor Service
    */
-  PersistenceContextExecutorWrapper executorService
+  def executorService
   static scope = "singleton"
 
 

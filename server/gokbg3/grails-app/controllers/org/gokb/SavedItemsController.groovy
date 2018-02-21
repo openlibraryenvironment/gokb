@@ -4,7 +4,6 @@ import grails.converters.*
 import org.springframework.security.acls.model.NotFoundException
 import org.springframework.security.access.annotation.Secured;
 
-import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import org.gokb.cred.*
 
 class SavedItemsController {
