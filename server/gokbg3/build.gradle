@@ -60,6 +60,10 @@ dependencies {
     compile group: 'joda-time', name: 'joda-time', version: '2.9.9'
     compile group: 'org.apache.commons', name: 'commons-compress', version: '1.16.1'
     compile group: 'net.sf.opencsv', name: 'opencsv', version: '2.3'
+    compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
+    compile 'org.elasticsearch:elasticsearch:5.2.0'
+    compile group: 'org.apache.tika', name: 'tika-core', version: '1.17'
+
 
 
 

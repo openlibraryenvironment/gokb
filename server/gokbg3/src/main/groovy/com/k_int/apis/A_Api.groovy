@@ -5,7 +5,7 @@ import groovy.util.logging.Log4j
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
-import org.codehaus.groovy.grails.web.context.ServletContextHolder as SCH
+import grails.util.Holders.ServletContextHolder as SCH
 import org.codehaus.groovy.grails.web.servlet.GrailsApplicationAttributes as GA
 import org.grails.datastore.gorm.AbstractGormApi
 import org.springframework.context.ApplicationContext
