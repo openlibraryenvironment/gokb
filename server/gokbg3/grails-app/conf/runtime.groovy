@@ -489,66 +489,6 @@ grails {
   }
 }
 
-// Added by the Spring Security Core plugin:
-grails.plugin.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.User'
-grails.plugin.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
-grails.plugin.springsecurity.authority.className = 'org.gokb.cred.Role'
-
-//Enable Basic Auth Filter
-grails.plugin.springsecurity.useBasicAuth = true
-grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required"
-//Exclude normal controllers from basic auth filter. Just the JSON API is included
-grails.plugin.springsecurity.filterChain.chainMap = [
-  '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
-  '/packages/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
-  '/admin/bulkLoadUsers': 'JOINED_FILTERS,-exceptionTranslationFilter',
-  '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
-]
-
-grails.plugin.springsecurity.controllerAnnotations.staticRules = [
-  '/admin/**':                ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'],
-  '/file/**':                 ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'],
-  '/monitoring/**':           ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/':                        ['permitAll'],
-  '/index':                   ['permitAll'],
-  '/index.gsp':               ['permitAll'],
-  '/register/**':             ['permitAll'],
-  '/packages/**':             ['permitAll'],
-  '/public/**':               ['permitAll'],
-  '/globalSearch/**':         ['ROLE_USER'],
-  '/home/**':                 ['ROLE_USER'],
-  '/assets/**':               ['permitAll'],
-  '/**/js/**':                ['permitAll'],
-  '/**/css/**':               ['permitAll'],
-  '/**/images/**':            ['permitAll'],
-  '/**/favicon.ico':          ['permitAll'],
-  '/api/find':                ['permitAll'],
-  '/api/suggest':             ['permitAll'],
-  '/api/esconfig':            ['permitAll'],
-  '/api/capabilities':        ['permitAll'],
-  '/api/downloadUpdate':      ['permitAll'],
-  '/api/checkUpdate':         ['permitAll'],
-  '/api/isUp':                ['permitAll'],
-  '/api/userData':            ['permitAll'],
-  '/fwk/**':                  ['ROLE_USER'],
-  '/user/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/role/**':                 ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/securityInfo/**':         ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/registrationCode/**':     ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/aclClass/**':             ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/aclSid/**':               ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/aclObjectIdentity/**':    ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/aclEntry/**':             ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'],
-  '/oai':                     ['permitAll'],
-  '/oai/**':                  ['permitAll'],
-  '/coreference/**':          ['permitAll']
-]
-
-
-appDefaultPrefs {
-  globalDateFormat='dd MMMM yyyy'
-}
-
 validationRules = [
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'title.identifier.issn'] ],
   [ type:'must', rule:'ContainOneOfTheFollowingColumns', colnames:[ 'title.identifier.eissn'] ],
@@ -1554,19 +1494,6 @@ grails.plugin.springsecurity.ui.register.defaultRoleNames = [
 // The following 2 entries make the app use basic auth by default
 grails.plugin.springsecurity.useBasicAuth = true
 grails.plugin.springsecurity.basic.realmName = "gokb"
-
-// This stanza then says everything should use form apart from /api
-// More info: http://stackoverflow.com/questions/7065089/how-to-configure-grails-spring-authentication-scheme-per-url
-grails.plugin.springsecurity.filterChain.chainMap = [
-  '/integration/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
-  '/api/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
-  '/packages/**': 'JOINED_FILTERS,-exceptionTranslationFilter',
-  '/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
-  // '/soap/deposit': 'JOINED_FILTERS,-exceptionTranslationFilter',
-  // '/rest/**': 'JOINED_FILTERS,-exceptionTranslationFilter'
-  // '/rest/**': 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'
-
-]
 
 cosine.good_threshold = 0.75
 
