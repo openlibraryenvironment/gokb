@@ -101,8 +101,26 @@ dataSource:
 environments:
     development:
         dataSource:
-            dbCreate: create-drop
-            url: jdbc:h2:mem:devDb;MVCC=TRUE;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE
+            dbCreate: update
+            url: jdbc:postgresql://pghost:5432/gokbg3dev
+            username: knowint
+            password: knowint
+            driverClassName: org.postgresql.Driver
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+            defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+            pooled: true
+            configClass: com.k_int.KIGormConfiguration
+            properties:
+                maxActive: 100
+                minEvictableIdleTimeMillis: 1800000
+                timeBetweenEvictionRunsMillis: 1800000
+                numTestsPerEvictionRun: 3
+                testOnBorrow: true
+                testWhileIdle: true
+                testOnReturn: true
+                validationQuery: select 1
+                defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+
     test:
         dataSource:
             dbCreate: update
