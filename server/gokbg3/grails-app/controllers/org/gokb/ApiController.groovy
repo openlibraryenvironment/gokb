@@ -882,40 +882,6 @@ class ApiController {
     "macros"              : true,
   ]
 
-  private static def getCapabilities() {
-
-    if (!CAPABILITIES."app") {
-      CAPABILITIES."app" = [:]
-
-      Holders.grailsApplication.metadata.each { String k, v ->
-        if ( k.startsWith ("app.") ) {
-
-          String prop_name = "${k.substring(4)}"
-          if (!prop_name.contains('.')) {
-            CAPABILITIES."app"."${prop_name}" = v
-          }
-        }
-      }
-
-      // Also add the required columns here.
-      CAPABILITIES."app"."required-cols" = Validation.getRequiredColumns()
-    }
-
-    CAPABILITIES
-  }
-
-  def capabilities () {
-
-    // If etag matches then we can just return the 304 to denote that the resource is unchanged.
-    withCacheHeaders {
-      etag ( SERVER_VERSION_ETAG_DSL )
-      generate {
-        render (getCapabilities() as JSON)
-      }
-    }
-  }
-
-
   def esconfig () {
 
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.

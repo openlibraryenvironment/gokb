@@ -64,6 +64,7 @@ dependencies {
     compile group: 'net.sf.opencsv', name: 'opencsv', version: '2.3'
     compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
     compile 'org.elasticsearch:elasticsearch:5.2.0'
+    compile 'org.elasticsearch.client:transport:5.2.0'
     compile 'org.apache.tika:tika-core:1.17'
     compile 'org.grails.plugins:grails-executor:0.4'
 
