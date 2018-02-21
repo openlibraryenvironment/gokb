@@ -1,7 +1,7 @@
 import grails.util.GrailsNameUtils;
 
-import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
-import org.codehaus.groovy.grails.commons.GrailsApplication
+import org.grails.core.DefaultGrailsDomainClass
+import grails.core.GrailsApplication
 import grails.converters.JSON
 
 

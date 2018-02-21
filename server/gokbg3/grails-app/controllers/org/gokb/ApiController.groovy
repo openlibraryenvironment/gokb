@@ -13,7 +13,6 @@ import org.elasticsearch.index.query.*
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
-import org.gokb.validation.Validation
 import org.hibernate.criterion.CriteriaSpecification
 import org.hibernate.criterion.Subqueries
 import org.springframework.security.access.annotation.Secured
@@ -31,7 +30,6 @@ import static java.util.UUID.randomUUID
 class ApiController {
 
   TsvSuperlifterService tsvSuperlifterService
-  RefineService refineService
   SecureRandom rand = new SecureRandom()
   UploadAnalysisService uploadAnalysisService
   def ESWrapperService
@@ -770,32 +768,9 @@ class ApiController {
     }
   }
 
-  def checkUpdate () {
-
-    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"), springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
-
-    // Add the api version to the result. We will actually use this to circumvent a degrade taking place in the refine client.
-    result."api-version" = getCapabilities()."app"."version"
-    apiReturn (result)
-  }
 
   def downloadUpdate () {
     return downloadUpdateFile (springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
-  }
-
-  private def downloadUpdateFile(boolean tester = false) {
-
-    // Grab the download.
-    def file = refineService.extensionDownloadFile (params."requested-version", tester)
-    if (file) {
-      // Send the file.
-      response.setContentType("application/x-gzip")
-      response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
-      response.outputStream << file.newInputStream()
-    }
-
-    // Send not found.
-    response.status = 404
   }
 
   // this is used as an entrypoint for single page apps based on frameworks like angular.

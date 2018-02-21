@@ -27,7 +27,7 @@ package org.gokb
 import grails.util.GrailsNameUtils
 import groovy.util.logging.*
 
-import org.codehaus.groovy.grails.commons.DefaultGrailsDomainClass
+import org.grails.core.DefaultGrailsDomainClass
 import org.gokb.cred.*
 
 import com.k_int.ClassUtils

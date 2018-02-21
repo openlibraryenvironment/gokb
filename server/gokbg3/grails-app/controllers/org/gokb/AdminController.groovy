@@ -16,7 +16,6 @@ class AdminController {
   def FTUpdateService
   def packageService
   def grailsCacheAdminService
-  def refineService
   def titleAugmentService
   ConcurrencyManagerService concurrencyManagerService
   CleanupService cleanupService
@@ -214,20 +213,6 @@ class AdminController {
     // clear the cache used by the blocks tag…
     grailsCacheAdminService.clearBlocksCache()
     redirect(url: request.getHeader('referer'))
-  }
-
-  def buildExtension() {
-
-    // Run the task in the background so we can show the logs in this thread without having to wait
-    // for the task to finish.
-    Job j = concurrencyManagerService.createJob {
-      refineService.buildExtension()
-    }.startOrQueue()
-    
-    j.description = "Build Extension"
-    j.startTime = new Date()
-    
-    render(view: "logViewer", model: logViewer())
   }
 
   def triggerEnrichments() {
