@@ -9,7 +9,6 @@ class GlobalSearchController {
 
 
   def ESWrapperService
-  def grailsApplication
 
   def index() { 
     def result = [:]

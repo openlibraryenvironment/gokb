@@ -66,7 +66,6 @@ class ApiController {
     return props
   }
 
-  def grailsApplication
   def springSecurityService
   def componentLookupService
   def genericOIDService

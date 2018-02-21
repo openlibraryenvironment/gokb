@@ -8,7 +8,6 @@ import groovy.xml.StreamingMarkupBuilder
 
 class OaiController {
 
-  def grailsApplication
   def genericOIDService
 
   // JSON.registerObjectMarshaller(DateTime) {

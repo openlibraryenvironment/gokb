@@ -24,7 +24,6 @@ class TitleListController {
   def concurrencyManagerService
   def TSVIngestionService
   def ESWrapperService
-  def grailsApplication
   def sessionFactory
 
   def update() {

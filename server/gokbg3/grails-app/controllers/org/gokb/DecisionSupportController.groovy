@@ -8,7 +8,6 @@ import org.hibernate.transform.AliasToEntityMapResultTransformer
 
 class DecisionSupportController {
 
-  def grailsApplication
   def springSecurityService
 
   public static String CRITERIA_QUERY = '''select c.id,

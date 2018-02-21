@@ -25,7 +25,6 @@ class PackagesController {
   def TSVIngestionService
   def ESWrapperService
   def ESSearchService
-  def grailsApplication
   def sessionFactory
 
   public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp  and c.type.value = ? order by tipp.id';

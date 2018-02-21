@@ -10,7 +10,6 @@ import org.hibernate.transform.AliasToEntityMapResultTransformer
 
 class HomeController {
 
-  def grailsApplication
   def springSecurityService
   def userAlertingService
   def passwordEncoder

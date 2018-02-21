@@ -3,8 +3,6 @@
 // in the classpath in ConfigSlurper format
 
 import com.k_int.TextUtils
-import org.apache.log4j.DailyRollingFileAppender
-import org.apache.log4j.RollingFileAppender
 import org.gokb.cred.KBComponent
 import org.gokb.validation.types.*
 import java.text.SimpleDateFormat
@@ -368,7 +366,7 @@ identifiers = [
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
 // }
 
-project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
+project_dir = new java.io.File(org.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
 refine_min_version = "3.0.0"
 

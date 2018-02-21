@@ -13,7 +13,6 @@ import groovy.util.logging.*
 @Log4j
 class IntegrationController {
 
-  def grailsApplication
   def springSecurityService
   def titleLookupService
   def applicationEventService

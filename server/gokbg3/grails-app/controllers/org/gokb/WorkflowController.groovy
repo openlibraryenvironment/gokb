@@ -13,7 +13,6 @@ import org.hibernate.Hibernate
 
 class WorkflowController {
 
-  def grailsApplication
   def genericOIDService
   def springSecurityService
   def sessionFactory

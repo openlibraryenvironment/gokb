@@ -12,7 +12,6 @@ import org.gokb.cred.*
 
 class GroupController {
 
-  def grailsApplication
   def springSecurityService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
