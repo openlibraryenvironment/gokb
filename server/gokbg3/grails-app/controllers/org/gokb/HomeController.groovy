@@ -135,8 +135,8 @@ class HomeController {
         // Construct an entry for this xValue
         def entry = [
           "${xkey}" : "${xVal}",
-          "${ykeyAll}" : comp_stats.numTotal,
-          "${ykeyNew}" : comp_stats.numNew
+          "${ykeyAll}" : comp_stats?.numTotal,
+          "${ykeyNew}" : comp_stats?.numNew
         ]
 
         // Add to the data.

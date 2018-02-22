@@ -1,60 +1,45 @@
+<g:set var='securityConfig' value='${applicationContext.springSecurityService.securityConfig}'/>
 <html>
 <head>
-<title><g:message code="springSecurity.login.title" /></title>
-<meta name='layout' content='sb-admin' />
+	<meta name="layout" content="public"/>
+	<s2ui:title messageCode='spring.security.ui.login.title'/>
+	<asset:stylesheet src='spring-security-ui-auth.css'/>
 </head>
-
 <body>
-
-	<h1 class="page-header">Sign in</h1>
-	<div id="mainarea" class="panel panel-default">
-		<div class="panel-heading">
-			<h3 class="panel-title">User details</h3>
-		</div>
-                <g:if test="${params.login_error == '1' && flash.message}">
-                  <div class="panel-body">
-                    <div class="alert alert-danger">
-                      ${flash.message}
-                    </div>
-                  </div>
-                </g:if>
-                <g:else>
-                  <div class="panel-body">
-                          <p>Use the form below to sign into GOKb. If you don't have an account yet, please create one by using the register link in the top menu.</p>
-                  </div>
-                </g:else>
-		<div class="panel-footer clearfix" >
-			<form action='${postUrl}' method='POST' id='loginForm'
-				class='form-horizontal col-md-6 col-md-offset-3' autocomplete='off' role="form">
-
-				<div class="form-group">
-					<label class="control-label" for='username'><g:message
-							code="springSecurity.login.username.label" />:</label>
-					<input type='text'
-						class='form-control' name='j_username' id='username' />
-				</div>
-
-				<div class="form-group">
-					<label class="control-label" for='password'><g:message
-							code="springSecurity.login.password.label" />:</label> <input
-						type='password' class='form-control' name='j_password'
-						id='password' />
-				</div>
-				
-				<p>Have you <g:link controller="register" action="forgotPassword" >forgotten your password?</g:link></p>
-
-				<div class="form-group" id="remember_me_holder">
-					<input type='checkbox' class='chk' name='${rememberMeParameter}'
-						id='remember_me'
-						<g:if test='${hasCookie}'>checked='checked'</g:if> /> <label
-						for='remember_me'><g:message
-							code="springSecurity.login.remember.me.label" /></label>
-				</div>
-				<div class="form-group pull-right" >
-					<button type='submit' class="btn btn-default btn-sm" id="submit" >${message(code: "springSecurity.login.button")}</button>
-				</div>
-			</form>
-		</div>
+<p/>
+<div class="login s2ui_center ui-corner-all" style='text-align:center;'>
+	<div class="login-inner">
+		<s2ui:form type='login' focus='username'>
+			<div class="sign-in">
+				<h2><g:message code='spring.security.ui.login.signin'/></h2>
+				<table>
+					<tr>
+						<td><label for="username"><g:message code='spring.security.ui.login.username'/></label></td>
+						<td><input type="text" name="${securityConfig.apf.usernameParameter}" id="username" class='formLogin' size="20"/></td>
+					</tr>
+					<tr>
+						<td><label for="password"><g:message code='spring.security.ui.login.password'/></label></td>
+						<td><input type="password" name="${securityConfig.apf.passwordParameter}" id="password" class="formLogin" size="20"/></td>
+					</tr>
+					<tr>
+						<td colspan='2'>
+							<input type="checkbox" class="checkbox" name="${securityConfig.rememberMe.parameter}" id="remember_me" checked="checked"/>
+							<label for='remember_me'><g:message code='spring.security.ui.login.rememberme'/></label> |
+							<span class="forgot-link">
+								<g:link controller='register' action='forgotPassword'><g:message code='spring.security.ui.login.forgotPassword'/></g:link>
+							</span>
+						</td>
+					</tr>
+					<tr>
+						<td colspan='2'>
+							<s2ui:linkButton elementId='register' controller='register' messageCode='spring.security.ui.login.register'/>
+							<s2ui:submitButton elementId='loginButton' messageCode='spring.security.ui.login.login'/>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</s2ui:form>
 	</div>
+</div>
 </body>
 </html>
