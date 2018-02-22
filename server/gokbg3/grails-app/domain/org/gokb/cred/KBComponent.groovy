@@ -162,7 +162,7 @@ abstract class KBComponent {
         KBComponent thisComponent = this
 
         // DomainClassArtefactHandler for this class
-        PersistentEntity dClass = thisComponent.domainClass
+        PersistentEntity dClass = grailsApplication.getDomainClass(thisComponent.class.name)
 
         defaultsForThis.each { String className, defaults ->
 

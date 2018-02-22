@@ -1,20 +1,14 @@
 package org.gokb.cred
 
-import grails.plugin.springsecurity.SpringSecurityService
 import groovy.util.logging.Log4j;
-
 import java.lang.reflect.Field
-
 import javax.persistence.Transient
-
 import org.hibernate.proxy.HibernateProxy
 
 @Log4j
 class User extends Party {
 
-  transient springSecurityService
   transient grailsApplication
-  transient passwordEncoder
 
   // Used in user import to bypass password encoding - used to directly load hashes instead of password
   transient direct_password = false
@@ -117,27 +111,9 @@ class User extends Party {
   } 
 
   def beforeInsert() {
-
-    if ( direct_password ) {
-    }
-    else {
-      encodePassword()
-    }
-
-    if ( displayName == null )
-      displayName = username
   }
 
   def beforeUpdate() {
-    if (isDirty('password')) {
-      encodePassword()
-    }
-    if ( displayName == null )
-      displayName = username
-  }
-  
-  public boolean isCurrent() {
-     equals(springSecurityService.currentUser)
   }
   
   public boolean isEditable(boolean default_to = true) {    
@@ -165,12 +141,6 @@ class User extends Party {
     // Return false if we get here.
     false
   }
-
-  protected void encodePassword() {
-    // log.debug("Encoding password: ${password} (This should be plaintext at this stage)")
-    password = passwordEncoder.encodePassword(password,null)
-  }
-
 
   transient def getUserOptions() {
     def userOptions = [:]
