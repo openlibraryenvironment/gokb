@@ -1,0 +1,51 @@
+ProQuest http://www.proquest.com/libraries/academic/primary-sources/?&page=1
+Adam Matthew Digital https://www.amdigital.co.uk/products/products
+Brill 
+EBSCO 
+
+
+
+Field Field description
+Title Name or title by which the resource is known
+Provider The publisher/provider/vendor of the resource
+Category Restricted list of categories (Primary Source/
+
+Journal archive/Book archive/...)
+Description A short description of the resource (limited
+
+number of characters)
+
+Link to provider information/catalogue Link to more information on the provider's web-
+site, or in the provider’s catalogue
+
+List price (ex. VAT) The list price for the item (in billing currency)
+Pricing information Description of pricing model/discount schemes
+Authentication methods Which methods of authentication are supported
+(probably a controlled list of options including:
+
+IP Access; Shibboleth/SAML; Username/Pass-
+word/Other)
+
+Subject Subject headings (probably BIC headings)
+ISSN ISSN if available
+DOI DOI if available
+Contents metadata available List of formats in which a list of contents of the
+
+resource is available
+
+Accessibility information Information about accessibility compliance
+(should this be WCAG? Other standards)
+
+COUNTER Reports List of COUNTER reports available for the re-
+source
+
+Other usage data Description of any other usage data/reports
+
+available
+
+Jisc Deal available Whether there is one or more Jisc deal avail-
+able for the resource. Yes/No
+
+Jisc Deals Link to Jisc deal(s) where available
+Consortium deals List of any consortium deals that are available
+Agreement types Free/Subscription/Perpetual licence
