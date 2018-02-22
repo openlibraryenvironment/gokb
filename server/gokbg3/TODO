@@ -1,5 +1,8 @@
 
 
+userDetails and preferencesFilters from G2 have been replaced and work differently in G3. Need a new mechanism to migrate.
+
+
 Connecting to docker postgres in testing::
 
 docker exec -it pg psql -U postgres
