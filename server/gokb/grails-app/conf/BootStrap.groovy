@@ -862,6 +862,8 @@ class BootStrap {
 
   def DSConfig() {
 
+    log.debug("DSConfig");
+
     [ 
       'accessdl':'Access - Download', 
       'accessol':'Access - Read Online',
@@ -985,6 +987,7 @@ class BootStrap {
       
       log.debug("Adding index setttings..")
       createIndexRequestBuilder.setSettings(indexSettings());
+
       log.debug("Adding index mappings..")
       createIndexRequestBuilder.addMapping("component", indexMapping());
       
@@ -1101,6 +1104,7 @@ class BootStrap {
               .field("analyzer","autocomplete")
               .field("search_analyzer","standard")
             .endObject()
+          .endObject()
         .endObject()
       .endObject()
       
