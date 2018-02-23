@@ -8,6 +8,7 @@
   @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1'),
   @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
   @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
+  @Grab(group='net.sf.opencsv', module='opencsv', version='2.3'),
   @GrabExclude('org.codehaus.groovy:groovy-all')
 ])
 
@@ -28,6 +29,8 @@ import groovyx.net.http.*
 import org.apache.http.entity.mime.MultipartEntityBuilder /* we'll use the new builder strategy */
 import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulate our file uploads */
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
+import au.com.bytecode.opencsv.CSVReader
+import au.com.bytecode.opencsv.CSVWriter
 
 config = null;
 cfg_file = new File('./sync-jstor-cfg.json')
@@ -77,20 +80,38 @@ def pullLatest(config, url) {
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
   httpbuilder.auth.basic 'admin', 'admin'
 
+  def baos = new ByteArrayOutputStream();
+  CSVWriter out_writer = new CSVWriter( new OutputStreamWriter( baos, java.nio.charset.Charset.forName('UTF-8') ), '\t' as char)
+
+  List out_header = []
+  out_header.add('online_identifier');
+  out_header.add('publication_title');
+  out_header.add('title_url');
+  out_header.add('publisher');
+  out_header.add('notes');
+  out_writer.writeNext((String[])(out_header.toArray()))
+
+
+
   while(next_page) {
     page_count++
 
     List<?> products = html.getByXPath("//a[@class='product']");
     println("Processing ${products.size()} products");
     products.each { product ->
+      List nl=[]
       def product_title = product.getFirstByXPath("div/h3/text()")
-      println(product_title);
       def product_url = product.getFirstByXPath("@href").getValue();
-      println(product_url);
       def product_excerpt = product.getFirstByXPath("div/div[@class='excerpt']/text()")
-      println(product_excerpt);
+
+      nl.add(product_url);
+      nl.add(product_title);
+      nl.add(product_url);
+      nl.add('Adam Matthew Digital');
+      nl.add(product_excerpt);
+      out_writer.writeNext((String[])(nl.toArray()))
     }
-  
+
     // def next_page_links = []
     // if ( next_page_links.size() > 0 ) {
     //   html = next_page_links[0].click();
@@ -100,7 +121,11 @@ def pullLatest(config, url) {
     // }
   }
   
+  out_writer.close()
+
+
   println("Done ${page_count} pages");
+  println(new String(baos.toByteArray()));
 }
 
 def pushToGokb(name, data, http) {
