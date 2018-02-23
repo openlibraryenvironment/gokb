@@ -5,7 +5,7 @@
   @Grab(group='net.sourceforge.nekohtml', module='nekohtml', version='1.9.14'),
   @Grab(group='javax.mail', module='mail', version='1.4.7'),
   @Grab(group='net.sourceforge.htmlunit', module='htmlunit', version='2.21'),
-  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.2'),
+  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1'),
   @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
   @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
   @GrabExclude('org.codehaus.groovy:groovy-all')
@@ -44,7 +44,7 @@ println("Using config ${config}");
 println("Pulling latest messages");
 // ProQuest http://www.proquest.com/libraries/academic/primary-sources/?&page=1
 
-pullLatest(config,'http://about.jstor.org/content/jstor-title-lists');
+pullLatest(config,'http://www.proquest.com/libraries/academic/primary-sources/?&page=1');
 println("All done");
 
 println("Updating config");
@@ -69,7 +69,6 @@ def pullLatest(config, url) {
 
   // Added as HtmlUnit had problems with the JavaScript
   // client.javaScriptEnabled = true
-  html = client.getPage(url);
   
   boolean next_page = true;
   int page_count = 0;
@@ -78,22 +77,29 @@ def pullLatest(config, url) {
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
   httpbuilder.auth.basic 'admin', 'admin'
 
+  def next_page_url = url;
+
   while(next_page) {
+
+    html = client.getPage(next_page_url);
+
     page_count++
 
-    List<?> links = html.getByXPath("//a/@href");
+    List<?> links = html.getByXPath("//div[@class='container categoryBlock']");
     println("Processing ${links.size()} links");
     links.each { link ->
-      if ( link.value.startsWith('https://static-content.springer.com/kbart') ) {
-        def package_name = link.getOwnerElement().getByXPath('./text()');
-        processFile(package_name[0].toString(),"${link.value}".toString(), config, httpbuilder);
-        package_count++;
-      }
+      def title = link.getFirstByXPath('div/h2/text()');
+      println(title)
     }
   
-    def next_page_links = []
-    if ( next_page_links.size() > 0 ) {
-      html = next_page_links[0].click();
+    def last_page_link = html.getFirstByXPath("//a[text()='Last']/@href").getValue().trim();
+    def next_page_link = html.getFirstByXPath("//i[@class='fa fa-chevron-right']/../@href").getValue().trim();
+
+    println("Last page: ${last_page_link} Next page: ${next_page_link} ${last_page_link.equals(next_page_link)}");
+
+    if ( ! last_page_link.equals(next_page_link) ) {
+      next_page_url = 'http://www.proquest.com'+next_page_link
+      next_page = true;
     }
     else {
       next_page = false;
@@ -102,44 +108,6 @@ def pullLatest(config, url) {
   
   println("Done ${page_count} pages");
   println("Done ${package_count} packages");
-}
-
-def processFile(official_package_name, link, config, http) {
-  println("\n\nfetching ${official_package_name} - ${link}");
-
-  def package_data = new URL(link).getText()
-
-
-  MessageDigest md5_digest = MessageDigest.getInstance("MD5");
-  InputStream md5_is = new ByteArrayInputStream(package_data.getBytes());
-
-  int filesize = 0;
-  byte[] md5_buffer = new byte[8192];
-  int md5_read = 0;
-  while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
-    md5_digest.update(md5_buffer, 0, md5_read);
-    filesize += md5_read
-  }
-  md5_is.close();
-  byte[] md5sum = md5_digest.digest();
-  def md5sumHex = new BigInteger(1, md5sum).toString(16);
-
-  println("Hash for ${link} is ${md5sumHex}");
-
-  if ( config.packageData[official_package_name] == null ) {
-    config.packageData[official_package_name] = [ cksum:0 ];
-  }
-
-  if ( md5sumHex == config.packageData[official_package_name].cksum ) {
-    println("Checksum not changed - Skipping");
-  }
-  else {
-    println("Checksum changed - process file");
-    pushToGokb(official_package_name, package_data, http);
-    config.packageData[official_package_name].cksum = md5sumHex
-    config.packageData[official_package_name].lastProcessed = System.currentTimeMillis()
-  }
-
 }
 
 def pushToGokb(name, data, http) {
