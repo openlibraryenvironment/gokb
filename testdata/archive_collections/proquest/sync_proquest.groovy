@@ -77,29 +77,37 @@ def pullLatest(config, url) {
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
   httpbuilder.auth.basic 'admin', 'admin'
 
-  def next_page_url = url;
+  def page_url = url;
 
   while(next_page) {
 
-    html = client.getPage(next_page_url);
+    html = client.getPage(page_url);
 
     page_count++
 
     List<?> links = html.getByXPath("//div[@class='container categoryBlock']");
     println("Processing ${links.size()} links");
     links.each { link ->
-      def title = link.getFirstByXPath('div/h2/text()');
+      def title = link.getFirstByXPath('div/h2/text()')
+      def details_link = link.getFirstByXPath('div/div/div/p/a[text()="LEARN MORE"]/@href').getValue();
+      def abst = link.getFirstByXPath('div/div/div/p/text()')
       println(title)
+      println(details_link)
+      println(abst)
+
+      // Each details link is a page that may contain a link to the title list at tls.search.proquest.com - Usually with the text "View Title List"
     }
   
     def last_page_link = html.getFirstByXPath("//a[text()='Last']/@href").getValue().trim();
     def next_page_link = html.getFirstByXPath("//i[@class='fa fa-chevron-right']/../@href").getValue().trim();
+    def next_page_url = 'http://www.proquest.com'+next_page_link
 
-    println("Last page: ${last_page_link} Next page: ${next_page_link} ${last_page_link.equals(next_page_link)}");
+    println("\n\n\nLast page: ${last_page_link} Next page: ${next_page_link} ${last_page_link.equals(next_page_link)}");
 
-    if ( ! last_page_link.equals(next_page_link) ) {
-      next_page_url = 'http://www.proquest.com'+next_page_link
+    // Are we currently processing the last page? (If the next page link is exactly the same as the page we have just processed
+    if ( ! next_page_url.equals(page_url) ) {
       next_page = true;
+      page_url = next_page_url
     }
     else {
       next_page = false;
