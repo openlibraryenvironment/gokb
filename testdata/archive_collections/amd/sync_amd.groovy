@@ -57,8 +57,6 @@ cfg_file << toJson(config);
 
 
 def pullLatest(config, url) {
-  def result = false;
-
   println("Get URL ${url}");
   client = new WebClient()
   client.getOptions().setThrowExceptionOnScriptError(false);
@@ -125,7 +123,10 @@ def pullLatest(config, url) {
 
 
   println("Done ${page_count} pages");
-  println(new String(baos.toByteArray()));
+  
+  def csv_data = new String(baos.toByteArray());
+
+  pushToGokb('AdamMatthewDigital.tsv',csv_data, httpbuilder);
 }
 
 def pushToGokb(name, data, http) {
