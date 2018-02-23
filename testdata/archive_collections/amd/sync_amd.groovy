@@ -140,8 +140,7 @@ def pushToGokb(name, data, http) {
     // Adding Multi-part file parameter "imageFile"
     multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
 
-    // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("JSTOR"))
+    multiPartContent.addPart("source", new StringBody("AMD"))
     multiPartContent.addPart("fmt", new StringBody("DAC"))
     multiPartContent.addPart("pkg", new StringBody("Adam Matthew Digital Archival Collections"))
     multiPartContent.addPart("platformUrl", new StringBody("https://www.amdigital.co.uk/products/products"));
