@@ -5,7 +5,7 @@
   @Grab(group='net.sourceforge.nekohtml', module='nekohtml', version='1.9.14'),
   @Grab(group='javax.mail', module='mail', version='1.4.7'),
   @Grab(group='net.sourceforge.htmlunit', module='htmlunit', version='2.21'),
-  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.2'),
+  @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1'),
   @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
   @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
   @GrabExclude('org.codehaus.groovy:groovy-all')
@@ -42,7 +42,9 @@ else {
 println("Using config ${config}");
 
 println("Pulling latest messages");
-pullLatest(config,'http://about.jstor.org/content/jstor-title-lists');
+// Adam Matthew Digital https://www.amdigital.co.uk/products/products
+
+pullLatest(config,'https://www.amdigital.co.uk/products/products');
 println("All done");
 
 println("Updating config");
@@ -71,7 +73,6 @@ def pullLatest(config, url) {
   
   boolean next_page = true;
   int page_count = 0;
-  int package_count = 0;
 
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
   httpbuilder.auth.basic 'admin', 'admin'
@@ -79,65 +80,27 @@ def pullLatest(config, url) {
   while(next_page) {
     page_count++
 
-    List<?> links = html.getByXPath("//a/@href");
-    println("Processing ${links.size()} links");
-    links.each { link ->
-      if ( link.value.startsWith('https://static-content.springer.com/kbart') ) {
-        def package_name = link.getOwnerElement().getByXPath('./text()');
-        processFile(package_name[0].toString(),"${link.value}".toString(), config, httpbuilder);
-        package_count++;
-      }
+    List<?> products = html.getByXPath("//a[@class='product']");
+    println("Processing ${products.size()} products");
+    products.each { product ->
+      def product_title = product.getFirstByXPath("div/h3/text()")
+      println(product_title);
+      def product_url = product.getFirstByXPath("@href").getValue();
+      println(product_url);
+      def product_excerpt = product.getFirstByXPath("div/div[@class='excerpt']/text()")
+      println(product_excerpt);
     }
   
-    def next_page_links = []
-    if ( next_page_links.size() > 0 ) {
-      html = next_page_links[0].click();
-    }
-    else {
+    // def next_page_links = []
+    // if ( next_page_links.size() > 0 ) {
+    //   html = next_page_links[0].click();
+    // }
+    // else {
       next_page = false;
-    }
+    // }
   }
   
   println("Done ${page_count} pages");
-  println("Done ${package_count} packages");
-}
-
-def processFile(official_package_name, link, config, http) {
-  println("\n\nfetching ${official_package_name} - ${link}");
-
-  def package_data = new URL(link).getText()
-
-
-  MessageDigest md5_digest = MessageDigest.getInstance("MD5");
-  InputStream md5_is = new ByteArrayInputStream(package_data.getBytes());
-
-  int filesize = 0;
-  byte[] md5_buffer = new byte[8192];
-  int md5_read = 0;
-  while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
-    md5_digest.update(md5_buffer, 0, md5_read);
-    filesize += md5_read
-  }
-  md5_is.close();
-  byte[] md5sum = md5_digest.digest();
-  def md5sumHex = new BigInteger(1, md5sum).toString(16);
-
-  println("Hash for ${link} is ${md5sumHex}");
-
-  if ( config.packageData[official_package_name] == null ) {
-    config.packageData[official_package_name] = [ cksum:0 ];
-  }
-
-  if ( md5sumHex == config.packageData[official_package_name].cksum ) {
-    println("Checksum not changed - Skipping");
-  }
-  else {
-    println("Checksum changed - process file");
-    pushToGokb(official_package_name, package_data, http);
-    config.packageData[official_package_name].cksum = md5sumHex
-    config.packageData[official_package_name].lastProcessed = System.currentTimeMillis()
-  }
-
 }
 
 def pushToGokb(name, data, http) {

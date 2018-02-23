@@ -42,6 +42,8 @@ else {
 println("Using config ${config}");
 
 println("Pulling latest messages");
+// ProQuest http://www.proquest.com/libraries/academic/primary-sources/?&page=1
+
 pullLatest(config,'http://about.jstor.org/content/jstor-title-lists');
 println("All done");
 
