@@ -29,6 +29,10 @@ import org.apache.http.entity.mime.MultipartEntityBuilder /* we'll use the new b
 import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulate our file uploads */
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
 
+java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(java.util.logging.Level.OFF); 
+java.util.logging.Logger.getLogger("org.apache.commons.httpclient").setLevel(java.util.logging.Level.OFF);
+
+
 config = null;
 cfg_file = new File('./sync-jstor-cfg.json')
 if ( cfg_file.exists() ) {
@@ -96,6 +100,7 @@ def pullLatest(config, url) {
       println(abst)
 
       // Each details link is a page that may contain a link to the title list at tls.search.proquest.com - Usually with the text "View Title List"
+      considerPage(title, details_link, abst, client);
     }
   
     def last_page_link = html.getFirstByXPath("//a[text()='Last']/@href").getValue().trim();
@@ -116,6 +121,22 @@ def pullLatest(config, url) {
   
   println("Done ${page_count} pages");
   println("Done ${package_count} packages");
+}
+
+def considerPage(title, details_link, abst, client) {
+
+  println("\n\n\nconsiderPage(...${details_link}...)");
+
+  def html = client.getPage(details_link);
+
+  def title_list_elem = html.getFirstByXPath('//a[starts-with(@href,"http://tls")]/@href');
+  if ( title_list_elem ) {
+    def title_list_link = title_list_elem.getValue()
+    println("  --> title_list: ${title_list_link}");
+  }
+  else {
+    println("  --> NO title list link found");
+  }
 }
 
 def pushToGokb(name, data, http) {
