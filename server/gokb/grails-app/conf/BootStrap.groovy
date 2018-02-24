@@ -121,10 +121,10 @@ class BootStrap {
       }
     }
 
-    // KBComponent.withTransaction() {
-    //   log.debug("Configuring default decision support parameters");
-    //   DSConfig();
-    // }
+    KBComponent.withTransaction() {
+      log.debug("Configuring default decision support parameters");
+      DSConfig();
+    }
 
     String fs = grailsApplication.config.project_dir
     log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
