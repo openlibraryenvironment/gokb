@@ -1149,19 +1149,21 @@ class TSVIngestionService {
       }
     }
 
-    // log.debug("Values updated, set lastSeen");
+    log.debug("Values updated, set lastSeen");
 
     if ( ingest_systime ) {
       // log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
       tipp.lastSeen = ingest_systime;
     }
 
-    log.debug("save tipp")
+    log.debug("save tipp...")
     tipp.save(failOnError:true, flush:true)
-    log.debug("createTIPP returning")
 
     // Look through the field list for any tipp.custprop values
+    log.debug("Checking for tipp custprops");
     addCustprops(tipp, the_kbart, 'tipp.custprops');
+
+    log.debug("createTIPP returning")
   }
 
 
@@ -1282,7 +1284,11 @@ class TSVIngestionService {
       tipp.lastSeen = ingest_systime;
     }
 
-    log.debug("createTIPP returning")
+   // Look through the field list for any tipp.custprop values
+   log.debug("Checking for tipp custprops");
+   addCustprops(tipp, the_kbart, 'tipp.custprops');
+
+    log.debug("manualcreateTIPP returning")
   }
 
 
@@ -1878,6 +1884,13 @@ class TSVIngestionService {
    *  matches are found, add the remaining property name to obj as custom properties.
    */
   def addCustprops(obj, props, prefix) {
+    log.debug("Checking for custprops with prefix ${prefix} against ${obj}");
+    props.each { k,v -> 
+      log.debug("checking ${k}");
+      if ( k.toString().startsWith(prefix) ) {
+        log.debug("Got custprop match : ${k} = ${v}");
+      }
+    }
     return;
   }
 }

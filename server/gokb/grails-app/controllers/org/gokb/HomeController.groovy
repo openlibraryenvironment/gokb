@@ -117,7 +117,7 @@ class HomeController {
 
       for ( int i=0; i<12; i++ ) {
 
-        log.debug("Period ${i}")
+        // log.debug("Period ${i}")
 
         calendar.add(Calendar.MONTH, 1)
 
@@ -144,13 +144,13 @@ class HomeController {
         wData."${xVal}".putAll(entry)
       }
 
-      log.debug("Completed Processing counts for ${widget_name}");
+      // log.debug("Completed Processing counts for ${widget_name}");
 
       // Add the results.
       result."${widget_name}"."data" = wData.values()
     }
 
-    log.debug("${result}")
+    // log.debug("${result}")
     ["widgets" : result]
   }
 

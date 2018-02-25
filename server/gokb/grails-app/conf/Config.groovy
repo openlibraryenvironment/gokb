@@ -367,6 +367,7 @@ identifiers = [
     "doi",
     "isbn",
     "issnl",
+    "uri",
     "zdb"
   ],
 
