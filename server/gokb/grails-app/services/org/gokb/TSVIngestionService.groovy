@@ -1188,8 +1188,8 @@ class TSVIngestionService {
 
    // Look through the field list for any tipp.custprop values
    log.debug("Checking for tipp custprops");
-   addCustprops(tipp, the_kbart, 'tipp.custprops');
-   addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops');
+   addCustprops(tipp, the_kbart, 'tipp.custprops.');
+   addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.');
 
     log.debug("manualcreateTIPP returning")
   }
@@ -1795,11 +1795,20 @@ class TSVIngestionService {
    *  @See KBComponent.additionalProperties
    */
   def addCustprops(obj, props, prefix) {
+    boolean changed = false
     props.each { k,v -> 
       if ( k.toString().startsWith(prefix) ) {
         log.debug("Got custprop match : ${k} = ${v}");
+        def trimmed_name = m.name.substring(prefix.length());
+        obj.appendToAdditionalProperty(trimmed_name, m.value);
+        changed=true
       }
     }
+
+    if ( changed ) {
+      obj.save(flush:true, failOnError:true);
+    }
+
     return;
   }
 
@@ -1812,11 +1821,20 @@ class TSVIngestionService {
    *  @See KBComponent.additionalProperties
    */
   def addUnmappedCustprops(obj, unmappedprops, prefix) {
+    boolean changed = false
     unmappedprops.each { m ->
       if ( m.name.toString().startsWith(prefix) ) {
         log.debug("Got custprop match : ${m.name} = ${m.value}");
+        def trimmed_name = m.name.substring(prefix.length());
+        obj.appendToAdditionalProperty(trimmed_name, m.value);
+        changed=true
       }
     }
+
+    if ( changed ) {
+      obj.save(flush:true, failOnError:true);
+    }
+
     return;
   }
 
