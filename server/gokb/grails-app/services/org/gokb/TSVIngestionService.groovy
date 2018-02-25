@@ -1792,6 +1792,7 @@ class TSVIngestionService {
    *  matches are found, add the remaining property name to obj as custom properties.
    *  Sometimes, a column is mapped into a custprop widget -> tipp.custprops.widget. This
    *  handles that case.
+   *  @See KBComponent.additionalProperties
    */
   def addCustprops(obj, props, prefix) {
     props.each { k,v -> 
@@ -1802,6 +1803,14 @@ class TSVIngestionService {
     return;
   }
 
+  /**
+   *  Add mapped custom properties to an object. Extensibility mechanism.
+   *  Look through any unmapped properties that start with the given prefix. If any
+   *  matches are found, add the remaining property name to obj as custom properties.
+   *  Sometimes, a column is mapped into a custprop widget -> tipp.custprops.widget. This
+   *  handles that case.
+   *  @See KBComponent.additionalProperties
+   */
   def addUnmappedCustprops(obj, unmappedprops, prefix) {
     unmappedprops.each { m ->
       if ( m.name.toString().startsWith(prefix) ) {
