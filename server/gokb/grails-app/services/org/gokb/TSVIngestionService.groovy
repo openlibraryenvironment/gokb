@@ -1159,6 +1159,9 @@ class TSVIngestionService {
     log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
     log.debug("createTIPP returning")
+
+    // Look through the field list for any tipp.custprop values
+    addCustprops(tipp, the_kbart, 'tipp.custprops');
   }
 
 
@@ -1867,5 +1870,14 @@ class TSVIngestionService {
 
     log.debug("preflight returning ${result.passed}");
     result
+  }
+
+  /**
+   *  Add custom properties to an object. Extensibility mechanism.
+   *  Look through the properties passed for any that start with the given prefix. If any
+   *  matches are found, add the remaining property name to obj as custom properties.
+   */
+  def addCustprops(obj, props, prefix) {
+    return;
   }
 }
