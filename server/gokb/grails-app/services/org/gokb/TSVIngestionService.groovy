@@ -1069,99 +1069,6 @@ class TSVIngestionService {
   }
 
 
-  def createTIPP(the_source,
-                 the_kbart,
-                 the_package,
-                 the_title,
-                 the_platform,
-                 ingest_date,
-                 ingest_systime) {
-
-    // log.debug("TSVIngestionService::createTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
-
-    assert the_package != null && the_title != null && the_platform != null
-
-    //first, try to find the platform. all we have to go in the host of the url.
-    def tipp_values = [
-      url:the_kbart.title_url?:'',
-      pkg:the_package,
-      title:the_title,
-      hostPlatform:the_platform,
-      embargo:the_kbart.embargo_info?:'',
-      coverageNote:the_kbart.coverage_depth?:'',
-      // notes:the_kbart.notes?:'',
-      startDate:parseDate(the_kbart.date_first_issue_online),
-      startVolume:the_kbart.num_first_vol_online,
-      startIssue:the_kbart.num_first_issue_online,
-      endDate:parseDate(the_kbart.date_last_issue_online),
-      endVolume:the_kbart.num_last_vol_online,
-      endIssue:the_kbart.num_last_issue_online,
-      source:the_source,
-      accessStartDate:ingest_date,
-      lastSeen:ingest_systime
-    ]
-
-    def tipp=null
-
-    log.debug("Find any existing tipps");
-    def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
-                                           'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?'+
-                                           'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
-                                           'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
-                                          [the_package,the_platform,the_title])
-    if ( tipps.size() == 1 ) {
-      log.debug("found");
-      tipp = tipps[0]
-    }
-    else {
-      log.debug("not found");
-    }
-
-
-    if (tipp==null) {
-      log.debug("create a new tipp as at ${ingest_date}");
-
-      // These are immutable for a TIPP - only set at creation time
-      // We are going to create tipl objects at the end instead if per title inline.
-      // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
-      tipp = new TitleInstancePackagePlatform(tipp_values)
-
-      // log.debug("Created");
-
-      // because pkg is not a real property, but a hasByCombo, passing the value in the map constuctor
-      // won't actually get this set. So do it manually. Ditto the other fields
-      tipp.pkg = the_package;
-      tipp.title = the_title;
-      tipp.hostPlatform = the_platform;
-      tipp.source = the_source;
-    } else {
-      // log.debug("found a tipp to use")
-
-      // Set all properties on the object.
-      tipp_values.each { prop, value ->
-        // Only update if we actually have a change to make
-        if ( tipp."${prop}" != value ) {
-          // Only set the property if we have a value.
-          if (value != null && value != "") {
-            tipp."${prop}" = value
-          }
-        }
-      }
-    }
-
-    // log.debug("Values updated, set lastSeen");
-
-    if ( ingest_systime ) {
-      // log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
-      tipp.lastSeen = ingest_systime;
-    }
-
-    log.debug("save tipp")
-    tipp.save(failOnError:true, flush:true)
-    log.debug("createTIPP returning")
-  }
-
-
   def manualCreateTIPP(the_source,
                        the_kbart,
                        the_package,
@@ -1279,7 +1186,12 @@ class TSVIngestionService {
       tipp.lastSeen = ingest_systime;
     }
 
-    log.debug("createTIPP returning")
+   // Look through the field list for any tipp.custprop values
+   log.debug("Checking for tipp custprops");
+   addCustprops(tipp, the_kbart, 'tipp.custprops.');
+   addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.');
+
+    log.debug("manualcreateTIPP returning")
   }
 
 
@@ -1558,7 +1470,7 @@ class TSVIngestionService {
 
     while ( nl != null ) {
 
-      log.debug("** Process row:${row_counter++} ${nl}");
+      log.debug("** convertToKbart Process row:${row_counter++} ${nl}");
 
       // KBartRecord result = new KBartRecord()
       def result = [:]
@@ -1599,11 +1511,16 @@ class TSVIngestionService {
         }
       }
 
-      
+      log.debug("Processing ${unmapped_cols.size()} unmapped columns");
       unmapped_cols.each { unmapped_col_idx ->
-        if ( ( nl.size() < unmapped_col_idx ) && ( header.size() < unmapped_col_idx ) ) {
+        if ( ( unmapped_col_idx < nl.size() ) && ( unmapped_col_idx < header.size() ) ) {
           log.debug("Setting unmapped column idx ${unmapped_col_idx} ${header[unmapped_col_idx]} to ${nl[unmapped_col_idx]}");
-          result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]]);
+          // result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]]);
+          result.unmapped.add([
+                                name:header[unmapped_col_idx], 
+                                value:nl[unmapped_col_idx],
+                                index:unmapped_col_idx
+                              ]);
         }
       }
 
@@ -1868,4 +1785,57 @@ class TSVIngestionService {
     log.debug("preflight returning ${result.passed}");
     result
   }
+
+  /**
+   *  Add mapped custom properties to an object. Extensibility mechanism.
+   *  Look through the properties passed for any that start with the given prefix. If any
+   *  matches are found, add the remaining property name to obj as custom properties.
+   *  Sometimes, a column is mapped into a custprop widget -> tipp.custprops.widget. This
+   *  handles that case.
+   *  @See KBComponent.additionalProperties
+   */
+  def addCustprops(obj, props, prefix) {
+    boolean changed = false
+    props.each { k,v -> 
+      if ( k.toString().startsWith(prefix) ) {
+        log.debug("Got custprop match : ${k} = ${v}");
+        def trimmed_name = m.name.substring(prefix.length());
+        obj.appendToAdditionalProperty(trimmed_name, m.value);
+        changed=true
+      }
+    }
+
+    if ( changed ) {
+      obj.save(flush:true, failOnError:true);
+    }
+
+    return;
+  }
+
+  /**
+   *  Add mapped custom properties to an object. Extensibility mechanism.
+   *  Look through any unmapped properties that start with the given prefix. If any
+   *  matches are found, add the remaining property name to obj as custom properties.
+   *  Sometimes, a column is mapped into a custprop widget -> tipp.custprops.widget. This
+   *  handles that case.
+   *  @See KBComponent.additionalProperties
+   */
+  def addUnmappedCustprops(obj, unmappedprops, prefix) {
+    boolean changed = false
+    unmappedprops.each { m ->
+      if ( m.name.toString().startsWith(prefix) ) {
+        log.debug("Got custprop match : ${m.name} = ${m.value}");
+        def trimmed_name = m.name.substring(prefix.length());
+        obj.appendToAdditionalProperty(trimmed_name, m.value);
+        changed=true
+      }
+    }
+
+    if ( changed ) {
+      obj.save(flush:true, failOnError:true);
+    }
+
+    return;
+  }
+
 }
