@@ -4,11 +4,11 @@ import groovy.util.logging.Log4j;
 import java.lang.reflect.Field
 import javax.persistence.Transient
 import org.hibernate.proxy.HibernateProxy
+import grails.core.GrailsApplication
+
 
 @Log4j
 class User extends Party {
-
-  transient grailsApplication
 
   // Used in user import to bypass password encoding - used to directly load hashes instead of password
   transient direct_password = false
@@ -142,7 +142,7 @@ class User extends Party {
     false
   }
 
-  transient def getUserOptions() {
+  def getUserOptions(GrailsApplication grailsApplication) {
     def userOptions = [:]
     userOptions.availableSearches = grailsApplication.config.globalSearchTemplates.sort{ it.value.title }
     userOptions
