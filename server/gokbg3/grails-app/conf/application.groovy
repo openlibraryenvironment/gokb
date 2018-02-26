@@ -9,6 +9,7 @@ grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required
 //Exclude normal controllers from basic auth filter. Just the JSON API is included
 
 grails.plugin.springsecurity.filterChain.chainMap = [
+        [pattern: '/login/auth',          filters: 'none'],
         [pattern: '/assets/**',           filters: 'none'],
         [pattern: '/**/js/**',            filters: 'none'],
         [pattern: '/**/css/**',           filters: 'none'],
@@ -25,6 +26,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/admin/**',                access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/file/**',                 access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/monitoring/**',           access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
+  [pattern: '/login/auth',              access: ['permitAll']],
   [pattern: '/',                        access: ['permitAll']],
   [pattern: '/index',                   access: ['permitAll']],
   [pattern: '/index.gsp',               access: ['permitAll']],

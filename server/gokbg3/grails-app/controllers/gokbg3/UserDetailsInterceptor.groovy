@@ -94,18 +94,17 @@ class UserDetailsInterceptor {
           }
         }
 
-        if ( grailsApplication && ( session.userPereferences == null ) ) {
+        if ( session.userPereferences == null ) {
           //log.debug("Set up user prefs");
           session.userPereferences = request.user.getUserPreferences()
         }
         else {
-          log.error("Grails application null OR no user preferences...");
         }
       }
       else {
-        log.debug("User details filter... No User present");
       }
 
+      log.debug("Return true");
       true 
     }
 

@@ -115,6 +115,7 @@ class BootStrap {
 
       // Make sure admin user has all the system roles.
       [contributorRole,userRole,editorRole,adminRole,apiRole,suRole,refineUserRole,refineTesterRole].each { role ->
+        log.debug("Ensure admin user has ${role} role");
         if (!adminUser.authorities.contains(role)) {
           UserRole.create adminUser, role
         }

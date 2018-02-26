@@ -118,7 +118,7 @@ class User extends Party {
   
   public boolean isEditable(boolean default_to = true) {    
     // Users can edit themselves.
-    return isCurrent() || User.isTypeEditable (default_to)
+    return User.isTypeEditable (default_to)
   }
   
   @Override
