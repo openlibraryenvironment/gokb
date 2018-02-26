@@ -127,15 +127,15 @@ class BootStrap {
     //   DSConfig();
     // }
 
-    String fs = grailsApplication.config.project_dir
-    log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
-
-    log.debug("Make sure project files directory exists, config says it's at ${fs}");
-    File f = new File(fs)
-    if ( ! f.exists() ) {
-      log.debug("Creating upload directory path.")
-      f.mkdirs()
-    }
+//    String fs = grailsApplication.config.project_dir
+//    log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
+//
+//    log.debug("Make sure project files directory exists, config says it's at ${fs}");
+//    File f = new File(fs)
+//    if ( ! f.exists() ) {
+//      log.debug("Creating upload directory path.")
+//      f.mkdirs()
+//    }
 
     
     KBComponent.withTransaction() {
@@ -1081,6 +1081,7 @@ class BootStrap {
             .endObject()
         .endObject()
       .endObject()
+    .endObject()
       
     return mapping
   }
