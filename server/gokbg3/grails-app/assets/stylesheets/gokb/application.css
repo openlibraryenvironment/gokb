@@ -2,7 +2,6 @@
  * GOKb application CSS.
  */
 /*
-*= require font-awesome
 *= require metisMenu.min
 *= require summernote
 *= require summernote-bs3
@@ -13,8 +12,11 @@
 *= require bootstrap-editable
 *= require morris
 *= require jquery.textcomplete
+*= require bootstrap
+*= require fontawesome
 *= encoding UTF-8
 */
+
 
 .threeColGrid > div:nth-child(4n+5) {
     clear: left;
