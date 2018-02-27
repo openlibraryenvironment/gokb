@@ -1,6 +1,7 @@
 package com.k_int
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 import org.grails.async.factory.future.CachedThreadPoolPromiseFactory
@@ -34,7 +35,7 @@ class ConcurrencyManagerService {
   }
   
 
-  public class Job implements Promise{
+  public class Job implements Promise, Future {
     int id
     private Promise task
     int progress
@@ -45,17 +46,17 @@ class ConcurrencyManagerService {
     String description
     List messages = []
 
-    public message(String message) {
+    public synchronized message(String message) {
       log.debug(message);
       messages.add([timestamp:System.currentTimeMillis(), message:message]);
     }
 
-    public message(Map message) {
+    public synchronized message(Map message) {
       log.debug("${message}");
       messages.add(message)
     }
 
-    public getMessages() {
+    public synchronized getMessages() {
       return messages
     }
 
@@ -85,32 +86,36 @@ class ConcurrencyManagerService {
     } 
     
     @Override
-    Promise accept(value) {
+    public synchronized Job accept(value) {
       this.task.accept(value)
+      this
     }
     
     @Override
-    Promise onComplete(Closure callable) {
+    public synchronized Job onComplete(Closure callable) {
       this.task.onComplete(callable)
+      this
     }
     
     @Override
-    Promise onError(Closure callable) {
+    public synchronized Job onError(Closure callable) {
       this.task.onComplete(callable)
+      this
     }
     
     @Override
-    Promise then(Closure callable) {
+    public synchronized Job then(Closure callable) {
       this.task.onComplete(callable)
+      this
     }
 
     @Override
-    public boolean cancel (boolean mayInterruptIfRunning) {
+    public synchronized boolean cancel (boolean mayInterruptIfRunning) {
       this.task.cancel(mayInterruptIfRunning);
     }
 
     @Override
-    public boolean isCancelled () {
+    public synchronized boolean isCancelled () {
       this.task.isCancelled();
     }
 
@@ -160,7 +165,7 @@ class ConcurrencyManagerService {
      * activities on this monitor. Removed for test..
      */
     @Override
-    public def get() {
+    public synchronized def get() {
       return task.get()
     }
 
