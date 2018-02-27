@@ -9,6 +9,21 @@ import java.text.SimpleDateFormat
 import java.util.concurrent.Executors
 
 kbart2.mappings= [
+  // Digital Archival Collections Ingest Format
+    DAC : [
+               quoteChar:'"',
+               charset:'UTF-8',
+               defaultTypeName:'org.gokb.cred.OtherInstance',
+               identifierMap:[ 'online_identifier':'uri'],
+               defaultMedium:'Other',
+               rules:[
+                [field: 'notes', kbart:'notes'],
+                [field: 'online_identifier', kbart: 'online_identifier'],
+                [field: 'publication_title', kbart: 'publication_title'],
+                [field: 'publisher', kbart:'publisher'],
+                [field: 'title_url', kbart:'title_url']
+               ]
+    ],
     ingram : [
                // defaultType:org.gokb.cred.BookInstance.class,
                defaultTypeName:'org.gokb.cred.BookInstance',
