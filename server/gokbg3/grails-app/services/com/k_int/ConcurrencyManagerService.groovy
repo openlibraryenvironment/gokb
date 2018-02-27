@@ -1,6 +1,5 @@
 package com.k_int
 
-import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -127,7 +126,7 @@ class ConcurrencyManagerService {
         // Check for a parameter on this closure.
         work = work.rcurry(this)
 
-        task = Promises.task(work as Callable)
+        task = Promises.task(work as Closure)
 
         begun = true
       }
@@ -146,7 +145,7 @@ class ConcurrencyManagerService {
 
         // Check for a parameter on this closure.
         work = work.rcurry(this)
-        task = ConcurrencyManagerService.pools.get ("${poolName}").createPromise(work as Callable)
+        task = ConcurrencyManagerService.pools.get ("${poolName}").createPromise(work as Closure)
 
         begun = true
       }
