@@ -54,7 +54,6 @@ class TSVIngestionService {
   def componentLookupService
   def refdataCategory
   def sessionFactory
-  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
   def possible_date_formats = [
     new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
@@ -1542,9 +1541,6 @@ class TSVIngestionService {
     // flush and clear the session.
     session.flush()
     session.clear()
-
-    // Clear the property instance map.
-    propertyInstanceMap.get().clear()
   }
 
   def makeBadFile() {

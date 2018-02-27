@@ -10,5 +10,7 @@ curl -v --user admin:admin -X POST \
   --form reprocess="Y" \
   --form synchronous="Y" \
   --form flags="+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs" \
-  localhost:8080/gokb/packages/deposit
+  localhost:8080/packages/deposit
 
+
+# N.B. upload URL for v7 and before is /gokb/packages/deposit. When running with grails run-app for G3 and above, its just /packages/deposit
