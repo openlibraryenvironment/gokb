@@ -1,12 +1,16 @@
 package com.k_int
 
-import grails.transaction.Transactional
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Future
-import java.util.concurrent.FutureTask
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+
+import org.grails.async.factory.future.CachedThreadPoolPromiseFactory
+
+import grails.async.Promise
+import grails.async.PromiseFactory
+import grails.async.Promises
 import grails.core.GrailsApplication
+import grails.gorm.transactions.Transactional
 
 /**
  * This service will allocate tasks to the Executor service while maintaining a list of current tasks
@@ -17,10 +21,23 @@ import grails.core.GrailsApplication
 
 @Transactional
 class ConcurrencyManagerService {
+  
+  private static final Map<String, PromiseFactory> pools
+  
+  static {
+    // Set the default promise factory and limit to 100 threads.
+    Promises.setPromiseFactory(
+      new CachedThreadPoolPromiseFactory(100, 60L, TimeUnit.SECONDS)
+    )
+    
+    // Immutable pool map.
+    pools = Collections.unmodifiableMap (['smallJobs' : new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
+  }
+  
 
-  public class Job {
+  public class Job implements Promise{
     int id
-    private FutureTask task
+    private Promise task
     int progress
     Date startTime
     Date endTime
@@ -48,7 +65,7 @@ class ConcurrencyManagerService {
      * @see java.util.concurrent.FutureTask#cancel()
      */
     public synchronized boolean cancel () {
-      task.cancel false
+      cancel (false)
     }
 
     /**
@@ -63,8 +80,39 @@ class ConcurrencyManagerService {
      * See if the job is done.
      * @see java.util.concurrent.FutureTask#done()
      */
+    @Override
     public synchronized boolean isDone () {
       task.done
+    } 
+    
+    @Override
+    Promise accept(value) {
+      this.task.accept(value)
+    }
+    
+    @Override
+    Promise onComplete(Closure callable) {
+      this.task.onComplete(callable)
+    }
+    
+    @Override
+    Promise onError(Closure callable) {
+      this.task.onComplete(callable)
+    }
+    
+    @Override
+    Promise then(Closure callable) {
+      this.task.onComplete(callable)
+    }
+
+    @Override
+    public boolean cancel (boolean mayInterruptIfRunning) {
+      this.task.cancel(mayInterruptIfRunning);
+    }
+
+    @Override
+    public boolean isCancelled () {
+      this.task.isCancelled();
     }
 
     /**
@@ -79,7 +127,7 @@ class ConcurrencyManagerService {
         // Check for a parameter on this closure.
         work = work.rcurry(this)
 
-        task = executorService.submit(work as Callable<Date>)
+        task = Promises.task(work as Callable)
 
         begun = true
       }
@@ -98,8 +146,7 @@ class ConcurrencyManagerService {
 
         // Check for a parameter on this closure.
         work = work.rcurry(this)
-
-        task = grailsApplication.mainContext."${poolName}ExecutorService".submit(work as Callable<Date>)
+        task = ConcurrencyManagerService.pools.get ("${poolName}").createPromise(work as Callable)
 
         begun = true
       }
@@ -113,6 +160,7 @@ class ConcurrencyManagerService {
      * II: I don't think this should be synchronized, as a waiting process will essentially block any other
      * activities on this monitor. Removed for test..
      */
+    @Override
     public def get() {
       return task.get()
     }
@@ -121,6 +169,7 @@ class ConcurrencyManagerService {
      * Attempt to retrieve the result. May be Null
      * @see java.util.concurrent.FutureTask#get(long timeout, TimeUnit unit)
      */
+    @Override
     public synchronized def get(long time, TimeUnit unit) {
       return task.get(time, unit)
     }
@@ -146,10 +195,6 @@ class ConcurrencyManagerService {
 
   GrailsApplication grailsApplication
   
-  /**
-   * Executor Service
-   */
-  def executorService
   static scope = "singleton"
 
 

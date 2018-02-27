@@ -647,17 +647,17 @@ searchApi = [
   'port'        : 9200
 ]
 
-concurrency.pools = [
-  "smallJobs" : [
-    type: 'SingleThreadExecutor'
-  ]
-]
+//concurrency.pools = [
+//  "smallJobs" : [
+//    type: 'SingleThreadExecutor'
+//  ]
+//]
 
-beans {
-  executorService {
-    executor = Executors.newFixedThreadPool(100)
-  }
-}
+//beans {
+//  executorService {
+//    executor = Executors.newFixedThreadPool(100)
+//  }
+//}
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
 // 'Access-Control-Allow-Origin': 'http://xissn.worldcat.org'
