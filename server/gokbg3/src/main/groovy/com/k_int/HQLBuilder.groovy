@@ -91,13 +91,13 @@ public class HQLBuilder {
       }
     }
 
-    def hql_builder_context = [:]
-    hql_builder_context.declared_scopes = [:]
+    def hql_builder_context = new java.util.HashMap();
+    hql_builder_context.declared_scopes = new java.util.HashMap();
     hql_builder_context.query_clauses = []
-    hql_builder_context.bindvars = [:]
+    hql_builder_context.bindvars = new java.util.HashMap();
     hql_builder_context.genericOIDService = genericOIDService;
-    hql_builder_context.sort = params.sort ?: qbetemplate.defaultSort
-    hql_builder_context.order = params.order ?: qbetemplate.defaultOrder
+    hql_builder_context.sort = params.sort ?: ( qbetemplate.containsKey('defaultSort') ? qbetemplate.defaultSort : null )
+    hql_builder_context.order = params.order ?: ( qbetemplate.containsKey('defaultOrder') ? qbetemplate.defaultOrder : null )
 
     def baseclass = target_class.getClazz()
     criteria.each { crit ->
@@ -115,39 +115,42 @@ public class HQLBuilder {
       // log.debug("QueryClause: ${qc}");
     }
 
-    def hql = outputHqlWithoutSort(hql_builder_context, qbetemplate)
+    String hql = outputHqlWithoutSort(hql_builder_context, qbetemplate)
     // log.debug("HQL: ${hql}");
     // log.debug("BindVars: ${hql_builder_context.bindvars}");
 
-    def count_hql = null; //"select count (distinct o) ${hql}"
+    String count_hql = null; //"select count (distinct o) ${hql}"
     if ( qbetemplate.useDistinct == true ) {
-      count_hql = "select count (distinct o.id) ${hql}"
+      count_hql = "select count (distinct o.id) ${hql}".toString()
     }
     else {
-      count_hql = "select count (*) ${hql}"
+      count_hql = "select count (*) ${hql}".toString()
     }
 
     def fetch_hql = null
     if ( returnObjectsOrRows=='objects' ) {
-      fetch_hql = "select ${qbetemplate.useDistinct == true ? 'distinct' : ''} o ${hql}"
+      fetch_hql = "select ${qbetemplate.useDistinct == true ? 'distinct' : ''} o ${hql}".toString()
     }
     else {
-      fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql}"
+      fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql}".toString()
     }
 
     // Many SQL variants freak out if you order by on a count(*) query, so only order by for the actual fetch
-    if ( ( hql_builder_context.sort != null ) && ( hql_builder_context.sort.length() > 0 ) ) {
+    if ( hql_builder_context.containsKey('sort' ) && 
+         ( hql_builder_context.get('sort') != null ) && 
+         ( hql_builder_context.get('sort').length() > 0 ) ) {
+      log.debug("Setting sort order to ${hql_builder_context.sort}");
       fetch_hql += " order by o.${hql_builder_context.sort} ${hql_builder_context.order}";
     }
 
+
     log.debug("Attempt count qry ${count_hql}");
     log.debug("Attempt qry ${fetch_hql}");
-    log.debug("Params ${hql_builder_context.bindvars}");
+    log.debug("Bindvars ${hql_builder_context.bindvars}");
     def count_start_time = System.currentTimeMillis();
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars,[readOnly:true])[0]
-    // result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
-    // log.debug("Got count result: ${result.reccount}");
-    log.debug("Count completed after ${System.currentTimeMillis() - count_start_time}");
+
+    log.debug("Count completed (${result.reccount}) after ${System.currentTimeMillis() - count_start_time}");
 
     def query_params = [:]
     if ( result.max )

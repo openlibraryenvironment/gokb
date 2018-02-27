@@ -57,7 +57,7 @@
             <span  class="icon-bar"></span>
         </button>
         <g:link uri="/" class="navbar-brand">
-          GOKb v<g:meta name="app.version" />
+          GOKb v<g:meta name="info.app.version" />
         </g:link>
       </div>
       <!-- /.navbar-header -->
