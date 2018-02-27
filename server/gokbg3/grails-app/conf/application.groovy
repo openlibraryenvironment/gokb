@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 // Added by the Spring Security Core plugin:
 grails.plugin.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.User'
 grails.plugin.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
@@ -1005,3 +1007,50 @@ globalDisplayTemplates = [
   'org.gokb.cred.Folder': [ type:'staticgsp', rendername:'folder' ],
   'org.gokb.cred.Work': [ type:'staticgsp', rendername:'work' ],
 ]
+
+possible_date_formats = [
+    new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('dd/MM/yyyy'),
+    new SimpleDateFormat('dd/MM/yy'),
+    new SimpleDateFormat('yyyy/MM'),
+    new SimpleDateFormat('yyyy')
+];
+
+isxn_formatter = { issn_string ->
+      def result = issn_string
+      def trimmed = (issn_string?:'').trim()
+      if ( trimmed.length() == 8 ) {
+        result = issn_string.substring(0,4)+"-"+issn_string.substring(4,8)
+      }
+      return result;
+    }
+
+
+identifiers = [
+  'class_ones' : [
+    'issn',
+    'eissn',
+    'doi',
+    'isbn',
+    'issnl',
+    'zdb',
+    'uri'
+  ],
+
+  // Class ones that need to be cross-checked. If an Identifier supplied as an ISSN,
+  // is found against a title but as an eISSN we still treat this as a match
+  'cross_checks' : [
+    ['issn', 'eissn'],
+    ['issn', 'issnl'],
+    ['eissn', 'issn'],
+    ['eissn', 'issnl'],
+    ['issnl', 'issn'],
+    ['issnl', 'eissn']
+  ],
+
+  formatters : [
+    'issn' : isxn_formatter,
+    'eissn' : isxn_formatter
+  ]
+]
+
