@@ -3,12 +3,14 @@ grails.plugin.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.Use
 grails.plugin.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
 grails.plugin.springsecurity.authority.className = 'org.gokb.cred.Role'
 
-grails.gorm.autowire = true
-
 //Enable Basic Auth Filter
 grails.plugin.springsecurity.useBasicAuth = true
 grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required"
 //Exclude normal controllers from basic auth filter. Just the JSON API is included
+
+grails.gorm.default.mapping = {
+    autowire true
+}
 
 grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/login/auth',          filters: 'none'],

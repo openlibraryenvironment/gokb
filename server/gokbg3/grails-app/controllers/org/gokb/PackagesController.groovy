@@ -227,6 +227,10 @@ class PackagesController {
   
             log.debug("Create background job");
             def incremental_flag = params.incremental
+
+            // Could do Promise p = task { Job.withNewSession { ...
+            // result = p.get() or p.get(1,MINUTES)
+            // 
             // Transactional part done. now queue the job
             background_job = concurrencyManagerService.createJob { Job job ->
               def job_result = null;
