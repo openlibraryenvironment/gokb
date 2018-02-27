@@ -1523,7 +1523,7 @@ class TSVIngestionService {
         }
       }
 
-      log.debug(result)
+      log.debug("${result}")
       results<<result;
       nl=csv.readNext()
     }
