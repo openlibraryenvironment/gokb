@@ -8,6 +8,8 @@ import javax.persistence.Transient
 import org.grails.datastore.mapping.model.PersistentEntity
 import org.grails.datastore.mapping.model.PersistentProperty
 import org.gokb.GOKbTextUtils
+import grails.core.GrailsDomainClass
+import grails.core.GrailsDomainClassProperty
 
 /**
  * Abstract base class for GoKB Components.
@@ -162,7 +164,8 @@ abstract class KBComponent {
         KBComponent thisComponent = this
 
         // DomainClassArtefactHandler for this class
-        PersistentEntity dClass = grailsApplication.getDomainClass(thisComponent.class.name)
+        // PersistentEntity dClass = grailsApplication.getDomainClass(thisComponent.class.name)
+        GrailsDomainClass dClass = grailsApplication.getDomainClass(thisComponent.class.name)
 
         defaultsForThis.each { String className, defaults ->
 
@@ -172,7 +175,7 @@ abstract class KBComponent {
             if (thisComponent."${property}" == null) {
 
               // Get the type defined against the class.
-              PersistentProperty propertyDef = dClass.getPropertyByName(property)
+              GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
               String propType = propertyDef?.getReferencedPropertyType()?.getName()
   
               if (propType) {
