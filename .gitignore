@@ -19,3 +19,4 @@ server/gokb/logs/
 /openrefine
 *.class
 /*.zip
+application-development.yaml
