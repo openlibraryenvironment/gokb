@@ -29,7 +29,6 @@ class ESWrapperService {
 
     if ( esclient == null ) {
 
-
       def es_cluster_name = grailsApplication.config?.gokb?.es?.cluster ?: 'elasticsearch'
       def es_host_name = grailsApplication.config?.eshost ?: 'eshost'
 
