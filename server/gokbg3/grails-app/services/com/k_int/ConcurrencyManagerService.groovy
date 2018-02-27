@@ -46,17 +46,17 @@ class ConcurrencyManagerService {
     String description
     List messages = []
 
-    public synchronized message(String message) {
+    public message(String message) {
       log.debug(message);
       messages.add([timestamp:System.currentTimeMillis(), message:message]);
     }
 
-    public synchronized message(Map message) {
+    public message(Map message) {
       log.debug("${message}");
       messages.add(message)
     }
 
-    public synchronized getMessages() {
+    public getMessages() {
       return messages
     }
 
@@ -86,36 +86,36 @@ class ConcurrencyManagerService {
     } 
     
     @Override
-    public synchronized Job accept(value) {
+    public Job accept(value) {
       this.task.accept(value)
       this
     }
     
     @Override
-    public synchronized Job onComplete(Closure callable) {
+    public Job onComplete(Closure callable) {
       this.task.onComplete(callable)
       this
     }
     
     @Override
-    public synchronized Job onError(Closure callable) {
+    public Job onError(Closure callable) {
       this.task.onComplete(callable)
       this
     }
     
     @Override
-    public synchronized Job then(Closure callable) {
+    public Job then(Closure callable) {
       this.task.onComplete(callable)
       this
     }
 
     @Override
-    public synchronized boolean cancel (boolean mayInterruptIfRunning) {
+    public boolean cancel (boolean mayInterruptIfRunning) {
       this.task.cancel(mayInterruptIfRunning);
     }
 
     @Override
-    public synchronized boolean isCancelled () {
+    public boolean isCancelled () {
       this.task.isCancelled();
     }
 
@@ -165,7 +165,7 @@ class ConcurrencyManagerService {
      * activities on this monitor. Removed for test..
      */
     @Override
-    public synchronized def get() {
+    public def get() {
       return task.get()
     }
 
