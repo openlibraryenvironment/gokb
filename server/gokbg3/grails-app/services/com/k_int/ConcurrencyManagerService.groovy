@@ -51,7 +51,7 @@ class ConcurrencyManagerService {
     }
 
     public message(Map message) {
-      log.debug(message);
+      log.debug("${message}");
       messages.add(message)
     }
 
