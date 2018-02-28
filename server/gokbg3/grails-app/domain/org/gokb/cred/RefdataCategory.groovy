@@ -54,7 +54,7 @@ class RefdataCategory {
     }
     else {
       // The category.
-      RefdataCategory.withTransaction { status ->
+      // RefdataCategory.withTransaction { status ->
   
   
         def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where c.desc = ?',category_name);
@@ -72,11 +72,11 @@ class RefdataCategory {
             }
           }
   
-          // log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
+          log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
         }
         else if ( cats.size() == 1 ) {
-          log.debug("Found existing category");
           cat = cats[0]
+          log.debug("Found existing category for ${category_name} : ${cat}");
           result = RefdataValue.findByOwnerAndValueIlike(cat, value)
         }
         else {
@@ -97,10 +97,10 @@ class RefdataCategory {
           }
         }
         else {
-          log.debug("Located existing refdata value..");
+          log.debug("Located existing refdata value.. ${value} ${result}");
           rdv_cache[rdv_cache_key] = result.id
         }
-      }
+      // }
     }
     
 
