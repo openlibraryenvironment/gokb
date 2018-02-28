@@ -75,6 +75,7 @@ class RefdataCategory {
           // log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
         }
         else if ( cats.size() == 1 ) {
+          log.debug("Found existing category");
           cat = cats[0]
           result = RefdataValue.findByOwnerAndValueIlike(cat, value)
         }
@@ -96,6 +97,7 @@ class RefdataCategory {
           }
         }
         else {
+          log.debug("Located existing refdata value..");
           rdv_cache[rdv_cache_key] = result.id
         }
       }
