@@ -2,27 +2,26 @@ package com.k_int
 
 import org.hibernate.proxy.HibernateProxy
 import org.hibernate.proxy.LazyInitializer
+import org.hibernate.Hibernate
 import org.gokb.cred.RefdataCategory
 import grails.util.GrailsClassUtils
 import java.text.SimpleDateFormat
 
 class ClassUtils {
 
-  public static <T> T deproxy(Object element) {
+  @groovy.transform.CompileStatic
+  public static <T> T deproxy(Object proxied) {
 
-    T result = null;
+    T entity = proxied;
 
-    if (element instanceof HibernateProxy) {
-      HibernateProxy hp = (HibernateProxy) element;
-      LazyInitializer li = hp.getHibernateLazyInitializer()
-      
-      result = (T) (li.getImplementation());
-    }
-    else {
-      result = (T) element;
+    if (entity instanceof HibernateProxy) {
+      Hibernate.initialize(entity);
+      entity = (T) ((HibernateProxy) entity)
+                  .getHibernateLazyInitializer()
+                  .getImplementation();
     }
 
-    return result;
+    return entity;
   }
 
   /**
