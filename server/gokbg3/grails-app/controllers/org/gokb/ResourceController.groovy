@@ -23,8 +23,10 @@ class ResourceController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
+
     User user = springSecurityService.currentUser
 
+    log.debug("ResourceController::show ${params}");
     def result = [:]
 
     if ( params.id ) {

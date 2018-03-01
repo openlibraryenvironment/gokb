@@ -32,6 +32,8 @@ endpoints:
 ---
 grails:
     mime:
+        file:
+            extensions: false
         disable:
             accept:
                 header:

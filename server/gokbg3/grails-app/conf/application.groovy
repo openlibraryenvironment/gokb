@@ -10,6 +10,8 @@ grails.plugin.springsecurity.useBasicAuth = true
 grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required"
 //Exclude normal controllers from basic auth filter. Just the JSON API is included
 
+grails.mime.file.extensions=false
+
 grails.gorm.default.mapping = {
     autowire true
 }
@@ -984,6 +986,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
   'org.gokb.cred.BookInstance': [ type:'staticgsp', rendername:'book' ],
   'org.gokb.cred.JournalInstance': [ type:'staticgsp', rendername:'journal' ],
+  'org.gokb.cred.OtherInstance': [ type:'staticgsp', rendername:'othertitle' ],
   'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
   'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
   'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
