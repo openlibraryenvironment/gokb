@@ -110,7 +110,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Type', property:'class.simpleName'],
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -182,7 +182,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', sort:'status', property:'status.value'],
+        [heading:'Status', sort:'status', property:'status?.value'],
       ]
     ]
   ],
@@ -218,7 +218,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name',link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -292,7 +292,7 @@ globalSearchTemplates = [
         [heading:'ID', property:'id', link:[controller:'resource',action:'show',id:'x.r?.class?.name+\':\'+x.r?.id'],sort:'name' ],
         [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r?.class?.name+\':\'+x.r?.id'],sort:'name' ],
         [heading:'Type', property:'class?.simpleName'],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
         [heading:'Date Created', property:'dateCreated',sort:'dateCreated'],
         [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
       ]
@@ -333,7 +333,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Provider', sort:'provider.name', property:'provider?.name'],
-        [heading:'Status', sort:'status', property:'status.value'],
+        [heading:'Status', sort:'status', property:'status?.value'],
       ]
     ]
   ],
@@ -410,7 +410,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Title', property:'title?.name',link:[controller:'resource',action:'show',id:'x.r.title?.class.name+\':\'+x.r.title?.id'] ],
-        [heading:'Status', property:'status.value'],
+        [heading:'Status', property:'status?.value'],
         [heading:'Package', property:'pkg?.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class.name+\':\'+x.r.pkg.id'] ],
         [heading:'Platform', property:'hostPlatform?.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
       ]
@@ -515,7 +515,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -538,7 +538,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -583,7 +583,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -649,7 +649,7 @@ globalSearchTemplates = [
         [heading:'ID', property:'id', sort:'id', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Name/Title', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Url', property:'url',sort:'url'],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -693,7 +693,7 @@ globalSearchTemplates = [
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Created On', property:'dateCreated',sort:'dateCreated'],
         [heading:'Mime Type', property:'uploadMimeType',sort:'uploadMimeType'],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -737,7 +737,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -862,7 +862,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -896,7 +896,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
@@ -922,7 +922,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
         [heading:'Bucket Hash', property:'bucketHash'],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
   ],
