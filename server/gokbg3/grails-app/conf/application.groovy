@@ -154,7 +154,7 @@ globalSearchTemplates = [
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name'],
         [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
-        [heading:'Status', property:'status.value',sort:'status'],
+        [heading:'Status', property:'status?.value',sort:'status'],
       ],
       actions:[
         [name:'Register Web Hook for all Packages', code:'general::registerWebhook', iconClass:'glyphicon glyphicon-link']
