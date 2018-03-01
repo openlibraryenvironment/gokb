@@ -2,7 +2,7 @@ package org.gokb
 
 import java.beans.PropertyDescriptor
 import java.lang.reflect.Field
-import org.grails.datastore.mapping.model.PersistentEntity
+import org.grails.core.DefaultGrailsDomainClass
 import grails.util.GrailsNameUtils
 import org.gokb.cred.RefdataValue
 import org.springframework.beans.BeanUtils
@@ -16,7 +16,7 @@ class ClassExaminationService {
 	LinkedHashMap refdata_props = [:]
 	
 	// Let's append a list of refdata properties.
-	PersistentEntity the_class = grailsApplication.getArtefact('Domain', className)
+	DefaultGrailsDomainClass the_class = grailsApplication.getArtefact('Domain', className)
 	// log.debug("Examining ${className} for refdata properties.")
 	
 	// The surent class pointer.
