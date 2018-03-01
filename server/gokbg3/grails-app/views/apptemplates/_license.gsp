@@ -1,5 +1,4 @@
-<g:render template="kbcomponent" contextPath="../apptemplates"
-	model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+<g:render template="/apptemplates/kbcomponent" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 <g:if test="${d.id != null}">
 	<dl class="dl-horizontal">
 		<dt>
@@ -17,7 +16,7 @@
 
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd>
-       <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
+       <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" />
     </dd>
 
 	</dl>
@@ -36,7 +35,7 @@
 			</g:if>
 		</div>
 
-		<g:render template="showDataFiles" contextPath="../tabTemplates" model="${[d:displayobj,allowEdit:true]}" />
+		<g:render template="/tabTemplates/showDataFiles" model="${[d:displayobj,allowEdit:true]}" />
 	</div>
 	<g:javascript>
 	$('.trigger').each(function(){

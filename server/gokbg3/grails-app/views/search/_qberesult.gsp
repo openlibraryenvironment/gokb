@@ -4,7 +4,7 @@
 
 <g:if test="${ request.isAjax() }">
 
-  <g:render template="pagination" contextPath="." model="${params}" />
+  <g:render template="pagination" model="${params}" />
 
   <table class="table table-striped table-condensed table-bordered">
     <thead>
@@ -65,7 +65,7 @@
 <g:else>
   <div class="batch-all-info" style="display:none;"></div>
 
-  <g:render template="pagination" contextPath="." model="${params}" />
+  <g:render template="pagination" model="${params}" />
 
   <g:form controller="workflow" action="action" method="post" params="${params}" class='action-form' >
 
@@ -148,7 +148,7 @@
       </tbody>
     </table>
     </g:form>
-  <g:render template="pagination" contextPath="." model="${params + [dropup : true]}" />
+  <g:render template="pagination" model="${params + [dropup : true]}" />
 </g:else>
 
 <script language="JavaScript">

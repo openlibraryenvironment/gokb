@@ -29,7 +29,7 @@
 
   <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
   <dd>
-      <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
+      <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" />
   </dd>
 
 
@@ -106,16 +106,16 @@
       </g:else>
     </div>
         
-    <g:render template="showVariantnames" contextPath="../tabTemplates"
+    <g:render template="/tabTemplates/showVariantnames"
       model="${[d:displayobj, showActions:true]}" />
             
     <div class="tab-pane" id="ds">
-      <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
+      <g:render template="/apptemplates/dstab" model="${[d:d]}" />
     </div>
 
 
   </div>
-  <g:render template="componentStatus" contextPath="../apptemplates"
+  <g:render template="/apptemplates/componentStatus"
     model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 
 </div>

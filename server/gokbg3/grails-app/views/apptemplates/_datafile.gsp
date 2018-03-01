@@ -57,16 +57,16 @@
     </div>
 
     <div class="tab-pane" id="addprops">
-       <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
+       <g:render template="/apptemplates/addprops" model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="review">
-      <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
+      <g:render template="/apptemplates/revreqtab" model="${[d:d]}" />
     </div>
 
 
   </div>
-  <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  <g:render template="/apptemplates/componentStatus" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 
 

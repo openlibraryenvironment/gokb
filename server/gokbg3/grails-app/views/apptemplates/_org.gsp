@@ -105,7 +105,7 @@
 					</dl>
 				</g:if>
 			</div>
-			<g:render template="showVariantnames" contextPath="../tabTemplates"
+			<g:render template="/tabTemplates/showVariantnames"
 			model="${[d:displayobj, showActions:true]}" />
 			<div class="tab-pane" id="ids">
 				<g:if test="${d.id != null}">
@@ -114,9 +114,9 @@
 							<g:annotatedLabel owner="${d}" property="ids">IDs</g:annotatedLabel>
 						</dt>
 						<dd>
-							<g:render template="comboList" contextPath="../apptemplates"
+							<g:render template="/apptemplates/comboList"
 								model="${[d:d, property:'ids', cols:[[expr:'namespace.value',colhead:'Namespace'],[expr:'value',colhead:'Identifier']]]}" />
-                                                        <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d]}"/>
+                                                        <g:render template="/apptemplates/addIdentifier" model="${[d:d]}"/>
 
 						</dd>
 
@@ -157,8 +157,7 @@
 						<g:annotatedLabel owner="${d}" property="addprops">Additional Properties</g:annotatedLabel>
 					</dt>
 					<dd>
-						<g:render template="addprops" contextPath="../apptemplates"
-							model="${[d:d]}" />
+						<g:render template="/apptemplates/addprops" model="${[d:d]}" />
 					</dd>
 				</dl>
 			</div>
@@ -169,8 +168,7 @@
 						<g:annotatedLabel owner="${d}" property="reviewrequests">Review Requests</g:annotatedLabel>
 					</dt>
 					<dd>
-						<g:render template="revreqtab" contextPath="../apptemplates"
-							model="${[d:d]}" />
+						<g:render template="/apptemplates/revreqtab" model="${[d:d]}" />
 					</dd>
 				</dl>
 			</div>
@@ -181,7 +179,7 @@
 						<g:annotatedLabel owner="${d}" property="offices">Offices</g:annotatedLabel>
 					</dt>
 					<dd>
-						<g:render template="comboList" contextPath="../apptemplates"
+						<g:render template="/apptemplates/comboList"
 							model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
 
 						<g:if test="${d.isEditable()}">
@@ -248,7 +246,7 @@
 						<g:annotatedLabel owner="${d}" property="licenses">Licenses</g:annotatedLabel>
 					</dt>
 					<dd>
-						<g:render template="comboList" contextPath="../apptemplates"
+						<g:render template="/apptemplates/comboList"
 							model="${[d:d, property:'heldLicenses', cols:[[expr:'name',colhead:'License Name']],targetClass:'org.gokb.cred.License']}" />
 					</dd>
 				</dl>
@@ -260,7 +258,7 @@
 						<g:annotatedLabel owner="${d}" property="platforms">Platforms</g:annotatedLabel>
 					</dt>
 					<dd>
-						<g:render template="comboList" contextPath="../apptemplates"
+						<g:render template="/apptemplates/comboList"
 							model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform']]]}" />
 					</dd>
 				</dl>
@@ -278,13 +276,13 @@
 						<g:annotatedLabel owner="${d}" property="packages">Packages</g:annotatedLabel>
 					</dt>
 					<dd>
-						<g:render template="comboList" contextPath="../apptemplates"
+						<g:render template="/apptemplates/comboList"
 							model="${[d:d, property:'providedPackages', cols:[[expr:'name',colhead:'Package Name', action:'link']],targetClass:'org.gokb.cred.Package']}" />
 					</dd>
 				</dl>
 			</div>
 		</div>
-		<g:render template="componentStatus" contextPath="../apptemplates"
+		<g:render template="/apptemplates/componentStatus"
 			model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 	</g:if>
 </div>

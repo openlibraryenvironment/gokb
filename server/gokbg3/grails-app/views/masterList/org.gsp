@@ -8,7 +8,7 @@
   </head>
   <body>
 	  <h1 class="page-header">
-	    Master lists for <g:render template="component_heading" contextPath="../apptemplates" model="${[d:o]}" />
+	    Master lists for <g:render template="/apptemplates/component_heading" model="${[d:o]}" />
 	  </h1>
     <div id="mainarea" class="panel panel-default">
       <div class="panel-body">

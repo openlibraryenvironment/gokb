@@ -95,7 +95,7 @@
                      <p>${revreq_problem.problemDescription}</p>
                    </td>
                    <td>
-                     <g:render template="${revreq_problem.problemCode}" contextPath="../reviewRequestCases"  model="${[d:d, prob:revreq_problem, status:i]}" />
+                     <g:render template="/reviewRequestCases/${revreq_problem.problemCode}"  model="${[d:d, prob:revreq_problem, status:i]}" />
                    </td>
                   </tr>
                 </g:each>

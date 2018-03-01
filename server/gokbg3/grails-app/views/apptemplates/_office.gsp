@@ -81,7 +81,7 @@
 
   <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
   <dd>
-     <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" />
+     <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" />
   </dd>
 
 

@@ -12,10 +12,9 @@
 		<div class="panel-body">
 			<g:if test="${displaytemplate != null}">
 				<g:if test="${displaytemplate.type=='staticgsp'}">
-					<g:render contextPath="../apptemplates" template="messages"
+					<g:render template="/apptemplates/messages"
 						model="${ ["preMessage" : "There were errors when attempting to create the new component." ]}" />
-					<g:render template="${displaytemplate.rendername}"
-						contextPath="../apptemplates"
+					<g:render template="/apptemplates/${displaytemplate.rendername}"
 						model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
 					<button id="save-btn" class="btn btn-default pull-right btn-sm">Create and Edit &gt;&gt;</button>
         </g:if>

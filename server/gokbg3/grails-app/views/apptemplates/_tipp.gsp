@@ -102,7 +102,7 @@
 
 <div id="my-tab-content" class="tab-content">
     
-    <g:render template="showVariantnames" contextPath="../tabTemplates"
+    <g:render template="/tabTemplates/showVariantnames" 
       model="${[d:displayobj, showActions:true]}" />
 
   <div class="tab-pane active" id="tippdetails">
@@ -188,15 +188,15 @@
 
   <g:if test="${ d.isEditable() }">
     <div class="tab-pane" id="addprops">
-      <g:render template="addprops" contextPath="../apptemplates"
+      <g:render template="/apptemplates/addprops"
         model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="review">
-      <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
+      <g:render template="/apptemplates/revreqtab" model="${[d:d]}" />
     </div>
   </g:if>
 </div>
-<g:render template="componentStatus" contextPath="../apptemplates"
+<g:render template="/apptemplates/componentStatus" 
   model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 

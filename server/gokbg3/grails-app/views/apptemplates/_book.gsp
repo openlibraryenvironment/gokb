@@ -252,7 +252,7 @@
       </g:if>
     </div>
 
-    <g:render template="showVariantnames" contextPath="../tabTemplates"
+    <g:render template="/tabTemplates/showVariantnames"
       model="${[d:displayobj, showActions:true]}" />
 
     <div class="tab-pane" id="history">
@@ -323,7 +323,7 @@
         <g:annotatedLabel owner="${d}" property="availability">Availability</g:annotatedLabel>
       </dt>
       <dd>
-        <g:render template="tippdisplay" contextPath="../apptemplates" model="${[d:d.tipps]}" />
+        <g:render template="/apptemplates/tippdisplay" model="${[d:d.tipps]}" />
       </dd>
 
     </div>
@@ -335,7 +335,7 @@
       </dt>
 
      <dd>
-		<g:render template="simpleCombos" contextPath="../apptemplates"
+		<g:render template="/apptemplates/simpleCombos"
         model="${[d:d, property:'publisher', fragment:'identifiers', delete:'true', cols:[
                   [expr:'name', colhead:'name', action:'link'],
                   [expr:'status', colhead:'status'],
@@ -357,7 +357,7 @@
 
     <div class="tab-pane" id="identifiers">
     <div class="tab-pane" id="identifiers">
-      <g:render template="simpleCombos" contextPath="../apptemplates"
+      <g:render template="/apptemplates/simpleCombos"
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                   [expr:'namespace.value', colhead:'Namespace'],
                   [expr:'value', colhead:'ID', action:'link']]]}" />
@@ -365,17 +365,17 @@
     </div>
 
     <div class="tab-pane" id="addprops">
-      <g:render template="addprops" contextPath="../apptemplates"
+      <g:render template="/apptemplates/addprops" 
         model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="review">
-      <g:render template="revreqtab" contextPath="../apptemplates"
+      <g:render template="/apptemplates/revreqtab"
         model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="ds">
-      <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
+      <g:render template="/apptemplates/dstab" model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="people">
@@ -386,7 +386,7 @@
 		</dt>
 		<dd>
 		  <!-- this bit could be better  -->
-		  <g:render template="componentPerson" contextPath="../apptemplates"
+		  <g:render template="/apptemplates/componentPerson"
 				    model="${[d:d, property:'people', cols:[[expr:'person.name',colhead:'Name', action:'link-person'],
 						                                    [expr:'role.value', colhead: 'Role']], targetClass:'org.gokb.cred.Person',direction:'in']}" />
 		</dd>
@@ -400,7 +400,7 @@
 		</dt>
 		<dd>
 		  <!-- this bit could be better  -->
-		  <g:render template="componentSubject" contextPath="../apptemplates"
+		  <g:render template="/apptemplates/componentSubject" 
 				    model="${[d:d, property:'subjects', cols:[[expr:'subject.name',colhead:'Subject Heading',action:'link-subject'],
 						                                      [expr:'subject.clsmrk', colhead: 'Classification']],targetClass:'org.gokb.cred.Subject',direction:'in']}" />
 		</dd>
@@ -408,7 +408,7 @@
 	</div>
 
   </div>
-  <g:render template="componentStatus" contextPath="../apptemplates"
+  <g:render template="/apptemplates/componentStatus"
     model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 

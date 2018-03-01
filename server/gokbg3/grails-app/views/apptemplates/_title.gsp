@@ -70,7 +70,7 @@
     </dt>
     <dd>
 
-      <g:render template="fullth" contextPath="../apptemplates"  model="${[d:d]}" />
+      <g:render template="/apptemplates/fullth" model="${[d:d]}" />
     </dd>
   </g:if>
 </dl>
@@ -136,7 +136,7 @@
       </g:if>
     </div>
 
-    <g:render template="showVariantnames" contextPath="../tabTemplates" model="${[d:displayobj, showActions:true]}" />
+    <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
 
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
@@ -306,28 +306,28 @@
     </div>
 
     <div class="tab-pane" id="identifiers">
-      <g:render template="combosByType" contextPath="../apptemplates"
+      <g:render template="/apptemplates/combosByType"
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
 
-      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d, hash:'#identifiers']}"/>
+      <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
 
     </div>
 
     <div class="tab-pane" id="addprops">
-      <g:render template="addprops" contextPath="../apptemplates"
+      <g:render template="/apptemplates/addprops"
         model="${[d:d]}" />
     </div>
 
     <div class="tab-pane" id="review">
-      <g:render template="revreqtab" contextPath="../apptemplates"
+      <g:render template="/apptemplates/revreqtab"
         model="${[d:d]}" />
     </div>
 
 
   </div>
-  <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  <g:render template="/apptemplates/componentStatus" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 </div>
 
 
