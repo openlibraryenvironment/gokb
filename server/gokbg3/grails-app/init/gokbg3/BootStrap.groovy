@@ -841,7 +841,7 @@ class BootStrap {
       'other':'Other',
       'ref':'Referencing',
     ].each { k,v ->
-      def dscat = DSCategory.findByCode(k) ?: new DSCategory(code:k, description: v).save(failOnError: true)
+      def dscat = DSCategory.findByCode(k) ?: new DSCategory(code:k, description: v).save(flush:true, failOnError: true)
     }
 
     [ 
@@ -890,11 +890,16 @@ class BootStrap {
       [ 'lic',        'Publishers Included', '', '' ] 
     ].each { crit ->
       def cat = DSCategory.findByCode(crit[0]);
-      def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
-                                                                               owner:cat,
-                                                                               title:crit[1],
-                                                                               description:crit[2],
-                                                                               explanation:crit[3]).save(failOnError: true)
+      if ( cat ) {
+        def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
+                                                                                 owner:cat,
+                                                                                 title:crit[1],
+                                                                                 description:crit[2],
+                                                                                 explanation:crit[3]).save(flush:true, failOnError: true)
+      }
+      else {
+        log.error("Unable to locate category: ${crit[0]}");
+      }
     }
 
     //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedFrom'));

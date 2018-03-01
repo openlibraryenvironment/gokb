@@ -977,40 +977,6 @@ globalSearchTemplates = [
 
 ]
 
-// Types: staticgsp: under views/templates, dyngsp: in database, dynamic:full dynamic generation, other...
-globalDisplayTemplates = [
-  'org.gokb.cred.AdditionalPropertyDefinition': [ type:'staticgsp', rendername:'addpropdef' ],
-  'org.gokb.cred.Package': [ type:'staticgsp', rendername:'package' ],
-  'org.gokb.cred.Org': [ type:'staticgsp', rendername:'org' ],
-  'org.gokb.cred.Platform': [ type:'staticgsp', rendername:'platform' ],
-  'org.gokb.cred.TitleInstance': [ type:'staticgsp', rendername:'title' ],
-  'org.gokb.cred.BookInstance': [ type:'staticgsp', rendername:'book' ],
-  'org.gokb.cred.JournalInstance': [ type:'staticgsp', rendername:'journal' ],
-  'org.gokb.cred.OtherInstance': [ type:'staticgsp', rendername:'othertitle' ],
-  'org.gokb.cred.TitleInstancePackagePlatform': [ type:'staticgsp', rendername:'tipp' ],
-  'org.gokb.refine.Rule': [ type:'staticgsp', rendername:'rule' ],
-  'org.gokb.refine.RefineProject': [ type:'staticgsp', rendername:'project' ],
-  'org.gokb.cred.RefdataCategory': [ type:'staticgsp', rendername:'rdc' ],
-  'org.gokb.cred.ReviewRequest': [ type:'staticgsp', rendername:'revreq' ],
-  'org.gokb.cred.Office': [ type:'staticgsp', rendername:'office' ],
-  'org.gokb.cred.CuratoryGroup': [ type:'staticgsp', rendername:'curatory_group' ],
-  'org.gokb.cred.License': [ type:'staticgsp', rendername:'license' ],
-  'org.gokb.cred.User': [ type:'staticgsp', rendername:'user' ],
-  'org.gokb.cred.Source': [ type:'staticgsp', rendername:'source' ],
-  'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
-  'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
-  'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ],
-  'org.gokb.cred.IdentifierNamespace': [ type:'staticgsp', rendername:'identifier_namespace' ],
-  'org.gokb.cred.Macro': [ type:'staticgsp', rendername:'macro' ],
-  'org.gokb.cred.DSCategory': [ type:'staticgsp', rendername:'ds_category' ],
-  'org.gokb.cred.DSCriterion': [ type:'staticgsp', rendername:'ds_criterion' ],
-  'org.gokb.cred.Subject': [ type:'staticgsp', rendername:'subject' ],
-  'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ],
-  'org.gokb.cred.UserOrganisation': [ type:'staticgsp', rendername:'user_org' ],
-  'org.gokb.cred.Folder': [ type:'staticgsp', rendername:'folder' ],
-  'org.gokb.cred.Work': [ type:'staticgsp', rendername:'work' ],
-]
-
 possible_date_formats = [
     new SimpleDateFormat('yyyy/MM/dd'),
     new SimpleDateFormat('dd/MM/yyyy'),

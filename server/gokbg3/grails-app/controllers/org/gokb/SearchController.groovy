@@ -15,6 +15,7 @@ class SearchController {
   def springSecurityService
   def classExaminationService
   def gokbAclService
+  def displayTemplateService
 
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -119,7 +120,7 @@ class SearchController {
           if ( result.displayobj != null ) {
   
             result.displayobjclassname = result.displayobj.class.name
-            result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
+            result.displaytemplate = displayTemplateService.getTemplateInfo(result.displayobjclassname)
             result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
       
             // Add any refdata property names for this class to the result.

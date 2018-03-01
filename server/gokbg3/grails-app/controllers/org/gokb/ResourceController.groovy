@@ -16,6 +16,7 @@ class ResourceController {
   def springSecurityService
   def gokbAclService
   def aclUtilService
+  def displayTemplateService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -55,7 +56,12 @@ class ResourceController {
 
           result.displayobjclassname = result.displayobj.class.name
           result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
-          result.displaytemplate = grailsApplication.config.globalDisplayTemplates[result.displayobjclassname]
+  
+          log.debug("Looking up display template for ${result.displayobjclassname}");
+
+          result.displaytemplate = displayTemplateService.getTemplateInfo(result.displayobjclassname);
+
+          log.debug("Using displaytemplate: ${result.displaytemplate}");
 
           // Add any refdata property names for this class to the result.
           result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)

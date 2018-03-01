@@ -90,6 +90,7 @@
           </g:elseif>
         </g:if>
         <g:if test="${displaytemplate != null}">
+          <!-- Using display template ${displaytemplate.rendername} -->
           <g:if test="${displaytemplate.type=='staticgsp'}">
             <g:render template="${displaytemplate.rendername}"
                       contextPath="../apptemplates"

@@ -12,7 +12,7 @@ class CreateController {
   def genericOIDService
   def classExaminationService
   def springSecurityService
-
+  def displayTemplateService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -31,7 +31,7 @@ class CreateController {
           log.debug("Got new instance");
 
           if ( params.tmpl ) {
-            result.displaytemplate = grailsApplication.config.globalDisplayTemplates[params.tmpl]
+            result.displaytemplate = displayTemplateService.getTemplateInfo(params.tmpl)
 
             /* Extras needed for the refdata */
             result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.newclassname)
