@@ -124,10 +124,8 @@ class BootStrap {
 
 
     if (  grailsApplication.config.decisionSupport ) {
-      KBComponent.withTransaction() {
-        log.debug("Configuring default decision support parameters");
-        DSConfig();
-      }
+      log.debug("Configuring default decision support parameters");
+      DSConfig();
     }
 
 //    String fs = grailsApplication.config.project_dir
@@ -154,14 +152,12 @@ class BootStrap {
 
       def ctr = 0;
       KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
-        KBComponent.withNewSession {
-          KBComponent kbc = KBComponent.get(kbc_id)
-          log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}");
-          kbc.generateNormname()
-          kbc.save(flush:true, failOnError:true);
-          kbc.discard()
-          ctr++
-        }
+        KBComponent kbc = KBComponent.get(kbc_id)
+        log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}");
+        kbc.generateNormname()
+        kbc.save(flush:true, failOnError:true);
+        kbc.discard()
+        ctr++
       }
       log.debug("${ctr} components updated");
 
@@ -169,20 +165,16 @@ class BootStrap {
 
     def id_ctr = 0;
     Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
-      Identifier.withNewSession {
         Identifier i = Identifier.get(id_id)
         i.generateNormname()
         i.save(flush:true, failOnError:true)
         i.discard()
         id_ctr++
-      }
     }
     log.debug("${id_ctr} identifiers updated");
 
     log.info("GoKB defaultSortKeys()");
-    KBComponent.withNewSession() {
-      defaultSortKeys ()
-    }
+    defaultSortKeys ()
 
     log.info("GoKB sourceObjects()");
     sourceObjects()

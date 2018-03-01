@@ -183,22 +183,6 @@ abstract class KBComponent {
                 switch (propType) {
                   case RefdataValue.class.getName() :
   
-                  // Expecting refdata value. Do the lookup in a new session.
-                  // Ian :: I'm going to try this with KBComponent.withTransaction instead of withNewSession
-                  // In some situations, the logically superior transaction (Whatever is creating the component
-                  // that will be defaulted in) can have a read-consistent view of the database which means that
-                  // this object may not be visible to the outer transaction when it's created in a new session.
-                  // Hopeing that withTransaction will meet the needs of having the Refdata looked up and or created
-                  // But also allow the object to be shared with the parent context 
-  
-                  // Note 2: withTransaction does not seem to work, revering to withNewSession, and going to try different isolation levels
-  
-                  // note 3 : withTransaction moved into RefdataCategory method itself as the safest place to correctly
-                  // assert transaction isolation.
-                  
-                  // Steve O :: Reverting back tyo withNewSession as per note 2 above.
-  
-                      KBComponent.withNewSession { session ->
                         final String ucProp = GrailsNameUtils.getClassName(property);
                         final String key = "${className}.${ucProp}"
     
@@ -214,7 +198,6 @@ abstract class KBComponent {
                           // log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
                           thisComponent."${property}" = v
                         }
-                      }
                       break
                   default :
                     // Just treat as a normal prop
