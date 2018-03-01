@@ -1117,7 +1117,9 @@ class TSVIngestionService {
       // These are immutable for a TIPP - only set at creation time
       // We are going to create tipl objects at the end instead if per title inline.
       // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
+      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
       tipp = new TitleInstancePackagePlatform(tipp_values)
+      tipp.status = status_current;
 
       // log.debug("Created");
 

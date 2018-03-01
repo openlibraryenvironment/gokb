@@ -31,6 +31,7 @@ logger ('grails.app.services', DEBUG)
 logger ('com.k_int', DEBUG)
 logger ('org.gokb', DEBUG)
 logger ('gokbg3', DEBUG)
+logger ('org.gokb.DomainClassExtender', WARN)
 
 
 def targetDir = BuildSettings.TARGET_DIR

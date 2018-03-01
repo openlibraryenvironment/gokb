@@ -60,12 +60,12 @@
     <dd> <g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /> </dd>
 
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
-    <dd> <g:render template="curatory_groups" contextPath="../apptemplates" model="${[d:d]}" /> </dd>
+    <dd> <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" /> </dd>
   </dl>
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d.id ? d.titles?.size() : '0'}/${d?.tipps?.findAll{ it.status.value == 'Current'}?.size() ?: '0'} </span></a></li>
+      <li><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d.id ? d.titles?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.ids?.size() ?: '0'} </span></a></li>
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
         <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
@@ -79,7 +79,7 @@
 
       <div class="tab-pane active" id="packagedetails">
         <dl class="dl-horizontal">
-          <g:render template="refdataprops" contextPath="../apptemplates"
+          <g:render template="/apptemplates/refdataprops" 
             model="${[d:(d), rd:(rd), dtype:(dtype)]}" />
           <dt>
             <g:annotatedLabel owner="${d}" property="nominalPlatform">Nominal Platform</g:annotatedLabel>
@@ -129,19 +129,19 @@
         </g:if>
       </div>
 
-     <g:render template="showVariantnames" contextPath="../tabTemplates" model="${[d:displayobj, showActions:true]}" />
+     <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
 
       <div class="tab-pane" id="identifiers">
-        <g:render template="combosByType" contextPath="../apptemplates"
+        <g:render template="/apptemplates/combosByType"
                                 model="${[d:d, property:'ids', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
                   
-        <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d, hash:'#identifiers']}"/>
+        <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
       </div>
 
       <div class="tab-pane" id="ds">
-        <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
+        <g:render template="/apptemplates/dstab" model="${[d:d]}" />
       </div>
 
       <div class="tab-pane" id="activity">
@@ -166,7 +166,7 @@
       </div>
       
       <div class="tab-pane" id="review">
-        <g:render template="revreqtab" contextPath="../apptemplates"
+        <g:render template="/apptemplates/revreqtab"
           model="${[d:d]}" />
 
         <div class="connected-rr">
@@ -191,7 +191,7 @@
 
     </div>
 
-    <g:render template="componentStatus" contextPath="../apptemplates"
+    <g:render template="/apptemplates/componentStatus"
       model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 
     <g:javascript>
