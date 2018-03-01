@@ -92,8 +92,7 @@
         <g:if test="${displaytemplate != null}">
           <!-- Using display template ${displaytemplate.rendername} -->
           <g:if test="${displaytemplate.type=='staticgsp'}">
-            <g:render template="${displaytemplate.rendername}"
-                      contextPath="../apptemplates"
+            <g:render template="/apptemplates/${displaytemplate.rendername}"
                       model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
           </g:if>
         </g:if>
