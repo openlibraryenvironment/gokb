@@ -100,4 +100,9 @@ class ComponentStatisticService {
     }
     running = false
   }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
+    log.debug("Destroy");
+  }
 }

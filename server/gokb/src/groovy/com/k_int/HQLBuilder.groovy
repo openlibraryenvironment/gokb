@@ -121,10 +121,10 @@ public class HQLBuilder {
 
     def count_hql = null; //"select count (distinct o) ${hql}"
     if ( qbetemplate.useDistinct == true ) {
-      count_hql = "select count (distinct o) ${hql}"
+      count_hql = "select count (distinct *) ${hql}"
     }
     else {
-      count_hql = "select count (o) ${hql}"
+      count_hql = "select count (*) ${hql}"
     }
 
     def fetch_hql = null

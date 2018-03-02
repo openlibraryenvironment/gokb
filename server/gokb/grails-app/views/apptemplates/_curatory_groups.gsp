@@ -25,7 +25,7 @@
     		<td colspan="2">There are currently no linked Curatory Groups</td>
     	</tr>
     </g:else>
-    <g:if test="${cur_editable}">
+    <g:if test="${editable}">
     <tr>
     	<th colspan="2">Link a Curatory Group</th>
     </tr>
@@ -40,7 +40,9 @@
         			<button type="submit" class="btn btn-default btn-sm ">Link</button>
         		</div>
         	</div>
-        	<p><g:link controller="create" params="${["tmpl": "org.gokb.cred.CuratoryGroup"]}">New Curatory Group</g:link></p>
+                <g:if test="${cur_editable}">
+                  <p><g:link controller="create" params="${["tmpl": "org.gokb.cred.CuratoryGroup"]}">New Curatory Group</g:link></p>
+                </g:if>
         </td>
       </g:form>
     </tr>

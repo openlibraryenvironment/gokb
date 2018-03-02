@@ -6,6 +6,7 @@
       <th>Cause</th>
       <th>Request</th>
       <th>Component</th>
+      <th>Timestamp</th>
       <th>Status</th>
       <th>Raised By</th>
       <th>Reviewed By</th>
@@ -21,7 +22,10 @@
           <g:link controller="resource" action="show" id="org.gokb.cred.ReviewRequest:${rr.id}">${rr.reviewRequest}</g:link>
         </td>
         <td>
-          <g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${rr.componentToReview.id}">${rr.componentToReview?.name}</g:link>
+          <g:link controller="resource" action="show" id="org.gokb.cred.TitleInstance:${rr.componentToReview.id}">${rr.componentToReview?.name ?: rr.componentToReview}</g:link>
+        </td>
+        <td>
+          ${rr.dateCreated}
         </td>
         <td>
           <g:xEditableRefData owner="${rr}" field="status" config='ReviewRequest.Status' />

@@ -168,8 +168,9 @@ class Package extends KBComponent {
             and tipp.status = ?
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
-            and rr.componentToReview = title
-            and rr.status = ?'''
+            and (rr.componentToReview = title OR rr.componentToReview = tipp)
+            and rr.status = ?
+            order by rr.dateCreated desc'''
             ,[this, refdata_current, refdata_open]);
       }
       else {
@@ -183,8 +184,9 @@ class Package extends KBComponent {
             and pkgCombo.fromComponent=?
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
-            and rr.componentToReview = title
-            and rr.status = ?'''
+            and (rr.componentToReview = title OR rr.componentToReview = tipp)
+            and rr.status = ?
+            order by rr.dateCreated desc'''
             ,[this, refdata_open]);
       }
     }else{
@@ -200,7 +202,8 @@ class Package extends KBComponent {
             and tipp.status = ?
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
-            and rr.componentToReview = title'''
+            and (rr.componentToReview = title OR rr.componentToReview = tipp)
+            order by rr.dateCreated desc'''
             ,[this, refdata_current]);
       }
       else {
@@ -214,7 +217,8 @@ class Package extends KBComponent {
             and pkgCombo.fromComponent=?
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
-            and rr.componentToReview = title'''
+            and (rr.componentToReview = title OR rr.componentToReview = tipp)
+            order by rr.dateCreated desc'''
             ,[this]);
       }
     }
@@ -225,7 +229,7 @@ class Package extends KBComponent {
   private static OAI_PKG_CONTENTS_QRY = '''
 select tipp.id, 
        title.name, 
-       title.id, 
+       title.id,
        plat.name, 
        plat.id,
        tipp.startDate, 
@@ -239,11 +243,12 @@ select tipp.id,
        tipp.url, 
        tipp.status, 
        tipp.accessStartDate, 
-       tipp.accessEndDate, 
+       tipp.accessEndDate,
        tipp.format, 
        tipp.embargo, 
        plat.primaryUrl,
-       tipp.lastUpdated
+       tipp.lastUpdated,
+       tipp.dateCreated
     from TitleInstancePackagePlatform as tipp, 
          Combo as hostPlatformCombo, 
          Combo as titleCombo,  
@@ -400,7 +405,8 @@ select tipp.id,
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
               builder.'status' (tipp[14]?.value)
-              builder.'lastUpdated' (sdf.format(tipp[20]?.value))
+              builder.'dateCreated' (sdf.format(tipp[21]))
+              builder.'lastUpdated' (sdf.format(tipp[20]))
               builder.'medium' (tipp[17]?.value)
               builder.'title' (['id':tipp[2]]) {
                 builder.'name' (tipp[1]?.trim())
@@ -443,11 +449,12 @@ select tipp.id,
   }
 
   @Transient
-  public getRecentActivity(n) {
+  public getRecentActivity(int n = 50) {
     def result = [];
 
     if ( this.id ) {
       def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
+      def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
 
       // select tipp, accessStartDate, 'Added' from tipps UNION select tipp, accessEndDate, 'Removed' order by date
 
@@ -459,18 +466,24 @@ select tipp.id,
 //                        'from TitleInstancePackagePlatform as tipp, Combo as c '+
 //                        'where c.fromComponent= :pkg and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.lastUpdated DESC',
 //                        [pkg: this], [max:n]);
-                       
+
       def changes =   TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c '+
-                       'where c.fromComponent= ? and c.toComponent=tipp order by tipp.lastUpdated DESC',
+                       'where c.fromComponent= ? and c.toComponent=tipp order by coalesce( tipp.lastUpdated, tipp.dateCreated ) DESC',
                        [this]);
-                       
+
       use( TimeCategory ) {
         changes.each {
-          if ( it.accessEndDate || it.isDeleted() ){
-            result.add([it,it.accessEndDate ?: it.lastUpdated, it.accessEndDate ? 'Removed (accessEndDate)' : 'Deleted (status)'])
+          if ( it.lastUpdated <= it.dateCreated + 5.seconds ){
+            result.add([it,it.lastUpdated, it.status, "Created"])
           }
-          if ( it.lastUpdated <= it.dateCreated + 5.seconds || it.accessStartDate ){
-            result.add([it, it.accessStartDate ?: it.dateCreated, it.accessStartDate ? 'Added (accessStartDate)' : 'Added (dateCreated)'])
+          else if (it.isRetired() ) {
+            result.add([it,it.lastUpdated, it.status, "Retired"])
+          }
+          else if (it.isDeleted() ) {
+            result.add([it,it.lastUpdated, it.status, "Deleted"])
+          }
+          else {
+            result.add([it,it.lastUpdated, it.status, "Updated"])
           }
         }
       }
@@ -479,7 +492,10 @@ select tipp.id,
 //       result.addAll(deletions)
       result.sort {it[1]}
       result = result.reverse();
-      result = result.take(n);
+
+      if(n != 0) {
+        result = result.take(n);
+      }
     }
 
     return result;
@@ -524,12 +540,8 @@ select tipp.id,
    *   responsibleParty:''
    * ]
    * name:'Campus: All Journals'
-   * curatoryGroups:[
-   *   curatoryGroup:"SuUB Bremen"
-   * ]
-   * variantNames : [
-   *   variantName:"Campus: All Journals"
-   * ]
+   * curatoryGroups:["SuUB Bremen"]
+   * variantNames : ["Campus: All Journals"]
    */
   @Transient
   public static upsertDTO(packageHeaderDTO, def user = null) {
@@ -747,9 +759,9 @@ select tipp.id,
 
     packageHeaderDTO.curatoryGroups?.each {
 
-      String normname = CuratoryGroup.generateNormname(it)
+      String cg_normname = CuratoryGroup.generateNormname(it)
       
-      def cg = CuratoryGroup.findByNormname(normname)
+      def cg = CuratoryGroup.findByNormname(cg_normname)
 
       if ( cg ) {
         if ( result.curatoryGroups.find {it.name == cg.name } ) {

@@ -222,7 +222,9 @@ class AjaxSupportController {
           log.debug("Saving ${new_obj}");
           if ( new_obj.save() ) {
             log.debug("Saved OK");
-            contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
+//             if (contextObj.respondsTo('getLastUpdateComment')) {
+//               contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName} (ID: ${new_obj.id})."
+//             }
             contextObj.save(flush: true)
           }
           else {
@@ -432,6 +434,7 @@ class AjaxSupportController {
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
     def target_object = resolveOID2(params.pk)
+    def old_val = target_object[params.name]
     def errors = null
     if ( target_object ) {
       if ( params.type=='date' ) {
@@ -443,11 +446,16 @@ class AjaxSupportController {
         bindData(target_object, binding_properties)
       }
       
-      if (!target_object.hasErrors()) {
+      if (target_object.validate()) {
         target_object.save(flush:true);
       }
       else {
-        errors = target_object.errors.allErrors()
+        log.error("Old value was: ${old_val}")
+        errors = []
+        target_object.errors.allErrors.each { e ->
+          errors.add(e)
+        }
+        log.error("${errors}")
       }
     }
 

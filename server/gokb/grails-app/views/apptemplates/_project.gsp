@@ -123,15 +123,30 @@
                                                                 ${d.provider?.name}
                                                         </g:manyToOneReferenceTypedown>
 					</dd>
-
-					<dd>
-						${d.provider?.name ?: 'Not yet set'}
-					</dd>
 					<dt>
 						<g:annotatedLabel owner="${d}" property="lastValidationResult">Last validation result</g:annotatedLabel>
 					</dt>
 					<dd>
-						${d.lastValidationResult ?: 'Not yet validated'}
+                                          <g:if test="${d.lastValidationResult}">
+                                            <table class="table table-bordered">
+                                            <thead>
+                                              <th>Column</th>
+                                              <th>Type</th>
+                                              <th>Sub Type</th>
+                                              <th>Text</th>
+                                            </thead>
+                                            <tbody>
+                                              <g:each in="${d.lastValidationAsMap()}" var="vr">
+                                                <tr>
+                                                  <td>${vr.col}</td><td>${vr.type}</td><td>${vr.sub_type}</td><td>${vr.text}</td>
+                                                </tr>
+                                              </g:each>
+                                            </tbody>
+                                            </table>
+                                          </g:if>
+                                          <g:else>
+                                            ${d.lastValidationAsMap() ?: 'Not yet validated'}
+                                          </g:else>
 					</dd>
 				</g:if>
 			</dl>

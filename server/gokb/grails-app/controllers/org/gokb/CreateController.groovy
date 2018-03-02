@@ -144,20 +144,39 @@ class CreateController {
           
             log.debug("Saving..");
             log.debug("Obj: ${result.newobj}")
-            if ( result.newobj.hasErrors() ) {
-              log.error("Problem saving new object")
-              flash.error = "Problem saving new object!"
-              
-              log.error("${result.newobj.errors}")
-              // render view: 'index', model: [d: result.newobj]
-              result.newobj.errors.allErrors.each { e ->
-                log.error(e)
+
+            if(result.newobj.validate()){
+              log.debug("Object validated OK!")
+
+              if(!result.newobj.save(flush:true)) {
+                if ( result.newobj.hasErrors() ) {
+                  log.error("Problem saving new object")
+                  flash.error = "Problem saving new object!"
+                  // render view: 'index', model: [d: result.newobj]
+                  result.newobj.errors.allErrors.each { e ->
+                    log.error(e)
+                  }
+
+                  result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
+                }
               }
-              
+              else{
+                result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
+              }
+            }
+            else{
+              log.error("Problem validating new object")
+
+              if ( result.newobj?.hasErrors() ) {
+                flash.error = []
+
+                result.newobj.errors.allErrors.each { e ->
+                  log.error(e)
+                  flash.error.add(e)
+                }
+              }
+
               result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
-            }else {
-              result.newobj.save(flush:true)
-              result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
             }
           }
         }

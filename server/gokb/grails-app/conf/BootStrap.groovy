@@ -466,6 +466,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("Platform.Service", "Highwire").save()
 
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Database").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset").save()
@@ -475,7 +476,7 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save()
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Full OA").save()
-    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Hibrid OA").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Hybrid OA").save()
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "No OA").save()
 
     RefdataCategory.lookupOrCreate("TitleInstance.PureOA", "Yes").save()
@@ -1052,6 +1053,16 @@ class BootStrap {
             .startObject()
               .startObject("roles")
                 .field("match", "roles")
+                .field("match_mapping_type", "string")
+                .startObject("mapping")
+                  .field("type", "string")
+                  .field("index","not_analyzed")
+                .endObject()
+              .endObject()
+            .endObject()
+            .startObject()
+              .startObject("curGroups")
+                .field("match", "curatoryGroups")
                 .field("match_mapping_type", "string")
                 .startObject("mapping")
                   .field("type", "string")

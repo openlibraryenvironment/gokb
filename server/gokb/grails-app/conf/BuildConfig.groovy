@@ -118,8 +118,8 @@ grails.project.dependency.resolution = {
       
       compile ":grails-melody:1.52.0"
 
-      /* Grails 2.4 Upgrade */
-      build ':tomcat:7.0.55' // plugins for the compile step compile
+      /* Grails 2.5.6 Upgrade */
+      build ':tomcat:8.0.33' // plugins for the compile step compile
       
       // plugins for the compile step
       compile ':cache:1.1.8'
@@ -166,7 +166,7 @@ grails.project.dependency.resolution = {
       compile ":font-awesome-resources:4.2.0.0"
       
       // Job scheduler plugin.
-      compile ":quartz:1.0.1"
+      compile ":quartz:1.0.2"
 
       /** Moved plugins from the properties file to here **/
       compile ':audit-logging:1.1.3'

@@ -778,7 +778,7 @@ class IntegrationController {
               }
 
               if ( tipp.title.internalId == null ) {
-                log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
+                log.error("Failed to locate or create a title for ${tipp.title} when attempting to create TIPP");
               }
 
               valid &= Platform.validateDTO(tipp.platform);
@@ -829,10 +829,10 @@ class IntegrationController {
         else{
           valid = false
           log.warn("Package update denied!")
-          response.status = 403
           result['result'] = 'ERROR'
           result['errors'] = []
           result['errors'].add(['code': 403, 'message': "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."])
+          response.status = 403
         }
 
 //        cleanUpGorm()
@@ -885,6 +885,10 @@ class IntegrationController {
               
               if ( to_retire.isCurrent() ) {
                 
+                if ( !to_retire.accessEndDate ) {
+                  to_retire.accessEndDate = new Date()
+                }
+
                 to_retire.retire()
                 to_retire.save(failOnError: true)
 

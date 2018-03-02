@@ -109,6 +109,11 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+
+        result.curatoryGroups = []
+        kbc.curatoryGroups.each { cg ->
+          result.curatoryGroups.add(cg.name)
+        }
         
         result.status = kbc.status?.value
 
