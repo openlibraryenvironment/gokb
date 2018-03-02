@@ -18,8 +18,6 @@ class FTUpdateService {
 
   public static boolean running = false;
 
-  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
-
   def synchronized updateFTIndexes() {
     log.debug("updateFTIndexes");
     
@@ -294,7 +292,6 @@ class FTUpdateService {
     def session = sessionFactory.currentSession
     session.flush()
     session.clear()
-    propertyInstanceMap.get().clear()
   }
 
   def clearDownAndInitES() {
