@@ -35,17 +35,17 @@
                 id="watchToggleLink"
                 title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
                 style="cursor:pointer;"
-                  ><i id="watchIcon" class="glyphicon ${user_watching ? 'glyphicon-eye-open' : 'glyphicon-eye-close'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
+                  ><i id="watchIcon" class="fa ${user_watching ? 'fa-eye' : 'fa-eye-slash'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
         </g:if>
         <li><a data-toggle="modal" data-cache="false"
               title="Show History"
               data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>'
-              data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
+              data-target="#modal"><i class="fa fa-clock"></i></a></li>
 
         <li><a data-toggle="modal" data-cache="false"
               title="Show Notes"
               data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>'
-              data-target="#modal"><i class="glyphicon glyphicon-comment"></i>
+              data-target="#modal"><i class="fa fa-comments"></i>
                 <span class="badge badge-warning"> ${num_notes}</span>
             </a></li>
       </ul>
