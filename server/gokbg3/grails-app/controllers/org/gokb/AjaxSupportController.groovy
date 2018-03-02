@@ -255,9 +255,9 @@ class AjaxSupportController {
         }
         else {
           // Stand alone object.. Save it!
-          log.debug("Saving stand along reference object");
-          if ( new_obj.save() ) {
-            log.debug("Saved OK");
+          log.debug("Saving stand alone reference object");
+          if ( new_obj.save(flush:true, failOnError:true) ) {
+            log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})");
           }
           else {
             new_obj.errors.each { e ->
@@ -277,7 +277,7 @@ class AjaxSupportController {
               new_obj[hbc] = resolveOID2(params[hbc])
             }
           }
-          new_obj.save()
+          new_obj.save(flush:true, failOnError:true)
         }
       }
       else {
