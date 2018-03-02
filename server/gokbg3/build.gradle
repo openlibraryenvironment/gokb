@@ -71,8 +71,10 @@ dependencies {
     compile 'org.grails.plugins:grails-executor:0.4'
 
 
-
-
+    // This  is for rest integration tests -  see more at
+    //  http://guides.grails.org/grails-controller-testing/guide/index.html
+    //  and https://github.com/grails-plugins/grails-rest-client-builder
+    compile 'org.grails:grails-datastore-rest-client'
 
 
     console "org.grails:grails-console"
