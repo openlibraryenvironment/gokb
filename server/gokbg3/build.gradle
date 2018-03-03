@@ -115,10 +115,16 @@ tasks.withType(Test) {
 assets {
     minifyJs = true
     minifyCss = true
-    includes = ["webfonts/*"]
-    // configOptions = [
-    //   less: [
-    //     complier: 'standard'
-    //   ]
-    // ]
+    excludes = [
+      '**/_*.less',
+      'gokb/themes/*.less',
+      'gokb/themes/**/*.less',
+      'bootstrap/*.less',
+      'bootstrap/**/*.less'
+    ]
+    includes = [
+      'webfonts/*',
+      'gokb/themes/*/theme.less',
+      'bootstrap/bootstrap.less'
+    ]
 }
