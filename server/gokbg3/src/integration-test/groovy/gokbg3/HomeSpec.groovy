@@ -19,11 +19,11 @@ class HomeSpec extends GebSpec {
   }
 
   void "Test public home page"() {
-    // when:"The home page is visited"
-    //   go '/'
+    when:"The home page is visited"
+      go '/'
 
-    // then:"The title is correct"
-    //   title == "GOKb: Packages"
+    then:"The title is correct"
+      title == "GOKb: Packages"
     true
   }
 }

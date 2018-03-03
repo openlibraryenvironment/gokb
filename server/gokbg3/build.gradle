@@ -116,4 +116,9 @@ assets {
     minifyJs = true
     minifyCss = true
     includes = ["webfonts/*"]
+    // configOptions = [
+    //   less: [
+    //     complier: 'standard'
+    //   ]
+    // ]
 }
