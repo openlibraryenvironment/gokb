@@ -24,7 +24,7 @@
        <div class="collapse navbar-collapse" id="primary-nav">
          <ul class="nav navbar-nav">
            <li class="hidden active"><a href="#page-body"></a></li>
-           <li><span>GOKb Packages</span></li>
+           <li><span>GOKb Public Package List (<g:link controller="home" action="index">Admin Home</g:link>)</span></li>
          </ul>
        </div>
 

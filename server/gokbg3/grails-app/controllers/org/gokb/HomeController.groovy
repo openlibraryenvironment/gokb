@@ -36,6 +36,7 @@ class HomeController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index () {
+    log.debug("Home::index");
     if (springSecurityService.currentUser) {
       if ( grailsApplication.config.newDash ) {
         forward (action: "userdash", params: (params))

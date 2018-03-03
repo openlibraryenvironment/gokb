@@ -1,0 +1,14 @@
+This directory contains template files which can provide you with a starter configuration for non-default setups.
+
+in reality, this means templates for developer configurations. Currently the 2 files are
+
+application-test.yaml
+    - place in server/gokbg3
+    - controls the configuration of the grails3 app when running grails test-app
+
+
+application-development.yaml       
+    - place in server/gokbg3
+    - controls the configuration of the grails3 app when running grails run-app
+
+

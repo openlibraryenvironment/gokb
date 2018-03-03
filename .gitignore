@@ -20,3 +20,4 @@ server/gokb/logs/
 *.class
 /*.zip
 application-development.yaml
+application-test.yaml

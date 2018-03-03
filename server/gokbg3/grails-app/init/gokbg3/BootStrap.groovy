@@ -938,7 +938,7 @@ class BootStrap {
   }
   
   def ensureESIndex() {
-    def indexName = grailsApplication.config.searchApi.indices ?: "gokb"
+    def indexName = grailsApplication.config.gokb_es_index ?: "gokbg3"
     def esclient = ESWrapperService.getClient()
     IndicesAdminClient adminClient = esclient.admin().indices();
     
@@ -1051,6 +1051,10 @@ class BootStrap {
                   .field("index","not_analyzed")
                 .endObject()
               .endObject()
+            .endObject()
+            .startObject("sortname") 
+              .field("type","string") 
+              .field("index","not_analyzed") 
             .endObject()
             .startObject("componentType") 
               .field("type","string") 
