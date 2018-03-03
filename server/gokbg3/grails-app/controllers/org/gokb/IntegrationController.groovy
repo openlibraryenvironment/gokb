@@ -17,7 +17,6 @@ class IntegrationController {
   def titleLookupService
   def applicationEventService
   def sessionFactory
-  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
@@ -1463,9 +1462,6 @@ class IntegrationController {
     // flush and clear the session.
     session.flush()
     session.clear()
-
-    // Clear the property instance map.
-    propertyInstanceMap.get().clear()
   }
 
 

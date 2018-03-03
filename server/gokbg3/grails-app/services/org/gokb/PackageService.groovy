@@ -126,14 +126,12 @@ class PackageService {
   }
   
   def sessionFactory
-  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
   private def cleanUpGorm() {
     log.debug ("Cleaning up GORM")
     def session = sessionFactory.currentSession
     session.flush()
     session.clear()
-    propertyInstanceMap.get().clear()
   }
 
   /**
