@@ -10,8 +10,8 @@
     <meta name="author" content="">
     <g:layoutHead />
   
-	  <asset:javascript src="public/script.js" />
-	  <asset:stylesheet src="public/style.css"/>
+    <asset:stylesheet src="public/style.css" />
+    <asset:javascript src="public/script.js" />
 
     <title><g:layoutTitle default="GOKb: Welcome" /></title>
 

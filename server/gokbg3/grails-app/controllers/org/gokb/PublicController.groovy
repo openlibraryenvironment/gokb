@@ -49,6 +49,7 @@ class PublicController {
 
 
   def index() {
+    log.debug("PublicController::index ${params}");
     def result = [:]
     params.max = 30
 

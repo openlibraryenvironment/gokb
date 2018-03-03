@@ -61,7 +61,7 @@ class RefdataCategory {
         def cat = null;
   
         if ( cats.size() == 0 ) {
-          log.debug("Create new refdata category ${category_name}");
+          // log.debug("Create new refdata category ${category_name}");
           cat = new RefdataCategory(desc:category_name, label:category_name)
           if ( cat.save(failOnError:true, flush:true) ) {
           }
@@ -72,11 +72,11 @@ class RefdataCategory {
             }
           }
   
-          log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
+          // log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
         }
         else if ( cats.size() == 1 ) {
           cat = cats[0]
-          log.debug("Found existing category for ${category_name} : ${cat}");
+          // log.debug("Found existing category for ${category_name} : ${cat}");
           result = RefdataValue.findByOwnerAndValueIlike(cat, value)
         }
         else {
@@ -90,14 +90,14 @@ class RefdataCategory {
           if ( result.save(failOnError:true, flush:true) ) {
           }
           else {
-            log.debug("Problem saving new refdata item");
+            // log.debug("Problem saving new refdata item");
             result.errors.each {
               log.error("Problem: ${it}");
             }
           }
         }
         else {
-          log.debug("Located existing refdata value.. ${value} ${result}");
+          // log.debug("Located existing refdata value.. ${value} ${result}");
           rdv_cache[rdv_cache_key] = result.id
         }
       // }
