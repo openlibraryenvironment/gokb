@@ -26,7 +26,7 @@
 
 </head>
 
-<body id="page-body">
+<body id="page-body" class="theme-${ grailsApplication.config.gokb.theme }">
 
     <div class="brand" id="main-branding">GOKb</div>
 

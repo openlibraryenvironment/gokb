@@ -4,10 +4,11 @@
  * For details, see http://www.apache.org/licenses/LICENSE-2.0.
  */
 /*
-*= require bootstrap/bootstrap.less
-*= require gokb/fontawesome.less
+*= require bootstrap
+*= require fontawesome
 *= encoding UTF-8
 */
+
 body {
     font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
     background: url('../../images/public/books_bg_dark.jpg') no-repeat center center fixed;
