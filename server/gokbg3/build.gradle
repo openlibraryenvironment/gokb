@@ -113,7 +113,6 @@ tasks.withType(Test) {
 }
 
 assets {
-    packagePlugin = true
     minifyJs = true
     minifyCss = true
     excludes = [

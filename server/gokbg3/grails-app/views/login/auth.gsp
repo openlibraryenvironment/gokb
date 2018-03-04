@@ -6,7 +6,7 @@
   <asset:stylesheet src='spring-security-ui-auth.css'/>
 </head>
 <body>
-  <div class="container">
+  <div class="container-fluid">
     <div class="row">
       <div class="col-md-12">
         <div class="login s2ui_center ui-corner-all" style='text-align:center;'>
