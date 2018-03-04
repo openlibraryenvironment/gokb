@@ -10,6 +10,8 @@ class PreferencesInterceptor {
 
   boolean before() {
 
+	log.debug("PreferencesInterceptor::before(${params}) ${request.getRequestURL()}")
+
     if ( session.sessionPreferences == null ) {
       log.debug("setting session preferences....${grailsApplication.config.appDefaultPrefs ? 'present' : 'Not present'}");
       session.sessionPreferences = grailsApplication.config.appDefaultPrefs

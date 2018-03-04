@@ -4,8 +4,6 @@ Connecting to docker postgres in testing::
 
 docker exec -it pg psql -U postgres
 
-
-
-See
-
-https://github.com/domurtag/migrate-2-grails3
+funcitonal-test issues
+http://www.asset-pipeline.com/manual/index.html#spring-boot
+https://github.com/bertramdev/asset-pipeline
