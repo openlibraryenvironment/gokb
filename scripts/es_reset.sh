@@ -1,8 +1,13 @@
 
+export INDEXNAME="${1:-gokb}"
 
-curl -XDELETE 'http://localhost:9200/gokb'
+echo Reset ES indexes for index name $INDEXNAME
 
-curl -X PUT "localhost:9200/gokb" -d '{
+echo Drop old index
+curl -XDELETE "http://localhost:9200/$INDEXNAME"
+
+echo Create index
+curl -X PUT "localhost:9200/$INDEXNAME" -d '{
   "settings": {
       "number_of_shards": 1, 
       "analysis": {
@@ -27,7 +32,8 @@ curl -X PUT "localhost:9200/gokb" -d '{
   }
 }'
 
-curl -X PUT "localhost:9200/gokb/component/_mapping" -d '{
+echo Create component mapping
+curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
   "component" : {
     "properties" : {
       "name" : {
