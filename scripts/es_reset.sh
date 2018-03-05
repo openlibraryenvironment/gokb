@@ -48,6 +48,10 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
         "type":"string", 
         "index":"not_analyzed" 
       },
+      "sortname" : { 
+        "type":"string", 
+        "index":"not_analyzed" 
+      },
       "status" : {
         "type":"string",
         "index":"not_analyzed"

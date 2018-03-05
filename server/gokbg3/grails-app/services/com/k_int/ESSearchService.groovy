@@ -52,9 +52,10 @@ class ESSearchService{
           params.remove("tempFQ") //remove from GSP access
         }
 
-        log.debug("index:${grailsApplication.config.aggr_es_index} query: ${query_str}");
         
-        def es_index = grailsApplication.config.aggr_es_index ?: "gokbg3"
+        def es_index = grailsApplication.config.gokb_es_index ?: "gokbg3"
+        log.debug("index:${es_index} query: ${query_str}");
+
         def search_results = null
         
         try {

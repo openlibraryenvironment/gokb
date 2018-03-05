@@ -939,6 +939,7 @@ class BootStrap {
   
   def ensureESIndex() {
     def indexName = grailsApplication.config.gokb_es_index ?: "gokbg3"
+    log.debug("ensureESIndex for ${indexName}");
     def esclient = ESWrapperService.getClient()
     IndicesAdminClient adminClient = esclient.admin().indices();
     
