@@ -9,9 +9,10 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <g:layoutHead />
-  
+    <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
+    
     <asset:stylesheet src="public/style.css" />
-    <asset:javascript src="public/script.js" />
+<!--     <asset:javascript src="public/script.js" /> -->
 
     <title><g:layoutTitle default="GOKb: Welcome" /></title>
 
