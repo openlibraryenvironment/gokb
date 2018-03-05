@@ -28,13 +28,13 @@ class PackageUploadSpec extends Specification {
     }
 
     // This is a test REST call 
-    // void "test search"() {
-    //   when:
-    //     // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
-    //     RestResponse resp = rest.get("http://localhost:${serverPort}/")
+    void "test search"() {
+      when:
+        // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
+        RestResponse resp = rest.get("http://localhost:${serverPort}/")
 
-    //   then:
-    //     // println(resp.json)
-    //     resp.status == 200
-    // }
+      then:
+        // println(resp.json)
+        resp.status == 200
+    }
 }
