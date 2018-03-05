@@ -1,0 +1,5 @@
+
+gokb:
+    es:
+        cluster: elasticsearch
+
