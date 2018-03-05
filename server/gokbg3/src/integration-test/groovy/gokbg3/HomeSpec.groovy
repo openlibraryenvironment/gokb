@@ -7,6 +7,7 @@ import geb.spock.*
 
 /**
  * See http://www.gebish.org/manual/current/ for more instructions
+ * https://github.com/geb/geb/blob/master/doc/manual-snippets/src/test/groovy/navigator/FileUploadSpec.groovy
  */
 @Integration
 @Rollback
@@ -17,6 +18,7 @@ class HomeSpec extends GebSpec {
 
   def cleanup() {
   }
+
 
   void "Test public home page"() {
     when:"The home page is visited"

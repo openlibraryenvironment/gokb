@@ -6,6 +6,8 @@ import spock.lang.Specification
 import spock.lang.Shared
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
+import org.springframework.core.io.ClassPathResource
+import org.springframework.core.io.Resource
 
 
 @Integration
@@ -29,9 +31,28 @@ class PackageUploadSpec extends Specification {
 
     // This is a test REST call 
     void "test search"() {
+
+      Resource jac_upload_file_resource = new ClassPathResource("/test_archival_format.tsv")
+
       when:
         // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
-        RestResponse resp = rest.get("http://localhost:${serverPort}/")
+        RestResponse resp = rest.post("http://localhost:${serverPort}/packages/deposit") {
+          auth 'admin', 'admin'
+          contentType "multipart/form-data"
+          // String properties
+          source='DAC_TEST'.getBytes()
+          fmt='DAC'.getBytes()
+          pkg='DAC Test Ingest'.getBytes()
+          platformUrl='http://dactest.com'.getBytes()
+          format='tsv'.getBytes()
+          providerName='DACTEST'.getBytes()
+          providerIdentifierNamespace='DACTEST'.getBytes()
+          reprocess='Y'.getBytes()
+          synchronous='Y'.getBytes()
+          flags='+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs'.getBytes()
+          // Upload file content
+          content= jac_upload_file_resource.getFile();
+        }
 
       then:
         // println(resp.json)
