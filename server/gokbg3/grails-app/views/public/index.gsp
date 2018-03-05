@@ -28,12 +28,13 @@
          </ul>
        </div>
 
+     </div>
+   </nav>
 
+   <div class="container-fluid">
        <div class="row">
          <div class="col-md-12">
-
            <g:form controller="public" class="form" role="form" action="index" method="get" params="${params}">
-
              <div class="well form-horizontal">
                Search Term: <input name="q" placeholder="Add &quot;&quot; for exact match" value="${params.q}"/>
                <button class="btn btn-success" type="submit" name="search" value="yes">Search</button>
@@ -49,12 +50,10 @@
 
          </div>
        </div>
-     </div>
-   </nav>
+   </div>
 
 
-  <div class="container">
-
+  <div class="container-fluid">
     <div class="row">
       <div class="col-md-2">
            <g:each in="${facets.sort{it.key}}" var="facet">

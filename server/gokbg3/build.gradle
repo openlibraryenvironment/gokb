@@ -8,7 +8,7 @@ buildscript {
         classpath "gradle.plugin.com.energizedwork.webdriver-binaries:webdriver-binaries-gradle-plugin:1.1"
         classpath "gradle.plugin.com.energizedwork:idea-gradle-plugins:1.4"
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
-        classpath "com.bertramlabs.plugins:asset-pipeline-gradle:2.14.7"
+        classpath "com.bertramlabs.plugins:asset-pipeline-gradle:2.14.8"
     }
 }
 
@@ -84,8 +84,8 @@ dependencies {
     compile group: 'org.postgresql', name: 'postgresql', version: '42.2.1'
     runtime "com.h2database:h2"
     runtime "org.apache.tomcat:tomcat-jdbc"
-    runtime "com.bertramlabs.plugins:asset-pipeline-grails:2.14.7"
-    assets 'com.bertramlabs.plugins:less-asset-pipeline:2.14.7'
+    runtime "com.bertramlabs.plugins:asset-pipeline-grails:2.14.8"
+    assets 'com.bertramlabs.plugins:less-asset-pipeline:2.14.8'
     
     testCompile "org.grails:grails-gorm-testing-support"
     testCompile "org.grails:grails-web-testing-support"

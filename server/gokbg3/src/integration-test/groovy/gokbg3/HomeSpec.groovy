@@ -20,7 +20,7 @@ class HomeSpec extends GebSpec {
 
   void "Test public home page"() {
     when:"The home page is visited"
-      go '/'
+      go '/public'
 
     then:"The title is correct"
       title == "GOKb: Packages"
