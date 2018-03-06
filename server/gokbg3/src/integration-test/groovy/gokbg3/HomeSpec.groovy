@@ -5,6 +5,9 @@ import grails.transaction.*
 
 import geb.spock.*
 
+
+import geb.report.*
+
 /**
  * See http://www.gebish.org/manual/current/ for more instructions
  * https://github.com/geb/geb/blob/master/doc/manual-snippets/src/test/groovy/navigator/FileUploadSpec.groovy
@@ -12,6 +15,8 @@ import geb.spock.*
 @Integration
 @Rollback
 class HomeSpec extends GebSpec {
+
+  // def reporter = new CompositeReporter(new PageSourceReporter(), new ScreenshotReporter(), new FramesSourceReporter())
 
   def setup() {
   }
@@ -23,6 +28,7 @@ class HomeSpec extends GebSpec {
   void "Test public home page"() {
     when:"The home page is visited"
       go '/public'
+      browser.report("Public Home");
 
     then:"The title is correct"
       title == "GOKb: Packages"

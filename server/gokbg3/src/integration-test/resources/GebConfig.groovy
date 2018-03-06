@@ -2,6 +2,13 @@ import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.firefox.FirefoxDriver
 
+reportsDir = "target/geb-reports"
+autoClearCookies = false
+
+waiting {
+  timeout = 2
+}
+
 environments {
 
     // run via “./gradlew -Dgeb.env=chrome iT”
