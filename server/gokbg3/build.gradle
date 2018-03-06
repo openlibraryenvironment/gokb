@@ -94,6 +94,7 @@ dependencies {
     testRuntime "org.seleniumhq.selenium:selenium-firefox-driver:3.6.0"
     testRuntime "org.seleniumhq.selenium:selenium-remote-driver:3.6.0"
     testRuntime "org.seleniumhq.selenium:selenium-api:3.6.0"
+    testRuntime 'com.bertramlabs.plugins:less-asset-pipeline:2.14.8'
 }
 
 bootRun {

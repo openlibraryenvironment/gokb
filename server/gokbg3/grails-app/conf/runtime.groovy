@@ -558,7 +558,7 @@ apiClasses = [
 ]
 
 /** Less config **/
-
+/** Config duplicated here and in build.groovy for alternate run paths */
 grails.assets.less.compiler = 'less4j'
 grails.assets.excludes = [ '**/_*.less', 'gokb/themes/*.less', 'gokb/themes/**/*.less', 'bootstrap/*.less', 'bootstrap/**/*.less' ]
 grails.assets.includes = [ 'webfonts/*', 'gokb/themes/*/theme.less', 'bootstrap/bootstrap.less' ]
