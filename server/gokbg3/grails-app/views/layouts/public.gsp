@@ -9,8 +9,10 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <g:layoutHead />
+
     <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
     <asset:stylesheet src="gokb/fontawesome.css" />
+
     <title><g:layoutTitle default="GOKb: Welcome" /></title>
 
     <!-- Fonts -->
