@@ -1,3 +1,6 @@
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
 buildscript {
     repositories {
         mavenLocal()
@@ -9,6 +12,8 @@ buildscript {
         classpath "gradle.plugin.com.energizedwork:idea-gradle-plugins:1.4"
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
         classpath "com.bertramlabs.plugins:asset-pipeline-gradle:2.14.8"
+        // Experiment with guide from http://guides.grails.org/grails-as-docker-container/guide/index.html
+        classpath "com.bmuschko:gradle-docker-plugin:3.2.5" 
     }
 }
 
@@ -17,12 +22,13 @@ group "gokbg3"
 
 apply plugin:"eclipse"
 apply plugin:"idea"
-apply plugin:"war"
+// apply plugin:"war"
 apply plugin:"org.grails.grails-web"
 apply plugin:"com.energizedwork.webdriver-binaries"
 apply plugin:"com.energizedwork.idea-project-components"
 apply plugin:"asset-pipeline"
 apply plugin:"org.grails.grails-gsp"
+apply plugin:"com.bmuschko.docker-remote-api"
 
 repositories {
     mavenLocal()
@@ -128,4 +134,47 @@ assets {
       'gokb/themes/*/theme.less',
       'bootstrap/bootstrap.less'
     ]
+}
+
+ext {
+    dockerTag = "grails-sample/${project.name}:${project.version}".toLowerCase() 
+    dockerBuildDir = mkdir("${buildDir}/docker") 
+}
+
+task prepareDocker(type: Copy, dependsOn: assemble) { 
+    description = 'Copy files from src/main/docker and application jar to Docker temporal build directory'
+    group = 'Docker'
+
+    from 'src/main/docker'
+    from project.jar
+
+    into dockerBuildDir
+}
+
+task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) { 
+    description = 'Create a Dockerfile file'
+    group = 'Docker'
+
+    destFile = project.file("${dockerBuildDir}/Dockerfile")
+
+    from 'openjdk:8u151-jdk-alpine'
+    maintainer 'John Doe "john.doe@example.com"'
+
+    exposePort 8080
+
+    workingDir '/app'
+
+    copyFile jar.archiveName, 'application.jar'
+    copyFile 'app-entrypoint.sh', 'app-entrypoint.sh' 
+    runCommand 'chmod +x app-entrypoint.sh'
+
+    entryPoint '/app/app-entrypoint.sh' 
+}
+
+task buildImage(type: DockerBuildImage, dependsOn: createDockerfile) { 
+    description = 'Create Docker image to run the Grails application'
+    group = 'Docker'
+
+    inputDir = file(dockerBuildDir)
+    tag = dockerTag
 }
