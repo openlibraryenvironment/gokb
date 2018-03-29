@@ -91,7 +91,7 @@ services:
     environment:
       TEST: "something"
     ports:
-      - "8080:8091" # Export 8080 as 8091 locally
+            - "8091:8080" # Export container 8080 as 8091 locally
  
 #  adminer:
 #    image: adminer
