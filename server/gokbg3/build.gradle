@@ -22,7 +22,7 @@ group "gokbg3"
 
 apply plugin:"eclipse"
 apply plugin:"idea"
-apply plugin:"war"
+// apply plugin:"war"
 apply plugin:"org.grails.grails-web"
 apply plugin:"com.energizedwork.webdriver-binaries"
 apply plugin:"com.energizedwork.idea-project-components"
