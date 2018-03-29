@@ -138,9 +138,14 @@ assets {
 
 // http://guides.grails.org/grails-as-docker-container/guide/index.html
 // Build docker image:: ./gradlew buildImage
+// ./gradlew dockerPushImage should push the image
 // 
+// list know docker images  :: docker images
+// Logon to docker hub:: docker login --username=yourhubusername
+// Push image to docker hub::   docker push knowint/gokbg3
+
 ext {
-    dockerTag = "grails-sample/${project.name}:${project.version}".toLowerCase() 
+    dockerTag = "knowint/${project.name}:${project.version}".toLowerCase() 
     dockerBuildDir = mkdir("${buildDir}/docker") 
 }
 
