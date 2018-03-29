@@ -22,7 +22,7 @@ group "gokbg3"
 
 apply plugin:"eclipse"
 apply plugin:"idea"
-// apply plugin:"war"
+apply plugin:"war"
 apply plugin:"org.grails.grails-web"
 apply plugin:"com.energizedwork.webdriver-binaries"
 apply plugin:"com.energizedwork.idea-project-components"
@@ -136,6 +136,9 @@ assets {
     ]
 }
 
+// http://guides.grails.org/grails-as-docker-container/guide/index.html
+// Build docker image:: ./gradlew buildImage
+// 
 ext {
     dockerTag = "grails-sample/${project.name}:${project.version}".toLowerCase() 
     dockerBuildDir = mkdir("${buildDir}/docker") 
@@ -153,12 +156,12 @@ task prepareDocker(type: Copy, dependsOn: assemble) {
 
 task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) { 
     description = 'Create a Dockerfile file'
-    group = 'Docker'
+    group = 'knowint'
 
     destFile = project.file("${dockerBuildDir}/Dockerfile")
 
     from 'openjdk:8u151-jdk-alpine'
-    maintainer 'John Doe "john.doe@example.com"'
+    maintainer 'Ian Ibbotson "ian.ibbotson@k-int.com"'
 
     exposePort 8080
 
@@ -173,7 +176,7 @@ task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) {
 
 task buildImage(type: DockerBuildImage, dependsOn: createDockerfile) { 
     description = 'Create Docker image to run the Grails application'
-    group = 'Docker'
+    group = 'knowint'
 
     inputDir = file(dockerBuildDir)
     tag = dockerTag
