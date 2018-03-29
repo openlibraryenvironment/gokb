@@ -185,4 +185,5 @@ task buildImage(type: DockerBuildImage, dependsOn: createDockerfile) {
 
     inputDir = file(dockerBuildDir)
     tag = dockerTag
+    tags = [dockerTag, 'knowint/gokbg3:latest']
 }
