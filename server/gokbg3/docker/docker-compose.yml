@@ -2,7 +2,6 @@ version: "2.0"
 
 volumes:
   pgdata:
-  mysqldata:
   esdata:
   virtuoso:
 
@@ -20,14 +19,14 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./dbinit:/docker-entrypoint-initdb.d
     ports:
       - 5432:5432
     networks:
       default:
         aliases:
           - pghost
-    
+
+
 
   #  mysql:
   #    container_name: mysql
@@ -40,15 +39,27 @@ services:
 
   # https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docker.html
   # https://github.com/k-int/KBPlusG3/blob/dev-integration/SETUP-ES-DOCKER.txt
+  # see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docker.html
   es5:
     container_name: es5
-    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.8
     restart: always
     environment:
-      http.host: 0.0.0.0
-      transport.host: 0.0.0.0
-      cluster.name: elasticsearch
-      xpack.security.enabled: "false"
+      - xpack.security.enabled=false
+      - xpack.monitoring.enabled=false
+      - xpack.ml.enabled=false
+      - xpack.graph.enabled=false
+      - xpack.watcher.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - discovery.zen.minimum_master_nodes=1
+      - discovery.type=single-node 
+      - cluster.name=elasticsearch
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1g
     ports:
       - 9200:9200 
       - 9300:9300
@@ -78,26 +89,69 @@ services:
     container_name: virtuoso
     image: tenforce/virtuoso:1.3.1-virtuoso7.2.4
     environment:
+      DBA_PASSWORD: virtpass
       SPARQL_UPDATE: "true"
       DEFAULT_GRAPH: "http://www.example.com/my-graph"
     volumes:
       - virtuoso:/data
     ports:
       - "8890:8890"
-
-  gokb:
-    container_name: gokb
-    image: knowint/gokbg3:8.0.0
-    environment:
-      GOKB_ES_CLUSTER: "elasticsearch"
-      GOKB_DB: "elasticsearch"
-      GOKB_DB_USER: "knowint"
-      GOKB_DB_PASS: "knowint"
-    ports:
-            - "8091:8080" # Export container 8080 as 8091 locally
  
 #  adminer:
 #    image: adminer
 #    restart: always
 #    ports:
 #      - 8080:8080
+# https://github.com/gilyes/docker-nginx-letsencrypt-sample/blob/master/docker-compose.yml
+# This looks really helpful: https://devsidestory.com/lets-encrypt-with-docker/
+#
+#  nginx:
+#    restart: always
+#    image: nginx
+#    container_name: nginx
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - "./volumes/nginx_conf:/etc/nginx/conf.d"
+#      - "./volumes/nginx_vhost:/etc/nginx/vhost.d"
+#      - "./volumes/nginx_certs:/etc/nginx/certs"
+#      - "./volumes/www:/var/www/letsencrypt"
+#
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/etc/nginx/vhost.d"
+      - "/usr/share/nginx/html"
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+      - "/etc/nginx/certs"
+
+  letsencrypt-nginx-proxy-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    volumes_from:
+      - "nginx-proxy"
+
+  gokb:
+    container_name: gokb
+    image: knowint/gokbg3:latest
+    depends_on:
+      - "postgres"
+      - "es5"
+      - "nginx-proxy"
+      - "virtuoso"
+    environment:
+      GOKB_ES_CLUSTER: "elasticsearch"
+      GOKB_DB: "jdbc:postgresql://pghost:5432/gokbg3"
+      GOKB_DB_USER: "knowint"
+      GOKB_DB_PASS: "knowint"
+    ports:
+      - "8091:8080" # Export container 8080 as 8091 locally
+
+
+
