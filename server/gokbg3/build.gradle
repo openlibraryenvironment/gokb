@@ -154,7 +154,7 @@ task prepareDocker(type: Copy, dependsOn: assemble) {
     group = 'Docker'
 
     from 'src/main/docker'
-    from project.jar
+    from project.war
 
     into dockerBuildDir
 }
@@ -172,7 +172,7 @@ task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) {
 
     workingDir '/app'
 
-    copyFile jar.archiveName, 'application.jar'
+    copyFile war.archiveName, 'application.jar'
     copyFile 'app-entrypoint.sh', 'app-entrypoint.sh' 
     runCommand 'chmod +x app-entrypoint.sh'
 
