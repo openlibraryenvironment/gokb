@@ -29,17 +29,17 @@
 						</p>
 					</g:if>
 	
-					<g:render template="qbeform" contextPath="."
+					<g:render template="qbeform"
 						model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide),cfg:qbetemplate.qbeConfig]}" />
 				</div>
 				<!-- panel-body -->
 				<g:if test="${recset && !init}">
-					<g:render template="qberesult" contextPath="."
+					<g:render template="qberesult"
 						model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, jumpToPage:'jumpToPage', det:det, page:page_current, page_max:page_total]}" />
 				</g:if>
 				<g:elseif test="${!init}">
 					<div class="panel-footer">
-						<g:render template="qbeempty" contextPath="." />
+						<g:render template="qbeempty" />
 					</div>
 				</g:elseif>
 			</g:else>
