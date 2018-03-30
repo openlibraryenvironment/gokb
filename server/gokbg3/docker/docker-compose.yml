@@ -89,7 +89,10 @@ services:
     container_name: gokb
     image: knowint/gokbg3:8.0.0
     environment:
-      TEST: "something"
+      GOKB_ES_CLUSTER: "elasticsearch"
+      GOKB_DB: "elasticsearch"
+      GOKB_DB_USER: "knowint"
+      GOKB_DB_PASS: "knowint"
     ports:
             - "8091:8080" # Export container 8080 as 8091 locally
  
