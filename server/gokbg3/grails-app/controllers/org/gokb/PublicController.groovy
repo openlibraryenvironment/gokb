@@ -51,31 +51,34 @@ class PublicController {
   def index() {
     log.debug("PublicController::index ${params}");
     def result = [:]
-    params.max = 30
 
-    params.componentType = "Package" // Tells ESSearchService what to look for
+    def mutableParams = new HashMap(params)
 
-    if(params.q == "")  
-      params.q = "*"
+    mutableParams.max = 30
+
+    mutableParams.componentType = "Package" // Tells ESSearchService what to look for
+
+    if( ( mutableParams.q == null ) || (mutableParams.q == '') )  
+      mutableParams.q = '*'
     // params.remove('q');
     // params.isPublic="Yes"
 
-    if(params.lastUpdated){
-      params.lastModified ="[${params.lastUpdated} TO 2100]"
+    if(mutableParams.lastUpdated){
+      mutableParams.lastModified ="[${params.lastUpdated} TO 2100]"
     }
-    if (!params.sort){
-      params.sort="sortname"
-      params.order = "asc"
+    if (!mutableParams.sort){
+      mutableParams.sort='sortname'
+      mutableParams.order = 'asc'
     }
-    if(params.search.equals("yes")){
+    if(mutableParams.search.equals('yes')){
       //when searching make sure results start from first page
-      params.offset = 0
-      params.search = null
+      mutableParams.offset = 0
+      mutableParams.search = null
     }
-    if(params.filter == "current")
-      params.tempFQ = " -pkg_scope:\"Master File\" -\"open access\" ";
+    if(mutableParams.filter == 'current')
+      mutableParams.tempFQ = ' -pkg_scope:\"Master File\" -\"open access\" ';
 
-    result =  ESSearchService.search(params)
+    result =  ESSearchService.search(mutableParams)
     result.transforms = grailsApplication.config.packageTransforms
 
     result

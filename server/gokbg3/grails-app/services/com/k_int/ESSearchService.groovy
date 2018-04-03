@@ -40,10 +40,10 @@ class ESSearchService{
       if ( (params.q && params.q.length() > 0) || params.rectype) {
 
        if ((!params.all) || (!params.all?.equals("yes"))) {
-         params.max = Math.min(params.max ? params.int('max') : 15, 100)
+         params.max = Math.min(params.max ? params.max : 15, 100)
         }
 
-        params.offset = params.offset ? params.int('offset') : 0
+        params.offset = params.offset ? params.offset : 0
 
         def query_str = buildQuery(params,field_map)
 
