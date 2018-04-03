@@ -149,6 +149,7 @@ def pushToGokb(name, data, http) {
     multiPartContent.addPart("providerIdentifierNamespace", new StringBody("uri"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
+    multiPartContent.addPart("curatoryGroup", new StringBody("Jisc"));
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
     
     req.entity = multiPartContent.build()
