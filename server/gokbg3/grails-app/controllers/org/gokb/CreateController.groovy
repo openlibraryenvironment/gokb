@@ -5,7 +5,8 @@ import org.springframework.security.access.annotation.Secured;
 import org.codehaus.groovy.grails.commons.*
 import org.grails.plugins.web.taglib.ApplicationTagLib
 import org.gokb.cred.*
-import org.grails.datastore.mapping.model.PersistentProperty
+// import org.grails.datastore.mapping.model.PersistentProperty
+import grails.core.GrailsDomainClassProperty
 
 class CreateController {
 
@@ -80,8 +81,7 @@ class CreateController {
               // Ensure that blank values actually null the value instead of trying to use an empty string.
               if (p.value == "") p.value = null
 
-              PersistentProperty pdef = newclass.getPersistentProperty(p.key)
-              log.debug(pdef);
+              GrailsDomainClassProperty pdef = newclass.getPersistentProperty(p.key)
               if ( pdef.association ) {
                 if ( pdef.isOneToOne() ) {
                   log.debug("one-to-one");
@@ -158,7 +158,7 @@ class CreateController {
               result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
             }else {
               result.newobj.save(flush:true)
-              result.uri = new ApplicationTagLib().createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
+              result.uri = createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
             }
           }
         }
