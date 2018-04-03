@@ -227,6 +227,7 @@ class PackagesController {
   
             log.debug("Create background job");
             def incremental_flag = params.incremental
+            Map additional_params = [curatoryGroup:params.curatoryGroup];
 
             // Could do Promise p = task { Job.withNewSession { ...
             // result = p.get() or p.get(1,MINUTES)
@@ -237,6 +238,7 @@ class PackagesController {
               // Create a new session to run the ingest.
               try {
                 log.debug("Launching ingest");
+
                 job_result = TSVIngestionService.ingest2(format_rdv,
                                                          pkg,
                                                          new java.net.URL(platformUrl),
@@ -247,7 +249,8 @@ class PackagesController {
                                                          providerIdentifierNamespace,
                                                          null, //  ip_id
                                                          null, //  ingest_cfg
-                                                         incremental_flag)
+                                                         incremental_flag,
+                                                         additional_params);
               }
               catch ( Exception e ) {
                 log.error("Problem",e)

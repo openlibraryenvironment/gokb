@@ -42,6 +42,7 @@ import org.gokb.cred.TitleInstancePackagePlatform;
 import org.gokb.cred.User;
 import org.gokb.cred.DataFile;
 import org.gokb.cred.IngestionProfile;
+import org.gokb.cred.CuratoryGroup;
 import org.gokb.exceptions.*;
 import com.k_int.TextUtils
 import grails.converters.JSON
@@ -630,7 +631,8 @@ class TSVIngestionService {
                    job,
                    ip_id,
                    ingest_cfg,
-                   'N')
+                   'N',
+                   'Local')
   }
 
 
@@ -644,7 +646,8 @@ class TSVIngestionService {
              providerIdentifierNamespace=null,
              ip_id=null,
              ingest_cfg=null,
-             incremental=null) {
+             incremental=null,
+             other_params = null) {
 
     log.debug("ingest2...");
     def result = [:]
@@ -721,6 +724,19 @@ class TSVIngestionService {
           author_role_id = author_role.id
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           editor_role_id = editor_role.id
+
+          if ( other_params.curatoryGroup ) {
+            log.debug("Adding curatory group to package: ${other_params.curatoryGroup}");
+            def cg = CuratoryGroup.findByName(other_params.curatoryGroup) ?: new CuratoryGroup(name:other_params.curatoryGroup).save(flush:true, failOnError:true);
+            the_package.curatoryGroups.add(cg);
+            the_package.save(flush:true, failOnError:true);
+          }
+          else if ( grailsApplication.config.gokb?.defaultCuratoryGroup ) {
+            log.debug("Adding default curatory group to package: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
+            def cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup)
+            the_package.curatoryGroups.add(cg);
+            the_package.save(flush:true, failOnError:true);
+          }
         }
 
 
