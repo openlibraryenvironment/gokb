@@ -78,6 +78,16 @@ class BootStrap {
       'XMLHttpRequest' == delegate.getHeader('X-Requested-With')
     }
 
+    CuratoryGroup.withTransaction() {
+      if ( grailsApplication.config.gokb.defaultCuratoryGroup != null ) {
+
+        log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
+
+        def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?: 
+                        new CuratoryGroup(name:grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush:true, failOnError:true);
+      }
+    }
+
     // Global System Roles
     KBComponent.withTransaction() {
       def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR') ?: new Role(authority: 'ROLE_CONTRIBUTOR', roleType:'global').save(failOnError: true)
@@ -247,7 +257,7 @@ class BootStrap {
 
         // Just try reading the class.
         Class c = Class.forName(d.dcName)
-        log.debug ("Looking for ${d.dcName} found class ${c}.")
+        // log.debug ("Looking for ${d.dcName} found class ${c}.")
         
       } catch (ClassNotFoundException e) {
         d.delete(flush:true)
@@ -277,7 +287,7 @@ class BootStrap {
       // SecurityApi.
       // II: has this caused projects under org.gokb.refine to no longer be visible? Not sure how to fix it.
 
-      log.debug("Considering ${c}")
+      // log.debug("Considering ${c}")
       grailsApplication.config.apiClasses.each { String className ->
         // log.debug("Adding methods to ${c.name} from ${className}");
         // Add the api methods.
