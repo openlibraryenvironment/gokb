@@ -138,7 +138,7 @@ assets {
 
 // http://guides.grails.org/grails-as-docker-container/guide/index.html
 // Build docker image:: ./gradlew buildImage
-// ./gradlew dockerPushImage should push the image
+// ./gradlew dockerPushImage should push the image, but it is better to use the commands below to do that
 // 
 // list know docker images  :: docker images
 // Logon to docker hub:: docker login --username=yourhubusername
