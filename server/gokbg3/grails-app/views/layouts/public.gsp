@@ -28,7 +28,29 @@
 
 <body id="page-body" class="theme-${ grailsApplication.config.gokb.theme }">
 
-    <div class="brand" id="main-branding">GOKb</div>
+  <nav class="navbar navbar-default" id="primary-nav-bar" role="navigation">
+     <div class="container">
+       <!-- Brand and toggle get grouped for better mobile display -->
+       <div class="navbar-header">
+         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#primary-nav">
+           <span class="sr-only">Toggle navigation</span>
+           <span class="icon-bar"></span>
+           <span class="icon-bar"></span>
+           <span class="icon-bar"></span>
+         </button>
+         <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
+         <a class="navbar-brand" href="index.html">GOKb</a>
+       </div>
+
+       <div class="nav navbar-nav navbar-right">
+          <li><g:link controller="home" action="index">Admin Home</g:link></li>
+       </div>
+
+     </div>
+   </nav>
+
+
+
 
     <g:layoutBody />
 
@@ -36,7 +58,6 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-12 text-center">
-                    <p>Copyright &copy; GOKb 2014-2016</p>
                 </div>
             </div>
         </div>

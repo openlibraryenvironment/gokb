@@ -92,9 +92,10 @@ class AdminController {
   }
 
   def logViewer() {
-    cache "until_changed"
-    def f = new File ("${grailsApplication.config.log_location}")
-    return [file: "${f.canonicalPath}"]
+    // cache "until_changed"
+    // def f = new File ("${grailsApplication.config.log_location}")
+    // return [file: "${f.canonicalPath}"]
+    redirect(controller:'home', action:'index');
   }
 
   def reSummariseLicenses() {

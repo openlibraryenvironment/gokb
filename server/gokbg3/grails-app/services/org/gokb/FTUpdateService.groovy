@@ -8,25 +8,28 @@ import java.nio.charset.Charset
 import java.util.GregorianCalendar
 import org.gokb.cred.*
 
-
 @Transactional
 class FTUpdateService {
 
-  def executorService
   def ESWrapperService
   def sessionFactory
+  def grailsApplication
 
   public static boolean running = false;
 
+
+  /**
+   * Update ES.
+   * The caller is responsible for running this function in a task if needed. This method
+   * is responsible for ensuring only 1 FT index task runs at a time. It's a simple mutex.
+   * see https://async.grails.org/latest/guide/index.html
+   */
   def synchronized updateFTIndexes() {
     log.debug("updateFTIndexes");
     
     if ( running == false ) {
       running = true;
-      def future = executorService.submit({
-        doFTUpdate()
-      } as java.util.concurrent.Callable)
-      log.debug("updateFTIndexes returning");
+      doFTUpdate()
     }
     else {
       log.debug("FTUpdate already running");
@@ -223,19 +226,14 @@ class FTUpdateService {
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}");
         def idx_record = recgen_closure(r)
 
+        def es_index = grailsApplication.config.gokb_es_index ?: "gokbg3"
+
         if ( idx_record != null ) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
-
-          def future = esclient.indexAsync {
-            index 'gokb'
-            type 'component'
-            id recid
-            source idx_record
-          }
-
-          // future.actionGet()
-          // log.debug("Index completed -- ${recid}");
+          
+          def future = esclient.prepareIndex(es_index,'component',recid).setSource(idx_record)
+          def result=future.get()
         }
 
 

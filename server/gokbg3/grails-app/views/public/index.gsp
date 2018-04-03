@@ -7,37 +7,20 @@
 
 <body>
 
-   <nav class="navbar navbar-default" id="primary-nav-bar" role="navigation">
-     <div class="container">
-       <!-- Brand and toggle get grouped for better mobile display -->
-       <div class="navbar-header">
-         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#primary-nav">
-           <span class="sr-only">Toggle navigation</span>
-           <span class="icon-bar"></span>
-           <span class="icon-bar"></span>
-           <span class="icon-bar"></span>
-         </button>
-         <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="index.html">GOKb</a>
-       </div>
-
-       <div class="collapse navbar-collapse" id="primary-nav">
-         <ul class="nav navbar-nav">
-           <li class="hidden active"><a href="#page-body"></a></li>
-           <li><span>GOKb Public Package List (<g:link controller="home" action="index">Admin Home</g:link>)</span></li>
-         </ul>
-       </div>
-
-     </div>
-   </nav>
-
-   <div class="container-fluid">
+   <div class="container">
        <div class="row">
          <div class="col-md-12">
            <g:form controller="public" class="form" role="form" action="index" method="get" params="${params}">
              <div class="well form-horizontal">
-               Search Term: <input name="q" placeholder="Add &quot;&quot; for exact match" value="${params.q}"/>
-               <button class="btn btn-success" type="submit" name="search" value="yes">Search</button>
+
+               <label for="q">Search for packages...</label>
+               <div class="input-group">
+                 <input type="text" class="form-control" placeholder="Find package like..." value="${params.q}" name="q">
+                 <span class="input-group-btn">
+                   <button class="btn btn-primary" type="submit" value="yes" name="search"><span class="fa fa-search" aria-hidden="true">Search</span></button>
+                 </span>
+               </div>
+
                <p>
                  <g:each in="${['type','endYear','startYear','consortiaName','cpname']}" var="facet">
                    <g:each in="${params.list(facet)}" var="fv">
@@ -53,10 +36,10 @@
    </div>
 
 
-  <div class="container-fluid">
+  <div class="container">
     <div class="row">
       <div class="col-md-2">
-           <g:each in="${facets.sort{it.key}}" var="facet">
+           <g:each in="${facets?.sort{it.key}}" var="facet">
              <g:if test="${facet.key != 'type'}">
              <div class="panel panel-default">
                <div class="panel-heading">
@@ -64,7 +47,7 @@
                </div>
                <div class="panel-body">
                  <ul>
-                   <g:each in="${facet.value.sort{it.display}}" var="v">
+                   <g:each in="${facet.value?.sort{it.display}}" var="v">
                      <li>
                        <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
  

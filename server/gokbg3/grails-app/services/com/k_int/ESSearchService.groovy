@@ -19,6 +19,7 @@ class ESSearchService{
                     'cpname':'cpname',
                     'availableToOrgs':'availableToOrgs',
                     'isPublic':'isPublic',
+                    'componentType':'componentType',
                     'lastModified':'lastModified']
 
   def ESWrapperService

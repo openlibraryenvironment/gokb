@@ -53,10 +53,13 @@ class PublicController {
     def result = [:]
     params.max = 30
 
-    params.rectype = "Package" // Tells ESSearchService what to look for
+    params.componentType = "Package" // Tells ESSearchService what to look for
 
-    if(params.q == "")  params.remove('q');
-    params.isPublic="Yes"
+    if(params.q == "")  
+      params.q = "*"
+    // params.remove('q');
+    // params.isPublic="Yes"
+
     if(params.lastUpdated){
       params.lastModified ="[${params.lastUpdated} TO 2100]"
     }
