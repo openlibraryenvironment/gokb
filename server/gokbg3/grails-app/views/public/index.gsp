@@ -81,8 +81,8 @@
               <g:each in="${hits}" var="hit">
                 <tr>
                   <td>
-                      <g:link controller="packages" action="packageContent" id="${hit.id}">${hit.source.name}</g:link>
-                      <g:link controller="packages" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>
+                      <g:link controller="public" action="packageContent" id="${hit.id}">${hit.source.name}</g:link>
+                      <g:link controller="public" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>
                   </td>
                   <td></td>
                   <td></td>

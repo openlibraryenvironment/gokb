@@ -37,6 +37,7 @@ class PublicController {
     if ( params.id ) {
       def pkg_id_components = params.id.split(':');
       def pkg_id = pkg_id_components[1]
+      result.pkg = Package.get(pkg_id);
       result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id=?',[Long.parseLong(pkg_id)])
       result.pkgId = result.pkgData[0][0]
       result.pkgName = result.pkgData[0][1]
