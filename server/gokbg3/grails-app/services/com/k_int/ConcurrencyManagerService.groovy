@@ -21,6 +21,8 @@ import grails.gorm.transactions.Transactional
 
 @Transactional
 class ConcurrencyManagerService {
+
+  def executorService
   
   private static final Map<String, PromiseFactory> pools
   

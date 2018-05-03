@@ -17,7 +17,6 @@
         <th>Start Time</th>
         <th>Has Ended</th>
         <th>End Time</th>
-        <th>Progress%</th>
       </tr>
     </thead>
     <tbody>
@@ -29,7 +28,6 @@
           <td>${v.startTime}</td>
           <td>${v.isDone()}</td>
           <td>${v.endTime}</td>
-          <td>${v.progress}</td>
         </tr>
         <tr>
           <td colspan="6">

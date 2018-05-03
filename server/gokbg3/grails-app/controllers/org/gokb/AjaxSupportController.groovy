@@ -57,11 +57,13 @@ class AjaxSupportController {
     def config = refdata_config[params.id]
 
     if (!config) {
-      // Use generic config.
+      log.debug("Use generic config.")
+
       config = [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='${params.id}' order by rdv.sortKey asc, rdv.description asc",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=? order by rdv.sortKey asc, rdv.description asc",
+      rdvCat: "${params.id}",
       qryParams:[],
       cols:['value'],
       format:'simple'
@@ -69,13 +71,14 @@ class AjaxSupportController {
     }
 
     if ( config ) {
-      def query_params = []
+      def query_params = [config.rdvCat]
+
       config.qryParams.each { qp ->
         if ( qp.clos ) {
           query_params.add(qp.clos(params[qp.param]?:''));
         }
         else {
-          query_params.add(params[qp.param]);
+          query_params.add(params[qp.param] ?: qp.cat);
         }
       }
 
@@ -119,9 +122,10 @@ class AjaxSupportController {
     ],
     'PackageType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='Package Type'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='Package Type'",
-      qryParams:[],
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      qryParams:[['cat': "Package Type"]],
+      rdvCat: "${params.id}",
       cols:['value'],
       format:'simple'
     ],
@@ -129,25 +133,37 @@ class AjaxSupportController {
       domain:'RefdataValue',
       // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
       // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponent.Status'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponent.Status'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       qryParams:[],
+      rdvCat: "KBComponent.Status",
       cols:['value'],
       format:'simple'
     ],
     'VariantNameType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.VariantType'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.VariantType'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       qryParams:[],
+      rdvCat: "KBComponentVariantName.VariantType",
+      cols:['value'],
+      format:'simple'
+    ],
+    'KBComponentVariantName.VariantType' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      qryParams:[],
+      rdvCat: "KBComponentVariantName.VariantType",
       cols:['value'],
       format:'simple'
     ],
     'Locale' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.Locale'",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc='KBComponentVariantName.Locale'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       qryParams:[],
+      rdvCat: "KBComponentVariantName.Locale",
       cols:['value'],
       format:'simple'
     ]
@@ -320,23 +336,23 @@ class AjaxSupportController {
               log.debug("context found");
               //item_to_remove[hbc]=resolveOID2(null)
               item_to_remove.deleteParent();
-              log.debug(item_to_remove.children)
-              log.debug(item_to_remove.heading)
-              log.debug(item_to_remove.parent)
+              log.debug("${item_to_remove.children}")
+              log.debug("${item_to_remove.heading}")
+              log.debug("${item_to_remove.parent}")
               log.debug("tried removal: "+item_to_remove[hbc]);
             }
           }
         }
-        log.debug(params);
+        log.debug("${params}");
         log.debug("removing: "+item_to_remove+" from "+params.__property+" for "+contextObj);
 
-            contextObj[params.__property].remove(item_to_remove);
-
+            def remove_result = contextObj[params.__property].remove(item_to_remove);
+                log.debug("remove successful?: ${remove_result}")
                 log.debug("child removed: "+ contextObj[params.__property]);
-                if (contextObj.save()==false) {
-                  log.debug(contextObj.errors.allErrors())
+                if (contextObj.save(flush: true, failOnError: true)==false) {
+                  log.debug("${contextObj.errors.allErrors()}")
                 } else {
-                  log.debug("saved ok");
+                  log.debug("saved ok (${contextObj[params.__property]})");
                 }
                 item_to_remove.refresh();
                 if (params.__otherEnd && item_to_remove[params.__otherEnd]!=null) {
@@ -346,7 +362,7 @@ class AjaxSupportController {
                   log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
                 }
                 if (item_to_remove.save()==false) {
-                 log.debug(item_to_remove.errors.allError());
+                 log.debug("${item_to_remove.errors.allError()}");
                 }
       } else {
         log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
@@ -507,7 +523,7 @@ class AjaxSupportController {
       log.error("no type (target=${params.pk}, value=${params.value}");
     }
 
-    def resp = [ newValue: result ]
+    def resp = [ newValue: target[params.name] ]
     log.debug("return ${resp as JSON}");
     render resp as JSON
   }
@@ -533,7 +549,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addIdentifier() {
-    log.debug(params);
+    log.debug("${params}");
     // Check identifier namespace present, and identifier value valid for that namespace
     if ( ( params.identifierNamespace?.length() > 0 ) &&
          ( params.identifierValue?.length() > 0 ) &&

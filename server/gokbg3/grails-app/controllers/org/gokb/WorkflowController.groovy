@@ -106,26 +106,36 @@ class WorkflowController {
               // We should just call the method on the targets.
               result.objects_to_action.each {def target ->
 
+                log.debug("Target: ${target} (${target.class.name})")
                 log.debug ("Attempting to fire method ${method_config[1]} (${method_params})")
 
                 // Wrap in a transaction.
-                KBComponent.withNewTransaction {def trans_status ->
+                KBComponent.withTransaction {def trans_status ->
                   try {
 
                     // Just try and fire the method.
                     target.invokeMethod("${method_config[1]}", method_params ? method_params as Object[] : null)
 
                     // Save the object.
+
                     target.save(failOnError:true)
+
                   } catch (Throwable t) {
 
                     // Rollback and log error.
                     trans_status.setRollbackOnly()
                     t.printStackTrace()
-                    log.error(t)
+                    log.error("${t}")
                   }
                 }
+                target.save(flush: true, failOnError:true)
+                log.debug("After transaction: ${target?.status}")
               }
+
+              result.objects_to_action.each {
+                log.debug("${it.status}")
+              }
+
               break
           }
           // Do stuff
@@ -1247,7 +1257,7 @@ class WorkflowController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def authorizeVariant() {
-    log.debug(params);
+    log.debug("${params}");
     def result = [:]
     result.ref=request.getHeader('referer')
     def variant = KBComponentVariantName.get(params.id)
@@ -1278,7 +1288,7 @@ class WorkflowController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteVariant() {
-    log.debug(params);
+    log.debug("${params}");
     User user = springSecurityService.currentUser
     def result = [:]
     result.ref=request.getHeader('referer')

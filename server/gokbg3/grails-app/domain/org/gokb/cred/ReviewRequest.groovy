@@ -102,10 +102,13 @@ class ReviewRequest {
   }
 
 
-  def RRClose(rrcontext) {
-    log.debug("Close review request ${id} - user=${rrcontext.user}");
-    this.status=RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
-    this.closedBy = rrcontext.user
+  public void RRClose(rrcontext) {
+    log.debug("Close review request ${id} (${this.class.name}) - user=${rrcontext.user}");
+
+    setStatus(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed'))
+    setClosedBy(rrcontext.user)
+    save(failOnError:true)
+    log.debug("Changed status - ${status} ${closedBy}")
   }
 
   public String getNiceName() {
@@ -114,6 +117,7 @@ class ReviewRequest {
 
   def beforeUpdate() {
     if ( isDirty('status') ) {
+      log.debug("RR Status changed > ${this.status}")
       reviewedBy = springSecurityService.currentUser
     }
   }

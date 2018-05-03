@@ -55,4 +55,9 @@ class EdinaPublicationsAPIService {
 
     result
   }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
+    log.debug("Destroy");
+  }
 }

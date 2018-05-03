@@ -881,7 +881,7 @@ class IntegrationController {
               
               def to_retire = TitleInstancePackagePlatform.get(ttd)
               
-              if ( to_retire.isCurrent() ) {
+              if ( to_retire?.isCurrent() ) {
                 
                 to_retire.retire()
                 to_retire.save(failOnError: true)
@@ -893,6 +893,8 @@ class IntegrationController {
 //                     user
 //                 )
                 num_deleted_tipps++;
+              }else{
+                log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
               }
             }
             if( num_deleted_tipps > 0 ) {
@@ -956,7 +958,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  private static boolean setAllRefdata (Collection<String> propNames, data, target) {
+  private boolean setAllRefdata (propNames, data, target) {
     boolean changed = false
     propNames.each { String prop ->
       changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop)
@@ -1026,7 +1028,7 @@ class IntegrationController {
     def result
     def json = request.JSON
 
-    if(org.codehaus.groovy.grails.web.json.JSONArray != json.getClass()){
+    if(org.grails.web.json.JSONArray != json.getClass()){
 
       result = crossReferenceSingleTitle(json)
     }
@@ -1082,7 +1084,6 @@ class IntegrationController {
         }
 
         title_changed |= setAllRefdata ([
-              'software', 'service',
               'OAStatus', 'medium',
               'pureOA', 'continuingSeries',
               'reasonRetired'
@@ -1093,10 +1094,10 @@ class IntegrationController {
           title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
         }
 
+        title.save(flush:true, failOnError:true)
+
         // Add the core data.
         ensureCoreData(title, titleObj)
-
-//        title.save(flush:true, failOnError:true)
 
         if ( titleObj.historyEvents?.size() > 0 ) {
 
@@ -1206,6 +1207,8 @@ class IntegrationController {
           }
         }
 
+        title.save(flush:true, failOnError:true)
+
         addPublisherHistory(title, titleObj.publisher_history, sdf)
 
         result.message = "Created/looked up title ${title.id}"
@@ -1216,9 +1219,9 @@ class IntegrationController {
         result.message = "No title for ${titleObj}";
         log.error("Cross Reference Title failed :${titleObj}");
         // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
-        event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
-              // Event callback closure
-        }
+//         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
+//               // Event callback closure
+//         }
       }
     }
     catch ( Exception e ) {
@@ -1237,7 +1240,7 @@ class IntegrationController {
 
   private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
 
-    if (publishers) {
+    if (publishers && ti) {
 
       def publisher_combos = []
       publisher_combos.addAll( ti.getCombosByPropertyName('publisher') )
@@ -1274,15 +1277,32 @@ class IntegrationController {
 
           // Only add if we havn't found anything.
           if (!found) {
+
+            log.debug("Adding new combo for publisher ${publisher} (${propName}) to title ${ti} (${tiPropName})")
+
             RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
-            Combo combo = new Combo(
-              type            : (type),
-              status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-              startDate       : pub_to_add?.startDate && "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
-              endDate         : pub_add_ed,
-              "${propName}"   : publisher,
-              "${tiPropName}" : ti
-            )
+
+            def combo = null
+
+            if (propName == "toComponent") {
+              combo = new Combo(
+                type            : (type),
+                status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                startDate       : pub_to_add?.startDate && "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
+                endDate         : pub_add_ed,
+                toComponent     : publisher,
+                fromComponent   : ti
+              )
+            } else {
+              combo = new Combo(
+                type            : (type),
+                status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                startDate       : pub_to_add?.startDate && "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
+                endDate         : pub_add_ed,
+                fromComponent   : publisher,
+                toComponent     : ti
+              )
+            }
 
             // Depending on where the combo is defined we need to add a combo.
 //            if (ti.isComboReverse('publisher')) {
@@ -1292,14 +1312,18 @@ class IntegrationController {
 //            }
 //            publisher.save()
 
-            combo.save(flush:true, failOnError:true)
+            if (combo) {
+              combo.save(flush:true, failOnError:true)
 
-            // Add the combo to our list to avoid adding duplicates.
-            publisher_combos.add ( combo )
+              // Add the combo to our list to avoid adding duplicates.
+              publisher_combos.add ( combo )
 
-            log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
-              (combo.startDate ? ' from ' + combo.startDate : '') +
-              (combo.endDate ? ' to ' + combo.endDate : '')
+              log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
+                (combo.startDate ? ' from ' + combo.startDate : '') +
+                (combo.endDate ? ' to ' + combo.endDate : '')
+            } else {
+              log.error("Could not create publisher Combo..")
+            }
 
           } else {
             log.debug "Publisher ${publisher.name} already set against '${ti.name}'"

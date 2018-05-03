@@ -110,7 +110,7 @@ class Package extends KBComponent {
   @Transient
   public getTitles(def onlyCurrent = true) {
     def all_titles = null
-    
+
     if (onlyCurrent) {
       def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
       def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
@@ -741,8 +741,10 @@ select tipp.id,
     }
 
     packageHeaderDTO.variantNames?.each {
-      result.ensureVariantName(it)
-      changed=true
+      if ( it.trim().size() > 0 ) {
+        result.ensureVariantName(it)
+        changed=true
+      }
     }
 
     packageHeaderDTO.curatoryGroups?.each {

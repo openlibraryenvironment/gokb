@@ -65,12 +65,12 @@
 								<li><a data-toggle="modal" data-cache="false"
 									title="Show History"
 									data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>'
-									data-target="#modal"><i class="glyphicon glyphicon-time"></i></a></li>
+									data-target="#modal"><i class="far fa-clock"></i></a></li>
 	
 								<li><a data-toggle="modal" data-cache="false"
 									title="Show Notes"
 									data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>'
-									data-target="#modal"><i class="glyphicon glyphicon-comment"></i></a></li>
+									data-target="#modal"><i class="fas fa-comment"></i></a></li>
 	
 								<!-- li>
 		                      <a data-toggle="modal" 
@@ -82,27 +82,27 @@
 								
 								<g:if test="${ det == 1 }">
 									<li class="disabled">
-										<a class="disabled" href="#" ><i class="glyphicon glyphicon-chevron-left"></i></a>
+										<a class="disabled" href="#" ><i class="fas fa-chevron-left"></i></a>
 									</li>
 								</g:if>
 								<g:else>
 									<li><g:link controller="search" title="Previous Record"
 											action="index"
 											params="${params+['det':det-1, offset:((int)((det-2) / max))*max]}">
-											<i class="glyphicon glyphicon-chevron-left"></i>
+											<i class="fas fa-chevron-left"></i>
 										</g:link></li>
 								</g:else>
 								
 								<g:if test="${ det == reccount }">
 									<li class="disabled">
-										<a class="disabled" href="#" ><i class="glyphicon glyphicon-chevron-right"></i></a>
+										<a class="disabled" href="#" ><i class="fas fa-chevron-right"></i></a>
 									</li>
 								</g:if>
 								<g:else>
 									<li><g:link controller="search" title="Next Record"
 										action="index"
 										params="${params+['det':det+1, offset:((int)(det / max))*max]}">
-										<i class="glyphicon glyphicon-chevron-right"></i>
+										<i class="fas fa-chevron-right"></i>
 									</g:link></li>
 								</g:else>
 								

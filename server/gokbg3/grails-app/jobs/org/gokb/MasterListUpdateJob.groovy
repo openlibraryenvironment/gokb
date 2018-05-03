@@ -2,11 +2,9 @@ package org.gokb
 
 
 class MasterListUpdateJob {
-
-  def grailsApplication
   
   // Allow only one run at a time.
-  def concurrent = false
+  static concurrent = false
   
   static triggers = {
     // Cron timer.            

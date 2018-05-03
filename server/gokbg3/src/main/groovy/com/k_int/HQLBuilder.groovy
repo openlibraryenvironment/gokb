@@ -92,7 +92,7 @@ public class HQLBuilder {
     }
 
     def hql_builder_context = new java.util.HashMap();
-    hql_builder_context.declared_scopes = new java.util.HashMap();
+    hql_builder_context.declared_scopes = [:];
     hql_builder_context.query_clauses = []
     hql_builder_context.bindvars = new java.util.HashMap();
     hql_builder_context.genericOIDService = genericOIDService;
@@ -194,6 +194,8 @@ public class HQLBuilder {
     // Get all the combo properties defined on the class.
     def allProps = KBComponent.getAllComboPropertyDefinitionsFor(the_class)
 
+    log.debug("combo props for ${the_class} are: ${allProps}")
+
     if ( proppath.size() > 1 ) {
       
       def head = proppath.remove(0)
@@ -228,18 +230,18 @@ public class HQLBuilder {
       }
     }
     else {
-      // log.debug("head prop...");
+      log.debug("head prop...");
       // If this is an ordinary property, add the operation. If it's a special, the make the extra joins
       Class target_class = allProps[proppath[0]]
       if ( target_class ) {
-        // log.debug("Combo property.....");
+        log.debug("Combo property.....");
         def component_scope_name = createComboScope(the_class, proppath[0], hql_builder_context, parent_scope)
         // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an 
         // object.
         addQueryClauseFor(crit,hql_builder_context,component_scope_name)
       }
       else {
-        // log.debug("Standard property...");
+        log.debug("Standard property ${proppath}...");
         // The property is a standard property
         addQueryClauseFor(crit,hql_builder_context,parent_scope+'.'+proppath[0])
       }

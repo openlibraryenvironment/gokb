@@ -16,9 +16,7 @@ class ComponentStatisticService {
 
     if ( running == false ) {
       running = true;
-      def future = executorService.submit({
-        ensureStats(months, offset, force_update)
-      } as java.util.concurrent.Callable)
+      ensureStats(months, offset, force_update)
       log.debug("updateCompStats returning");
     }
     else {
@@ -67,14 +65,14 @@ class ComponentStatisticService {
 
           query_params.enddate = period_end_date
 
-          def fetch_all = "select count(o.id) from ${c} as o where dateCreated < :enddate";
+          def fetch_all = "select count(o.id) from ${c} as o where dateCreated < :enddate"
           def fetch_new = "select count(o.id) from ${c} as o where dateCreated > :startdate and dateCreated < :enddate"
 
-          def stats_total_count = KBComponent.executeQuery(fetch_all, query_params, [readOnly: true])[0]
+          def stats_total_count = KBComponent.executeQuery(fetch_all.toString(), query_params, [readOnly: true])[0]
 
           query_params.startdate = period_start_date
 
-          def stats_new_count = KBComponent.executeQuery(fetch_new, query_params, [readOnly: true])[0]
+          def stats_new_count = KBComponent.executeQuery(fetch_new.toString(), query_params, [readOnly: true])[0]
 
           if (existing_stats && existing_stats.size() > 0 && ( ( offset == 0 && i == to_substract ) || force_update ) ) {
             if( existing_stats.size() == 1 ) {
@@ -99,5 +97,10 @@ class ComponentStatisticService {
       log.debug("${c} - Created ${new_stats_created} new stat lines, updated ${stats_updated}")
     }
     running = false
+  }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
+    log.debug("Destroy");
   }
 }

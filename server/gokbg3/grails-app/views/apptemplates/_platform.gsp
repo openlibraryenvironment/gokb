@@ -98,7 +98,7 @@
     <div class="tab-pane" id="titledetails">
       <g:if test="${params.controller != 'create'}">
         <g:link class="display-inline" controller="search" action="index"
-          params="[qbe:'g:3tipps', qp_plat_id:d.id, hide:['qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat', 'qp_plat_id']]"
+          params="[qbe:'g:3tipps', qp_plat_id:d.id, hide:['qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat', 'qp_plat_id', 'qp_pkg_id']]"
           id="">TIPPs on this Platform</g:link>
       </g:if>
       <g:else>

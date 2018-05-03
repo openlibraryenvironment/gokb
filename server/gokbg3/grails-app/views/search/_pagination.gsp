@@ -27,24 +27,24 @@
 
         <g:if test="${ page == 1 }">
           <li class='disabled'><a class='disabled' href='#'><i
-              class="glyphicon glyphicon-chevron-left"></i></a></li>
+              class="fas fa-chevron-left"></i></a></li>
         </g:if>
         <g:else>
           <li><g:link title="Previous Page" controller="${s_controller}"
               action="${s_action}"
               params="${params+["${custom_offset}":(offset.toInteger() - max.toInteger()),det:null]}">
-              <i class="glyphicon glyphicon-chevron-left"></i>
+              <i class="fas fa-chevron-left"></i>
             </g:link></li>
         </g:else>
         <g:if test="${ page == page_max }">
-          <li class='disabled'><a href='#'><i
-              class="glyphicon glyphicon-chevron-right"></i></a></li>
+          <li class='disabled'><a href='#'>
+          <i class="fas fa-chevron-right"></i></a></li>
         </g:if>
         <g:else>
           <li><g:link title="Next Page" controller="${s_controller}"
               action="${s_action}"
               params="${params+["${custom_offset}":(offset.toInteger() + max.toInteger()),det:null]}">
-              <i class="glyphicon glyphicon-chevron-right"></i>
+              <i class="fas fa-chevron-right"></i>
             </g:link></li>
         </g:else>
       </ul>

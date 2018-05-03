@@ -164,3 +164,6 @@ environments:
 ---
 gokb:
     defaultCuratoryGroup: Local
+---
+quartz:
+    autoStartup: true

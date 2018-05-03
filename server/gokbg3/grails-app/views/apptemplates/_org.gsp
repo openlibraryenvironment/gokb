@@ -186,7 +186,7 @@
 							<button
 								class="hidden-license-details btn btn-default btn-sm btn-primary "
 								data-toggle="collapse" data-target="#collapseableAddOffice">
-								Add new <i class="glyphicon glyphicon-plus"></i>
+								Add new <i class="fas fa-plus"></i>
 							</button>
 							<dl id="collapseableAddOffice" class="dl-horizontal collapse">
 								<g:form controller="ajaxSupport" action="addToCollection"

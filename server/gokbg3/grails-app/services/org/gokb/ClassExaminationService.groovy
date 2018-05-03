@@ -3,9 +3,10 @@ package org.gokb
 import java.beans.PropertyDescriptor
 import java.lang.reflect.Field
 import org.grails.core.DefaultGrailsDomainClass
+import org.gokb.cred.*
 import grails.util.GrailsNameUtils
-import org.gokb.cred.RefdataValue
 import org.springframework.beans.BeanUtils
+import org.grails.datastore.mapping.model.*
 
 class ClassExaminationService {
   def grailsApplication
@@ -40,5 +41,36 @@ class ClassExaminationService {
 	  currentClass = currentClass.getSuperclass()
 	}
 	refdata_props
+  }
+
+  def deriveCategoryForProperty ( String obj, String propName ) {
+    String propertyDef
+
+    // Default to this class.
+
+    def moreTests = grailsApplication.mappingContext.getPersistentEntity(obj)
+
+//     def moreTests = obj.domainClass.clazz
+    while (moreTests) {
+      log.debug("deriveCategoryForProperty testing ${obj} for ${propName}")
+      // Read the property...
+      if (moreTests.getPropertyByName(propName)) {
+
+        log.debug("found ${propName} for ${moreTests.getJavaClass().simpleName}")
+
+        propertyDef = "${moreTests.getJavaClass().simpleName}"
+
+        // Get the superclass.
+        moreTests = moreTests.getParentEntity()
+      } else {
+
+        log.debug("${propName} not found ..")
+
+        moreTests = false
+      }
+    }
+
+    propertyDef ? "${propertyDef}.${GrailsNameUtils.getClassName(propName)}" : null
+
   }
 }

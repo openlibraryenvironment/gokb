@@ -16,6 +16,7 @@ import grails.core.GrailsDomainClassProperty
  */
 
 @Log4j
+@grails.gorm.dirty.checking.DirtyCheck
 abstract class KBComponent {
 
   static final String RD_STATUS         = "KBComponent.Status"
@@ -111,7 +112,7 @@ abstract class KBComponent {
     try {
 
       // Metaclass
-      ExpandoMetaClass metaclass_of_this_component = getMetaClass()
+      ExpandoMetaClass metaclass_of_this_component = this.metaClass
 
       // First get or build up the full static map of defaults
       final Class rootClass = metaclass_of_this_component.getTheClass()

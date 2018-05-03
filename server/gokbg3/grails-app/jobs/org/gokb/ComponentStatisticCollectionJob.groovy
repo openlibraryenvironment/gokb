@@ -2,10 +2,9 @@ package org.gokb
 
 class ComponentStatisticCollectionJob {
 
-  def grailsApplication
-  def ComponentStatisticService
+  static concurrent = false
 
-  def concurrent = false
+  ComponentStatisticService componentStatisticService
 
   // First of the month
   static triggers = {
@@ -16,11 +15,11 @@ class ComponentStatisticCollectionJob {
     log.debug("Beginning scheduled statistics update job.")
     if (grailsApplication.config.enable_statsrewrite) {
       log.debug("Also updating existing stats.")
-      ComponentStatisticService.updateCompStats(12,0,true)
+      componentStatisticService.updateCompStats(12,0,true)
     }
     else{
       log.debug("Not updating existing stats.")
-      ComponentStatisticService.updateCompStats()
+      componentStatisticService.updateCompStats()
     }
   }
 }

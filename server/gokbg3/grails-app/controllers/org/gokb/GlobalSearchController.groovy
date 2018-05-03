@@ -1,6 +1,9 @@
 package org.gokb
 
 import grails.converters.*
+import org.elasticsearch.action.search.*
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.index.query.*
 
 class GlobalSearchController {
 
@@ -35,26 +38,40 @@ class GlobalSearchController {
 
         def typing_field = grailsApplication.config.globalSearch.typingField ?: 'componentType'
 
-        def search_action = esclient.search {
-                       indices grailsApplication.config.globalSearch.indices
-                       types grailsApplication.config.globalSearch.types
-                       source {
-                         from = result.offset
-                         size = result.max
-                         query {
-                           query_string (query: query_str)
-                         }
-                         aggregations {
-                           'Component Type' {
-                             terms {
-                               field = typing_field
-                             }
-                           }
-                         }
-                       }
-                     }
+        QueryBuilder esQuery = QueryBuilders.queryStringQuery(query_str)
 
-        def search = search_action.actionGet()
+        log.debug("Using index ${grailsApplication.config.globalSearch.indices ?: 'gokbg3 (auto)'}")
+
+        SearchRequestBuilder es_request = esclient.prepareSearch("globalSearch")
+            .setIndices(grailsApplication.config.globalSearch.indices ?: "gokbg3")
+            .setTypes(grailsApplication.config.globalSearch.types ?: "component")
+            .setSize(result.max)
+            .setFrom(result.offset)
+            .setQuery(esQuery)
+            .addAggregation(
+              AggregationBuilders.terms('Component Type').field(typing_field)
+            )
+
+//         def search_action = esclient.search {
+//                        indices grailsApplication.config.globalSearch.indices
+//                        types grailsApplication.config.globalSearch.types
+//                        source {
+//                          from = result.offset
+//                          size = result.max
+//                          query {
+//                            query_string (query: query_str)
+//                          }
+//                          aggregations {
+//                            'Component Type' {
+//                              terms {
+//                                field = typing_field
+//                              }
+//                            }
+//                          }
+//                        }
+//                      }
+
+        def search = es_request.execute().actionGet()
 
         result.hits = search.hits
 

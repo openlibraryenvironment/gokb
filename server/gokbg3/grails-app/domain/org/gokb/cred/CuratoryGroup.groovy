@@ -36,7 +36,7 @@ class CuratoryGroup extends KBComponent {
     ql = CuratoryGroup.findAllByNameIlike("${params.q}%",params)
 
     ql.each { t ->
-      if( !params.filter1 || t.status.value == params.filter1 ){
+      if( !params.filter1 || t.status?.value == params.filter1 ){
         result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
       }
     }
@@ -47,24 +47,9 @@ class CuratoryGroup extends KBComponent {
   def beforeInsert() {
     def user = springSecurityService?.currentUser
     this.owner = user
-    
-    log.debug("Checking for duplicate CuratoryGroup: ${this.name}")
-    
-    if (CuratoryGroup.findByNameIlike(this.name)){
-      this.errors.reject ("Name is not unique","A group with this name alread exists" )
-      log.debug("CuratoryGroup: ${this.errors}")
-      return false
-    }
   }
 
   def beforeUpdate() {
-    log.debug("UPDATE: Checking for duplicate CuratoryGroup: ${this.name}")
-
-    if (CuratoryGroup.findByNameIlike(this.name)){
-      this.errors.reject ("Name is not unique", "A group with this name alread exists" )
-      log.debug("CuratoryGroup: ${this.errors}")
-      return false
-    }
   }
 
 }

@@ -16,7 +16,7 @@
           <th>
             <g:link params="${params+[pkg_sort:'name',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
               Package Name 
-              <i class="glyphicon glyphicon-sort"></i>
+              <i class="fas fa-sort"></i>
             </g:link>
               
           </th>
@@ -26,7 +26,7 @@
           <th>
             <g:link params="${params+[pkg_sort:'lastUpdated',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
               Last Modified
-              <i class="glyphicon glyphicon-sort"></i>
+              <i class="fas fa-sort"></i>
             </g:link>
           </th>
           <th>Scope</th>
@@ -70,7 +70,7 @@
           <th>
             <g:link params="${params+[rr_sort:'displayName',rr_sort_order:('desc'== params.rr_sort_order?'asc':'desc')]}">
               Allocated To
-              <i class="glyphicon glyphicon-sort"></i>
+              <i class="fas fa-sort"></i>
             </g:link>
           </th>
           <th>Component</th>

@@ -135,14 +135,14 @@
             var counter = parseInt($('#watchCounter').html());
             if ( data.change == '-1' ) {
               $('#watchToggleLink').prop('title','You are not watching this resource');
-              $('#watchIcon').removeClass('glyphicon-eye-open');
-              $('#watchIcon').addClass('glyphicon-eye-close');
+              $('#watchIcon').removeClass('fas fa-eye');
+              $('#watchIcon').addClass('far fa-eye-slash');
               $('#watchCounter').html(counter-1);
             }
             else {
               $('#watchToggleLink').prop('title','You are watching this resource');
-              $('#watchIcon').removeClass('glyphicon-eye-close');
-              $('#watchIcon').addClass('glyphicon-eye-open');
+              $('#watchIcon').removeClass('far fa-eye-slash');
+              $('#watchIcon').addClass('fas fa-eye');
               $('#watchCounter').html(counter+1);
             }
           });

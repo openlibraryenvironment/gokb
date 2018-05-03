@@ -1,16 +1,20 @@
 package org.gokb
 
 import org.gokb.cred.*
+import grails.transaction.Transactional
+import org.elasticsearch.action.delete.DeleteRequest
+import org.elasticsearch.client.Requests
 
 class CleanupService {
   def sessionFactory
   def ESWrapperService
+  def grailsApplication
   
   def tidyMissnamedPublishers () {
     
     try {
     
-      log.debug "Tidy the missnamed publishers"
+      log.debug("Tidy the missnamed publishers")
       def matches = Org.executeQuery('from Org as o where o.name LIKE :pattern', [pattern: '%::{Org:%}'])
       final def toDelete = []
       
@@ -18,7 +22,7 @@ class CleanupService {
         
         Org.withNewTransaction {
           String name = original.name
-          log.debug "Considering ${name}"
+          log.debug("Considering ${name}")
           
           // Strip the formatting noise.
           String idStr = name.replaceAll(/.*\:\:\{Org\:(\d+)\}/, '$1')
@@ -29,7 +33,7 @@ class CleanupService {
             
               Org newTarget = Org.read(theId)
               
-              log.debug "Move the publisher entries to ${newTarget}"
+              log.debug("Move the publisher entries to ${newTarget}")
               
               // Unsaved components can't have combo relations
               final RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, Org.getComboTypeValueFor(TitleInstance, "publisher"))
@@ -70,7 +74,7 @@ class CleanupService {
               
             } else {
               // Publisher was a brand new one. Just rename the publisher.
-              log.debug "Correct component with incorrect title. Leave the relationship in place but rename the org."
+              log.debug("Correct component with incorrect title. Leave the relationship in place but rename the org.")
               String theName = name.replaceAll(/(.*)\:\:\{Org\:\d+\}/, '$1')
               
               // Strange things happening when attempting to rename "original" reload from the id.
@@ -79,7 +83,7 @@ class CleanupService {
               rnm.save( flush: true, failOnError:true )
             }
           } else {
-            log.debug "'${name}' does not contain an identifier, so we are ignoring this match." 
+            log.debug("'${name}' does not contain an identifier, so we are ignoring this match." )
           }
         }
       }
@@ -87,7 +91,7 @@ class CleanupService {
       expungeByIds(toDelete)
       
     } catch (Throwable t) {
-      log.error "Error tidying duplicated (missnamed) orgs.", t
+      log.error("Error tidying duplicated (missnamed) orgs. ${t}")
     }
   }
   
@@ -103,13 +107,16 @@ class CleanupService {
           def component = KBComponent.get(component_id);
           def c_id = "${component.class.name}:${component.id}"
           def expunge_result = component.expunge();
-          log.debug(expunge_result);
-          def es_response = esclient.delete {
-            index 'gokb'
-            type 'component'
-            id c_id
-          }
-          log.debug(es_response)
+          log.debug("${expunge_result}");
+
+          DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb_es_index ?: "gokbg3")
+                .type('component')
+                .id(c_id)
+
+          def es_response = esclient.delete(req)
+
+
+          log.debug("${es_response}")
           result.report.add(expunge_result)
         }
       }
@@ -121,6 +128,7 @@ class CleanupService {
     return result
   }
   
+  @Transactional
   def expungeDeletedComponents() {
 
     log.debug("Process delete candidates");
@@ -163,7 +171,7 @@ class CleanupService {
   }
   
   private final def duplicateIdentifierCleanup = {
-    log.debug "Beginning duplicate identifier tidyup."
+    log.debug("Beginning duplicate identifier tidyup.")
     
     // Lookup the Ids refdata element name.
     final long id_combo_type_id = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids').id
@@ -217,14 +225,14 @@ class CleanupService {
     }
       
     // We can also check the number of occurances from the query as an added safety check.
-    log.debug "Projected deletions = ${projected_deletes}"
-    log.debug "Collected deletions = ${to_delete.size()}"
+    log.debug("Projected deletions = ${projected_deletes}")
+    log.debug("Collected deletions = ${to_delete.size()}")
     if (to_delete.size() != projected_deletes) {
-      log.error "Missmatch in duplicate combo deletion, backing out..."
+      log.error("Missmatch in duplicate combo deletion, backing out...")
     } else {
     
       if (projected_deletes > 0) {
-        log.debug "Matched number of deletions and projected number, delete..."
+        log.debug("Matched number of deletions and projected number, delete...")
         
         query = 'DELETE FROM Combo c WHERE c.combo_id IN (:delete_ids)'
         
@@ -245,10 +253,10 @@ class CleanupService {
             // Get all results.
             executeUpdate()
           }
-          log.debug "Delete query returned ${dres} duplicated identifier instances removed."
+          log.debug("Delete query returned ${dres} duplicated identifier instances removed.")
         }
       } else {
-        log.debug "No duplicates to delete..."
+        log.debug("No duplicates to delete...")
       }
     }
     

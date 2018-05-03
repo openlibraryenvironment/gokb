@@ -30,6 +30,7 @@ class FTUpdateService {
     if ( running == false ) {
       running = true;
       doFTUpdate()
+      return new Date();
     }
     else {
       log.debug("FTUpdate already running");
@@ -111,6 +112,11 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
         
+        result.curatoryGroups = []
+        kbc.curatoryGroups?.each { cg ->
+          result.curatoryGroups.add(cg.name)
+        }
+
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -302,6 +308,11 @@ class FTUpdateService {
     else {
       log.debug("FTUpdate already running");
     }
+  }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
+    log.debug("Destroy");
   }
  
 }

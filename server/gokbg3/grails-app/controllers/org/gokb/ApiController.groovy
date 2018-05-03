@@ -637,6 +637,10 @@ class ApiController {
             orgRoleParam = v
           }
 
+          else if (k == 'curatoryGroup' && v instanceof String) {
+            singleParams['curatoryGroups'] = v
+          }
+
           else if (k == 'label' && v instanceof String) {
             exactQuery.should(QueryBuilders.matchQuery('name', v))
             exactQuery.should(QueryBuilders.matchQuery('altname', v))
@@ -651,15 +655,17 @@ class ApiController {
             singleParams['altname'] = v
           }
 
-          else if ( k == "identifier" ) {
-            if (v instanceof String) {
-              id_params['identifiers.value'] = v
-            }else if (v instanceof ArrayList && v.size() == 2) {
-              id_params['identifiers.value'] = v[1]
-              id_params['identifiers.namespace'] = v[0]
+          else if ( k == "identifier" && v instanceof String) {
+            if (v.contains(',')) {
+              id_params['identifiers.namespace'] = v.split(',')[0]
+              id_params['identifiers.value'] = v.split(',')[1]
             }else{
-              errors['identifier'] = "No String or ArrayList for param identifier found."
+              id_params['identifiers.value'] = v
             }
+          }
+
+          else if ( k == "id" && v instanceof String) {
+            singleParams['id'] = v
           }
 
           else if (!other_fields.contains(k)){

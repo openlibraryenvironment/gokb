@@ -18,8 +18,8 @@
           ${d.activityName} - ${d.status?.value}
         </h3>
         <div>Icon indicators: 
-          <div><span class="glyphicon glyphicon-ok"></span> Item is already connected to the new title</div>
-          <div><span class="glyphicon glyphicon-plus" style="color:green;"></span> Item will be added to the new title, if the item type is <b>included</b></div>
+          <div><span class="fas fa-check"></span> Item is already connected to the new title</div>
+          <div><span class="fas fa-plus" style="color:green;"></span> Item will be added to the new title, if the item type is <b>included</b></div>
         </div>
           <div class="title-merge-info">
             Please note: Once processed, the status of the replaced titles and their TIPPs will be set to <b>Deleted</b> and all of their open ReviewRequests will be closed!
@@ -54,10 +54,10 @@
                       <span class="label label-default">${ti_id.value}</span>
                       <span class="pull-right">
                         <g:if test="${ti_id in newTitle.ids}">
-                          <span class="glyphicon glyphicon-ok"></span>
+                          <span class="fas fa-check"></span>
                         </g:if>
                         <g:else>
-                          <span class="glyphicon glyphicon-plus" style="color:green;"></span>
+                          <span class="fas fa-plus" style="color:green;"></span>
                         </g:else>
                       </span>
                     </div>
@@ -70,10 +70,10 @@
                         <span>${ti_vn.variantName}</span>
                         <span class="pull-right">
                           <g:if test="${ti_vn in newTitle.variantNames}">
-                            <span class="glyphicon glyphicon-ok"></span>
+                            <span class="fas fa-check"></span>
                           </g:if>
                           <g:else>
-                            <span class="glyphicon glyphicon-plus" style="color:green;"></span>
+                            <span class="fas fa-plus" style="color:green;"></span>
                           </g:else>
                         </span>
                       </li>
@@ -87,10 +87,10 @@
                         <span>${ti_pb.name}<span>
                         <span class="pull-right">
                           <g:if test="${ti_pb in newTitle.publisher}">
-                            <span class="glyphicon glyphicon-ok"></span>
+                            <span class="fas fa-check"></span>
                           </g:if>
                           <g:else>
-                            <span class="glyphicon glyphicon-plus" style="color:green;"></span>
+                            <span class="fas fa-plus" style="color:green;"></span>
                           </g:else>
                         </span>
                       </li>
@@ -173,7 +173,7 @@
               </tr>
             </g:each>
             <tr class="title-merge-space">
-              <td colspan="5"><span class="glyphicon glyphicon-arrow-down"></span></td>
+              <td colspan="5"><span class="fas fa-arrow-down"></span></td>
             </tr>
             <tr class="title-merge-heading-new">
               <td rowspan="3" style="text-align:center;"> ${newTitle.id} </td>

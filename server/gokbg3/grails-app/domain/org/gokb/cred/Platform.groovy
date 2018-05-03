@@ -189,8 +189,9 @@ class Platform extends KBComponent {
       } catch( MalformedURLException ){
         log.debug("Platform name is no valid URL")
       }
-      name_candidates = Platform.executeQuery("from Platform where name = ?", [platformDTO.name]);
     }
+
+    name_candidates = Platform.executeQuery("from Platform where name = ?", [platformDTO.name]);
     
     if(platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0){
       try {

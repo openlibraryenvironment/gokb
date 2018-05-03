@@ -15,20 +15,20 @@
               <g:if test="${params.sort==c.sort && params.order=='asc'}">
                 <g:link params="${params+['sort':c.sort,order:'desc']}">
                   ${c.heading}
-                  <i class="glyphicon glyphicon-sort-up"></i>
+                  <i class="fas fa-sort-up"></i>
                 </g:link>
               </g:if>
               <g:else>
                 <g:if test="${params.sort==c.sort && params.order=='desc'}">
                   <g:link params="${params+['sort':c.sort,order:'asc']}">
                     ${c.heading}
-                    <i class="glyphicon glyphicon-sort-down"></i>
+                    <i class="fas fa-sort-down"></i>
                   </g:link>
                 </g:if>
                 <g:else>
                   <g:link params="${params+['sort':c.sort,order:'desc']}">
                     ${c.heading}
-                    <i class="glyphicon glyphicon-sort"></i>
+                    <i class="fas fa-sort"></i>
                   </g:link>
                 </g:else>
               </g:else>
@@ -78,20 +78,20 @@
                 <g:if test="${params.sort==c.sort && params.order=='asc'}">
                   <g:link params="${params+['sort':c.sort,order:'desc']}">
                     ${c.heading}
-                    <i class="glyphicon glyphicon-sort-up"></i>
+                    <i class="fas fa-sort-up"></i>
                   </g:link>
                 </g:if>
                 <g:else>
                   <g:if test="${params.sort==c.sort && params.order=='desc'}">
                     <g:link params="${params+['sort':c.sort,order:'asc']}">
                       ${c.heading}
-                      <i class="glyphicon glyphicon-sort-down"></i>
+                      <i class="fas fa-sort-down"></i>
                     </g:link>
                   </g:if>
                   <g:else>
                     <g:link params="${params+['sort':c.sort,order:'desc']}">
                       ${c.heading}
-                      <i class="glyphicon glyphicon-sort"></i>
+                      <i class="fas fa-sort"></i>
                     </g:link>
                   </g:else>
                 </g:else>

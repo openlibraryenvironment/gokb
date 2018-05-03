@@ -581,7 +581,7 @@ cache.headers.presets = [
 ]
 
 globalSearch = [
-  'indices'     : 'gokb',
+  'indices'     : 'gokbg3',
   'types'       : 'component',
   'typingField' : 'componentType',
   'port'        : 9300
@@ -589,7 +589,7 @@ globalSearch = [
 
 searchApi = [
   'path'        : '/',
-  'indices'     : 'gokb',
+  'indices'     : 'gokbg3',
   'types'       : 'component',
   'typingField' : 'componentType',
   'port'        : 9200

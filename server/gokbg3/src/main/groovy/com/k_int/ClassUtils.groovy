@@ -5,6 +5,7 @@ import org.hibernate.proxy.LazyInitializer
 import org.hibernate.Hibernate
 import org.gokb.cred.RefdataCategory
 import grails.util.GrailsClassUtils
+import org.gokb.ClassExaminationService
 import java.text.SimpleDateFormat
 
 class ClassUtils {
@@ -63,8 +64,10 @@ class ClassUtils {
 
   public static boolean setRefdataIfPresent(value, obj, prop, cat = null) {
     boolean result = false
+    ClassExaminationService classExaminationService = grails.util.Holders.applicationContext.getBean('classExaminationService') as ClassExaminationService
+
     if (!cat) {
-      cat = RefdataCategory.derriveCategoryForProperty(obj, prop)
+      cat = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
     }
 
     if ( ( value ) && ( cat ) &&

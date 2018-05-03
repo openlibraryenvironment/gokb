@@ -1,5 +1,5 @@
 <%@page import="org.gokb.cred.CuratoryGroup"%>
-<g:set var="cur_editable" value="${ CuratoryGroup.isTypeAdministerable(false) && d.isEditable() && ((request.curator?.size() > 0) || (params.curationOverride == "true")) }" />
+<g:set var="cur_editable" value="${ CuratoryGroup.isTypeAdministerable(false) && d.isEditable() && ((d.curatoryGroups?.size() == 0) || (request.curator?.size() > 0) || (params.curationOverride == "true")) }" />
 <table class="table table-bordered">
   <thead>
     <tr>

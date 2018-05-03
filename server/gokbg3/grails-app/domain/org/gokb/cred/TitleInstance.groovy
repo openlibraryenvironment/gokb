@@ -46,9 +46,10 @@ class TitleInstance extends KBComponent {
       // Need to compare the existing variant names here. Rather than use the equals method,
       // we are going to compare certain attributes here.
       RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
+      def locale_rd = null
       
       if(locale){
-        RefdataValue locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
+        locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
       }
 
       // Each of the variants...
@@ -144,6 +145,8 @@ class TitleInstance extends KBComponent {
         }
       }
     }
+    result = result ? Org.get(result.id) : null
+
     result
   }
 

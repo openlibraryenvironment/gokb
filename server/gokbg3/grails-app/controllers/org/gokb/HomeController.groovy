@@ -188,6 +188,7 @@ class HomeController {
     def result = [:]
     User user = springSecurityService.currentUser
     result.user = user
+    result.curator = [user]
     result
   }
 
