@@ -24,7 +24,9 @@ class DatabaseMessageSource extends AbstractMessageSource {
       // println("DatabaseMessageSource::resolveCode(${code},${locale}) ${messageBundleMessageSource}");
 
       ContentItem.withTransaction {
-        ContentItem ci = ContentItem.findByKeyAndLocale(code, locale.toString());
+        // Try to find by key and locale, otherwise, by key and blank locale
+        ContentItem ci = ContentItem.findByKeyAndLocale(code, locale.toString()) ?: ContentItem.findByKeyAndLocale(code, '');
+
         if ( ci ) {
           format = new MessageFormat(ci.content, locale)
 
