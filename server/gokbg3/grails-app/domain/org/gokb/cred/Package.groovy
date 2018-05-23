@@ -399,7 +399,7 @@ select tipp.id,
           tipps.each { tipp ->
             builder.'TIPP' (['id':tipp[0]]) {
               builder.'status' (tipp[14]?.value)
-              builder.'lastUpdated' (sdf.format(tipp[20]?.value))
+              builder.'lastUpdated' (tipp[20]?sdf.format(tipp[20]):null)
               builder.'medium' (tipp[17]?.value)
               builder.'title' (['id':tipp[2]]) {
                 builder.'name' (tipp[1]?.trim())
@@ -424,7 +424,7 @@ select tipp.id,
                 coverageDepth:tipp[11]?.value,
                 coverageNote:tipp[12],
                 embargo: tipp[18] )
-              if ( tipp[13] != null ) { 'url'(tipp[13]) }
+              'url'(tipp[13]?:"")
             }
           }
         }
