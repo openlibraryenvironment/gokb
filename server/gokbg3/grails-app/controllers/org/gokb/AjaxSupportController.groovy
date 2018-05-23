@@ -238,7 +238,9 @@ class AjaxSupportController {
           log.debug("Saving ${new_obj}");
           if ( new_obj.save() ) {
             log.debug("Saved OK");
-            contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
+            if (contextObj.respondsTo("lastUpdateComment")){
+              contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
+            }
             contextObj.save(flush: true)
           }
           else {
@@ -584,13 +586,13 @@ class AjaxSupportController {
 
     def current_applied = DSAppliedCriterion.findByUserAndAppliedToAndCriterion(user,component,crit);
     if ( current_applied == null ) {
-      // log.debug("Create new applied criterion");
-      current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
+      log.debug("Create new applied criterion");
+      current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(flush: true, failOnError:true)
     }
     else {
       log.debug("Update existing vote");
       current_applied.value=rdv
-      current_applied.save(failOnError:true)
+      current_applied.save(flush: true, failOnError:true)
     }
     result.username = user.username
     render result as JSON

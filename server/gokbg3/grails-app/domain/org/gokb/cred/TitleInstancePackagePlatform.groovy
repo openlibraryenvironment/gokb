@@ -277,9 +277,21 @@ class TitleInstancePackagePlatform extends KBComponent {
             "Platform not marked as current."
           )
         }
-        
-        if ( tipp.isDeleted() || tipp.isRetired() ) {
+        if (tipp_dto.status && tipp_dto.status == "Retired") {
+          tipp.status = status_retired
+
+          if ( !tipp_dto.accessEndDate ) {
+            tipp.accessEndDate = new Date()
+          }
+        }
+        else if ( tipp.isDeleted() || tipp.isRetired() ) {
           tipp.status = status_current
+
+          ReviewRequest.raise(
+            tipp,
+            "This TIPP was previously marked as Retired, but has now been set back to Current again.",
+            "Retired TIPP reenabled."
+          )
           
           if ( !tipp.accessStartDate ) {
             tipp.accessStartDate = new Date()
