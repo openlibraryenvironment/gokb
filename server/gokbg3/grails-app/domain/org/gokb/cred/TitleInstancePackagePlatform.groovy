@@ -298,11 +298,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           if (payment_ref) tipp.paymentType = RefdataValue.get(payment_ref)
         }
 
-        def changedUrl = com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
-        log.debug("changedUrl for ${tipp.id} returned ${changedUrl}. ${tipp.url} -> ${tipp_dto.url}")
-
-        tipp.url = tipp_dto.url
-
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate,tipp,'accessStartDate')
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessStartDate')
 
