@@ -51,8 +51,11 @@ class RefdataCategory {
 
     def rdv_cache_key = category_name+':'+value+':'+sortkey
     def rdv_id  = rdv_cache[rdv_cache_key]
-    if ( rdv_id ) {
+    if ( rdv_id && rdv_id instanceof Long) {
       result = RefdataValue.get(rdv_id);
+    }
+    else if (!rdv_id instanceof Long) {
+      throw new RuntimeException("Got a string value from rdv_cache for ${category_name}, ${value}!");
     }
     else {
       // The category.

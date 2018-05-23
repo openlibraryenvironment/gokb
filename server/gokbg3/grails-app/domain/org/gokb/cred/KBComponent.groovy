@@ -8,8 +8,6 @@ import javax.persistence.Transient
 import org.grails.datastore.mapping.model.PersistentEntity
 import org.grails.datastore.mapping.model.PersistentProperty
 import org.gokb.GOKbTextUtils
-import grails.core.GrailsDomainClass
-import grails.core.GrailsDomainClassProperty
 
 /**
  * Abstract base class for GoKB Components.
@@ -165,8 +163,7 @@ abstract class KBComponent {
         KBComponent thisComponent = this
 
         // DomainClassArtefactHandler for this class
-        // PersistentEntity dClass = grailsApplication.getDomainClass(thisComponent.class.name)
-        GrailsDomainClass dClass = grailsApplication.getDomainClass(thisComponent.class.name)
+        PersistentEntity dClass = grailsApplication.mappingContext.getPersistentEntity(thisComponent.class.name)
 
         defaultsForThis.each { String className, defaults ->
 
@@ -176,8 +173,8 @@ abstract class KBComponent {
             if (thisComponent."${property}" == null) {
 
               // Get the type defined against the class.
-              GrailsDomainClassProperty propertyDef = dClass.getPropertyByName(property)
-              String propType = propertyDef?.getReferencedPropertyType()?.getName()
+              PersistentProperty propertyDef = dClass.getPropertyByName(property)
+              String propType = propertyDef?.getType()?.getName()
   
               if (propType) {
   
@@ -1217,7 +1214,7 @@ abstract class KBComponent {
 
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
-    def cids = getIds() ?: []
+    def cids = this.ids ?: []
     String cName = this.class.name
     
     // Singel props.
@@ -1246,13 +1243,13 @@ abstract class KBComponent {
     }
     
     // Tags
-    if ( tags ) {
-      builder.'tags' {
-        tags.each { tag ->
-          builder.'tag' (tag.value)
-        }
-      }
-    }
+//     if ( tags ) {
+//       builder.'tags' {
+//         tags.each { tag ->
+//           builder.'tag' (tag.value)
+//         }
+//       }
+//     }
     
     if (additionalProperties) {
       builder.'additionalProperties' {

@@ -129,7 +129,7 @@ class Org extends KBComponent {
     id:'orgs',
     textDescription:'Organization repository for GOKb',
     query:" from Org as o ",
-    statusFilter:"where o.status.value != 'Deleted'",
+    statusFilter: ["Deleted"],
     pageSize:10
   ]
 

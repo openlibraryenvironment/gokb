@@ -173,6 +173,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   public static TitleInstancePackagePlatform upsertDTO(tipp_dto) {
     def result = null;
+    def newTipp = false;
     log.debug("upsertDTO(${tipp_dto})");
     def pkg = Package.get(tipp_dto.package?.internalId)
     def plt = Platform.get(tipp_dto.platform?.internalId)
@@ -243,18 +244,25 @@ class TitleInstancePackagePlatform extends KBComponent {
 //         tipp.hostPlatform = plt;
 
         log.debug("Creating new TIPP..")
-        tipp=new TitleInstancePackagePlatform().save(flush:true, failOnError:true)
+        tipp = new TitleInstancePackagePlatform().save(failOnError: true)
 
-        def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+        if ( tipp ) {
+          def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
-        def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-        def pkg_combo = new Combo(toComponent:tipp, fromComponent:pkg, type:pkg_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+          def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+          def pkg_combo = new Combo(toComponent:tipp, fromComponent:pkg, type:pkg_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
 
-        def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
-        def plt_combo = new Combo(toComponent:tipp, fromComponent:plt, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+          def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+          def plt_combo = new Combo(toComponent:tipp, fromComponent:plt, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
 
-        def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-        def ti_combo = new Combo(toComponent:tipp, fromComponent:ti, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+          def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+          def ti_combo = new Combo(toComponent:tipp, fromComponent:ti, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+
+          newTipp = true
+        }
+        else {
+          log.error("TIPP creation failed!")
+        }
       }
 
       if ( tipp ) {
@@ -290,7 +298,11 @@ class TitleInstancePackagePlatform extends KBComponent {
           if (payment_ref) tipp.paymentType = RefdataValue.get(payment_ref)
         }
 
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
+        def changedUrl = com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
+        log.debug("changedUrl for ${tipp.id} returned ${changedUrl}. ${tipp.url} -> ${tipp_dto.url}")
+
+        tipp.url = tipp_dto.url
+
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate,tipp,'accessStartDate')
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessStartDate')
 
@@ -305,7 +317,6 @@ class TitleInstancePackagePlatform extends KBComponent {
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
         }
-
 //         tipp.save(flush:true, failOnError:true);
       }
       result = tipp;

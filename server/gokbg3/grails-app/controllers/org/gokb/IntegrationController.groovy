@@ -865,6 +865,8 @@ class IntegrationController {
               log.debug("Upsert tipp [${tippctr++}] ${tipp}")
 
               def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
+              log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
+              upserted_tipp.merge(flush: true)
 
               if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
                 log.debug("Existing TIPP matched!")

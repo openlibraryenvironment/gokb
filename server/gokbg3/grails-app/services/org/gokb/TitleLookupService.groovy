@@ -340,10 +340,20 @@ class TitleLookupService {
               the_title = matches[0]
 
               if( id_mismatches.size() > 0 ){
+
+                def id_mm = []
+
+                id_mismatches.each { mId ->
+                  def id_map = [:]
+                  id_map[mId.namespace?.value ?: "ns"] = mId.value
+
+                  id_mm.add(id_map)
+                }
+
                 ReviewRequest.raise(
                   matches[0],
                   "Identifier mismatch.",
-                  "Title ${matches[0]} matched, but ingest identifiers ${id_mismatches} differ from existing ones in the same namespaces.",
+                  "Title ${matches[0]} matched, but ingest identifiers ${id_map} differ from existing ones in the same namespaces.",
                   user,
                   project
                 )

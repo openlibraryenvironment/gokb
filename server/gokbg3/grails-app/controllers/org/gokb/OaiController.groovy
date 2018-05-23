@@ -62,7 +62,7 @@ class OaiController {
           case 'listsets':
             listSets(result);
             break;
-          defaut:
+          default:
             break;
         }
         log.debug("done");
@@ -323,6 +323,7 @@ class OaiController {
       }
 
       def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
+      def wClause = false
 
       // This bit of the query needs to come from the oai config in the domain class
       def query_params = []
@@ -331,34 +332,66 @@ class OaiController {
       
       def status_filter = result.oaiConfig.statusFilter
       
-      if(!status_filter){
-        query += 'where '
-      }
-      else{
-        query += result.oaiConfig.statusFilter
+      if(status_filter && status_filter.size() > 0){
+        status_filter.eachWithIndex { val, index ->
+          if (index > 0) {
+            query += ' and '
+          }
+
+          if (val instanceof String) {
+            query += 'where o.status.value != ?'
+            def qry_rdc = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, val)
+            query_params.add(val)
+            wClause = true
+          }
+          else if (val instanceof org.gokb.cred.RefdataValue) {
+            query += 'where o.status != ?'
+            query_params.add(val)
+            wClause = true
+          }
+          else {
+            log.warn("Unknown parameter format!")
+          }
+        }
       }
 
       if ((params.from != null)&&(params.from.length()>0)) {
-        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
           query += ' and '
         }
         query += 'o.lastUpdated > ?'
         query_params.add(sdf.parse(params.from))
       }else if(from && from.length()>0){
-        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
           query += ' and '
         }
         query += 'o.lastUpdated > ?'
         query_params.add(sdf.parse(from))
       }
       if ((params.until != null)&&(params.until.length()>0)) {
-        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
           query += ' and '
         }
         query += 'o.lastUpdated < ?'
         query_params.add(sdf.parse(params.until))
       }else if(until && until.length()>0){
-        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
           query += ' and '
         }
         query += 'o.lastUpdated < ?'
@@ -366,7 +399,11 @@ class OaiController {
       }
 
       if ( params.set != null ) {
-        if( (status_filter && status_filter.size() > 0) || query_params.size() > 0){
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
           query += ' and '
         }
         query += 'o.identifier = ? '
@@ -374,10 +411,10 @@ class OaiController {
       }
 
       def order_by_clause = 'order by o.lastUpdated'
-
+      log.debug("qry is: ${query}");
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
-      def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
-      def records = Package.executeQuery("select o ${query} ${order_by_clause}",query_params,[offset:offset,max:max])
+      def rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
+      def records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
 
       log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 

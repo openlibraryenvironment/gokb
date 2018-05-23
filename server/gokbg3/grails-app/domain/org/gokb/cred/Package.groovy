@@ -333,7 +333,6 @@ select tipp.id,
     id:'packages',
     textDescription:'Package repository for GOKb',
     query:" from Package as o ",
-    statusFilter:"where o.status.value != 'Deleted'",
     pageSize:3
   ]
 

@@ -226,7 +226,6 @@ class TitleInstance extends KBComponent {
     id:'titles',
     textDescription:'Title repository for GOKb',
     query:" from TitleInstance as o ",
-    statusFilter:"where o.status.value != 'Expected'",
     pageSize:20
   ]
 
@@ -248,7 +247,7 @@ class TitleInstance extends KBComponent {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     try {
-      def tids = getIds() ?: []
+      def tids = this.ids ?: []
       def tipps = getTipps()
       def theIssuer = getIssuer()
       // def thePublisher = getPublisher()
@@ -283,7 +282,7 @@ class TitleInstance extends KBComponent {
               }
 
               if ( pub_org ) {
-                def org_ids = pub_org.getIds()
+                def org_ids = pub_org.ids ?: []
 
                 builder."publisher" (['id': pub_org?.id]) {
                   "name" (pub_org?.name)
@@ -325,7 +324,7 @@ class TitleInstance extends KBComponent {
                       title(hti.name)
                       internalId(hti.id)
                       "identifiers" {
-                        hti.getIds()?.each { tid ->
+                        hti.ids?.each { tid ->
                           builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                         }
                         if ( grailsApplication.config.serverUrl ) {
@@ -341,7 +340,7 @@ class TitleInstance extends KBComponent {
                       title(hti.name)
                       internalId(hti.id)
                       "identifiers" {
-                        hti.getIds()?.each { tid ->
+                        hti.ids?.each { tid ->
                           builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
                         }
                         if ( grailsApplication.config.serverUrl ) {

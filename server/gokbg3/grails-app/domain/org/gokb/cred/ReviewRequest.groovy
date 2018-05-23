@@ -71,15 +71,15 @@ class ReviewRequest {
 
     // Create a request.
     ReviewRequest req = new ReviewRequest (
-        status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
+        status : RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
         raisedBy : (raisedBy),
         allocatedTo : (raisedBy),
         descriptionOfCause : (cause),
         reviewRequest : (actionRequired),
-        refineProject: (refineProject),
-        additionalInfo: (additionalInfo),
-        componentToReview: (forComponent)
-        ).save(flush:true, failOnError:true);
+        refineProject : (refineProject),
+        additionalInfo : (additionalInfo),
+        componentToReview : (forComponent)
+        ).save(failOnError:true);
 
     // Just return the request.
     req
