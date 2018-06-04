@@ -32,7 +32,18 @@ You can start a vanulla ubuntu with the following command
 
 # GOKb
 
-## Building the GOKb Docker Image
+## Building the GOKb Docker Image (2018)
+
+from ~/server/gokbg3
+
+    docker login
+    # Login using your credentials
+    gradle buildImage
+    # Follow the docker commands in build.gradle, but specifically
+    docker push knowint/gokbg3
+
+
+## Building the GOKb Docker Image (Legacy)
 
 Build the gokb war file as per usual deployment 
     
