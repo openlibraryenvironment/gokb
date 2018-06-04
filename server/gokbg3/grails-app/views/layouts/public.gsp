@@ -39,7 +39,7 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="index.html">GOKb</a>
+         <a class="navbar-brand" href="index.html"><g:message code="gokb.appname" default="GOKb" /></a>
        </div>
 
        <div class="nav navbar-nav navbar-right">
