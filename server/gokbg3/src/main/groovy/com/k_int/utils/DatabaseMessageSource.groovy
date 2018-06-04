@@ -21,11 +21,9 @@ class DatabaseMessageSource extends AbstractMessageSource {
 
     if ( format == null ) {
 
-      // println("DatabaseMessageSource::resolveCode(${code},${locale}) ${messageBundleMessageSource}");
-
       ContentItem.withTransaction {
         // Try to find by key and locale, otherwise, by key and blank locale
-        ContentItem ci = ContentItem.findByKeyAndLocale(code, locale.toString()) ?: ContentItem.findByKeyAndLocale(code, '');
+        ContentItem ci = ContentItem.findByKeyAndLocale(code, locale.toString()) ?: ContentItem.findByKeyAndLocale(code, 'default');
 
         if ( ci ) {
           format = new MessageFormat(ci.content, locale)
@@ -42,7 +40,7 @@ class DatabaseMessageSource extends AbstractMessageSource {
             } 
             catch ( Exception e ) {
               // Something went badly wrong, return the code as the messge and carry on.
-              e.printStackTrace();
+              System.err.println("Problem trying to lookup message with key ${cache_key}");
               format = new MessageFormat(code, locale)
             }
           }
