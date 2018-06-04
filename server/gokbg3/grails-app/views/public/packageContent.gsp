@@ -23,7 +23,7 @@
           </g:each>
         </ul>
 
-        <h2>Titles</h2>
+        <h2>Titles (${titleCount})</h2>
         <table class="table table-striped table-bordered">
           <thead>
             <tr>
@@ -50,6 +50,13 @@
             </g:each>
           </tbody>
         </table>
+
+        <div class="pagination" style="text-align:center">
+          <g:if test="${titleCount?:0 > 0 }" >
+            <g:paginate  controller="public" action="packageContent" params="${params}" next="Next" prev="Prev" max="${max}" total="${titleCount}" />
+          </g:if>
+        </div>
+
       </g:if>
 
       </div>
