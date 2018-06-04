@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null) : true) || (params.curationOverride == 'true')) }" />
+<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true')) }" />
   <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
@@ -135,9 +135,10 @@
         <g:render template="/apptemplates/combosByType"
                                 model="${[d:d, property:'ids', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-                  
-        <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+                  [expr:'toComponent.value', colhead:'ID']], cur: editable]}" />
+        <g:if test="${ editable }">
+          <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+        </g:if>
       </div>
 
       <div class="tab-pane" id="ds">

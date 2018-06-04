@@ -11,7 +11,9 @@
       <div class="col-lg-6 col-lg-offset-3">
             <g:form class="well" controller="login" action="authenticate" method="post" name="loginForm" elementId="loginForm" autocomplete="off">
             <h2>Login</h2>
-
+              <g:if test="${params.login_error}">
+                <div class="alert alert-danger"><g:message code='springSecurity.login.error.message'/></div>
+              </g:if>
                <div class="form-group">
                  <label for="username"><g:message code='spring.security.ui.login.username'/></label>
                  <input type="text" class="form-control" id="username" aria-describedby="usernameHelp" placeholder="Username" name="${securityConfig.apf.usernameParameter}">

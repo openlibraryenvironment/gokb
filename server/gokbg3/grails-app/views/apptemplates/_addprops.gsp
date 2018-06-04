@@ -10,7 +10,7 @@
 	        <g:set var="current_key" value="${cp.propertyDefn?.propertyName}" />
 	        <td>${cp.propertyDefn?.propertyName}</td>
 	        <td>${cp.apValue}</td>
-	        <td></td>
+	        <td><g:if test="${d.isEditable()}"><g:link controller="ajaxSupport" action="unlinkManyToMany" class="confirm-click" data-confirm-message="Are you sure you wish to unlink this property?" params="${ ["__property":"additionalProperties", "__context":d.getClassName() + ":" + d.id, "__itemToRemove" : cp.getClassName() + ":" + cp.id] }" >Unlink</g:link></g:if></td>
 	      </tr>
 	    </g:if>
       <g:else>

@@ -756,6 +756,7 @@ select tipp.id,
         if ( result.curatoryGroups.find {it.name == cg.name } ) {
         }
         else {
+
           result.curatoryGroups.add(cg)
           changed=true;
         }

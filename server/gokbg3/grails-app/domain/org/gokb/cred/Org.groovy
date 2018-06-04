@@ -69,6 +69,7 @@ class Org extends KBComponent {
 
   static constraints = {
     mission(nullable:true, blank:true)
+    homepage(nullable:true, blank:true, url:true)
   }
 
   //  @Transient

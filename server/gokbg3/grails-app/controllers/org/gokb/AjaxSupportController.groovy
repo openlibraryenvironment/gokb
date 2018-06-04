@@ -7,7 +7,10 @@ import com.k_int.ClassUtils
 import org.gokb.cred.*
 
 import org.springframework.security.access.annotation.Secured;
-import grails.util.GrailsNameUtils;
+import grails.util.GrailsNameUtils
+import grails.core.GrailsClass
+import org.grails.datastore.mapping.model.*
+import org.grails.datastore.mapping.model.types.*
 
 class AjaxSupportController {
 
@@ -184,20 +187,21 @@ class AjaxSupportController {
     log.debug("AjaxController::addToCollection ${params}");
     User user = springSecurityService.currentUser
     def contextObj = resolveOID2(params.__context)
-    def domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
+    GrailsClass domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
 
-    if ( domain_class ) {
+    if ( domain_class && domain_class.getClazz().isTypeCreatable() ) {
 
-      if ( contextObj ) {
+      if ( contextObj && contextObj.isEditable() ) {
         log.debug("Create a new instance of ${params.__newObjectClass}");
 
         def new_obj = domain_class.getClazz().newInstance();
+        PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(domain_class.fullName)
 
-        domain_class.getPersistentProperties().each { p -> // list of GrailsDomainClassProperty
-          log.debug("${p.name} (assoc=${p.isAssociation()}) (oneToMany=${p.isOneToMany()}) (ManyToOne=${p.isManyToOne()}) (OneToOne=${p.isOneToOne()})");
+        pent.getPersistentProperties().each { p -> // list of PersistentProperties
+          log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
           if ( params[p.name] ) {
-            if ( p.isAssociation() ) {
-              if ( p.isManyToOne() || p.isOneToOne() ) {
+            if ( p instanceof Association ) {
+              if ( p instanceof ManyToOne || p instanceof OneToOne ) {
                 // Set ref property
                 log.debug("set assoc ${p.name} to lookup of OID ${params[p.name]}");
                 // if ( key == __new__ then we need to create a new instance )
@@ -236,7 +240,7 @@ class AjaxSupportController {
           log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
           new_obj[params.__recip] = contextObj
           log.debug("Saving ${new_obj}");
-          if ( new_obj.save() ) {
+          if ( new_obj.save(flush:true) ) {
             log.debug("Saved OK");
             if (contextObj.respondsTo("lastUpdateComment")){
               contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
@@ -253,8 +257,8 @@ class AjaxSupportController {
           contextObj[params.__addToColl].add(new_obj)
           log.debug("Saving ${new_obj}");
 
-          if ( new_obj.save() ) {
-            log.debug("Saved OK");
+          if ( new_obj.save(flush:true) ) {
+            log.debug("New Object Saved OK");
           }
           else {
             new_obj.errors.each { e ->
@@ -262,8 +266,8 @@ class AjaxSupportController {
             }
           }
 
-          if ( contextObj.save() ) {
-            log.debug("Saved OK");
+          if ( contextObj.save(flush:true) ) {
+            log.debug("Context Object Saved OK");
           }
           else {
             contextObj.errors.each { e ->
@@ -298,12 +302,15 @@ class AjaxSupportController {
           new_obj.save(flush:true, failOnError:true)
         }
       }
-      else {
+      else if (!contextObj) {
         log.debug("Unable to locate instance of context class with oid ${params.__context}");
+      }
+      else {
+        log.debug("Located instance of context class with oid ${params.__context} is not editable.");
       }
     }
     else {
-      log.error("Unable to ookup domain class ${params.__newObjectClass}");
+      log.error("Unable to lookup domain class ${params.__newObjectClass}");
     }
 
     redirect(url: request.getHeader('referer'))
@@ -314,10 +321,13 @@ class AjaxSupportController {
     log.debug("addToStdCollection(${params})");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
-    if ( contextObj ) {
+    if ( contextObj && contextObj.isEditable()) {
       contextObj["${params.__property}"].add (resolveOID2(params.__relatedObject))
       contextObj.save(flush:true, failOnError:true)
       log.debug("Saved: ${contextObj.id}");
+    }
+    else {
+      log.debug("context object not found, or not editable.")
     }
     redirect(url: request.getHeader('referer'))
   }
@@ -327,7 +337,7 @@ class AjaxSupportController {
     log.debug("unlinkManyToMany(${params})");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
-    if ( contextObj ) {
+    if ( contextObj && contextObj.isEditable()) {
       def item_to_remove = resolveOID2(params.__itemToRemove)
       if ( item_to_remove ) {
         if ( ( item_to_remove != null ) && ( item_to_remove.hasProperty('hasByCombo') ) && ( item_to_remove.hasByCombo != null ) ) {
@@ -348,29 +358,44 @@ class AjaxSupportController {
         log.debug("${params}");
         log.debug("removing: "+item_to_remove+" from "+params.__property+" for "+contextObj);
 
-            def remove_result = contextObj[params.__property].remove(item_to_remove);
-                log.debug("remove successful?: ${remove_result}")
-                log.debug("child removed: "+ contextObj[params.__property]);
-                if (contextObj.save(flush: true, failOnError: true)==false) {
-                  log.debug("${contextObj.errors.allErrors()}")
-                } else {
-                  log.debug("saved ok (${contextObj[params.__property]})");
-                }
-                item_to_remove.refresh();
-                if (params.__otherEnd && item_to_remove[params.__otherEnd]!=null) {
-                  log.debug("remove parent: "+item_to_remove[params.__otherEnd])
-                  //item_to_remove.setParent(null);
-                  item_to_remove[params.__otherEnd]=null; //this seems to fail
-                  log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
-                }
-                if (item_to_remove.save()==false) {
-                 log.debug("${item_to_remove.errors.allError()}");
-                }
+        def remove_result = contextObj[params.__property].remove(item_to_remove);
+
+        log.debug("remove successful?: ${remove_result}")
+        log.debug("child ${item_to_remove} removed: "+ contextObj[params.__property]);
+
+        def new_cobj = contextObj.save(flush: true, failOnError: true)
+
+        if (!new_cobj) {
+          log.debug("${contextObj.errors.allErrors()}")
+        } else {
+          log.debug("saved ok (${new_cobj[params.__property]})");
+        }
+
+        if (item_to_remove.fromComponent == contextObj) {
+          item_to_remove.delete(flush:true)
+        }
+        else {
+          item_to_remove.refresh();
+
+          if (params.__otherEnd && item_to_remove[params.__otherEnd]!=null) {
+            log.debug("remove parent: "+item_to_remove[params.__otherEnd])
+            //item_to_remove.setParent(null);
+            item_to_remove[params.__otherEnd]=null; //this seems to fail
+            log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
+          }
+          if (item_to_remove.save()==false) {
+            log.debug("${item_to_remove.errors.allError()}");
+          }
+        }
       } else {
         log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
       }
-    } else {
-      log.error("Unable to resolve context obj : ${params.__context}");
+    }
+    else if (!contextObj) {
+      log.debug("Unable to locate instance of context class with oid ${params.__context}");
+    }
+    else {
+      log.debug("Located instance of context class with oid ${params.__context} is not editable.");
     }
     redirect(url: request.getHeader('referer'))
   }
@@ -380,11 +405,14 @@ class AjaxSupportController {
     log.debug("delete(${params}), referer: ${request.getHeader('referer')}");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
-    if ( contextObj ) {
-      contextObj.delete()
+    if ( contextObj && contextObj.isDeletable()) {
+      contextObj.delete(flush:true)
+    }
+    else if (!contextObj) {
+      log.debug("Unable to locate instance of context class with oid ${params.__context}");
     }
     else {
-      log.error("Unable to resolve context obj : ${params.__context}");
+      log.debug("Located instance of context class with oid ${params.__context} is not editable.");
     }
 
     def redirect_to = request.getHeader('referer')
@@ -426,11 +454,11 @@ class AjaxSupportController {
     def result = [:]
     params.max = params.max ?: 10;
     def domain_class = grailsApplication.getArtefact('Domain',params.baseClass)
-    if ( domain_class ) {
+    if ( domain_class && domain_class.getClazz().isTypeReadable() ) {
       result.values = domain_class.getClazz().refdataFind(params);
     }
     else {
-      log.error("Unable to locate domain class ${params.baseClass}");
+      log.error("Unable to locate domain class ${params.baseClass} or not readable");
       result.values=[]
     }
     //result.values = [[id:'Person:45',text:'Fred'],
@@ -450,8 +478,9 @@ class AjaxSupportController {
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
     def target_object = resolveOID2(params.pk)
+    def user = springSecurityService.currentUser
     def errors = null
-    if ( target_object ) {
+    if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.format ?: 'yyyy-MM-dd')
       }
@@ -465,8 +494,12 @@ class AjaxSupportController {
         target_object.save(flush:true);
       }
       else {
+        log.debug("Errors: ${target_object.errors}")
         errors = target_object.errors.allErrors()
       }
+    }
+    else {
+      log.debug("Object ${target_object} is not editable.");
     }
 
     response.setContentType('text/plain')
@@ -492,7 +525,7 @@ class AjaxSupportController {
 
     def result = null
 
-    if ( target != null ) {
+    if ( target != null && target.isEditable()) {
       // def binding_properties = [ "${params.name}":value ]
       log.debug("Binding: ${params.name} into ${target} - a ${target.class.name}");
       // bindData(target, binding_properties)
@@ -522,7 +555,7 @@ class AjaxSupportController {
       }
     }
     else {
-      log.error("no type (target=${params.pk}, value=${params.value}");
+      log.error("no type (target=${params.pk}, value=${params.value}) or not editable");
     }
 
     def resp = [ newValue: target[params.name] ]
@@ -558,14 +591,16 @@ class AjaxSupportController {
          ( params.__context?.length() > 0 ) ) {
       def ns = genericOIDService.resolveOID(params.identifierNamespace)
       def owner = genericOIDService.resolveOID(params.__context)
-      if ( ( ns != null ) && ( owner != null ) ) {
+      if ( ( ns != null ) && ( owner != null ) && owner.isEditable() ) {
         // Lookup or create Identifier
         def identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
 
         // Link if not existing
         owner.ids.add(identifier_instance);
 
-        owner.save();
+        owner.save(flush:true);
+      }else{
+        log.debug("could not create identifier!")
       }
     }
     log.debug("Redirecting to referer: ${request.getHeader('referer')}");

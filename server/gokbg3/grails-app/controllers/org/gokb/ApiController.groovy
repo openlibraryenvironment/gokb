@@ -496,9 +496,6 @@ class ApiController {
     def offsetDefault = 0
     def maxDefault = 10
 
-
-    result.endpoint = request.forwardURI
-
     try {
 
       if ( params.q?.size() > 0 ) {
@@ -559,6 +556,8 @@ class ApiController {
 
     }finally {
       if (errors) {
+        response.status = 400
+        result = [:]
         result.errors = errors
       }
     }
@@ -614,7 +613,6 @@ class ApiController {
     def search_action = null
     def errors = [:]
 
-    result.endpoint = request.forwardURI
 
     try {
 
@@ -777,6 +775,8 @@ class ApiController {
 
     }finally {
       if (errors) {
+        result = [:]
+        response.status = 400
         result.errors = errors
       }
     }

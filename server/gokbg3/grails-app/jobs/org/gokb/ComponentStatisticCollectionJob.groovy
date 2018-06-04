@@ -6,7 +6,6 @@ class ComponentStatisticCollectionJob {
 
   ComponentStatisticService componentStatisticService
 
-  // First of the month
   static triggers = {
     cron name: 'ComponentStatisticCollectionJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:200000
   }

@@ -572,21 +572,22 @@ abstract class KBComponent {
   }
 
   protected def generateNormname () {
-    normname = generateNormname(name);
+    log.debug("checking for normname")
+    this.normname = generateNormname(name);
   }
 
   protected def generateComponentHash() {
     // Default component hash generation -- Override in subclasses
 
     // To try and find instances
-    componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);
+    this.componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);
 
     // To find works
-    bucketHash = GOKbTextUtils.generateComponentHash([normname]);
+    this.bucketHash = GOKbTextUtils.generateComponentHash([normname]);
   }
 
   def beforeInsert() {
-
+    log.debug("beforeInsert for ${this}")
     // Generate the any necessary values.
     generateShortcode()
     generateNormname()
@@ -617,9 +618,10 @@ abstract class KBComponent {
   }
 
   def beforeUpdate() {
+    log.debug("beforeUpdate for ${this}")
     if ( name ) {
       if ( !shortcode ) {
-        shortcode = generateShortcode(name);
+        this.shortcode = generateShortcode(name);
       }
       generateNormname();
       generateComponentHash()

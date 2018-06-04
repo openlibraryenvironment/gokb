@@ -286,13 +286,13 @@
                 <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
                 <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
                 <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
-                <td><g:link controller="workflow" action="deleteCombo" id="${p.id}">Delete</g:link></td>
+                <td><g:if test="${d.isEditable()}"><g:link controller="workflow" action="deleteCombo" id="${p.id}">Delete</g:link></g:if></td>
               </tr>
             </g:each>
           </tbody>
         </table>
       </dd>
-
+      <g:if test="${d.isEditable()}">
         <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
           <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
           <input type="hidden" name="__property" value="publisher" />
@@ -301,6 +301,7 @@
             <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
           </dd>
         </g:form>
+      </g:if>
 
 
     </div>
@@ -310,8 +311,9 @@
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-
-      <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+      <g:if test="${d.isEditable()}">
+        <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+      </g:if>
 
     </div>
 

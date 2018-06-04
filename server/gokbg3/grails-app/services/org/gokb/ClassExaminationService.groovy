@@ -2,7 +2,7 @@ package org.gokb
 
 import java.beans.PropertyDescriptor
 import java.lang.reflect.Field
-import org.grails.core.DefaultGrailsDomainClass
+import grails.core.GrailsClass
 import org.gokb.cred.*
 import grails.util.GrailsNameUtils
 import org.springframework.beans.BeanUtils
@@ -17,7 +17,7 @@ class ClassExaminationService {
 	LinkedHashMap refdata_props = [:]
 	
 	// Let's append a list of refdata properties.
-	DefaultGrailsDomainClass the_class = grailsApplication.getArtefact('Domain', className)
+	GrailsClass the_class = grailsApplication.getArtefact('Domain', className)
 	// log.debug("Examining ${className} for refdata properties.")
 	
 	// The surent class pointer.

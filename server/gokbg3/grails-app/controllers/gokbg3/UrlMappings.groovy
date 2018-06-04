@@ -2,6 +2,8 @@ package gokbg3
 
 class UrlMappings {
 
+    def springSecurityService
+
     static mappings = {
         // "/$controller/$action?/$id?(.$format)?"{
         "/$controller/$action?/$id?"{
@@ -12,6 +14,7 @@ class UrlMappings {
 
         "/"(controller:'public',action:'index')
         "500"(view:'/error')
-        "404"(view:'/notFound')
+        "404"(controller:'home', action:'index') {status = '404'}
+        "403"(view:'/login/denied')
     }
 }

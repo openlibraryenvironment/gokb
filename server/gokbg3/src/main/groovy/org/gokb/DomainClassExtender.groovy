@@ -27,7 +27,8 @@ package org.gokb
 import grails.util.GrailsNameUtils
 import groovy.util.logging.*
 
-import org.grails.core.DefaultGrailsDomainClass
+import org.grails.core.GrailsClass
+import grails.core.GrailsClass
 import org.gokb.cred.*
 
 import com.k_int.ClassUtils
@@ -44,7 +45,7 @@ class DomainClassExtender {
     getComboStatusActive
   }
 
-  private static addComboPropertyCache = { DefaultGrailsDomainClass domainClass ->
+  private static addComboPropertyCache = { GrailsClass domainClass ->
 
     log.debug("Adding comboPropertyCache to ${delegate} for ${domainClass}")
     // Get the metaclass.
@@ -66,7 +67,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetAllComboPropertyNames = { DefaultGrailsDomainClass domainClass ->
+  private static addGetAllComboPropertyNames = { GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().getAllComboPropertyNames = { ->
@@ -74,7 +75,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addIsComboPropertyFor = { DefaultGrailsDomainClass domainClass ->
+  private static addIsComboPropertyFor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     final ExpandoMetaClass mc = domainClass.getMetaClass()
@@ -93,7 +94,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addIsComboProperty = { DefaultGrailsDomainClass domainClass ->
+  private static addIsComboProperty = { GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().isComboProperty = { String propertyName ->
@@ -103,7 +104,7 @@ class DomainClassExtender {
 
   private static Map comboTypeValueCache = [:]
 
-  private static addGetAllComboPropertyNamesFor = { DefaultGrailsDomainClass domainClass ->
+  private static addGetAllComboPropertyNamesFor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     final ExpandoMetaClass mc = domainClass.getMetaClass()
@@ -114,7 +115,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetAllComboPropertyDefinitionsFor = { DefaultGrailsDomainClass domainClass ->
+  private static addGetAllComboPropertyDefinitionsFor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     final ExpandoMetaClass mc = domainClass.getMetaClass()
@@ -144,7 +145,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetAllComboTypeValues = { DefaultGrailsDomainClass domainClass ->
+  private static addGetAllComboTypeValues = { GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().getAllComboTypeValues = { ->
@@ -152,7 +153,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetAllComboTypeValuesFor = { DefaultGrailsDomainClass domainClass ->
+  private static addGetAllComboTypeValuesFor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     final ExpandoMetaClass mc = domainClass.getMetaClass()
@@ -186,7 +187,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetComboMap = { DefaultGrailsDomainClass domainClass ->
+  private static addGetComboMap = { GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().getComboMap = { String mappingName ->
@@ -195,7 +196,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addCombineInheritedMap = { DefaultGrailsDomainClass domainClass ->
+  private static addCombineInheritedMap = { GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().combineInheritedMap = { String mapName ->
@@ -203,7 +204,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addCombineInheritedMapFor = { DefaultGrailsDomainClass domainClass ->
+  private static addCombineInheritedMapFor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().'static'.combineInheritedMapFor = {Class forClass, String mapName ->
@@ -243,7 +244,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetComboMapFor = { DefaultGrailsDomainClass domainClass ->
+  private static addGetComboMapFor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     final ExpandoMetaClass mc = domainClass.getMetaClass()
@@ -278,7 +279,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetComboProperty = { DefaultGrailsDomainClass domainClass ->
+  private static addGetComboProperty = { GrailsClass domainClass ->
     final MetaClass mc = domainClass.getMetaClass()
     mc.getComboProperty { String propertyName ->
       log.debug("getComboProperty called on ${delegate} with args ${[propertyName]}")
@@ -439,7 +440,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetComboTypeValue = {DefaultGrailsDomainClass domainClass ->
+  private static addGetComboTypeValue = {GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().getComboTypeValue = {String propertyName  ->
@@ -448,7 +449,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetComboTypeValueFor = {DefaultGrailsDomainClass domainClass ->
+  private static addGetComboTypeValueFor = {GrailsClass domainClass ->
 
     // Get the metaclass.
     final MetaClass mc = domainClass.getMetaClass()
@@ -519,14 +520,14 @@ class DomainClassExtender {
     }
   }
 
-  private static addIsComboReverse = { DefaultGrailsDomainClass domainClass ->
+  private static addIsComboReverse = { GrailsClass domainClass ->
     domainClass.getMetaClass().isComboReverse = {String propertyName ->
       log.debug("isComboReverse called on ${delegate} with args ${[propertyName]}")
       (lookupComboMapping (Combo.MAPPED_BY, propertyName) != null)
     }
   }
   
-  private static addIsComboReverseFor = { DefaultGrailsDomainClass domainClass ->
+  private static addIsComboReverseFor = { GrailsClass domainClass ->
     final ExpandoMetaClass mc = domainClass.getMetaClass()
     mc.'static'.isComboReverseFor = { Class forClass, String propertyName ->
       log.debug("isComboReverseFor called on ${delegate} with args ${[propertyName]}")
@@ -534,7 +535,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addLookupComboMapping = { DefaultGrailsDomainClass domainClass ->
+  private static addLookupComboMapping = { GrailsClass domainClass ->
 
     // Get the metaclass.
     domainClass.getMetaClass().lookupComboMapping = {String mappingName, String propertyName ->
@@ -544,7 +545,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addLookupComboMappingFor = { DefaultGrailsDomainClass domainClass ->
+  private static addLookupComboMappingFor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     final MetaClass mc = domainClass.getMetaClass()
@@ -561,7 +562,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addPropertyMissing = {DefaultGrailsDomainClass domainClass ->
+  private static addPropertyMissing = {GrailsClass domainClass ->
     // Get the metaclass.
     final MetaClass mc = domainClass.getMetaClass()
 
@@ -602,7 +603,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addRemoveComboPropertyVals = { DefaultGrailsDomainClass domainClass ->
+  private static addRemoveComboPropertyVals = { GrailsClass domainClass ->
     final MetaClass mc = domainClass.getMetaClass()
     mc.removeComboPropertyVals {String propertyName, boolean preserveCurrent = false ->
       log.debug("removeComboPropertyVals called on ${delegate} (${delegate.class.name}) with args ${propertyName}")
@@ -706,7 +707,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addGetCardinalityFor = {DefaultGrailsDomainClass domainClass ->
+  private static addGetCardinalityFor = {GrailsClass domainClass ->
     final MetaClass mc = domainClass.getMetaClass()
     mc.'static'.getCardinalityFor = { Class forClass, String propName ->
       log.debug("getCardinalityFor called on ${delegate} with args ${[forClass,propName]}")
@@ -725,7 +726,7 @@ class DomainClassExtender {
     }
   }
   
-  private static addGetCardinality = { DefaultGrailsDomainClass domainClass ->
+  private static addGetCardinality = { GrailsClass domainClass ->
     
     // Get the metaclass.
     domainClass.getMetaClass().getCardinality = { String propName ->
@@ -733,7 +734,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addSetComboProperty = {DefaultGrailsDomainClass domainClass ->
+  private static addSetComboProperty = {GrailsClass domainClass ->
     final MetaClass mc = domainClass.getMetaClass()
     mc.setComboProperty = {String propertyName, def value, boolean preserveCurrent = false ->
       log.debug("setComboProperty called on ${delegate} with args ${[propertyName, value]}")
@@ -897,7 +898,7 @@ class DomainClassExtender {
 
   private static Map comboMappingCache = [:]
 
-  public static extend = { DefaultGrailsDomainClass domainClass ->
+  public static extend = { GrailsClass domainClass ->
 
     // Get the actual class that is represented by this domain class object.
     Class actualClass = domainClass.getClazz()
@@ -953,7 +954,7 @@ class DomainClassExtender {
     }
   }
 
-  private static extendMapConstructor = { DefaultGrailsDomainClass domainClass ->
+  private static extendMapConstructor = { GrailsClass domainClass ->
 
     // Get the metaclass.
     final ExpandoMetaClass mc = domainClass.getMetaClass()
@@ -994,7 +995,7 @@ class DomainClassExtender {
     }
   }
 
-  private static addComboPropertyGettersAndSetters = { DefaultGrailsDomainClass domainClass ->
+  private static addComboPropertyGettersAndSetters = { GrailsClass domainClass ->
     // Get the metaclass.
     final MetaClass mc = domainClass.getMetaClass()
 
@@ -1025,7 +1026,7 @@ class DomainClassExtender {
     }
   }
   
-//  private static overrideGORMMethods = { DefaultGrailsDomainClass domainClass ->
+//  private static overrideGORMMethods = { GrailsClass domainClass ->
 //    
 //    def target = domainClass.getClazz()
 //    

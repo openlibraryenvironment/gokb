@@ -28,12 +28,14 @@
           </td>
         </g:each>
         <td>
-          <g:link 
-            controller='ajaxSupport' 
-            action='delete' 
-            params="${['__context':combooid,'fragment':fragment]}"
-            class="confirm-click"
-            data-confirm-message="Are you sure you wish to delete this ${row.toComponent.getNiceName()}?" >Delete</g:link>
+          <g:if test="${d.isEditable() && cur}">
+            <g:link
+              controller='ajaxSupport'
+              action='delete'
+              params="${['__context':combooid,'fragment':fragment]}"
+              class="confirm-click"
+              data-confirm-message="Are you sure you wish to delete this ${row.toComponent.getNiceName()}?" >Delete</g:link>
+          </g:if>
         </td>
       </tr>
     </g:each>

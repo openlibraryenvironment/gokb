@@ -353,7 +353,7 @@ class TitleLookupService {
                 ReviewRequest.raise(
                   matches[0],
                   "Identifier mismatch.",
-                  "Title ${matches[0]} matched, but ingest identifiers ${id_map} differ from existing ones in the same namespaces.",
+                  "Title ${matches[0]} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
                   user,
                   project
                 )

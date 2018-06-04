@@ -2,7 +2,7 @@ package gokbg3;
 
 import grails.util.GrailsNameUtils;
 
-import org.grails.core.DefaultGrailsDomainClass
+import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
 
@@ -312,7 +312,7 @@ class BootStrap {
   def alterDefaultMetaclass = {
 
     // Inject helpers to Domain classes.
-    grailsApplication.domainClasses.each {DefaultGrailsDomainClass domainClass ->
+    grailsApplication.domainClasses.each {GrailsClass domainClass ->
 
       // Extend the domain class.
       DomainClassExtender.extend (domainClass)

@@ -2,6 +2,7 @@ package org.gokb
 
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
+import org.springframework.security.acls.domain.ObjectIdentityImpl
 import org.springframework.security.acls.domain.GrantedAuthoritySid
 import org.springframework.security.acls.domain.PrincipalSid
 import org.springframework.security.acls.model.AccessControlEntry
@@ -82,12 +83,17 @@ class SecurityController {
       }
       
       // Grant the permission.
-      log.debug("\n\nCall gokbAclService.addPermission ${domain}(${domain.class.name}),${recipient},${perm}");
-      aclUtilService.addPermission domain, recipient, perm
-      
+      def for_acl = gokbAclService.readAclSilently(domain)
+      if(!for_acl) {
+        log.warn("Could not find acl for ${domain}! It may have to be created manually..")
+      }else {
+        log.debug("\n\nCall gokbAclService.addPermission ${domain}(${domain.class.name}),${recipient},${perm}");
+        aclUtilService.addPermission domain, recipient, perm
+      }
+
       if (request.isAjax()) {
         // Send back to the roles action.
-        log.debug("Send back refirect - is ajax");
+        log.debug("Send back redirect - is ajax");
         redirect(controller: "security", "action": (action), 'params' : [ 'id': "${domain.class.name}:${domain.id}" ])
         
       } else {

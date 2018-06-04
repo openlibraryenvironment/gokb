@@ -44,7 +44,7 @@ class Platform extends KBComponent {
   }
 
   static constraints = {
-    primaryUrl    (nullable:true, blank:false)
+    primaryUrl    (url:true, nullable:true, blank:false)
     authentication  (nullable:true, blank:false)
     software  (nullable:true, blank:false)
     service  (nullable:true, blank:false)

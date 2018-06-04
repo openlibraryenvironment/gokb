@@ -5,8 +5,9 @@ import org.springframework.security.access.annotation.Secured;
 import org.codehaus.groovy.grails.commons.*
 import org.grails.plugins.web.taglib.ApplicationTagLib
 import org.gokb.cred.*
-// import org.grails.datastore.mapping.model.PersistentProperty
-import grails.core.GrailsDomainClassProperty
+import org.grails.datastore.mapping.model.*
+import org.grails.datastore.mapping.model.types.*
+import grails.core.GrailsClass
 
 class CreateController {
 
@@ -65,8 +66,10 @@ class CreateController {
 
     if ( params.cls ) {
 
-      def newclass = grailsApplication.getArtefact("Domain",params.cls)
+      GrailsClass newclass = grailsApplication.getArtefact("Domain",params.cls)
+      PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(params.cls)
       // def refdata_properties = classExaminationService.getRefdataPropertyNames(params.cls)
+      log.debug("Got entity ${pent} for ${newclass.name}")
 
       if ( newclass ) {
         try {
@@ -75,21 +78,22 @@ class CreateController {
 
           params.each { p ->
             log.debug("Consider ${p.key} -> ${p.value}");
-            if ( newclass.hasPersistentProperty(p.key) ) {
+            if ( pent.getPropertyByName(p.key) ) {
               // THis deffo didn't work :( if ( newclass.metaClass.hasProperty(p.key) ) {
 
               // Ensure that blank values actually null the value instead of trying to use an empty string.
               if (p.value == "") p.value = null
 
-              GrailsDomainClassProperty pdef = newclass.getPersistentProperty(p.key)
-              if ( pdef.association ) {
-                if ( pdef.isOneToOne() ) {
+              PersistentProperty pprop = pent.getPropertyByName(p.key)
+
+              if ( pprop instanceof Association ) {
+                if ( pprop instanceof OneToOne) {
                   log.debug("one-to-one");
                   def related_item = genericOIDService.resolveOID(p.value);
                   result.newobj[p.key] = related_item
                   propertyWasSet = propertyWasSet || (related_item != null)
                 }
-                else if ( pdef.isManyToOne() ) {
+                else if ( pprop instanceof ManyToOne ) {
                   log.debug("many-to-one");
                   def related_item = genericOIDService.resolveOID(p.value);
                   result.newobj[p.key] = related_item

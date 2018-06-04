@@ -1,10 +1,9 @@
 package org.gokb
 
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.annotation.Secured
 import grails.util.GrailsNameUtils
 
 import org.gokb.cred.*
-import org.hibernate.SessionFactory;
 import org.hibernate.transform.AliasToEntityMapResultTransformer
 
 
@@ -14,7 +13,6 @@ class HomeController {
   def userAlertingService
   def passwordEncoder
 
-  SessionFactory sessionFactory
 
   static stats_cache = null;
   static stats_timestamp = null;
@@ -36,14 +34,15 @@ class HomeController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index () {
-    log.debug("Home::index");
-    if (springSecurityService.currentUser) {
-      if ( grailsApplication.config.newDash ) {
-        forward (action: "userdash", params: (params))
-      }
-      else {
-        forward (action: "dashboard", params: (params))
-      }
+    log.debug("Home::index -- ${params}")
+
+    if ( grailsApplication.config?.newDash ) {
+      log.debug("NewDash!")
+      forward ( action: "userdash", params: (params))
+    }
+    else {
+      log.debug("Redirect!")
+      forward ( action: "dashboard", params: (params))
     }
   }
 

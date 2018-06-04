@@ -41,16 +41,16 @@ class User extends Party {
   static mappedBy = [curatoryGroups: "users"]
 
   static constraints = {
-    username blank: false, unique: true
-    password blank: false
-    showQuickView blank: true, nullable:true
-    email blank: true, nullable:true
-    defaultPageSize blank: true, nullable:true
-    curatoryGroups blank: true, nullable:true
-    org blank: false, nullable:true
-    last_alert_check blank: false, nullable:true
-    alert_check_frequency blank: false, nullable:true
-    send_alert_emails blank: false, nullable:true
+    username(blank: false, unique: true)
+    password(blank: false)
+    showQuickView(blank: true, nullable:true)
+    email(blank: true, nullable:true, unique: true)
+    defaultPageSize(blank: true, nullable:true)
+    curatoryGroups(blank: true, nullable:true)
+    org(blank: false, nullable:true)
+    last_alert_check(blank: false, nullable:true)
+    alert_check_frequency(blank: false, nullable:true)
+    send_alert_emails(blank: false, nullable:true)
   }
 
   static mapping = {

@@ -5,24 +5,24 @@
   
     <dt><g:annotatedLabel owner="${d}" property="displayName">Display Name</g:annotatedLabel></dt>
     <dd><g:xEditable class="ipe" owner="${d}" field="displayName"/></dd>
-  
-    <dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
-    <dd>
-      <g:xEditable class="ipe" owner="${d}" field="email"/>
-    </dd>
-    
+    <g:if test="${d == request.user}">
+      <dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
+      <dd>
+        <g:xEditable class="ipe" owner="${d}" field="email"/>
+      </dd>
+    </g:if>
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd>
        <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" />
     </dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="org">Home Org</g:annotatedLabel></dt>
+<%--     <dt><g:annotatedLabel owner="${d}" property="org">Home Org</g:annotatedLabel></dt>
     <dd>
       <g:manyToOneReferenceTypedown owner="${d}" field="org"
-                                baseClass="org.gokb.cred.Org">
+                                baseClass="org.gokb.cred.UserOrganisation">
                                 ${d.org?.name}
                         </g:manyToOneReferenceTypedown>
-    </dd>
+    </dd> --%>
 
     <dt><g:annotatedLabel owner="${d}" property="last_alert_check">Last Alert Check</g:annotatedLabel></dt>
     <dd>

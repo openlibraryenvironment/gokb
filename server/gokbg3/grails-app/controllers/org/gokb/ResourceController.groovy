@@ -84,8 +84,8 @@ class ResourceController {
         }
       }
       else {
-        log.debug("unable to resolve object");
-        response.sendError(404);
+        log.debug("unable to resolve object")
+        result = [:]
       }
     }
     result

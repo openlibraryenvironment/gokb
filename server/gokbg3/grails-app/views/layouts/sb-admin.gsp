@@ -19,13 +19,13 @@
   <g:layoutHead />
 
   <asset:javascript src="gokb/application.grass.js" />
+  <asset:javascript src="jquery-2.2.0.min.js"/>
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
 
 	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/extras/modernizr-custom.js"></asset:script>
 	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/polyfiller.js"></asset:script>
-
 	<asset:script>
 	  webshims.setOptions('waitReady', false);
 	  webshims.setOptions('forms-ext', {types: 'date'});
@@ -77,8 +77,12 @@
               <li class="divider"></li>
               <li><g:link controller="logout"><i class="fa fa-sign-out fa-fw"></i> Logout</g:link></li>
               <li class="divider"></li>
-            </ul> <!-- /.dropdown-user --></li>
+            </ul> <!-- /.dropdown-user -->
+          </li>
           <!-- /.dropdown -->
+          <li>
+            <span style="width:20px;"></span>
+          </li>
         </ul>
         <!-- /.navbar-top-links -->
       </sec:ifLoggedIn>
@@ -133,11 +137,11 @@
 
                   <ul class="nav nav-second-level">
                     <li><g:link controller="search" action="index"
-                        params="${[
+                        params="[
                           qbe:'g:reviewRequests',
                           qp_allocatedto:'org.gokb.cred.User:'+request.user.id,
                           qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open').id))
-                        ]}">
+                        ]">
                         <i class="fa fa-angle-double-right fa-fw"></i> My ToDos</g:link></li>
                     <li><g:link controller="search" action="index"
                         params="${[
@@ -172,7 +176,7 @@
               <sec:ifAnyGranted roles="ROLE_ADMIN">
                 <li class="${params?.controller == "admin" ? 'active' : ''}"><a href="#"><i class="fa fa-wrench fa-fw"></i> Admin<span class="fa arrow"></span></a>
                   <ul class="nav nav-second-level">
-                    <li><g:link controller="admin" action="tidyOrgData" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Tidy Orgs Data</g:link></li>
+                    <%-- <li><g:link controller="admin" action="tidyOrgData" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Tidy Orgs Data</g:link></li> --%>
                     <li><g:link controller="admin" action="reSummariseLicenses" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Regenerate License Summaries</g:link></li>
                     <li><g:link controller="admin" action="updateTextIndexes" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Update Free Text Indexes</g:link></li>
                     <li><g:link controller="admin" action="resetTextIndexes" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Reset Free Text Indexes</g:link></li>
@@ -185,7 +189,7 @@
                     <li><g:link controller="admin" action="buildExtension" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Build Refine Extensions</g:link></li>
                     <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
                     <li><g:link controller="admin" action="jobs"><i class="fa fa-angle-double-right fa-fw"></i> Manage Jobs</g:link></li>
-                    <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li>
+               <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
                     <li><g:link controller="user" action="search"><i class="fa fa-angle-double-right fa-fw"></i> User Management Console</g:link></li>
                     <!--
                     <li><g:link controller="api" action="downloadUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Get Refine Extension</g:link></li>

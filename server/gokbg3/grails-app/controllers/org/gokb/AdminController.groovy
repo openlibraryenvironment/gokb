@@ -20,6 +20,7 @@ class AdminController {
   ConcurrencyManagerService concurrencyManagerService
   CleanupService cleanupService
 
+  @Deprecated
   def tidyOrgData() {
 
     Job j = concurrencyManagerService.createJob {
@@ -45,7 +46,7 @@ class AdminController {
         if ( nmo.parent != null ) {
 
             nmo.parent.variantNames.add(new KBComponentVariantName(variantName:nmo.name, owner:nmo.parent))
-            nmo.parent..save();
+            nmo.parent.save();
 
           log.debug("${nmo.id} ${nmo.parent?.id}")
           def combosToDelete = []
@@ -95,7 +96,7 @@ class AdminController {
     // cache "until_changed"
     // def f = new File ("${grailsApplication.config.log_location}")
     // return [file: "${f.canonicalPath}"]
-    redirect(controller:'home', action:'index');
+    redirect(controller:'admin', action:'jobs');
   }
 
   def reSummariseLicenses() {
@@ -254,6 +255,7 @@ class AdminController {
     result
   }
 
+  @Deprecated
   def housekeeping() {
     Job j = concurrencyManagerService.createJob {
       def et = cleanupService.housekeeping()

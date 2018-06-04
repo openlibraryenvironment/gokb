@@ -17,6 +17,8 @@ class UserDetailsInterceptor {
 
       def user = springSecurityService.getCurrentUser()
 
+      log.debug("UserDetailsInterceptor::before(${params}) ${request.getRequestURL()}")
+
       if (user) {
         log.debug("User details filter... User present");
         request.user = user
@@ -103,7 +105,7 @@ class UserDetailsInterceptor {
       }
       else {
       }
-
+      log.debug("UserDetailsInterceptor::before(${params}) ${request.getRequestURL()}")
       log.debug("Return true");
       true 
     }

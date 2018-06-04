@@ -15,6 +15,7 @@ class InplaceTagLib {
   private boolean checkEditable (attrs, body, out) {
     
     // See if there is an owner attribute on the request - owner will be the domain object asking to be edited.
+    def user = springSecurityService.currentUser
     def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
     
     boolean cur = request.curator != null ? request.curator.size() > 0 : true
@@ -23,7 +24,7 @@ class InplaceTagLib {
     boolean tl_editable = cur  || (params.curationOverride == "true")
     
     if (tl_editable && owner?.respondsTo("isEditable")) {
-      tl_editable = owner.isEditable()
+      tl_editable = owner.isEditable() || ( owner == user )
     }
     
     // If not editable then we should output as value only and return the value.

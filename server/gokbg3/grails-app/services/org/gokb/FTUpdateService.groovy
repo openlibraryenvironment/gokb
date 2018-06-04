@@ -26,7 +26,7 @@ class FTUpdateService {
    */
   def synchronized updateFTIndexes() {
     log.debug("updateFTIndexes");
-    
+
     if ( running == false ) {
       running = true;
       doFTUpdate()

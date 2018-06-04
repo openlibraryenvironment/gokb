@@ -16,7 +16,7 @@ modules = {
     resource url:'js/action-forms.js'
     resource url:'js/annotations.js'
     resource url:'css/annotations.css'
-    resource url:'js/bootstrap-editable.min.js'
+    resource url:'js/bootstrap-editable.js'
     resource url:'css/security-styles.css'
     resource url:'js/select-all-multistate.js'
   }

@@ -7,7 +7,7 @@
 //=require morris.min
 //=require bootstrap
 //=require bootbox.min
-//=require bootstrap-editable.min
+//=require bootstrap-editable
 //=require select2
 //=require metisMenu.min
 //=require show-more

@@ -15,7 +15,7 @@
 	    <g:if test="${ d.users }" >
 		    <ul>
 		      <g:each var="u" in="${ d.users }" >
-		        <li><a href="mailto:${ u.email }" ><i class="fa fa-envelope"></i> ${u.displayName }</a></li>
+		        <li><a href="mailto:${ u.email }" ><i class="fa fa-envelope"></i> ${u.displayName ?: u.username}</a></li>
 		      </g:each>
 		    </ul>
 	    </g:if>

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: ${displayobj?.getNiceName() ?: 'Component'} 
+<title>GOKb: ${displayobj?.getNiceName() ?: 'Component'}
 <g:if test="${displayobj}">
 &lt;${ displayobj?.isEditable() ? 'Editable' : 'Read Only' }&gt; 
 &lt;${ displayobj?.isCreatable() ? 'Creatable' : 'Not Creatable' }&gt;
@@ -56,7 +56,7 @@
     <div class="panel-body">
       <g:if test="${displayobj != null}">
         <g:if test="${ (!displayobj.respondsTo("isEditable")) || displayobj.isEditable() }" >
-          <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" >
+          <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true") || displayobj.getNiceName() == "User") }" >
             <div class="col-xs-3 pull-right well">
               <div class="alert alert-warning">
                 <h4>Warning</h4>
@@ -98,7 +98,7 @@
         </g:if>
       </g:if>
       <g:else>
-        <div class="alert alert-danger" style="display:inline-block;">Unable to find record in database : Please verify your input or notify support</div>
+        <div class="alert alert-danger" style="display:inline-block;"><g:message code="component.notFound.label" args="[params.id]"/></div>
       </g:else>
     </div>
   </div>

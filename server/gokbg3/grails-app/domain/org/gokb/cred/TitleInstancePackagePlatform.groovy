@@ -117,6 +117,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     paymentType (nullable:true, blank:true)
     accessStartDate (nullable:true, blank:false)
     accessEndDate (nullable:true, blank:false)
+    url (nullable:true, blank:true, url:true)
   }
 
   @Transient

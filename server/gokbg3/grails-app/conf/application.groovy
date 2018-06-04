@@ -15,6 +15,28 @@ grails.mime.file.extensions=false
 grails.gorm.default.mapping = {
     autowire true
 }
+grails.plugin.springsecurity.ui.register.postRegisterUrl = '/public/index'
+grails.mail.disabled = true
+
+// grails.plugins.auditLog {
+//
+//   auditDomainClassName = "org.gokb.cred.AuditLogEvent"
+//
+//   actorClosure = { request, session ->
+//
+//     if (request.applicationContext.springSecurityService.principal instanceof java.lang.String){
+//       return request.applicationContext.springSecurityService.principal
+//     }
+//
+//     def username = request.applicationContext.springSecurityService.principal?.username
+//
+//     if (SpringSecurityUtils.isSwitched()){
+//       username = SpringSecurityUtils.switchedUserOriginalUsername+" AS "+username
+//     }
+//
+//     return username
+//   }
+// }
 
 grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/login/auth',          filters: 'none'],

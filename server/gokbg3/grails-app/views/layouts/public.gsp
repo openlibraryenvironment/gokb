@@ -43,6 +43,7 @@
        </div>
 
        <div class="nav navbar-nav navbar-right">
+          <li><g:link controller="register" action="register">Register</g:link></li>
           <li><g:link controller="home" action="index">Admin Home</g:link></li>
        </div>
 

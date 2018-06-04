@@ -8,6 +8,7 @@
       <th>Component</th>
       <th>Status</th>
       <th>Raised By</th>
+      <th>Date Created</th>
       <th>Reviewed By</th>
     </tr>
   </thead>
@@ -28,6 +29,9 @@
         </td>
         <td>
           ${rr.raisedBy?.displayName?:rr.raisedBy?.username}
+        </td>
+        <td>
+          ${rr.dateCreated}
         </td>
         <td>
           ${rr.reviewedBy?.displayName?:rr.reviewedBy?.username}

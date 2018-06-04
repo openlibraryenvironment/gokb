@@ -9,6 +9,10 @@ class CuratoryGroup extends KBComponent {
   static hasMany = [
     users: User,
   ]
+
+  static mapping = {
+    includes KBComponent.mapping
+  }
   
   static mappedBy = [users: "curatoryGroups", ]
   
@@ -28,6 +32,16 @@ class CuratoryGroup extends KBComponent {
 
   static constraints = {
     owner (nullable:true, blank:false)
+    name (validator: { val, obj ->
+      log.debug("${val}")
+      def dupes = CuratoryGroup.findByNameIlike(val);
+      if ( dupes && dupes != obj ) {
+        log.debug("Found dupe")
+        return false
+      }else{
+        log.debug("no dupes found!")
+      }
+    })
   }
   
   static def refdataFind(params) {
@@ -47,10 +61,10 @@ class CuratoryGroup extends KBComponent {
   def beforeInsert() {
     def user = springSecurityService?.currentUser
     this.owner = user
-  }
 
-  def beforeUpdate() {
+    this.generateShortcode()
+    this.generateNormname()
+    this.generateComponentHash()
   }
-
 }
 
