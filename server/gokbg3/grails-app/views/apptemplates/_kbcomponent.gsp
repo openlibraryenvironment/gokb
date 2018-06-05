@@ -31,7 +31,7 @@
 	</g:if>
 
 	<g:if test="${d.id != null}">
-		<g:if test="${ d.tags?.size() > 0 }">
+		<g:if test="${ d.hasProperty('tags') && d.tags?.size() > 0 }">
 			<dt>
 				<g:annotatedLabel owner="${d}" property="tags">Tags</g:annotatedLabel>
 			</dt>

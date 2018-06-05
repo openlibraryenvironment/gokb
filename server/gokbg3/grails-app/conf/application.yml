@@ -83,6 +83,11 @@ grails:
                 scriptlets: html
                 taglib: none
                 staticparts: none
+    exceptionresolver:
+            params:
+                exclude:
+                    - password
+                    - email
 endpoints:
     jmx:
         unique-names: true

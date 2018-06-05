@@ -1,0 +1,6 @@
+#Mon, 04 Jun 2018 19:32:52 +0200
+
+info.app.version=8.0.0
+info.app.name=gokb
+grails.env=development
+info.app.grailsVersion=3.3.5
