@@ -15,7 +15,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title><g:layoutTitle default="GOKb" /></title>
 
-  <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
+  <link rel="shortcut icon" href="${resource(dir: 'images', file: 'gokb-favicon.png')}" type="image/png">
   <g:layoutHead />
 
   <asset:javascript src="gokb/application.grass.js" />

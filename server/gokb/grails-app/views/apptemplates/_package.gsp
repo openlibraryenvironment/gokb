@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null) : true) || (params.curationOverride == 'true')) }" />
+<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups?.size() > 0 ? (request.curator != null) : true) || (params.curationOverride == 'true')) }" />
   <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
@@ -53,7 +53,7 @@
     <dt> <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /> </dd>
 
-    <dt> <g:annotatedLabel owner="${d}" property="lastUpdateComment">Update Method</g:annotatedLabel> </dt>
+    <dt> <g:annotatedLabel owner="${d}" property="lastUpdateComment">Last Update Comment</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" field="lastUpdateComment" /> </dd>
 
     <dt> <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel> </dt>
@@ -148,17 +148,21 @@
         <table class="table table-bordered">
           <thead>
             <tr>
-              <th>Date</th>
+              <th>Time</th>
               <th>Action</th>
               <th>Title</th>
+              <th>TIPP Status</th>
+              <th>TIPP Created</th>
             </tr>
           </thead>
           <tbody>
-            <g:each in="${d?.getRecentActivity(40)}" var="h">
+            <g:each in="${d?.getRecentActivity(0)}" var="h">
               <tr>
                 <td>${h[1]}</td>
-                <td>${h[2]}</td>
+                <td>${h[3]}</td>
                 <td>${h[0].title?.name} (<g:link controller="resource" action="show" id="${h[0].getClassName()+':'+h[0].id}">TIPP ${h[0].id}</g:link>)</td>
+                <td>${h[2]}</td>
+                <td>${h[0].dateCreated}</td>
               </tr>
             </g:each>
           </tbody>
@@ -166,6 +170,7 @@
       </div>
       
       <div class="tab-pane" id="review">
+        <h3>Review Requests for this package</h3>
         <g:render template="revreqtab" contextPath="../apptemplates"
           model="${[d:d]}" />
 

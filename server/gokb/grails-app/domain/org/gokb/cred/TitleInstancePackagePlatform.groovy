@@ -69,7 +69,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   ]
 
   public getPersistentId() {
-    "gokb:TIPP:${title?.id}:${pkg?.id}"
+    "gokb:TIPP:${title?.id}:${hostPlatform?.id}:${pkg?.id}"
   }
   
   public static isTypeCreatable(boolean defaultValue = false) {
@@ -122,6 +122,12 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   def getPermissableCombos() {
     [
+    ]
+  }
+
+  def availableActions() {
+    [ [code:'method::deleteSoft', label:'Delete'],
+      [code:'method::retire', label:'Retire']
     ]
   }
 
@@ -188,21 +194,24 @@ class TitleInstancePackagePlatform extends KBComponent {
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
                                           [pkg,plt,ti])
       def tipp = null;
+      def matched = false;
       switch ( tipps.size() ) {
         case 1:
           log.debug("found");
 
+          tipp = tipps[0]
+
           if( tipp_dto.url && tipp_dto.url.trim().size() > 0 ) {
-            if( !tipps[0].url || tipps[0].url == tipp_dto.url ){
-              tipp = tipps[0]
+            if( tipp.url == tipp_dto.url ){
+              log.debug("matched tipp with identical URL..")
+            }else if (!tipp.url) {
+              log.debug("matched tipp without an URL..")
             }
-            else{
-              log.debug("matched tipp has a different url..")
+            else {
+              log.debug("matched tipp has a different URL..")
             }
           }
-          else {
-            tipp = tipps[0]
-          } 
+
           break;
         case 0:
           log.debug("not found");
@@ -225,7 +234,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           else if ( ret_tipps.size() > 0 ) {
             tipp = ret_tipps[0]
             
-            log.warn("found ${ret_tipps.size()} current TIPPs!")
+            log.warn("only found ${ret_tipps.size()} retired TIPPs!")
           }
           else {
             log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
@@ -242,37 +251,66 @@ class TitleInstancePackagePlatform extends KBComponent {
         tipp.title = ti;
         tipp.hostPlatform = plt;
       }
+      else {
+        matched = true
+      }
 
       if ( tipp ) {
         tipp.save(flush:true,failOnError:true);
         def changed = false
         
-        if (plt.status != status_current) {
+        if ( plt.isRetired() ) {
           ReviewRequest.raise(
             tipp,
-            "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! Please review the URL/Platform for validity.",
-            "Platform not marked as current."
+            "Please validate the URL and Platform.",
+            "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! "
           )
         }
         
-        if ( tipp.isDeleted() || tipp.isRetired() ) {
+        if ( tipp_dto.status == "Current" && ( tipp.isDeleted() || tipp.isRetired() ) ) {
           tipp.status = status_current
           
           if ( !tipp.accessStartDate ) {
             tipp.accessStartDate = new Date()
-          }
-          
-          if ( tipp.accessEndDate ) {
-            tipp.accessEndDate = null
+
+            ReviewRequest.raise(
+              tipp,
+              "Please review TIPP access dates.",
+              "The TIPP matched for a package update was previously marked as Retired!"
+            )
           }
           changed = true
+        }
+        else if (tipp_dto.status == 'Retired') {
+          if ( tipp.isCurrent() ){
+
+            tipp.status = status_retired
+
+            if (!tipp.accessEndDate && !tipp_dto.accessEndDate) {
+              tipp.accessEndDate = new Date()
+            }
+            changed = true
+          }
+          else if ( tipp.isRetired() ) {
+            if (!tipp.accessEndDate && !tipp_dto.accessEndDate) {
+              ReviewRequest.raise(
+                tipp,
+                "Retired TIPP needs an Access End Date.",
+                "TIPP ${tipp} was already marked as Retired but does not have a specified Access End Date."
+              )
+            }
+          }
         }
         
         if ( tipp_dto.paymentType && tipp_dto.paymentType.length() > 0 ) {
           
           def payment_ref = RefdataCategory.getOID("TitleInstancePackagePlatform.PaymentType", tipp_dto.paymentType)
           
-          if (payment_ref) tipp.paymentType = RefdataValue.get(payment_ref)
+          if (payment_ref) {
+            def rdv_id = payment_ref.split(':')[1]
+            tipp.paymentType = RefdataValue.get(rdv_id)
+            changed = true
+          }
         }
 
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
@@ -289,6 +327,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
+        }
+
+        if ( changed ) {
+//           ReviewRequest.raise(
+//             tipp,
+//             "TIPP details changed.",
+//             "This TIPP was changed during a package update."
+//           )
+          log.debug("TIPP information changed!")
         }
 
         tipp.save(flush:true, failOnError:true);

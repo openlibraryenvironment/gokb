@@ -28,6 +28,21 @@ class CuratoryGroup extends KBComponent {
 
   static constraints = {
     owner (nullable:true, blank:false)
+    name (validator: { val, obj ->
+      if (obj.id) {
+        CuratoryGroup.findAllByNameIlike(val)?.each { cg ->
+          if (!cg.equals(obj)){
+            return 'validation.curatoryGroup.name.unique';
+          }
+        }
+        true
+      }
+      else if(CuratoryGroup.findAllByNameIlike(val)) {
+        return 'validation.curatoryGroup.name.unique';
+      }else {
+        true
+      }
+    })
   }
   
   static def refdataFind(params) {
@@ -46,25 +61,11 @@ class CuratoryGroup extends KBComponent {
 
   def beforeInsert() {
     def user = springSecurityService?.currentUser
+
     this.owner = user
-    
-    log.debug("Checking for duplicate CuratoryGroup: ${this.name}")
-    
-    if (CuratoryGroup.findByNameIlike(this.name)){
-      this.errors.reject ("Name is not unique","A group with this name alread exists" )
-      log.debug("CuratoryGroup: ${this.errors}")
-      return false
-    }
   }
 
   def beforeUpdate() {
-    log.debug("UPDATE: Checking for duplicate CuratoryGroup: ${this.name}")
-
-    if (CuratoryGroup.findByNameIlike(this.name)){
-      this.errors.reject ("Name is not unique", "A group with this name alread exists" )
-      log.debug("CuratoryGroup: ${this.errors}")
-      return false
-    }
   }
 
 }

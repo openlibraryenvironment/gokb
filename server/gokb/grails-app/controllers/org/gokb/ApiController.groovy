@@ -422,7 +422,7 @@ class ApiController {
 
             log.debug("Found source file in metadata. Decoding and adding to project.")
             // We need to decode it (base64).
-            def source_tgz = Base64.decodeBase64(source_file_str)
+            byte[] source_tgz = source_file_str.decodeBase64()
             project.setSourceFile(source_tgz)
           }
         }
@@ -985,6 +985,10 @@ class ApiController {
             orgRoleParam = v
           }
 
+          else if (k == 'curatoryGroup' && v instanceof String) {
+            singleParams['curatoryGroups'] = v
+          }
+
           else if (k == 'label' && v instanceof String) {
             exactQuery.should(QueryBuilders.matchQuery('name', v))
             exactQuery.should(QueryBuilders.matchQuery('altname', v))
@@ -999,14 +1003,12 @@ class ApiController {
             singleParams['altname'] = v
           }
 
-          else if ( k == "identifier" ) {
-            if (v instanceof String) {
-              id_params['identifiers.value'] = v
-            }else if (v instanceof ArrayList && v.size() == 2) {
-              id_params['identifiers.value'] = v[1]
-              id_params['identifiers.namespace'] = v[0]
+          else if ( k == "identifier" && v instanceof String) {
+            if (v.contains(',')) {
+              id_params['identifiers.namespace'] = v.split(',')[0]
+              id_params['identifiers.value'] = v.split(',')[1]
             }else{
-              errors['identifier'] = "No String or ArrayList for param identifier found."
+              id_params['identifiers.value'] = v
             }
           }
 
@@ -1486,9 +1488,14 @@ class ApiController {
     Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
       "org.gokb.cred.${classType}"
     )
+    log.debug("Starting lookup: ${params}")
 
     // Get the "term" parameter for performing a search.
     def term = params.term
+
+    if (params.match == 'id') {
+      term = params.long('id')
+    }
 
     // Results per page.
     def perPage = Math.min(params.int('perPage') ?: 10, 10)

@@ -924,6 +924,7 @@ class WorkflowController {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+    def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
     def rr_status_current = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open')
     
     def new_ti = genericOIDService.resolveOID2(activity_data.newTitle)
@@ -959,8 +960,9 @@ class WorkflowController {
         }
       }
       
-      if( merge_params['merge_pb'] ){ 
+      if( merge_params['merge_pubs'] ){
         old_ti.publisher.each{ old_pb ->
+          log.debug("Checking for publisher ${old_pb}")
           if ( !new_ti.publisher.contains(old_pb) ){
             new_ti.publisher.add(old_pb)
           }
@@ -1036,11 +1038,12 @@ class WorkflowController {
       
       old_ti.tipps.each { old_tipp ->
         
-        if( merge_params['merge_tipps'] && old_tipp.status == status_current ){
+        if( merge_params['merge_tipps'] && ( old_tipp.status == status_current || old_tipp.status == status_retired ) ){
           def dupe = false
           
           new_ti.tipps.each { new_tipp ->
             if ( new_tipp.pkg == old_tipp.pkg && new_tipp.hostPlatform == old_tipp.hostPlatform && new_tipp.url == old_tipp.url ) {
+              new_tipp.status = old_tipp.status
               dupe = true
             }
           }
@@ -1056,9 +1059,13 @@ class WorkflowController {
                                     endDate:old_tipp.endDate,
                                     endVolume:old_tipp.endVolume,
                                     endIssue:old_tipp.endIssue,
+                                    status:old_tipp.status,
                                     url:old_tipp.url,
                                     ]).save()
             log.debug("Added new TIPP ${new_tipp} to TI ${new_ti}")
+          }
+          else {
+            log.debug("Found an existing TIPP for the new title.")
           }
         }
         old_tipp.status = status_deleted
