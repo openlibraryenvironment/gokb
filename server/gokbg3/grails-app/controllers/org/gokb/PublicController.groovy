@@ -28,7 +28,7 @@ class PublicController {
   def ESSearchService
   def sessionFactory
 
-  public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp  and c.type.value = ? order by tipp.id';
+  public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp  and c.type.value = ?';
 
 
 
@@ -43,7 +43,9 @@ class PublicController {
       result.pkgId = result.pkgData[0][0]
       result.pkgName = result.pkgData[0][1]
       log.debug("Tipp qry name: ${result.pkgName}");
-      result.tipps = TitleInstancePackagePlatform.executeQuery(TIPPS_QRY,[result.pkgId, 'Package.Tipps'],[offset:0,max:10])
+
+      result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, 'Package.Tipps'])[0]
+      result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, 'Package.Tipps'],[offset:params.offset?:0,max:10])
       log.debug("Tipp qry done ${result.tipps?.size()}");
     }
     result

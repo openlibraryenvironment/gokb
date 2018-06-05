@@ -63,6 +63,10 @@ class BootStrap {
     log.info("\n\n\n **WARNING** \n\n\n - Automatic create of component identifiers index is no longer part of the domain model");
     log.info("Create manually with create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk,class)");
 
+    ContentItem.withTransaction() {
+      def appname = ContentItem.findByKeyAndLocale('gokb.appname','default') ?: new ContentItem(key:'gokb.appname', locale:'default', content:'GOKb').save(flush:true, failOnError:true)
+    }
+
     KBComponent.withTransaction() {
       cleanUpMissingDomains ()
     }

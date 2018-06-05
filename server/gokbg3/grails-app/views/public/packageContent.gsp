@@ -19,11 +19,11 @@
         <h2>Curated By</h2>
         <ul>
           <g:each in="${pkg.curatoryGroups}" var="cg">
-            <li>${cg.name}</li>
+            <li><g:link controller="public" action="curatorDetails" params="${cg.id}">${cg.name}</g:link></li>
           </g:each>
         </ul>
 
-        <h2>Titles</h2>
+        <h2>Titles (${titleCount})</h2>
         <table class="table table-striped table-bordered">
           <thead>
             <tr>
@@ -35,7 +35,7 @@
           <tbody>
             <g:each in="${tipps}" var="t">
               <tr>
-                <td>${t.title.name}</th>
+                <td><g:link controller="public" action="titleDetails" params="${t.title.id}">${t.title.name}</g:link></th>
                 <td>
                   <ul>
                     <g:each in="${t.title.ids}" var="id">
@@ -50,6 +50,13 @@
             </g:each>
           </tbody>
         </table>
+
+        <div class="pagination" style="text-align:center">
+          <g:if test="${titleCount?:0 > 0 }" >
+            <g:paginate  controller="public" action="packageContent" params="${params}" next="Next" prev="Prev" max="${max}" total="${titleCount}" />
+          </g:if>
+        </div>
+
       </g:if>
 
       </div>
