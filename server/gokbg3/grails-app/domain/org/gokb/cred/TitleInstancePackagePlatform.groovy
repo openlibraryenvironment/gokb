@@ -120,6 +120,12 @@ class TitleInstancePackagePlatform extends KBComponent {
     url (nullable:true, blank:true, url:true)
   }
 
+  def availableActions() {
+    [ [code:'method::retire', label:'Retire'],
+      [code:'method::deleteSoft', label:'Delete'],
+    ]
+  }
+
   @Transient
   def getPermissableCombos() {
     [

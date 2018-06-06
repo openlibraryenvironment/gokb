@@ -57,6 +57,12 @@
           </g:if>
           <g:else>N/A</g:else>
         </dd>
+        <dt>
+          <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
+        </dt>
+        <dd>
+          ${d.allocatedTo ? d.allocatedTo.displayName ?: d.allocatedTo.username : 'N/A'}
+        </dd>
 
         <g:if test="${d.id != null}">
           <dt>

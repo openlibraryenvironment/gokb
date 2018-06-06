@@ -1367,8 +1367,8 @@ class WorkflowController {
         log.debug("Process ${tt} - ${rr}");
         rr.needsNotify = true
         rr.allocatedTo = new_user_alloc
-        rr.save()
-        def rra = new ReviewRequestAllocationLog(note:params.note,allocatedTo:new_user_alloc,rr:rr).save();
+        rr.save(flush:true)
+        def rra = new ReviewRequestAllocationLog(note:params.note,allocatedTo:new_user_alloc,rr:rr).save(flush:true);
       }
     }
 
@@ -1708,7 +1708,7 @@ class WorkflowController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteCombo() {
     Combo c = Combo.get(params.id);
-    c.delete();
+    c.delete(flush:true);
     redirect(url: request.getHeader('referer'));
   }
 }
