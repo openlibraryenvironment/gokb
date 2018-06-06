@@ -10,6 +10,7 @@ class UserDetailsInterceptor {
 
 
   def springSecurityService
+  def displayTemplateService
 
     boolean before() { 
 
@@ -71,9 +72,8 @@ class UserDetailsInterceptor {
                   ]
                 }
               }
-      
               // Add if creatable.
-              if ( tc.isTypeCreatable() ) { 
+              if ( tc.isTypeCreatable() && displayTemplateService.getTemplateInfo(d.dcName)?.size() > 0) {
                 if ( d.dcName == 'org.gokb.cred.TitleInstancePackagePlatform' ) {
                   // Suppress for now.
                   log.error ("TitleInstancePackagePlatform.isTypeCreatable() is testing true!!")
