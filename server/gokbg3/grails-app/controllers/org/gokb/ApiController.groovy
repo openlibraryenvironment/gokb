@@ -17,6 +17,7 @@ import org.hibernate.criterion.CriteriaSpecification
 import org.hibernate.criterion.Subqueries
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.multipart.MultipartHttpServletRequest
+import org.apache.lucene.search.join.ScoreMode
 
 import java.security.SecureRandom
 
@@ -625,6 +626,8 @@ class ApiController {
         def other_fields = ["controller","action","max","offset","from"]
         def id_params = [:]
         def orgRoleParam = ""
+        def tippPackageId = null
+        def tippTitleId = null
 
         params.each { k, v ->
           if ( k == 'componentType' && v instanceof String ) {
@@ -633,6 +636,18 @@ class ApiController {
 
           else if( k == 'role' && v instanceof String ) {
             orgRoleParam = v
+          }
+
+          else if (k == 'package' && v instanceof String) {
+            tippPackageId = v
+          }
+
+          else if (k == 'status' && v instanceof String) {
+            singleParams['status'] = v
+          }
+
+          else if (k == 'title' && v instanceof String) {
+            tippTitleId = v
           }
 
           else if (k == 'curatoryGroup' && v instanceof String) {
@@ -663,7 +678,7 @@ class ApiController {
           }
 
           else if ( k == "id" && v instanceof String) {
-            singleParams['id'] = v
+            singleParams['_id'] = v
           }
 
           else if (!other_fields.contains(k)){
@@ -684,6 +699,24 @@ class ApiController {
           }
         }
 
+        if ( tippPackageId ) {
+          if ( singleParams['componentType'] ) {
+            singleParams['tippPackage'] = tippPackageId
+          }
+          else {
+            errors['role'] = "To filter by Package, please add filter componentType=TIPP to the query"
+          }
+        }
+
+        if ( tippTitleId ) {
+          if ( singleParams['componentType'] ) {
+            singleParams['tippTitle'] = tippTitleId
+          }
+          else {
+            errors['role'] = "To filter by Title, please add filter componentType=TIPP to the query"
+          }
+        }
+
         if (singleParams) {
           singleParams.each { k,v ->
             exactQuery.must(QueryBuilders.matchQuery(k,v))
@@ -691,7 +724,7 @@ class ApiController {
         }
 
         if (id_params) {
-          exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params)))
+          exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
         }
 
 

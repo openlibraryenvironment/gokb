@@ -22,8 +22,7 @@ class Platform extends KBComponent {
   ]
   
   private static refdataDefaults = [
-    "authentication"  : "Unknown",
-    "roles"      : ["Host"]
+    "authentication"  : "Unknown"
   ]
   
   static manyByCombo = [

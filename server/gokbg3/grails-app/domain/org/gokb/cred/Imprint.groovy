@@ -8,6 +8,10 @@ class Imprint extends KBComponent {
     org               : Org
   ]
 
+  static manyByCombo = [
+    owners      : Org
+  ]
+
   static mappedByCombo = [
   ]
 
@@ -18,14 +22,46 @@ class Imprint extends KBComponent {
   static constraints = {
   }
 
-  @Transient
-  def getPermissableCombos() {
-    [
-    ]
-  }
+//   @Transient
+//   def getPermissableCombos() {
+//     [
+//     ]
+//   }
 
   public String getNiceName() {
     return "Imprint";
+  }
+
+  public Org getCurrentOwner() {
+    def result = null;
+    def owner_combos = getCombosByPropertyName('owners')
+    def highest_end_date = null;
+
+    owner_combos.each { Combo pc ->
+      if ( ( pc.endDate == null ) ||
+           ( highest_end_date == null) ||
+           ( pc.endDate > highest_end_date ) ) {
+
+        if (isComboReverse('owners')) {
+          if ( pc.fromComponent.status?.value == 'Deleted' ) {
+          }
+          else {
+            highest_end_date = pc.endDate
+            result = pc.fromComponent
+          }
+        } else {
+          if ( pc.toComponent.status?.value == 'Deleted' ) {
+          }
+          else {
+            highest_end_date = pc.endDate
+            result = pc.toComponent
+          }
+        }
+      }
+    }
+    result = result ? Org.get(result.id) : null
+
+    result
   }
 
   /**

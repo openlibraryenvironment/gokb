@@ -741,7 +741,7 @@ abstract class KBComponent {
 
   @Transient
   public List<Combo> getCombosByPropertyNameAndStatus(propertyName,status) {
-    log.debug("KBComponent::getCombosByPropertyNameAndStatus::${propertyName}|${status}")
+//     log.debug("KBComponent::getCombosByPropertyNameAndStatus::${propertyName}|${status}")
 
     def combos
     def status_ref
@@ -771,7 +771,7 @@ abstract class KBComponent {
 
       combos = Combo.executeQuery(hql_query,hql_params)
 
-      log.debug("Qry: ${hql_query}, Params:${hql_params} : result.size=${combos?.size()}");
+//       log.debug("Qry: ${hql_query}, Params:${hql_params} : result.size=${combos?.size()}");
     }
     else {
       log.error("This.id == null");

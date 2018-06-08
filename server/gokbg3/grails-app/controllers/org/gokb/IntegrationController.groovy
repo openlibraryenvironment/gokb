@@ -736,6 +736,7 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
+    def errors = []
     User user = springSecurityService.currentUser
     if ( request.JSON.packageHeader.name ) {
       def valid = Package.validateDTO(request.JSON.packageHeader)
@@ -744,180 +745,190 @@ class IntegrationController {
         def existing_tipps = []
         Boolean curated_pkg = false;
         def is_curator = null;
-        
-        if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
-          is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
-          curated_pkg = true;
-        }
-        
-        if ( is_curator || !curated_pkg ) {
-          if ( the_pkg.tipps?.size() > 0 ) {
-            existing_tipps = the_pkg.tipps.collect { it.id }
-            log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
+        if (the_pkg) {
+          if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
+            is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+            curated_pkg = true;
           }
 
-          Map platform_cache = [:]
-          log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
+          if ( is_curator || !curated_pkg ) {
+            if ( the_pkg.tipps?.size() > 0 ) {
+              existing_tipps = the_pkg.tipps.collect { it.id }
+              log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
+            }
 
-          // Validate and upsert titles and platforms
-          request.JSON.tipps.each { tipp ->
+            Map platform_cache = [:]
+            log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
 
-            TitleInstance.withNewSession {
+            // Validate and upsert titles and platforms
+            request.JSON.tipps.each { tipp ->
 
-              valid &= TitleInstance.validateDTO(tipp.title);
+              TitleInstance.withNewSession {
 
-              if ( !valid )
-                log.warn("Not valid after title validation ${tipp.title}");
+                valid &= TitleInstance.validateDTO(tipp.title);
 
-              def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
-              
-              if ( ti && ( tipp.title.internalId == null ) ) {
-                tipp.title.internalId = ti.id;
-              }
+                if ( !valid )
+                  log.warn("Not valid after title validation ${tipp.title}");
 
-              if ( tipp.title.internalId == null ) {
-                log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
-              }
+                def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-              valid &= Platform.validateDTO(tipp.platform);
-              if ( !valid )
-                log.warn("Not valid after platform validation ${tipp.platform}");
+                if ( ti && ( tipp.title.internalId == null ) ) {
+                  tipp.title.internalId = ti.id;
+                }
 
-              if ( valid ) {
+                if ( tipp.title.internalId == null ) {
+                  log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
+                }
 
-                def pl = null
-                def pl_id
-                if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
-                  pl = Platform.get(pl_id)
-                } else {
-                  // Not in cache.
-                  pl = Platform.upsertDTO(tipp.platform, user);
+                valid &= Platform.validateDTO(tipp.platform);
+                if ( !valid )
+                  log.warn("Not valid after platform validation ${tipp.platform}");
 
-                  if(pl){
-                    platform_cache[tipp.platform.name] = pl.id
-                  }else{
-                    log.error("Could not find/create ${tipp.platform}")
-                    result['errors'].add(['code': 500, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
-                    valid = false
+                if ( valid ) {
+
+                  def pl = null
+                  def pl_id
+                  if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                    pl = Platform.get(pl_id)
+                  } else {
+                    // Not in cache.
+                    pl = Platform.upsertDTO(tipp.platform, user);
+
+                    if(pl){
+                      platform_cache[tipp.platform.name] = pl.id
+                    }else{
+                      log.error("Could not find/create ${tipp.platform}")
+                      errors.add(['code': 500, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                      valid = false
+                    }
+                  }
+
+                  if ( pl && ( tipp.platform.internalId == null ) ) {
+                    tipp.platform.internalId = pl.id;
+                  }
+                  else {
+                    log.warn("No platform arising from ${tipp.platform}");
                   }
                 }
-
-                if ( pl && ( tipp.platform.internalId == null ) ) {
-                  tipp.platform.internalId = pl.id;
+                else {
+                  log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
+                }
+    //
+    //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+                if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
+                  tipp.package = [ internalId: the_pkg.id ]
                 }
                 else {
-                  log.warn("No platform arising from ${tipp.platform}");
+                  log.warn("No package");
+                  errors.add(['code': 500, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                  valid = false
                 }
               }
-              else {
-                log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
-              }
-  //
-  //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
-              if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-                tipp.package = [ internalId: the_pkg.id ]
-              }
-              else {
-                log.warn("No package");
+            }
+          }
+          else{
+            valid = false
+            log.warn("Package update denied!")
+            response.status = 403
+            result['result'] = 'ERROR'
+            errors.add(['code': 403, 'message': "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."])
+          }
+
+  //        cleanUpGorm()
+
+          int tippctr=0;
+          if ( valid ) {
+            // If valid so far, validate tipps
+            log.debug("Validating tipps [${tippctr++}]");
+            request.JSON.tipps.each { tipp ->
+              def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
+              if ( !validation_result) {
+                log.error("TIPP Validation failed on ${tipp}")
                 valid = false
               }
             }
           }
-        }
-        else{
-          valid = false
-          log.warn("Package update denied!")
-          response.status = 403
+          else {
+            log.warn("Not validating tipps - failed pre validation")
+          }
+
+
+          log.debug("\n\nupsert tipp data\n\n")
+          tippctr=0
+
+          def tipps_to_delete = existing_tipps
+          def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+
+          if ( valid ) {
+            def tipp_upsert_start_time = System.currentTimeMillis()
+            // If valid, upsert tipps
+            request.JSON.tipps.each { tipp ->
+              TitleInstancePackagePlatform.withNewSession {
+                log.debug("Upsert tipp [${tippctr++}] ${tipp}")
+
+                def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
+                log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
+                upserted_tipp.merge(flush: true)
+
+                if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
+                  log.debug("Existing TIPP matched!")
+                  tipps_to_delete.remove(upserted_tipp.id)
+                }
+              }
+            }
+            def num_deleted_tipps = 0;
+
+            if ( existing_tipps.size() > 0 ) {
+
+
+              tipps_to_delete.each { ttd ->
+
+                def to_retire = TitleInstancePackagePlatform.get(ttd)
+
+                if ( to_retire?.isCurrent() ) {
+
+                  to_retire.retire()
+                  to_retire.save(failOnError: true)
+
+  //                 ReviewRequest.raise(
+  //                     to_retire,
+  //                     "TIPP retired.",
+  //                     "An update to this package did not contain this TIPP.",
+  //                     user
+  //                 )
+                  num_deleted_tipps++;
+                }else{
+                  log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
+                }
+              }
+              if( num_deleted_tipps > 0 ) {
+                ReviewRequest.raise(
+                    the_pkg,
+                    "TIPPs retired.",
+                    "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
+                    user
+                )
+              }
+            }
+            log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
+            result.message = "Created/Updated package ${request.JSON.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})}"
+            log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
+          }
+          else {
+            log.warn("Not loading tipps - failed validation")
+          }
+        }else{
+          response.status = 400
           result['result'] = 'ERROR'
-          result['errors'] = []
-          result['errors'].add(['code': 403, 'message': "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."])
-        }
-
-//        cleanUpGorm()
-
-        int tippctr=0;
-        if ( valid ) {
-          // If valid so far, validate tipps
-          log.debug("Validating tipps [${tippctr++}]");
-          request.JSON.tipps.each { tipp ->
-            def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
-            if ( !validation_result) {
-              log.error("TIPP Validation failed on ${tipp}")
-            }
-          }
-        }
-        else {
-          log.warn("Not validating tipps - failed pre validation")
-        }
-
-
-        log.debug("\n\nupsert tipp data\n\n")
-        tippctr=0
-
-        def tipps_to_delete = existing_tipps
-        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-
-        if ( valid ) {
-          def tipp_upsert_start_time = System.currentTimeMillis()
-          // If valid, upsert tipps
-          request.JSON.tipps.each { tipp ->
-            TitleInstancePackagePlatform.withNewSession {
-              log.debug("Upsert tipp [${tippctr++}] ${tipp}")
-
-              def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
-              log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
-              upserted_tipp.merge(flush: true)
-
-              if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
-                log.debug("Existing TIPP matched!")
-                tipps_to_delete.remove(upserted_tipp.id)
-              }
-            }
-          }
-          def num_deleted_tipps = 0;
-          
-          if ( existing_tipps.size() > 0 ) {
-
-
-            tipps_to_delete.each { ttd ->
-              
-              def to_retire = TitleInstancePackagePlatform.get(ttd)
-              
-              if ( to_retire?.isCurrent() ) {
-                
-                to_retire.retire()
-                to_retire.save(failOnError: true)
-
-//                 ReviewRequest.raise(
-//                     to_retire,
-//                     "TIPP retired.",
-//                     "An update to this package did not contain this TIPP.",
-//                     user
-//                 )
-                num_deleted_tipps++;
-              }else{
-                log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
-              }
-            }
-            if( num_deleted_tipps > 0 ) {
-              ReviewRequest.raise(
-                  the_pkg,
-                  "TIPPs retired.",
-                  "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
-                  user
-              )
-            }
-          }
-          log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
-
-          log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
-        }
-        else {
-          log.warn("Not loading tipps - failed validation")
+          errors.add(['code': 400, 'message': "Package could not be matched/created!"])
         }
       }
 
     }
+    if( errors.size() > 0 ){
+      result['errors'] = errors
+    }
+
     render result as JSON
   }
 
@@ -1228,6 +1239,7 @@ class IntegrationController {
     }
     catch ( Exception e ) {
       log.error("Exception attempting to cross reference title",e);
+      response.status = 400
       result.result="ERROR"
       result.message=e.toString()
       result.baddata=titleObj

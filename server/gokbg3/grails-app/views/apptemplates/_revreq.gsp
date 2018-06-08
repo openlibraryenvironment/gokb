@@ -42,8 +42,6 @@
             field="componentToReview" baseClass="org.gokb.cred.KBComponent">
             ${d.componentToReview?.displayName?:''}
           </g:manyToOneReferenceTypedown>
-          <g:componentLink object="${d?.componentToReview}" target="_blank"
-            title="View the component (opens in new window)">view</g:componentLink>
         </dd>
         <dt>
           <g:annotatedLabel owner="${d}" property="refineProject">Refine Project</g:annotatedLabel>

@@ -39,6 +39,7 @@
 			<li><a href="#ids" data-toggle="tab">IDs <span
 					class="badge badge-warning"> ${d.ids?.size() ?: '0'}
 				</span></a></li>
+                        <li><a href="#relationships" data-toggle="tab">Relations</a></li>
 			<li><a href="#licenses" data-toggle="tab">Licenses</a></li>
 			<li><a href="#packages" data-toggle="tab">Packages</a></li>
 			<li><a href="#titles" data-toggle="tab">Published Titles</a></li>
@@ -56,7 +57,7 @@
 
 		<div id="my-tab-content" class="tab-content">
 			<div class="tab-pane active" id="orgdetails">
-				<g:if test="${d.id != null}">
+                                <g:if test="${d.id != null}">
 					<dl class="dl-horizontal">
 						<dt>
 							<g:annotatedLabel owner="${d}" property="mission">Mission</g:annotatedLabel>
@@ -65,12 +66,12 @@
 							<g:xEditableRefData owner="${d}" field="mission"
 								config='Org.Mission' />
 						</dd>
-                        <dt>
-                          <g:annotatedLabel owner="${d}" property="homepage">Homepage</g:annotatedLabel>
-                        </dt>
-                        <dd>
-                          <g:xEditable class="ipe" owner="${d}" field="homepage" />
-                        </dd>
+                                                <dt>
+                                                  <g:annotatedLabel owner="${d}" property="homepage">Homepage</g:annotatedLabel>
+                                                </dt>
+                                                <dd>
+                                                  <g:xEditable class="ipe" owner="${d}" field="homepage" />
+                                                </dd>
 						<dt>
 							<g:annotatedLabel owner="${d}" property="roles">Roles</g:annotatedLabel>
 						</dt>
@@ -99,8 +100,8 @@
 								</g:if>
 							</g:if>
 							<g:else>
-                              Record must be saved before roles can be edited.
-                            </g:else>
+                                                          Record must be saved before roles can be edited.
+                                                        </g:else>
 						</dd>
 					</dl>
 				</g:if>
@@ -119,38 +120,83 @@
                                                         <g:render template="/apptemplates/addIdentifier" model="${[d:d]}"/>
 
 						</dd>
-
-						<g:if test="${d.parent != null}">
-							<dt>
-								<g:annotatedLabel owner="${d}" property="parent">Parent</g:annotatedLabel>
-							</dt>
-							<dd>
-								<g:link controller="resource" action="show"
-									id="${d.parent.getClassName()+':'+d.parent.id}">
-									${d.parent.name}
-								</g:link>
-							</dd>
-						</g:if>
-
-						<g:if test="${d.children?.size() > 0}">
-							<dt>
-								<g:annotatedLabel owner="${d}" property="children">Children</g:annotatedLabel>
-							</dt>
-							<dd>
-								<ul>
-									<g:each in="${d.children}" var="c">
-										<li><g:link controller="resource" action="show"
-												id="${c.getClassName()+':'+c.id}">
-												${c.name}
-											</g:link></li>
-									</g:each>
-								</ul>
-							</dd>
-						</g:if>
 					</dl>
 				</g:if>
 			</div>
+                        <div class="tab-pane" id="relationships">
+                                <g:if test="${d.id != null}">
+                                        <dl class="dl-horizontal">
+                                                <dt>
+                                                  <g:annotatedLabel owner="${d}" property="successor">Successor</g:annotatedLabel>
+                                                </dt>
+                                                <dd>
+                                                  <g:manyToOneReferenceTypedown owner="${d}" field="successor" baseClass="org.gokb.cred.Org">${d.successor?.name}</g:manyToOneReferenceTypedown>
+                                                </dd>
+                                                <dt>
+                                                  <g:annotatedLabel owner="${d}" property="successor">Predecessor(s)</g:annotatedLabel>
+                                                </dt>
+                                                <dd>
+                                                        <ul>
+                                                                <g:each in="${d.previous}" var="c">
+                                                                        <li><g:link controller="resource" action="show"
+                                                                                        id="${c.getClassName()+':'+c.id}">
+                                                                                        ${c.name}
+                                                                                </g:link></li>
+                                                                </g:each>
+                                                        </ul>
+                                                </dd>
+                                                <dt>
+                                                  <g:annotatedLabel owner="${d}" property="parent">Parent Org</g:annotatedLabel>
+                                                </dt>
+                                                <dd>
+                                                  <g:manyToOneReferenceTypedown owner="${d}" field="parent" baseClass="org.gokb.cred.Org">${d.parent?.name}</g:manyToOneReferenceTypedown>
+                                                </dd>
 
+                                                <g:if test="${d.children?.size() > 0}">
+                                                        <dt>
+                                                                <g:annotatedLabel owner="${d}" property="children">Subsidiaries</g:annotatedLabel>
+                                                        </dt>
+                                                        <dd>
+                                                                <ul>
+                                                                        <g:each in="${d.children}" var="c">
+                                                                                <li><g:link controller="resource" action="show"
+                                                                                                id="${c.getClassName()+':'+c.id}">
+                                                                                                ${c.name}
+                                                                                        </g:link></li>
+                                                                        </g:each>
+                                                                </ul>
+                                                        </dd>
+                                                </g:if>
+                                                <dt>
+                                                  <g:annotatedLabel owner="${d}" property="imprints">Imprints</g:annotatedLabel>
+                                                </dt>
+                                                <dd>
+                                                  <table class="table table-striped table-bordered">
+                                                    <thead>
+                                                      <tr>
+                                                        <th>Imprint Name</th>
+                                                        <th>Combo Status</th>
+                                                        <th>Imprint From</th>
+                                                        <th>Imprint To</th>
+                                                        <th>Actions</th>
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                      <g:each in="${d.getCombosByPropertyName('imprints')}" var="p">
+                                                        <tr>
+                                                          <td><g:link controller="resource" action="show" id="${p.fromComponent.class.name}:${p.fromComponent.id}"> ${p.fromComponent.name} </g:link></td>
+                                                          <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
+                                                          <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
+                                                          <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
+                                                          <td><g:link controller="workflow" action="deleteCombo" id="${p.id}">Delete</g:link></td>
+                                                        </tr>
+                                                      </g:each>
+                                                    </tbody>
+                                                  </table>
+                                                </dd>
+                                        </dl>
+                                </g:if>
+                        </div>
 			<div class="tab-pane" id="addprops">
 				<dl>
 					<dt>

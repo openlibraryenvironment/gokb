@@ -19,6 +19,8 @@ class Org extends KBComponent {
   static manyByCombo = [
     providedPackages  : Package,
     children    : Org,
+    'previous'  : Org,
+    imprints  : Imprint,
     publishedTitles    : TitleInstance,
     issuedTitles    : TitleInstance,
     providedPlatforms  : Platform,
@@ -33,8 +35,8 @@ class Org extends KBComponent {
 
   static hasByCombo = [
     parent          :  Org,
-    'previous'         :  Org,
-    successor         :  Org
+    successor         :  Org,
+    imprint         : Imprint
   ]
 
   static mappedByCombo = [
@@ -228,4 +230,5 @@ class Org extends KBComponent {
     Combo.executeUpdate("delete from Combo where fromComponent.id = ?",[this.getId()]);
     result
   }
+
 }

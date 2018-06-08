@@ -54,8 +54,8 @@ class FTUpdateService {
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
-        result.publisher = kbc.currentPublisher?.name
-        result.publisherId = kbc.currentPublisher?.id
+//         result.publisher = kbc.currentPublisher?.name
+        result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -83,7 +83,7 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
         // result.publisher = kbc.currentPublisher?.name
-        result.publisherId = kbc.currentPublisher?.id
+        result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -123,6 +123,27 @@ class FTUpdateService {
         kbc.ids.each { identifier ->
           result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
         }
+
+        result.componentType=kbc.class.simpleName
+
+        result
+      }
+
+      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { kbc ->
+        def result = null
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+
+        result.curatoryGroups = []
+        kbc.pkg?.curatoryGroups?.each { cg ->
+          result.curatoryGroups.add(cg.name)
+        }
+
+        result.tippPackage = kbc.pkg ? "${kbc.pkg.class.name}:${kbc.pkg.id}" : ""
+        result.tippTitle = kbc.title ? "${kbc.title.class.name}:${kbc.title.id}" : ""
+        result.hostPlatform = kbc.hostPlatform ? "${kbc.hostPlatform.class.name}:${kbc.hostPlatform.id}" : ""
+
+        result.status = kbc.status?.value
 
         result.componentType=kbc.class.simpleName
 
@@ -219,10 +240,10 @@ class FTUpdateService {
       def total = 0;
       Date from = new Date(latest_ft_record.lastTimestamp);
   
-      def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND ( o.status = :current OR o.status = :retired )",[ts: from, current: status_current, retired: status_retired], [readonly:true])[0];
+      def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ",[ts: from], [readonly:true])[0];
       log.debug("Will process ${countq} records");
 
-      def q = domain.executeQuery("select o.id from "+domain.name+" as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) AND ( o.status = :current OR o.status = :retired ) order by o.lastUpdated, o.id",[ts: from, current: status_current, retired: status_retired], [readonly:true]);
+      def q = domain.executeQuery("select o.id from "+domain.name+" as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id",[ts: from], [readonly:true]);
     
       log.debug("Query completed.. processing rows...");
 

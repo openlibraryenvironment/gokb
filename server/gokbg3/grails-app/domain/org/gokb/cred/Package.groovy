@@ -533,44 +533,55 @@ select tipp.id,
   @Transient
   public static upsertDTO(packageHeaderDTO, def user = null) {
     log.info("Upsert package with header ${packageHeaderDTO}");
-
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
     def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
-    def name_candidates = Package.executeQuery("select p from Package as p where p.normname = ? and p.status.value <> 'Deleted' ",[pkg_normname])
+
+    log.debug("Checking by normname ${pkg_normname} ..")
+    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ? ",[pkg_normname, status_deleted])
     def full_matches = []
     def result = false;
 
     if(name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0){
+      log.debug("Got ${name_candidates.size()} matches by name. Checking against identifiers!")
       name_candidates.each { mp ->
         if(mp.ids.size() > 0){
-          def full_match = true;
+          def id_match = false;
 
           packageHeaderDTO.identifiers.each { rid ->
 
             Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(rid.type, rid.value);
 
-            if( !mp.ids.contains(the_id) ) {
-              full_match = false
+            if( mp.ids.contains(the_id) ) {
+              id_match = true
             }
           }
 
-          if(full_match){
+          if(id_match && !full_matches.contains(mp)){
             full_matches.add(mp)
           }
         }
       }
 
       if(full_matches.size() == 1){
+        log.debug("Matched package by name + identifier!")
         result = full_matches[0]
+      }else if (full_matches.size() == 0 && name_candidates.size() == 1){
+        result = name_candidates[0]
+        log.debug("Found a single match by name!")
+      }else{
+        log.warn("Found multiple possible matches for package! Aborting..")
+        return result
       }
     }
     else if (name_candidates.size() == 1) {
+      log.debug("Matched package by name!")
       result = name_candidates[0]
     }
 
     if( !result ){
-
+      log.debug("Did not find a match via name, trying existing variantNames..")
       def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
-      def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status.value <> 'Deleted' ",[variant_normname]);
+      def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_normname, status_deleted]);
 
       if ( candidate_pkgs.size() == 1 ){
         result = candidate_pkgs[0]
@@ -579,6 +590,7 @@ select tipp.id,
     }
 
     if( !result && packageHeaderDTO.variantNames?.size() > 0 ){
+      log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
       packageHeaderDTO.variantNames.each {
 
         if(it.trim().size() > 0){
@@ -589,7 +601,7 @@ select tipp.id,
           }else{
 
             def variant_normname = GOKbTextUtils.normaliseString(it)
-            def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status.value <> 'Deleted' ",[variant_normname]);
+            def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_normname, status_deleted]);
 
             if ( candidate_pkgs.size() == 1 ){
               log.debug("Found existing package variant name for variantName ${it}")
@@ -711,7 +723,7 @@ select tipp.id,
         changed = true
       }else{
         def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.nominalProvider)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value = 'Current'",[variant_normname]);
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status = ?",[variant_normname, status_deleted]);
 
         if ( candidate_orgs.size() == 1 ) {
           result.provider = candidate_orgs[0]
