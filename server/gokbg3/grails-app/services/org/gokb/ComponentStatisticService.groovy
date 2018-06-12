@@ -3,7 +3,9 @@ package org.gokb
 import org.gokb.cred.*
 
 import com.k_int.ClassUtils
+import grails.transaction.Transactional
 
+@Transactional
 class ComponentStatisticService {
 
   def executorService
@@ -18,6 +20,7 @@ class ComponentStatisticService {
       running = true;
       ensureStats(months, offset, force_update)
       log.debug("updateCompStats returning");
+      return new Date();
     }
     else {
       log.debug("Stats Update already running");

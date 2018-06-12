@@ -175,35 +175,35 @@ class Org extends KBComponent {
           builder.'mission' ( mission.value )
         }
         
-        if (publishes) {
-          'publishedTitles' {
-            publishes.each { title ->
-              builder.'title' (['id':title.id]) {
-                builder.'name' (title.name)
-                builder.'identifiers' {
-                  title.ids?.each { tid ->
-                    builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        if (issues) {
-          'issuedTitles' {
-            issues.each { title ->
-              builder.'title' (['id':title.id]) {
-                builder.'name' (title.name)
-                builder.'identifiers' {
-                  title.ids?.each { tid ->
-                    builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
-                  }
-                }
-              }
-            }
-          }
-        }
+//         if (publishes) {
+//           'publishedTitles' {
+//             publishes.each { title ->
+//               builder.'title' (['id':title.id]) {
+//                 builder.'name' (title.name)
+//                 builder.'identifiers' {
+//                   title.ids?.each { tid ->
+//                     builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//
+//         if (issues) {
+//           'issuedTitles' {
+//             issues.each { title ->
+//               builder.'title' (['id':title.id]) {
+//                 builder.'name' (title.name)
+//                 builder.'identifiers' {
+//                   title.ids?.each { tid ->
+//                     builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
         
         if (provides) {
           'providedPackages' {
@@ -213,6 +213,13 @@ class Org extends KBComponent {
                 builder.'identifiers' {
                   pkg.ids?.each { tid ->
                     builder.'identifier' (['namespace':tid.namespace?.value], tid.value)
+                  }
+                }
+                builder.'curatoryGroups' {
+                  pkg.curatoryGroups?.each { cg ->
+                    builder.'group'(['id':cg.id]) {
+                      builder.'name'(cg.name)
+                    }
                   }
                 }
               }

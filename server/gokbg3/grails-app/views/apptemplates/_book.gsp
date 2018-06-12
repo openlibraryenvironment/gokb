@@ -381,29 +381,33 @@
     <div class="tab-pane" id="people">
 
      <dl>
-	    <dt>
-		  <g:annotatedLabel owner="${d}" property="people">Add People</g:annotatedLabel>
-		</dt>
-		<dd>
-		  <!-- this bit could be better  -->
-		  <g:render template="/apptemplates/componentPerson"
-				    model="${[d:d, property:'people', cols:[[expr:'person.name',colhead:'Name', action:'link-person'],
-						                                    [expr:'role.value', colhead: 'Role']], targetClass:'org.gokb.cred.Person',direction:'in']}" />
-		</dd>
+            <g:if test="${d.id}">
+              <dt>
+                    <g:annotatedLabel owner="${d}" property="people">Add People</g:annotatedLabel>
+              </dt>
+                  <dd>
+                    <!-- this bit could be better  -->
+                    <g:render template="/apptemplates/componentPerson"
+                                      model="${[d:d, property:'people', cols:[[expr:'person.name',colhead:'Name', action:'link-person'],
+                                                                                      [expr:'role.value', colhead: 'Role']], targetClass:'org.gokb.cred.Person',direction:'in']}" />
+                  </dd>
+            </g:if>
 	  </dl>
     </div>
 
     <div class="tab-pane" id="subjects">
 	  <dl>
-	    <dt>
-		  <g:annotatedLabel owner="${d}" property="subjects">Add Subjects</g:annotatedLabel>
-		</dt>
-		<dd>
-		  <!-- this bit could be better  -->
-		  <g:render template="/apptemplates/componentSubject" 
-				    model="${[d:d, property:'subjects', cols:[[expr:'subject.name',colhead:'Subject Heading',action:'link-subject'],
-						                                      [expr:'subject.clsmrk', colhead: 'Classification']],targetClass:'org.gokb.cred.Subject',direction:'in']}" />
-		</dd>
+            <g:if test="${d.id}">
+                <dt>
+                      <g:annotatedLabel owner="${d}" property="subjects">Add Subjects</g:annotatedLabel>
+                </dt>
+                <dd>
+                  <!-- this bit could be better  -->
+                  <g:render template="/apptemplates/componentSubject"
+                                    model="${[d:d, property:'subjects', cols:[[expr:'subject.name',colhead:'Subject Heading',action:'link-subject'],
+                                                                                      [expr:'subject.clsmrk', colhead: 'Classification']],targetClass:'org.gokb.cred.Subject',direction:'in']}" />
+                </dd>
+            </g:if>
 	  </dl>
 	</div>
 

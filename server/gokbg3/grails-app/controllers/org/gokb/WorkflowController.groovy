@@ -1394,20 +1394,20 @@ class WorkflowController {
           params.beforeTitles = [ params.beforeTitles ]
         }
 
-        def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:params.date('EventDate', 'yyyy-MM-dd')).save()
+        def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:params.date('EventDate', 'yyyy-MM-dd')).save(flush:true)
 
         params.afterTitles?.each { at ->
           def component = genericOIDService.resolveOID2(at)
           def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
                                                                         participant:component,
-                                                                        participantRole:'out').save()
+                                                                        participantRole:'out').save(flush:true)
         }
 
         params.beforeTitles?.each { bt ->
           def component = genericOIDService.resolveOID2(bt)
           def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
                                                                         participant:component,
-                                                                        participantRole:'in').save()
+                                                                        participantRole:'in').save(flush:true)
         }
       }
 

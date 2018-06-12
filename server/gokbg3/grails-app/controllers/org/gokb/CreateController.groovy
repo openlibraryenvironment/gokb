@@ -149,14 +149,14 @@ class CreateController {
           
             log.debug("Saving..");
             log.debug("Obj: ${result.newobj}")
-            if ( result.newobj.hasErrors() ) {
+            if ( !result.newobj.validate() ) {
               log.error("Problem saving new object")
               flash.error = "Problem saving new object!"
               
               log.error("${result.newobj.errors}")
               // render view: 'index', model: [d: result.newobj]
               result.newobj.errors.allErrors.each { e ->
-                log.error(e)
+                log.error("${e}")
               }
               
               result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])

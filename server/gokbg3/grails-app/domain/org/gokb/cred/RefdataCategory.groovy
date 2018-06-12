@@ -122,7 +122,7 @@ class RefdataCategory {
   static String getOID(category_name, value) {
     String result = null
     def cat = RefdataCategory.findByDesc(category_name);
-    if ( cat != null ) {
+    if ( cat != null && value != null ) {
       def v = RefdataValue.findByOwnerAndValueIlike(cat, value)
       if ( v != null ) {
         result = "org.gokb.cred.RefdataValue:${v.id}"

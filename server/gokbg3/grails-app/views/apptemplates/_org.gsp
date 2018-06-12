@@ -106,8 +106,7 @@
 					</dl>
 				</g:if>
 			</div>
-			<g:render template="/tabTemplates/showVariantnames"
-			model="${[d:displayobj, showActions:true]}" />
+			<g:render template="/tabTemplates/showVariantnames" model="${[d:d, showActions:true]}" />
 			<div class="tab-pane" id="ids">
 				<g:if test="${d.id != null}">
 					<dl>
@@ -305,7 +304,7 @@
 					</dt>
 					<dd>
 						<g:render template="/apptemplates/comboList"
-							model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform']]]}" />
+							model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform', action:'link']]]}" />
 					</dd>
 				</dl>
 			</div>

@@ -30,7 +30,7 @@ class OaiController {
 
           def o = dc.clazz.oaiConfig
           if ( o.id == params.id ) {
-            
+
             // Combine the default props with the locally set ones.
             result.oaiConfig = grailsApplication.config.defaultOaiConfig + o
 
@@ -212,7 +212,7 @@ class OaiController {
       query += ' and o.lastUpdated < ?'
       query_params.add(sdf.parse(params.until))
     }
-    def order_by_clause = 'order by o.lastUpdated'
+    def order_by_clause = 'order by o.id'
 
     def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
     def records = Package.executeQuery("select o ${query} ${order_by_clause}",query_params,[offset:offset,max:3])
@@ -410,7 +410,7 @@ class OaiController {
         query_params.add(params.set)
       }
 
-      def order_by_clause = 'order by o.lastUpdated'
+      def order_by_clause = 'order by o.id'
       log.debug("qry is: ${query}");
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
       def rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];

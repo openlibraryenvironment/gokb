@@ -15,6 +15,7 @@ class AdminController {
   def uploadAnalysisService
   def FTUpdateService
   def packageService
+  def componentStatisticService
   def grailsCacheAdminService
   def titleAugmentService
   ConcurrencyManagerService concurrencyManagerService
@@ -304,5 +305,17 @@ class AdminController {
     }
     
     render result as JSON
+  }
+
+  def recalculateStats() {
+    Job j = concurrencyManagerService.createJob {
+      componentStatisticService.updateCompStats(12,0,true)
+    }.startOrQueue()
+
+    log.debug "Triggering statistics rewrite, job #${j.id}"
+    j.description = "Recalculate Statistics"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
   }
 }

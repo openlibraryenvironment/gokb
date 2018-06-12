@@ -587,7 +587,7 @@ abstract class KBComponent {
   }
 
   def beforeInsert() {
-    log.debug("beforeInsert for ${this}")
+    // log.debug("beforeInsert for ${this}")
     // Generate the any necessary values.
     generateShortcode()
     generateNormname()

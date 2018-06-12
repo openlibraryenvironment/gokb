@@ -28,7 +28,7 @@
           </td>
         </g:each>
         <td>
-          <g:if test="${d.isEditable() && cur}">
+          <g:if test="${d.isEditable() && (d.respondsTo('curatoryGroups') ? (!d.curatoryGroups ? true : cur) : true)}">
             <g:link
               controller='ajaxSupport'
               action='delete'

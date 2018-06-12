@@ -251,6 +251,9 @@ class TitleInstancePackagePlatform extends KBComponent {
 //         tipp.hostPlatform = plt;
 
         log.debug("Creating new TIPP..")
+        // tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': tipp_dto.url]).save(failOnError: true)
+        // Hibernate problem
+
         tipp = new TitleInstancePackagePlatform().save(failOnError: true)
 
         if ( tipp ) {

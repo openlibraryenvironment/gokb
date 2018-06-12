@@ -5,6 +5,7 @@
       <th>On this date</th>
       <th>This/These titles</th>
       <th>Changed to This/These titles</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody>

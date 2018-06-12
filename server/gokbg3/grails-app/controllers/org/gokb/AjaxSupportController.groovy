@@ -189,7 +189,7 @@ class AjaxSupportController {
     def contextObj = resolveOID2(params.__context)
     GrailsClass domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
 
-    if ( domain_class && domain_class.getClazz().isTypeCreatable() ) {
+    if ( domain_class && (domain_class.getClazz().isTypeCreatable() || params.__newObjectClass == "org.gokb.cred.TitleInstancePackagePlatform") ) {
 
       if ( contextObj && contextObj.isEditable() ) {
         log.debug("Create a new instance of ${params.__newObjectClass}");
@@ -310,7 +310,11 @@ class AjaxSupportController {
       }
     }
     else {
-      log.error("Unable to lookup domain class ${params.__newObjectClass}");
+      if(!domain_class) {
+        log.error("Unable to lookup domain class ${params.__newObjectClass}");
+      }else{
+        log.error("Unable to create domain class ${params.__newObjectClass}");
+      }
     }
 
     redirect(url: request.getHeader('referer'))
