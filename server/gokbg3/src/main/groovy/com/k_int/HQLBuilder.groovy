@@ -3,8 +3,9 @@ package com.k_int
 import groovy.util.logging.*
 import org.gokb.cred.*;
 import grails.util.GrailsClassUtils
+import groovy.util.logging.Slf4j
 
-@Log4j
+@Slf4j
 public class HQLBuilder {
 
   /**
