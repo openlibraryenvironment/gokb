@@ -819,6 +819,12 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('MembershipStatus','Pending').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('MembershipStatus','Rejected/Revoked').save(flush:true, failOnError:true)
 
+    RefdataCategory.lookupOrCreate('PackagePrice.type','list').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('PackagePrice.type','perpetual').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('PackagePrice.type','topup').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('PackagePrice.type','on-off').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('PackagePrice.type','subscription').save(flush:true, failOnError:true)
+
     log.debug("Deleting any null refdata values");
     RefdataValue.executeUpdate('delete from RefdataValue where value is null');
   }
