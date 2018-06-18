@@ -76,7 +76,7 @@ class TSVIngestionService {
    * Structure of map a regex for matching, a type and a property.
    */
   static def packageProperties = [
-    [ regex: ~/(pkg)\.(price)(\.(.*))?/, type:'typeValueFunction', prop:'price' ]  // Match pkg.price and pkg.price.anything
+    [ regex: ~/(pkg)\.(price)(\.(.*))?/, type:'typeValueFunction', prop:'Price' ]  // Match pkg.price and pkg.price.anything
   ]
 
   // Don't update the accessStartDate if we are seeing the tipp again in a file
@@ -1295,14 +1295,31 @@ class TSVIngestionService {
         switch ( pp.type ) {
           case 'typeValueFunction':
             def propname_groups = prop =~ pp.regex
-            log.debug("Call getter object.${propname_groups[0][2]}(${propname_groups[0][4]}) - value is ${props[prop]}");
+            def propname = propname_groups[0][2]
+            def proptype = propname_groups[0][4]
+            log.debug("Call getter object.${propname}(${proptype}) - value is ${props[prop]}");
             // If the value returned by the getter is not the same as the value we have, update
+            def current_value = pkg."get${pp.prop}"(proptype)
+            log.debug("current_value of ${prop} = ${current_value}");
+
+            // If we don't currently have a value OR we have a value which is not the same as the one supplied
+            if ( ( ( current_value == null ) && ( props[prop]?.trim().length() > 0 ) ) ||
+                 ( ! current_value.equals(props[prop]) ) ) {
+              log.debug("${current_value} != ${props[prop]} so set ${pp.prop}");
+              pkg."set${pp.prop}"(proptype, props[prop])
+              package_changed = true;
+            }
+
             break;
           default:
             log.warn("Unhandled package property type ${pp.type} : ${pp}");
             break;
         }
       }
+    }
+
+    if ( package_changed ) {
+      pkg.save(flush:true, failOnError:true);
     }
   }
 
