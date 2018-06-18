@@ -13,3 +13,7 @@ Version 8.0.0
                   If prices are the same between uploads they will not be changed, if changes are detected, the old price
                   date range will be closed out and the new one created with the date range starting now and no end date.
                   See /gokb/testdata/archive_collections/brill/upload.sh for an example CURL command that sets package level prices
+
+  II - 2018-06-18 Added ability for package/deposit endpoint to handle typed tipp level properties. Examples are
+                  tipp.price.list, tipp.price.perpetual. Values are currency values, so float with optonal space + currency - examples
+                  "1.23 EUR", "1.23", "11243.23 USD" etc.
