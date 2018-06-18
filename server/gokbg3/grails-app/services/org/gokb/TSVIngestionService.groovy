@@ -1048,7 +1048,7 @@ class TSVIngestionService {
               title.save(flush:true, failOnError:true);
 
               def pre_create_tipp_time = System.currentTimeMillis();
-              manualCreateTIPP(source,
+              manualUpsertTIPP(source,
                                the_kbart,
                                the_package,
                                title,
@@ -1097,7 +1097,7 @@ class TSVIngestionService {
     parsed_date
   }
 
-  def manualCreateTIPP(the_source,
+  def manualUpsertTIPP(the_source,
                        the_kbart,
                        the_package,
                        the_title,
@@ -1105,7 +1105,7 @@ class TSVIngestionService {
                        ingest_date,
                        ingest_systime) {
 
-    log.debug("TSVIngestionService::manualCreateTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
+    log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
 
     assert the_package != null && the_title != null && the_platform != null
 
@@ -1148,7 +1148,10 @@ class TSVIngestionService {
       // We are going to create tipl objects at the end instead if per title inline.
       // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
       def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+
+      // Copy the new tipp_values from the file into our new object
       tipp = new TitleInstancePackagePlatform(tipp_values)
+
       tipp.status = status_current;
 
       // log.debug("Created");
@@ -1216,14 +1219,65 @@ class TSVIngestionService {
       tipp.lastSeen = ingest_systime;
     }
 
+    // Allow columns like tipp.price, tipp.price.list, tipp.price.perpetual - Call the setPrice(type, value) for each
+    setTypedProperties(tipp, the_kbart.unmapped, 'Price',  ~/(tipp)\.(price)(\.(.*))?/, 'currency');
+
     // Look through the field list for any tipp.custprop values
     log.debug("Checking for tipp custprops");
     addCustprops(tipp, the_kbart, 'tipp.custprops.');
     addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.');
 
-    log.debug("manualCreateTIPP returning")
+    log.debug("manualUpsertTIPP returning")
   }
 
+  def setTypedProperties(tipp, props, field, regex, type) {
+    log.debug("setTypedProperties(...${field},...)");
+
+    props.each { up ->
+      def prop = up.name
+      if ( ( prop ==~ regex ) && ( up.value.trim().length() > 0 ) ) {
+        def propname_groups = prop =~ regex
+        def propname = propname_groups[0][2]
+        def proptype = propname_groups[0][4]
+
+        def current_value = tipp."get${field}"(proptype)
+        def value_from_file = formatValueFromFile(up.value.trim(), type);
+
+        log.debug("setTypedProperties - match regex on ${prop},type=${proptype},value_from_file=${value_from_file} current=${current_value}");
+
+
+        // If we don't currently have a value OR we have a value which is not the same as the one supplied
+        if ( ( current_value == null ) || 
+             ( ! current_value.equals(value_from_file) ) ) {
+          log.debug("${current_value} !=  ${value_from_file} so set...");
+          tipp."set${field}"(proptype, value_from_file)
+        }
+      }
+      else {
+        // log.debug("${prop} does not match regex");
+      }
+    }
+  }
+
+  private String formatValueFromFile(String v, String t) {
+    String result = null;
+    switch ( t ) {
+      case 'currency':
+        // "1.24", "1 GBP", "11234.43", "3334", "3334.2", "2.3 USD" -> "1.24", "1.00 GBP", "11234.43", "3334.00", "3334.20", "2.30 USD"
+        String[] currency_components = v.split(' ');
+        if ( currency_components.length == 2 ) {
+          result = String.format('%.2f',Float.parseFloat(currency_components[0]))+' '+currency_components[1]
+        }
+        else {
+          result = String.format('%.2f',Float.parseFloat(currency_components[0]))
+        }
+        break;
+      default:
+        result = v.trim();
+    }
+
+    return result;
+  }
 
   //this is a lot more complex than this for journals. (which uses refine)
   //theres no notion in here of retiring packages for example.

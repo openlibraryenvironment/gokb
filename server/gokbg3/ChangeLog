@@ -12,3 +12,4 @@ Version 8.0.0
                   "pkg.price.perpetual=123.23 GBP" as a URL parameter, callers can now set prices against an uploaded package.
                   If prices are the same between uploads they will not be changed, if changes are detected, the old price
                   date range will be closed out and the new one created with the date range starting now and no end date.
+                  See /gokb/testdata/archive_collections/brill/upload.sh for an example CURL command that sets package level prices
