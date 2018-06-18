@@ -65,6 +65,20 @@ class TSVIngestionService {
     new SimpleDateFormat('yyyy')
   ];
 
+  /**
+   * Define package level properties.
+   * Currently only defines one type of property - typeValueFunction where the package will provide
+   * a setX(Y,V), getX(Y,V) method. In the price example below, a column like pkg.price.list would result
+   * in a call to getPrice('list') and if the returned value was different to the input file, call
+   * setPrice('list','value'). This method may be arbitrarily complex. In the price example, multiple
+   * associated tracking events can happen.
+   *
+   * Structure of map a regex for matching, a type and a property.
+   */
+  static def packageProperties = [
+    [ regex: ~/(pkg)\.(price)(\.(.*))?/, type:'typeValueFunction', prop:'price' ]  // Match pkg.price and pkg.price.anything
+  ]
+
   // Don't update the accessStartDate if we are seeing the tipp again in a file
   // already loaded.
   def tipp_properties_to_ignore_when_updating = [ 'accessStartDate' ]
@@ -717,7 +731,7 @@ class TSVIngestionService {
         log.debug("Passed preflight -- ingest");
 
         Package.withNewTransaction() {
-          the_package=handlePackage(packageName,source,providerName)
+          the_package=handlePackage(packageName,source,providerName,other_params)
           assert the_package != null
           the_package_id=the_package.id
           def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
@@ -1214,7 +1228,7 @@ class TSVIngestionService {
   //this is a lot more complex than this for journals. (which uses refine)
   //theres no notion in here of retiring packages for example.
   //for this v1, I've made this very simple - probably too simple.
-  def handlePackage(packageName, source, providerName) {
+  def handlePackage(packageName, source, providerName,other_params) {
     def result;
     def norm_pkg_name = KBComponent.generateNormname(packageName)
     // def packages=Package.findAllByNormname(norm_pkg_name);
@@ -1264,8 +1278,32 @@ class TSVIngestionService {
       break
     }
 
+    // The request can now have additional package level properties that we need to process.
+    // other_params can contain 'pkg.' properties. 
+    handlePackageProperties(result, other_params)
+
     log.debug("handlePackage returns ${result}");
     result;
+  }
+
+  def handlePackageProperties(pkg, props) {
+    def package_changed = false;
+    packageProperties.each { pp ->
+      // consider See if pp.regex matches any of the properties
+      props.keySet().grep(pp.regex).each { prop -> 
+        log.debug("Property ${prop} matched config ${pp}");
+        switch ( pp.type ) {
+          case 'typeValueFunction':
+            def propname_groups = prop =~ pp.regex
+            log.debug("Call getter object.${propname_groups[0][2]}(${propname_groups[0][4]}) - value is ${props[prop]}");
+            // If the value returned by the getter is not the same as the value we have, update
+            break;
+          default:
+            log.warn("Unhandled package property type ${pp.type} : ${pp}");
+            break;
+        }
+      }
+    }
   }
 
   def handlePlatform(host, the_source) {

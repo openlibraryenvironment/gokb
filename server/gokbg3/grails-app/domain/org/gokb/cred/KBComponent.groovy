@@ -323,7 +323,8 @@ abstract class KBComponent {
     variantNames: 'owner',
     reviewRequests:'componentToReview',
     people:'component',
-    subjects:'component'
+    subjects:'component',
+    prices: 'owner'
   ]
 
   static hasMany = [
@@ -334,8 +335,12 @@ abstract class KBComponent {
     variantNames:KBComponentVariantName,
     reviewRequests:ReviewRequest,
     people:ComponentPerson,
-    subjects:ComponentSubject
+    subjects:ComponentSubject,
+    prices: ComponentPrice
   ]
+
+
+
 
   static mapping = {
     tablePerHierarchy false
