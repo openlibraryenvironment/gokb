@@ -376,7 +376,7 @@ class TitleLookupService {
                 ReviewRequest.raise(
                   the_title,
                   "New TI created.",
-                  "TitleInstance ${matches[0].name ?: matches[0].id} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
+                  "TitleInstance ${matches[0].id} ${matches[0].name ? '('+ matches[0].name +')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
                   user,
                   project
                 )

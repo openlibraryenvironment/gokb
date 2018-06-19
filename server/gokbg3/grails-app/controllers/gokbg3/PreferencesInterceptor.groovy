@@ -4,7 +4,7 @@ package gokbg3
 class PreferencesInterceptor {
 
   public PreferencesInterceptor() {
-      matchAll()
+      matchAll().excludes(controller:'api')
       // matchAll().excludes(controller: 'auth')
   }
 

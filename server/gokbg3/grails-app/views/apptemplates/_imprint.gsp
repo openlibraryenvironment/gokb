@@ -36,7 +36,7 @@
       <tbody>
         <g:each in="${d.getCombosByPropertyName('owners')}" var="p">
           <tr>
-            <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
+            <td><g:link controller="resource" action="show" id="${p.fromComponent.class.name}:${p.fromComponent.id}"> ${p.fromComponent.name} </g:link></td>
             <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
             <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
             <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
@@ -46,13 +46,14 @@
       </tbody>
     </table>
   </dd>
-
-  <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
-    <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
-    <input type="hidden" name="__property" value="owners" />
-    <dt>Add Owner:</td>
-    <dd>
-      <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
-    </dd>
-  </g:form>
+  <g:if test="${d.id}">
+    <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
+      <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
+      <input type="hidden" name="__property" value="owners" />
+      <dt>Add Owner:</td>
+      <dd>
+        <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" filter1="Current"/><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+      </dd>
+    </g:form>
+  </g:if>
 </dl>

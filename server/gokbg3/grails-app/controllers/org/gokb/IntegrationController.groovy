@@ -911,7 +911,7 @@ class IntegrationController {
               }
             }
             log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
-            result.message = "Created/Updated package ${request.JSON.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})}"
+            result.message = "Created/Updated package ${request.JSON.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
             log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
           }
           else {

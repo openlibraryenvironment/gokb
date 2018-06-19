@@ -126,6 +126,12 @@ environments:
                 testOnReturn: true
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+        grails:
+          logging:
+            plugin:
+              springsecurity:
+                debug:
+                  useFilter: true
     test:
         dataSource:
             dbCreate: create-drop

@@ -567,7 +567,7 @@ class AjaxSupportController {
     }
 
     def resp = [ newValue: target[params.name] ]
-    log.debug("return ${resp as JSON}");
+    log.debug("return ${resp}");
     render resp as JSON
   }
 

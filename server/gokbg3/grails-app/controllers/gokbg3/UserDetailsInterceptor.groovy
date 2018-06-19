@@ -6,6 +6,7 @@ class UserDetailsInterceptor {
 
   public UserDetailsInterceptor() {
     matchAll().excludes(controller: 'auth')
+              .excludes(controller: 'api')
   }
 
 

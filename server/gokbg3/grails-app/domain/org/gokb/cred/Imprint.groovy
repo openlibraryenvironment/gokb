@@ -13,6 +13,7 @@ class Imprint extends KBComponent {
   ]
 
   static mappedByCombo = [
+    owners      : 'imprints'
   ]
 
   public getPersistentId() {
