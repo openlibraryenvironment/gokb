@@ -20,6 +20,8 @@ import static groovy.json.JsonOutput.*
 import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import com.gargoylesoftware.htmlunit.*
+import com.gargoylesoftware.htmlunit.html.HtmlCheckBoxInput
+import com.gargoylesoftware.htmlunit.html.HtmlSelect
 import groovyx.net.http.HTTPBuilder
 import org.apache.http.entity.mime.MultipartEntity
 import org.apache.http.entity.mime.HttpMultipartMode
@@ -48,13 +50,15 @@ else {
   config.packageData=[:]
 }
 
+def report = []
+
 println("Using config ${config}");
 
 println("Pulling latest messages");
 // ProQuest http://www.proquest.com/libraries/academic/primary-sources/?&page=1
 
 // pullLatest(config,'http://www.proquest.com/libraries/academic/primary-sources/?&page=1');
-pullLatest(config,'https://www.proquest.com/products-services/databases/?selectFilter-search=Academic&selectFilterTwo-search=');
+pullLatest(config,'https://www.proquest.com/products-services/databases/?selectFilter-search=Academic&selectFilterTwo-search=',report);
 println("All done");
 
 println("Updating config");
@@ -63,11 +67,12 @@ cfg_file << toJson(config);
 
 
 
-def pullLatest(config, url) {
+def pullLatest(config, url, report) {
   def result = false;
 
   println("Get URL ${url}");
   client = new WebClient()
+  client.getOptions().setThrowExceptionOnFailingStatusCode(false);
   client.getOptions().setThrowExceptionOnScriptError(false);
   client.getOptions().setJavaScriptEnabled(true);
   client.getOptions().setRedirectEnabled(true);
@@ -90,7 +95,7 @@ def pullLatest(config, url) {
   def page_url = url;
 
   while(next_page) {
-
+    println("\n**\n** Page of results:: ${page_url}\n**\n");
     html = client.getPage(page_url);
 
     page_count++
@@ -105,8 +110,11 @@ def pullLatest(config, url) {
       println('details_link:'+details_link)
       println('abst:'+abst)
 
+      def report_line = [title:title, details_link:details_link, abst:abst, statusMessage:'OK', errors:[]]
+      report.add(report_line)
+
       // Each details link is a page that may contain a link to the title list at tls.search.proquest.com - Usually with the text "View Title List"
-      considerPage(title, details_link, abst, client);
+      considerPage(title, details_link, abst, client, report_line, httpbuilder);
     }
   
     def last_page_link = html.getFirstByXPath("//a[text()='Last']/@href").getValue().trim();
@@ -127,45 +135,91 @@ def pullLatest(config, url) {
   
   println("Done ${page_count} pages");
   println("Done ${package_count} packages");
+  println("Report:\n${report}");
 }
 
-def considerPage(title, details_link, abst, client) {
+def considerPage(title, details_link, abst, client, report_line, gokb) {
 
   println("\n\n\nconsiderPage(...${details_link}...)");
 
   def html = client.getPage(details_link);
 
   def title_list_elem = html.getFirstByXPath('//a[starts-with(@href,"http://tls")]/@href');
+
   if ( title_list_elem ) {
     def title_list_link = title_list_elem.getValue()
-    println("  --> title_list: ${title_list_link}");
-    processTitleListUrl(client, title_list_link, title);
+    if ( title_list_link.contains('ProductSearch') ) {
+      // Suspect this is a duff link, which just loops back to search. Title list links normally head to
+      // http://tls.search.proquest.com/titlelist. The presence of productSearch means something isn't quite right
+      report_line.errors.add('Suspected invalid title_list link');
+    }
+    else {
+      println("  --> title_list: ${title_list_link}");
+      processTitleListUrl(client, title_list_link, title, report_line, gokb);
+    }
   }
   else {
     println("  --> NO title list link found");
+    report_line.statusMessage="No Title List"
   }
 }
 
-def processTitleListUrl(client, link, title) {
+def processTitleListUrl(client, link, title, report_line, gokb) {
+
+  println("processTitleListUrl... ${link}");
 
   // The link we have has the form
   // http://tls.search.proquest.com/titlelist/jsp/list/tlsSingle.jsp?productId=1006728
   // And we need a link like this:
   // http://tls.search.proquest.com/titlelist/ListForward?productId=1006728&format=tab&IDString=1006728&all=all&keyTitle=keyTitle&ft=Y&citAbs=Y&other=Y&issn=Y&isbn=Y&peer=Y&pubId=Y&additionalTitle=additionalTitle&ftDetail=Y&citAbsDetail=Y&otherDetail=Y&gaps=Y&subject=Y&language=Y&changes=Y
 
-  def product_id = null;
+  // matches = link =~ /(?:\?|&|;)([^=]+)=([^&|;]+)/
 
-  // Create a matcher
-  matches = link =~ /(?:\?|&|;)([^=]+)=([^&|;]+)/
-  matches.each { m ->
-    if ( m[1] == 'productId' ) {
-      product_id = m[2]
+  // Get the page that allows us to specify what details we want.
+  def html = client.getPage(link);
+
+  // If the response page contains a select element with the name subProductIdList then this package is
+  // a collection of other packages and we should create a GOKb package for each component as well as the parent product
+  // HtmlSelect si = (HtmlSelect) html.getElementByName("subProductIdList");
+  HtmlSelect si = null; //(HtmlSelect) html.getFirstByXPath('//SELECT[NAME="subProductIdList"]');
+  try {
+    si = html.getElementByName("subProductIdList");
+  }
+  catch ( Exception e ) {
+  }
+
+  if ( si != null ) {
+    report_line.type='MultiCollection'
+    println("Product is composed of multiple collections - enumerate them");
+
+    // Push the parent package
+    pushToGokb(title,makeTSV([]),gokb)
+
+
+    si.getOptions().each { opt ->
+      println("  --> ${opt}");
+      // now push the child objects
     }
   }
+  else {
+    // It's a simple package...
+    report_line.type='SingleCollection'
+    println("Product is single collection");
 
-  if ( product_id ) {  
-    println("Fetch product ${product_id}");
+    pushToGokb(title,makeTSV([]),gokb)
+
+    // Click the checkbox :  <INPUT TYPE="checkbox" NAME="all" VALUE="all" onclick="changeAll();"/>
+    HtmlCheckBoxInput i = (HtmlCheckBoxInput) html.getElementByName("all");
+    i.setChecked(true);
+  
+    // Click the link : <A HREF="javascript: void 0" onClick="return checkFormat('tab');">
+    // ScriptResult result = html.executeJavaScript("return checkFormat('tab');");
+
+    // We actually don't want the title list at this stage - just the package data.
+    // def tsv_response = result.getNewPage()
+    // println("Result of execute tab: ${tsv_response}");
   }
+
 
   // DAC Ingest Columns::    [field: 'notes', kbart:'notes'],
   //              [field: 'online_identifier', kbart: 'online_identifier'],
@@ -173,19 +227,19 @@ def processTitleListUrl(client, link, title) {
   //              [field: 'publisher', kbart:'publisher'],
   //              [field: 'title_url', kbart:'title_url']
 
-  URL title_list = new URL("http://tls.search.proquest.com/titlelist/ListForward?productId=${product_id}&format=tab&IDString=${product_id}&all=all&keyTitle=keyTitle&ft=Y&citAbs=Y&other=Y&issn=Y&isbn=Y&peer=Y&pubId=Y&additionalTitle=additionalTitle&ftDetail=Y&citAbsDetail=Y&otherDetail=Y&gaps=Y&subject=Y&language=Y&changes=Y")
-  BufferedReader is = new BufferedReader(new InputStreamReader(title_list.openStream()));
-  CSVReader reader = new CSVReader(is);
-  String[] header = null;
-  String[] row = reader.readNext()  // Package name
-  if ( row ) { row = reader.readNext() }  // Accurare as of line
-  if ( row ) { row = reader.readNext() }  // actual header line
-  header = row;
-  if ( row ) { row=reader.readNext() } // First line of data
-  while ( row ) {
-    println(row)
-    row = reader.readNext()
-  }
+  // URL title_list = new URL("http://tls.search.proquest.com/titlelist/ListForward?productId=${product_id}&format=tab&IDString=${product_id}&all=all&keyTitle=keyTitle&ft=Y&citAbs=Y&other=Y&issn=Y&isbn=Y&peer=Y&pubId=Y&additionalTitle=additionalTitle&ftDetail=Y&citAbsDetail=Y&otherDetail=Y&gaps=Y&subject=Y&language=Y&changes=Y")
+  // BufferedReader is = new BufferedReader(new InputStreamReader(title_list.openStream()));
+  // CSVReader reader = new CSVReader(is);
+  // String[] header = null;
+  // String[] row = reader.readNext()  // Package name
+  // if ( row ) { row = reader.readNext() }  // Accurare as of line
+  // if ( row ) { row = reader.readNext() }  // actual header line
+  // header = row;
+  // if ( row ) { row=reader.readNext() } // First line of data
+  // while ( row ) {
+  //   println(row)
+  //   row = reader.readNext()
+  // }
 }
 
 def pushToGokb(name, data, http) {
@@ -197,7 +251,7 @@ def pushToGokb(name, data, http) {
 
     MultipartEntityBuilder multiPartContent = new MultipartEntityBuilder()
     // Adding Multi-part file parameter "imageFile"
-    multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
+    multiPartContent.addPart("content", new ByteArrayBody( data, name.toString()))
 
     // Adding another string parameter "city"
     multiPartContent.addPart("source", new StringBody("PROQUEST"))
@@ -222,5 +276,27 @@ def pushToGokb(name, data, http) {
       }
     }
   }
+}
+
+def makeTSV(data_rows) {
+  def baos = new ByteArrayOutputStream();
+  CSVWriter out_writer = new CSVWriter( new OutputStreamWriter( baos, java.nio.charset.Charset.forName('UTF-8') ), '\t' as char)
+
+  List out_header = []
+  out_header.add('online_identifier');
+  out_header.add('publication_title');
+  out_header.add('title_url');
+  out_header.add('publisher');
+  out_header.add('notes');
+  out_writer.writeNext((String[])(out_header.toArray()))
+
+
+  data_rows.each { dr ->
+  }
+
+  out_writer.close()
+
+  return baos.toByteArray();
+
 }
 
