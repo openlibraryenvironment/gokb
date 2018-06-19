@@ -1295,7 +1295,13 @@ class TSVIngestionService {
         def newpkgid = null;
 
         def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
-        def newpkg = new Package(name:packageName, normname:norm_pkg_name, source:source, status: status_current)
+        def newpkg = new Package(
+                                 name:packageName, 
+                                 normname:norm_pkg_name, 
+                                 source:source, 
+                                 status: status_current,
+                                 description:other_params?.description)
+
         if (newpkg.save(flush:true, failOnError:true)) {
           newpkgid = newpkg.id
           if ( providerName && providerName.length() > 0 ) {

@@ -245,6 +245,11 @@ where cp.owner = :c
   String shortcode
 
   /**
+   * A description (DC.description)
+   */
+  String description
+
+  /**
    * Component Status. Linked to refdata table.
    */
   RefdataValue status
@@ -358,6 +363,7 @@ where cp.owner = :c
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
     // create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk);
     normname column:'kbc_normname', type:'text', index:'kbc_normname_idx'
+    description column:'kbc_description', type:'text'
     source column:'kbc_source_fk'
     status column:'kbc_status_rv_fk', index:'kbc_status_idx'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
@@ -381,6 +387,7 @@ where cp.owner = :c
   static constraints = {
     name    (nullable:true, blank:false, maxSize:2048)
     shortcode  (nullable:true, blank:false, maxSize:128)
+    description  (nullable:true, blank:false, maxSize:128)
     duplicateOf  (nullable:true, blank:false)
     normname  (nullable:true, blank:false, maxSize:2048)
     status    (nullable:true, blank:false)

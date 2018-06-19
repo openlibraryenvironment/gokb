@@ -17,3 +17,6 @@ Version 8.0.0
   II - 2018-06-18 Added ability for package/deposit endpoint to handle typed tipp level properties. Examples are
                   tipp.price.list, tipp.price.perpetual. Values are currency values, so float with optonal space + currency - examples
                   "1.23 EUR", "1.23", "11243.23 USD" etc.
+
+  II - 2018-06-19 package/deposit now supports description parameter and KBComponent knows of a description property. Initially
+                  to hold proquest package level descriptive text.

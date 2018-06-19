@@ -8,6 +8,7 @@
   @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1'),
   @Grab(group='org.apache.httpcomponents', module='httpclient', version='4.5.2'),
   @Grab(group='org.apache.httpcomponents', module='httpmime', version='4.5.2'),
+  @Grab(group='net.sf.opencsv', module='opencsv', version='2.3'),
   @GrabExclude('org.codehaus.groovy:groovy-all')
 ])
 
@@ -28,6 +29,10 @@ import groovyx.net.http.*
 import org.apache.http.entity.mime.MultipartEntityBuilder /* we'll use the new builder strategy */
 import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulate our file uploads */
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
+import java.io.BufferedReader
+import au.com.bytecode.opencsv.CSVReader
+import au.com.bytecode.opencsv.CSVWriter
+
 
 java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(java.util.logging.Level.OFF); 
 java.util.logging.Logger.getLogger("org.apache.commons.httpclient").setLevel(java.util.logging.Level.OFF);
@@ -48,7 +53,8 @@ println("Using config ${config}");
 println("Pulling latest messages");
 // ProQuest http://www.proquest.com/libraries/academic/primary-sources/?&page=1
 
-pullLatest(config,'http://www.proquest.com/libraries/academic/primary-sources/?&page=1');
+// pullLatest(config,'http://www.proquest.com/libraries/academic/primary-sources/?&page=1');
+pullLatest(config,'https://www.proquest.com/products-services/databases/?selectFilter-search=Academic&selectFilterTwo-search=');
 println("All done");
 
 println("Updating config");
@@ -95,9 +101,9 @@ def pullLatest(config, url) {
       def title = link.getFirstByXPath('div/h2/text()')
       def details_link = link.getFirstByXPath('div/div/div/p/a[text()="LEARN MORE"]/@href').getValue();
       def abst = link.getFirstByXPath('div/div/div/p/text()')
-      println(title)
-      println(details_link)
-      println(abst)
+      println('title:'+title)
+      println('details_link:'+details_link)
+      println('abst:'+abst)
 
       // Each details link is a page that may contain a link to the title list at tls.search.proquest.com - Usually with the text "View Title List"
       considerPage(title, details_link, abst, client);
@@ -133,9 +139,52 @@ def considerPage(title, details_link, abst, client) {
   if ( title_list_elem ) {
     def title_list_link = title_list_elem.getValue()
     println("  --> title_list: ${title_list_link}");
+    processTitleListUrl(client, title_list_link, title);
   }
   else {
     println("  --> NO title list link found");
+  }
+}
+
+def processTitleListUrl(client, link, title) {
+
+  // The link we have has the form
+  // http://tls.search.proquest.com/titlelist/jsp/list/tlsSingle.jsp?productId=1006728
+  // And we need a link like this:
+  // http://tls.search.proquest.com/titlelist/ListForward?productId=1006728&format=tab&IDString=1006728&all=all&keyTitle=keyTitle&ft=Y&citAbs=Y&other=Y&issn=Y&isbn=Y&peer=Y&pubId=Y&additionalTitle=additionalTitle&ftDetail=Y&citAbsDetail=Y&otherDetail=Y&gaps=Y&subject=Y&language=Y&changes=Y
+
+  def product_id = null;
+
+  // Create a matcher
+  matches = link =~ /(?:\?|&|;)([^=]+)=([^&|;]+)/
+  matches.each { m ->
+    if ( m[1] == 'productId' ) {
+      product_id = m[2]
+    }
+  }
+
+  if ( product_id ) {  
+    println("Fetch product ${product_id}");
+  }
+
+  // DAC Ingest Columns::    [field: 'notes', kbart:'notes'],
+  //              [field: 'online_identifier', kbart: 'online_identifier'],
+  //              [field: 'publication_title', kbart: 'publication_title'],
+  //              [field: 'publisher', kbart:'publisher'],
+  //              [field: 'title_url', kbart:'title_url']
+
+  URL title_list = new URL("http://tls.search.proquest.com/titlelist/ListForward?productId=${product_id}&format=tab&IDString=${product_id}&all=all&keyTitle=keyTitle&ft=Y&citAbs=Y&other=Y&issn=Y&isbn=Y&peer=Y&pubId=Y&additionalTitle=additionalTitle&ftDetail=Y&citAbsDetail=Y&otherDetail=Y&gaps=Y&subject=Y&language=Y&changes=Y")
+  BufferedReader is = new BufferedReader(new InputStreamReader(title_list.openStream()));
+  CSVReader reader = new CSVReader(is);
+  String[] header = null;
+  String[] row = reader.readNext()  // Package name
+  if ( row ) { row = reader.readNext() }  // Accurare as of line
+  if ( row ) { row = reader.readNext() }  // actual header line
+  header = row;
+  if ( row ) { row=reader.readNext() } // First line of data
+  while ( row ) {
+    println(row)
+    row = reader.readNext()
   }
 }
 
@@ -151,14 +200,15 @@ def pushToGokb(name, data, http) {
     multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
 
     // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("JSTOR"))
-    multiPartContent.addPart("fmt", new StringBody("springer-kbart"))
+    multiPartContent.addPart("source", new StringBody("PROQUEST"))
+    multiPartContent.addPart("fmt", new StringBody("DAC"))
     multiPartContent.addPart("pkg", new StringBody(name.toString()))
-    multiPartContent.addPart("platformUrl", new StringBody("http://www.jstor.org/"));
+    multiPartContent.addPart("platformUrl", new StringBody("https://www.proquest.com"));
     multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("JSTOR"));
-    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("doi"));
+    multiPartContent.addPart("providerName", new StringBody("PROQUEST"));
+    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("PROQUEST"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
+    multiPartContent.addPart("description", new StringBody("description"));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
     multiPartContent.addPart("curtoryGroup", new StringBody("Jisc"));
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));

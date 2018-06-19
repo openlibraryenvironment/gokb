@@ -227,7 +227,10 @@ class PackagesController {
   
             log.debug("Create background job");
             def incremental_flag = params.incremental
-            Map additional_params = [ curatoryGroup:params.curatoryGroup ];
+            Map additional_params = [ 
+                                     curatoryGroup:params.curatoryGroup,
+                                     description:params.description 
+                                    ];
 
             // Trying to create an extensible way to pass package level properties to the ingest processing routine.
             // Passing params as a map is a bad idea as the scope of params is restricted to the request and the ingest can
