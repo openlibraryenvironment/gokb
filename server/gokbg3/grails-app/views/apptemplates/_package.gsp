@@ -59,6 +59,10 @@
     <dt> <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel> </dt>
     <dd> <g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /> </dd>
 
+    <dt> <g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel> </dt>
+    <dd> <span>${d.description?:''}</span> </dd>
+
+
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd> <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" /> </dd>
   </dl>
@@ -73,6 +77,7 @@
       <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       <li><a href="#activity" data-toggle="tab">Activity</a></li>
       <li><a href="#review" data-toggle="tab">Review Requests</a></li>
+      <li><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
     </ul>
 
     <div id="my-tab-content" class="tab-content">
@@ -166,8 +171,7 @@
       </div>
       
       <div class="tab-pane" id="review">
-        <g:render template="/apptemplates/revreqtab"
-          model="${[d:d]}" />
+        <g:render template="/apptemplates/revreqtab" model="${[d:d]}" />
 
         <div class="connected-rr">
           <h3>Review Requests for connected Titles</h3>
@@ -188,6 +192,9 @@
         </div>
       </div>
 
+      <div class="tab-pane" id="pkgCosts">
+        <g:render template="/apptemplates/componentCosts" model="${[d:d]}" />
+      </div>
 
     </div>
 

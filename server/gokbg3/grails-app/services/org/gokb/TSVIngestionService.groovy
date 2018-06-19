@@ -739,17 +739,20 @@ class TSVIngestionService {
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           editor_role_id = editor_role.id
 
-          if ( other_params.curatoryGroup ) {
-            log.debug("Adding curatory group to package: ${other_params.curatoryGroup}");
-            def cg = CuratoryGroup.findByName(other_params.curatoryGroup) ?: new CuratoryGroup(name:other_params.curatoryGroup).save(flush:true, failOnError:true);
-            the_package.curatoryGroups.add(cg);
-            the_package.save(flush:true, failOnError:true);
-          }
-          else if ( grailsApplication.config.gokb?.defaultCuratoryGroup ) {
-            log.debug("Adding default curatory group to package: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
-            def cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup)
-            the_package.curatoryGroups.add(cg);
-            the_package.save(flush:true, failOnError:true);
+          if ( the_package.curatoryGroups.size() == 0 ) {
+            if ( other_params.curatoryGroup ) {
+              // See if the package already lists the supplied group as a CG, if not, add it.
+              log.debug("Adding curatory group to package: ${other_params.curatoryGroup}");
+              def cg = CuratoryGroup.findByName(other_params.curatoryGroup) ?: new CuratoryGroup(name:other_params.curatoryGroup).save(flush:true, failOnError:true);
+              the_package.curatoryGroups.add(cg);
+              the_package.save(flush:true, failOnError:true);
+            }
+            else if ( grailsApplication.config.gokb?.defaultCuratoryGroup ) {
+              log.debug("Adding default curatory group to package: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
+              def cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup)
+              the_package.curatoryGroups.add(cg);
+              the_package.save(flush:true, failOnError:true);
+            }
           }
         }
 
@@ -1285,12 +1288,13 @@ class TSVIngestionService {
   def handlePackage(packageName, source, providerName,other_params) {
     def result;
     def norm_pkg_name = KBComponent.generateNormname(packageName)
-    // def packages=Package.findAllByNormname(norm_pkg_name);
+    log.debug("Attempt package match by normalised name: ${norm_pkg_name}");
     def packages=Package.executeQuery("select p from Package as p where p.normname=?",[norm_pkg_name],[readonly:false])
+
     switch (packages.size()) {
       case 0:
         //no match. create a new package!
-        log.debug("Create new package");
+        log.debug("Create new package(${packageName},${norm_pkg_name})");
 
         def newpkgid = null;
 
@@ -1332,10 +1336,15 @@ class TSVIngestionService {
         //found a match
         result=packages[0]
         log.debug("match package found: ${result}")
-      break
+        // See if any properties have changed.
+        if ( !result.description == other_params.description) {
+          result.description = other_params.description;
+          result.save(flush:true, failOnError:true);
+        }
+        break
       default:
         log.error("found multiple packages when looking for ${packageName}")
-      break
+        break
     }
 
     // The request can now have additional package level properties that we need to process.

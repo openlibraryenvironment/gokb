@@ -105,7 +105,7 @@ def pullLatest(config, url, report) {
     links.each { link ->
       def title = link.getFirstByXPath('div/h2/text()')
       def details_link = link.getFirstByXPath('div/div/div/p/a[text()="LEARN MORE"]/@href').getValue();
-      def abst = link.getFirstByXPath('div/div/div/p/text()')
+      def abst = link.getFirstByXPath('div/div/div/p/text()').toString()
       println('title:'+title)
       println('details_link:'+details_link)
       println('abst:'+abst)
@@ -113,8 +113,9 @@ def pullLatest(config, url, report) {
       def report_line = [title:title, details_link:details_link, abst:abst, statusMessage:'OK', errors:[]]
       report.add(report_line)
 
+
       // Each details link is a page that may contain a link to the title list at tls.search.proquest.com - Usually with the text "View Title List"
-      considerPage(title, details_link, abst, client, report_line, httpbuilder);
+      considerPage(title, abst, details_link, abst, client, report_line, httpbuilder);
     }
   
     def last_page_link = html.getFirstByXPath("//a[text()='Last']/@href").getValue().trim();
@@ -138,9 +139,9 @@ def pullLatest(config, url, report) {
   println("Report:\n${report}");
 }
 
-def considerPage(title, details_link, abst, client, report_line, gokb) {
+def considerPage(title, description, details_link, abst, client, report_line, gokb) {
 
-  println("\n\n\nconsiderPage(...${details_link}...)");
+  println("\n\n\nconsiderPage(${title},${description},${details_link}...)");
 
   def html = client.getPage(details_link);
 
@@ -155,16 +156,20 @@ def considerPage(title, details_link, abst, client, report_line, gokb) {
     }
     else {
       println("  --> title_list: ${title_list_link}");
-      processTitleListUrl(client, title_list_link, title, report_line, gokb);
+      def desc_to_send = ''+description+'\n\nCollected from '+details_link.toString()+' titleList here:'+title_list_link.toString()
+      processTitleListUrl(client, title_list_link, title, desc_to_send, report_line, gokb);
     }
   }
   else {
     println("  --> NO title list link found");
     report_line.statusMessage="No Title List"
+    def desc_to_send = ''+description+'\n\nCollected from '+details_link.toString()+' No title list found';
+    // Create a package entry, but with no content.
+    pushToGokb(title,desc_to_send,makeTSV([]),gokb)
   }
 }
 
-def processTitleListUrl(client, link, title, report_line, gokb) {
+def processTitleListUrl(client, link, title, description, report_line, gokb) {
 
   println("processTitleListUrl... ${link}");
 
@@ -193,7 +198,7 @@ def processTitleListUrl(client, link, title, report_line, gokb) {
     println("Product is composed of multiple collections - enumerate them");
 
     // Push the parent package
-    pushToGokb(title,makeTSV([]),gokb)
+    pushToGokb(title,description.toString(),makeTSV([]),gokb)
 
 
     si.getOptions().each { opt ->
@@ -206,7 +211,7 @@ def processTitleListUrl(client, link, title, report_line, gokb) {
     report_line.type='SingleCollection'
     println("Product is single collection");
 
-    pushToGokb(title,makeTSV([]),gokb)
+    pushToGokb(title,description.toString(),makeTSV([]),gokb)
 
     // Click the checkbox :  <INPUT TYPE="checkbox" NAME="all" VALUE="all" onclick="changeAll();"/>
     HtmlCheckBoxInput i = (HtmlCheckBoxInput) html.getElementByName("all");
@@ -242,12 +247,12 @@ def processTitleListUrl(client, link, title, report_line, gokb) {
   // }
 }
 
-def pushToGokb(name, data, http) {
+def pushToGokb(name, description, data, http) {
   // curl -v --user admin:admin -X POST \
   //   $GOKB_HOST/gokb/packages/deposit
 
   http.request(Method.POST) { req ->
-    uri.path="/gokb/packages/deposit"
+    uri.path="/packages/deposit"
 
     MultipartEntityBuilder multiPartContent = new MultipartEntityBuilder()
     // Adding Multi-part file parameter "imageFile"
@@ -262,9 +267,9 @@ def pushToGokb(name, data, http) {
     multiPartContent.addPart("providerName", new StringBody("PROQUEST"));
     multiPartContent.addPart("providerIdentifierNamespace", new StringBody("PROQUEST"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
-    multiPartContent.addPart("description", new StringBody("description"));
+    multiPartContent.addPart("description", new StringBody(description));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
-    multiPartContent.addPart("curtoryGroup", new StringBody("Jisc"));
+    multiPartContent.addPart("curatoryGroup", new StringBody("Jisc"));
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
     
     req.entity = multiPartContent.build()
