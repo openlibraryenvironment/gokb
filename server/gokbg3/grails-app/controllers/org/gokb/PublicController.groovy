@@ -58,9 +58,17 @@ class PublicController {
 
     def mutableParams = new HashMap(params)
 
-    mutableParams.max = 30
+    if ( mutableParams.max == null )
+      mutableParams.max = 30
+    else
+      mutableParams.max = Integer.parseInt(mutableParams.max)
 
     mutableParams.componentType = "Package" // Tells ESSearchService what to look for
+
+    if ( mutableParams.offset == null )
+      mutableParams.offset = 0
+    else
+      mutableParams.offset = Integer.parseInt(mutableParams.offset)
 
     if( ( mutableParams.q == null ) || (mutableParams.q == '') )  
       mutableParams.q = '*'

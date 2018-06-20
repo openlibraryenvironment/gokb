@@ -20,9 +20,10 @@
                    <button class="btn btn-primary" type="submit" value="yes" name="search"><span class="fa fa-search" aria-hidden="true">Search</span></button>
                  </span>
                </div>
+               Showing results ${firstrec} to ${lastrec} of ${resultsTotal}
 
                <p>
-                 <g:each in="${['type','endYear','startYear','consortiaName','cpname']}" var="facet">
+                 <g:each in="${['providerName']}" var="facet">
                    <g:each in="${params.list(facet)}" var="fv">
                      <span class="badge alert-info">${facet}:${fv} &nbsp; <g:link controller="${controller}" action="index" params="${removeFacet(params,facet,fv)}"><i class="icon-remove icon-white"></i></g:link></span>
                    </g:each>
@@ -50,13 +51,7 @@
                    <g:each in="${facet.value?.sort{it.display}}" var="v">
                      <li>
                        <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
- 
-                       <g:if test="${params.list(facet.key).contains(v.term.toString())}">
-                         ${v.display} (${v.count})
-                       </g:if>
-                       <g:else>
-                         <g:link controller="${controller}" action="${action}" params="${addFacet(params,facet.key,v.term)}">${v.display}</g:link> (${v.count})
-                       </g:else>
+                       ${v.display} (${v.count})
                      </li>
                    </g:each>
                  </ul>
@@ -83,7 +78,7 @@
                   <td>
                       <g:link controller="public" action="packageContent" id="${hit.id}">${hit.source.name}</g:link>
                       <g:link controller="public" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>
-                      (Curated by <g:each in="${hit.source.curatoryGroups}" var="cg">${cg}</g:each>)
+                      (Curated by <g:each in="${hit.source.curatoryGroups}" var="cg" status="i"><g:if test="${i>0}">; </g:if>${cg}</g:each>)
                   </td>
                   <td>${hit.source.provider?.name}</td>
                   <td>${hit.source.titleCount}</td>
@@ -92,9 +87,16 @@
               </g:each>
             </tbody>
           </table>
+
+          <g:if test="${resultsTotal?:0 > 0 }" >
+            <g:paginate  controller="public" action="index" params="${params}" next="Next" prev="Prev" max="${max}" total="${resultsTotal}" />
+          </g:if>
+
          </div>
       </div>
+
     </div>
+
   </div> <!-- /.container -->
 
 </body>

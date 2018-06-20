@@ -109,6 +109,7 @@ class FTUpdateService {
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
+        result.sortname = kbc.name
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -116,10 +117,7 @@ class FTUpdateService {
         result.updater='pkg'
         result.titleCount = ''+kbc.tipps?.size()
 
-        result.provider = [
-          name:kbc.provider?.name,
-          id:kbc.provider?.id
-        ]
+        result.cpname = kbc.provider?.name
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
