@@ -83,9 +83,10 @@
                   <td>
                       <g:link controller="public" action="packageContent" id="${hit.id}">${hit.source.name}</g:link>
                       <g:link controller="public" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>
+                      (Curated by <g:each in="${hit.source.curatoryGroups}" var="cg">${cg}</g:each>)
                   </td>
-                  <td></td>
-                  <td></td>
+                  <td>${hit.source.provider?.name}</td>
+                  <td>${hit.source.titleCount}</td>
                   <td></td>
                 </tr>
               </g:each>
