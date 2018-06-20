@@ -739,20 +739,14 @@ class TSVIngestionService {
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           editor_role_id = editor_role.id
 
-          if ( the_package.curatoryGroups.size() == 0 ) {
-            if ( other_params.curatoryGroup ) {
-              // See if the package already lists the supplied group as a CG, if not, add it.
-              log.debug("Adding curatory group to package: ${other_params.curatoryGroup}");
-              def cg = CuratoryGroup.findByName(other_params.curatoryGroup) ?: new CuratoryGroup(name:other_params.curatoryGroup).save(flush:true, failOnError:true);
-              the_package.curatoryGroups.add(cg);
-              the_package.save(flush:true, failOnError:true);
-            }
-            else if ( grailsApplication.config.gokb?.defaultCuratoryGroup ) {
-              log.debug("Adding default curatory group to package: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
-              def cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup)
-              the_package.curatoryGroups.add(cg);
-              the_package.save(flush:true, failOnError:true);
-            }
+ 
+          if ( other_params.curatoryGroup ) {
+            the_package.addCuratoryGroupIfNotPresent(other_params.curatoryGroup)
+            the_package.save(flush:true, failOnError:true);
+          }
+          else if ( grailsApplication.config.gokb?.defaultCuratoryGroup ) {
+            the_package.addCuratoryGroupIfNotPresent(grailsApplication.config.gokb?.defaultCuratoryGroup)
+            the_package.save(flush:true, failOnError:true);
           }
         }
 

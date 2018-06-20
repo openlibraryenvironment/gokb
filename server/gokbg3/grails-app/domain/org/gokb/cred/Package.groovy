@@ -768,4 +768,17 @@ select tipp.id,
 
     result
   }
+
+  public void addCuratoryGroupIfNotPresent(String cgname) {
+    boolean add_needed = true;
+    curatoryGroups.each { cgtest ->
+      if ( cgtest.name.equalsIgnoreCase(cgname) )
+        add_needed = false;
+    }
+
+    if ( add_needed ) {
+      def cg = CuratoryGroup.findByName(cgname) ?: new CuratoryGroup(name:cgname).save(flush:true, failOnError:true);
+      curatoryGroups.add(cg);
+    }
+  }
 }

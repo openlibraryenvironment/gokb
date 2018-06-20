@@ -57,6 +57,7 @@ class FTUpdateService {
         result.publisher = kbc.currentPublisher?.name
         result.publisherId = kbc.currentPublisher?.id
         result.altname = []
+        result.updater='book'
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -82,6 +83,7 @@ class FTUpdateService {
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
+        result.updater='journal'
         // result.publisher = kbc.currentPublisher?.name
         result.publisherId = kbc.currentPublisher?.id
         result.altname = []
@@ -111,6 +113,13 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.updater='pkg'
+        result.titleCount = ''+kbc.tipps?.size()
+
+        result.provider = [
+          name:kbc.provider?.name,
+          id:kbc.provider?.id
+        ]
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -134,6 +143,7 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
         result.altname = []
+        result.updater='org'
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -159,11 +169,13 @@ class FTUpdateService {
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
+        result.updater='platform'
 
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.updater='platform'
         result.primaryUrl = kbc.primaryUrl
         result.status = kbc.status?.value
         
