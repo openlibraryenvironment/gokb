@@ -76,6 +76,7 @@ def pullLatest(config, url) {
   boolean next_page = true;
   int page_count = 0;
 
+  // def httpbuilder = new HTTPBuilder( 'https://dac.k-int.com' )
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
   httpbuilder.auth.basic 'admin', 'admin'
 
