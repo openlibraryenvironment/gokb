@@ -6,6 +6,7 @@ class UserDetailsInterceptor {
 
   public UserDetailsInterceptor() {
     matchAll().excludes(controller: 'auth')
+              .excludes(controller: 'integration')
               .excludes(controller: 'api')
   }
 
@@ -68,7 +69,7 @@ class UserDetailsInterceptor {
                   // Add a menu item.
                   menus["search"]["${d.type.value}"] << [
                     text : val.title,
-                    link : ['controller' : 'search', 'action' : 'index', 'params' : [qbe:'g:'+ key, init: 'true']],
+                    link : ['controller' : 'search', 'action' : 'index', 'params' : [qbe:'g:'+ key]],
                     attr : ['title' : "Search ${val.title}"]
                   ]
                 }

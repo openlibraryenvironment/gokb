@@ -1,7 +1,7 @@
 /**
  * GOKb application javascript file.
  */
-//=require jquery
+//=require jquery-2.2.0.min
 //=require jquery.mask
 //=require raphael.min
 //=require morris.min
@@ -25,8 +25,8 @@
 // Global namespace for GOKb functions.
 window.gokb = {
   "config" : {
-    "lookupURI" : "/gokb/ajaxSupport/lookup",
-    "baseUrl" : "/gokb",
+    "lookupURI" : "/ajaxSupport/lookup",
+    "baseUrl" : "/",
   },
   validateJson : function (value) {
     
@@ -48,6 +48,11 @@ window.gokb = {
   
   // When DOM is ready.
   $(document).ready(function(){
+
+    if(contextPath) {
+      gokb.config.baseUrl = contextPath;
+      gokb.config.lookupURI = contextPath + "/ajaxSupport/lookup";
+    }
 
     gokb.dialog = bootbox.dialog;
   

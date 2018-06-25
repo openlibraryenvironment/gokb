@@ -47,7 +47,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/**/favicon.ico',      filters: 'none'],
         [pattern: '/error',               filters: 'none'],
         [pattern: '/api/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
-        [pattern: '/integration/*',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/integration/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/packages/deposit',    filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/admin/bulkLoadUsers', filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'],
@@ -207,6 +207,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Status', sort:'status', property:'status?.value'],
+        [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
       ]
     ]
   ],

@@ -8,6 +8,8 @@ beans = {
 
   messageBundleMessageSource(PluginAwareResourceBundleMessageSource) {
     basenames = "WEB-INF/grails-app/i18n/messages"
+    cacheSeconds = 10
+    fileCacheSeconds = 10
   }
 
   messageSource(DatabaseMessageSource) {

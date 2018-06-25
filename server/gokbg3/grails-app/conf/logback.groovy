@@ -22,18 +22,13 @@ appender('STDOUT', ConsoleAppender) {
     }
 }
 
-logger ('grails.app.init', DEBUG)
-logger ('grails.app.controllers', DEBUG)
-logger ('grails.app.domain', DEBUG)
-logger ('grails.app.domains', DEBUG)
-logger ('grails.app.jobs', DEBUG)
-logger ('grails.app.services', DEBUG)
 logger ('com.k_int', DEBUG)
 logger ('org.gokb', DEBUG)
 logger ('gokbg3', DEBUG)
 logger ('org.gokb.AjaxSupportController', DEBUG)
 logger ('org.gokb.DomainClassExtender', WARN)
 logger ('org.gokb.ClassExaminationService', WARN)
+logger ('org.gokb.IntegrationController', DEBUG)
 
 
 def targetDir = BuildSettings.TARGET_DIR

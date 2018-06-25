@@ -37,11 +37,9 @@ class HomeController {
     log.debug("Home::index -- ${params}")
 
     if ( grailsApplication.config?.newDash ) {
-      log.debug("NewDash!")
       forward ( action: "userdash", params: (params))
     }
     else {
-      log.debug("Redirect!")
       forward ( action: "dashboard", params: (params))
     }
   }

@@ -941,11 +941,14 @@ class IntegrationController {
          ( request.JSON.platformName ) &&
          ( request.JSON.platformName.trim().length() > 0 ) ) {
       def p = Platform.findByPrimaryUrl(request.JSON.platformUrl)
+
       if ( p == null ) {
 
         // Attempt normname lookup.
-        p = Platform.findByNormname( Platform.generateNormname (request.JSON.name) ) ?: new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.name)
+        p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) ) ?: new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true)
       }
+
+      log.debug("created or looked up platform ${p}!")
 
       setAllRefdata ([
         'software', 'service'
@@ -965,7 +968,7 @@ class IntegrationController {
 //      if ( changed ) {
 //        p.save(flush:true, failOnError:true);
 //      }
-
+      result.message = "Created/looked up platform ${p}"
       result.platform_id = p.id;
     }
     render result as JSON

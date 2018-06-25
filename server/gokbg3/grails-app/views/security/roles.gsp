@@ -32,7 +32,7 @@
             </g:else>
           </td>
           <td>
-            ${ role.authority }
+            ${ message(code:'role.' + role.authority + '', default: role.authority) }
           </td>
         </tr>
       </g:each>

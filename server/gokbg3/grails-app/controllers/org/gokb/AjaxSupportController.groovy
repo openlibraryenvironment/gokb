@@ -498,12 +498,14 @@ class AjaxSupportController {
         bindData(target_object, binding_properties)
       }
       
-      if (!target_object.hasErrors()) {
+      if (target_object.validate()) {
         target_object.save(flush:true);
       }
       else {
-        log.debug("Errors: ${target_object.errors}")
-        errors = target_object.errors.allErrors()
+
+        errors = target_object.errors.allErrors.collect{g.message([error : it])}
+
+        log.debug("Errors: ${errors}")
       }
     }
     else {
@@ -516,7 +518,8 @@ class AjaxSupportController {
       outs << params.value
     }
     else {
-      outs << errors
+      response.status = 400
+      outs << errors[0]
     }
     outs.flush()
     outs.close()

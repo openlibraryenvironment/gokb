@@ -5,6 +5,7 @@ class PreferencesInterceptor {
 
   public PreferencesInterceptor() {
       matchAll().excludes(controller:'api')
+                .excludes(controller:'integration')
       // matchAll().excludes(controller: 'auth')
   }
 

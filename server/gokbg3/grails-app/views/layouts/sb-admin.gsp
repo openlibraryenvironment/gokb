@@ -17,7 +17,7 @@
 
   <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
   <g:layoutHead />
-
+  <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: '/gokb'}"; </asset:script>
   <asset:javascript src="gokb/application.grass.js" />
   <asset:javascript src="jquery-2.2.0.min.js"/>
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
