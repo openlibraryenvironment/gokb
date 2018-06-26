@@ -49,7 +49,7 @@ class GlobalSearchController {
             .setFrom(result.offset)
             .setQuery(esQuery)
             .addAggregation(
-              AggregationBuilders.terms('Component Type').field(typing_field)
+              AggregationBuilders.terms('ComponentType').field(typing_field)
             )
 
 //         def search_action = esclient.search {

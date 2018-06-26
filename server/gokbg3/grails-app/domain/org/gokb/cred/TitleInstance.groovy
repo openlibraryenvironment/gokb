@@ -514,13 +514,36 @@ class TitleInstance extends KBComponent {
   @Transient
   public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null) {
     def result = null;
+    def type = 'org.gokb.cred.JournalInstance'
+
+    switch (titleDTO.type) {
+      case 'Serial':
+        log.debug("Type is ${titleDTO.type}")
+        break;
+      case 'Monograph':
+      case 'Book':
+        log.debug("type ${titleDTO.type} given")
+        type = 'org.gokb.cred.BookInstance'
+        break;
+      case 'Database':
+        log.debug("type ${titleDTO.type} given")
+        type = 'org.gokb.cred.DatabaseInstance'
+        break;
+      case 'Other':
+        log.debug("type ${titleDTO.type} given")
+        type = 'org.gokb.cred.OtherInstance'
+        break;
+      default:
+        log.warn("Unknown or missing type ${titleDTO.type}! Handling title as journal ..")
+    }
+
     result = titleLookupService.find(titleDTO.name,
                                      titleDTO.publisher,
                                      titleDTO.identifiers,
                                      user,
                                      null,
-                                     titleDTO.type=='Serial' ? 'org.gokb.cred.JournalInstance' : 'org.gokb.cred.BookInstance' )
-
+                                     type
+                                )
     log.debug("Result of upsertDTO: ${result}");
     result;
   }

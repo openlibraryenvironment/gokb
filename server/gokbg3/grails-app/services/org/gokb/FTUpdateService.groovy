@@ -101,6 +101,33 @@ class FTUpdateService {
         // log.debug("process ${result}");
         result
       }
+
+      updateES(esclient, org.gokb.cred.DatabaseInstance.class) { kbc ->
+
+        def result = null
+
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.name = kbc.name
+        // result.publisher = kbc.currentPublisher?.name
+        result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.ids.each { identifier ->
+          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        // log.debug("process ${result}");
+        result
+      }
   
       updateES(esclient, org.gokb.cred.Package.class) { kbc ->
         def result = null

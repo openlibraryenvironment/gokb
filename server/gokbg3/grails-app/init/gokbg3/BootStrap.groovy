@@ -40,7 +40,7 @@ import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRespon
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse 
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
 import static org.elasticsearch.common.xcontent.XContentFactory.*
 import org.elasticsearch.common.xcontent.XContentBuilder
@@ -441,6 +441,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Database").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Film").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image").save(flush:true, failOnError:true)

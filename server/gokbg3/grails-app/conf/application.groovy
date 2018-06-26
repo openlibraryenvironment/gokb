@@ -47,7 +47,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/**/favicon.ico',      filters: 'none'],
         [pattern: '/error',               filters: 'none'],
         [pattern: '/api/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
-        [pattern: '/integration/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/integration/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/packages/deposit',    filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/admin/bulkLoadUsers', filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'],
@@ -56,6 +56,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/admin/**',                access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/file/**',                 access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
+  [pattern: '/info',                    access: ['permitAll']],
   [pattern: '/monitoring/**',           access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/login/auth',              access: ['permitAll']],
   [pattern: '/',                        access: ['permitAll']],
@@ -901,6 +902,40 @@ globalSearchTemplates = [
       qbeForm:[
         [
           prompt:'Journal Title',
+          qparam:'qp_name',
+          placeholder:'Name or title of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Org',
+          prompt:'Publisher',
+          qparam:'qp_pub',
+          placeholder:'Publisher',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
+          hide:true
+        ],
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
+         'qparam':'qp_onlyCurrent', 'default':'on', 'cat':'KBComponent.Status', 'type': 'java.lang.Object']
+      ],
+      qbeResults:[
+        [heading:'Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'],sort:'name' ],
+        [heading:'Status', property:'status?.value',sort:'status'],
+      ]
+    ]
+  ],
+  '1eDatabases':[
+    baseclass:'org.gokb.cred.DatabaseInstance',
+    title:'Databases',
+    group:'Secondary',
+    defaultSort:'name',
+    defaultOrder:'asc',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Database Title',
           qparam:'qp_name',
           placeholder:'Name or title of item',
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name','wildcard':'R']

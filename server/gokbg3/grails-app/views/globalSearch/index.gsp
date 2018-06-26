@@ -4,6 +4,10 @@
   def addFacet = { params, facet, val ->
     def newparams = [:]
     newparams.putAll(params)
+
+    newparams.remove('offset');
+    newparams.remove('max');
+
     def current = newparams[facet]
     if ( current == null ) {
       newparams[facet] = val
@@ -23,6 +27,10 @@
     def newparams = [:]
     newparams.putAll(params)
     def current = newparams[facet]
+
+    newparams.remove('offset');
+    newparams.remove('max');
+
     if ( current == null ) {
     }
     else if ( current instanceof String[] ) {
@@ -31,7 +39,7 @@
       newparams[facet].remove(val);
     }
     else if ( current?.equals(val.toString()) ) {
-      newparams.remove(facet)
+      newparams.remove(facet);
     }
     newparams
   }

@@ -13,6 +13,7 @@ public class DisplayTemplateService {
     globalDisplayTemplates.put('org.gokb.cred.TitleInstance',[ type:'staticgsp', rendername:'title' ]);
     globalDisplayTemplates.put('org.gokb.cred.BookInstance',[ type:'staticgsp', rendername:'book' ]);
     globalDisplayTemplates.put('org.gokb.cred.JournalInstance',[ type:'staticgsp', rendername:'journal' ]);
+    globalDisplayTemplates.put('org.gokb.cred.DatabaseInstance',[ type:'staticgsp', rendername:'database' ]);
     globalDisplayTemplates.put('org.gokb.cred.OtherInstance',[ type:'staticgsp', rendername:'othertitle' ]);
     globalDisplayTemplates.put('org.gokb.cred.TitleInstancePackagePlatform',[ type:'staticgsp', rendername:'tipp' ]);
     globalDisplayTemplates.put('org.gokb.refine.Rule',[ type:'staticgsp', rendername:'rule' ]);

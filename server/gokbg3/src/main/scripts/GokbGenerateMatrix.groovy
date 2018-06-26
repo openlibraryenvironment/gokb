@@ -84,7 +84,7 @@ target(main: "Generate the property matrix for KBComponents") {
           // cc1 hasmany cc2
           combo_relations_matrix[x+1][y+1]='M';
         }
-        else if ( ( t2 != null ) && ( cc1.clazz.hasByCombo.values().contains(cc2.clazz) ) ) {
+        else if ( ( t2 != null ) && ( cc1.clazz.manyByCombo.size() > 0) && ( cc1.clazz.hasByCombo?.values().contains(cc2.clazz) ) ) {
           combo_relations_matrix[x+1][y+1]='1';
         }
         else {

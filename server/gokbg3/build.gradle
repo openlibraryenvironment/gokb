@@ -9,11 +9,13 @@ buildscript {
     dependencies {
         classpath "org.grails:grails-gradle-plugin:$grailsVersion"
         classpath "gradle.plugin.com.energizedwork.webdriver-binaries:webdriver-binaries-gradle-plugin:1.1"
+        classpath "gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:1.5.1"
         classpath "gradle.plugin.com.energizedwork:idea-gradle-plugins:1.4"
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
         classpath "com.bertramlabs.plugins:asset-pipeline-gradle:2.14.8"
         // Experiment with guide from http://guides.grails.org/grails-as-docker-container/guide/index.html
         classpath "com.bmuschko:gradle-docker-plugin:3.2.5" 
+        classpath 'org.grails.plugins:database-migration:3.0.3'
     }
 }
 
@@ -24,6 +26,7 @@ apply plugin:"eclipse"
 apply plugin:"idea"
 apply plugin:"war"
 apply plugin:"org.grails.grails-web"
+apply plugin:"com.gorylenko.gradle-git-properties"
 apply plugin:"com.energizedwork.webdriver-binaries"
 apply plugin:"com.energizedwork.idea-project-components"
 apply plugin:"asset-pipeline"
@@ -62,6 +65,7 @@ dependencies {
     compile "org.grails.plugins:gsp"
     compile "org.grails.plugins:mail:2.0.0"
     compile 'org.grails.plugins:cache-headers:2.0.1'
+    compile 'org.grails.plugins:database-migration:3.0.3'
 
     compile 'org.grails.plugins:spring-security-core:3.2.1'
     compile 'org.grails.plugins:spring-security-acl:3.2.1'
@@ -80,6 +84,7 @@ dependencies {
     compile 'org.apache.tika:tika-core:1.17'
     compile 'org.grails.plugins:grails-executor:0.4'
     // compile 'org.grails.plugins:audit-logging:2.0.6'
+    compile 'org.liquibase:liquibase-core:3.5.3'
 
 
     // This  is for rest integration tests -  see more at
@@ -113,9 +118,59 @@ bootRun {
     addResources = true
 }
 
+buildProperties.doLast {
+    // Find the right file
+
+    File grailsBuildInfoFile = it.outputs.files.files.find { it.name == 'grails.build.info' }
+    File grailsGitInfoFile = it.outputs.files.find { it.name == 'git.properties' }
+    if(!grailsBuildInfoFile) {
+      println "Build file not found!"
+      return // No need to continue if the file is not there
+    }
+
+    Properties properties = new Properties()
+    Properties gitProperties = new Properties()
+    // Read properties from the file
+
+    grailsBuildInfoFile.withInputStream {
+        properties.load(it)
+    }
+
+    if (grailsGitInfoFile) {
+        gitProperties.load(it)
+    }else{
+      println "Git file not found!"
+    }
+
+    // Add new properties from various sources
+    properties.setProperty('build.time', new Date().format("yyyy-MM-dd HH:mm:ss"))
+    // Get a System property
+    properties.setProperty('build.java.version', System.getProperty('java.version'))
+    // Get the host name where the build was created
+    properties.setProperty('build.host', InetAddress.localHost.hostName)
+
+    Map<String, String> env = System.getenv()
+    if(grailsGitInfoFile) {
+        properties.setProperty('build.git.revision', gitProperties.getProperty('git.commit.id'))
+        properties.setProperty('build.git.branch', gitProperties.getProperty('git.branch'))
+    }
+    // Write the properties back to the file
+    grailsBuildInfoFile.withOutputStream {
+        properties.store(it,null)
+    }
+}
+
 webdriverBinaries {
     chromedriver '2.32'
     geckodriver '0.18.0'
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'migrations'
+        }
+    }
 }
 
 tasks.withType(Test) {

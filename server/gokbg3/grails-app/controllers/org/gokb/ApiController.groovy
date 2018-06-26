@@ -617,169 +617,140 @@ class ApiController {
 
     try {
 
-      if ( !params.q ) {
+      QueryBuilder exactQuery = QueryBuilders.boolQuery()
 
-        QueryBuilder exactQuery = QueryBuilders.boolQuery()
+      def singleParams = [:]
+      def unknown_fields = []
+      def other_fields = ["controller","action","max","offset","from"]
+      def id_params = [:]
+      def orgRoleParam = ""
+      def tippPackageId = null
+      def tippTitleId = null
 
-        def singleParams = [:]
-        def unknown_fields = []
-        def other_fields = ["controller","action","max","offset","from"]
-        def id_params = [:]
-        def orgRoleParam = ""
-        def tippPackageId = null
-        def tippTitleId = null
+      params.each { k, v ->
+        if ( k == 'componentType' && v instanceof String ) {
+          singleParams['componentType'] = v
+        }
 
-        params.each { k, v ->
-          if ( k == 'componentType' && v instanceof String ) {
-            singleParams['componentType'] = v
-          }
+        else if( k == 'role' && v instanceof String ) {
+          orgRoleParam = v
+        }
 
-          else if( k == 'role' && v instanceof String ) {
-            orgRoleParam = v
-          }
+        else if (k == 'package' && v instanceof String) {
+          tippPackageId = v
+        }
 
-          else if (k == 'package' && v instanceof String) {
-            tippPackageId = v
-          }
+        else if (k == 'status' && v instanceof String) {
+          singleParams['status'] = v
+        }
 
-          else if (k == 'status' && v instanceof String) {
-            singleParams['status'] = v
-          }
+        else if (k == 'title' && v instanceof String) {
+          tippTitleId = v
+        }
 
-          else if (k == 'title' && v instanceof String) {
-            tippTitleId = v
-          }
+        else if (k == 'curatoryGroup' && v instanceof String) {
+          singleParams['curatoryGroups'] = v
+        }
 
-          else if (k == 'curatoryGroup' && v instanceof String) {
-            singleParams['curatoryGroups'] = v
-          }
+        else if ((k == 'label' || k == "q") && v instanceof String) {
+          exactQuery.should(QueryBuilders.matchQuery('name', v))
+          exactQuery.should(QueryBuilders.matchQuery('altname', v))
+          exactQuery.minimumNumberShouldMatch(1)
+        }
 
-          else if (k == 'label' && v instanceof String) {
-            exactQuery.should(QueryBuilders.matchQuery('name', v))
-            exactQuery.should(QueryBuilders.matchQuery('altname', v))
-            exactQuery.minimumNumberShouldMatch(1)
-          }
+        else if (!params.label && k == "name" && v instanceof String) {
+          singleParams['name'] = v
+        }
 
-          else if (!params.label && k == "name" && v instanceof String) {
-            singleParams['name'] = v
-          }
+        else if (!params.label && k == "altname" && v instanceof String) {
+          singleParams['altname'] = v
+        }
 
-          else if (!params.label && k == "altname" && v instanceof String) {
-            singleParams['altname'] = v
-          }
-
-          else if ( k == "identifier" && v instanceof String) {
-            if (v.contains(',')) {
-              id_params['identifiers.namespace'] = v.split(',')[0]
-              id_params['identifiers.value'] = v.split(',')[1]
-            }else{
-              id_params['identifiers.value'] = v
-            }
-          }
-
-          else if ( k == "id" && v instanceof String) {
-            singleParams['_id'] = v
-          }
-
-          else if (!other_fields.contains(k)){
-            unknown_fields.add(k)
+        else if ( k == "identifier" && v instanceof String) {
+          if (v.contains(',')) {
+            id_params['identifiers.namespace'] = v.split(',')[0]
+            id_params['identifiers.value'] = v.split(',')[1]
+          }else{
+            id_params['identifiers.value'] = v
           }
         }
 
-        if(unknown_fields.size() > 0){
-          errors['unknown'] = "Unknown parameter(s): ${unknown_fields}"
+        else if ( k == "id" && v instanceof String) {
+          singleParams['_id'] = v
         }
 
-        if ( orgRoleParam ) {
-          if ( singleParams['componentType'] ) {
-            singleParams['roles'] = orgRoleParam
-          }
-          else {
-            errors['role'] = "To filter by Org Roles, please add filter componentType=Org to the query"
-          }
-        }
-
-        if ( tippPackageId ) {
-          if ( singleParams['componentType'] ) {
-            singleParams['tippPackage'] = tippPackageId
-          }
-          else {
-            errors['role'] = "To filter by Package, please add filter componentType=TIPP to the query"
-          }
-        }
-
-        if ( tippTitleId ) {
-          if ( singleParams['componentType'] ) {
-            singleParams['tippTitle'] = tippTitleId
-          }
-          else {
-            errors['role'] = "To filter by Title, please add filter componentType=TIPP to the query"
-          }
-        }
-
-        if (singleParams) {
-          singleParams.each { k,v ->
-            exactQuery.must(QueryBuilders.matchQuery(k,v))
-          }
-        }
-
-        if (id_params) {
-          exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
-        }
-
-
-
-        if( singleParams || params.label || id_params ) {
-          SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
-
-          es_request.setIndices(grailsApplication.config.globalSearch.indices)
-          es_request.setTypes(grailsApplication.config.globalSearch.types)
-          es_request.setQuery(exactQuery)
-
-          setQueryMax(errors, result, null)
-          setQueryFrom(errors, result, null)
-          setQueryOffset(errors, result, null)
-
-          if (result.max) {
-            es_request.setSize(result.max)
-          }
-          if (result.offset) {
-            es_request.setFrom(result.offset)
-          }
-
-          search_action = es_request.execute()
-        }
-        else{
-          errors['params'] = "No valid parameters found"
+        else if (!other_fields.contains(k)){
+          unknown_fields.add(k)
         }
       }
 
-      else {
-        result.max = params.max ? Integer.parseInt(params.max) : 10;
-        result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+      if(unknown_fields.size() > 0){
+        errors['unknown'] = "Unknown parameter(s): ${unknown_fields}"
+      }
 
-        if ( params.q?.length() > 0) {
+      if ( orgRoleParam ) {
+        if ( singleParams['componentType'] ) {
+          singleParams['roles'] = orgRoleParam
+        }
+        else {
+          errors['role'] = "To filter by Org Roles, please add filter componentType=Org to the query"
+        }
+      }
 
-          params.q = params.q.replace('[',"(")
-          params.q = params.q.replace(']',")")
+      if ( tippPackageId ) {
+        if ( singleParams['componentType'] ) {
+          singleParams['tippPackage'] = tippPackageId
+        }
+        else {
+          errors['role'] = "To filter by Package, please add filter componentType=TIPP to the query"
+        }
+      }
 
-          def query_str = buildQuery(params)
+      if ( tippTitleId ) {
+        if ( singleParams['componentType'] ) {
+          singleParams['tippTitle'] = tippTitleId
+        }
+        else {
+          errors['role'] = "To filter by Title, please add filter componentType=TIPP to the query"
+        }
+      }
 
-          search_action = esclient.search {
-            indices grailsApplication.config.globalSearch.indices
-            types grailsApplication.config.globalSearch.types
-            source {
-              from = result.offset
-              size = result.max
-              query {
-                query_string (query: query_str)
-              }
-            }
-          }
+      if (singleParams) {
+        singleParams.each { k,v ->
+          exactQuery.must(QueryBuilders.matchQuery(k,v))
+        }
+      }
 
+      if (id_params) {
+        exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
+      }
+
+
+
+      if( !errors && (singleParams || params.label || id_params) ) {
+        SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
+
+        es_request.setIndices(grailsApplication.config.globalSearch.indices)
+        es_request.setTypes(grailsApplication.config.globalSearch.types)
+        es_request.setQuery(exactQuery)
+
+        setQueryMax(errors, result, null)
+        setQueryFrom(errors, result, null)
+        setQueryOffset(errors, result, null)
+
+        if (result.max) {
+          es_request.setSize(result.max)
+        }
+        if (result.offset) {
+          es_request.setFrom(result.offset)
         }
 
+        search_action = es_request.execute()
       }
+      else{
+        errors['params'] = "No valid parameters found"
+      }
+
       def search = null
 
       if (search_action) {
