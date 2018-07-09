@@ -60,8 +60,7 @@
     <dd> <g:xEditableRefData owner="${d}" field="editStatus" config='KBComponent.EditStatus' /> </dd>
 
     <dt> <g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel> </dt>
-    <dd> <span>${d.description?:''}</span> </dd>
-
+    <dd> <g:xEditable class="ipe" owner="${d}" field="description" /> </dd>
 
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd> <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" /> </dd>

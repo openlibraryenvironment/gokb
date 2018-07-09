@@ -17,9 +17,9 @@
 
         <h1>Package: ${pkgName}</h1>
 
-        <dt> Provider </dt> <dd> </dd>
-        <dt> Status </dt> <dd> </dd>
-        <dt> Description </dt> <dd> </dd>
+        <dt> Provider </dt> <dd> ${pkg.provider?.name} </dd>
+        <dt> Status </dt> <dd> ${pkg.status?.value} </dd>
+        <dt> Description </dt> <dd> ${pkg.description}</dd>
 
         <g:if test="${pkg.prices?.size() > 0}">
           <h2>Price Information</h2>
