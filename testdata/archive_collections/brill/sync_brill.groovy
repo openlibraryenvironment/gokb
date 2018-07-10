@@ -81,97 +81,56 @@ def ingest(config, file, report) {
   CSVReader r = new CSVReader( new InputStreamReader( new FileInputStream(file), java.nio.charset.Charset.forName('UTF-8') ), '\t' as char)
 
   // Load header line
+  // The brill xlsx has lines of extra info at the top we don't want - lets read past them
   List header = r.readNext();
+
+  // The real header line:
+  header = r.readNext();
+
+  println('header:');
+  println(header);
+  println('---------------------------------------------');
+
   List next_line = r.readNext();
   while(next_line) {
     println(next_line)
+    def description = next_line.get(0)+' '+next_line.get(1)+'\n'+next_line.get(2)+'/'+next_line.get(3)+' '+next_line.get(4)
+    pushToGokb(next_line.get(1), 
+               description, 
+               makeTSV(new java.util.ArrayList()), 
+               httpbuilder,
+               sanitiseCurrency(next_line.get(5)), 
+               sanitiseCurrency(next_line.get(6)), 
+               sanitiseCurrency(next_line.get(7)))
+    println(next_line.get(1)+' '+next_line.get(7))
     next_line = r.readNext();
   }
 }
 
+public String sanitiseCurrency(String value) {
+  String v2 = value.trim();
+  String result;
 
-
-def processTitleListUrl(client, link, title, description, report_line, gokb) {
-
-  println("processTitleListUrl... ${link}");
-
-  // The link we have has the form
-  // http://tls.search.proquest.com/titlelist/jsp/list/tlsSingle.jsp?productId=1006728
-  // And we need a link like this:
-  // http://tls.search.proquest.com/titlelist/ListForward?productId=1006728&format=tab&IDString=1006728&all=all&keyTitle=keyTitle&ft=Y&citAbs=Y&other=Y&issn=Y&isbn=Y&peer=Y&pubId=Y&additionalTitle=additionalTitle&ftDetail=Y&citAbsDetail=Y&otherDetail=Y&gaps=Y&subject=Y&language=Y&changes=Y
-
-  // matches = link =~ /(?:\?|&|;)([^=]+)=([^&|;]+)/
-
-  // Get the page that allows us to specify what details we want.
-  def html = client.getPage(link);
-
-  // If the response page contains a select element with the name subProductIdList then this package is
-  // a collection of other packages and we should create a GOKb package for each component as well as the parent product
-  // HtmlSelect si = (HtmlSelect) html.getElementByName("subProductIdList");
-  HtmlSelect si = null; //(HtmlSelect) html.getFirstByXPath('//SELECT[NAME="subProductIdList"]');
-  try {
-    si = html.getElementByName("subProductIdList");
-  }
-  catch ( Exception e ) {
-  }
-
-  if ( si != null ) {
-    report_line.type='MultiCollection'
-    println("Product is composed of multiple collections - enumerate them");
-
-    // Push the parent package
-    pushToGokb(title,description.toString(),makeTSV([]),gokb)
-
-
-    si.getOptions().each { opt ->
-      println("  --> ${opt}");
-      // now push the child objects
-    }
+  if ( v2.equals('-') ) {
+    result = ''
   }
   else {
-    // It's a simple package...
-    report_line.type='SingleCollection'
-    println("Product is single collection");
-
-    pushToGokb(title,description.toString(),makeTSV([]),gokb)
-
-    // Click the checkbox :  <INPUT TYPE="checkbox" NAME="all" VALUE="all" onclick="changeAll();"/>
-    HtmlCheckBoxInput i = (HtmlCheckBoxInput) html.getElementByName("all");
-    i.setChecked(true);
-  
-    // Click the link : <A HREF="javascript: void 0" onClick="return checkFormat('tab');">
-    // ScriptResult result = html.executeJavaScript("return checkFormat('tab');");
-
-    // We actually don't want the title list at this stage - just the package data.
-    // def tsv_response = result.getNewPage()
-    // println("Result of execute tab: ${tsv_response}");
+    if (v2.startsWith('€')) {
+      result = v2.substring(1,v2.length()).trim()+' EUR'
+    }
+    else {
+      result = v2
+    }
   }
 
-
-  // DAC Ingest Columns::    [field: 'notes', kbart:'notes'],
-  //              [field: 'online_identifier', kbart: 'online_identifier'],
-  //              [field: 'publication_title', kbart: 'publication_title'],
-  //              [field: 'publisher', kbart:'publisher'],
-  //              [field: 'title_url', kbart:'title_url']
-
-  // URL title_list = new URL("http://tls.search.proquest.com/titlelist/ListForward?productId=${product_id}&format=tab&IDString=${product_id}&all=all&keyTitle=keyTitle&ft=Y&citAbs=Y&other=Y&issn=Y&isbn=Y&peer=Y&pubId=Y&additionalTitle=additionalTitle&ftDetail=Y&citAbsDetail=Y&otherDetail=Y&gaps=Y&subject=Y&language=Y&changes=Y")
-  // BufferedReader is = new BufferedReader(new InputStreamReader(title_list.openStream()));
-  // CSVReader reader = new CSVReader(is);
-  // String[] header = null;
-  // String[] row = reader.readNext()  // Package name
-  // if ( row ) { row = reader.readNext() }  // Accurare as of line
-  // if ( row ) { row = reader.readNext() }  // actual header line
-  // header = row;
-  // if ( row ) { row=reader.readNext() } // First line of data
-  // while ( row ) {
-  //   println(row)
-  //   row = reader.readNext()
-  // }
+  return result;
 }
 
-def pushToGokb(name, description, data, http) {
+def pushToGokb(name, description, data, http, price_std, price_topup, price_perpetual) {
   // curl -v --user admin:admin -X POST \
   //   $GOKB_HOST/gokb/packages/deposit
+
+  println("pushToGokb($name,$description,data,http,$price_std,$price_topup,$price_perpetual");
 
   http.request(Method.POST) { req ->
     uri.path="/packages/deposit"
@@ -181,17 +140,21 @@ def pushToGokb(name, description, data, http) {
     multiPartContent.addPart("content", new ByteArrayBody( data, name.toString()))
 
     // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("PROQUEST"))
+    multiPartContent.addPart("source", new StringBody("BRILL"))
     multiPartContent.addPart("fmt", new StringBody("DAC"))
     multiPartContent.addPart("pkg", new StringBody(name.toString()))
-    multiPartContent.addPart("platformUrl", new StringBody("https://www.proquest.com"));
+    multiPartContent.addPart("platformUrl", new StringBody("https://www.brill.com"));
     multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("PROQUEST"));
-    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("PROQUEST"));
+    multiPartContent.addPart("providerName", new StringBody("BRILL"));
+    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("BRILL"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
     multiPartContent.addPart("description", new StringBody(description));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
     multiPartContent.addPart("curatoryGroup", new StringBody("Jisc"));
+    multiPartContent.addPart("pkg.price", new StringBody(price_std));
+    multiPartContent.addPart("pkg.price.topup", new StringBody(price_topup));
+    multiPartContent.addPart("pkg.price.perpetual", new StringBody(price_perpetual));
+
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
     
     req.entity = multiPartContent.build()
