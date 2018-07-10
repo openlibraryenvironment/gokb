@@ -116,7 +116,7 @@ public String sanitiseCurrency(String value) {
   }
   else {
     if (v2.startsWith('€')) {
-      result = v2.substring(1,v2.length()).trim()+' EUR'
+      result = v2.substring(1,v2.length()).replaceAll(',','').trim()+' EUR'
     }
     else {
       result = v2
