@@ -115,7 +115,7 @@ def pullLatest(config, url) {
       out_writer.close()
 
       def csv_data = new String(baos.toByteArray());
-      pushToGokb(product_title,descr,csv_data, httpbuilder);
+      pushToGokb(product_title,descr,csv_data, httpbuilder,product_url);
     }
 
     // Each product seems to have content and marc records:: https://www.amdigital.co.uk/primary-sources/african-american-communities
@@ -133,7 +133,7 @@ def pullLatest(config, url) {
   println("Done ${page_count} pages");
 }
 
-def pushToGokb(name, description, data, http) {
+def pushToGokb(name, description, data, http, url) {
   // curl -v --user admin:admin -X POST \
   //   $GOKB_HOST/gokb/packages/deposit
 
@@ -155,6 +155,7 @@ def pushToGokb(name, description, data, http) {
     multiPartContent.addPart("providerIdentifierNamespace", new StringBody("uri"));
     multiPartContent.addPart("reprocess", new StringBody("Y"));
     multiPartContent.addPart("description", new StringBody(description));
+    multiPartContent.addPart("pkg.descriptionURL", new StringBody(url));
     multiPartContent.addPart("synchronous", new StringBody("Y"));
     multiPartContent.addPart("curatoryGroup", new StringBody("Jisc"));
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
