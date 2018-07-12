@@ -31,6 +31,8 @@ import org.apache.http.entity.mime.content.ByteArrayBody /* this will encapsulat
 import org.apache.http.entity.mime.content.StringBody /* this will encapsulate string params */
 import au.com.bytecode.opencsv.CSVReader
 import au.com.bytecode.opencsv.CSVWriter
+import java.nio.charset.Charset
+
 
 config = null;
 cfg_file = new File('./sync-amd-cfg.json')
@@ -79,6 +81,7 @@ def pullLatest(config, url) {
   // def httpbuilder = new HTTPBuilder( 'https://dac.k-int.com' )
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
   httpbuilder.auth.basic 'admin', 'admin'
+  httpbuilder.encoders.charset = Charset.forName('UTF-8');
 
   while(next_page) {
     page_count++
@@ -146,19 +149,19 @@ def pushToGokb(name, description, data, http, url) {
     // Adding Multi-part file parameter "imageFile"
     multiPartContent.addPart("content", new ByteArrayBody( data.getBytes(), name.toString()))
 
-    multiPartContent.addPart("source", new StringBody("AMD"))
-    multiPartContent.addPart("fmt", new StringBody("DAC"))
-    multiPartContent.addPart("pkg", new StringBody(name))
-    multiPartContent.addPart("platformUrl", new StringBody("https://www.amdigital.co.uk"));
-    multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("AMD"));
-    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("uri"));
-    multiPartContent.addPart("reprocess", new StringBody("Y"));
-    multiPartContent.addPart("description", new StringBody(description));
-    multiPartContent.addPart("pkg.descriptionURL", new StringBody(url));
-    multiPartContent.addPart("synchronous", new StringBody("Y"));
-    multiPartContent.addPart("curatoryGroup", new StringBody("Jisc"));
-    multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
+    multiPartContent.addPart("source", new StringBody("AMD", Charset.forName('UTF-8')))
+    multiPartContent.addPart("fmt", new StringBody("DAC", Charset.forName('UTF-8')))
+    multiPartContent.addPart("pkg", new StringBody(name, Charset.forName('UTF-8')))
+    multiPartContent.addPart("platformUrl", new StringBody("https://www.amdigital.co.uk", Charset.forName('UTF-8')));
+    multiPartContent.addPart("format", new StringBody("JSON", Charset.forName('UTF-8')));
+    multiPartContent.addPart("providerName", new StringBody("AMD", Charset.forName('UTF-8')));
+    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("uri", Charset.forName('UTF-8')));
+    multiPartContent.addPart("reprocess", new StringBody("Y", Charset.forName('UTF-8')));
+    multiPartContent.addPart("description", new StringBody(description, Charset.forName('UTF-8')));
+    multiPartContent.addPart("pkg.descriptionURL", new StringBody(url, Charset.forName('UTF-8')));
+    multiPartContent.addPart("synchronous", new StringBody("Y", Charset.forName('UTF-8')));
+    multiPartContent.addPart("curatoryGroup", new StringBody("Jisc", Charset.forName('UTF-8')));
+    multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs", Charset.forName('UTF-8')));
     
     req.entity = multiPartContent.build()
 
