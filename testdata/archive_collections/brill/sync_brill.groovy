@@ -34,6 +34,7 @@ import org.apache.http.entity.mime.content.StringBody /* this will encapsulate s
 import java.io.BufferedReader
 import au.com.bytecode.opencsv.CSVReader
 import au.com.bytecode.opencsv.CSVWriter
+import java.nio.charset.Charset
 
 
 java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(java.util.logging.Level.OFF); 
@@ -77,6 +78,7 @@ def ingest(config, file, report) {
   def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
   // def httpbuilder = new HTTPBuilder( 'https://dac.k-int.com' )
   httpbuilder.auth.basic 'admin', 'admin'
+  httpbuilder.encoders.charset = Charset.forName('UTF-8');
 
   CSVReader r = new CSVReader( new InputStreamReader( new FileInputStream(file), java.nio.charset.Charset.forName('UTF-8') ), '\t' as char)
 
@@ -127,7 +129,7 @@ public String sanitiseCurrency(String value) {
   return result;
 }
 
-def pushToGokb(name, description, data, http, price_std, price_perpetual, price_topup, urk) {
+def pushToGokb(name, description, data, http, price_std, price_perpetual, price_topup, url) {
   // curl -v --user admin:admin -X POST \
   //   $GOKB_HOST/gokb/packages/deposit
 
@@ -141,23 +143,23 @@ def pushToGokb(name, description, data, http, price_std, price_perpetual, price_
     multiPartContent.addPart("content", new ByteArrayBody( data, name.toString()))
 
     // Adding another string parameter "city"
-    multiPartContent.addPart("source", new StringBody("BRILL"))
-    multiPartContent.addPart("fmt", new StringBody("DAC"))
-    multiPartContent.addPart("pkg", new StringBody(name.toString()))
-    multiPartContent.addPart("platformUrl", new StringBody("https://www.brill.com"));
-    multiPartContent.addPart("format", new StringBody("JSON"));
-    multiPartContent.addPart("providerName", new StringBody("BRILL"));
-    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("BRILL"));
-    multiPartContent.addPart("reprocess", new StringBody("Y"));
-    multiPartContent.addPart("description", new StringBody(description));
-    multiPartContent.addPart("synchronous", new StringBody("Y"));
-    multiPartContent.addPart("curatoryGroup", new StringBody("Jisc"));
-    multiPartContent.addPart("pkg.price", new StringBody(price_std));
-    multiPartContent.addPart("pkg.price.topup", new StringBody(price_topup));
-    multiPartContent.addPart("pkg.price.perpetual", new StringBody(price_perpetual));
-    multiPartContent.addPart("pkg.descriptionURL", new StringBody(url));
+    multiPartContent.addPart("source", new StringBody("BRILL",Charset.forName('UTF-8')))
+    multiPartContent.addPart("fmt", new StringBody("DAC",Charset.forName('UTF-8')))
+    multiPartContent.addPart("pkg", new StringBody(name.toString(),Charset.forName('UTF-8')))
+    multiPartContent.addPart("platformUrl", new StringBody("https://www.brill.com",Charset.forName('UTF-8')));
+    multiPartContent.addPart("format", new StringBody("JSON",Charset.forName('UTF-8')));
+    multiPartContent.addPart("providerName", new StringBody("BRILL",Charset.forName('UTF-8')));
+    multiPartContent.addPart("providerIdentifierNamespace", new StringBody("BRILL",Charset.forName('UTF-8')));
+    multiPartContent.addPart("reprocess", new StringBody("Y",Charset.forName('UTF-8')));
+    multiPartContent.addPart("description", new StringBody(description,Charset.forName('UTF-8')));
+    multiPartContent.addPart("synchronous", new StringBody("Y",Charset.forName('UTF-8')));
+    multiPartContent.addPart("curatoryGroup", new StringBody("Jisc",Charset.forName('UTF-8')));
+    multiPartContent.addPart("pkg.price", new StringBody(price_std,Charset.forName('UTF-8')));
+    multiPartContent.addPart("pkg.price.topup", new StringBody(price_topup,Charset.forName('UTF-8')));
+    multiPartContent.addPart("pkg.price.perpetual", new StringBody(price_perpetual,Charset.forName('UTF-8')));
+    multiPartContent.addPart("pkg.descriptionURL", new StringBody(url,Charset.forName('UTF-8')));
 
-    multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
+    multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs",Charset.forName('UTF-8')));
     
     req.entity = multiPartContent.build()
 
