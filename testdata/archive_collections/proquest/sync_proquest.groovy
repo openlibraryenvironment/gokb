@@ -159,8 +159,8 @@ def considerPage(title, description, details_link, abst, client, report_line, go
     }
     else {
       println("  --> title_list: ${title_list_link}");
-      def desc_to_send = ''+description+'\n\nCollected from '+details_link.toString()+' titleList here:'+title_list_link.toString()
-      processTitleListUrl(client, title_list_link, title, desc_to_send, report_line, gokb);
+      def desc_to_send = ''+description+'\n\nCollected from '+details_link.toString()+'. Title List here:'+title_list_link.toString()
+      processTitleListUrl(client, title_list_link, title, desc_to_send, report_line, gokb, details_link);
     }
   }
   else {
@@ -168,11 +168,11 @@ def considerPage(title, description, details_link, abst, client, report_line, go
     report_line.statusMessage="No Title List"
     def desc_to_send = ''+description+'\n\nCollected from '+details_link.toString()+' No title list found';
     // Create a package entry, but with no content.
-    pushToGokb(title,desc_to_send,makeTSV([]),gokb)
+    pushToGokb(title,desc_to_send,makeTSV([]),gokb, details_link)
   }
 }
 
-def processTitleListUrl(client, link, title, description, report_line, gokb) {
+def processTitleListUrl(client, link, title, description, report_line, gokb, details_link) {
 
   println("processTitleListUrl... ${link}");
 
@@ -201,7 +201,7 @@ def processTitleListUrl(client, link, title, description, report_line, gokb) {
     println("Product is composed of multiple collections - enumerate them");
 
     // Push the parent package
-    pushToGokb(title,description.toString(),makeTSV([]),gokb)
+    pushToGokb(title,description.toString(),makeTSV([]),gokb, details_link)
 
 
     si.getOptions().each { opt ->
@@ -214,7 +214,7 @@ def processTitleListUrl(client, link, title, description, report_line, gokb) {
     report_line.type='SingleCollection'
     println("Product is single collection");
 
-    pushToGokb(title,description.toString(),makeTSV([]),gokb)
+    pushToGokb(title,description.toString(),makeTSV([]),gokb,details_link)
 
     // Click the checkbox :  <INPUT TYPE="checkbox" NAME="all" VALUE="all" onclick="changeAll();"/>
     HtmlCheckBoxInput i = (HtmlCheckBoxInput) html.getElementByName("all");
@@ -250,7 +250,7 @@ def processTitleListUrl(client, link, title, description, report_line, gokb) {
   // }
 }
 
-def pushToGokb(name, description, data, http) {
+def pushToGokb(name, description, data, http, url) {
   // curl -v --user admin:admin -X POST \
   //   $GOKB_HOST/gokb/packages/deposit
 
@@ -271,6 +271,7 @@ def pushToGokb(name, description, data, http) {
     multiPartContent.addPart("providerIdentifierNamespace", new StringBody("PROQUEST", Charset.forName('UTF-8')));
     multiPartContent.addPart("reprocess", new StringBody("Y", Charset.forName('UTF-8')));
     multiPartContent.addPart("description", new StringBody(description, Charset.forName('UTF-8')));
+    multiPartContent.addPart("pkg.descriptionURL", new StringBody(url, Charset.forName('UTF-8')));
     multiPartContent.addPart("synchronous", new StringBody("Y", Charset.forName('UTF-8')));
     multiPartContent.addPart("curatoryGroup", new StringBody("Jisc", Charset.forName('UTF-8')));
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs", Charset.forName('UTF-8')));

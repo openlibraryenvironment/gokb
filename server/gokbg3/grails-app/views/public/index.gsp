@@ -77,7 +77,7 @@
                 <tr>
                   <td>
                       <g:link controller="public" action="packageContent" id="${hit.id}">${hit.source.name}</g:link>
-                      <g:link controller="public" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>
+                      <!-- <g:link controller="public" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>-->
                       (Curated by <g:each in="${hit.source.curatoryGroups}" var="cg" status="i"><g:if test="${i>0}">; </g:if>${cg}</g:each>)
                   </td>
                   <td>${hit.source.provider?.name}</td>

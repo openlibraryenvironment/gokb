@@ -77,7 +77,7 @@ class TSVIngestionService {
    */
   static def packageProperties = [
     [ regex: ~/(pkg)\.(price)(\.(.*))?/, type:'typeValueFunction', prop:'Price' ],  // Match pkg.price and pkg.price.anything
-    [ regex: ~/(pkg)\.(descriptionURL)/, tyoe:'simpleProperty', prop:'descriptionURL']
+    [ regex: ~/(pkg)\.(descriptionURL)/, type:'simpleProperty', prop:'descriptionURL']
   ]
 
   // Don't update the accessStartDate if we are seeing the tipp again in a file

@@ -62,6 +62,9 @@
     <dt> <g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" field="description" /> </dd>
 
+    <dt> <g:annotatedLabel owner="${d}" property="descriptionURL">URL</g:annotatedLabel> </dt>
+    <dd> <g:xEditable class="ipe" owner="${d}" field="descriptionURL" /> </dd>
+
     <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
     <dd> <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" /> </dd>
   </dl>
