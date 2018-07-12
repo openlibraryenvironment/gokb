@@ -34,6 +34,7 @@ class Package extends KBComponent {
   String listVerifier
   User userListVerifier
   Date listVerifiedDate
+  String descriptionURL
   
   private static refdataDefaults = [
     "scope"       : "Front File",
@@ -79,6 +80,7 @@ class Package extends KBComponent {
     global column:'pkg_global_rv_fk'
     listVerifier column:'pkg_list_verifier'
     userListVerifier column:'pkg_list_verifier_user_fk'
+    descriptionURL column:'pkg_descr_url'
   }
 
   static constraints = {
@@ -91,6 +93,7 @@ class Package extends KBComponent {
     paymentType    (nullable:true, blank:false)
     global      (nullable:true, blank:false)
     lastProject    (nullable:true, blank:false)
+    descriptionURL (nullable:true, blank:false)
   }
 
   static def refdataFind(params) {

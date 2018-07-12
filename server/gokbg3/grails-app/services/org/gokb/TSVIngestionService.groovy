@@ -76,7 +76,8 @@ class TSVIngestionService {
    * Structure of map a regex for matching, a type and a property.
    */
   static def packageProperties = [
-    [ regex: ~/(pkg)\.(price)(\.(.*))?/, type:'typeValueFunction', prop:'Price' ]  // Match pkg.price and pkg.price.anything
+    [ regex: ~/(pkg)\.(price)(\.(.*))?/, type:'typeValueFunction', prop:'Price' ],  // Match pkg.price and pkg.price.anything
+    [ regex: ~/(pkg)\.(descriptionURL)/, tyoe:'simpleProperty', prop:'descriptionURL']
   ]
 
   // Don't update the accessStartDate if we are seeing the tipp again in a file
@@ -1357,6 +1358,7 @@ class TSVIngestionService {
         log.debug("Property ${prop} matched config ${pp}");
         switch ( pp.type ) {
           case 'typeValueFunction':
+            // The property has a subtype eg price.list which should be mapped in a special way
             def propname_groups = prop =~ pp.regex
             def propname = propname_groups[0][2]
             def proptype = propname_groups[0][4]
@@ -1373,6 +1375,10 @@ class TSVIngestionService {
               package_changed = true;
             }
 
+            break;
+          case 'simpleProperty':
+            // A simple scalar property
+            pkg[pp.prop] = props[prop]
             break;
           default:
             log.warn("Unhandled package property type ${pp.type} : ${pp}");

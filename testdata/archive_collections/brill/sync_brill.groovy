@@ -101,7 +101,8 @@ def ingest(config, file, report) {
                httpbuilder,
                sanitiseCurrency(next_line.get(5)), 
                sanitiseCurrency(next_line.get(6)), 
-               sanitiseCurrency(next_line.get(7)))
+               sanitiseCurrency(next_line.get(7)),
+               '')
     println(next_line.get(1)+' '+next_line.get(7))
     next_line = r.readNext();
   }
@@ -126,7 +127,7 @@ public String sanitiseCurrency(String value) {
   return result;
 }
 
-def pushToGokb(name, description, data, http, price_std, price_topup, price_perpetual) {
+def pushToGokb(name, description, data, http, price_std, price_perpetual, price_topup, urk) {
   // curl -v --user admin:admin -X POST \
   //   $GOKB_HOST/gokb/packages/deposit
 
@@ -154,6 +155,7 @@ def pushToGokb(name, description, data, http, price_std, price_topup, price_perp
     multiPartContent.addPart("pkg.price", new StringBody(price_std));
     multiPartContent.addPart("pkg.price.topup", new StringBody(price_topup));
     multiPartContent.addPart("pkg.price.perpetual", new StringBody(price_perpetual));
+    multiPartContent.addPart("pkg.descriptionURL", new StringBody(url));
 
     multiPartContent.addPart("flags", new StringBody("+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs"));
     

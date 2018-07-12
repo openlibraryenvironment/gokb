@@ -13,6 +13,7 @@ curl -v --user admin:admin -X POST \
   --form pkg.price="1.23 GBP" \
   --form pkg.price.topup="100.00 GBP" \
   --form pkg.price.perpetual="1000.00 GBP" \
+  --form pkg.descriptionUrl="http://www.k-int.com/" \
   --form description="This is a test package used to exercise the package ingest API" \
   --form flags="+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs" \
   localhost:8080/packages/deposit
