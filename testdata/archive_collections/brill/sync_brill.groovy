@@ -104,7 +104,7 @@ def ingest(config, file, report) {
                sanitiseCurrency(next_line.get(5)), 
                sanitiseCurrency(next_line.get(6)), 
                sanitiseCurrency(next_line.get(7)),
-               '')
+               next_line.get(4))
     println(next_line.get(1)+' '+next_line.get(7))
     next_line = r.readNext();
   }
