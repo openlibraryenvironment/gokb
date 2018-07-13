@@ -93,7 +93,7 @@ class Package extends KBComponent {
     paymentType    (nullable:true, blank:false)
     global      (nullable:true, blank:false)
     lastProject    (nullable:true, blank:false)
-    descriptionURL (nullable:true, blank:false)
+    descriptionURL (nullable:true, blank:true)
   }
 
   static def refdataFind(params) {
