@@ -90,10 +90,9 @@ def pullLatest(config, url, report) {
   int page_count = 0;
   int package_count = 0;
 
-  // def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
-  def httpbuilder = new HTTPBuilder( 'https://dac.k-int.com' )
-  // httpbuilder.auth.basic 'admin', 'admin'
-  httpbuilder.auth.basic 'knowint', 'pa55w0rd__'
+  def httpbuilder = new HTTPBuilder( 'http://localhost:8080' )
+  // def httpbuilder = new HTTPBuilder( 'https://dac.k-int.com' )
+  httpbuilder.auth.basic 'admin', 'admin'
   httpbuilder.encoders.charset = Charset.forName('UTF-8');
 
   def page_url = url;
