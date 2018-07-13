@@ -1369,7 +1369,7 @@ where cp.owner = :c
       rdv_type = RefdataCategory.lookupOrCreate('Price.type',type?:'list').save(flush:true, failOnError:true)
 
       if ( price_components.length == 2 ) {
-        rdv_currency = RefdataCategory.lookupOrCreate('Currency',price_components[1]).save(flush:true, failOnError:true)
+        rdv_currency = RefdataCategory.lookupOrCreate('Currency',price_components[1].trim()).save(flush:true, failOnError:true)
       }
 
       // Close out any existing component prices

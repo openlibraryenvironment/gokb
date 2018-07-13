@@ -825,6 +825,10 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Price.type','on-off').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Price.type','subscription').save(flush:true, failOnError:true)
 
+    RefdataCategory.lookupOrCreate('Currency','EUR').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Currency','GBP').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Currency','USD').save(flush:true, failOnError:true)
+
     log.debug("Deleting any null refdata values");
     RefdataValue.executeUpdate('delete from RefdataValue where value is null');
   }
