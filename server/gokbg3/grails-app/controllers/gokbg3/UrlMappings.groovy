@@ -1,5 +1,8 @@
 package gokbg3
 
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.acls.model.NotFoundException
+
 class UrlMappings {
 
     def springSecurityService
@@ -14,6 +17,8 @@ class UrlMappings {
 
         "/"(controller:'public',action:'index')
         "500"(view:'/error')
+        "500"(view:'/login/denied', exception: NotFoundException)
+        "500"(view:'/login/denied', exception: AccessDeniedException)
         "404"(controller:'home', action:'index') {status = '404'}
         "403"(view:'/login/denied')
     }

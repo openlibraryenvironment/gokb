@@ -11,4 +11,5 @@ out/
 .project
 .settings
 .classpath
+.asscache
 bin
