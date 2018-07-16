@@ -7,6 +7,7 @@ import org.hibernate.ScrollMode
 import java.nio.charset.Charset
 import java.util.GregorianCalendar
 import org.gokb.cred.*
+import java.text.SimpleDateFormat
 
 @Transactional
 class FTUpdateService {
@@ -57,6 +58,7 @@ class FTUpdateService {
 //         result.publisher = kbc.currentPublisher?.name
         result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
         result.altname = []
+        result.updater='book'
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -82,6 +84,7 @@ class FTUpdateService {
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
+        result.updater='journal'
         // result.publisher = kbc.currentPublisher?.name
         result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
         result.altname = []
@@ -130,14 +133,25 @@ class FTUpdateService {
       }
   
       updateES(esclient, org.gokb.cred.Package.class) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
+        result.description = kbc.description
+        result.descriptionURL = kbc.descriptionURL
+        result.sortname = kbc.name
         result.altname = []
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.updater='pkg'
+        result.titleCount = ''+kbc.tipps?.size()
+
+        result.cpname = kbc.provider?.name
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -182,6 +196,7 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
         result.altname = []
+        result.updater='org'
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -207,11 +222,13 @@ class FTUpdateService {
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.name = kbc.name
+        result.updater='platform'
 
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.updater='platform'
         result.primaryUrl = kbc.primaryUrl
         result.status = kbc.status?.value
         

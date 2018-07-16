@@ -820,6 +820,16 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('MembershipStatus','Pending').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('MembershipStatus','Rejected/Revoked').save(flush:true, failOnError:true)
 
+    RefdataCategory.lookupOrCreate('Price.type','list').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Price.type','perpetual').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Price.type','topup').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Price.type','on-off').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Price.type','subscription').save(flush:true, failOnError:true)
+
+    RefdataCategory.lookupOrCreate('Currency','EUR').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Currency','GBP').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Currency','USD').save(flush:true, failOnError:true)
+
     log.debug("Deleting any null refdata values");
     RefdataValue.executeUpdate('delete from RefdataValue where value is null');
   }
@@ -1019,6 +1029,15 @@ class BootStrap {
       .startObject()
         .startObject("component")
           .startArray("dynamic_templates")
+            .startObject()
+              .startObject("provider")
+                .field("match", "provider")
+                .field("match_mapping_type", "string")
+                .startObject("mapping")
+                  .field("type", "keyword")
+                .endObject()
+              .endObject()
+            .endObject()
             .startObject()
               .startObject("publisher")
                 .field("match", "publisher")

@@ -65,6 +65,21 @@ class TSVIngestionService {
     new SimpleDateFormat('yyyy')
   ];
 
+  /**
+   * Define package level properties.
+   * Currently only defines one type of property - typeValueFunction where the package will provide
+   * a setX(Y,V), getX(Y,V) method. In the price example below, a column like pkg.price.list would result
+   * in a call to getPrice('list') and if the returned value was different to the input file, call
+   * setPrice('list','value'). This method may be arbitrarily complex. In the price example, multiple
+   * associated tracking events can happen.
+   *
+   * Structure of map a regex for matching, a type and a property.
+   */
+  static def packageProperties = [
+    [ regex: ~/(pkg)\.(price)(\.(.*))?/, type:'typeValueFunction', prop:'Price' ],  // Match pkg.price and pkg.price.anything
+    [ regex: ~/(pkg)\.(descriptionURL)/, type:'simpleProperty', prop:'descriptionURL']
+  ]
+
   // Don't update the accessStartDate if we are seeing the tipp again in a file
   // already loaded.
   def tipp_properties_to_ignore_when_updating = [ 'accessStartDate' ]
@@ -717,7 +732,7 @@ class TSVIngestionService {
         log.debug("Passed preflight -- ingest");
 
         Package.withNewTransaction() {
-          the_package=handlePackage(packageName,source,providerName)
+          the_package=handlePackage(packageName,source,providerName,other_params)
           assert the_package != null
           the_package_id=the_package.id
           def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
@@ -725,16 +740,13 @@ class TSVIngestionService {
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           editor_role_id = editor_role.id
 
+ 
           if ( other_params.curatoryGroup ) {
-            log.debug("Adding curatory group to package: ${other_params.curatoryGroup}");
-            def cg = CuratoryGroup.findByName(other_params.curatoryGroup) ?: new CuratoryGroup(name:other_params.curatoryGroup).save(flush:true, failOnError:true);
-            the_package.curatoryGroups.add(cg);
+            the_package.addCuratoryGroupIfNotPresent(other_params.curatoryGroup)
             the_package.save(flush:true, failOnError:true);
           }
           else if ( grailsApplication.config.gokb?.defaultCuratoryGroup ) {
-            log.debug("Adding default curatory group to package: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
-            def cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup)
-            the_package.curatoryGroups.add(cg);
+            the_package.addCuratoryGroupIfNotPresent(grailsApplication.config.gokb?.defaultCuratoryGroup)
             the_package.save(flush:true, failOnError:true);
           }
         }
@@ -1034,7 +1046,7 @@ class TSVIngestionService {
               title.save(flush:true, failOnError:true);
 
               def pre_create_tipp_time = System.currentTimeMillis();
-              manualCreateTIPP(source,
+              manualUpsertTIPP(source,
                                the_kbart,
                                the_package,
                                title,
@@ -1083,7 +1095,7 @@ class TSVIngestionService {
     parsed_date
   }
 
-  def manualCreateTIPP(the_source,
+  def manualUpsertTIPP(the_source,
                        the_kbart,
                        the_package,
                        the_title,
@@ -1091,7 +1103,7 @@ class TSVIngestionService {
                        ingest_date,
                        ingest_systime) {
 
-    log.debug("TSVIngestionService::manualCreateTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
+    log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
 
     assert the_package != null && the_title != null && the_platform != null
 
@@ -1134,7 +1146,10 @@ class TSVIngestionService {
       // We are going to create tipl objects at the end instead if per title inline.
       // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
       def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+
+      // Copy the new tipp_values from the file into our new object
       tipp = new TitleInstancePackagePlatform(tipp_values)
+
       tipp.status = status_current;
 
       // log.debug("Created");
@@ -1202,32 +1217,90 @@ class TSVIngestionService {
       tipp.lastSeen = ingest_systime;
     }
 
+    // Allow columns like tipp.price, tipp.price.list, tipp.price.perpetual - Call the setPrice(type, value) for each
+    setTypedProperties(tipp, the_kbart.unmapped, 'Price',  ~/(tipp)\.(price)(\.(.*))?/, 'currency');
+
     // Look through the field list for any tipp.custprop values
     log.debug("Checking for tipp custprops");
     addCustprops(tipp, the_kbart, 'tipp.custprops.');
     addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.');
 
-    log.debug("manualCreateTIPP returning")
+    log.debug("manualUpsertTIPP returning")
   }
 
+  def setTypedProperties(tipp, props, field, regex, type) {
+    log.debug("setTypedProperties(...${field},...)");
+
+    props.each { up ->
+      def prop = up.name
+      if ( ( prop ==~ regex ) && ( up.value.trim().length() > 0 ) ) {
+        def propname_groups = prop =~ regex
+        def propname = propname_groups[0][2]
+        def proptype = propname_groups[0][4]
+
+        def current_value = tipp."get${field}"(proptype)
+        def value_from_file = formatValueFromFile(up.value.trim(), type);
+
+        log.debug("setTypedProperties - match regex on ${prop},type=${proptype},value_from_file=${value_from_file} current=${current_value}");
+
+
+        // If we don't currently have a value OR we have a value which is not the same as the one supplied
+        if ( ( current_value == null ) || 
+             ( ! current_value.equals(value_from_file) ) ) {
+          log.debug("${current_value} !=  ${value_from_file} so set...");
+          tipp."set${field}"(proptype, value_from_file)
+        }
+      }
+      else {
+        // log.debug("${prop} does not match regex");
+      }
+    }
+  }
+
+  private String formatValueFromFile(String v, String t) {
+    String result = null;
+    switch ( t ) {
+      case 'currency':
+        // "1.24", "1 GBP", "11234.43", "3334", "3334.2", "2.3 USD" -> "1.24", "1.00 GBP", "11234.43", "3334.00", "3334.20", "2.30 USD"
+        String[] currency_components = v.split(' ');
+        if ( currency_components.length == 2 ) {
+          result = String.format('%.2f',Float.parseFloat(currency_components[0]))+' '+currency_components[1]
+        }
+        else {
+          result = String.format('%.2f',Float.parseFloat(currency_components[0]))
+        }
+        break;
+      default:
+        result = v.trim();
+    }
+
+    return result;
+  }
 
   //this is a lot more complex than this for journals. (which uses refine)
   //theres no notion in here of retiring packages for example.
   //for this v1, I've made this very simple - probably too simple.
-  def handlePackage(packageName, source, providerName) {
+  def handlePackage(packageName, source, providerName,other_params) {
     def result;
     def norm_pkg_name = KBComponent.generateNormname(packageName)
-    // def packages=Package.findAllByNormname(norm_pkg_name);
+    log.debug("Attempt package match by normalised name: ${norm_pkg_name}");
     def packages=Package.executeQuery("select p from Package as p where p.normname=?",[norm_pkg_name],[readonly:false])
+
     switch (packages.size()) {
       case 0:
         //no match. create a new package!
-        log.debug("Create new package");
+        log.debug("Create new package(${packageName},${norm_pkg_name})");
 
         def newpkgid = null;
 
         def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
-        def newpkg = new Package(name:packageName, normname:norm_pkg_name, source:source, status: status_current)
+        def newpkg = new Package(
+                                 name:packageName, 
+                                 normname:norm_pkg_name, 
+                                 source:source, 
+                                 status: status_current,
+                                 description:other_params?.description)
+
         if (newpkg.save(flush:true, failOnError:true)) {
           newpkgid = newpkg.id
           if ( providerName && providerName.length() > 0 ) {
@@ -1258,14 +1331,65 @@ class TSVIngestionService {
         //found a match
         result=packages[0]
         log.debug("match package found: ${result}")
-      break
+        // See if any properties have changed.
+        if ( !result.description == other_params.description) {
+          result.description = other_params.description;
+          result.save(flush:true, failOnError:true);
+        }
+        break
       default:
         log.error("found multiple packages when looking for ${packageName}")
-      break
+        break
     }
+
+    // The request can now have additional package level properties that we need to process.
+    // other_params can contain 'pkg.' properties. 
+    handlePackageProperties(result, other_params)
 
     log.debug("handlePackage returns ${result}");
     result;
+  }
+
+  def handlePackageProperties(pkg, props) {
+    def package_changed = false;
+    packageProperties.each { pp ->
+      // consider See if pp.regex matches any of the properties
+      props.keySet().grep(pp.regex).each { prop -> 
+        log.debug("Property ${prop} matched config ${pp}");
+        switch ( pp.type ) {
+          case 'typeValueFunction':
+            // The property has a subtype eg price.list which should be mapped in a special way
+            def propname_groups = prop =~ pp.regex
+            def propname = propname_groups[0][2]
+            def proptype = propname_groups[0][4]
+            log.debug("Call getter object.${propname}(${proptype}) - value is ${props[prop]}");
+            // If the value returned by the getter is not the same as the value we have, update
+            def current_value = pkg."get${pp.prop}"(proptype)
+            log.debug("current_value of ${prop} = ${current_value}");
+
+            // If we don't currently have a value OR we have a value which is not the same as the one supplied
+            if ( ( ( current_value == null ) && ( props[prop]?.trim().length() > 0 ) ) ||
+                 ( ! current_value.equals(props[prop]) ) ) {
+              log.debug("${current_value} != ${props[prop]} so set ${pp.prop}");
+              pkg."set${pp.prop}"(proptype, props[prop])
+              package_changed = true;
+            }
+
+            break;
+          case 'simpleProperty':
+            // A simple scalar property
+            pkg[pp.prop] = props[prop]
+            break;
+          default:
+            log.warn("Unhandled package property type ${pp.type} : ${pp}");
+            break;
+        }
+      }
+    }
+
+    if ( package_changed ) {
+      pkg.save(flush:true, failOnError:true);
+    }
   }
 
   def handlePlatform(host, the_source) {

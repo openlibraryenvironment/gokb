@@ -23,6 +23,9 @@
 //=require text-complete
 
 // Global namespace for GOKb functions.
+// Ian:: We are now deploying the G3 application at / instead of /gokb. URLs changed accordingly
+// However - this feels brittle, and likely to change on a deployment by deployment basis. Needs
+// discussion I think?
 window.gokb = {
   "config" : {
     "lookupURI" : "/ajaxSupport/lookup",

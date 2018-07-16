@@ -28,6 +28,14 @@ abstract class KBComponent {
   static final String EDIT_STATUS_IN_PROGRESS  = "In Progress"
   static final String EDIT_STATUS_REJECTED    = "Rejected"
 
+  static final String CURRENT_PRICE_HQL = '''
+select cp 
+from ComponentPrice as cp 
+where cp.owner = :c 
+  and cp.priceType.value = :t
+  and ( ( startDate is null OR startDate <= :d ) and ( endDate is null OR endDate > :d ) )
+'''
+
   static auditable = true
 
   private static refdataDefaults = [
@@ -234,6 +242,11 @@ abstract class KBComponent {
   String shortcode
 
   /**
+   * A description (DC.description)
+   */
+  String description
+
+  /**
    * Component Status. Linked to refdata table.
    */
   RefdataValue status
@@ -320,7 +333,8 @@ abstract class KBComponent {
     variantNames: 'owner',
     reviewRequests:'componentToReview',
     people:'component',
-    subjects:'component'
+    subjects:'component',
+    prices: 'owner'
   ]
 
   static hasMany = [
@@ -331,8 +345,12 @@ abstract class KBComponent {
     variantNames:KBComponentVariantName,
     reviewRequests:ReviewRequest,
     people:ComponentPerson,
-    subjects:ComponentSubject
+    subjects:ComponentSubject,
+    prices: ComponentPrice
   ]
+
+
+
 
   static mapping = {
     tablePerHierarchy false
@@ -342,6 +360,7 @@ abstract class KBComponent {
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
     // create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk);
     normname column:'kbc_normname', type:'text', index:'kbc_normname_idx'
+    description column:'kbc_description', type:'text'
     source column:'kbc_source_fk'
     status column:'kbc_status_rv_fk', index:'kbc_status_idx'
     shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
@@ -365,6 +384,7 @@ abstract class KBComponent {
   static constraints = {
     name    (nullable:true, blank:false, maxSize:2048)
     shortcode  (nullable:true, blank:false, maxSize:128)
+    description  (nullable:true, blank:false)
     duplicateOf  (nullable:true, blank:false)
     normname  (nullable:true, blank:false, maxSize:2048)
     status    (nullable:true, blank:false)
@@ -1309,4 +1329,59 @@ abstract class KBComponent {
     }
   }
 
+  // Given the type return a string such as "1.23 GBP" which represents the CURRENT
+  // price for the type variant. Default type to "list" if null is passed in.
+  public String getPrice(String type) {
+    String result = null;
+    String price_type = type ?: 'list'
+    Date now = new Date()
+    def cpresult = ComponentPrice.executeQuery(CURRENT_PRICE_HQL,[t:price_type, c:this, d:now]);
+    if ( cpresult.size() == 1 ) {
+      result = String.format('%.2f',cpresult.get(0).price);
+      if ( cpresult.get(0).currency != null ) {
+        result += " ${cpresult.get(0).currency.value}"
+      }
+    }
+    else if ( cpresult.size() == 0 ) {
+      // No matches - return null
+    }
+    else {
+      throw new RuntimeException("Multiple prices match for component ${this.id} price type ${price_type}");
+    }
+
+    return result;
+  }
+
+  /**
+   * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
+   */
+  public void setPrice(String type, String price) {
+    Float f = null;
+    RefdataValue rdv_type = null;
+    RefdataValue rdv_currency = null;
+
+    if ( price ) {
+      Date now = new Date();
+
+      String[] price_components = price.trim().split(' ');
+      f = Float.parseFloat(price_components[0])
+      rdv_type = RefdataCategory.lookupOrCreate('Price.type',type?:'list').save(flush:true, failOnError:true)
+
+      if ( price_components.length == 2 ) {
+        rdv_currency = RefdataCategory.lookupOrCreate('Currency',price_components[1].trim()).save(flush:true, failOnError:true)
+      }
+
+      // Close out any existing component prices
+      ComponentPrice.executeUpdate('update ComponentPrice set endDate=:now where owner=:t and endDate is null and priceType=:pt',[t:this, now:now, pt:rdv_type]);
+
+      // Create the new component price
+      ComponentPrice cp = new ComponentPrice(
+                                             owner:this, 
+                                             priceType:rdv_type, 
+                                             currency:rdv_currency ,
+                                             startDate:now,
+                                             endDate:null, 
+                                             price:f).save(flush:true, failOnError:true);
+    }
+  }
 }

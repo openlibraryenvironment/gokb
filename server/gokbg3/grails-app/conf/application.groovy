@@ -46,6 +46,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/**/images/**',        filters: 'none'],
         [pattern: '/**/favicon.ico',      filters: 'none'],
         [pattern: '/error',               filters: 'none'],
+        [pattern: '/ajaxSupport/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/api/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/integration/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/packages/deposit',    filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],

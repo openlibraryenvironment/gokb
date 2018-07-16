@@ -227,12 +227,21 @@ class PackagesController {
   
             log.debug("Create background job");
             def incremental_flag = params.incremental
-            Map additional_params = [curatoryGroup:params.curatoryGroup];
+            Map additional_params = [ 
+                                     curatoryGroup:params.curatoryGroup,
+                                     description:params.description 
+                                    ];
 
-            // Could do Promise p = task { Job.withNewSession { ...
-            // result = p.get() or p.get(1,MINUTES)
-            // 
-            // Transactional part done. now queue the job
+            // Trying to create an extensible way to pass package level properties to the ingest processing routine.
+            // Passing params as a map is a bad idea as the scope of params is restricted to the request and the ingest can
+            // (and probably will) outlive the http request.
+            params.each { k,v ->
+              if ( k.toLowerCase().startsWith('pkg.') ) {
+                additional_params[k] = v;
+              }
+            }
+            log.debug("Additional params will be ${additional_params}");
+
             background_job = concurrencyManagerService.createJob { Job job ->
               def job_result = null;
               // Create a new session to run the ingest.

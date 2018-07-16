@@ -16,6 +16,38 @@
       <g:if test="${pkgName}">
 
         <h1>Package: ${pkgName}</h1>
+
+        <dt> Provider </dt> <dd> ${pkg.provider?.name} </dd>
+        <dt> Status </dt> <dd> ${pkg.status?.value} </dd>
+        <dt> Description </dt> <dd> ${pkg.description}</dd>
+        <dt> URL </dt> <dd> ${pkg.descriptionURL}</dd>
+
+        <g:if test="${pkg.prices?.size() > 0}">
+          <h2>Price Information</h2>
+          <table class="table table-striped table-bordered">
+            <thead>
+              <tr> 
+                <th>Price Type</th>
+                <th>Currency</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <g:each in="${pkg.prices}" var="p">
+                <tr>
+                  <td>${p.priceType?.value}</td>
+                  <td>${p.currency?.value}</td>
+                  <td><g:formatDate date="${p.startDate}" format="yyyy-MM-dd"/></td>
+                  <td><g:formatDate date="${p.endDate}" format="yyyy-MM-dd"/></td>
+                  <td>${p.price}</td>
+                </tr>
+              </g:each>
+            </tbody>
+          </table>
+        </g:if>
+
         <h2>Curated By</h2>
         <ul>
           <g:each in="${pkg.curatoryGroups}" var="cg">
