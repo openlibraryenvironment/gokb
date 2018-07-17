@@ -143,6 +143,7 @@ class FTUpdateService {
         result.descriptionURL = kbc.descriptionURL
         result.sortname = kbc.name
         result.altname = []
+        result.listStatus = kbc.listStatus?.value
         result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         kbc.variantNames.each { vn ->

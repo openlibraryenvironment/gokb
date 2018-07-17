@@ -626,6 +626,7 @@ class ApiController {
       def orgRoleParam = ""
       def tippPackageId = null
       def tippTitleId = null
+      def pkgListStatus = ""
 
       params.each { k, v ->
         if ( k == 'componentType' && v instanceof String ) {
@@ -636,15 +637,19 @@ class ApiController {
           orgRoleParam = v
         }
 
-        else if (k == 'package' && v instanceof String) {
+        else if (k == 'linkedPackage' && v instanceof String) {
           tippPackageId = v
+        }
+
+        else if (k == 'listStatus' && v instanceof String) {
+          pkgListStatus = v
         }
 
         else if (k == 'status' && v instanceof String) {
           singleParams['status'] = v
         }
 
-        else if (k == 'title' && v instanceof String) {
+        else if (k == 'linkedTitle' && v instanceof String) {
           tippTitleId = v
         }
 
@@ -685,11 +690,20 @@ class ApiController {
       }
 
       if(unknown_fields.size() > 0){
-        errors['unknown'] = "Unknown parameter(s): ${unknown_fields}"
+        errors['unknown_params'] = "${unknown_fields}"
+      }
+
+      if ( pkgListStatus ) {
+        if ( singleParams['componentType'] && singleParams['componentType'] == 'Package' ) {
+          singleParams['listStatus'] = pkgListStatus
+        }
+        else {
+          errors['listStatus'] = "To filter by Package List Status, please add filter componentType=Package to the query"
+        }
       }
 
       if ( orgRoleParam ) {
-        if ( singleParams['componentType'] ) {
+        if ( singleParams['componentType'] && singleParams['componentType'] == 'Org') {
           singleParams['roles'] = orgRoleParam
         }
         else {
@@ -698,20 +712,20 @@ class ApiController {
       }
 
       if ( tippPackageId ) {
-        if ( singleParams['componentType'] ) {
+        if ( singleParams['componentType'] && singleParams['componentType'] == 'TIPP' ) {
           singleParams['tippPackage'] = tippPackageId
         }
         else {
-          errors['role'] = "To filter by Package, please add filter componentType=TIPP to the query"
+          errors['package'] = "To filter by Package, please add filter componentType=TIPP to the query"
         }
       }
 
       if ( tippTitleId ) {
-        if ( singleParams['componentType'] ) {
+        if ( singleParams['componentType'] && singleParams['componentType'] == 'TIPP' ) {
           singleParams['tippTitle'] = tippTitleId
         }
         else {
-          errors['role'] = "To filter by Title, please add filter componentType=TIPP to the query"
+          errors['linkedTitle'] = "To filter by Title, please add filter componentType=TIPP to the query"
         }
       }
 
@@ -747,7 +761,7 @@ class ApiController {
 
         search_action = es_request.execute()
       }
-      else{
+      else if (!singleParams && !params.label && !id_params){
         errors['params'] = "No valid parameters found"
       }
 

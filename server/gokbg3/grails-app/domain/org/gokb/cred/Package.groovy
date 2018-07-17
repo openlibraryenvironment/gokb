@@ -384,8 +384,20 @@ select tipp.id,
         'fixed' ( fixed?.value )
         'paymentType' ( paymentType?.value )
         'global' ( global?.value )
-        'nominalPlatform' ( nominalPlatform?.name )
-        'nominalProvider' ( provider?.name )
+
+        if (nominalPlatform) {
+          builder.'nominalPlatform' ([id: nominalPlatform.id]) {
+            'primaryUrl' (nominalPlatform.primaryUrl)
+            'name' (nominalPlatform.name)
+          }
+        }
+
+        if (provider) {
+          builder.'nominalProvider' ([id: provider.id]) {
+            'name' (provider.name)
+          }
+        }
+
         'listVerifier' ( listVerifier )
         'userListVerifier' ( userListVerifier?.username )
         'listVerifiedDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
