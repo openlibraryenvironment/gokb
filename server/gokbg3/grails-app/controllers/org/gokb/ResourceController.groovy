@@ -41,7 +41,7 @@ class ResourceController {
           // Need to figure out whether the current user has curatorial rights (or is an admin).
           // Defaults to true as not all components have curatorial groups defined.
 
-          def curatedObj = result.displayobj.respondsTo("getCuratoryGroups") ? result.displayobj : ( result.displayobj.pkg ?: false )
+          def curatedObj = result.displayobj.respondsTo("getCuratoryGroups") ? result.displayobj : ( result.displayobj.hasProperty('pkg') ? result.displayobj.pkg : false )
 
           if (curatedObj && curatedObj.curatoryGroups && curatedObj.niceName != 'User') {
 
