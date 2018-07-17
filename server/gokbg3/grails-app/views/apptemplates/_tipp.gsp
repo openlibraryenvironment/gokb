@@ -77,11 +77,9 @@
     </a>
   </li>
 
-  <g:if test="${ d.isEditable() }">
-    <li>
-      <a href="#tippcoverage" data-toggle="tab">Coverage</a>
-    </li>
-  </g:if>
+  <li>
+    <a href="#tippcoverage" data-toggle="tab">Coverage</a>
+  </li>
   <li>
     <a href="#tipplists" data-toggle="tab">Lists</a>
   </li>
@@ -138,51 +136,56 @@
     </g:if>
   </div>
 
-  <g:if test="${ d.isEditable() }">
-    <div class="tab-pane" id="tippcoverage">
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="coverage">Coverage</g:annotatedLabel>
-        </dt>
-        <dd>
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Start Date</th>
-                <th>Start Volume</th>
-                <th>Start Issue</th>
-                <th>End Date</th>
-                <th>End Volume</th>
-                <th>End Issue</th>
-                <th>Embargo</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><g:xEditable class="ipe" owner="${d}" type="date"
-                    field="startDate" /></td>
-                <td><g:xEditable class="ipe" owner="${d}"
-                    field="startVolume" /></td>
-                <td><g:xEditable class="ipe" owner="${d}"
-                    field="startIssue" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" type="date"
-                    field="endDate" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" field="endVolume" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" field="endIssue" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" field="embargo" /></td>
-              </tr>
-            </tbody>
-          </table>
-        </dd>
-        <dt>
-          <g:annotatedLabel owner="${d}" property="covergaeNote">Coverage Note</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable class="ipe" owner="${d}" field="coverageNote" />
-        </dd>
-      </dl>
-    </div>
-  </g:if>
+  <div class="tab-pane" id="tippcoverage">
+    <dl class="dl-horizontal">
+      <dt>
+        <g:annotatedLabel owner="${d}" property="coverage">Coverage</g:annotatedLabel>
+      </dt>
+      <dd>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Start Date</th>
+              <th>Start Volume</th>
+              <th>Start Issue</th>
+              <th>End Date</th>
+              <th>End Volume</th>
+              <th>End Issue</th>
+              <th>Embargo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><g:xEditable class="ipe" owner="${d}" type="date"
+                  field="startDate" /></td>
+              <td><g:xEditable class="ipe" owner="${d}"
+                  field="startVolume" /></td>
+              <td><g:xEditable class="ipe" owner="${d}"
+                  field="startIssue" /></td>
+              <td><g:xEditable class="ipe" owner="${d}" type="date"
+                  field="endDate" /></td>
+              <td><g:xEditable class="ipe" owner="${d}" field="endVolume" /></td>
+              <td><g:xEditable class="ipe" owner="${d}" field="endIssue" /></td>
+              <td><g:xEditable class="ipe" owner="${d}" field="embargo" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </dd>
+      <dt>
+        <g:annotatedLabel owner="${d}" property="coverageNote">Coverage Note</g:annotatedLabel>
+      </dt>
+      <dd>
+        <g:xEditable class="ipe" owner="${d}" field="coverageNote" />
+      </dd>
+      <dt>
+        <g:annotatedLabel owner="${d}" property="coverageDepth">Coverage Depth</g:annotatedLabel>
+      </dt>
+      <dd>
+        <g:xEditableRefData owner="${d}" field="coverageDepth"
+          config='TitleInstancePackagePlatform.CoverageDepth' />
+      </dd>
+    </dl>
+  </div>
 
   <div class="tab-pane" id="tipplists"></div>
 

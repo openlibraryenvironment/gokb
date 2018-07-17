@@ -379,7 +379,7 @@ class AjaxSupportController {
           log.debug("saved ok (${new_cobj[params.__property]})");
         }
 
-        if (item_to_remove.fromComponent == contextObj) {
+        if (item_to_remove.hasProperty('fromComponent') && item_to_remove.fromComponent == contextObj) {
           item_to_remove.delete(flush:true)
         }
         else {
