@@ -22,13 +22,17 @@ appender('STDOUT', ConsoleAppender) {
     }
 }
 
-logger ('com.k_int', DEBUG)
-logger ('org.gokb', DEBUG)
-logger ('gokbg3', DEBUG)
-logger ('org.gokb.AjaxSupportController', DEBUG)
-logger ('org.gokb.DomainClassExtender', WARN)
-logger ('org.gokb.ClassExaminationService', WARN)
-logger ('org.gokb.IntegrationController', DEBUG)
+if (Environment.isDevelopmentMode()) {
+  logger ('com.k_int', DEBUG)
+  logger ('org.gokb', DEBUG)
+  logger ('gokbg3', DEBUG)
+  logger ('org.gokb.DomainClassExtender', WARN)
+  logger ('org.gokb.ClassExaminationService', WARN)
+}else{
+  logger ('com.k_int', INFO)
+  logger ('org.gokb', INFO)
+  logger ('gokbg3', INFO)
+}
 
 
 def targetDir = BuildSettings.TARGET_DIR

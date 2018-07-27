@@ -173,7 +173,7 @@
 
               <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 
-              <sec:ifAnyGranted roles="ROLE_ADMIN">
+              <sec:ifAnyGranted roles="ROLE_SUPERUSER">
                 <li class="${params?.controller == "admin" ? 'active' : ''}"><a href="#"><i class="fa fa-wrench fa-fw"></i> Admin<span class="fa arrow"></span></a>
                   <ul class="nav nav-second-level">
                     <%-- <li><g:link controller="admin" action="tidyOrgData" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Tidy Orgs Data</g:link></li> --%>
@@ -198,10 +198,9 @@
                     <li class="divider"></li>
                     <li><g:link controller="integration"><i class="fa fa-database fa-fw"></i> Integration API</g:link></li>
                   </ul></li>
-
+                <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Operating environment</g:link></li>
               </sec:ifAnyGranted>
-              <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Operating environment</g:link></li>
-              <g:if test="${ grailsApplication.config.decisionSupport }">
+              <g:if test="${ grailsApplication.config.decisionSupport && user.hasRole('ROLE_EDITOR') }">
                 <li><g:link controller="decisionSupport"><i class="fa fa-search fa-fw"></i> Decision Support Dashboard</g:link></li>
               </g:if>
 

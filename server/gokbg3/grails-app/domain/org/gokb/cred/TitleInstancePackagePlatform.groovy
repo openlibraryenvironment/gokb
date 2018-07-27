@@ -333,6 +333,9 @@ class TitleInstancePackagePlatform extends KBComponent {
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
+          if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
+            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
+          }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
         }
 //         tipp.save(flush:true, failOnError:true);

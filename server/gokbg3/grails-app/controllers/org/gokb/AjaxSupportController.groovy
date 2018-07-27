@@ -17,6 +17,7 @@ class AjaxSupportController {
   def genericOIDService
   def aclUtilService
   def springSecurityService
+  def messageSource
 
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -503,9 +504,41 @@ class AjaxSupportController {
       }
       else {
 
-        errors = target_object.errors.allErrors.collect{g.message([error : it])}
+        errors = []
 
-        log.debug("Errors: ${errors}")
+        target_object.errors.allErrors.each { eo ->
+
+          String[] messageArgs = eo.getArguments()
+          def errorMessage = null
+
+          log.debug("Found error with args: ${messageArgs}")
+
+          eo.getCodes().each { ec ->
+
+            if (!errorMessage) {
+              log.debug("testing code -> ${ec}")
+
+              def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
+
+              if(msg && msg != ec) {
+                errorMessage = msg
+              }
+
+              if(!errorMessage) {
+                log.debug("Could not resolve message")
+              }else{
+                log.debug("found message: ${msg}")
+              }
+            }
+          }
+
+          if (errorMessage) {
+            errors.add(errorMessage)
+          }else{
+            log.debug("Found no message for error code ${eo}")
+          }
+        }
+
       }
     }
     else {

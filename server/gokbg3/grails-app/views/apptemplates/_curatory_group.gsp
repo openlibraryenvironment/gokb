@@ -15,7 +15,12 @@
 	    <g:if test="${ d.users }" >
 		    <ul>
 		      <g:each var="u" in="${ d.users }" >
-		        <li><a href="mailto:${ u.email }" ><i class="fa fa-envelope"></i> ${u.displayName ?: u.username}</a></li>
+                        <sec:ifAnyGranted roles="ROLE_ADMIN">
+                          <li><a href="mailto:${ u.email }" ><i class="fa fa-envelope"></i> ${u.displayName ?: u.username}</a></li>
+                        </sec:ifAnyGranted>
+                        <sec:ifNotGranted roles="ROLE_ADMIN">
+                          <li>${u.displayName ?: u.username}</li>
+                        </sec:ifNotGranted>
 		      </g:each>
 		    </ul>
 	    </g:if>

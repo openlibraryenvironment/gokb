@@ -342,7 +342,7 @@ class FTUpdateService {
       FTControl.withNewTransaction {
         latest_ft_record = FTControl.get(latest_ft_record.id);
         latest_ft_record.lastTimestamp = highest_timestamp
-        latest_ft_record.lastId = 0
+        latest_ft_record.lastId = highest_id
         latest_ft_record.save(flush:true, failOnError:true);
       }
       cleanUpGorm();

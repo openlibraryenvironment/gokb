@@ -1,6 +1,6 @@
 <html>
 <head>
-  <meta name='layout' content='sb-admin'/>
+  <meta name='layout' content='public'/>
   <title>Password Reset</title>
 </head>
 
@@ -32,12 +32,12 @@
 
           <div class="form-group">
             <label for="password">Password</label>
-            <g:textField class="form-control" type="password" id="password"  name="password" size="25" />
+            <g:passwordField class="form-control" type="password" id="password"  name="password" size="25" />
           </div>
 
           <div class="form-group">
             <label for="password2">Repeat Password</label>
-            <g:textField class="form-control" type="password" id="password2"  name="password2" size="25" />
+            <g:passwordField class="form-control" type="password" id="password2"  name="password2" size="25" />
           </div>
 
           <div class="form-group">

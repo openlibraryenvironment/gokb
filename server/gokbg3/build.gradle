@@ -64,6 +64,7 @@ dependencies {
     compile "org.hibernate:hibernate-core:5.1.5.Final"
     compile "org.grails.plugins:gsp"
     compile "org.grails.plugins:mail:2.0.0"
+    compile 'org.grails.plugins:greenmail:2.0.0.RC2'
     compile 'org.grails.plugins:cache-headers:2.0.1'
     compile 'org.grails.plugins:database-migration:3.0.3'
 
@@ -118,11 +119,15 @@ bootRun {
     addResources = true
 }
 
+gitProperties {
+    gitPropertiesDir = "${project.rootDir}/build/resources/main/META-INF"
+}
+
 buildProperties.doLast {
     // Find the right file
 
     File grailsBuildInfoFile = it.outputs.files.files.find { it.name == 'grails.build.info' }
-    File grailsGitInfoFile = it.outputs.files.find { it.name == 'git.properties' }
+    File grailsGitInfoFile = it.outputs.files.files.find { it.name == 'git.properties' }
     if(!grailsBuildInfoFile) {
       println "Build file not found!"
       return // No need to continue if the file is not there
@@ -147,7 +152,7 @@ buildProperties.doLast {
     // Get a System property
     properties.setProperty('build.java.version', System.getProperty('java.version'))
     // Get the host name where the build was created
-    properties.setProperty('build.host', InetAddress.localHost.hostName)
+    // properties.setProperty('build.host', InetAddress.localHost.hostName)
 
     Map<String, String> env = System.getenv()
     if(grailsGitInfoFile) {

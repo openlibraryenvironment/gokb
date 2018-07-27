@@ -10,13 +10,20 @@ grails.plugin.springsecurity.useBasicAuth = true
 grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required"
 //Exclude normal controllers from basic auth filter. Just the JSON API is included
 
+grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKb<no-reply@gokb.org>"
+
+grails.plugin.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.org>"
+grails.plugin.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
+grails.plugin.springsecurity.ui.register.defaultRoleNames = [
+  "ROLE_USER"
+]
+
 grails.mime.file.extensions=false
 
 grails.gorm.default.mapping = {
     autowire true
 }
 grails.plugin.springsecurity.ui.register.postRegisterUrl = '/public/index'
-grails.mail.disabled = true
 
 // grails.plugins.auditLog {
 //
@@ -60,6 +67,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/info',                    access: ['permitAll']],
   [pattern: '/monitoring/**',           access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/login/auth',              access: ['permitAll']],
+  [pattern: '/greenmail/**',               access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/',                        access: ['permitAll']],
   [pattern: '/index',                   access: ['permitAll']],
   [pattern: '/index.gsp',               access: ['permitAll']],

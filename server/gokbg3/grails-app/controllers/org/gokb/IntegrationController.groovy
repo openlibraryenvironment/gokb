@@ -777,7 +777,7 @@ class IntegrationController {
                 }
 
                 if ( tipp.title.internalId == null ) {
-                  log.error("Failed to locate or a title for ${tipp.title} when attempting to create TIPP");
+                  log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
                 }
 
                 valid &= Platform.validateDTO(tipp.platform);

@@ -174,6 +174,7 @@ class HomeController {
     result
   }
 
+  @Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
   def about() {
   }
 

@@ -56,7 +56,14 @@ order by f.id, ti.id, title_in_group.id
       Date end_date = new Date(System.currentTimeMillis());
       sendEmail(user, start_date, end_date);
       user.last_alert_check = end_date
-      user.save(flush:true, failOnError:true);
+
+      if (user.validate()) {
+        user.save(flush:true, failOnError:true);
+      }else{
+        def errors = user.errors.allErrors
+
+        log.debug("User Object could not be validated: ${errors}")
+      }
     }
     catch ( Exception e ) {
       log.error("Error sending user email - ${user.email}",e)
@@ -95,8 +102,9 @@ order by f.id, ti.id, title_in_group.id
     def engine = new SimpleTemplateEngine()
     def tmpl = engine.createTemplate(emailTemplateFile).make(result)
     def content = tmpl.toString()
+    EmailValidator validator = EmailValidator.getInstance();
     
-    if (user.email && EmailValidator.isValid(user.email)) {
+    if (user.email && validator.isValid(user.email)) {
 
       mailService.sendMail {
         to user.email
@@ -108,7 +116,7 @@ order by f.id, ti.id, title_in_group.id
       log.debug("Sent email")
     }
     else {
-      log.debug("User ${user.name} has no valid email!")
+      log.debug("User ${user.username} has no valid email!")
     }
   }
 

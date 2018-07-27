@@ -53,7 +53,7 @@
     <dt> <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /> </dd>
 
-    <dt> <g:annotatedLabel owner="${d}" property="lastUpdateComment">Update Method</g:annotatedLabel> </dt>
+    <dt> <g:annotatedLabel owner="${d}" property="lastUpdateComment">Last Update Comment</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" field="lastUpdateComment" /> </dd>
 
     <dt> <g:annotatedLabel owner="${d}" property="editStatus">Edit Status</g:annotatedLabel> </dt>

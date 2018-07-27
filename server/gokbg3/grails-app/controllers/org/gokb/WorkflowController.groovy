@@ -245,7 +245,7 @@ class WorkflowController {
                                     activityData:builder.toString(),
                                     owner:request.user,
                                     status:active_status,
-                                    type:transfer_type).save()
+                                    type:transfer_type).save(flush:true)
 
     log.debug("redirect to edit activity (Really title) ${builder.toString()}");
 
@@ -307,7 +307,7 @@ class WorkflowController {
                                     activityData:builder.toString(),
                                     owner:user,
                                     status:active_status,
-                                    type:transfer_type).save()
+                                    type:transfer_type).save(flush:true)
 
     log.debug("redirect to edit activity (Really title) ${builder.toString()}");
 
@@ -340,7 +340,7 @@ class WorkflowController {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
     }
     else if ( params.process ) {
       log.debug("Process...");
@@ -348,7 +348,7 @@ class WorkflowController {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
 
       processTitleMerge(activity_record, activity_data, merge_params);
       if ( activity_data.newTitle?.size() > 0 ) {
@@ -361,7 +361,7 @@ class WorkflowController {
     else if ( params.abandon ) {
       log.debug("**ABANDON**...");
       activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
-      activity_record.save()
+      activity_record.save(flush:true)
       if ( activity_data.oldTitles?.size() > 0 ) {
         redirect(controller:'resource',action:'show', id:activity_data.oldTitles[0]);
       }
@@ -470,7 +470,7 @@ class WorkflowController {
                                     activityData:builder.toString(),
                                     owner:user,
                                     status:active_status,
-                                    type:transfer_type).save()
+                                    type:transfer_type).save(flush:true)
 
     log.debug("Redirect to edit title transfer activity");
     redirect(action:'editTitleTransfer',id:new_activity.id)
@@ -561,7 +561,7 @@ class WorkflowController {
           def builder = new JsonBuilder()
           builder(activity_data)
           activity_record.activityData = builder.toString();
-          activity_record.save()
+          activity_record.save(flush:true)
         }
         else {
           log.error("Add transfer tipps but failed to resolve package(${params.Package}) or platform(${params.Platform})");
@@ -576,7 +576,7 @@ class WorkflowController {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
     }
     else if ( params.remove ) {
       log.debug("remove... ${params.remove}");
@@ -585,13 +585,13 @@ class WorkflowController {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
     }
     else if ( params.process ) {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
 
       log.debug("Process...");
 
@@ -607,7 +607,7 @@ class WorkflowController {
     else if ( params.abandon ) {
       log.debug("**ABANDON**...");
       activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
-      activity_record.save()
+      activity_record.save(flush:true)
       if ( activity_data.title_ids?.size() > 0 ) {
         redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
       }
@@ -723,7 +723,7 @@ class WorkflowController {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
     }
     else if ( params.remove ) {
       log.debug("remove... ${params.remove}");
@@ -732,7 +732,7 @@ class WorkflowController {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
     }
     else if ( params.process ) {
       log.debug("Process...");
@@ -740,7 +740,7 @@ class WorkflowController {
       def builder = new JsonBuilder()
       builder(activity_data)
       activity_record.activityData = builder.toString();
-      activity_record.save()
+      activity_record.save(flush:true)
 
       processTitleChange(activity_record, activity_data);
       if ( activity_data.title_ids?.size() > 0 ) {
@@ -753,7 +753,7 @@ class WorkflowController {
     else if ( params.abandon ) {
       log.debug("**ABANDON**...");
       activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Abandoned')
-      activity_record.save()
+      activity_record.save(flush:true)
       if ( activity_data.title_ids?.size() > 0 ) {
         redirect(controller:'resource',action:'show', id:'org.gokb.cred.TitleInstance:'+activity_data.title_ids[0]);
       }
@@ -923,7 +923,7 @@ class WorkflowController {
 
 
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
-    activity_record.save()
+    activity_record.save(flush:true)
   }
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -1085,7 +1085,7 @@ class WorkflowController {
     }
     
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
-    activity_record.save()
+    activity_record.save(flush:true)
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -1206,7 +1206,7 @@ class WorkflowController {
     }
 
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
-    activity_record.save()
+    activity_record.save(flush:true)
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

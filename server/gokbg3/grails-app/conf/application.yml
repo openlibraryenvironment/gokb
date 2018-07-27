@@ -88,6 +88,7 @@ grails:
             params:
                 exclude:
                     - password
+                    - password2
                     - email
 endpoints:
     jmx:
@@ -128,11 +129,13 @@ environments:
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
         grails:
-          logging:
-            plugin:
-              springsecurity:
-                debug:
-                  useFilter: true
+            logging:
+                plugin:
+                    springsecurity:
+                        debug:
+                            useFilter: true
+            mail:
+                port: 3025
     test:
         dataSource:
             dbCreate: create-drop
@@ -153,6 +156,9 @@ environments:
                 testOnReturn: true
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+        grails:
+            mail:
+                port: 3025
     production:
         dataSource:
             dbCreate: update
@@ -173,6 +179,10 @@ environments:
                 testOnReturn: true
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+        grails:
+            plugin:
+                greenmail:
+                    disabled: true
 ---
 gokb:
     defaultCuratoryGroup: Local

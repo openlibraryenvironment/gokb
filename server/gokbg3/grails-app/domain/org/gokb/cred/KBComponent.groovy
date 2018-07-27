@@ -1000,29 +1000,34 @@ where cp.owner = :c
   @Transient
   def ensureVariantName(String name) {
 
-    def normname = generateNormname(name)
+    if (name.trim().size() != 0) {
+      def normname = generateNormname(name)
 
-    // Check that name is not already a name or a variant, if so, add it.
-    def existing_component = KBComponent.findByNormname( normname )
+      // Check that name is not already a name or a variant, if so, add it.
+      def existing_component = KBComponent.findByNormname( normname )
 
-    if ( existing_component == null ) {
-      
-      // Variant names use different normalisation method.
-      normname = GOKbTextUtils.normaliseString(name)
-      
-      // not already a name
-      // Make sure not already a variant name
-      def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
-      if ( existing_variants.size() == 0 ) {
-        KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+      if ( existing_component == null ) {
+
+        // Variant names use different normalisation method.
+        normname = GOKbTextUtils.normaliseString(name)
+
+        // not already a name
+        // Make sure not already a variant name
+        def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
+        if ( existing_variants.size() == 0 ) {
+          KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+        }
+        else {
+          log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+        }
+
       }
       else {
-        log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+        log.error("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
       }
-
     }
     else {
-      log.error("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
+      log.error("No viable variant name supplied!")
     }
 
   }

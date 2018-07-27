@@ -172,6 +172,7 @@ class SecurityController {
       
       log.debug("Attempt to update Roles for user ${params.id}.");
       def obj = genericOIDService.resolveOID(params.id)
+      def su_status = springSecurityService.currentUser.hasRole('ROLE_SUPERUSER')
       
       // User is sent.
       if (obj && obj instanceof User) {
@@ -180,7 +181,7 @@ class SecurityController {
         User user = obj as User
         
         // Allow only admins and 
-        if (user.isAdmin() || springSecurityService.currentUser != user) {
+        if (springSecurityService.currentUser != user || su_status) {
         
           params.each { String k, v ->
             
@@ -198,53 +199,59 @@ class SecurityController {
                 // Get the role.
                 Role r = Role.get(roleNum)
                 if (r) {
+
+                  if (r.authority != 'ROLE_SUPERUSER' || su_status) {
                   
-                  // Load the UserRole pair.
-                  UserRole ur = UserRole.get(user.id, r.id)
-                  
-                  // Set or unset.
-                  boolean set = v != "false"
-                  
-                  // Now lookup.
-                  if (set == true) {
-                    
-                    // Try and set.
-                    if (ur) {
-                      log.debug ("Not setting role as it's already set.")
+                    // Load the UserRole pair.
+                    UserRole ur = UserRole.get(user.id, r.id)
+
+                    // Set or unset.
+                    boolean set = v != "false"
+
+                    // Now lookup.
+                    if (set == true) {
+
+                      // Try and set.
+                      if (ur) {
+                        log.debug ("Not setting role as it's already set.")
+                      } else {
+                        // Add the pair.
+                        UserRole.create(user, r, true)
+                        log.debug("Added User with id ${user.id} to the Role ${r.authority}")
+                      }
+
                     } else {
-                      // Add the pair.
-                      UserRole.create(user, r, true)
-                      log.debug("Added User with id ${user.id} to the Role ${r.authority}")
-                    }
-                    
-                  } else {
-                  
-                    // Unset the UserRole.
-                    if (!ur) {
-                      log.debug ("Not removing role as it's already not set.")
-                    } else {
-                      // Add the pair.
-                      ur.delete(flush:true)
-                      log.debug("Removed User with id ${user.id} from the Role ${r.authority}")
+
+                      // Unset the UserRole.
+                      if (!ur) {
+                        log.debug ("Not removing role as it's already not set.")
+                      } else {
+                        // Add the pair.
+                        ur.delete(flush:true)
+                        log.debug("Removed User with id ${user.id} from the Role ${r.authority}")
+                      }
                     }
                   }
-                  
+                  else {
+                    log.error ("Allocation of ROLE_SUPERUSER forbidden for users without this role! (User ${springSecurityService.currentUser.id})")
+                  }
+
                 } else {
                   log.error ("Could not find role with id ${roleNum}")
                 }
               }
             }
           }
-          
-          if (request.isAjax()) {
-            // Send back to the roles action.
-            redirect(controller: "security", action: "roles", 'params' : [ 'id': "${user.class.name}:${user.id}" ])
-          } else {
-            // Send back to referer.
-            redirect(url: request.getHeader('referer'))
-          }
         } else {
-          log.error ("User ${user.id} attempted to mdoify their own roles.")
+          log.error ("User ${user.id} attempted to modify their own roles.")
+        }
+
+        if (request.isAjax()) {
+          // Send back to the roles action.
+          redirect(controller: "security", action: "roles", 'params' : [ 'id': "${user.class.name}:${user.id}" ])
+        } else {
+          // Send back to referer.
+          redirect(url: request.getHeader('referer'))
         }
       }
     }

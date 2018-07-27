@@ -429,10 +429,12 @@ class TitleLookupService {
               the_title.ids = []
             }
 
+            def matchedIds = matches.collect { cti -> cti.id }
+
             ReviewRequest.raise(
               the_title,
               "New TI created.",
-              "Multiple TitleInstances ${matches} were matched on one identifier, but none matched for all given IDs.",
+              "Multiple TitleInstances ${matchedIds} were matched on one identifier, but none matched for all given IDs.",
               user,
               project
             )
