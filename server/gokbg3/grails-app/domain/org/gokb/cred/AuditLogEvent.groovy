@@ -29,8 +29,6 @@ class AuditLogEvent implements Serializable {
     // Enable when you configured UUID(2) kind of ids in "auditLog.idMapping" in < 1.1.0 plugin version
     // String id
 
-    static auditable = false
-
     Date dateCreated
     Date lastUpdated
 

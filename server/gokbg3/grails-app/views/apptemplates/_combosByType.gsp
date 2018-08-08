@@ -24,6 +24,9 @@
             <g:if test="${c.action=='link'}">
               <g:link controller="resource" action="show" id="${linkedoid}">${groovy.util.Eval.x(row, 'x.' + c.expr)}</g:link>
             </g:if>
+            <g:elseif test="${c.action=='editRefData'}">
+              <g:xEditableRefData owner="${row}" field="${c.expr}" config='Combo.Status' />
+            </g:elseif>
             <g:else>${groovy.util.Eval.x(row, 'x.' + c.expr)}</g:else>
           </td>
         </g:each>

@@ -188,6 +188,7 @@ class AjaxSupportController {
     log.debug("AjaxController::addToCollection ${params}");
     User user = springSecurityService.currentUser
     def contextObj = resolveOID2(params.__context)
+    def errors = false
     GrailsClass domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
 
     if ( domain_class && (domain_class.getClazz().isTypeCreatable() || params.__newObjectClass == "org.gokb.cred.TitleInstancePackagePlatform") ) {
@@ -195,112 +196,131 @@ class AjaxSupportController {
       if ( contextObj && contextObj.isEditable() ) {
         log.debug("Create a new instance of ${params.__newObjectClass}");
 
-        def new_obj = domain_class.getClazz().newInstance();
-        PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(domain_class.fullName)
+        if(params.__newObjectClass == "org.gokb.cred.KBComponentVariantName"){
 
-        pent.getPersistentProperties().each { p -> // list of PersistentProperties
-          log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
-          if ( params[p.name] ) {
-            if ( p instanceof Association ) {
-              if ( p instanceof ManyToOne || p instanceof OneToOne ) {
-                // Set ref property
-                log.debug("set assoc ${p.name} to lookup of OID ${params[p.name]}");
-                // if ( key == __new__ then we need to create a new instance )
-                new_obj[p.name] = resolveOID2(params[p.name])
+          def norm_variant = GOKbTextUtils.normaliseString(params.variantName)
+          def existing_variants = KBComponentVariantName.findByNormVariantNameAndOwner(norm_variant, contextObj)
+
+          if(existing_variants){
+            log.debug("found dupes!")
+            errors = true
+          }else{
+            log.debug("create new variantName")
+          }
+        }
+
+        if(!errors) {
+          def new_obj = domain_class.getClazz().newInstance();
+          PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(domain_class.fullName)
+
+          pent.getPersistentProperties().each { p -> // list of PersistentProperties
+            log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
+            if ( params[p.name] ) {
+              if ( p instanceof Association ) {
+                if ( p instanceof ManyToOne || p instanceof OneToOne ) {
+                  // Set ref property
+                  log.debug("set assoc ${p.name} to lookup of OID ${params[p.name]}");
+                  // if ( key == __new__ then we need to create a new instance )
+                  new_obj[p.name] = resolveOID2(params[p.name])
+                }
+                else {
+                  // Add to collection
+                  log.debug("add to collection ${p.name} for OID ${params[p.name]}");
+                  new_obj[p.name].add(resolveOID2(params[p.name]))
+                }
               }
               else {
-                // Add to collection
-                log.debug("add to collection ${p.name} for OID ${params[p.name]}");
-                new_obj[p.name].add(resolveOID2(params[p.name]))
+                switch ( p.type ) {
+                  case Long.class:
+                    log.debug("Set simple prop ${p.name} = ${params[p.name]} (as long=${Long.parseLong(params[p.name])})");
+                    new_obj[p.name] = Long.parseLong(params[p.name]);
+                    break;
+                  default:
+                    log.debug("Set simple prop ${p.name} = ${params[p.name]}");
+                    new_obj[p.name] = params[p.name]
+                    break;
+                }
               }
+            }
+          }
+
+          if (params.__refdataName && params.__refdataValue) {
+            log.debug("set refdata "+ params.__refdataName +" for component ${contextObj}")
+            def refdata = resolveOID2(params.__refdataValue)
+            new_obj[params.__refdataName] = refdata
+          }
+
+          // Need to do the right thing depending on who owns the relationship. If new obj
+          // BelongsTo other, should be added to recip collection.
+          if ( params.__recip ) {
+            log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
+            new_obj[params.__recip] = contextObj
+            log.debug("Saving ${new_obj}");
+            if ( new_obj.save(flush:true) ) {
+              log.debug("Saved OK");
+              if (contextObj.respondsTo("lastUpdateComment")){
+                contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
+              }
+              contextObj.save(flush: true)
             }
             else {
-              switch ( p.type ) {
-                case Long.class:
-                  log.debug("Set simple prop ${p.name} = ${params[p.name]} (as long=${Long.parseLong(params[p.name])})");
-                  new_obj[p.name] = Long.parseLong(params[p.name]);
-                  break;
-                default:
-                  log.debug("Set simple prop ${p.name} = ${params[p.name]}");
-                  new_obj[p.name] = params[p.name]
-                  break;
+              new_obj.errors.each { e ->
+                log.debug("Problem ${e}");
               }
             }
           }
-        }
+          else if ( params.__addToColl ) {
+            contextObj[params.__addToColl].add(new_obj)
+            log.debug("Saving ${new_obj}");
 
-        if (params.__refdataName && params.__refdataValue) {
-          log.debug("set refdata "+ params.__refdataName +" for component ${contextObj}")
-          def refdata = resolveOID2(params.__refdataValue)
-          new_obj[params.__refdataName] = refdata
-        }
-
-        // Need to do the right thing depending on who owns the relationship. If new obj
-        // BelongsTo other, should be added to recip collection.
-        if ( params.__recip ) {
-          log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
-          new_obj[params.__recip] = contextObj
-          log.debug("Saving ${new_obj}");
-          if ( new_obj.save(flush:true) ) {
-            log.debug("Saved OK");
-            if (contextObj.respondsTo("lastUpdateComment")){
-              contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
+            if ( new_obj.save(flush:true) ) {
+              log.debug("New Object Saved OK");
             }
-            contextObj.save(flush: true)
+            else {
+              new_obj.errors.each { e ->
+                log.debug("Problem ${e}");
+              }
+            }
+
+            if ( contextObj.save(flush:true) ) {
+              log.debug("Context Object Saved OK");
+            }
+            else {
+              contextObj.errors.each { e ->
+                log.debug("Problem ${e}");
+              }
+            }
           }
           else {
-            new_obj.errors.each { e ->
-              log.debug("Problem ${e}");
+            // Stand alone object.. Save it!
+            log.debug("Saving stand alone reference object");
+            if ( new_obj.save(flush:true, failOnError:true) ) {
+              log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})");
             }
-          }
-        }
-        else if ( params.__addToColl ) {
-          contextObj[params.__addToColl].add(new_obj)
-          log.debug("Saving ${new_obj}");
-
-          if ( new_obj.save(flush:true) ) {
-            log.debug("New Object Saved OK");
-          }
-          else {
-            new_obj.errors.each { e ->
-              log.debug("Problem ${e}");
+            else {
+              new_obj.errors.each { e ->
+                log.debug("Problem ${e}");
+              }
             }
           }
 
-          if ( contextObj.save(flush:true) ) {
-            log.debug("Context Object Saved OK");
-          }
-          else {
-            contextObj.errors.each { e ->
-              log.debug("Problem ${e}");
+          // Special combo processing
+          if ( ( new_obj != null ) &&
+              ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
+            log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
+            new_obj.hasByCombo.keySet().each { hbc ->
+              log.debug("Testing ${hbc} -> ${params[hbc]}");
+              if ( params[hbc] ) {
+                log.debug("Setting ${hbc} to ${params[hbc]}");
+                new_obj[hbc] = resolveOID2(params[hbc])
+              }
             }
+            new_obj.save(flush:true, failOnError:true)
           }
         }
         else {
-          // Stand alone object.. Save it!
-          log.debug("Saving stand alone reference object");
-          if ( new_obj.save(flush:true, failOnError:true) ) {
-            log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})");
-          }
-          else {
-            new_obj.errors.each { e ->
-              log.debug("Problem ${e}");
-            }
-          }
-        }
-
-        // Special combo processing
-        if ( ( new_obj != null ) &&
-             ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
-          log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
-          new_obj.hasByCombo.keySet().each { hbc ->
-            log.debug("Testing ${hbc} -> ${params[hbc]}");
-            if ( params[hbc] ) {
-              log.debug("Setting ${hbc} to ${params[hbc]}");
-              new_obj[hbc] = resolveOID2(params[hbc])
-            }
-          }
-          new_obj.save(flush:true, failOnError:true)
+          log.debug("could not add to collection!")
+          flash.message = "Unable to add component!"
         }
       }
       else if (!contextObj) {
@@ -356,10 +376,10 @@ class AjaxSupportController {
             if (item_to_remove[hbc]==contextObj) {
               log.debug("context found");
               //item_to_remove[hbc]=resolveOID2(null)
-              item_to_remove.deleteParent();
-              log.debug("${item_to_remove.children}")
-              log.debug("${item_to_remove.heading}")
-              log.debug("${item_to_remove.parent}")
+              if(item_to_remove.respondsTo('deleteParent')) {
+                log.debug("deleteParent()")
+                item_to_remove.deleteParent();
+              }
               log.debug("tried removal: "+item_to_remove[hbc]);
             }
           }
@@ -628,7 +648,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addIdentifier() {
-    log.debug("${params}");
+    log.debug("addIdentifier - ${params}");
     // Check identifier namespace present, and identifier value valid for that namespace
     if ( ( params.identifierNamespace?.length() > 0 ) &&
          ( params.identifierValue?.length() > 0 ) &&
@@ -639,6 +659,7 @@ class AjaxSupportController {
         // Lookup or create Identifier
         def identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
 
+        log.debug("Got ID: ${identifier_instance}")
         // Link if not existing
         owner.ids.add(identifier_instance);
 

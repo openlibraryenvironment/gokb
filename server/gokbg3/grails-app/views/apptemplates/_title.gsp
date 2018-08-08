@@ -3,10 +3,15 @@
     <g:annotatedLabel owner="${d}" property="name">Title</g:annotatedLabel>
   </dt>
   <dd style="max-width:60%">
-    <div>
-      ${d.name}<br/>
-      <span style="white-space:nowrap;">(Modify title through <i>Alternate Names</i> below)</span>
-    </div>
+    <g:if test="${displayobj?.id != null}">
+      <div>
+        ${d.name}<br/>
+        <span style="white-space:nowrap;">(Modify title through <i>Alternate Names</i> below)</span>
+      </div>
+    </g:if>
+    <g:else>
+      <g:xEditable class="ipe" owner="${d}" field="name" />
+    </g:else>
   </dd>
 
   <dt>
@@ -395,16 +400,15 @@
     }
   }
 
-
-  var hash = window.location.hash;
-  hash && $('ul.nav a[href="' + hash + '"]').tab('show');
+  var hash = location.hash;
+  hash && $('ul.nav a[href="' + hash + '"]');
 
   $('.nav-tabs a').click(function (e) {
-    $(this).tab('show');
     var scrollmem = $('body').scrollTop();
     window.location.hash = this.hash;
     $('html,body').scrollTop(scrollmem);
   });
+
 
 
 </asset:script>

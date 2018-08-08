@@ -57,6 +57,10 @@ class User extends Party {
     password column: '`password`'
   }
 
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
+
   Set<Role> getAuthorities() {
     UserRole.findAllByUser(this).collect { it.role } as Set
   }
@@ -124,7 +128,7 @@ class User extends Party {
   @Override
   public boolean equals(Object obj) {
 
-    log.debug("USER::equals ${obj?.class.name} :: ${obj}")
+    log.debug("USER::equals ${obj?.class?.name} :: ${obj}")
     if ( obj != null ) {
 
       def o = obj

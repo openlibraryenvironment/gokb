@@ -5,18 +5,7 @@ grails.plugin.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.Use
 grails.plugin.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
 grails.plugin.springsecurity.authority.className = 'org.gokb.cred.Role'
 
-//Enable Basic Auth Filter
-grails.plugin.springsecurity.useBasicAuth = true
-grails.plugin.springsecurity.basic.realmName = "GOKb API Authentication Required"
-//Exclude normal controllers from basic auth filter. Just the JSON API is included
-
 grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKb<no-reply@gokb.org>"
-
-grails.plugin.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.org>"
-grails.plugin.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
-grails.plugin.springsecurity.ui.register.defaultRoleNames = [
-  "ROLE_USER"
-]
 
 grails.mime.file.extensions=false
 
@@ -25,25 +14,14 @@ grails.gorm.default.mapping = {
 }
 grails.plugin.springsecurity.ui.register.postRegisterUrl = '/public/index'
 
-// grails.plugins.auditLog {
-//
-//   auditDomainClassName = "org.gokb.cred.AuditLogEvent"
-//
-//   actorClosure = { request, session ->
-//
-//     if (request.applicationContext.springSecurityService.principal instanceof java.lang.String){
-//       return request.applicationContext.springSecurityService.principal
-//     }
-//
-//     def username = request.applicationContext.springSecurityService.principal?.username
-//
-//     if (SpringSecurityUtils.isSwitched()){
-//       username = SpringSecurityUtils.switchedUserOriginalUsername+" AS "+username
-//     }
-//
-//     return username
-//   }
-// }
+grails {
+    plugin {
+        auditLog {
+            auditDomainClassName = "org.gokb.cred.AuditLogEvent"
+            logFullClassName = false
+        }
+    }
+}
 
 grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/login/auth',          filters: 'none'],

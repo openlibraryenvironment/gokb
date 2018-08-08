@@ -32,7 +32,7 @@ class PackageService {
 '''
   */
 
-
+  def sessionFactory
   ComponentLookupService componentLookupService
   
   /**
@@ -115,7 +115,7 @@ class PackageService {
   /**
    * Method to update all Master list type packages.
    */
-  def updateAllMasters(delta = true) {
+  def synchronized updateAllMasters(delta = true) {
 
     // Create the criteria.
     getAllProviders().each { Org pr ->
@@ -123,9 +123,8 @@ class PackageService {
         updateMasterFor (pr.id, delta)
       }.curry(pr.id))
     }
+    return new Date();
   }
-  
-  def sessionFactory
 
   private def cleanUpGorm() {
     log.debug ("Cleaning up GORM")
@@ -349,5 +348,10 @@ class PackageService {
 
     log.debug("Found ${results.size()} providers.")
     results
+  }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
+    log.debug("Destroy");
   }
 }

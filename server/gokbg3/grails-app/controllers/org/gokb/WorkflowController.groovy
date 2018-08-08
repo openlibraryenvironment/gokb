@@ -128,7 +128,7 @@ class WorkflowController {
                     log.error("${t}")
                   }
                 }
-                target.save(flush: true, failOnError:true)
+//                 target.save(flush: true, failOnError:true)
                 log.debug("After transaction: ${target?.status}")
               }
 
@@ -1280,6 +1280,7 @@ class WorkflowController {
       }else{
           log.debug("Found existing variant name: ${current_name_as_variant}")
       }
+      variant.variantType = RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Authorized')
       variant.owner.name = variant.variantName
       variant.owner.save(flush:true);
     }
@@ -1425,7 +1426,7 @@ class WorkflowController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteTitleHistoryEvent() {
-    log.debug(params);
+
     def result = [:]
     result.ref=request.getHeader('referer')
     def he = ComponentHistoryEvent.get(params.id)
@@ -1670,7 +1671,7 @@ class WorkflowController {
     redirect(url: result.ref)
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   def deprecateOrg() {
     def result=[:]
     log.debug("Params: ${params}");
@@ -1692,7 +1693,7 @@ class WorkflowController {
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   def deprecateDeleteOrg() {
     log.debug("deprecateDeleteOrg ${params}");
     def result=[:]
@@ -1705,7 +1706,7 @@ class WorkflowController {
     result
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY'])
   def deleteCombo() {
     Combo c = Combo.get(params.id);
     c.delete(flush:true);

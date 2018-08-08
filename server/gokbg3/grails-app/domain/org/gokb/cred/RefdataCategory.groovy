@@ -36,6 +36,10 @@ class RefdataCategory {
     label(nullable:true, blank:true)
   }
 
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
+
   static RefdataValue lookupOrCreate(category_name, value) {
     return lookupOrCreate(category_name,value,null);
   }

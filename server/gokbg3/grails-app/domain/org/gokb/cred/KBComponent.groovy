@@ -7,6 +7,8 @@ import javax.persistence.Transient
 
 import org.grails.datastore.mapping.model.PersistentEntity
 import org.grails.datastore.mapping.model.PersistentProperty
+import grails.plugins.orm.auditable.Auditable
+import grails.plugins.orm.auditable.AuditEventType
 import org.gokb.GOKbTextUtils
 
 /**
@@ -15,7 +17,7 @@ import org.gokb.GOKbTextUtils
 
 @Log4j
 @grails.gorm.dirty.checking.DirtyCheck
-abstract class KBComponent {
+abstract class KBComponent implements Auditable {
 
   static final String RD_STATUS         = "KBComponent.Status"
   static final String STATUS_CURRENT       = "Current"
@@ -36,14 +38,40 @@ where cp.owner = :c
   and ( ( startDate is null OR startDate <= :d ) and ( endDate is null OR endDate > :d ) )
 '''
 
-  static auditable = true
-
   private static refdataDefaults = [
     "status"     : STATUS_CURRENT,
     "editStatus"  : EDIT_STATUS_IN_PROGRESS
   ]
 
   private static final Map fullDefaultsForClass = [:]
+
+  @Override
+  Collection<AuditEventType> getLogIgnoreEvents() {
+      [AuditEventType.INSERT, AuditEventType.DELETE]
+  }
+
+  @Override
+  Collection<String> getLogExcluded() {
+      [
+        'version',
+        'lastUpdated',
+        'lastUpdatedBy',
+        'bucketHash',
+        'componentHash',
+        'componentDiscriminator',
+        'normname',
+        'shortcode',
+        'systemComponent',
+        'insertBenchmark',
+        'componentHash',
+        'incomingCombos',
+        'outgoingCombos'
+      ]
+  }
+
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
 
   @Transient
   private def springSecurityService
@@ -615,7 +643,6 @@ where cp.owner = :c
 
     // Ensure any defaults defined get set.
     ensureDefaults()
-
   }
 
   def afterInsert() {
@@ -727,9 +754,9 @@ where cp.owner = :c
     save(failOnError:true)
   }
 
-  public void retire () {
+  public void retire (def context = null) {
     log.debug("KBComponent::retire");
-    // Set the status to deleted.
+    // Set the status to retired.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
     save(failOnError:true)
   }
@@ -846,7 +873,7 @@ where cp.owner = :c
   }
 
   public String toString() {
-    "${name?:''} (${getNiceName()} ${id})".toString()
+    "${name?:''} (${getNiceName()} ${this.id})".toString()
   }
 
   /**

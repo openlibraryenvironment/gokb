@@ -288,7 +288,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           )
         }
         if (tipp_dto.status && tipp_dto.status == "Retired") {
-          tipp.status = status_retired
+          tipp.retire()
 
           if ( !tipp_dto.accessEndDate ) {
             tipp.accessEndDate = new Date()

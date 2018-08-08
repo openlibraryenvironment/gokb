@@ -16,29 +16,34 @@ class JournalInstance extends TitleInstance {
   static constraints = {
   }
 
+  @Override
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
+
   /**
    * Auditable plugin, on change
    *
    * See if properties that might impact the mapping of this instance to a work have changed.
    * If so, fire the appropriate event to cause a remap. 
    */
-  @Transient
-  def onChange = { oldMap,newMap ->
 
+  def afterUpdate() {
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
-    if ( ( oldMap.name != newMap.name ) ||
-         ( oldMap.componentDiscriminator != newMap.componentDiscriminator ) ) {
-      submitRemapWorkTask(newMap);
+    if ( ( hasChanged('name') ) ||
+         ( hasChanged('componentDiscriminator') )) {
+      submitRemapWorkTask();
     }
   }
 
 
   // audit plugin, onSave fires on a new item - we always want to map a work in this case, so directly call and wait
-  @Transient onSave = { newMap ->
-    submitRemapWorkTask(newMap);
+  def afterInsert() {
+
+    submitRemapWorkTask();
   }
 
-  def submitRemapWorkTask(newMap) {
+  def submitRemapWorkTask() {
     log.debug("BookInstance::submitRemapWorkTask");
     def tls = grailsApplication.mainContext.getBean("titleLookupService")
     def map_work_task = task {

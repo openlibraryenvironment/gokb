@@ -71,7 +71,7 @@
                 <td>
                   <ul>
                     <g:each in="${t.title.ids}" var="id">
-                      <li<strong>${id.namespace.value}</strong> : ${id.value}</li>
+                      <li><strong>${id.namespace.value}</strong> : ${id.value}</li>
                     </g:each>
                   </ul>
                 </th>

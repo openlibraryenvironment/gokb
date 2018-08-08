@@ -407,7 +407,7 @@ class PackagesController {
           def session = sessionFactory.getCurrentSession()
           def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
           query.setReadOnly(true)
-          query.setParameter('p',pkg.getId(), Hibernate.LONG)
+          query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
 
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
@@ -499,7 +499,7 @@ class PackagesController {
           def session = sessionFactory.getCurrentSession()
           def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
           query.setReadOnly(true)
-          query.setParameter('p',pkg.getId(), Hibernate.LONG)
+          query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
 

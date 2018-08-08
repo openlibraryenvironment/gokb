@@ -1,8 +1,9 @@
 package org.gokb.cred
 
 import org.hibernate.proxy.HibernateProxy
+import grails.plugins.orm.auditable.Auditable
 
-class RefdataValue {
+class RefdataValue implements Auditable {
 
   String value
   String icon
@@ -28,6 +29,11 @@ class RefdataValue {
     useInstead(nullable:true, blank:false)
     sortKey(nullable:true, blank:false)
   }
+
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
+
 
   @Override
   public String toString() {

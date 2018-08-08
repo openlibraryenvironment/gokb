@@ -391,7 +391,7 @@ class TitleLookupService {
 
       default :
         // Multiple matches.
-        log.debug ("Title class one identifier lookup yielded ${matches.size()} matches - ${matches.collect{it.id}}.")
+        log.debug ("Title class one identifier lookup yielded ${matches.size()} matches - ${matches}.")
         def all_matched = []
 
         matches.each { mti ->
@@ -429,12 +429,10 @@ class TitleLookupService {
               the_title.ids = []
             }
 
-            def matchedIds = matches.collect { cti -> cti.id }
-
             ReviewRequest.raise(
               the_title,
               "New TI created.",
-              "Multiple TitleInstances ${matchedIds} were matched on one identifier, but none matched for all given IDs.",
+              "Multiple TitleInstances ${matches} were matched on one identifier, but none matched for all given IDs.",
               user,
               project
             )

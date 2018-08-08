@@ -42,34 +42,38 @@ class BookInstance extends TitleInstance {
          summaryOfContent (nullable:true, blank:false)
   }
 
+  @Override
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
+
   /**
    * Auditable plugin, on change
    *
    * See if properties that might impact the mapping of this instance to a work have changed.
    * If so, fire the appropriate event to cause a remap. 
    */
-  @Transient
-  def onChange = { oldMap,newMap ->
+
+  def afterUpdate() {
 
     log.debug("BookInstance::onChange handler");
     println("onChange handler");
 
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
-    if ( ( oldMap.name != newMap.name ) ||
-         ( oldMap.editionStatement != newMap.editionStatement ) ||
-         ( oldMap.componentDiscriminator != newMap.componentDiscriminator ) ) {
+    if ( ( hasChanged('name') ) ||
+         ( hasChanged('editionStatement') ) ||
+         ( hasChanged('componentDiscriminator')) ) {
       log.debug("BookInstance::onChange detected an update to properties that might change the work mapping. Looking up");
-      submitRemapWorkTask(newMap);
+      submitRemapWorkTask();
     }
   }
 
-  @Transient
-  def onSave = { newMap ->  
+  def afterInsert() {
     log.debug("BookInstance::onSave handler");
-    submitRemapWorkTask(newMap);
+    submitRemapWorkTask();
   }
 
-  def submitRemapWorkTask(newMap) {
+  def submitRemapWorkTask() {
     log.debug("BookInstance::submitRemapWorkTask");
     def tls = grailsApplication.mainContext.getBean("titleLookupService")
     def map_work_task = task {

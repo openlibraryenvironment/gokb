@@ -22,9 +22,41 @@
           <td style="white-space:nowrap;">${hl.actor}</td>
           <td style="white-space:nowrap;">${hl.dateCreated}</td>
           <td style="white-space:nowrap;">${hl.eventName}</td>
-          <td style="white-space:nowrap;">${hl.propertyName}</td>
-          <td>${hl.oldValue}</td>
-          <td>${hl.newValue}</td>
+          <td style="white-space:nowrap;">
+            <g:if test="${hl.className == 'Combo'}">
+              <g:set var="cobj" value="${org.gokb.cred.Combo.get(Long.valueOf(hl.persistedObjectId.split(':')[1]))}" />
+              ${cobj?.type?.value}
+            </g:if>
+            <g:else>
+              ${hl.propertyName}
+            </g:else>
+          </td>
+          <td>
+            <g:if test="${hl.oldValue?.startsWith('[id:org')}">
+              <g:set var="valuePart" value="${hl.oldValue.split(']')[1]}" />
+              <g:set var="oidPart" value ="${hl.oldValue.split(']')[0].substring(4)}" />
+              <g:link controller="resource" action="show" id="${oidPart}">${valuePart ?: oidPart}</g:link>
+            </g:if>
+            <g:elseif test="${hl.oldValue?.startsWith('[id:')}">
+              ${hl.oldValue.split(']')[1]}
+            </g:elseif>
+            <g:else>
+              ${hl.oldValue}
+            </g:else>
+          </td>
+          <td>
+            <g:if test="${hl.newValue?.startsWith('[id:org')}">
+              <g:set var="valuePart" value="${hl.newValue.split(']')[1]}" />
+              <g:set var="oidPart" value ="${hl.newValue.split(']')[0].substring(4)}" />
+              <g:link controller="resource" action="show" id="${oidPart}">${valuePart ?: oidPart}</g:link>
+            </g:if>
+            <g:elseif test="${hl.newValue?.startsWith('[id:')}">
+              ${hl.newValue.split(']')[1]}
+            </g:elseif>
+            <g:else>
+              ${hl.newValue}
+            </g:else>
+          </td>
         </tr>
       </g:each>
     </tbody>

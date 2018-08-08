@@ -17,18 +17,16 @@
                <div class="form-group">
                  <label for="username"><g:message code='springSecurity.login.username.label'/></label>
                  <input type="text" class="form-control" id="username" aria-describedby="usernameHelp" placeholder="Username" name="${securityConfig.apf.usernameParameter}">
-                 <small id="usernameHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
                </div>
 
                <div class="form-group">
                  <label for="password"><g:message code='springSecurity.login.password.label'/></label>
                  <input type="password" class="form-control" id="password" aria-describedby="passwordHelp" placeholder="" name="${securityConfig.apf.passwordParameter}">
-                 <small id="passwordHelp" class="form-text text-muted">Password.</small>
                </div>
 
                <!-- input type="checkbox" class="checkbox" name="${securityConfig.rememberMe.parameter}" id="remember_me" checked="checked"-->
                <!-- label for='remember_me'><g:message code='spring.security.ui.login.rememberme'/></label -->
-               <button type="submit">Login</button>
+               <button type="submit">Login</button> <small style="margin-left:20px;"><g:link controller="register" action="forgotPassword"><g:message code="spring.security.ui.login.forgotPassword" /></g:link></small>
             </g:form>
       </div>
     </div>

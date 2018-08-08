@@ -5,6 +5,16 @@ class Identifier extends KBComponent {
   IdentifierNamespace namespace
   String value
 
+  @Override
+  Collection<String> getLogIncluded() {
+      ['value']
+  }
+
+  @Override
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
+
   static constraints = {
     namespace (nullable:true, blank:true)
     value (nullable:true, blank:true)
@@ -78,5 +88,10 @@ class Identifier extends KBComponent {
   @Override
   public String getName() {
     return value
+  }
+
+  @Override
+  public String toString() {
+    "${namespace.value}:${value} (${getNiceName()} ${id})".toString()
   }
 }

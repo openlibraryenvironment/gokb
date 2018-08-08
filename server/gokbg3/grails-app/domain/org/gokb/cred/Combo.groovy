@@ -1,4 +1,6 @@
 package org.gokb.cred
+import grails.plugins.orm.auditable.Auditable
+import javax.persistence.Transient
 
 /**
  * @author sosguthorpe
@@ -6,7 +8,10 @@ package org.gokb.cred
  */
 
 
-class Combo {
+class Combo implements Auditable {
+
+  @Transient
+  private def springSecurityService
   
   static final String RD_STATUS = "Combo.Status"
   static final String RD_TYPE = "Combo.Type"
@@ -25,6 +30,9 @@ class Combo {
   
   // The Combos without an end date are the "current" values.
   Date endDate
+
+  Date dateCreated
+  Date lastUpdated
 
   // Participant 1 - One of these
   KBComponent fromComponent
@@ -50,6 +58,11 @@ class Combo {
     toComponent(nullable:false, blank:false)
     endDate(nullable:true, blank:false)
     startDate(nullable:true, blank:false)
+  }
+
+  @Override
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
   }
   
   public Date expire (Date endDate = null) {

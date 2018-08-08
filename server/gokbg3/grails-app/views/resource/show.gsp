@@ -18,14 +18,14 @@
   <div class="container-fluid">
     <div class="navbar-header">
       <span class="navbar-brand">
-        <g:if test="displayobj?.id != null">
+        <g:if test="${displayobj?.id != null}">
           ${displayobj?.getNiceName() ?: 'Component'} : ${displayobj?.id}
           <g:if test="${ displayobj?.respondsTo('getDisplayName') && displayobj.getDisplayName()}"> - <strong>${displayobj.getDisplayName()}</strong></g:if>
           <g:if test="${ !displayobj?.isEditable() }"> <small><i>&lt;Read only&gt;</i></small> </g:if>
         </g:if>
-        <g:else>
+        <g:elseif test="${displayobj}">
           Create New ${displayobj?.getNiceName() ?: 'Component'}
-        </g:else>
+        </g:elseif>
       </span>
     </div>
     <g:if test="${displayobj}">

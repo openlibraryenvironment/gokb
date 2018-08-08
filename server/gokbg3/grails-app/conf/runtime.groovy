@@ -475,21 +475,6 @@ validation.regex.kbartcoveragedepth = "^(\\Qfulltext\\E|\\Qselected articles\\E|
 //   class_one_cols[name] = "${IngestService.IDENTIFIER_PREFIX}${name}"
 // }
 
-auditLog {
-
-  auditDomainClassName = "org.gokb.cred.AuditLogEvent"
-
-  actorClosure = { request, session ->
-
-    if (request.applicationContext.springSecurityService.principal instanceof java.lang.String){
-      return request.applicationContext.springSecurityService.principal
-    }
-
-    def username = request.applicationContext.springSecurityService.principal?.username
-
-    return username
-  }
-}
 grails.gorm.default.constraints = {
   '*'(nullable: true, blank:false)
 }
@@ -633,8 +618,4 @@ grails {
 }
 
 fileViewer.grails.views.gsp.codecs.expression = "none"
-
-
-// Added by the Audit-Logging plugin:
-// auditLog.auditDomainClassName = 'org.gokb.cred.AuditLogEvent'
 

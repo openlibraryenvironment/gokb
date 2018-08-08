@@ -480,11 +480,17 @@ select tipp.id,
                        
       use( TimeCategory ) {
         changes.each {
-          if ( it.accessEndDate || it.isDeleted() ){
-            result.add([it,it.accessEndDate ?: it.lastUpdated, it.accessEndDate ? 'Removed (accessEndDate)' : 'Deleted (status)'])
+          if ( it.isDeleted() ){
+            result.add([it, it.lastUpdated, 'Deleted (status)'])
           }
-          if ( it.lastUpdated <= it.dateCreated + 5.seconds || it.accessStartDate ){
-            result.add([it, it.accessStartDate ?: it.dateCreated, it.accessStartDate ? 'Added (accessStartDate)' : 'Added (dateCreated)'])
+          else if ( it.isRetired() ){
+            result.add([it,it.lastUpdated, it.accessEndDate ? "Retired (${it.accessEndDate})" : 'Retired (status)'])
+          }
+          else if ( it.lastUpdated <= it.dateCreated + 1.minute ){
+            result.add([it,it.dateCreated, it.accessStartDate ? "Added (${it.accessStartDate})" : 'Newly Added'])
+          }
+          else {
+            result.add([it,it.lastUpdated, 'Updated'])
           }
         }
       }

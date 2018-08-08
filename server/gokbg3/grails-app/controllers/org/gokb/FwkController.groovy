@@ -15,19 +15,35 @@ class FwkController {
     def obj = resolveOID2(params.id)
     
     if(obj) {
-      def qry_params = [obj.getClass().getSimpleName(),Objects.toString(obj.id, null)];
-      log.debug("Params: ${qry_params}")
 
       result.max = params.max ?: 20;
       result.offset = params.offset ?: 0;
-      log.debug("${AuditLogEvent.class.name}")
 
-      result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className=? and e.persistedObjectId=? order by id desc", 
-                                                                              qry_params, 
-                                                                              [max:result.max, offset:result.offset]);
+      def related_combos = Combo.executeQuery("select c.id from Combo as c where c.fromComponent = :obj OR c.toComponent = :obj", [obj: obj]).collect { "org.gokb.cred.Combo:" + Objects.toString(it, null) }
 
-      result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className=? and e.persistedObjectId=?",
-                                                                              qry_params)[0];
+      def qry_params = [ocn: obj.getClass().getSimpleName(), oid: params.id];
+
+      if (related_combos?.size() == 0) {
+        result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid order by id desc",
+                                                                        qry_params,
+                                                                        [max:result.max,offset:result.offset]);
+        result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid",
+                                                                                qry_params)[0];
+      }
+      else{
+        qry_params.put('oidt', "%" + params.id + "]%")
+        qry_params.put('comboids', related_combos)
+
+        result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid OR (e.className = 'Combo' and e.persistedObjectId IN (:comboids) and (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent' OR e.eventName = 'UPDATE') and e.newValue NOT LIKE :oidt ) order by id desc",
+                                                                        qry_params,
+                                                                        [max:result.max,offset:result.offset]);
+
+        result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid OR (e.className = 'Combo' and e.persistedObjectId IN (:comboids) and (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent' OR e.eventName = 'UPDATE') and e.newValue NOT LIKE :oidt)",
+                                                                                qry_params)[0];
+        }
+
+
+
     }else{
       log.error("resolve OID failed to identify a domain class. Input was ${params.id}")
     }
