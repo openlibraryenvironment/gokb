@@ -684,6 +684,10 @@ class ApiController {
           singleParams['_id'] = v
         }
 
+        else if ( k == "uuid" v instanceof String ) {
+          singleParams['uuid'] = v
+        }
+
         else if (!other_fields.contains(k)){
           unknown_fields.add(k)
         }

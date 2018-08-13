@@ -54,6 +54,7 @@ class FTUpdateService {
   
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
         result.name = kbc.name
 //         result.publisher = kbc.currentPublisher?.name
         result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
@@ -83,6 +84,7 @@ class FTUpdateService {
   
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
         result.name = kbc.name
         result.updater='journal'
         // result.publisher = kbc.currentPublisher?.name
@@ -111,6 +113,7 @@ class FTUpdateService {
 
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
         result.name = kbc.name
         // result.publisher = kbc.currentPublisher?.name
         result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
@@ -138,6 +141,7 @@ class FTUpdateService {
         def result = null
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
         result.name = kbc.name
         result.description = kbc.description
         result.descriptionURL = kbc.descriptionURL
@@ -175,6 +179,7 @@ class FTUpdateService {
         def result = null
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
 
         result.curatoryGroups = []
         kbc.pkg?.curatoryGroups?.each { cg ->
@@ -195,6 +200,7 @@ class FTUpdateService {
       updateES(esclient, org.gokb.cred.Org.class) { kbc ->
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
         result.name = kbc.name
         result.altname = []
         result.updater='org'
@@ -222,6 +228,7 @@ class FTUpdateService {
       updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
         result.name = kbc.name
         result.updater='platform'
 

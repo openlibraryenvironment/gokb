@@ -57,6 +57,7 @@ class Platform extends KBComponent {
     id:'platforms',
     textDescription:'Platform repository for GOKb',
     query:" from Platform as o ",
+    curators: 'Platform.CuratoryGroups',
     statusFilter: ["Deleted"]
   ]
 

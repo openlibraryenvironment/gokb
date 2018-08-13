@@ -336,6 +336,7 @@ select tipp.id,
     id:'packages',
     textDescription:'Package repository for GOKb',
     query:" from Package as o ",
+    curators: 'Package.CuratoryGroups',
     pageSize:3
   ]
 
@@ -355,7 +356,7 @@ select tipp.id,
   @Transient
   def toGoKBXml(builder, attr) {
 
-    log.debug("toGoKBXml...");
+    log.debug("toGoKBXml... ${this.class.name}:${id}");
 
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
@@ -366,7 +367,7 @@ select tipp.id,
     def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps');
     def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
 
-    log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
+    // log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
 
     // Get the tipps manually rather than iterating over the collection - For better management
     def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true]); // , fetchSize:250]);

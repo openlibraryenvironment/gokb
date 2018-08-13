@@ -253,6 +253,11 @@ where cp.owner = :c
   // Canonical name field - title for a title instance, name for an org, etc, etc, etc
 
   /**
+   * UUID
+   */
+  String uuid = UUID.randomUUID().toString()
+
+  /**
    * Generic name for the component. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
    * conventions when trying to decide what to map to this property in a subclass. The name should be a string that reasonably identifies this
    * object when placed in a list of other components.
@@ -311,6 +316,7 @@ where cp.owner = :c
   Set outgoingCombos = []
   Set incomingCombos = []
   Set reviewRequests = []
+  Set variantNames = []
 
   // Org provOrg
   // String provUpdateFrequency
@@ -383,6 +389,7 @@ where cp.owner = :c
   static mapping = {
     tablePerHierarchy false
     id column:'kbc_id'
+    uuid column:'kbc_uuid', type:'text'
     version column:'kbc_version'
     name column:'kbc_name', type:'text', index:'kbc_name_idx'
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
@@ -438,6 +445,13 @@ where cp.owner = :c
       shortcode = generateShortcode(name)
     }
   }
+
+  protected def generateUuid () {
+    if (! uuid) {
+      uuid = UUID.randomUUID().toString()
+    }
+  }
+
 
   static def generateShortcode(String text) {
     def candidate = text.trim().replaceAll(" ","_")

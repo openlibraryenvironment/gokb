@@ -177,13 +177,15 @@
                 </tr>
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
-                      baseClass="org.gokb.cred.TitleInstance" /> <br />
+                      baseClass="org.gokb.cred.TitleInstance"
+                      filter1="Current" /> <br />
                     <button type="button"
                       onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
                     <button type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
                   <td></td>
                   <td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
-                      baseClass="org.gokb.cred.TitleInstance" /> <br />
+                      baseClass="org.gokb.cred.TitleInstance"
+                      filter1="Current" /> <br />
                     <button type="button"
                       onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
                     <button type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
