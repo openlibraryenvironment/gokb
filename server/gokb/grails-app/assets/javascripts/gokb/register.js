@@ -1,9 +1,0 @@
-//= require jquery/jquery.jgrowl
-//= require jquery/jquery.checkbox
-//= require jquery/jquery.date_input
-//= require jquery/jquery.positionBy
-//= require jquery/jquery.bgiframe
-//= require jquery/jquery.jdMenu
-//= require jquery/jquery.dataTables.min
-//= require js/jquery-ui-1.10.3.custom.min
-//= require spring-security-ui
