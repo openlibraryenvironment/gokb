@@ -74,7 +74,7 @@
         <tr>
           <th></th>
           <g:each in="${qbeConfig.qbeResults}" var="c">
-            <th><g:if test="${c.sort}">
+            <th style="white-space:nowrap"><g:if test="${c.sort}">
                 <g:if test="${params.sort==c.sort && params.order=='asc'}">
                   <g:link params="${params+['sort':c.sort,order:'desc']}">
                     ${c.heading}

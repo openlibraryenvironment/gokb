@@ -3,10 +3,9 @@ package org.gokb.cred
 import javax.persistence.Transient
 import org.gokb.refine.RefineProject
 import grails.converters.JSON
+import grails.plugins.orm.auditable.Auditable
 
-class ReviewRequest {
-
-  static auditable = true
+class ReviewRequest implements Auditable {
 
   @Transient
   def springSecurityService
@@ -83,6 +82,10 @@ class ReviewRequest {
 
     // Just return the request.
     req
+  }
+
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
   }
 
   @Transient

@@ -490,6 +490,18 @@ class ApiController {
     render result as JSON
   }
 
+  /**
+   * suggest : Get a list of autocomplete suggestions from ES
+   *
+   * @param max : Define result size
+   * @param offset : Define offset
+   * @param from : Define offset
+   * @param q : Search term
+   * @param componentType : Restrict search to specific component type (Package, Org, Platform, BookInstance, JournalInstance, TIPP)
+   * @param role : Filter by Org role (only in context of componentType=Org)
+   * @return JSON Object
+  **/
+
   def suggest() {
     def result = [:]
     def esclient = ESWrapperService.getClient()
@@ -608,6 +620,26 @@ class ApiController {
     return null
   }
 
+  /**
+   * find : Query the Elasticsearch index
+   * @param max : Define result size
+   * @param offset : Define offset
+   * @param from : Define offset
+   * @param label : Search in name + variantNames
+   * @param name : Search in name
+   * @param altname : Search in variantNames
+   * @param id : Search by object ID ([classname]:[id])
+   * @param uuid : Search by component UUID
+   * @param identifier : Search for a linked external identifier ([identifier] or [namespace],[identifier])
+   * @param componentType : Filter by component Type (Package, Org, Platform, BookInstance, JournalInstance, TIPP)
+   * @param role : Filter by Org role (only in context of componentType=Org)
+   * @param linkedPackage : Filter by linked Package (only in context of componentType=TIPP)
+   * @param listStatus : Filter by title list status (only in context of componentType=Package)
+   * @param status : Filter by component status (Current, Expected, Retired, Deleted)
+   * @param linkedTitle : Filter by linked TitleInstance (only in context of componentType=TIPP)
+   * @param curatoryGroup : Filter by connected Curatory Group
+  **/
+
   def find() {
     def result = [:]
     def esclient = ESWrapperService.getClient()
@@ -684,7 +716,7 @@ class ApiController {
           singleParams['_id'] = v
         }
 
-        else if ( k == "uuid" v instanceof String ) {
+        else if ( k == "uuid" && v instanceof String ) {
           singleParams['uuid'] = v
         }
 

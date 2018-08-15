@@ -1508,7 +1508,7 @@ class TSVIngestionService {
         log.warn("Possible malformed last row");
       }
 
-      log.debug(result)
+      log.debug("${result}")
       // log.debug(new KBartRecord(result))
       //this is a cheat cos I don't get why springer files don't work!
       // results<<new KBartRecord(result)
@@ -1516,7 +1516,7 @@ class TSVIngestionService {
       nl=csv.readNext()
       rownum++
     }
-    log.debug(results)
+    log.debug("${results}")
     results
   }
 

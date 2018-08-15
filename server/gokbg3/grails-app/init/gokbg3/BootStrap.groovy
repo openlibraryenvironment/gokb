@@ -170,48 +170,20 @@ class BootStrap {
         log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}");
         kbc.generateNormname()
         kbc.save(flush:true, failOnError:true);
-        kbc.discard()
         ctr++
       }
       log.debug("${ctr} components updated");
 
     log.info("GoKB missing normalised identifiers");
 
-    log.debug("GOKb missing uuid check..")
-
-      def uid_ctr = 0
-      def skipctr = 0
-      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null and kbc.name is not null").each { kbc_id ->
-        KBComponent.withNewTransaction {
-          try {
-            KBComponent comp = KBComponent.get(kbc_id)
-            log.debug("Repair component with no uuid.. ${comp.class.name} ${comp.id} ${comp.name}")
-            comp.generateUuid()
-            comp.save(flush:true)
-            comp.discard()
-            ctr++
-          }
-          catch(Exception e){
-            log.debug("Skip component id ${kbc_id}")
-            skipctr++
-          }
-        }
+      def id_ctr = 0;
+      Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
+          Identifier i = Identifier.get(id_id)
+          i.generateNormname()
+          i.save(flush:true, failOnError:true)
+          id_ctr++
       }
-      log.debug("${ctr} components updated with uuid");
-
-      if (skipctr > 0) log.debug("${skipctr} components skipped when updating with uuid");
-
-      log.debug("GoKB missing normalised identifiers");
-
-    def id_ctr = 0;
-    Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
-        Identifier i = Identifier.get(id_id)
-        i.generateNormname()
-        i.save(flush:true, failOnError:true)
-        i.discard()
-        id_ctr++
-    }
-    log.debug("${id_ctr} identifiers updated");
+      log.debug("${id_ctr} identifiers updated");
 
     log.info("GoKB defaultSortKeys()");
     defaultSortKeys ()

@@ -43,6 +43,21 @@
             ${d.componentToReview?.displayName?:''}
           </g:manyToOneReferenceTypedown>
         </dd>
+        <g:if test="${d.additional?.otherComponents}">
+
+          <dt>
+            <g:annotatedLabel owner="${d}" property="otherOids">Other Relevant Components</g:annotatedLabel>
+          </dt>
+          <dd>
+            <ul>
+              <g:each in="${d.additional?.otherComponents}" var="oc">
+                <li>
+                  <g:link controller="resource" action="show" id="${oc.oid}">${oc.name}</g:link>
+                </li>
+              </g:each>
+            </ul>
+          <dd>
+        </g:if>
         <dt>
           <g:annotatedLabel owner="${d}" property="refineProject">Refine Project</g:annotatedLabel>
         </dt>
@@ -74,8 +89,7 @@
           &nbsp;Additional fields will be available once the record is saved
         </g:else>
 
-        <g:if test="${d.additional}">
-
+        <g:if test="${d.additional?.problems}">
           <g:form name="AddRules" controller="workflow" action="addToRulebase">
             <input type="hidden" name="sourceName" value="${d.additional.sourceName}"/>
             <input type="hidden" name="sourceId" value="${d.additional.sourceId}"/>

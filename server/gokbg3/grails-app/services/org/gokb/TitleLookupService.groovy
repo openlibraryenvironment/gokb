@@ -3,6 +3,7 @@ package org.gokb
 import org.gokb.cred.*
 
 import com.k_int.ClassUtils
+import grails.converters.JSON
 
 class TitleLookupService {
 
@@ -350,12 +351,21 @@ class TitleLookupService {
                   id_mm.add(id_map)
                 }
 
+                def additionalInfo = [:]
+
+                additionalInfo.otherComponents = []
+
+                matches.each { tlm ->
+                  additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                }
+
                 ReviewRequest.raise(
                   matches[0],
                   "Identifier mismatch.",
                   "Title ${matches[0]} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
                   user,
-                  project
+                  project,
+                  (additionalInfo as JSON).toString()
                 )
               }
             }
@@ -373,12 +383,23 @@ class TitleLookupService {
                   the_title.normname = KBComponent.generateNormname(metadata.title)
                   the_title.ids = []
                 }
+
+                def additionalInfo = [:]
+
+                additionalInfo.otherComponents = []
+
+                matches.each { tlm ->
+                  additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                }
+
+
                 ReviewRequest.raise(
                   the_title,
                   "New TI created.",
                   "TitleInstance ${matches[0].id} ${matches[0].name ? '('+ matches[0].name +')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
                   user,
-                  project
+                  project,
+                  (additionalInfo as JSON).toString()
                 )
               }else{
                 // Now we can examine the text of the title.
@@ -429,12 +450,21 @@ class TitleLookupService {
               the_title.ids = []
             }
 
+            def additionalInfo = [:]
+
+            additionalInfo.otherComponents = []
+
+            matches.each { tlm ->
+              additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+            }
+
             ReviewRequest.raise(
               the_title,
               "New TI created.",
-              "Multiple TitleInstances ${matches} were matched on one identifier, but none matched for all given IDs.",
+              "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
               user,
-              project
+              project,
+              (additionalInfo as JSON).toString()
             )
             break;
 
@@ -588,7 +618,6 @@ class TitleLookupService {
 
     ti
   }
-
 
   private TitleInstance attemptBucketMatch (String title) {
     def t = null;

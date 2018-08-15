@@ -113,11 +113,15 @@ class SearchController {
           }
   
           // log.debug("Trying to display record ${recno}");
-  
+
           result.displayobj = result.recset.get(recno)
           
           def display_start_time = System.currentTimeMillis();
           if ( result.displayobj != null ) {
+
+            if ( result.displayobj.class.name == "org.gokb.cred.ComponentWatch"  && result.displayobj.component?.id ) {
+              result.displayobj = KBComponent.get(result.displayobj.component?.id)
+            }
   
             result.displayobjclassname = result.displayobj.class.name
             result.displaytemplate = displayTemplateService.getTemplateInfo(result.displayobjclassname)

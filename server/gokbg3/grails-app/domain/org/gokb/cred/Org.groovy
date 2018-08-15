@@ -20,7 +20,7 @@ class Org extends KBComponent {
     providedPackages  : Package,
     children    : Org,
     'previous'  : Org,
-    imprints  : Imprint,
+    ownedImprints  : Imprint,
     publishedTitles    : TitleInstance,
     issuedTitles    : TitleInstance,
     providedPlatforms  : Platform,
