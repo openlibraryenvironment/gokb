@@ -846,7 +846,7 @@ where cp.owner = :c
 //       log.debug("Qry: ${hql_query}, Params:${hql_params} : result.size=${combos?.size()}");
     }
     else {
-      log.error("This.id == null");
+      log.debug("This.id == null");
     }
 
     return combos

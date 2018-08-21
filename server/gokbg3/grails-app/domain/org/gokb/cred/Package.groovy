@@ -114,35 +114,37 @@ class Package extends KBComponent {
   public getTitles(def onlyCurrent = true) {
     def all_titles = null
 
-    if (onlyCurrent) {
-      def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
-      def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
-      def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
+    if (this.id) {
+      if (onlyCurrent) {
+        def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
+        def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+        def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
 
-      all_titles = TitleInstancePackagePlatform.executeQuery('''select distinct title
-        from TitleInstance as title,
-          Combo as pkgCombo,
-          Combo as titleCombo,
-          TitleInstancePackagePlatform as tipp
-        where pkgCombo.toComponent=tipp
-          and pkgCombo.fromComponent=?
-          and titleCombo.toComponent=tipp
-          and titleCombo.fromComponent=title
-          and tipp.status = ?
-          and title.status = ?'''
-          ,[this,refdata_current,refdata_current]);
-    }
-    else {
-      all_titles = TitleInstancePackagePlatform.executeQuery('''select distinct title
-        from TitleInstance as title,
-          Combo as pkgCombo,
-          Combo as titleCombo,
-          TitleInstancePackagePlatform as tipp
-        where pkgCombo.toComponent=tipp
-          and pkgCombo.fromComponent=?
-          and titleCombo.toComponent=tipp
-          and titleCombo.fromComponent=title'''
-          ,[this]);
+        all_titles = TitleInstance.executeQuery('''select distinct title
+          from TitleInstance as title,
+            Combo as pkgCombo,
+            Combo as titleCombo,
+            TitleInstancePackagePlatform as tipp
+          where pkgCombo.toComponent=tipp
+            and pkgCombo.fromComponent=?
+            and titleCombo.toComponent=tipp
+            and titleCombo.fromComponent=title
+            and tipp.status = ?
+            and title.status = ?'''
+            ,[this,refdata_current,refdata_current]);
+      }
+      else {
+        all_titles = TitleInstance.executeQuery('''select distinct title
+          from TitleInstance as title,
+            Combo as pkgCombo,
+            Combo as titleCombo,
+            TitleInstancePackagePlatform as tipp
+          where pkgCombo.toComponent=tipp
+            and pkgCombo.fromComponent=?
+            and titleCombo.toComponent=tipp
+            and titleCombo.fromComponent=title'''
+            ,[this]);
+      }
     }
 
     return all_titles;
