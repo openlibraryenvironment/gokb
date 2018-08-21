@@ -47,6 +47,10 @@ class BookInstance extends TitleInstance {
       "${this.class.name}:${id}"
   }
 
+  public String getNiceName() {
+    return "Book";
+  }
+
   /**
    * Auditable plugin, on change
    *
@@ -56,20 +60,16 @@ class BookInstance extends TitleInstance {
 
   def afterUpdate() {
 
-    log.debug("BookInstance::onChange handler");
-    println("onChange handler");
-
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
     if ( ( hasChanged('name') ) ||
          ( hasChanged('editionStatement') ) ||
          ( hasChanged('componentDiscriminator')) ) {
-      log.debug("BookInstance::onChange detected an update to properties that might change the work mapping. Looking up");
+      log.debug("Detected an update to properties for ${id} that might change the work mapping. Looking up");
       submitRemapWorkTask();
     }
   }
 
   def afterInsert() {
-    log.debug("BookInstance::onSave handler");
     submitRemapWorkTask();
   }
 

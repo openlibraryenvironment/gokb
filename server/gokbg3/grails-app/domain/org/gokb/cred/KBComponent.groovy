@@ -255,7 +255,7 @@ where cp.owner = :c
   /**
    * UUID
    */
-  String uuid = UUID.randomUUID().toString()
+  String uuid
 
   /**
    * Generic name for the component. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
@@ -447,7 +447,7 @@ where cp.owner = :c
   }
 
   protected def generateUuid () {
-    if (! uuid) {
+    if (!uuid) {
       uuid = UUID.randomUUID().toString()
     }
   }
@@ -654,6 +654,7 @@ where cp.owner = :c
     generateShortcode()
     generateNormname()
     generateComponentHash()
+    generateUuid()
 
     // Ensure any defaults defined get set.
     ensureDefaults()
@@ -687,6 +688,11 @@ where cp.owner = :c
       generateNormname();
       generateComponentHash()
     }
+
+    if (!uuid) {
+      generateUuid()
+    }
+
     def user = springSecurityService?.currentUser
     if ( user != null ) {
       this.lastUpdatedBy = user
@@ -772,6 +778,11 @@ where cp.owner = :c
     log.debug("KBComponent::retire");
     // Set the status to retired.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
+    save(failOnError:true)
+  }
+
+  public void setActive (context) {
+    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
     save(failOnError:true)
   }
 

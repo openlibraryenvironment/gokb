@@ -226,9 +226,9 @@ class Package extends KBComponent {
   }
   
   private static OAI_PKG_CONTENTS_QRY = '''
-select tipp.id, 
+select tipp.id,
        title.name, 
-       title.id, 
+       title.id,
        plat.name, 
        plat.id,
        tipp.startDate, 
@@ -246,7 +246,10 @@ select tipp.id,
        tipp.format, 
        tipp.embargo, 
        plat.primaryUrl,
-       tipp.lastUpdated
+       tipp.lastUpdated,
+       tipp.uuid,
+       title.uuid,
+       plat.uuid
     from TitleInstancePackagePlatform as tipp, 
          Combo as hostPlatformCombo, 
          Combo as titleCombo,  
@@ -413,11 +416,11 @@ select tipp.id,
         'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {
           tipps.each { tipp ->
-            builder.'TIPP' (['id':tipp[0]]) {
+            builder.'TIPP' (['id':tipp[0],'uuid':tipp[21]]) {
               builder.'status' (tipp[14]?.value)
               builder.'lastUpdated' (tipp[20]?sdf.format(tipp[20]):null)
               builder.'medium' (tipp[17]?.value)
-              builder.'title' (['id':tipp[2]]) {
+              builder.'title' (['id':tipp[2],'uuid':tipp[22]]) {
                 builder.'name' (tipp[1]?.trim())
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
@@ -425,7 +428,7 @@ select tipp.id,
                   }
                 }
               }
-              'platform'([id:tipp[4]]) {
+              'platform'([id:tipp[4],'uuid':tipp[23]]) {
                 'primaryUrl' (tipp[19]?.trim())
                 'name' (tipp[3]?.trim())
               }

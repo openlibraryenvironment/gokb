@@ -19,11 +19,14 @@ class FwkController {
       result.max = params.max ?: 20;
       result.offset = params.offset ?: 0;
 
-      def related_combos = Combo.executeQuery("select c.id from Combo as c where c.fromComponent = :obj OR c.toComponent = :obj", [obj: obj]).collect { "org.gokb.cred.Combo:" + Objects.toString(it, null) }
-
       def qry_params = [ocn: obj.getClass().getSimpleName(), oid: params.id];
+      def related_combos = null
 
-      if (related_combos?.size() == 0) {
+      if( params.withCombos ) {
+        related_combos = Combo.executeQuery("select c.id from Combo as c where c.fromComponent = :obj OR c.toComponent = :obj", [obj: obj]).collect { "org.gokb.cred.Combo:" + Objects.toString(it, null) }
+      }
+
+      if ( related_combos?.size() == 0 || !params.withCombos ) {
         result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid order by id desc",
                                                                         qry_params,
                                                                         [max:result.max,offset:result.offset]);

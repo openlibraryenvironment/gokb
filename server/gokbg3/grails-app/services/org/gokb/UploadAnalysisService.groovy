@@ -26,7 +26,7 @@ class UploadAnalysisService {
       analyseXML(uploaded_file, datafile)
     }
     else {
-      log.debug("Unhandled file type in analysis: ${datafile.mimetype}");
+      log.debug("Unhandled file type in analysis: ${datafile.uploadMimeType}");
     }
   }
 

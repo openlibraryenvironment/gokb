@@ -144,22 +144,24 @@ class CleanupService {
   def ensureUuids()  {
     log.debug("GOKb missing uuid check..")
 
-    def uid_ctr = 0
+    def ctr = 0
     def skipctr = 0
-    KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").each { kbc_id ->
-      try {
-        KBComponent comp = KBComponent.get(kbc_id)
-        log.debug("Repair component with no uuid.. ${comp.class.name} ${comp.id} ${comp.name}")
-        comp.generateUuid()
-        comp.markDirty('uuid')
-        log.debug("Generated ${comp.uuid}")
-        comp.save(flush:true, failOnError:true)
-        comp.discard()
-        ctr++
-      }
-      catch(Exception e){
-        log.debug("Skip component id ${kbc_id}")
-        skipctr++
+    KBComponent.withNewSession {
+      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").each { kbc_id ->
+        try {
+          KBComponent comp = KBComponent.get(kbc_id)
+          log.debug("Repair component with no uuid.. ${comp.class.name} ${comp.id} ${comp.name}")
+          comp.generateUuid()
+          comp.markDirty('uuid')
+          log.debug("Generated ${comp.uuid}")
+          comp.save(flush:true, failOnError:true)
+          comp.discard()
+          ctr++
+        }
+        catch(Exception e){
+          log.debug("Skip component id ${kbc_id}")
+          skipctr++
+        }
       }
     }
     log.debug("${ctr} components updated with uuid");

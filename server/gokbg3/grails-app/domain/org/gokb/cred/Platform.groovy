@@ -80,7 +80,7 @@ class Platform extends KBComponent {
     def identifiers = getIds()
 
     builder.'gokb' (attr) {
-      builder.'platform' (['id':(id)]) {
+      builder.'platform' (['id':(id), 'uuid':(uuid)]) {
         
         addCoreGOKbXmlFields(builder, attr)
 

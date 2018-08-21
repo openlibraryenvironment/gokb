@@ -458,7 +458,7 @@ class OaiController {
                 mkp.'record'() {
                   mkp.'header' () {
                     identifier("${rec.class.name}:${rec.id}")
-                    uuid("rec.uuid")
+                    uuid(rec.uuid)
                     datestamp(sdf.format(rec.lastUpdated))
                   }
                   buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)

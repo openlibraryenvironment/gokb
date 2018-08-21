@@ -30,6 +30,7 @@ class WorkflowController {
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
+    'method::setActive':[actionType:'simple' ],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
     'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg']
   ];

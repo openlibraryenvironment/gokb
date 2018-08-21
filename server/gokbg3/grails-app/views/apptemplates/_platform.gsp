@@ -42,6 +42,10 @@
     <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps?.findAll{ it.status.value == 'Current'}?.size() ?: '0'}</span> </a></li>
     <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
     <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+    <li><a href="#review" data-toggle="tab">Review Tasks <span
+        class="badge badge-warning">
+          ${d.reviewRequests?.size() ?: '0'}
+      </span></a></li>
   </ul>
 
 
@@ -111,6 +115,11 @@
             
     <div class="tab-pane" id="ds">
       <g:render template="/apptemplates/dstab" model="${[d:d]}" />
+    </div>
+
+    <div class="tab-pane" id="review">
+      <g:render template="/apptemplates/revreqtab"
+        model="${[d:d]}" />
     </div>
 
 

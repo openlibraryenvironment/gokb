@@ -112,6 +112,7 @@ class TitleInstance extends KBComponent {
 
   def availableActions() {
     [ [code:'method::deleteSoft', label:'Delete'],
+      [code:'method::setActive', label:'Make Current'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
       [code:'title::merge', label:'Title Merge']
@@ -266,7 +267,7 @@ class TitleInstance extends KBComponent {
       def history = getTitleHistory()
 
       builder.'gokb' (attr) {
-        builder.'title' (['id':(id)]) {
+        builder.'title' (['id':(id), 'uuid':(uuid)]) {
 
           addCoreGOKbXmlFields(builder, attr)
           
@@ -291,8 +292,8 @@ class TitleInstance extends KBComponent {
               if ( pub_org ) {
                 def org_ids = pub_org.ids ?: []
 
-                builder."publisher" (['id': pub_org?.id]) {
-                  "name" (pub_org?.name)
+                builder."publisher" (['id': pub_org.id, 'uuid': pub_org.uuid]) {
+                  "name" (pub_org.name)
                   if ( pc.startDate ) {
                     "startDate" (pc.startDate)
                   }
@@ -316,7 +317,7 @@ class TitleInstance extends KBComponent {
           }
 
           if (theIssuer) {
-            builder."issuer" (['id': theIssuer.id]) {
+            builder."issuer" (['id': theIssuer.id, 'uuid': theIssuer.uuid]) {
               "name" (theIssuer.name)
             }
           }
@@ -329,6 +330,7 @@ class TitleInstance extends KBComponent {
                   if(hti){
                     "from" {
                       title(hti.name)
+                      uuid(hti.id)
                       internalId(hti.id)
                       "identifiers" {
                         hti.ids?.each { tid ->
@@ -345,6 +347,7 @@ class TitleInstance extends KBComponent {
                   if(hti){
                     "to" {
                       title(hti.name)
+                      uuid(hti.id)
                       internalId(hti.id)
                       "identifiers" {
                         hti.ids?.each { tid ->
@@ -363,15 +366,15 @@ class TitleInstance extends KBComponent {
 
           builder.'TIPPs' (count:tipps?.size()) {
             tipps?.each { tipp ->
-              builder.'TIPP' (['id':tipp.id]) {
+              builder.'TIPP' (['id':tipp.id, 'uuid':tipp.uuid]) {
 
                 def pkg = tipp.pkg
-                builder.'package' (['id':pkg?.id]) {
+                builder.'package' (['id':pkg?.id, 'uuid':pkg?.uuid]) {
                   builder.'name' (pkg?.name)
                 }
 
                 def platform = tipp.hostPlatform
-                builder.'platform'(['id':platform?.id]) {
+                builder.'platform'(['id':platform?.id, 'uuid':platform?.uuid]) {
                   builder.'name' (platform?.name)
                 }
 
