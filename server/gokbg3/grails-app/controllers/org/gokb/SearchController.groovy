@@ -35,6 +35,12 @@ class SearchController {
       result.inline = true
     }
 
+    if ( params.refOid ) {
+      result.refOid = params.refOid
+
+      result.refName = KBComponent.get(Long.valueOf(params.refOid.split(':')[1])).name
+    }
+
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 

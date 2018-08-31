@@ -8,6 +8,10 @@
       <input type="hidden" name="hide" value="${hidden_var}"/>
     </g:each>
 
+    <g:if test="${params.refOid}">
+      <input type="hidden" name="refOid" value="${params.refOid}"/>
+    </g:if>
+
     <g:each in="${formdefn}" var="fld">
       <g:if test="${((hide?.contains(fld.qparam)) || ( fld.hide==true))}">
         <input type="hidden" name="${fld.qparam}" id="${fld.qparam}" value="${params[fld.qparam]}" />
@@ -24,7 +28,7 @@
         </g:each>
 
         <div class="btn-group pull-right" role="group" aria-label="Search Buttons">
-          <button name="searchAction" type="submit" class="btn btn-success btn-sm" value="search">Change Filters</button>
+          <button name="searchAction" type="submit" class="btn btn-success btn-sm" value="search">Full View</button>
         </div>
       </div>
     </div>

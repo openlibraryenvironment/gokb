@@ -5,7 +5,7 @@
 <title>Search</title>
 </head>
 <body>
-	<h1 class="page-header">${qbetemplate.title?:''}</h1>
+	<h1 class="page-header">${qbetemplate.title ?:''} <g:if test="${refOid}">for <g:link controller="resource" action="show" id="${refOid}">${refName ?: refOid}</g:link></g:if></h1>
 	<div class="${displayobj != null ? 'col-md-5 ' : ''}" >
 		<div id="mainarea"
 			class="panel panel-default">

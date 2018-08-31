@@ -18,6 +18,8 @@ class FwkController {
       result.max = params.max ?: 20;
       result.offset = params.offset ?: 0;
       result.timestamp = new Date()
+      result.objectclass = obj.getClass().getSimpleName()
+      result.label = obj.name ?: obj.id
 
       def qry_params = [ocn: obj.getClass().getSimpleName(), oid: params.id];
       def related_combos = null

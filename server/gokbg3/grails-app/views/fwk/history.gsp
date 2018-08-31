@@ -1,9 +1,9 @@
 <div class="modal-header">
 	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-	<h3 class="modal-title">History ${params.id}</h3>
+	<h3 class="modal-title">Recent History for <i><b>${params.id}</b></i></h3>
 </div>
 <div class="modal-body">
-	<table class="table table-striped table-bordered">
+    <table class="table table-striped table-bordered">
     <thead>
       <tr>
         <th>Event ID</th>

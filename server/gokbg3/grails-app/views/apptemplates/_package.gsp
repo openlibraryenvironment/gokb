@@ -111,7 +111,7 @@
       <div class="tab-pane" id="titledetails">
         <g:if test="${params.controller != 'create'}">
           <g:link class="display-inline" controller="search" action="index"
-            params="[qbe:'g:3tipps', qp_pkg_id:d.id, inline:true, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id']]"
+            params="[qbe:'g:3tipps', qp_pkg_id:d.id, inline:true, refOid: d.getLogEntityId(), hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id']]"
             id="">Titles in this package</g:link>
         </g:if>
         <g:else>

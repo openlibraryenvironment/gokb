@@ -41,12 +41,11 @@
                 title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
                 style="cursor:pointer;"
                   ><i id="watchIcon" class="fa ${user_watching ? 'fa-eye' : 'fa-eye-slash'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
+          <li><a data-toggle="modal" data-cache="false"
+                title="Show History"
+                data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}" params="[withCombos:true]"/>'
+                data-target="#modal"><i class="fa fa-clock"></i></a></li>
         </g:if>
-        <li><a data-toggle="modal" data-cache="false"
-              title="Show History"
-              data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}" params="[withCombos:true]"/>'
-              data-target="#modal"><i class="fa fa-clock"></i></a></li>
-
         <li><a data-toggle="modal" data-cache="false"
               title="Show Notes"
               data-remote='<g:createLink controller="fwk" action="notes" id="${displayobj.class.name}:${displayobj.id}"/>'

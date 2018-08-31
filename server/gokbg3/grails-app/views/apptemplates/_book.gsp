@@ -329,7 +329,7 @@
       </dt>
       <dd>
         <g:link class="display-inline" controller="search" action="index"
-          params="[qbe:'g:3tipps', inline:true, qp_title_id:d.id, hide:['qp_title_id', 'qp_title']]"
+          params="[qbe:'g:3tipps', inline:true, refOid: d.getLogEntityId(), qp_title_id:d.id, hide:['qp_title_id', 'qp_title']]"
           id="">Availability of this Title</g:link>
       </dd>
 

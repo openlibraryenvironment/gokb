@@ -206,7 +206,7 @@ class TitleLookupService {
 
           // Create the new TI.
           if ( newTitleClassName == null ) {
-            the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title),ids:[])
+            the_title = new TitleInstance(name:metadata.title, ids:[])
             the_title.normname = KBComponent.generateNormname(metadata.title);
           }
           else {
@@ -380,6 +380,9 @@ class TitleLookupService {
                   def clazz = Class.forName(newTitleClassName)
                   the_title = clazz.newInstance()
                   the_title.name = metadata.title
+                  if ( metadata.uuid && metadata.uuid ==~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/ ) {
+                    the_title.uuid = metadata.uuid
+                  }
                   the_title.normname = KBComponent.generateNormname(metadata.title)
                   the_title.ids = []
                 }
@@ -446,6 +449,9 @@ class TitleLookupService {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
               the_title.name = metadata.title
+              if ( metadata.uuid && metadata.uuid ==~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/ ) {
+                the_title.uuid = metadata.uuid
+              }
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
             }
