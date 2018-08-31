@@ -509,7 +509,7 @@ class AjaxSupportController {
     def target_object = resolveOID2(params.pk)
     def user = springSecurityService.currentUser
     def errors = null
-    if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
+    if ( target_object && ( target_object.isEditable() || user.equals(ClassUtils.deproxy(target_object)) ) ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.format ?: 'yyyy-MM-dd')
       }
