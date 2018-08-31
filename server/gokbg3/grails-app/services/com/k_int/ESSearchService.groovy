@@ -198,4 +198,10 @@ class ESSearchService{
 
     result;
   }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
+    log.debug("Destroy");
+  }
+
 }

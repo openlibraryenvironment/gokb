@@ -19,7 +19,6 @@
   <g:layoutHead />
   <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: '/gokb'}"; </asset:script>
   <asset:javascript src="gokb/application.grass.js" />
-  <asset:javascript src="jquery-2.2.0.min.js"/>
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
@@ -223,6 +222,20 @@
     <div id="page-wrapper" class="${ params.controller ?: 'default' }-display" >
       <div class="row" >
         <div id="page-content" class="col-lg-12">
+          <g:if test="${flash.message}">
+            <div id="msg" style="display:none">
+              <ul>
+              <g:if test="${flash.message instanceof String}">
+                <li>${flash.message}</li>
+              </g:if>
+              <g:else>
+                <g:each in="${flash.message}" var="msg">
+                  <li>${msg}</li>
+                </g:each>
+              </g:else>
+              </ul>
+            </div>
+          </g:if>
           <g:layoutBody />
         </div>
         <!-- /.col-lg-12 -->

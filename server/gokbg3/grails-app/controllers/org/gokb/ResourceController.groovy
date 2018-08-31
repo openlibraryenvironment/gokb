@@ -83,7 +83,8 @@ class ResourceController {
           result.user_watching = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=? and n.user=?",[result.displayobj, user])[0] == 1 ? true : false;
         }
         else {
-          response.sendError(403);
+          response.setStatus(403)
+          result.status = 403
         }
       }
       else {

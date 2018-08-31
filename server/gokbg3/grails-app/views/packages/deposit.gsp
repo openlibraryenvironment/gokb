@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+<sec:ifLoggedIn>
+<meta name='layout' content='sb-admin' />
+</sec:ifLoggedIn>
+<sec:ifNotLoggedIn>
 <meta name='layout' content='public' />
+</sec:ifNotLoggedIn>
 <title>GOKb: Packages</title>
 </head>
 

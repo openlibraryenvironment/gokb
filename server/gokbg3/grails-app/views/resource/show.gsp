@@ -4,7 +4,7 @@
 <meta name="layout" content="sb-admin" />
 <title>GOKb: ${displayobj?.getNiceName() ?: 'Component'}
 <g:if test="${displayobj}">
-&lt;${ displayobj?.isEditable() ? 'Editable' : 'Read Only' }&gt; 
+&lt;${ displayobj?.isEditable() ? 'Editable' : ( response.status == 403 ? 'Not Accessible' : 'Read Only') }&gt;
 &lt;${ displayobj?.isCreatable() ? 'Creatable' : 'Not Creatable' }&gt;
 </g:if>
 <g:else>
@@ -20,15 +20,20 @@
       <span class="navbar-brand">
         <g:if test="${displayobj?.id != null}">
           ${displayobj?.getNiceName() ?: 'Component'} : ${displayobj?.id}
-          <g:if test="${ displayobj?.respondsTo('getDisplayName') && displayobj.getDisplayName()}"> - <strong>${displayobj.getDisplayName()}</strong></g:if>
-          <g:if test="${ !displayobj?.isEditable() }"> <small><i>&lt;Read only&gt;</i></small> </g:if>
+          <g:if test="${response.status != 403}">
+            <g:if test="${ displayobj?.respondsTo('getDisplayName') && displayobj.getDisplayName()}"> - <strong>${displayobj.getDisplayName()}</strong></g:if>
+            <g:if test="${ !displayobj?.isEditable() }"> <small><i>&lt;Read only&gt;</i></small> </g:if>
+          </g:if>
+          <g:else>
+            <small><i>&lt;Not Accessible&gt;</i></small>
+          </g:else>
         </g:if>
         <g:elseif test="${displayobj}">
           Create New ${displayobj?.getNiceName() ?: 'Component'}
         </g:elseif>
       </span>
     </div>
-    <g:if test="${displayobj}">
+    <g:if test="${displayobj && response.status != 403}">
       <ul class="nav navbar-nav navbar-right">
         <g:if test="${org.gokb.cred.KBComponent.isAssignableFrom(displayobj.class)}">
           <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
@@ -39,7 +44,7 @@
         </g:if>
         <li><a data-toggle="modal" data-cache="false"
               title="Show History"
-              data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}"/>'
+              data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}" params="[withCombos:true]"/>'
               data-target="#modal"><i class="fa fa-clock"></i></a></li>
 
         <li><a data-toggle="modal" data-cache="false"
@@ -89,6 +94,9 @@
             </div>
           </g:elseif>
         </g:if>
+        <g:elseif test="${response.status == 403}">
+          <g:message code="springSecurity.denied.message" />
+        </g:elseif>
         <g:if test="${displaytemplate != null}">
           <!-- Using display template ${displaytemplate.rendername} -->
           <g:if test="${displaytemplate.type=='staticgsp'}">
@@ -119,11 +127,59 @@
     </div>
 
    <asset:script type="text/javascript" >
+
+        $(document).on('show.bs.modal','#modal', function(){
+          $(".modal-content").empty();
+          $(".modal-content").append('<div class="modal-loading"><h4>Loading <asset:image src="img/loading.gif" /></h4></div>');
+        });
+
         $(document).ready(function(){
-          var loading_spinner =
-          $("#modal").on('show.bs.modal', function(){
-            $(".modal-content").empty();
-            $(".modal-content").append('<div class="modal-loading"><h4>Loading <asset:image src="img/loading.gif" /></h4></div>');
+
+          $('a.editable').on('click', function(){
+            var editable = $(this);
+
+            var select = editable.next();
+
+            var submit = select.find('.editable-submit');
+
+            submit.on('click', function(){
+
+              var follow_link = select.next();
+              var related_editable = select.prev();
+
+              window.setTimeout(function() {
+
+                var new_linked_oid = null;
+
+                editable.each(function() {
+                  var new_tid = false;
+
+                  $.each(this.attributes, function(){
+                    if(this.specified && this.name == 'target-id') {
+                      new_linked_oid = this.value;
+                      new_tid = true;
+                    }
+                  })
+
+                  if(!new_tid) {
+                    new_linked_oid = null;
+                  }
+                })
+
+                if (new_linked_oid) {
+                  if (follow_link.attr('href')) {
+                    var old_href = follow_link.attr('href');
+                    var truncated_link = old_href.substring(0, old_href.lastIndexOf('/') + 1);
+
+                    follow_link.attr('href', truncated_link + new_linked_oid);
+                  }else {
+                    related_editable.after(" &nbsp; <a href=" + contextPath + "/resource/show/" + new_linked_oid + ">Follow Link</a>");
+                  }
+                } else if (follow_link.attr('href')) {
+                  $(follow_link).remove();
+                }
+              }, 500);
+            });
           });
         });
    

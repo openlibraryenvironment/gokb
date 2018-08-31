@@ -94,6 +94,16 @@ class Package extends KBComponent {
     global      (nullable:true, blank:false)
     lastProject    (nullable:true, blank:false)
     descriptionURL (nullable:true, blank:true)
+    name (validator: { val, obj ->
+      if (val) {
+        def dupes = Package.findByNameIlike(val);
+        if ( dupes && dupes != obj ) {
+          return ['notUnique']
+        }
+      } else {
+        return ['notNull']
+      }
+    })
   }
 
   static def refdataFind(params) {

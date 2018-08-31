@@ -39,25 +39,9 @@
                 <h3 class="panel-title">Your Tasks</h3>
               </div>
               <div class="panel-body">
-                <g:set value="${org.gokb.cred.ReviewRequest.findAllByAllocatedTo(request.user)}" var="requests"/>
-                <table class="table table-striped table-condensed table-bordered">
-                  <thead>
-                    <tr>
-                      <th>Component</th>
-                      <th>Cause</th>
-                      <th>Request</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <g:each var="rr" in="${requests}">
-                      <tr>
-                        <td><g:link controller="resource" action="show" id="${rr.allocatedTo?.getClassName()+':'+rr.allocatedTo.id}">${rr.allocatedTo?.displayName} </g:link></td>
-                        <td>${rr.descriptionOfCause}</td>
-                        <td>${rr.reviewRequest}</td>
-                      </tr>
-                    </g:each>
-                  </tbody>
-                </table>
+                <g:link class="display-inline" controller="search" action="index"
+                  params="[qbe:'g:reviewRequests', qp_allocatedto:'org.gokb.cred.User:' + Long.toString(request.user.id), qp_status:'org.gokb.cred.RefdataValue:' + Long.toString(org.gokb.cred.RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open').id), hide:['qp_status', 'qp_project', 'qp_raisedby', 'qp_allocatedto']]"
+                  id="">Titles in this package</g:link>
               </div>
             </div>
           </div>

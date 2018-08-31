@@ -1,6 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import groovy.json.JsonSlurper
 
 class SavedSearch {
 
@@ -19,6 +20,11 @@ class SavedSearch {
     name column: 'ss_name'
     owner column: 'ss_owner_fk'
     searchDescriptor column: 'ss_search_descriptor', type:'text'
+  }
+
+  public def toParam() {
+    def jsonSlurper = new JsonSlurper().parseText(searchDescriptor)
+    return jsonSlurper
   }
 
 }

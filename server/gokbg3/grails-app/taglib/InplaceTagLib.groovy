@@ -297,14 +297,16 @@ class InplaceTagLib {
     def owner = ClassUtils.deproxy(attrs.owner)
     
     def oid = attrs.owner.id != null ? "${owner.class.name}:${owner.id}" : ''
-    def id = attrs.id ?: "${oid}:${attrs.field}"
+    def id = attrs.id ?: "${oid ?: owner.class.name }:${attrs.field}"
     def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel')
 
     def follow_link = null;
 
     if ( owner != null && owner[attrs.field] != null ) {
+      def field_class = "${ClassUtils.deproxy(owner[attrs.field]).class.name}"
+
       follow_link = createLink(controller:'resource', action: 'show')
-      follow_link = follow_link + '/' + owner[attrs.field].class.name + ':' + owner[attrs.field].id;
+      follow_link = follow_link + '/' + field_class + ':' + owner[attrs.field].id;
     }
 
     out << "<a href=\"#\" data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "

@@ -31,6 +31,10 @@ class SearchController {
       result.init = true
     }
 
+    if( params.inline ) {
+      result.inline = true
+    }
+
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 

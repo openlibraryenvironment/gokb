@@ -8,11 +8,11 @@
   <dt> <g:annotatedLabel owner="${d}" property="explanation">Explanation</g:annotatedLabel> </dt>
   <dd> <g:xEditable class="ipe" owner="${d}" field="explanation" /> </dd>
 
+  <dt> <g:annotatedLabel owner="${d}" property="owner">Category</g:annotatedLabel> </dt>
+  <dd>
+    <g:manyToOneReferenceTypedown owner="${d}" field="owner" baseClass="org.gokb.cred.DSCategory">${d.owner?.description}</g:manyToOneReferenceTypedown>
+  </dd>
   <g:if test="${d.id}">
-    <dt> <g:annotatedLabel owner="${d}" property="owner">Category</g:annotatedLabel> </dt>
-    <dd> 
-     <g:manyToOneReferenceTypedown owner="${d}" field="owner" baseClass="org.gokb.cred.DSCategory">${d.owner?.description}</g:manyToOneReferenceTypedown>
-    </dd>
 
     <dt> Applied Criteria </dt>
     <dd>

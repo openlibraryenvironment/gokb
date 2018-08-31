@@ -17,6 +17,8 @@ class Combo implements Auditable {
   static final String RD_TYPE = "Combo.Type"
   static final String STATUS_ACTIVE = "Active"
   static final String STATUS_SUPERSEDED = "Superseded"
+  static final String STATUS_DELETED = "Deleted"
+  static final String STATUS_EXPIRED = "Expired"
 
   public static final String MAPPED_BY = "mappedByCombo"
   public static final String HAS = "hasByCombo"

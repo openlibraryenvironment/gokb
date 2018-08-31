@@ -15,11 +15,13 @@
 			</g:if>
 	
 			<g:else>
+                              <g:if test="${!params.inline}">
 				<div class="panel-heading">
 					<h3 class="panel-title">
 						Search
 					</h3>
 				</div>
+                              </g:if>
 				<div class="panel-body">
 					<g:if test="${(qbetemplate.message != null)}">
 						<p style="text-align: center">
@@ -30,7 +32,7 @@
 					</g:if>
 	
 					<g:render template="qbeform"
-						model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide),cfg:qbetemplate.qbeConfig]}" />
+						model="${[formdefn:qbetemplate.qbeConfig?.qbeForm, 'hide':(hide), cfg:qbetemplate.qbeConfig]}" />
 				</div>
 				<!-- panel-body -->
 				<g:if test="${recset && !init}">

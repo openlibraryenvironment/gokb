@@ -16,7 +16,7 @@
       <g:if test="${itm instanceof org.gokb.cred.SavedSearch}">
         <div class="col-md-3 center-block center-text">
           <i class="fa fa-search fa-fw"></i>
-          <g:link controller="search" action="index" params="${itm.toParams()}">${itm.name}</g:link>
+          <g:link controller="search" action="index" params="${itm.toParam()}">${itm.name}</g:link>
         </div>
       </g:if>
       <g:if test="${1==2}">

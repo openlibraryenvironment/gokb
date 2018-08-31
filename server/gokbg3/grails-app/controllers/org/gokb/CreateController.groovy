@@ -15,6 +15,7 @@ class CreateController {
   def classExaminationService
   def springSecurityService
   def displayTemplateService
+  def messageSource
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -150,13 +151,39 @@ class CreateController {
             log.debug("Saving..");
             log.debug("Obj: ${result.newobj}")
             if ( !result.newobj.validate() ) {
-              log.error("Problem saving new object")
-              flash.error = "Problem saving new object!"
-              
-              log.error("${result.newobj.errors}")
-              // render view: 'index', model: [d: result.newobj]
-              result.newobj.errors.allErrors.each { e ->
-                log.error("${e}")
+              flash.message = []
+
+              result.newobj.errors.allErrors.each { eo ->
+
+                String[] messageArgs = eo.getArguments()
+                def errorMessage = null
+
+                log.debug("Found error with args: ${messageArgs}")
+
+                eo.getCodes().each { ec ->
+
+                  if (!errorMessage) {
+                    log.debug("testing code -> ${ec}")
+
+                    def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
+
+                    if(msg && msg != ec) {
+                      errorMessage = msg
+                    }
+
+                    if(!errorMessage) {
+                      log.debug("Could not resolve message")
+                    }else{
+                      log.debug("found message: ${msg}")
+                    }
+                  }
+                }
+
+                if (errorMessage) {
+                  flash.message.add(errorMessage)
+                }else{
+                  log.debug("Found no message for error code ${eo}")
+                }
               }
               
               result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
