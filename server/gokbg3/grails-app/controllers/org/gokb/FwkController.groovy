@@ -10,48 +10,125 @@ class FwkController {
   def history() { 
     log.debug("FwkController::history...");
     def result = [:]
-    result.user = User.get(springSecurityService.principal.id)
 
     def obj = resolveOID2(params.id)
     
-    if(obj) {
+    if(obj && obj.isReadable()) {
 
       result.max = params.max ?: 20;
       result.offset = params.offset ?: 0;
+      result.timestamp = new Date()
 
       def qry_params = [ocn: obj.getClass().getSimpleName(), oid: params.id];
       def related_combos = null
+      def oid_string = "[id:${params.id}]%"
 
       if( params.withCombos ) {
-        related_combos = Combo.executeQuery("select c.id from Combo as c where c.fromComponent = :obj OR c.toComponent = :obj", [obj: obj]).collect { "org.gokb.cred.Combo:" + Objects.toString(it, null) }
+        related_combos = AuditLogEvent.executeQuery("select distinct ale.persistedObjectId from AuditLogEvent as ale where ale.className = 'Combo' AND (ale.newValue LIKE :oidt OR ale.oldValue LIKE :oidt)", [oidt: oid_string])
       }
 
-      if ( related_combos?.size() == 0 || !params.withCombos ) {
-        result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid order by id desc",
-                                                                        qry_params,
-                                                                        [max:result.max,offset:result.offset]);
-        result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid",
-                                                                                qry_params)[0];
-      }
-      else{
-        qry_params.put('oidt', "%" + params.id + "]%")
+      if (related_combos?.size() > 0 && params.withCombos) {
+        qry_params.put('oidt', oid_string)
         qry_params.put('comboids', related_combos)
 
-        result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid OR (e.className = 'Combo' and e.persistedObjectId IN (:comboids) and (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent' OR e.eventName = 'UPDATE') and e.newValue NOT LIKE :oidt ) order by id desc",
-                                                                        qry_params,
-                                                                        [max:result.max,offset:result.offset]);
+        def query_start_time = System.currentTimeMillis();
 
-        result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid OR (e.className = 'Combo' and e.persistedObjectId IN (:comboids) and (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent' OR e.eventName = 'UPDATE') and e.newValue NOT LIKE :oidt)",
-                                                                                qry_params)[0];
+        result.events = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where (e.className= :ocn and e.persistedObjectId= :oid) OR (e.persistedObjectId IN (:comboids) AND (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent') AND (e.newValue NOT LIKE :oidt OR e.newValue IS NULL) AND (e.oldValue NOT LIKE :oidt OR e.oldValue IS NULL)) order by id desc",qry_params,[max:result.max,offset:result.offset]);
+
+        log.debug("Fetch completed after ${System.currentTimeMillis() - query_start_time}");
+//         def count_start_time = System.currentTimeMillis();
+//
+//         result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where (e.className= :ocn and e.persistedObjectId= :oid) OR (e.persistedObjectId IN (:comboids) AND (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent') AND (e.newValue NOT LIKE :oidt OR e.newValue IS NULL) AND (e.oldValue NOT LIKE :oidt OR e.oldValue IS NULL))", qry_params)[0];
+//
+//         log.debug("Count completed (${result.historyLinesTotal}) after ${System.currentTimeMillis() - count_start_time}");
+        result.historyLines = []
+
+        result.events.eachWithIndex { evt, idx ->
+          def event = [:]
+          def allOidEvents = AuditLogEvent.findAllByPersistedObjectId(evt.persistedObjectId)
+          def skip = false
+
+          if ( evt.oldValue && evt.oldValue.startsWith("[id:org.gokb.cred") ) {
+            event.oldValue = getComboValueMaps(evt.oldValue)
+          }else{
+            event.oldValue = evt.oldValue
+          }
+
+          if ( evt.newValue && evt.newValue.startsWith("[id:org.gokb.cred") ) {
+            event.newValue = getComboValueMaps(evt.newValue)
+          }else{
+            event.newValue = evt.newValue
+          }
+
+          if ( evt.className == 'Combo' ) {
+            def hasOwnerRef = allOidEvents.collect {( it.newValue?.contains(params.id) || it.oldValue?.contains(params.id)) && it.propertyName == evt.propertyName}.any { it == true }
+            def deletedComboVal = null
+
+            if(!hasOwnerRef) {
+              allOidEvents.each { aoe ->
+                if (aoe.eventName == 'INSERT' && aoe.propertyName == 'type') {
+                  event.propertyName = aoe.newValue.split(']')[1]
+                }
+                else if (!evt.newValue && !evt.oldValue && aoe.propertyName == evt.propertyName && aoe.newValue) {
+                  event.oldValue = getComboValueMaps(aoe.newValue)
+                }
+              }
+            }
+            else {
+              skip = true
+            }
+          }else {
+            event.propertyName = evt.propertyName
+          }
+
+          event.id = evt.id
+          event.actor = evt.actor
+          event.dateCreated = evt.dateCreated
+          event.eventName = evt.eventName
+
+          if (!skip) {
+            result.historyLines.add(event)
+          }
         }
+      }
+      else {
+        def query_start_time = System.currentTimeMillis();
 
+        result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid order by id desc", qry_params,[max:result.max,offset:result.offset]);
 
+        log.debug("Fetch completed after ${System.currentTimeMillis() - query_start_time}");
+//         def count_start_time = System.currentTimeMillis();
+//
+//         result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid", qry_params)[0];
+//
+//         log.debug("Count completed (${result.historyLinesTotal}) after ${System.currentTimeMillis() - count_start_time}");
+      }
 
     }else{
       log.error("resolve OID failed to identify a domain class. Input was ${params.id}")
     }
-    
-    result
+    withFormat {
+      html { result }
+      json {
+        result.remove('events')
+        render result as JSON
+      }
+    }
+  }
+
+  private List getComboValueMaps(String valueString) {
+    def allOids = valueString.substring(1).split(/,\[/)
+
+    def valueMaps = []
+
+    allOids.each { ao ->
+      def aot = ao.trim()
+
+      if( aot.startsWith("id:org.gokb.cred") ) {
+        valueMaps.add([val: aot.split(']')[1], oid: aot.split(']')[0].substring(3)])
+      }
+    }
+    valueMaps
   }
 
   def notes() { 
@@ -59,16 +136,21 @@ class FwkController {
     def result = [:]
     result.user = User.get(springSecurityService.principal.id)
     // result.owner = 
-    def oid_components = params.id.split(':');
-    def qry_params = [oid_components[0],Long.parseLong(oid_components[1])];
-    result.ownerClass = oid_components[0]
-    result.ownerId = oid_components[1]
+    def obj = resolveOID2(params.id)
 
-    result.max = params.max ?: 20;
-    result.offset = params.offset ?: 0;
+    if ( obj.isReadable() ) {
 
-    result.noteLines = Note.executeQuery("select n from Note as n where ownerClass=? and ownerId=? order by id desc", qry_params, [max:result.max, offset:result.offset]);
-    result.noteLinesTotal = AuditLogEvent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];
+      def oid_components = params.id.split(':');
+      def qry_params = [oid_components[0],Long.parseLong(oid_components[1])];
+      result.ownerClass = oid_components[0]
+      result.ownerId = oid_components[1]
+
+      result.max = params.max ?: 20;
+      result.offset = params.offset ?: 0;
+
+      result.noteLines = Note.executeQuery("select n from Note as n where ownerClass=? and ownerId=? order by id desc", qry_params, [max:result.max, offset:result.offset]);
+      result.noteLinesTotal = AuditLogEvent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];
+    }
 
     result
   }
