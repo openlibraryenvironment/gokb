@@ -84,7 +84,14 @@
         <g:each in="${rrs}" var="rr">
             <tr>
               <td>
-            <g:link controller="resource" action="show" id="${rr.allocatedTo?.getClassName()+':'+rr.allocatedTo.id}">${rr.allocatedTo?.displayName} </g:link>
+                <g:if test="${rr.allocatedTo?.isReadable()}">
+                  <g:link controller="resource" action="show" id="${rr.allocatedTo?.getClassName()+':'+rr.allocatedTo.id}">
+                    ${rr.allocatedTo?.displayName ?: rr.allocatedTo.username }
+                  </g:link>
+                </g:if>
+                <g:else>
+                  ${rr.allocatedTo?.displayName ?: rr.allocatedTo.username }
+                </g:else>
               </td>
               <td>
   <g:link controller="resource" action="show" id="${rr.componentToReview?.getClassName()+':'+rr.componentToReview?.id}">${rr.componentToReview}</g:link>
