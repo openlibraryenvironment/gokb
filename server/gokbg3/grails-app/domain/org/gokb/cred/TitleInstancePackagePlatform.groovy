@@ -290,12 +290,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
         if (tipp_dto.status && tipp_dto.status == "Retired") {
           tipp.retire()
-
-          if ( !tipp_dto.accessEndDate ) {
-            tipp.accessEndDate = new Date()
-          }
         }
-        else if ( tipp.isDeleted() || tipp.isRetired() ) {
+        else if ( tipp.isRetired() ) {
           tipp.status = status_current
 
           ReviewRequest.raise(
@@ -312,6 +308,12 @@ class TitleInstancePackagePlatform extends KBComponent {
             tipp.accessEndDate = null
           }
           changed = true
+        }else if( tipp.isDeleted() ) {
+          ReviewRequest.raise(
+            tipp,
+            "Matched TIPP was marked as Deleted.",
+            "Check TIPP Status."
+          )
         }
         
         if ( tipp_dto.paymentType && tipp_dto.paymentType.length() > 0 ) {
