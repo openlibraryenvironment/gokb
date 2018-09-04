@@ -189,3 +189,7 @@ gokb:
 ---
 quartz:
     autoStartup: true
+
+---
+ftupdate_enabled: true
+decisionSupport: true

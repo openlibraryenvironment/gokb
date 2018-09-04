@@ -31,6 +31,16 @@ class SearchController {
       result.init = true
     }
 
+    if( params.inline ) {
+      result.inline = true
+    }
+
+    if ( params.refOid ) {
+      result.refOid = params.refOid
+
+      result.refName = KBComponent.get(Long.valueOf(params.refOid.split(':')[1])).name
+    }
+
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
@@ -113,11 +123,15 @@ class SearchController {
           }
   
           // log.debug("Trying to display record ${recno}");
-  
+
           result.displayobj = result.recset.get(recno)
           
           def display_start_time = System.currentTimeMillis();
           if ( result.displayobj != null ) {
+
+            if ( result.displayobj.class.name == "org.gokb.cred.ComponentWatch"  && result.displayobj.component?.id ) {
+              result.displayobj = KBComponent.get(result.displayobj.component?.id)
+            }
   
             result.displayobjclassname = result.displayobj.class.name
             result.displaytemplate = displayTemplateService.getTemplateInfo(result.displayobjclassname)

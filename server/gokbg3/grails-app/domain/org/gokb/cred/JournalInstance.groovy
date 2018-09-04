@@ -21,6 +21,10 @@ class JournalInstance extends TitleInstance {
       "${this.class.name}:${id}"
   }
 
+  public String getNiceName() {
+    return "Journal";
+  }
+
   /**
    * Auditable plugin, on change
    *

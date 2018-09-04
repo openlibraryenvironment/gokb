@@ -136,7 +136,7 @@ class OaiController {
   def identify(result) {
 
     // Get the information needed to describe this entry point.
-    def obj = KBComponent.executeQuery("from ${result.className} as o ORDER BY ${result.oaiConfig.lastModified} ASC", [], [max:1, readOnly:true])[0];
+    def obj = KBComponent.executeQuery("from ${result.className} as o ORDER BY ${result.oaiConfig.lastModified} ASC".toString(), [], [max:1, readOnly:true])[0];
 
     def writer = new StringWriter()
     def xml = new MarkupBuilder(writer)
@@ -214,8 +214,8 @@ class OaiController {
     }
     def order_by_clause = 'order by o.id'
 
-    def rec_count = Package.executeQuery("select count(o) ${query}",query_params)[0];
-    def records = Package.executeQuery("select o ${query} ${order_by_clause}",query_params,[offset:offset,max:3])
+    def rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
+    def records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:3])
 
     log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
@@ -331,21 +331,35 @@ class OaiController {
       def query = result.oaiConfig.query
       
       def status_filter = result.oaiConfig.statusFilter
+
+      if ( params.curator && result.oaiConfig.curators) {
+        def cg = CuratoryGroup.findByName(params.curator)
+        def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.curators)
+
+        query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = ? and cgCombo.type = ? and cgCombo.fromComponent = o '
+        wClause = true
+        query_params.add(cg)
+        query_params.add(comboType)
+      }
       
       if(status_filter && status_filter.size() > 0){
         status_filter.eachWithIndex { val, index ->
-          if (index > 0) {
+          if(!wClause){
+            query += 'where '
+            wClause = true
+          }
+          else{
             query += ' and '
           }
 
           if (val instanceof String) {
-            query += 'where o.status.value != ?'
+            query += 'o.status.value != ?'
             def qry_rdc = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, val)
             query_params.add(val)
             wClause = true
           }
           else if (val instanceof org.gokb.cred.RefdataValue) {
-            query += 'where o.status != ?'
+            query += 'o.status != ?'
             query_params.add(val)
             wClause = true
           }
@@ -413,8 +427,8 @@ class OaiController {
       def order_by_clause = 'order by o.id'
       log.debug("qry is: ${query}");
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
-      def rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
-      def records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
+      def rec_count = Package.executeQuery("select count(distinct o) ${query}".toString(),query_params)[0];
+      def records = Package.executeQuery("select distinct o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
 
       log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
@@ -444,6 +458,7 @@ class OaiController {
                 mkp.'record'() {
                   mkp.'header' () {
                     identifier("${rec.class.name}:${rec.id}")
+                    uuid(rec.uuid)
                     datestamp(sdf.format(rec.lastUpdated))
                   }
                   buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)

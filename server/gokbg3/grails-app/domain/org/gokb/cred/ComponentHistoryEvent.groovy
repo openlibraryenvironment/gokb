@@ -1,8 +1,8 @@
 package org.gokb.cred
 
-class ComponentHistoryEvent {
+import grails.plugins.orm.auditable.Auditable
 
-  static auditable = true
+class ComponentHistoryEvent implements Auditable {
   
   Date eventDate
   Set participants
@@ -16,6 +16,10 @@ class ComponentHistoryEvent {
   static constraints = {
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
+  }
+
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
   }
 
 }

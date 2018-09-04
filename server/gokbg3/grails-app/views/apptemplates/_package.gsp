@@ -1,13 +1,21 @@
 <g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true')) }" />
   <dl class="dl-horizontal">
-    <dt>
-      <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
-    </dt>
-    <dd style="max-width:60%">
-      ${d.name}<br/>
-      <g:if test="${ editable }">(Modify name through <i>Alternate Names</i> below)</g:if><br/>
+  <dt>
+    <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
+  </dt>
+  <dd style="max-width:60%">
+    <g:if test="${displayobj?.id != null}">
+      <div>
+        ${d.name}<br/>
+        <span style="white-space:nowrap;">(Modify title through <i>Alternate Names</i> below)</span>
+      </div>
       <g:link controller="packages" action="kbart" id="${params.id}">KBart File</g:link> &nbsp;
       <g:link controller="packages" action="packageTSVExport" id="${params.id}">GOKb File</g:link>
+    </g:if>
+    <g:else>
+      <g:xEditable class="ipe" owner="${d}" field="name" />
+    </g:else>
+  </dd>
     </dd>
 
     <dt>
@@ -28,7 +36,7 @@
         <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
       </dt>
       <dd>
-        ${d.status?.value}
+        <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
       </dd>
     </g:if>
 
@@ -71,7 +79,7 @@
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d.titles ? d.titles?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
+      <li><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d?.titles ? d?.titles?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.ids?.size() ?: '0'} </span></a></li>
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
         <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
@@ -103,7 +111,7 @@
       <div class="tab-pane" id="titledetails">
         <g:if test="${params.controller != 'create'}">
           <g:link class="display-inline" controller="search" action="index"
-            params="[qbe:'g:3tipps', qp_pkg_id:d.id, hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat', 'qp_status']]"
+            params="[qbe:'g:3tipps', qp_pkg_id:d.id, inline:true, refOid: d.getLogEntityId(), hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id']]"
             id="">Titles in this package</g:link>
         </g:if>
         <g:else>

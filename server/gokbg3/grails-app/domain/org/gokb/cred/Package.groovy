@@ -94,6 +94,16 @@ class Package extends KBComponent {
     global      (nullable:true, blank:false)
     lastProject    (nullable:true, blank:false)
     descriptionURL (nullable:true, blank:true)
+    name (validator: { val, obj ->
+      if (val) {
+        def dupes = Package.findByNameIlike(val);
+        if ( dupes && dupes != obj ) {
+          return ['notUnique']
+        }
+      } else {
+        return ['notNull']
+      }
+    })
   }
 
   static def refdataFind(params) {
@@ -114,35 +124,37 @@ class Package extends KBComponent {
   public getTitles(def onlyCurrent = true) {
     def all_titles = null
 
-    if (onlyCurrent) {
-      def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
-      def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
-      def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
+    if (this.id) {
+      if (onlyCurrent) {
+        def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
+        def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+        def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
 
-      all_titles = TitleInstancePackagePlatform.executeQuery('''select distinct title
-        from TitleInstance as title,
-          Combo as pkgCombo,
-          Combo as titleCombo,
-          TitleInstancePackagePlatform as tipp
-        where pkgCombo.toComponent=tipp
-          and pkgCombo.fromComponent=?
-          and titleCombo.toComponent=tipp
-          and titleCombo.fromComponent=title
-          and tipp.status = ?
-          and title.status = ?'''
-          ,[this,refdata_current,refdata_current]);
-    }
-    else {
-      all_titles = TitleInstancePackagePlatform.executeQuery('''select distinct title
-        from TitleInstance as title,
-          Combo as pkgCombo,
-          Combo as titleCombo,
-          TitleInstancePackagePlatform as tipp
-        where pkgCombo.toComponent=tipp
-          and pkgCombo.fromComponent=?
-          and titleCombo.toComponent=tipp
-          and titleCombo.fromComponent=title'''
-          ,[this]);
+        all_titles = TitleInstance.executeQuery('''select distinct title
+          from TitleInstance as title,
+            Combo as pkgCombo,
+            Combo as titleCombo,
+            TitleInstancePackagePlatform as tipp
+          where pkgCombo.toComponent=tipp
+            and pkgCombo.fromComponent=?
+            and titleCombo.toComponent=tipp
+            and titleCombo.fromComponent=title
+            and tipp.status = ?
+            and title.status = ?'''
+            ,[this,refdata_current,refdata_current]);
+      }
+      else {
+        all_titles = TitleInstance.executeQuery('''select distinct title
+          from TitleInstance as title,
+            Combo as pkgCombo,
+            Combo as titleCombo,
+            TitleInstancePackagePlatform as tipp
+          where pkgCombo.toComponent=tipp
+            and pkgCombo.fromComponent=?
+            and titleCombo.toComponent=tipp
+            and titleCombo.fromComponent=title'''
+            ,[this]);
+      }
     }
 
     return all_titles;
@@ -226,9 +238,9 @@ class Package extends KBComponent {
   }
   
   private static OAI_PKG_CONTENTS_QRY = '''
-select tipp.id, 
+select tipp.id,
        title.name, 
-       title.id, 
+       title.id,
        plat.name, 
        plat.id,
        tipp.startDate, 
@@ -246,7 +258,10 @@ select tipp.id,
        tipp.format, 
        tipp.embargo, 
        plat.primaryUrl,
-       tipp.lastUpdated
+       tipp.lastUpdated,
+       tipp.uuid,
+       title.uuid,
+       plat.uuid
     from TitleInstancePackagePlatform as tipp, 
          Combo as hostPlatformCombo, 
          Combo as titleCombo,  
@@ -336,6 +351,7 @@ select tipp.id,
     id:'packages',
     textDescription:'Package repository for GOKb',
     query:" from Package as o ",
+    curators: 'Package.CuratoryGroups',
     pageSize:3
   ]
 
@@ -355,7 +371,7 @@ select tipp.id,
   @Transient
   def toGoKBXml(builder, attr) {
 
-    log.debug("toGoKBXml...");
+    log.debug("toGoKBXml... ${this.class.name}:${id}");
 
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
@@ -366,7 +382,7 @@ select tipp.id,
     def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps');
     def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
 
-    log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
+    // log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
 
     // Get the tipps manually rather than iterating over the collection - For better management
     def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true]); // , fetchSize:250]);
@@ -412,11 +428,11 @@ select tipp.id,
         'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {
           tipps.each { tipp ->
-            builder.'TIPP' (['id':tipp[0]]) {
+            builder.'TIPP' (['id':tipp[0],'uuid':tipp[21]]) {
               builder.'status' (tipp[14]?.value)
               builder.'lastUpdated' (tipp[20]?sdf.format(tipp[20]):null)
               builder.'medium' (tipp[17]?.value)
-              builder.'title' (['id':tipp[2]]) {
+              builder.'title' (['id':tipp[2],'uuid':tipp[22]]) {
                 builder.'name' (tipp[1]?.trim())
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
@@ -424,7 +440,7 @@ select tipp.id,
                   }
                 }
               }
-              'platform'([id:tipp[4]]) {
+              'platform'([id:tipp[4],'uuid':tipp[23]]) {
                 'primaryUrl' (tipp[19]?.trim())
                 'name' (tipp[3]?.trim())
               }

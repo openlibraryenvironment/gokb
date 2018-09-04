@@ -57,6 +57,7 @@ class Platform extends KBComponent {
     id:'platforms',
     textDescription:'Platform repository for GOKb',
     query:" from Platform as o ",
+    curators: 'Platform.CuratoryGroups',
     statusFilter: ["Deleted"]
   ]
 
@@ -79,7 +80,7 @@ class Platform extends KBComponent {
     def identifiers = getIds()
 
     builder.'gokb' (attr) {
-      builder.'platform' (['id':(id)]) {
+      builder.'platform' (['id':(id), 'uuid':(uuid)]) {
         
         addCoreGOKbXmlFields(builder, attr)
 

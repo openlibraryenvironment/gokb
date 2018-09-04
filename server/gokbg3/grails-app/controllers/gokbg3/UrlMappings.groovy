@@ -21,5 +21,6 @@ class UrlMappings {
         "500"(view:'/login/denied', exception: AccessDeniedException)
         "404"(controller:'home', action:'index') {status = '404'}
         "403"(view:'/login/denied')
+        "401"(view:'/login/denied')
     }
 }

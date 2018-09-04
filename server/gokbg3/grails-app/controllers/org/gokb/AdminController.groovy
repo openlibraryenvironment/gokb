@@ -136,6 +136,19 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def ensureUuids() {
+
+    Job j = concurrencyManagerService.createJob {
+      cleanupService.ensureUuids()
+    }.startOrQueue()
+
+    j.description = "Ensure UUIDs for components"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+
+  }
+
   def copyUploadedFile(inputfile, deposit_token) {
 
    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'

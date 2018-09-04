@@ -20,7 +20,7 @@ class Org extends KBComponent {
     providedPackages  : Package,
     children    : Org,
     'previous'  : Org,
-    imprints  : Imprint,
+    ownedImprints  : Imprint,
     publishedTitles    : TitleInstance,
     issuedTitles    : TitleInstance,
     providedPlatforms  : Platform,
@@ -158,7 +158,7 @@ class Org extends KBComponent {
     def identifiers = getIds()
     
     builder.'gokb' (attr) {
-      builder.'org' (['id':(id)]) {
+      builder.'org' (['id':(id), 'uuid':(uuid)]) {
        
         addCoreGOKbXmlFields ( builder, attr )
         builder.'homepage' (homepage)
@@ -208,7 +208,7 @@ class Org extends KBComponent {
         if (provides) {
           'providedPackages' {
             provides.each { pkg ->
-              builder.'package' (['id':pkg.id]) {
+              builder.'package' (['id':pkg.id, 'uuid':pkg.uuid]) {
                 builder.'name' (pkg.name)
                 builder.'identifiers' {
                   pkg.ids?.each { tid ->

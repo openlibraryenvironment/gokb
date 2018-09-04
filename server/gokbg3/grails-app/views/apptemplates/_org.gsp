@@ -181,7 +181,7 @@
                                                       </tr>
                                                     </thead>
                                                     <tbody>
-                                                      <g:each in="${d.getCombosByPropertyName('imprints')}" var="p">
+                                                      <g:each in="${d.getCombosByPropertyName('ownedImprints')}" var="p">
                                                         <tr>
                                                           <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
                                                           <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>

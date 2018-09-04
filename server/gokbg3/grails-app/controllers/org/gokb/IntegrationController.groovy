@@ -164,6 +164,7 @@ class IntegrationController {
     render result as JSON
   }
 
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def createJsonLDOrg(ldjsonorg) {
     log.debug("createJsonLDOrg");
     //             "@id": "http://www.lib.ncsu.edu/ld/onld/00000134" ,
@@ -213,7 +214,7 @@ class IntegrationController {
       log.error("Problem saving new org. ${new_org.errors}");
     }
   }
-
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def enrichJsonLDOrg(org, jsonld) {
     log.debug("Enrich existing..");
     request.JSON.'skos:altLabel'?.each { al ->

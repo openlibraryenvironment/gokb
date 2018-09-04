@@ -46,10 +46,10 @@
                <div class="panel-heading">
                  <h5><g:message code="facet.so.${facet.key}" default="${facet.key}" /></h5>
                </div>
-               <div class="panel-body">
+               <div class="panel-body" style="max-height:300px;overflow:auto;overflow-x:hidden">
                  <ul>
                    <g:each in="${facet.value?.sort{it.display}}" var="v">
-                     <li>
+                     <li style="margin-left:-5px">
                        <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
                        ${v.display} (${v.count})
                      </li>

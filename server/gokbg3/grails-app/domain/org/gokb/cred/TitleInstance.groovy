@@ -112,6 +112,7 @@ class TitleInstance extends KBComponent {
 
   def availableActions() {
     [ [code:'method::deleteSoft', label:'Delete'],
+      [code:'method::setActive', label:'Make Current'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
       [code:'title::merge', label:'Title Merge']
@@ -215,11 +216,13 @@ class TitleInstance extends KBComponent {
     def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
-    ql = TitleInstance.executeQuery("select t.id, t.name from TitleInstance as t where lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) )", ["${params.q?.toLowerCase()}%","${params.q}%"],[max:20]);
+    ql = TitleInstance.executeQuery("select t from TitleInstance as t where lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) )", ["${params.q?.toLowerCase()}%","${params.q}%"],[max:20]);
 
     if ( ql ) {
       ql.each { t ->
-        result.add([id:"org.gokb.cred.TitleInstance:${t[0]}",text:"${t[1]} "])
+        if( !params.filter1 || t.status.value == params.filter1 ){
+          result.add([id:"${t.class.name}:${t.id}",text:"${t.name} "])
+        }
       }
     }
 
@@ -264,7 +267,7 @@ class TitleInstance extends KBComponent {
       def history = getTitleHistory()
 
       builder.'gokb' (attr) {
-        builder.'title' (['id':(id)]) {
+        builder.'title' (['id':(id), 'uuid':(uuid)]) {
 
           addCoreGOKbXmlFields(builder, attr)
           
@@ -289,8 +292,8 @@ class TitleInstance extends KBComponent {
               if ( pub_org ) {
                 def org_ids = pub_org.ids ?: []
 
-                builder."publisher" (['id': pub_org?.id]) {
-                  "name" (pub_org?.name)
+                builder."publisher" (['id': pub_org.id, 'uuid': pub_org.uuid]) {
+                  "name" (pub_org.name)
                   if ( pc.startDate ) {
                     "startDate" (pc.startDate)
                   }
@@ -314,7 +317,7 @@ class TitleInstance extends KBComponent {
           }
 
           if (theIssuer) {
-            builder."issuer" (['id': theIssuer.id]) {
+            builder."issuer" (['id': theIssuer.id, 'uuid': theIssuer.uuid]) {
               "name" (theIssuer.name)
             }
           }
@@ -327,6 +330,7 @@ class TitleInstance extends KBComponent {
                   if(hti){
                     "from" {
                       title(hti.name)
+                      uuid(hti.id)
                       internalId(hti.id)
                       "identifiers" {
                         hti.ids?.each { tid ->
@@ -343,6 +347,7 @@ class TitleInstance extends KBComponent {
                   if(hti){
                     "to" {
                       title(hti.name)
+                      uuid(hti.id)
                       internalId(hti.id)
                       "identifiers" {
                         hti.ids?.each { tid ->
@@ -361,15 +366,15 @@ class TitleInstance extends KBComponent {
 
           builder.'TIPPs' (count:tipps?.size()) {
             tipps?.each { tipp ->
-              builder.'TIPP' (['id':tipp.id]) {
+              builder.'TIPP' (['id':tipp.id, 'uuid':tipp.uuid]) {
 
                 def pkg = tipp.pkg
-                builder.'package' (['id':pkg?.id]) {
+                builder.'package' (['id':pkg?.id, 'uuid':pkg?.uuid]) {
                   builder.'name' (pkg?.name)
                 }
 
                 def platform = tipp.hostPlatform
-                builder.'platform'(['id':platform?.id]) {
+                builder.'platform'(['id':platform?.id, 'uuid':platform?.uuid]) {
                   builder.'name' (platform?.name)
                 }
 
@@ -479,7 +484,7 @@ class TitleInstance extends KBComponent {
     def full_th = getFullTitleHistory()
     full_th.fh.each { history_event ->
       history_event.participants.each { history_event_participant ->
-        if ( history_event_participant.name == title ) {
+        if ( history_event_participant.participant.name == title ) {
           result = history_event_participant
         }
       }

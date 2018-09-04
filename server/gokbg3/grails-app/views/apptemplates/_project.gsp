@@ -81,7 +81,7 @@
 					<g:annotatedLabel owner="${d}" property="createdBy">Created By</g:annotatedLabel>
 				</dt>
 				<dd>
-					${ d.createdBy.displayName ?: d.createdBy.username }
+					${ d.createdBy?.displayName ?: d.createdBy?.username }
 				</dd>
 				
         <dt>
@@ -102,14 +102,14 @@
           </dt>
 				</g:else>
         <dd>
-          ${ d.lastCheckedOutBy.displayName ?: d.lastCheckedOutBy.username }
+          ${ d.lastCheckedOutBy?.displayName ?: d.lastCheckedOutBy?.username }
         </dd>
 
 				<dt>
 					<g:annotatedLabel owner="${d}" property="lastModifiedBy">Last Modified By</g:annotatedLabel>
 				</dt>
 				<dd>
-					${ d.modifiedBy.displayName ?: d.modifiedBy.username }
+					${ d.modifiedBy?.displayName ?: d.modifiedBy?.username }
 				</dd>
 
 				<g:if test="${d.id != null}">

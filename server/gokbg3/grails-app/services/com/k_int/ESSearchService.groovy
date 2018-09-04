@@ -73,7 +73,7 @@ class ESSearchService{
           log.debug("srb start to add query and aggregration query string is ${query_str}")
     
           srb.setQuery(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
-             .addAggregation(AggregationBuilders.terms('consortiaName').size(25).field('consortiaName'))
+             .addAggregation(AggregationBuilders.terms('curatoryGroup').size(25).field('curatoryGroup'))
              .addAggregation(AggregationBuilders.terms('cpname').size(25).field('cpname.keyword'))
              .addAggregation(AggregationBuilders.terms('type').field('rectype.keyword'))
              .addAggregation(AggregationBuilders.terms('startYear').size(25).field('startYear.keyword'))
@@ -198,4 +198,10 @@ class ESSearchService{
 
     result;
   }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
+    log.debug("Destroy");
+  }
+
 }

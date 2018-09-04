@@ -511,7 +511,7 @@ class PackagesController {
 
               writer.write( sanitize( tipp.getId() ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.getId() ) + '\t' + sanitize( tipp.title.name ) + '\t' +
                             sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
-                            sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
+                            sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.OAStatus?.value ) + '\t' +
                             sanitize( tipp.title.continuingSeries?.value ) + '\t' +
                             sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
                             sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +

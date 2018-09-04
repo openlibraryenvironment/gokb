@@ -32,6 +32,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/**/favicon.ico',      filters: 'none'],
         [pattern: '/error',               filters: 'none'],
         [pattern: '/ajaxSupport/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/fwk/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/api/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/integration/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/packages/deposit',    filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
@@ -149,11 +150,40 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'KBComponent.Status',
+          prompt:'Status',
+          qparam:'qp_status',
+          placeholder:'Component Status',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status'],
+          // II: Default not yet implemented
+          default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'Package.ListStatus',
+          prompt:'List Status',
+          qparam:'qp_liststatus',
+          placeholder:'List Status',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'listStatus'],
+        ],
+        [
+          type:'lookup',
           baseClass:'org.gokb.cred.Org',
           prompt:'Provider',
           qparam:'qp_provider',
           placeholder:'Provider',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'provider'],
+          hide:false
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.Platform',
+          prompt:'Platform',
+          qparam:'qp_platform',
+          placeholder:'Platform',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'nominalPlatform'],
           hide:false
         ],
       ],
@@ -237,7 +267,7 @@ globalSearchTemplates = [
   ],
   '1titles':[
     baseclass:'org.gokb.cred.TitleInstance',
-    title:'Titles',
+    title:'Titles (General)',
     group:'Secondary',
     // defaultSort:'name',
     // defaultOrder:'asc',
@@ -363,6 +393,12 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'title.name'],
         ],
         [
+          prompt:'Title ID',
+          qparam:'qp_title_id',
+          placeholder:'Title ID',
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.id', 'type' : 'java.lang.Long']
+        ],
+        [
           type:'lookup',
           baseClass:'org.gokb.cred.Org',
           prompt:'Content Provider',
@@ -422,10 +458,11 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Title', property:'title?.name',link:[controller:'resource',action:'show',id:'x.r.title?.class.name+\':\'+x.r.title?.id'] ],
+        [heading:'Title', qpEquiv:'qp_title_id', property:'title?.name',link:[controller:'resource',action:'show',id:'x.r.title?.class.name+\':\'+x.r.title?.id'] ],
+        [heading:'Type', qpEquiv:'qp_title_id', property:'title?.getNiceName()'],
         [heading:'Status', property:'status?.value'],
-        [heading:'Package', property:'pkg?.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class.name+\':\'+x.r.pkg.id'] ],
-        [heading:'Platform', property:'hostPlatform?.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
+        [heading:'Package', qpEquiv:'qp_pkg_id', property:'pkg?.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class.name+\':\'+x.r.pkg.id'] ],
+        [heading:'Platform', qpEquiv:'qp_plat_id', property:'hostPlatform?.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
       ]
     ]
   ],

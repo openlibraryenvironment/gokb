@@ -19,7 +19,6 @@
   <g:layoutHead />
   <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: '/gokb'}"; </asset:script>
   <asset:javascript src="gokb/application.grass.js" />
-  <asset:javascript src="jquery-2.2.0.min.js"/>
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
@@ -185,6 +184,7 @@
                     <li><g:link controller="admin" action="recalculateStats" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Recalculate Statistics</g:link></li>
                     <g:if env="development">
                       <li><g:link controller="admin" action="cleanup" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Expunge Deleted Records</g:link></li>
+                      <li><g:link controller="admin" action="ensureUuids" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Ensure UUIDs</g:link></li>
                     </g:if>
                     <li><g:link controller="admin" action="triggerEnrichments" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
                     <li><g:link controller="admin" action="buildExtension" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Build Refine Extensions</g:link></li>
@@ -222,6 +222,20 @@
     <div id="page-wrapper" class="${ params.controller ?: 'default' }-display" >
       <div class="row" >
         <div id="page-content" class="col-lg-12">
+          <g:if test="${flash.message}">
+            <div id="msg" style="display:none">
+              <ul>
+              <g:if test="${flash.message instanceof String}">
+                <li>${flash.message}</li>
+              </g:if>
+              <g:else>
+                <g:each in="${flash.message}" var="msg">
+                  <li>${msg}</li>
+                </g:each>
+              </g:else>
+              </ul>
+            </div>
+          </g:if>
           <g:layoutBody />
         </div>
         <!-- /.col-lg-12 -->
@@ -232,26 +246,6 @@
 
   </div>
   <!-- /#wrapper -->
-      <g:if test="${!grailsApplication.config.zendesk_disabled}">
-	<asset:script type="text/javascript">
-<!-- Start of gokb Zendesk Widget script -->
-/*<![CDATA[*/window.zEmbed||function(e,t){var n,o,d,i,s,a=[],r=document.createElement("iframe");window.zEmbed=function(){a.push(arguments)},window.zE=window.zE||window.zEmbed,r.src="javascript:false",r.title="",r.role="presentation",(r.frameElement||r).style.cssText="display: none",d=document.getElementsByTagName("script"),d=d[d.length-1],d.parentNode.insertBefore(r,d),i=r.contentWindow,s=i.document;try{o=s}catch(c){n=document.domain,r.src='javascript:var d=document.open();d.domain="'+n+'";void(0);',o=s}o.open()._l=function(){var o=this.createElement("script");n&&(this.domain=n),o.id="js-iframe-async",o.src=e,this.t=+new Date,this.zendeskHost=t,this.zEQueue=a,this.body.appendChild(o)},o.write('<body onload="document._l();">'),o.close()}("https://assets.zendesk.com/embeddable_framework/main.js","gokb.zendesk.com");
-/*]]>*/
-<!-- End of gokb Zendesk Widget script -->
-	</asset:script>
-      </g:if>
-
-  <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
-    <asset:script type="text/javascript">
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-      ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
-      ga('send', 'pageview');
-    </asset:script>
-  </g:if>
   <asset:deferredScripts/>
 
 

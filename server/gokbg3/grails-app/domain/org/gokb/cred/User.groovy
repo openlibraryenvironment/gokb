@@ -194,7 +194,7 @@ class User extends Party {
   }
 
   public String toString() {
-    return "${username} / ${displayName?:'No display name'}".toString();
+    return "${username}${displayName? ' / '+ displayName : ''}".toString();
   }
 
   public String getNiceName() {

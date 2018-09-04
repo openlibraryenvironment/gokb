@@ -253,6 +253,11 @@ where cp.owner = :c
   // Canonical name field - title for a title instance, name for an org, etc, etc, etc
 
   /**
+   * UUID
+   */
+  String uuid
+
+  /**
    * Generic name for the component. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
    * conventions when trying to decide what to map to this property in a subclass. The name should be a string that reasonably identifies this
    * object when placed in a list of other components.
@@ -311,6 +316,7 @@ where cp.owner = :c
   Set outgoingCombos = []
   Set incomingCombos = []
   Set reviewRequests = []
+  Set variantNames = []
 
   // Org provOrg
   // String provUpdateFrequency
@@ -383,6 +389,7 @@ where cp.owner = :c
   static mapping = {
     tablePerHierarchy false
     id column:'kbc_id'
+    uuid column:'kbc_uuid', type:'text'
     version column:'kbc_version'
     name column:'kbc_name', type:'text', index:'kbc_name_idx'
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
@@ -438,6 +445,13 @@ where cp.owner = :c
       shortcode = generateShortcode(name)
     }
   }
+
+  protected def generateUuid () {
+    if (!uuid) {
+      uuid = UUID.randomUUID().toString()
+    }
+  }
+
 
   static def generateShortcode(String text) {
     def candidate = text.trim().replaceAll(" ","_")
@@ -640,6 +654,7 @@ where cp.owner = :c
     generateShortcode()
     generateNormname()
     generateComponentHash()
+    generateUuid()
 
     // Ensure any defaults defined get set.
     ensureDefaults()
@@ -673,6 +688,11 @@ where cp.owner = :c
       generateNormname();
       generateComponentHash()
     }
+
+    if (!uuid) {
+      generateUuid()
+    }
+
     def user = springSecurityService?.currentUser
     if ( user != null ) {
       this.lastUpdatedBy = user
@@ -761,6 +781,11 @@ where cp.owner = :c
     save(failOnError:true)
   }
 
+  public void setActive (context) {
+    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
+    save(failOnError:true)
+  }
+
   @Transient
   public boolean isRetired () {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
@@ -821,7 +846,7 @@ where cp.owner = :c
 //       log.debug("Qry: ${hql_query}, Params:${hql_params} : result.size=${combos?.size()}");
     }
     else {
-      log.error("This.id == null");
+      log.debug("This.id == null");
     }
 
     return combos

@@ -26,15 +26,21 @@
 
       $('#save-btn').click(function() {
       
-      	// Build a list of params.
-      	var params = {};
-      	$('span.editable').not('.editable-empty').each (function(){
-      		var editable = $(this);
-      		
-      		// Add the parameter to the params object.
-      		params[editable.attr("data-name")] = editable.text();
-      	});
-      	
+        // Build a list of params.
+        var params = {};
+        $('span.editable').not('.editable-empty').each (function(){
+            var editable = $(this);
+
+            // Add the parameter to the params object.
+            params[editable.attr("data-name")] = editable.text();
+        });
+
+        $('a.editable').not('.editable-empty').each (function(){
+            var editable = $(this);
+
+            params[editable.attr("data-name")] = editable.attr('target-id');
+        })
+
       	// Now we have the params let's submit them to the controller.
       	var jqxhr = $.post( "${createLink(controller:'create', action: 'process', params:[cls:params.tmpl])}", params )
 					.done(function(data) {

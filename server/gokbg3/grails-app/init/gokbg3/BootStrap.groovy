@@ -170,22 +170,20 @@ class BootStrap {
         log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}");
         kbc.generateNormname()
         kbc.save(flush:true, failOnError:true);
-        kbc.discard()
         ctr++
       }
       log.debug("${ctr} components updated");
 
     log.info("GoKB missing normalised identifiers");
 
-    def id_ctr = 0;
-    Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
-        Identifier i = Identifier.get(id_id)
-        i.generateNormname()
-        i.save(flush:true, failOnError:true)
-        i.discard()
-        id_ctr++
-    }
-    log.debug("${id_ctr} identifiers updated");
+      def id_ctr = 0;
+      Identifier.executeQuery("select id.id from Identifier as id where id.normname is null and id.value is not null").each { id_id ->
+          Identifier i = Identifier.get(id_id)
+          i.generateNormname()
+          i.save(flush:true, failOnError:true)
+          id_ctr++
+      }
+      log.debug("${id_ctr} identifiers updated");
 
     log.info("GoKB defaultSortKeys()");
     defaultSortKeys ()
@@ -1131,6 +1129,9 @@ class BootStrap {
             .endObject()
             .startObject("componentType") 
               .field("type","keyword") 
+            .endObject()
+            .startObject("uuid")
+              .field("type","keyword")
             .endObject()
             .startObject("status")
               .field("type","keyword")

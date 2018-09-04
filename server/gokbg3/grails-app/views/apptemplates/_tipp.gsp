@@ -3,7 +3,7 @@
     <dt>
       <g:annotatedLabel owner="${d}" property="title">Title</g:annotatedLabel>
     </dt>
-    <dd>
+    <dd style="max-width:60%">
       <g:link controller="resource" action="show"
         id="${d.title?.class?.name+':'+d.title?.id}">
         ${(d.title?.name)?:'Empty'}

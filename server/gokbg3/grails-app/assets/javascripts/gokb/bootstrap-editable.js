@@ -1756,6 +1756,9 @@ Makes editable any HTML element on the page. Applied as jQuery method.
             //emptytext shown only for enabled
             if(!this.options.disabled) {
                 if (this.isEmpty) {
+                    if(this.$element.attr('target-id')) {
+                      this.$element.removeAttr('target-id');
+                    }
                     this.$element.html(this.options.emptytext);
                     if(this.options.emptyclass) {
                         this.$element.addClass(this.options.emptyclass);
@@ -3781,8 +3784,14 @@ $(function(){
            //data may be array (when multiple values allowed)
            if($.isArray(data)) {
                //collect selected data and show with separator
+
                text = [];
                $.each(data, function(k, v){
+
+                  if(v && typeof v === 'object' && v.id) {
+                    $(element).attr('target-id',v.id);
+                  }
+
                    text.push(v && typeof v === 'object' ? that.formatSelection(v) : v);
                });
            } else if(data) {

@@ -32,7 +32,7 @@
           var popover = editor_el.closest('.popover');
 
           // Save the data.
-          var value = editor_el.code();
+          var value = editor_el.summernote('code');
           
           // The edited element.
           var el = $('.annotation-editable', popover)
@@ -52,7 +52,7 @@
             el.removeClass('annotation-empty');
             
             // Close the editor
-            editor_el.destroy();
+            editor_el.summernote('destroy');
             
             // Remove the editor buttons.
             showHideEditorButtons(editor_el, false);
@@ -70,7 +70,7 @@
       // Append the cancel button.
       wrapper.append(
         $('<button class="btn btn-small btn-danger" />').text("Cancel").click(function(e) {
-          editor_el.destroy();
+          editor_el.summernote('destroy');
           showHideEditorButtons(editor_el, false);
 
           // Shift the element back.
@@ -118,7 +118,8 @@
       var me = $(e.target);
       
       // Editable annotation.
-      if (!me.hasClass('annotation-editable')) {
+
+      if (!me.attr('class') || (!me.hasClass('annotation-editable') && me.attr('class').search('note\-.*') == -1)) {
         $('.annotated').popover('hide');
       }
       
@@ -138,9 +139,11 @@
             ['para', ['ul', 'ol']],
             ['web',['link']]
           ],
-          oninit: function() {
-            showHideEditorButtons(me, true);
-            original_html[me.attr("id")] = me.html();
+          callbacks: {
+            onInit: function() {
+              showHideEditorButtons(me, true);
+              original_html[me.attr("id")] = me.html();
+            }
           }
         });
         
@@ -181,7 +184,7 @@
           
           // Listen to the hidden even and destroy any editor that might exist here.
           annotation.destroy();
-  
+
           // Also need to ensure we remove the buttons.
           showHideEditorButtons(annotation, false);
           
@@ -192,6 +195,10 @@
           var editableEl = $('.annotation-editable', $(this).next());
           if (editableEl.length > 0) {
             
+            editableEl.tooltip({
+              "title" : editableEl.attr("data-original-title")
+            });
+          }else{
             editableEl.tooltip({
               "title" : editableEl.attr("data-original-title")
             });

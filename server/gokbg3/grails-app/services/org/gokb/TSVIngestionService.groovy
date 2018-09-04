@@ -936,18 +936,20 @@ class TSVIngestionService {
       log.debug("Extract host from ${the_kbart.title_url}");
 
       def title_url_host = null
+      def title_url_protocol = null
 
       try {
         def title_url = new URL(the_kbart.title_url)
         log.debug("Parsed title_url : ${title_url}");
         title_url_host = title_url.getHost()
+        title_url_protocol = title_url.getProtocol()
       }
       catch ( Exception e ) {
       }
 
       if ( title_url_host ) {
         log.debug("Got platform from title host :: ${title_url_host}")
-        platform = handlePlatform(title_url_host, source)
+        platform = handlePlatform(title_url_host, title_url_protocol, source)
         log.debug("Platform result : ${platform}");
       }
       else {
@@ -1392,11 +1394,18 @@ class TSVIngestionService {
     }
   }
 
-  def handlePlatform(host, the_source) {
+  def handlePlatform(host, protocol, the_source) {
 
     def result;
     // def platforms=Platform.findAllByPrimaryUrl(host);
-    def platforms=Platform.executeQuery("select p from Platform as p where p.primaryUrl=?",[host],[readonly:false])
+
+    def orig_host = host
+
+    if(host.startsWith("www.")){
+      host = host.substring(4)
+    }
+
+    def platforms=Platform.executeQuery("select p from Platform as p where p.primaryUrl like :host",['host': "%" + host + "%"],[readonly:false])
 
 
     switch (platforms.size()) {
@@ -1405,7 +1414,9 @@ class TSVIngestionService {
         //no match. create a new platform!
         log.debug("Create new platform ${host}, ${host}, ${the_source}");
 
-          result = new Platform( name:host, primaryUrl:host, source:the_source)
+          def newUrl = protocol + "://" + orig_host
+
+          result = new Platform( name:host, primaryUrl:newUrl, source:the_source)
 
           // log.debug("Validate new platform");
           // result.validate();
@@ -1508,7 +1519,7 @@ class TSVIngestionService {
         log.warn("Possible malformed last row");
       }
 
-      log.debug(result)
+      log.debug("${result}")
       // log.debug(new KBartRecord(result))
       //this is a cheat cos I don't get why springer files don't work!
       // results<<new KBartRecord(result)
@@ -1516,7 +1527,7 @@ class TSVIngestionService {
       nl=csv.readNext()
       rownum++
     }
-    log.debug(results)
+    log.debug("${results}")
     results
   }
 

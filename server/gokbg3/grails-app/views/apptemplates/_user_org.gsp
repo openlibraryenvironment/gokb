@@ -20,7 +20,7 @@
       <tbody>
         <g:each in="${d.members}" var="m">
           <tr>
-            <td>${m.party.displayName}</td>
+            <td>${m.party.displayName ?: m.party }</td>
             <td>${m.status?.value}</td>
             <td>${m.role?.value}</td>
             <td>
@@ -70,7 +70,7 @@
   </dd>
 
 
-  <%-- <dt><g:annotatedLabel owner="${d}" property="name">Folders / Collections</g:annotatedLabel></dt>
+  <dt><g:annotatedLabel owner="${d}" property="name">Folders / Collections</g:annotatedLabel></dt>
   <dd>
     <table class="table table-bordered table-striped">
       <thead>
@@ -101,9 +101,9 @@
         </g:form>
       </tfoot>
     </table>
-  </dd> --%>
+  </dd>
 
-<%--   <dt><g:annotatedLabel owner="${d}" property="name">Load Title List</g:annotatedLabel> (<a href="https://github.com/k-int/gokb-phase1/wiki/Title-List-Upload-Format">Format</a>)</dt>
+  <dt><g:annotatedLabel owner="${d}" property="name">Load Title List</g:annotatedLabel> (<a href="https://github.com/k-int/gokb-phase1/wiki/Title-List-Upload-Format">Format</a>)</dt>
   <dd class="container">
     <g:form controller="folderUpload" action="processSubmission" method="post" enctype="multipart/form-data">
       <input type="hidden" name="ownerOrg" value="${d.id}"/>
@@ -119,7 +119,7 @@
         </span>
       </div>
     </g:form>
-  </dd> --%>
+  </dd>
   </g:if>
 
 </dl>

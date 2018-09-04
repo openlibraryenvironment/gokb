@@ -30,23 +30,18 @@ class OtherInstance extends TitleInstance {
    * See if properties that might impact the mapping of this instance to a work have changed.
    * If so, fire the appropriate event to cause a remap. 
    */
-  @Transient
-  def onChange = { oldMap,newMap ->
 
-    log.debug("OtherInstance::onChange handler");
-    println("onChange handler");
+  def afterUpdate() {
 
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
-    if ( ( oldMap.name != newMap.name ) ) {
-      log.debug("OtherInstance::onChange detected an update to properties that might change the work mapping. Looking up");
-      submitRemapWorkTask(newMap);
+    if ( hasChanged('name') ) {
+      log.debug("Detected an update to properties for ${id} that might change the work mapping. Looking up");
+      submitRemapWorkTask();
     }
   }
 
-  @Transient
-  def onSave = { newMap ->  
-    log.debug("OtherInstance::onSave handler");
-    submitRemapWorkTask(newMap);
+  def afterInsert() {
+    submitRemapWorkTask();
   }
 
   def submitRemapWorkTask(newMap) {

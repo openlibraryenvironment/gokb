@@ -28,32 +28,36 @@ class UploadController {
         def deposit_token = java.util.UUID.randomUUID().toString();
         temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
 
-        def info = analyse(temp_file);
+        if ( temp_file.exists() ) {
+          def info = analyse(temp_file);
 
-        log.debug("Got file with md5 ${info.md5sumHex}.. lookup");
+          log.debug("Got file with md5 ${info.md5sumHex}.. lookup");
 
-        def existing_file = DataFile.findByMd5(info.md5sumHex);
+          def existing_file = DataFile.findByMd5(info.md5sumHex);
 
-        if ( existing_file != null ) {
-          log.debug("Found a match !")
-          redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
-        }
-        else {
-          def new_datafile = new DataFile(
-                                          guid:deposit_token,
-                                          md5:info.md5sumHex,
-                                          uploadName:upload_filename, 
-                                          name:upload_filename, 
-                                          filesize:info.filesize, 
-                                          uploadMimeType:upload_mime_type).save(flush:true)
+          if ( existing_file != null ) {
+            log.debug("Found a match !")
+            redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+          }
+          else {
+            def new_datafile = new DataFile(
+                                            guid:deposit_token,
+                                            md5:info.md5sumHex,
+                                            uploadName:upload_filename,
+                                            name:upload_filename,
+                                            filesize:info.filesize,
+                                            uploadMimeType:upload_mime_type).save(flush:true)
 
-          uploadAnalysisService.analyse(temp_file, new_datafile);
-          log.debug("Completed Analysis");
+            uploadAnalysisService.analyse(temp_file, new_datafile);
+            log.debug("Completed Analysis");
 
-          new_datafile.fileData = temp_file.getBytes()
-          new_datafile.save(flush:true)
-          log.debug("Saved file on database ")
-          redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${new_datafile.id}")
+            new_datafile.fileData = temp_file.getBytes()
+            new_datafile.save(flush:true)
+            log.debug("Saved file on database ")
+            redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${new_datafile.id}")
+          }
+        }else{
+          log.error("Could not create temp file!")
         }
       }
       catch ( Exception e ) {
@@ -79,8 +83,15 @@ class UploadController {
     def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
     def temp_file = new File(temp_file_name);
 
+    temp_file.createNewFile()
+
+    if( temp_file?.canWrite() ) {
     // Copy the upload file to a temporary space
-    inputfile.transferTo(temp_file);
+
+      inputfile.transferTo(temp_file);
+    } else {
+      log.debug("copy to ${temp_file_name} failed..")
+    }
 
     temp_file
   }

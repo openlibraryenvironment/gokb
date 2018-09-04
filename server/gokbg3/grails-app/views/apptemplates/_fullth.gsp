@@ -13,7 +13,9 @@
 
     <g:each in="${fth}" var="theevent" status="i1">
       <tr>
-        <td><g:formatDate date="${theevent?.eventDate}" format="yyyy-MM-dd"/></td>
+        <td>
+          <g:xEditable class="ipe" owner="${theevent}" type="date" field="eventDate" />
+        </td>
         <td>
           <ul>
             <g:each in="${theevent?.participants}" var="p">
