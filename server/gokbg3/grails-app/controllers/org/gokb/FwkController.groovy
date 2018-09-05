@@ -52,7 +52,7 @@ class FwkController {
 
           if ( evt.oldValue && evt.oldValue.startsWith("[id:org.gokb.cred") ) {
             event.oldValue = getComboValueMaps(evt.oldValue)
-          }else if (evt.oldValue.startsWith("[id:")) {
+          }else if (evt.oldValue?.startsWith("[id:")) {
             event.oldValue = evt.oldValue.split(']')[1]
           }else {
             event.oldValue = evt.oldValue
@@ -60,7 +60,7 @@ class FwkController {
 
           if ( evt.newValue && evt.newValue.startsWith("[id:org.gokb.cred") ) {
             event.newValue = getComboValueMaps(evt.newValue)
-          }else if (evt.newValue.startsWith("[id:")) {
+          }else if (evt.newValue?.startsWith("[id:")) {
             event.newValue = evt.newValue.split(']')[1]
           }else {
             event.newValue = evt.newValue

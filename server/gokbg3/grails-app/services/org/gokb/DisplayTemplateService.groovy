@@ -28,6 +28,7 @@ public class DisplayTemplateService {
     globalDisplayTemplates.put('org.gokb.cred.DataFile',[ type:'staticgsp', rendername:'datafile' ]);
     globalDisplayTemplates.put('org.gokb.cred.KBDomainInfo',[ type:'staticgsp', rendername:'domainInfo' ]);
     globalDisplayTemplates.put('org.gokb.cred.Imprint',[ type:'staticgsp', rendername:'imprint' ]);
+    globalDisplayTemplates.put('org.gokb.cred.Identifier',[ type:'staticgsp', rendername:'identifier' ]);
     globalDisplayTemplates.put('org.gokb.cred.IdentifierNamespace',[ type:'staticgsp', rendername:'identifier_namespace' ]);
     globalDisplayTemplates.put('org.gokb.cred.Macro',[ type:'staticgsp', rendername:'macro' ]);
     globalDisplayTemplates.put('org.gokb.cred.DSCategory',[ type:'staticgsp', rendername:'ds_category' ]);

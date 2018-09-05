@@ -32,6 +32,10 @@ class KBComponentVariantName {
         status (nullable:true, blank:false)
   }
 
+  String getLogEntityId() {
+      "${this.class.name}:${id}"
+  }
+
   def beforeInsert() {
     // Generate the any necessary values.
     normVariantName = GOKbTextUtils.normaliseString(variantName);
