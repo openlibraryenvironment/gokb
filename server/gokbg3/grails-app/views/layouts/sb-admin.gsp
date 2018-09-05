@@ -163,9 +163,9 @@
               </g:if>
 
               <li class="${params?.controller == "savedItems" ? 'active' : ''}" ><g:link controller="savedItems" action="index"><i class="fa fa-folder fa-fw"></i> Saved Items</g:link></li>
-
+              <sec:ifAnyGranted roles="[ROLE_EDITOR, ROLE_CONTRIBUTOR, ROLE_ADMIN, ROLE_SUPERUSER]">
               <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
-
+              </sec:ifAnyGranted>
               <g:if test="${grailsApplication.config.feature.directUpload}">
                 <li class="${params?.controller == "ingest" ? 'active' : ''}" ><g:link controller="ingest" action="index"><i class="fa fa-upload fa-fw"></i> Direct Ingest</g:link></li>
               </g:if>
