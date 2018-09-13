@@ -47,6 +47,7 @@ class PackagesController {
     result
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def connectedRRs() {
     log.debug("connectedRRs::${params}")
     def result = [:]
@@ -66,7 +67,10 @@ class PackagesController {
 
       result.reviewRequests = pkg.getReviews(open_only, restr)
     }
-    render template: 'revreqtabpkg', model: [d:result], contentType:'text/html'
+    withFormat {
+      html { render template: 'revreqtabpkg', model: [d:result], contentType:'text/html' }
+      json { render result as JSON }
+    }
   }
 
 

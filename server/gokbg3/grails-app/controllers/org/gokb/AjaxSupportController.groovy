@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.converters.JSON
+import java.text.SimpleDateFormat
 
 import com.k_int.ClassUtils
 
@@ -230,12 +231,20 @@ class AjaxSupportController {
                 }
               }
               else {
+                log.debug("checking for type of property -> ${p.type}")
                 switch ( p.type ) {
                   case Long.class:
                     log.debug("Set simple prop ${p.name} = ${params[p.name]} (as long=${Long.parseLong(params[p.name])})");
                     new_obj[p.name] = Long.parseLong(params[p.name]);
                     break;
+
+                  case Date.class:
+                    def dateObj = params.date(p.name, 'yyyy-MM-dd')
+                    new_obj[p.name] = dateObj
+                    log.debug("Set simple prop ${p.name} = ${params[p.name]} (as date ${dateObj}))");
+                    break;
                   default:
+                    log.debug("Default for type ${p.type}")
                     log.debug("Set simple prop ${p.name} = ${params[p.name]}");
                     new_obj[p.name] = params[p.name]
                     break;

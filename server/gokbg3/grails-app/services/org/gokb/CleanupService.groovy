@@ -160,6 +160,7 @@ class CleanupService {
         }
         catch(Exception e){
           log.debug("Skip component id ${kbc_id}")
+          log.debug("${e}")
           skipctr++
         }
       }

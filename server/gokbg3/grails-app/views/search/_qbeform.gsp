@@ -8,8 +8,8 @@
       <input type="hidden" name="hide" value="${hidden_var}"/>
     </g:each>
 
-    <g:if test="${params.refOid}">
-      <input type="hidden" name="refOid" value="${params.refOid}"/>
+    <g:if test="${refOid}">
+      <input type="hidden" name="refOid" value="${refOid}"/>
     </g:if>
 
     <g:each in="${formdefn}" var="fld">
@@ -38,6 +38,10 @@
   <g:form method="get" class="form-horizontal" controller="search" role="form">
 
     <input type="hidden" name="qbe" value="${params.qbe}"/>
+
+    <g:if test="${refOid}">
+      <input type="hidden" name="refOid" value="${refOid}"/>
+    </g:if>
 
     <g:each in="${hide}" var="hidden_var">
       <input type="hidden" name="hide" value="${hidden_var}"/>

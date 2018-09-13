@@ -93,7 +93,7 @@ class WorkflowController {
 
             case "method" :
 
-              def context = [ user:request.user, params:params ]
+              def context = [ user:request.user ]
 
               // Everything after the first 2 "parts" are args for the method.
               def method_params = []
@@ -1291,16 +1291,31 @@ class WorkflowController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteVariant() {
     log.debug("${params}");
-    User user = springSecurityService.currentUser
     def result = [:]
     result.ref=request.getHeader('referer')
     def variant = KBComponentVariantName.get(params.id)
     def variantOwner = variant.owner
     def variantName = variant.variantName
-    if (variant != null ) {
+    if ( variant != null && variantOwner.isEditable() ) {
       variant.delete()
       variantOwner.lastUpdateComment = "Deleted Alternate Name ${variantName}."
       variantOwner.save(flush: true)
+    }
+    redirect(url: result.ref)
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteCoverageStatement() {
+    log.debug("${params}");
+    def result = [:]
+    result.ref=request.getHeader('referer')
+    def tcs = TIPPCoverageStatement.get(params.id)
+    def tipp = tcs.owner
+
+    if ( tcs != null && tipp.isEditable() ) {
+      tcs.delete()
+      tipp.lastUpdateComment = "Deleted Coverage Statement."
+      tipp.save(flush: true)
     }
     redirect(url: result.ref)
   }

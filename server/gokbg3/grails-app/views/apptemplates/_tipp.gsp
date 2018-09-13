@@ -80,9 +80,6 @@
   <li>
     <a href="#tippcoverage" data-toggle="tab">Coverage</a>
   </li>
-  <li>
-    <a href="#tipplists" data-toggle="tab">Lists</a>
-  </li>
   <g:if test="${ d.isEditable() }">
     <li>
       <a href="#addprops" data-toggle="tab">Additional Properties 
@@ -152,24 +149,100 @@
               <th>End Volume</th>
               <th>End Issue</th>
               <th>Embargo</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td><g:xEditable class="ipe" owner="${d}" type="date"
-                  field="startDate" /></td>
-              <td><g:xEditable class="ipe" owner="${d}"
-                  field="startVolume" /></td>
-              <td><g:xEditable class="ipe" owner="${d}"
-                  field="startIssue" /></td>
-              <td><g:xEditable class="ipe" owner="${d}" type="date"
-                  field="endDate" /></td>
-              <td><g:xEditable class="ipe" owner="${d}" field="endVolume" /></td>
-              <td><g:xEditable class="ipe" owner="${d}" field="endIssue" /></td>
-              <td><g:xEditable class="ipe" owner="${d}" field="embargo" /></td>
-            </tr>
+            <g:if test="${d.coverageStatements?.size() > 0}">
+              <g:each var="cs" in="${d.coverageStatements.sort { it.startDate }}">
+                <tr>
+                  <td><g:xEditable class="ipe" owner="${cs}" type="date"
+                      field="startDate" /></td>
+                  <td><g:xEditable class="ipe" owner="${cs}"
+                      field="startVolume" /></td>
+                  <td><g:xEditable class="ipe" owner="${cs}"
+                      field="startIssue" /></td>
+                  <td><g:xEditable class="ipe" owner="${cs}" type="date"
+                      field="endDate" /></td>
+                  <td><g:xEditable class="ipe" owner="${cs}" field="endVolume" /></td>
+                  <td><g:xEditable class="ipe" owner="${cs}" field="endIssue" /></td>
+                  <td><g:xEditable class="ipe" owner="${cs}" field="embargo" /></td>
+                  <td><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></td>
+                </tr>
+              </g:each>
+            </g:if>
+            <g:else>
+              <tr>
+                <td><g:xEditable class="ipe" owner="${d}" type="date"
+                    field="startDate" /></td>
+                <td><g:xEditable class="ipe" owner="${d}"
+                    field="startVolume" /></td>
+                <td><g:xEditable class="ipe" owner="${d}"
+                    field="startIssue" /></td>
+                <td><g:xEditable class="ipe" owner="${d}" type="date"
+                    field="endDate" /></td>
+                <td><g:xEditable class="ipe" owner="${d}" field="endVolume" /></td>
+                <td><g:xEditable class="ipe" owner="${d}" field="endIssue" /></td>
+                <td><g:xEditable class="ipe" owner="${d}" field="embargo" /></td>
+                <td></td>
+              </tr>
+            </g:else>
           </tbody>
         </table>
+<g:if test="${d.isEditable()}">
+                <button
+                        class="hidden-license-details btn btn-default btn-sm btn-primary "
+                        data-toggle="collapse" data-target="#collapseableAddCoverageStatement">
+                        Add new <i class="fas fa-plus"></i>
+                </button>
+                <dl id="collapseableAddCoverageStatement" class="dl-horizontal collapse">
+                  <g:form controller="ajaxSupport" action="addToCollection"
+                          class="form-inline">
+                    <input type="hidden" name="__context"
+                            value="${d.class.name}:${d.id}" />
+                    <input type="hidden" name="__newObjectClass"
+                            value="org.gokb.cred.TIPPCoverageStatement" />
+                    <input type="hidden" name="__recip" value="owner" />
+                    <dt>Start Date</dt>
+                    <dd>
+                      <input type="date" name="startDate" />
+                    </dd>
+                    <dt>Start Volume</dt>
+                    <dd>
+                      <input type="text" name="startVolume" />
+                    </dd>
+                    <dt>Start Issue</dt>
+                    <dd>
+                      <input type="text" name="startIssue" />
+                    </dd>
+                    <dt>End Date</dt>
+                    <dd>
+                      <input type="date" name="endDate" />
+                    </dd>
+                    <dt>End Volume</dt>
+                    <dd>
+                      <input type="text" name="endVolume" />
+                    </dd>
+                    <dt>End Issue</dt>
+                    <dd>
+                      <input type="text" name="endIssue" />
+                    </dd>
+                    <dt>Embargo</dt>
+                    <dd>
+                      <input type="text" name="embargo" />
+                    </dd>
+                    <dt>Coverage Note</dt>
+                    <dd>
+                      <input type="text" name="coverageNote" />
+                    </dd>
+                    <dt></dt>
+                    <dd>
+                      <button type="submit"
+                              class="btn btn-default btn-primary btn-sm ">Add</button>
+                    </dd>
+                  </g:form>
+                </dl>
+              </g:if>
       </dd>
       <dt>
         <g:annotatedLabel owner="${d}" property="coverageNote">Coverage Note</g:annotatedLabel>
@@ -186,8 +259,6 @@
       </dd>
     </dl>
   </div>
-
-  <div class="tab-pane" id="tipplists"></div>
 
   <g:if test="${ d.isEditable() }">
     <div class="tab-pane" id="addprops">
