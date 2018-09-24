@@ -19,6 +19,7 @@ public class DisplayTemplateService {
     globalDisplayTemplates.put('org.gokb.refine.Rule',[ type:'staticgsp', rendername:'rule' ]);
     globalDisplayTemplates.put('org.gokb.refine.RefineProject',[ type:'staticgsp', rendername:'project' ]);
     globalDisplayTemplates.put('org.gokb.cred.RefdataCategory',[ type:'staticgsp', rendername:'rdc' ]);
+    globalDisplayTemplates.put('org.gokb.cred.RefdataValue',[ type:'staticgsp', rendername:'rdv' ]);
     globalDisplayTemplates.put('org.gokb.cred.ReviewRequest',[ type:'staticgsp', rendername:'revreq' ]);
     globalDisplayTemplates.put('org.gokb.cred.Office',[ type:'staticgsp', rendername:'office' ]);
     globalDisplayTemplates.put('org.gokb.cred.CuratoryGroup',[ type:'staticgsp', rendername:'curatory_group' ]);

@@ -111,7 +111,7 @@ environments:
     development:
         dataSource:
             dbCreate: update
-            url: jdbc:postgresql://pghost:5432/gokbg3dev
+            url: jdbc:postgresql://pghost:5432/gokb
             username: knowint
             password: knowint
             driverClassName: org.postgresql.Driver
@@ -191,5 +191,4 @@ quartz:
     autoStartup: true
 
 ---
-ftupdate_enabled: true
 decisionSupport: true

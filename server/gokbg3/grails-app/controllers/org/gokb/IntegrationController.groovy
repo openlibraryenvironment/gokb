@@ -857,7 +857,7 @@ class IntegrationController {
           log.debug("\n\nupsert tipp data\n\n")
           tippctr=0
 
-          def tipps_to_delete = existing_tipps
+          def tipps_to_delete = existing_tipps.clone()
           def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
 
           if ( valid ) {

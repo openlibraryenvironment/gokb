@@ -35,67 +35,27 @@ class FwkController {
 
         def query_start_time = System.currentTimeMillis();
 
-        result.events = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where (e.className= :ocn and e.persistedObjectId= :oid) OR (e.persistedObjectId IN (:comboids) AND (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent') AND (e.newValue NOT LIKE :oidt OR e.newValue IS NULL) AND (e.oldValue NOT LIKE :oidt OR e.oldValue IS NULL)) order by id desc",qry_params,[max:result.max,offset:result.offset]);
+        def events = getCombinedEvents(qry_params, result.max, result.offset )
 
         log.debug("Fetch completed after ${System.currentTimeMillis() - query_start_time}");
-//         def count_start_time = System.currentTimeMillis();
-//
-//         result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where (e.className= :ocn and e.persistedObjectId= :oid) OR (e.persistedObjectId IN (:comboids) AND (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent') AND (e.newValue NOT LIKE :oidt OR e.newValue IS NULL) AND (e.oldValue NOT LIKE :oidt OR e.oldValue IS NULL))", qry_params)[0];
-//
-//         log.debug("Count completed (${result.historyLinesTotal}) after ${System.currentTimeMillis() - count_start_time}");
-        result.historyLines = []
 
-        result.events.eachWithIndex { evt, idx ->
-          def event = [:]
-          def allOidEvents = AuditLogEvent.findAllByPersistedObjectId(evt.persistedObjectId)
-          def skip = false
+        def processed_events = processEvents(events)
+        def skippedLastCall = processed_events.skipped
+        def new_offset = result.offset
 
-          if ( evt.oldValue && evt.oldValue.startsWith("[id:org.gokb.cred") ) {
-            event.oldValue = getComboValueMaps(evt.oldValue)
-          }else if (evt.oldValue?.startsWith("[id:")) {
-            event.oldValue = evt.oldValue.split(']')[1]
-          }else {
-            event.oldValue = evt.oldValue
-          }
+        result.historyLines = processed_events.historyLines
 
-          if ( evt.newValue && evt.newValue.startsWith("[id:org.gokb.cred") ) {
-            event.newValue = getComboValueMaps(evt.newValue)
-          }else if (evt.newValue?.startsWith("[id:")) {
-            event.newValue = evt.newValue.split(']')[1]
-          }else {
-            event.newValue = evt.newValue
-          }
+        while ( skippedLastCall > 0 ) {
 
-          if ( evt.className == 'Combo' ) {
-            def hasOwnerRef = allOidEvents.collect {( it.newValue?.contains(params.id) || it.oldValue?.contains(params.id)) && it.propertyName == evt.propertyName}.any { it == true }
-            def deletedComboVal = null
+          new_offset += skippedLastCall
+          def added_events = getCombinedEvents(qry_params, skippedLastCall, new_offset)
 
-            if(!hasOwnerRef) {
-              allOidEvents.each { aoe ->
-                if (aoe.eventName == 'INSERT' && aoe.propertyName == 'type') {
-                  event.propertyName = aoe.newValue.split(']')[1]
-                }
-                else if (!evt.newValue && !evt.oldValue && aoe.propertyName == evt.propertyName && aoe.newValue) {
-                  event.oldValue = getComboValueMaps(aoe.newValue)
-                }
-              }
-            }
-            else {
-              skip = true
-            }
-          }else {
-            event.propertyName = evt.propertyName
-          }
+          processed_events = processEvents(added_events)
+          skippedLastCall = processed_events.skipped
 
-          event.id = evt.id
-          event.actor = evt.actor
-          event.dateCreated = evt.dateCreated
-          event.eventName = evt.eventName
-
-          if (!skip) {
-            result.historyLines.add(event)
-          }
+          result.historyLines.add(processed_events.historyLines)
         }
+
       }
       else {
         def query_start_time = System.currentTimeMillis();
@@ -103,11 +63,6 @@ class FwkController {
         result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid order by id desc", qry_params,[max:result.max,offset:result.offset]);
 
         log.debug("Fetch completed after ${System.currentTimeMillis() - query_start_time}");
-//         def count_start_time = System.currentTimeMillis();
-//
-//         result.historyLinesTotal = AuditLogEvent.executeQuery("select count(e.id) from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid", qry_params)[0];
-//
-//         log.debug("Count completed (${result.historyLinesTotal}) after ${System.currentTimeMillis() - count_start_time}");
       }
 
     }else{
@@ -115,11 +70,76 @@ class FwkController {
     }
     withFormat {
       html { result }
-      json {
-        result.remove('events')
-        render result as JSON
+      json { render result as JSON }
+    }
+  }
+
+  private List getCombinedEvents(LinkedHashMap qry_params, int max, int offset) {
+    def events = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where (e.className= :ocn and e.persistedObjectId= :oid) OR (e.persistedObjectId IN (:comboids) AND (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent') AND (e.newValue NOT LIKE :oidt OR e.newValue IS NULL) AND (e.oldValue NOT LIKE :oidt OR e.oldValue IS NULL)) order by id desc",qry_params,['max':max,'offset':offset]);
+
+    events
+  }
+
+  private LinkedHashMap processEvents(List events) {
+
+    def finalHistoryLines = []
+    def skippedLines = 0
+
+    events.eachWithIndex { evt, idx ->
+      def event = [:]
+      def allOidEvents = AuditLogEvent.findAllByPersistedObjectId(evt.persistedObjectId)
+      def skip = false
+
+      if ( evt.oldValue && evt.oldValue.startsWith("[id:org.gokb.cred") ) {
+        event.oldValue = getComboValueMaps(evt.oldValue)
+      }else if (evt.oldValue?.startsWith("[id:")) {
+        event.oldValue = evt.oldValue.split(']')[1]
+      }else {
+        event.oldValue = evt.oldValue
+      }
+
+      if ( evt.newValue && evt.newValue.startsWith("[id:org.gokb.cred") ) {
+        event.newValue = getComboValueMaps(evt.newValue)
+      }else if (evt.newValue?.startsWith("[id:")) {
+        event.newValue = evt.newValue.split(']')[1]
+      }else {
+        event.newValue = evt.newValue
+      }
+
+      if ( evt.className == 'Combo' ) {
+        def hasOwnerRef = allOidEvents.collect {( it.newValue?.contains(params.id) || it.oldValue?.contains(params.id)) && it.propertyName == evt.propertyName}.any { it == true }
+        def deletedComboVal = null
+
+        if(!hasOwnerRef) {
+          allOidEvents.each { aoe ->
+            if (aoe.eventName == 'INSERT' && aoe.propertyName == 'type') {
+              event.propertyName = aoe.newValue.split(']')[1]
+            }
+            else if (!evt.newValue && !evt.oldValue && aoe.propertyName == evt.propertyName && aoe.newValue) {
+              event.oldValue = getComboValueMaps(aoe.newValue)
+            }
+          }
+        }
+        else {
+          skip = true
+        }
+      }else {
+        event.propertyName = evt.propertyName
+      }
+
+      event.id = evt.id
+      event.actor = evt.actor
+      event.dateCreated = evt.dateCreated
+      event.eventName = evt.eventName
+
+      if (!skip) {
+        finalHistoryLines.add(event)
+      }else {
+        skippedLines++
       }
     }
+
+    return [historyLines: finalHistoryLines, skipped: skippedLines]
   }
 
   private List getComboValueMaps(String valueString) {

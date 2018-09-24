@@ -192,7 +192,7 @@ class AjaxSupportController {
     def errors = false
     GrailsClass domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
 
-    if ( domain_class && (domain_class.getClazz().isTypeCreatable() || params.__newObjectClass == "org.gokb.cred.TitleInstancePackagePlatform") ) {
+    if ( domain_class && (domain_class.getClazz().isTypeCreatable() || domain_class.getClazz().isTypeAdministerable()) ) {
 
       if ( contextObj && contextObj.isEditable() ) {
         log.debug("Create a new instance of ${params.__newObjectClass}");

@@ -27,13 +27,13 @@
                 <td><g:xEditableRefData owner="${v}" field="status" config='KBComponentVariantName.Status' /></td>
                 <td><g:xEditableRefData owner="${v}" field="variantType" config='KBComponentVariantName.VariantType' /></td>
                 <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
-                <g:if test="${ editable && showActions }">
                 <td>
+                  <g:if test="${ editable && showActions }">
                               <g:link controller="workflow" action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
                               <g:link controller="workflow" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
                                 action="DeleteVariant" id="${v.id}" >Delete</g:link>
-                          </td>
-                          </g:if>
+                  </g:if>
+                </td>
               </tr>
             </g:each>
           </tbody>

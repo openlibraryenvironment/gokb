@@ -10,6 +10,7 @@ import grails.util.GrailsNameUtils
 import grails.util.Holders
 import org.elasticsearch.action.search.*
 import org.elasticsearch.index.query.*
+import org.elasticsearch.search.sort.*
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
@@ -659,13 +660,18 @@ class ApiController {
       def tippPackageId = null
       def tippTitleId = null
       def pkgListStatus = ""
+      def pkgNameSort = false
 
       params.each { k, v ->
         if ( k == 'componentType' && v instanceof String ) {
           singleParams['componentType'] = v
         }
 
-        else if( k == 'role' && v instanceof String ) {
+        else if (params.componentType == 'Package' && k == 'sort' && v == 'name') {
+          pkgNameSort = true
+        }
+
+        else if (k == 'role' && v instanceof String ) {
           orgRoleParam = v
         }
 
@@ -775,8 +781,6 @@ class ApiController {
         exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
       }
 
-
-
       if( !errors && (singleParams || params.label || id_params) ) {
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
@@ -793,6 +797,11 @@ class ApiController {
         }
         if (result.offset) {
           es_request.setFrom(result.offset)
+        }
+
+        if (pkgNameSort) {
+          FieldSortBuilder pkgSort = new FieldSortBuilder('sortname')
+          es_request.addSort(pkgSort)
         }
 
         search_action = es_request.execute()
@@ -817,7 +826,11 @@ class ApiController {
         search.hits.each { r ->
           def response_record = [:]
           response_record.id = r.id
-          response_record.score = r.score
+
+          log.debug("Score is ${response_record?.score?.class?.name}")
+          if (response_record.score && response_record.score != Float.NaN) {
+            response_record.score = r.score
+          }
 
           r.source.each { field, val ->
             response_record."${field}" = val

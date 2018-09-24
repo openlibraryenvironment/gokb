@@ -149,6 +149,17 @@ class AdminController {
 
   }
 
+  def convertTippCoverages() {
+    Job j = concurrencyManagerService.createJob {
+      cleanupService.addMissingCoverageObjects()
+    }.startOrQueue()
+
+    j.description = "Generate missing TIPPCoverageStatements"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def copyUploadedFile(inputfile, deposit_token) {
 
    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
@@ -267,6 +278,14 @@ class AdminController {
 
     log.debug("Return");
     result
+  }
+
+
+  def cancelJob() {
+    Job j = concurrencyManagerService.getJob(params.int('id'))
+
+    j?.forceCancel()
+    render(view: "logViewer", model: logViewer())
   }
 
   @Deprecated

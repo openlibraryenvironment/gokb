@@ -186,9 +186,9 @@ class FTUpdateService {
           result.curatoryGroups.add(cg.name)
         }
 
-        result.tippPackage = kbc.pkg ? "${kbc.pkg.class.name}:${kbc.pkg.id}" : ""
-        result.tippTitle = kbc.title ? "${kbc.title.class.name}:${kbc.title.id}" : ""
-        result.hostPlatform = kbc.hostPlatform ? "${kbc.hostPlatform.class.name}:${kbc.hostPlatform.id}" : ""
+        result.tippPackage = kbc.pkg ? "${kbc.pkg?.class?.name}:${kbc.pkg?.id}" : ""
+        result.tippTitle = kbc.title ? "${kbc.title?.class?.name}:${kbc.title?.id}" : ""
+        result.hostPlatform = kbc.hostPlatform ? "${kbc.hostPlatform?.class?.name}:${kbc.hostPlatform?.id}" : ""
 
         result.status = kbc.status?.value
 

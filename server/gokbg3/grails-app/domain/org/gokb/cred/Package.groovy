@@ -445,6 +445,23 @@ select tipp.id,
                 'name' (tipp[3]?.trim())
               }
               'access'(start:tipp[15]?sdf.format(tipp[15]):null,end:tipp[16]?sdf.format(tipp[16]):null)
+              def cov_statements = getCoverageStatements(tipp[0])
+              if(cov_statements?.size() > 0){
+                cov_statements.each { tcs ->
+                  'coverage'(
+                    startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
+                    startVolume:tcs.startVolume,
+                    startIssue:tcs.startIssue,
+                    endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
+                    endVolume:tcs.endVolume,
+                    endIssue:tcs.endIssue,
+                    coverageDepth:tipp[11]?.value,
+                    coverageNote:tcs.coverageNote,
+                    embargo: tcs.embargo
+                  )
+                }
+              }
+              else{
               'coverage'(
                 startDate:(tipp[5]?sdf.format(tipp[5]):null),
                 startVolume:tipp[6],
@@ -456,6 +473,7 @@ select tipp.id,
                 coverageNote:tipp[12],
                 embargo: tipp[18] )
               'url'(tipp[13]?:"")
+              }
             }
           }
         }
@@ -469,6 +487,12 @@ select tipp.id,
   private static getTitleIds  (Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
     def result = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value from Identifier as i, Combo as c left join i.namespace.datatype as datatype where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
+    result
+  }
+
+  @Transient
+  private static getCoverageStatements (Long tipp_id) {
+    def result = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement as tcs where tcs.owner.id = :tipp", ['tipp': tipp_id],[readOnly:true])
     result
   }
 

@@ -294,4 +294,25 @@ class CleanupService {
     
     log.debug("Finished cleaning identifiers elapsed = ${System.currentTimeMillis() - start_time}")
   }
+
+  def addMissingCoverageObjects() {
+    log.debug("Creating missing coverage statements..")
+
+    TitleInstancePackagePlatform.withNewSession {
+      def tipp_crit = TitleInstancePackagePlatform.createCriteria()
+      def tipps = tipp_crit.list () {
+        isEmpty('coverageStatements')
+        and {
+          isNotNull('startDate')
+          isNotNull('startVolume')
+        }
+      }
+
+      tipps?.each { t ->
+        t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote)
+      }
+    }
+    log.debug("Done");
+    return new Date();
+  }
 }

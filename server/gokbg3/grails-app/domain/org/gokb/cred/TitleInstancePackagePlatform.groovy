@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import java.text.SimpleDateFormat
+import com.k_int.ClassUtils
 import groovy.util.logging.*
 
 @Log4j
@@ -136,6 +137,16 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   public String getNiceName() {
 	return "TIPP";
+  }
+
+  def afterUpdate() {
+    KBComponent.withNewSession {
+      if(this.pkg){
+        this.pkg.lastUpdateComment = "TIPP ${this.id} updated"
+        this.pkg.listStatus = RefdataCategory.lookupOrCreate('Package.ListStatus','In Progress')
+        this.pkg.save(failOnError:true, flush:true)
+      }
+    }
   }
 
   /**
@@ -301,13 +312,10 @@ class TitleInstancePackagePlatform extends KBComponent {
             "Retired TIPP reenabled."
           )
           
-          if ( !tipp.accessStartDate ) {
-            tipp.accessStartDate = new Date()
-          }
-          
           if ( tipp.accessEndDate ) {
             tipp.accessEndDate = null
           }
+
           changed = true
         }else if( tipp.isDeleted() ) {
           ReviewRequest.raise(

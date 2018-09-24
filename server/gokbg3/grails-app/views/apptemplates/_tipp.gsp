@@ -1,4 +1,4 @@
-
+<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 ? true : false : true) || (params.curationOverride == 'true')) }" />
 <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="title">Title</g:annotatedLabel>
@@ -167,7 +167,7 @@
                   <td><g:xEditable class="ipe" owner="${cs}" field="endVolume" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="endIssue" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="embargo" /></td>
-                  <td><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></td>
+                  <td><g:if test="${editable && d.coverageStatements.size() > 1}"><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></g:if></td>
                 </tr>
               </g:each>
             </g:if>
@@ -189,7 +189,7 @@
             </g:else>
           </tbody>
         </table>
-<g:if test="${d.isEditable()}">
+<g:if test="${editable}">
                 <button
                         class="hidden-license-details btn btn-default btn-sm btn-primary "
                         data-toggle="collapse" data-target="#collapseableAddCoverageStatement">
