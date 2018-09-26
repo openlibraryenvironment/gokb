@@ -50,6 +50,16 @@ class Platform extends KBComponent {
     ipAuthentication  (nullable:true, blank:false)
     shibbolethAuthentication  (nullable:true, blank:false)
     passwordAuthentication  (nullable:true, blank:false)
+    name (validator: { val, obj ->
+      if (val) {
+        def dupes = Platform.findByNameIlike(val);
+        if ( dupes && dupes != obj ) {
+          return ['notUnique']
+        }
+      } else {
+        return ['notNull']
+      }
+    })
   }
 
   @Transient

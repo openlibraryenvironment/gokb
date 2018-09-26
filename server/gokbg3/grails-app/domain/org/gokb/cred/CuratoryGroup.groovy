@@ -34,7 +34,7 @@ class CuratoryGroup extends KBComponent {
     owner (nullable:true, blank:false)
     name (validator: { val, obj ->
       if (val) {
-        def dupes = Package.findByNameIlike(val);
+        def dupes = CuratoryGroup.findByNameIlike(val);
         if ( dupes && dupes != obj ) {
           return ['notUnique']
         }

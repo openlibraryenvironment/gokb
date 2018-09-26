@@ -655,8 +655,10 @@ class ApiController {
       def singleParams = [:]
       def unknown_fields = []
       def other_fields = ["controller","action","max","offset","from"]
+      def defined_types = ["Package", "Org", "JournalInstance", "BookInstance", "DatabaseInstance", "Platform", "TitleInstancePackagePlatform", "TIPP"]
       def id_params = [:]
       def orgRoleParam = ""
+      def providerParam = ""
       def tippPackageId = null
       def tippTitleId = null
       def pkgListStatus = ""
@@ -664,7 +666,20 @@ class ApiController {
 
       params.each { k, v ->
         if ( k == 'componentType' && v instanceof String ) {
-          singleParams['componentType'] = v
+
+          def final_type = v
+
+          if(v in defined_types) {
+
+            if(v == 'TIPP') {
+              final_type = 'TitleInstancePackagePlatform'
+            }
+
+            singleParams['componentType'] = final_type
+          }
+          else {
+            errors['componentType'] = "Requested component type ${v} does not exist"
+          }
         }
 
         else if (params.componentType == 'Package' && k == 'sort' && v == 'name') {
@@ -673,6 +688,14 @@ class ApiController {
 
         else if (k == 'role' && v instanceof String ) {
           orgRoleParam = v
+        }
+
+        else if (k == 'publisher' && v instanceof String) {
+          singleParams['publisher'] = v
+        }
+
+        else if ( (k == 'provider' || k == 'cpname') && v instanceof String) {
+          singleParams['cpname'] = v
         }
 
         else if (k == 'linkedPackage' && v instanceof String) {
@@ -827,7 +850,6 @@ class ApiController {
           def response_record = [:]
           response_record.id = r.id
 
-          log.debug("Score is ${response_record?.score?.class?.name}")
           if (response_record.score && response_record.score != Float.NaN) {
             response_record.score = r.score
           }
