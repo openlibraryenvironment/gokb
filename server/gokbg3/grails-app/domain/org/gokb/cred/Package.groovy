@@ -333,6 +333,7 @@ select tipp.id,
       [code:'method::retire', label:'Retire Package (with associated TIPPs)'],
       [code:'exportPackage', label:'TSV Export'],
       [code:'kbartExport', label:'KBART Export'],
+      [code:'verifyTitleList', label:'Verify Title List'],
       // [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }

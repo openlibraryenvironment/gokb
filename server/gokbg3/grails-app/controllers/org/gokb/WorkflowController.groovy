@@ -32,7 +32,8 @@ class WorkflowController {
     'method::retire':[actionType:'simple' ],
     'method::setActive':[actionType:'simple' ],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
-    'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg']
+    'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg'],
+    'verifyTitleList':[actionType:'process', method:'verifyTitleList']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -1623,7 +1624,7 @@ class WorkflowController {
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
             writer.write( sanitize( tipp.id ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.id ) + '\t' + sanitize( tipp.title.name ) + '\t' +
                           sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
-                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
+                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.OAStatus?.value ) + '\t' +
                           sanitize( tipp.title.continuingSeries?.value ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
@@ -1726,6 +1727,23 @@ class WorkflowController {
   def deleteCombo() {
     Combo c = Combo.get(params.id);
     c.delete(flush:true);
+    redirect(url: request.getHeader('referer'));
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  private def verifyTitleList(packages_to_verify) {
+    def user = springSecurityService.currentUser
+
+    packages_to_verify.each { ptv ->
+      def pkgObj = Package.get(ptv.id)
+
+      if ( pkgObj?.isEditable() ) {
+        pkgObj.listStatus = RefdataCategory.lookupOrCreate('Package.ListStatus','Checked')
+        pkgObj.userListVerifier = user
+        pkgObj.listVerifiedDate = new Date()
+        pkgObj.save(flush: true, failOnError: true)
+      }
+    }
     redirect(url: request.getHeader('referer'));
   }
 }

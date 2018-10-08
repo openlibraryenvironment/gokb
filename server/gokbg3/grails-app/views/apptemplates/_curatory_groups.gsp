@@ -4,7 +4,7 @@
   <thead>
     <tr>
       <th>Curatory Group</th>
-      <g:if test="${ cur_editable && editable }">
+      <g:if test="${cur_editable && d.isEditable()}">
         <th>Actions</th>
       </g:if>
     </tr>
@@ -14,9 +14,11 @@
 	    <g:each in="${d.curatoryGroups}" var="t">
 		    <tr>
 		      <td><g:link controller="resource" action="show" id="${t.getClassName()}:${t.id}"> ${t.name}</g:link></td>
-		      <g:if test="${ cur_editable && editable }">
-		        <td><g:link controller="ajaxSupport" action="unlinkManyToMany" class="confirm-click" data-confirm-message="Are you sure you wish to unlink ${ t.name }?" params="${ ["__property":"curatoryGroups", "__context":d.getClassName() + ":" + d.id, "__itemToRemove" : t.getClassName() + ":" + t.id] }" >Unlink</g:link></td>
-		      </g:if>
+                      <g:if test="${ cur_editable }">
+                        <td>
+                            <g:link controller="ajaxSupport" action="unlinkManyToMany" class="confirm-click" data-confirm-message="Are you sure you wish to unlink ${ t.name }?" params="${ ["__property":"curatoryGroups", "__context":d.getClassName() + ":" + d.id, "__itemToRemove" : t.getClassName() + ":" + t.id] }" >Unlink</g:link>
+                        </td>
+                      </g:if>
 		    </tr>
 	    </g:each>
     </g:if>
@@ -25,7 +27,7 @@
     		<td colspan="2">There are currently no linked Curatory Groups</td>
     	</tr>
     </g:else>
-    <g:if test="${cur_editable && editable}">
+    <g:if test="${(cur_editable && editable) || !d.curatoryGroups}">
       <tr>
           <th colspan="2">Link a Curatory Group</th>
       </tr>

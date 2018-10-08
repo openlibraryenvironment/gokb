@@ -167,7 +167,7 @@
                   <td><g:xEditable class="ipe" owner="${cs}" field="endVolume" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="endIssue" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="embargo" /></td>
-                  <td><g:if test="${editable && d.coverageStatements.size() > 1}"><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></g:if></td>
+                  <td><g:if test="${editable}"><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></g:if></td>
                 </tr>
               </g:each>
             </g:if>

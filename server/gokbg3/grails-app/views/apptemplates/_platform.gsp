@@ -1,3 +1,4 @@
+<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true')) }" />
 <dl class="dl-horizontal">
   <dt>
     <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
@@ -26,12 +27,6 @@
     <g:xEditableRefData owner="${d}" field="editStatus"
       config='KBComponent.EditStatus' />
   </dd>
-
-  <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
-  <dd>
-      <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" />
-  </dd>
-
 
 </dl>
 
@@ -102,7 +97,7 @@
     <div class="tab-pane" id="titledetails">
       <g:if test="${params.controller != 'create'}">
         <g:link class="display-inline" controller="search" action="index"
-          params="[qbe:'g:3tipps', qp_plat_id:d.id, hide:['qp_cp', 'qp_pkg', 'qp_pub_id', 'qp_plat', 'qp_plat_id', 'qp_pkg_id']]"
+          params="[qbe:'g:3tipps', qp_plat_id:d.id, inline:true, refOid: d.getLogEntityId(), hide:['qp_cp', 'qp_pub_id', 'qp_plat', 'qp_plat_id']]"
           id="">TIPPs on this Platform</g:link>
       </g:if>
       <g:else>

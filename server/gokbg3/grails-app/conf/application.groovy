@@ -179,6 +179,15 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
+          baseClass:'org.gokb.cred.CuratoryGroup',
+          prompt:'Curatory Group',
+          qparam:'qp_curgroup',
+          placeholder:'Curatory Group',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'curatoryGroups'],
+          hide:false
+        ],
+        [
+          type:'lookup',
           baseClass:'org.gokb.cred.Platform',
           prompt:'Platform',
           qparam:'qp_platform',
@@ -261,6 +270,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name',link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Primary URL', property:'primaryUrl'],
         [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
@@ -467,9 +477,9 @@ globalSearchTemplates = [
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Title', qpEquiv:'qp_title_id', property:'title?.name', sort:'title.name', link:[controller:'resource',action:'show',id:'x.r.title?.class.name+\':\'+x.r.title?.id'] ],
         [heading:'Type', qpEquiv:'qp_title_id', property:'title?.getNiceName()'],
-        [heading:'Status', property:'status?.value', sort:'status'],
         [heading:'Package', qpEquiv:'qp_pkg_id', property:'pkg?.name', sort:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class.name+\':\'+x.r.pkg.id'] ],
         [heading:'Platform', qpEquiv:'qp_plat_id', property:'hostPlatform?.name', sort:'platform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
+        [heading:'Status', property:'status?.value', sort:'status']
       ]
     ]
   ],

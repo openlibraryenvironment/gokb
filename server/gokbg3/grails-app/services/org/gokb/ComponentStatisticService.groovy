@@ -3,7 +3,7 @@ package org.gokb
 import org.gokb.cred.*
 
 import com.k_int.ClassUtils
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
 @Transactional
 class ComponentStatisticService {

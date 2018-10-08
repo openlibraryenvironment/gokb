@@ -304,7 +304,7 @@
 					</dt>
 					<dd>
 						<g:render template="/apptemplates/comboList"
-							model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform', action:'link']]]}" />
+							model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform', action:'link'],[expr:'primaryUrl',colhead:'Primary URL',targetClass:'org.gokb.cred.Platform']]]}" />
 					</dd>
 				</dl>
 			</div>

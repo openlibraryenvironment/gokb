@@ -59,7 +59,7 @@ class PublicController {
     def mutableParams = new HashMap(params)
 
     if ( mutableParams.max == null )
-      mutableParams.max = 30
+      mutableParams.max = 10
     else
       mutableParams.max = Integer.parseInt(mutableParams.max)
 

@@ -8,6 +8,7 @@ import org.hibernate.criterion.CriteriaSpecification
 
 import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
+import java.util.concurrent.CancellationException
 
 
 class AdminController {
@@ -263,10 +264,17 @@ class AdminController {
     result.cms = concurrencyManagerService
 
     result.jobs.each { k, j ->
-      if ( j.isDone() && !j.endTime && j.get()) {
-        def job_res = j.get()
-        log.debug("${job_res}")
-        j.endTime = j.get()
+      if ( j.isDone() && !j.endTime ) {
+
+        try {
+          def job_res = j.get()
+
+          if (job_res && job_res instanceof Date) {
+            j.endTime = j.get()
+          }
+        } catch (CancellationException e) {
+          log.debug("Cancelled")
+        }
       }
     }
 

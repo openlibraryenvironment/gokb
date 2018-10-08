@@ -1,7 +1,7 @@
 package org.gokb
 
 
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 import org.gokb.FTControl
 import org.hibernate.ScrollMode
 import java.nio.charset.Charset

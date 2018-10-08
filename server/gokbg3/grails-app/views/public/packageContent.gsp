@@ -51,7 +51,7 @@
         <h2>Curated By</h2>
         <ul>
           <g:each in="${pkg.curatoryGroups}" var="cg">
-            <li><g:link controller="public" action="curatorDetails" params="${cg.id}">${cg.name}</g:link></li>
+            <li>${cg.name}</li>
           </g:each>
         </ul>
 
@@ -67,7 +67,7 @@
           <tbody>
             <g:each in="${tipps}" var="t">
               <tr>
-                <td><g:link controller="public" action="titleDetails" params="${t.title.id}">${t.title.name}</g:link></th>
+                <td>${t.title.name}</th>
                 <td>
                   <ul>
                     <g:each in="${t.title.ids}" var="id">

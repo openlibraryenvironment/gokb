@@ -51,12 +51,20 @@
         </g:link>
       </dd>
     </g:if>
-
+    <dt> <g:annotatedLabel owner="${d}" property="listStatus">List Status</g:annotatedLabel> </dt>
+    <dd>
+      <g:xEditableRefData owner="${d}" field="listStatus" config='Package.ListStatus' />
+    </dd>
     <dt>
       <g:annotatedLabel owner="${d}" property="userListVerifier">List Verifier</g:annotatedLabel>
     </dt>
     <dd>
-      <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier?.displayName ?: ''}</g:manyToOneReferenceTypedown>
+      <g:if test="${org.gokb.cred.User.isTypeReadable()}">
+        <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier?.displayName ?: ''}</g:manyToOneReferenceTypedown>
+      </g:if>
+      <g:else>
+        ${d.userListVerifier ?: message(code:'default.empty', default:'Empty')}
+      </g:else>
     </dd>
     <dt> <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /> </dd>
@@ -73,8 +81,6 @@
     <dt> <g:annotatedLabel owner="${d}" property="descriptionURL">URL</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" field="descriptionURL" /> </dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="curatoryGroups">Curatory Groups</g:annotatedLabel></dt>
-    <dd> <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" /> </dd>
   </dl>
 
     <ul id="tabs" class="nav nav-tabs">
@@ -132,6 +138,10 @@
                 <dt style="margin-top:0.5em;">Platform</dt>
                 <dd>
                   <g:simpleReferenceTypedown class="form-control" name="hostPlatform" baseClass="org.gokb.cred.Platform" />
+                </dd>
+                <dt style="margin-top:0.5em;">URL</dt>
+                <dd>
+                  <input type="text" class="form-control" name="url" required />
                 </dd>
                 <dt></dt>
                 <dd>

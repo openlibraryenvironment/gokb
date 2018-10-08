@@ -2,6 +2,7 @@ package org.gokb
 
 import org.gokb.cred.*;
 import grails.converters.JSON
+import groovy.time.TimeCategory
 
 class FwkController {
 
@@ -53,7 +54,7 @@ class FwkController {
           processed_events = processEvents(added_events)
           skippedLastCall = processed_events.skipped
 
-          result.historyLines.add(processed_events.historyLines)
+          result.historyLines.addAll(processed_events.historyLines)
         }
 
       }
@@ -82,6 +83,7 @@ class FwkController {
 
   private LinkedHashMap processEvents(List events) {
 
+    def stagingHistoryLines = []
     def finalHistoryLines = []
     def skippedLines = 0
 
@@ -133,9 +135,34 @@ class FwkController {
       event.eventName = evt.eventName
 
       if (!skip) {
-        finalHistoryLines.add(event)
+        stagingHistoryLines.add(event)
       }else {
         skippedLines++
+      }
+    }
+
+    stagingHistoryLines.eachWithIndex { hl, idx ->
+      use( TimeCategory ) {
+        if ( idx < stagingHistoryLines.size() - 1
+          && hl.dateCreated >= stagingHistoryLines[idx+1].dateCreated - 1.second
+          && hl.propertyName == stagingHistoryLines[idx+1].propertyName
+          && hl.eventName == 'INSERT'
+          && stagingHistoryLines[idx+1]?.eventName == 'DELETE'
+        ) {
+          hl.eventName = 'UPDATE'
+          hl.oldValue = stagingHistoryLines[idx+1].oldValue
+          finalHistoryLines.add(hl)
+        }
+        else if ( idx > 0
+          && hl.dateCreated <= stagingHistoryLines[idx-1].dateCreated + 1.second
+          && hl.eventName == 'DELETE'
+          && hl.propertyName == stagingHistoryLines[idx-1].propertyName
+        ) {
+          skippedLines++
+        }
+        else {
+          finalHistoryLines.add(hl)
+        }
       }
     }
 

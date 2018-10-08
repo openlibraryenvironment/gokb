@@ -1,7 +1,7 @@
 package org.gokb
 
 import grails.converters.JSON
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
