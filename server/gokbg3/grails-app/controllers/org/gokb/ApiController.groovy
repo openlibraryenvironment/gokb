@@ -74,32 +74,6 @@ class ApiController {
   ConcurrencyManagerService concurrencyManagerService
 
   /**
-   * Before interceptor to check the current version of the refine
-   * plugin that is being used.
-   */
-
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'search', 'capabilities', 'esconfig', 'bulkLoadUsers', 'find', 'suggest']]
-
-  // defined with private scope, so it's not considered an action
-  private versionCheck() {
-    if ( params.skipVC ) {
-    }
-    else {
-      def gokbVersion = request.getHeader("GOKb-version")
-      def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
-
-      if (gokbVersion != 'development') {
-        if (!gokbVersion || TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
-          apiReturn([errorType : "versionError"], "The refine extension you are using is not compatible with this instance of the service.",
-          "error")
-
-          return false
-        }
-      }
-    }
-  }
-
-  /**
    * Check if the api is up. Just return true.
    */
   def isUp() {
@@ -151,74 +125,6 @@ class ApiController {
   def index() {
   }
 
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def describe() {
-    apiReturn(RefineOperation.findAll ())
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def checkMD5() {
-
-    def md5 = params.get("hash");
-    long pId = params.long("project");
-
-    // RefineProject
-    def rp = RefineProject.createCriteria().list {
-      and {
-        ne ("localProjectID", pId)
-        eq ("hash", md5)
-      }
-    }
-
-    // Create the return object.
-    def result = [
-      "hashCheck" : !rp
-    ]
-
-    // Return the result.
-    apiReturn(result)
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def checkSkippedTitles() {
-
-    long pId = params.long("project");
-
-    // RefineProject
-    RefineProject rp = RefineProject.get(pId)
-
-    // The result is the list of titles if we have a project.
-    def result = rp?.getSkippedTitles() ?: []
-
-    // Return the result.
-    apiReturn(result)
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def saveOperations() {
-    // Get the operations as a list.
-    log.debug("saveOperations");
-
-    // The line below looks like it replaces like with like but because the
-    // second parameter is a regex it gets double escaped.
-    def ops = params.operations.replaceAll("\\\\\"", "\\\\\"")
-    ops = JSON.parse(params.operations)
-
-    // Save each operation to the database
-    ops.each {
-      try {
-        new RefineOperation(
-            description : it['operation']['description'],
-            operation : new LinkedHashMap(it['operation'])
-            ).save(failOnError : true)
-      } catch (Exception e) {
-        log.error(e)
-      }
-    }
-
-    apiReturn( null, "Succesfully saved the operations.")
-  }
-
   @Secured(['IS_AUTHENTICATED_FULLY'])
   def checkLogin() {
     apiReturn(["login": true])
@@ -229,53 +135,6 @@ class ApiController {
       return
     }
     apiReturn ( TRANSFORMER_USER( springSecurityService.currentUser ) )
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectList() {
-    long time = System.currentTimeMillis()
-    apiReturn (RefineProject.findAll().collect(TRANSFORMER_PROJECT))
-    log.debug ("Project list ${System.currentTimeMillis() - time} milliseconds")
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectCheckout() {
-
-    // Get the current user from the security service.
-    User user = springSecurityService.currentUser
-
-    log.debug ("User ${user.getUsername()} attempting to check-out a project.")
-    if (params.projectID) {
-
-      // Get the project.
-      def project = RefineProject.get(params.projectID)
-
-      if (project) {
-
-        if (project.getProjectStatus() != RefineProject.Status.CHECKED_OUT) {
-
-          // Get the file and send the file to the client.
-          def file = new File(grailsApplication.config.project_dir + project.file)
-
-          // Send the file.
-          response.setContentType("application/x-gzip")
-          response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
-          response.outputStream << file.newInputStream()
-
-          project.setLastCheckedOutBy(user)
-          project.setProjectStatus(RefineProject.Status.CHECKED_OUT)
-
-          project.setLocalProjectID(params.long("localProjectID"))
-          return
-        } else {
-          // Project already checked out.
-          log.debug ("Project already checked out")
-        }
-      }
-    }
-
-    // Send 404 if not found.
-    response.status = 404;
   }
 
   def refdata() {
@@ -316,72 +175,14 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectIngestProgress() {
-    if (params.projectID) {
+  def namespaces() {
+    def all_ns = IdentifierNamespace.findAll()
+    def result = []
 
-      // Get the project.
-      def project = RefineProject.get(params.projectID)
-
-      // Also checking job 1...
-      log.debug ("Job 1: " + concurrencyManagerService.getJob(1)?.progress ?: "Undefined")
-
-      if (project) {
-        // Return the progress.
-        apiReturn ( project.collect(TRANSFORMER_PROJECT) )
-        return
-      }
-
-      // Return a 404.
-      response.status = 404;
+    all_ns.each { ns ->
+      result.add([value: ns.value, category: ns.family ?: ""])
     }
-  }
 
-  /**
-   *   Return a JSON structured array of the fields that should be collected when a project is checked in for the
-   *   first time
-   */
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def getProjectProfileProperties() {
-    def result = [
-      [
-        type : "fieldset",
-        children : [
-          [
-            type : 'legend',
-            text : 'Properties'
-          ],
-          [
-            label:'Source',
-            type:'textarea',
-            source:'ComponentLookup:Source',
-            name:'source',
-            create:true,
-          ],
-          [
-            label:'Provider',
-            type:'select',
-            source:'RefData:cp',
-            name:'provider',
-          ],
-          [
-            label:'Name',
-            type:'text',
-            name: 'name',
-          ],
-          [
-            label:'Description',
-            type:'text',
-            name: 'description',
-          ],
-          [
-            label:'Notes',
-            type:'textarea',
-            name: 'notes',
-          ]
-        ]
-      ]
-    ]
     apiReturn(result)
   }
 
@@ -445,11 +246,6 @@ class ApiController {
     } catch (Throwable t) {
       apiReturn (t, "There was an error creating a new Component of ${type}")
     }
-  }
-
-
-  def downloadUpdate () {
-    return downloadUpdateFile (springSecurityService?.currentUser?.hasRole("ROLE_REFINETESTER") as boolean)
   }
 
   // this is used as an entrypoint for single page apps based on frameworks like angular.

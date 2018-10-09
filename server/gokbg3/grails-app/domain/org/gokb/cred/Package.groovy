@@ -473,8 +473,8 @@ select tipp.id,
                 coverageDepth:tipp[11]?.value,
                 coverageNote:tipp[12],
                 embargo: tipp[18] )
-              'url'(tipp[13]?:"")
               }
+              'url'(tipp[13]?:"")
             }
           }
         }
