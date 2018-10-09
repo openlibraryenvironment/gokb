@@ -203,7 +203,7 @@
 
     <li><a href="#availability" data-toggle="tab">Availability <span
         class="badge badge-warning">
-          ${d.tipps?.size() ?: '0'}
+          ${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
       </span></a></li>
 
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span

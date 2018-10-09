@@ -157,8 +157,6 @@ class BootStrap {
 
       registerDomainClasses()
 
-      failAnyIngestingProjects()
-
       migrateDiskFilesToDatabase()
 
     
@@ -265,15 +263,6 @@ class BootStrap {
         d.delete(flush:true)
         log.info ("Deleted domain object for ${d.dcName} as the Class could not be found." )
       }
-    }
-  }
-
-  def failAnyIngestingProjects() {
-    log.debug("Failing any projects stuck on Ingesting on server start.");
-    RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
-
-      it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
-      it.save(flush:true)
     }
   }
 
@@ -1030,6 +1019,15 @@ class BootStrap {
             .startObject()
               .startObject("provider")
                 .field("match", "provider")
+                .field("match_mapping_type", "string")
+                .startObject("mapping")
+                  .field("type", "keyword")
+                .endObject()
+              .endObject()
+            .endObject()
+            .startObject()
+              .startObject("cpname")
+                .field("match", "cpname")
                 .field("match_mapping_type", "string")
                 .startObject("mapping")
                   .field("type", "keyword")

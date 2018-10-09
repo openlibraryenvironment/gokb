@@ -7,6 +7,8 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid
 import org.springframework.security.acls.domain.PrincipalSid
 import org.springframework.security.acls.model.AccessControlEntry
 import org.springframework.security.acls.model.Permission
+import org.springframework.security.acls.model.MutableAcl
+import org.springframework.security.acls.model.ObjectIdentity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.acls.domain.BasePermission
 import org.springframework.transaction.annotation.Transactional
@@ -20,6 +22,7 @@ class SecurityController {
   def gokbAclService
   def aclService
   def aclUtilService
+  def mutableAclService
   
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -84,12 +87,18 @@ class SecurityController {
       
       // Grant the permission.
       def for_acl = gokbAclService.readAclSilently(domain)
+
       if(!for_acl) {
         log.warn("Could not find acl for ${domain}! It may have to be created manually..")
-      }else {
-        log.debug("\n\nCall gokbAclService.addPermission ${domain}(${domain.class.name}),${recipient},${perm}");
-        aclUtilService.addPermission domain, recipient, perm
+        ObjectIdentity oi = new ObjectIdentityImpl(domain.class, domain.id);
+
+        log.debug("${oi}")
+
+        mutableAclService.createAcl(oi);
       }
+
+      log.debug("\n\nCall gokbAclService.addPermission ${domain}(${domain.class.name}),${recipient},${perm}");
+      aclUtilService.addPermission domain, recipient, perm
 
       if (request.isAjax()) {
         // Send back to the roles action.

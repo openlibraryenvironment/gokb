@@ -35,6 +35,10 @@ class SearchController {
       result.inline = true
     }
 
+    def cleaned_params = params.findAll { it.value && it.value != "" }
+
+    log.debug("Cleaned: ${cleaned_params}");
+
     if ( params.refOid ) {
       result.refOid = params.refOid
 
@@ -88,7 +92,7 @@ class SearchController {
         if (read_perm && !params.init) {
         
           log.debug("Execute query");
-          doQuery(result.qbetemplate, params, result)
+          doQuery(result.qbetemplate, cleaned_params, result)
           log.debug("Query complete");
           result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
           
@@ -179,7 +183,7 @@ class SearchController {
       }
     }
 
-    result.withoutJump = params.clone()
+    result.withoutJump = cleaned_params
     result.remove('jumpToPage');
     result.withoutJump.remove('jumpToPage');
 

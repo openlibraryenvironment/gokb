@@ -52,38 +52,39 @@
           </g:each>
         </tbody>
       </table>
+      <g:if test="${d.isEditable()}">
+        <hr />
 
-      <hr />
-
-      <h4>
-        <g:annotatedLabel owner="${d}" property="addRD">Add refdata value</g:annotatedLabel>
-      </h4>
-      <dl class="dl-horizontal">
-        <g:form controller="ajaxSupport" action="addToCollection"
-          class="form-inline">
-          <input type="hidden" name="__context"
-            value="${d.className}:${d.id}" />
-          <input type="hidden" name="__newObjectClass"
-            value="org.gokb.cred.RefdataValue" />
-          <input type="hidden" name="__recip" value="owner" />
-          <dt>Refdata Value</dt>
-          <dd>
-            <input type="text" name="value" />
-          </dd>
-          <dt>Display Class</dt>
-          <dd>
-            <input type="text" name="icon" />
-          </dd>
-          <dt>Sort Key</dt>
-          <dd>
-            <input type="text" name="sortKey" />
-          </dd>
-          <dt></dt>
-          <dd>
-            <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
-          </dd>
-        </g:form>
-      </dl>
+        <h4>
+          <g:annotatedLabel owner="${d}" property="addRD">Add refdata value</g:annotatedLabel>
+        </h4>
+        <dl class="dl-horizontal">
+          <g:form controller="ajaxSupport" action="addToCollection"
+            class="form-inline">
+            <input type="hidden" name="__context"
+              value="${d.className}:${d.id}" />
+            <input type="hidden" name="__newObjectClass"
+              value="org.gokb.cred.RefdataValue" />
+            <input type="hidden" name="__recip" value="owner" />
+            <dt>Refdata Value</dt>
+            <dd>
+              <input type="text" name="value" />
+            </dd>
+            <dt>Display Class</dt>
+            <dd>
+              <input type="text" name="icon" />
+            </dd>
+            <dt>Sort Key</dt>
+            <dd>
+              <input type="text" name="sortKey" />
+            </dd>
+            <dt></dt>
+            <dd>
+              <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+            </dd>
+          </g:form>
+        </dl>
+      </g:if>
     </dd>
   </g:if>
   <g:else>

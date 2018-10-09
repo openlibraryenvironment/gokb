@@ -1,11 +1,12 @@
 package org.gokb
 
 import grails.converters.JSON
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
+import java.text.SimpleDateFormat
 
 import groovy.util.logging.*
 
@@ -857,7 +858,7 @@ class IntegrationController {
           log.debug("\n\nupsert tipp data\n\n")
           tippctr=0
 
-          def tipps_to_delete = existing_tipps
+          def tipps_to_delete = existing_tipps.clone()
           def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
 
           if ( valid ) {
@@ -1261,6 +1262,8 @@ class IntegrationController {
 
   private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
 
+    def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS","yyyy-MM-dd"]
+
     if (publishers && ti) {
 
       def publisher_combos = []
@@ -1287,7 +1290,38 @@ class IntegrationController {
 
         if (publisher) {
 
-          Date pub_add_ed = pub_to_add?.endDate && "${pub_to_add.endDate}" != "" ? sdf.parse(pub_to_add.endDate) : null
+          Date pub_add_sd = null
+          Date pub_add_ed = null
+
+          if ( pub_to_add.startDate?.trim().size() > 0 ) {
+
+            sdfs.each { s ->
+              if (!pub_add_sd) {
+                try {
+                  SimpleDateFormat sdfStart = new SimpleDateFormat(s)
+
+                  pub_add_sd = sdfStart.parse(pub_to_add.startDate)
+                }
+                catch (Exception e) {
+                }
+              }
+            }
+          }
+
+          if ( pub_to_add.endDate?.trim().size() > 0 ) {
+
+            sdfs.each { s ->
+              if (!pub_add_ed) {
+                try {
+                  SimpleDateFormat sdfEnd = new SimpleDateFormat(s)
+
+                  pub_add_ed = sdfEnd.parse(pub_to_add.endDate)
+                }
+                catch (Exception e) {
+                }
+              }
+            }
+          }
 
           boolean found = false
           for ( int i=0; !found && i<publisher_combos.size(); i++) {
@@ -1309,7 +1343,7 @@ class IntegrationController {
               combo = new Combo(
                 type            : (type),
                 status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                startDate       : pub_to_add?.startDate && "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
+                startDate       : pub_add_sd,
                 endDate         : pub_add_ed,
                 toComponent     : publisher,
                 fromComponent   : ti
@@ -1318,7 +1352,7 @@ class IntegrationController {
               combo = new Combo(
                 type            : (type),
                 status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                startDate       : pub_to_add?.startDate && "${pub_to_add.startDate}" != "" ? sdf.parse(pub_to_add.startDate) : null,
+                startDate       : pub_add_sd,
                 endDate         : pub_add_ed,
                 fromComponent   : publisher,
                 toComponent     : ti

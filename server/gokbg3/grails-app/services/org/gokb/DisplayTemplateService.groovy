@@ -19,6 +19,7 @@ public class DisplayTemplateService {
     globalDisplayTemplates.put('org.gokb.refine.Rule',[ type:'staticgsp', rendername:'rule' ]);
     globalDisplayTemplates.put('org.gokb.refine.RefineProject',[ type:'staticgsp', rendername:'project' ]);
     globalDisplayTemplates.put('org.gokb.cred.RefdataCategory',[ type:'staticgsp', rendername:'rdc' ]);
+    globalDisplayTemplates.put('org.gokb.cred.RefdataValue',[ type:'staticgsp', rendername:'rdv' ]);
     globalDisplayTemplates.put('org.gokb.cred.ReviewRequest',[ type:'staticgsp', rendername:'revreq' ]);
     globalDisplayTemplates.put('org.gokb.cred.Office',[ type:'staticgsp', rendername:'office' ]);
     globalDisplayTemplates.put('org.gokb.cred.CuratoryGroup',[ type:'staticgsp', rendername:'curatory_group' ]);
@@ -28,6 +29,7 @@ public class DisplayTemplateService {
     globalDisplayTemplates.put('org.gokb.cred.DataFile',[ type:'staticgsp', rendername:'datafile' ]);
     globalDisplayTemplates.put('org.gokb.cred.KBDomainInfo',[ type:'staticgsp', rendername:'domainInfo' ]);
     globalDisplayTemplates.put('org.gokb.cred.Imprint',[ type:'staticgsp', rendername:'imprint' ]);
+    globalDisplayTemplates.put('org.gokb.cred.Identifier',[ type:'staticgsp', rendername:'identifier' ]);
     globalDisplayTemplates.put('org.gokb.cred.IdentifierNamespace',[ type:'staticgsp', rendername:'identifier_namespace' ]);
     globalDisplayTemplates.put('org.gokb.cred.Macro',[ type:'staticgsp', rendername:'macro' ]);
     globalDisplayTemplates.put('org.gokb.cred.DSCategory',[ type:'staticgsp', rendername:'ds_category' ]);

@@ -10,17 +10,13 @@ import org.elasticsearch.search.sort.SortOrder;
 
 class ESSearchService{
 // Map the parameter names we use in the webapp with the ES fields
-  def reversemap = ['subject':'subject', 
-                    'provider':'provid',
+  def reversemap = [
                     'type':'rectype',
-                    'endYear':'endYear',
-                    'startYear':'startYear',
-                    'consortiaName':'consortiaName',
+                    'curatoryGroups':'curatoryGroups',
                     'cpname':'cpname',
-                    'availableToOrgs':'availableToOrgs',
-                    'isPublic':'isPublic',
+                    'provider':'provider',
                     'componentType':'componentType',
-                    'lastModified':'lastModified']
+                    'lastUpdatedDisplay':'lastUpdatedDisplay']
 
   def ESWrapperService
   def grailsApplication
@@ -73,11 +69,8 @@ class ESSearchService{
           log.debug("srb start to add query and aggregration query string is ${query_str}")
     
           srb.setQuery(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
-             .addAggregation(AggregationBuilders.terms('curatoryGroup').size(25).field('curatoryGroup'))
-             .addAggregation(AggregationBuilders.terms('cpname').size(25).field('cpname.keyword'))
-             .addAggregation(AggregationBuilders.terms('type').field('rectype.keyword'))
-             .addAggregation(AggregationBuilders.terms('startYear').size(25).field('startYear.keyword'))
-             .addAggregation(AggregationBuilders.terms('endYear').size(25).field('endYear.keyword'))
+             .addAggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
+             .addAggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
              .setFrom(params.offset)
              .setSize(params.max)
              
@@ -140,7 +133,7 @@ class ESSearchService{
       
     if(params?.rectype){
       if(sw.toString()) sw.write(" AND ");
-      sw.write(" rectype.keyword:${params.rectype} ")
+      sw.write(" rectype:${params.rectype} ")
     } 
 
     field_map.each { mapping ->
@@ -150,12 +143,14 @@ class ESSearchService{
         if ( params[mapping.key].class == java.util.ArrayList) {
           log.debug("mapping is an arraylist: ${mapping} ${mapping.key} ${params[mapping.key]}")
           if(sw.toString()) sw.write(" AND ");
-          sw.write(" ( ( ( NOT _type:\"com.k_int.kbplus.Subscription\" ) AND ( NOT _type:\"com.k_int.kbplus.License\" )) OR ( ")
 
           params[mapping.key].each { p ->  
             if ( p ) {
                 sw.write(mapping.value?.toString())
                 sw.write(":".toString())
+
+                p = p.replaceAll(":","\\\\:")
+
                 sw.write(p.toString())
                 if(p == params[mapping.key].last()) {
                   sw.write(" ) ) ")
@@ -174,15 +169,19 @@ class ESSearchService{
           try {
             if ( params[mapping.key].length() > 0 && ! ( params[mapping.key].equalsIgnoreCase('*') ) ) {
 
+                def pval = params[mapping.key].replaceAll(":","\\\\:");
+
+                log.debug("pval = ${pval}")
+
                 if(sw.toString()) sw.write(" AND ");
 
                 sw.write(mapping.value)
                 sw.write(":")
 
                 if(params[mapping.key].startsWith("[") && params[mapping.key].endsWith("]")){
-                  sw.write(params[mapping.key])
+                  sw.write(pval)
                 }else{
-                  sw.write(params[mapping.key])
+                  sw.write(pval)
                 }
             }
           }

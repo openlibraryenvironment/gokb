@@ -1,4 +1,48 @@
 <!DOCTYPE html>
+<%
+  def addFacet = { params, facet, val ->
+    def newparams = [:]
+    newparams.putAll(params)
+
+    newparams.remove('offset');
+    newparams.remove('max');
+
+    def current = newparams[facet]
+    if ( current == null ) {
+      newparams[facet] = val
+    }
+    else if ( current instanceof String[] ) {
+      newparams.remove(current)
+      newparams[facet] = current as List
+      newparams[facet].add(val);
+    }
+    else {
+      newparams[facet] = [ current, val ]
+    }
+    newparams
+  }
+
+  def removeFacet = { params, facet, val ->
+    def newparams = [:]
+    newparams.putAll(params)
+    def current = newparams[facet]
+
+    newparams.remove('offset');
+    newparams.remove('max');
+
+    if ( current == null ) {
+    }
+    else if ( current instanceof String[] ) {
+      newparams.remove(current)
+      newparams[facet] = current as List
+      newparams[facet].remove(val);
+    }
+    else if ( current?.equals(val.toString()) ) {
+      newparams.remove(facet);
+    }
+    newparams
+  }
+%>
 <html>
 <head>
 <meta name='layout' content='public' />
@@ -23,9 +67,10 @@
                Showing results ${firstrec} to ${lastrec} of ${resultsTotal}
 
                <p>
-                 <g:each in="${['providerName']}" var="facet">
+                 <g:each in="${['provider','curatoryGroups']}" var="facet">
                    <g:each in="${params.list(facet)}" var="fv">
-                     <span class="badge alert-info">${facet}:${fv} &nbsp; <g:link controller="${controller}" action="index" params="${removeFacet(params,facet,fv)}"><i class="icon-remove icon-white"></i></g:link></span>
+                      <g:set var="kbc" value="${fv.startsWith('org.gokb.cred') ? org.gokb.cred.KBComponent.get(fv.split(':')[1].toLong()) : null}" />
+                     <span class="badge alert-info">${facet}:${kbc?.name ?: fv} &nbsp; <g:link controller="${controller}" action="index" params="${removeFacet(params,facet,fv)}"><i style="color:white" class="fa fa-times" aria-hidden="true"></i></g:link></span>
                    </g:each>
                  </g:each>
                </p>
@@ -42,21 +87,27 @@
       <div class="col-md-2">
            <g:each in="${facets?.sort{it.key}}" var="facet">
              <g:if test="${facet.key != 'type'}">
-             <div class="panel panel-default">
-               <div class="panel-heading">
-                 <h5><g:message code="facet.so.${facet.key}" default="${facet.key}" /></h5>
-               </div>
-               <div class="panel-body" style="max-height:300px;overflow:auto;overflow-x:hidden">
-                 <ul>
-                   <g:each in="${facet.value?.sort{it.display}}" var="v">
-                     <li style="margin-left:-5px">
-                       <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
-                       ${v.display} (${v.count})
-                     </li>
-                   </g:each>
-                 </ul>
-               </div>
-             </div>
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h5><g:message code="facet.so.${facet.key}" default="${facet.key}" /></h5>
+                </div>
+                <div class="panel-body" style="max-height:300px;overflow:auto;overflow-x:hidden">
+                  <ul>
+                    <g:each in="${facet.value?.sort{it.display}}" var="v">
+                      <li style="margin-left:-5px">
+                        <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
+                        <g:set var="kbc" value="${v.term.startsWith('org.gokb.cred') ? org.gokb.cred.KBComponent.get(v.term.split(':')[1].toLong()) : null}" />
+                        <g:if test="${params.list(facet.key).contains(v.term.toString())}">
+                          ${kbc?.name ?: v.display} (${v.count})
+                        </g:if>
+                        <g:else>
+                          <g:link controller="${controller}" action="${action}" params="${addFacet(params,facet.key,v.term)}">${kbc?.name ?: v.display}</g:link> (${v.count})
+                        </g:else>
+                      </li>
+                    </g:each>
+                  </ul>
+                </div>
+              </div>
              </g:if>
            </g:each>
       </div>

@@ -1,7 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.*
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.delete.DeleteRequest
 import org.elasticsearch.client.Requests
 
@@ -141,6 +141,7 @@ class CleanupService {
     return new Date();
   }
 
+  @Transactional
   def ensureUuids()  {
     log.debug("GOKb missing uuid check..")
 
@@ -160,6 +161,7 @@ class CleanupService {
         }
         catch(Exception e){
           log.debug("Skip component id ${kbc_id}")
+          log.debug("${e}")
           skipctr++
         }
       }
@@ -292,5 +294,33 @@ class CleanupService {
     }
     
     log.debug("Finished cleaning identifiers elapsed = ${System.currentTimeMillis() - start_time}")
+  }
+
+  @Transactional
+  def addMissingCoverageObjects() {
+    log.debug("Creating missing coverage statements..")
+
+    TitleInstancePackagePlatform.withNewSession {
+      def tipp_crit = TitleInstancePackagePlatform.createCriteria()
+      def tipps = tipp_crit.list () {
+        isEmpty('coverageStatements')
+        or {
+          isNotNull('startDate')
+          isNotNull('startVolume')
+          isNotNull('endDate')
+          isNotNull('endVolume')
+        }
+      }
+
+      tipps?.each { t ->
+        log.debug("Adding statement for TIPP ${t.id}")
+
+        t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote)
+
+        t.save(flush:true, failOnError:true);
+      }
+    }
+    log.debug("Done");
+    return new Date();
   }
 }

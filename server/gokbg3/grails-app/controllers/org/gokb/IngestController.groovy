@@ -125,23 +125,28 @@ class IngestController {
   
       }
 
-      log.debug("First transaction completed - datafile read and saved, move on to processing");
+      if (new_datafile_id) {
+        log.debug("First transaction completed - datafile read and saved, move on to processing");
 
-      // Transactional part done. now queue the job
-      Job background_job = concurrencyManagerService.createJob { Job job ->
-        // Create a new session to run the ingest.
-        try {
-          TSVIngestionService.ingest(ingestion_profile_id, new_datafile_id, job)
+        // Transactional part done. now queue the job
+        Job background_job = concurrencyManagerService.createJob { Job job ->
+          // Create a new session to run the ingest.
+          try {
+            TSVIngestionService.ingest(ingestion_profile_id, new_datafile_id, job)
+          }
+          catch ( Exception e ) {
+            log.error("Problem",e)
+          }
+          finally {
+            log.debug ("Async Data insert complete")
+          }
         }
-        catch ( Exception e ) {
-          log.error("Problem",e)
-        }
-        finally {
-          log.debug ("Async Data insert complete")            
-        }
+
+        background_job.startOrQueue()
       }
-      
-      background_job.startOrQueue()
+      else {
+        log.debug("No datafile id!");
+      }
     }
     else {
       log.debug("get")

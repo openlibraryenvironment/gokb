@@ -1,6 +1,8 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import java.text.SimpleDateFormat
+import com.k_int.ClassUtils
 import groovy.util.logging.*
 
 @Log4j
@@ -117,7 +119,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     paymentType (nullable:true, blank:true)
     accessStartDate (nullable:true, blank:false)
     accessEndDate (nullable:true, blank:false)
-    url (nullable:true, blank:true, url:true)
+    url (nullable:true, blank:true)
   }
 
   def availableActions() {
@@ -135,6 +137,17 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   public String getNiceName() {
 	return "TIPP";
+  }
+
+  def afterUpdate() {
+    KBComponent.withNewSession {
+      if(this.pkg){
+        this.pkg.lastUpdateComment = "TIPP ${this.id} updated"
+        this.pkg.listStatus = RefdataCategory.lookupOrCreate('Package.ListStatus','In Progress')
+        this.pkg.lastSeen = System.currentTimeMillis()
+        this.pkg.save(failOnError:true, flush:true)
+      }
+    }
   }
 
   /**
@@ -300,13 +313,10 @@ class TitleInstancePackagePlatform extends KBComponent {
             "Retired TIPP reenabled."
           )
           
-          if ( !tipp.accessStartDate ) {
-            tipp.accessStartDate = new Date()
-          }
-          
           if ( tipp.accessEndDate ) {
             tipp.accessEndDate = null
           }
+
           changed = true
         }else if( tipp.isDeleted() ) {
           ReviewRequest.raise(
@@ -336,8 +346,71 @@ class TitleInstancePackagePlatform extends KBComponent {
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
           changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
+
+          def sdfs = [
+              "yyyy-MM-dd' 'HH:mm:ss.SSS",
+              "yyyy-MM-dd'T'HH:mm:ss'Z'"
+          ]
+
+          def parsedStart = null
+          def parsedEnd = null
+
+          if ( c.startDate?.trim().size() > 0 ) {
+
+            sdfs.each { s ->
+              try {
+                SimpleDateFormat sdf = new SimpleDateFormat(s)
+
+                parsedStart = sdf.parse(c.startDate)
+              }
+              catch (Exception e) {
+              }
+            }
+          }
+
+          if ( c.endDate?.trim().size() > 0 ) {
+
+            sdfs.each { s ->
+              try {
+                SimpleDateFormat sdf = new SimpleDateFormat(s)
+
+                parsedEnd = sdf.parse(c.endDate)
+              }
+              catch (Exception e) {
+              }
+            }
+          }
+
           if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
             changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
+          }
+
+          def cs_match = false
+
+          tipp.coverageStatements?.each { tcs ->
+
+            if ( !cs_match && (
+                (tcs.startVolume && tcs.startVolume == c.startVolume) ||
+                (tcs.startDate && tcs.startDate == parsedStart) ||
+                (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
+            ) {
+                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
+                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
+                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
+                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
+                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
+                changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tcs,'startDate')
+                changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tcs,'endDate')
+
+                cs_match = true
+            }
+            else if (cs_match) {
+              log.debug("Matched new coverage ${c} on multiple existing coverages!")
+            }
+          }
+
+          if (!cs_match) {
+            tipp.addToCoverageStatements('startVolume': c.startVolume, 'startIssue':c.startIssue, 'endVolume': c.endVolume, 'endIssue': c.endIssue, 'embargo':c.embargo, 'coverageNote': c.coverageNote, 'startDate': parsedStart, 'endDate': parsedEnd)
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
         }

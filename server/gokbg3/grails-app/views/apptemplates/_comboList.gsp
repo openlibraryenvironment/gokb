@@ -22,16 +22,18 @@
           </td>
         </g:each>
         <td>
-          <g:link controller='ajaxSupport' 
-                  action='unlinkManyToMany' 
-                  params="${[__context:ctxoid,__property:property,__itemToRemove:rowoid]}">Delete</g:link>
+          <g:if test="${d.isEditable() && (d.respondsTo('curatoryGroups') ? (!d.curatoryGroups ? true : cur) : true)}">
+            <g:link controller='ajaxSupport'
+                    action='unlinkManyToMany'
+                    params="${[__context:ctxoid,__property:property,__itemToRemove:rowoid]}">Unlink</g:link>
+          </g:if>
         </td>
       </tr>
     </g:each>
   </tbody>
 </table>
 
-<g:if test="${targetClass && d.isEditable()}">
+<g:if test="${targetClass && d.isEditable() && !noadd}">
 
   <g:if test="${direction=='in'}">
     <g:set var="recip" value="toComponent"/>

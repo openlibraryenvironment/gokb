@@ -15,8 +15,9 @@
         <th>Description</th>
         <th>Has Started</th>
         <th>Start Time</th>
-        <th>Has Ended</th>
+        <th>Status</th>
         <th>End Time</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -26,8 +27,19 @@
           <td>${v.description}</td>
           <td>${v.begun}</td>
           <td>${v.startTime}</td>
-          <td>${v.isDone()}</td>
+          <td>
+            <g:if test="${v.isCancelled()}">
+              Cancelled
+            </g:if>
+            <g:elseif test="${v.isDone()}">
+              Finished
+            </g:elseif>
+            <g:else>
+              Running
+            </g:else>
+          </td>
           <td>${v.endTime}</td>
+          <td><g:if test="${!v.isCancelled() && !v.isDone()}"><g:link controller="admin" action="cancelJob" onclick="return confirm('Are you sure?')" id="${v.id}">Cancel</g:link></g:if></td>
         </tr>
         <tr>
           <td colspan="6">

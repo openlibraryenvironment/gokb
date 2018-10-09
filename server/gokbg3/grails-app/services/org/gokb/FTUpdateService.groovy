@@ -1,7 +1,7 @@
 package org.gokb
 
 
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 import org.gokb.FTControl
 import org.hibernate.ScrollMode
 import java.nio.charset.Charset
@@ -157,6 +157,8 @@ class FTUpdateService {
         result.titleCount = ''+kbc.tipps?.size()
 
         result.cpname = kbc.provider?.name
+
+        result.provider = kbc.provider ? "${kbc.provider.class?.name}:${kbc.provider?.id}" : ""
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -186,9 +188,9 @@ class FTUpdateService {
           result.curatoryGroups.add(cg.name)
         }
 
-        result.tippPackage = kbc.pkg ? "${kbc.pkg.class.name}:${kbc.pkg.id}" : ""
-        result.tippTitle = kbc.title ? "${kbc.title.class.name}:${kbc.title.id}" : ""
-        result.hostPlatform = kbc.hostPlatform ? "${kbc.hostPlatform.class.name}:${kbc.hostPlatform.id}" : ""
+        result.tippPackage = kbc.pkg ? "${kbc.pkg?.class?.name}:${kbc.pkg?.id}" : ""
+        result.tippTitle = kbc.title ? "${kbc.title?.class?.name}:${kbc.title?.id}" : ""
+        result.hostPlatform = kbc.hostPlatform ? "${kbc.hostPlatform?.class?.name}:${kbc.hostPlatform?.id}" : ""
 
         result.status = kbc.status?.value
 
@@ -231,6 +233,10 @@ class FTUpdateService {
         result.uuid = kbc.uuid
         result.name = kbc.name
         result.updater='platform'
+
+        result.cpname = kbc.provider?.name
+
+        result.provider = kbc.provider ? "${kbc.provider.class?.name}:${kbc.provider?.id}" : ""
 
         result.altname = []
         kbc.variantNames.each { vn ->

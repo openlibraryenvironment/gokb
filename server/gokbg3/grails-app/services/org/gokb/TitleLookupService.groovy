@@ -149,7 +149,7 @@ class TitleLookupService {
         }
       }
       else {
-        log.warn("Skipping problem ID ${id_def}");
+        log.debug("Skipping problem ID ${id_def}");
         Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
         result['other_identifiers'] << the_id
       }

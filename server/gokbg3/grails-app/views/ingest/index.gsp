@@ -6,11 +6,11 @@
   <body>
     <h1 class="page-header">Direct File Ingest</h1>
     <div class="col-md-6" >
-  	  <div id="mainarea" class="panel panel-default">
+      <div id="mainarea" class="panel panel-default">
         <div class="panel-heading">
-					<h3 class="panel-title">Existing Profiles</h3>
-				</div>
-    		<div class="panel-body">
+          <h3 class="panel-title">Existing Profiles</h3>
+        </div>
+        <div class="panel-body" style="overflow:auto;">
           <table class="table table-striped table-bordered">
             <thead>
               <tr>
@@ -19,6 +19,7 @@
                 <th>Source name</th>
                 <th>Platform Url</th>
                 <th>Package Type</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -29,6 +30,7 @@
                   <td>${p.source}</td>
                   <td>${p.platformUrl}</td>
                   <td>${p.packageType}</td>
+                  <td><g:xEditableRefData owner="${p}" field="status" config='KBComponent.Status' /></td>
                 </tr>
               </g:each>
             </tbody>
@@ -38,11 +40,11 @@
     </div>
 
     <div class="col-md-6 desktop-only" >
-    	<div id="newiparea" class="panel panel-default">
+      <div id="newiparea" class="panel panel-default">
         <div class="panel-heading">
-					<h3 class="panel-title">New Ingest Profile</h3>
-				</div>
-      	<div class="panel-body">
+          <h3 class="panel-title">New Ingest Profile</h3>
+        </div>
+        <div class="panel-body">
           <g:form action="addProfile" method="post" enctype="multipart/form-data" params="${params}">
             <div class="form-group">
               <label class="control-label" for='profileName'>Profile Name:</label>
@@ -55,6 +57,10 @@
             <div class="form-group">
               <label class="control-label" for='packageType'>Data Format:</label>
               <g:simpleReferenceTypedown class="form-control" name="packageType" baseClass="org.gokb.cred.RefdataValue" filter1="ingest.filetype"/>
+            </div>
+            <div class="form-group">
+              <label class="control-label" for='providerNamespace'>Provider Namespace:</label>
+              <g:simpleReferenceTypedown class="form-control" name="providerNamespace" baseClass="org.gokb.cred.IdentifierNamespace" />
             </div>
             <div class="form-group">
               <label class="control-label" for='platformUrl'>Url:</label>

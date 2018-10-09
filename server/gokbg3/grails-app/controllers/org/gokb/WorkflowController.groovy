@@ -32,7 +32,8 @@ class WorkflowController {
     'method::retire':[actionType:'simple' ],
     'method::setActive':[actionType:'simple' ],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
-    'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg']
+    'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg'],
+    'verifyTitleList':[actionType:'process', method:'verifyTitleList']
   ];
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -93,7 +94,7 @@ class WorkflowController {
 
             case "method" :
 
-              def context = [ user:request.user, params:params ]
+              def context = [ user:request.user ]
 
               // Everything after the first 2 "parts" are args for the method.
               def method_params = []
@@ -1291,16 +1292,31 @@ class WorkflowController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteVariant() {
     log.debug("${params}");
-    User user = springSecurityService.currentUser
     def result = [:]
     result.ref=request.getHeader('referer')
     def variant = KBComponentVariantName.get(params.id)
     def variantOwner = variant.owner
     def variantName = variant.variantName
-    if (variant != null ) {
+    if ( variant != null && variantOwner.isEditable() ) {
       variant.delete()
       variantOwner.lastUpdateComment = "Deleted Alternate Name ${variantName}."
       variantOwner.save(flush: true)
+    }
+    redirect(url: result.ref)
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteCoverageStatement() {
+    log.debug("${params}");
+    def result = [:]
+    result.ref=request.getHeader('referer')
+    def tcs = TIPPCoverageStatement.get(params.id)
+    def tipp = tcs.owner
+
+    if ( tcs != null && tipp.isEditable() ) {
+      tcs.delete()
+      tipp.lastUpdateComment = "Deleted Coverage Statement."
+      tipp.save(flush: true)
     }
     redirect(url: result.ref)
   }
@@ -1608,7 +1624,7 @@ class WorkflowController {
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
             writer.write( sanitize( tipp.id ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.id ) + '\t' + sanitize( tipp.title.name ) + '\t' +
                           sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
-                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
+                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.OAStatus?.value ) + '\t' +
                           sanitize( tipp.title.continuingSeries?.value ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
                           sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
@@ -1711,6 +1727,23 @@ class WorkflowController {
   def deleteCombo() {
     Combo c = Combo.get(params.id);
     c.delete(flush:true);
+    redirect(url: request.getHeader('referer'));
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  private def verifyTitleList(packages_to_verify) {
+    def user = springSecurityService.currentUser
+
+    packages_to_verify.each { ptv ->
+      def pkgObj = Package.get(ptv.id)
+
+      if ( pkgObj?.isEditable() ) {
+        pkgObj.listStatus = RefdataCategory.lookupOrCreate('Package.ListStatus','Checked')
+        pkgObj.userListVerifier = user
+        pkgObj.listVerifiedDate = new Date()
+        pkgObj.save(flush: true, failOnError: true)
+      }
+    }
     redirect(url: request.getHeader('referer'));
   }
 }

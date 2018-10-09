@@ -225,7 +225,7 @@
 					</dt>
 					<dd>
 						<g:render template="/apptemplates/comboList"
-							model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
+							model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
 
 						<g:if test="${d.isEditable()}">
 							<button
@@ -304,14 +304,14 @@
 					</dt>
 					<dd>
 						<g:render template="/apptemplates/comboList"
-							model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform', action:'link']]]}" />
+							model="${[d:d, property:'providedPlatforms', cols:[[expr:'name',colhead:'Platform Name',targetClass:'org.gokb.cred.Platform', action:'link'],[expr:'primaryUrl',colhead:'Primary URL',targetClass:'org.gokb.cred.Platform']]]}" />
 					</dd>
 				</dl>
 			</div>
 
 			<div class="tab-pane" id="titles">
 				<g:link class="display-inline" controller="search" action="index"
-					params="[qbe:'g:1titles', qp_pub:'org.gokb.cred.Org:'+d.id, hide:['qp_pub']]"
+					params="[qbe:'g:1titles', refOid: d.getLogEntityId(), inline:true, qp_pub_id:d.id, hide:['qp_pub','qp_pub_id']]"
 					id="">Titles published</g:link>
 			</div>
 

@@ -6,6 +6,7 @@ class IngestionProfile extends KBComponent {
   String packageName
   RefdataValue packageType
   String platformUrl
+  IdentifierNamespace providerNamespace
 
   static hasMany = [
     ingestions: ComponentIngestionSource
@@ -16,7 +17,7 @@ class IngestionProfile extends KBComponent {
   ]
 
   static hasByCombo = [
-    source: Source
+    source: Source,
   ]
 
   static constraints = {

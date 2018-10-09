@@ -46,7 +46,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/info',                    access: ['permitAll']],
   [pattern: '/monitoring/**',           access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/login/auth',              access: ['permitAll']],
-  [pattern: '/greenmail/**',               access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
+  [pattern: '/greenmail/**',            access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/',                        access: ['permitAll']],
   [pattern: '/index',                   access: ['permitAll']],
   [pattern: '/index.gsp',               access: ['permitAll']],
@@ -179,6 +179,15 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
+          baseClass:'org.gokb.cred.CuratoryGroup',
+          prompt:'Curatory Group',
+          qparam:'qp_curgroup',
+          placeholder:'Curatory Group',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'curatoryGroups'],
+          hide:false
+        ],
+        [
+          type:'lookup',
           baseClass:'org.gokb.cred.Platform',
           prompt:'Platform',
           qparam:'qp_platform',
@@ -261,6 +270,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name',link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Primary URL', property:'primaryUrl'],
         [heading:'Status', property:'status?.value',sort:'status'],
       ]
     ]
@@ -298,13 +308,20 @@ globalSearchTemplates = [
           hide:false
         ],
         [
+          prompt:'Title Publisher ID',
+          qparam:'qp_pub_id',
+          placeholder:'Title Publisher ID',
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'publisher.id', 'type' : 'java.lang.Long']
+        ],
+        [
           type:'lookup',
-          baseClass:'org.gokb.cred.Org',
-          prompt:'Publisher',
-          qparam:'qp_prov_id',
-          placeholder:'Content Provider',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider'],
-          hide:true
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'TitleInstance.Medium',
+          prompt:'Type',
+          qparam:'qp_medium',
+          placeholder:'Medium of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'medium'],
+          // II: Default not yet implemented
         ],
         [
           type:'lookup',
@@ -312,7 +329,7 @@ globalSearchTemplates = [
           filter1:'KBComponent.Status',
           prompt:'Status',
           qparam:'qp_status',
-          placeholder:'Name or title of item',
+          placeholder:'Status of item',
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status'],
           // II: Default not yet implemented
           default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
@@ -333,8 +350,8 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'ID', property:'id', link:[controller:'resource',action:'show',id:'x.r?.class?.name+\':\'+x.r?.id'],sort:'name' ],
-        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r?.class?.name+\':\'+x.r?.id'],sort:'name' ],
-        [heading:'Type', property:'class?.simpleName'],
+        [heading:'Name/Title', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r?.class?.name+\':\'+x.r?.id'] ],
+        [heading:'Type', property:'medium?.value', sort:'name'],
         [heading:'Status', property:'status?.value',sort:'status'],
         [heading:'Date Created', property:'dateCreated',sort:'dateCreated'],
         [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
@@ -458,11 +475,11 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Title', qpEquiv:'qp_title_id', property:'title?.name',link:[controller:'resource',action:'show',id:'x.r.title?.class.name+\':\'+x.r.title?.id'] ],
+        [heading:'Title', qpEquiv:'qp_title_id', property:'title?.name', sort:'title.name', link:[controller:'resource',action:'show',id:'x.r.title?.class.name+\':\'+x.r.title?.id'] ],
         [heading:'Type', qpEquiv:'qp_title_id', property:'title?.getNiceName()'],
-        [heading:'Status', property:'status?.value'],
-        [heading:'Package', qpEquiv:'qp_pkg_id', property:'pkg?.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class.name+\':\'+x.r.pkg.id'] ],
-        [heading:'Platform', qpEquiv:'qp_plat_id', property:'hostPlatform?.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
+        [heading:'Package', qpEquiv:'qp_pkg_id', property:'pkg?.name', sort:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class.name+\':\'+x.r.pkg.id'] ],
+        [heading:'Platform', qpEquiv:'qp_plat_id', property:'hostPlatform?.name', sort:'platform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
+        [heading:'Status', property:'status?.value', sort:'status']
       ]
     ]
   ],

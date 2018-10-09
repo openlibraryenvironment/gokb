@@ -8,6 +8,7 @@ import org.hibernate.criterion.CriteriaSpecification
 
 import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
+import java.util.concurrent.CancellationException
 
 
 class AdminController {
@@ -149,6 +150,17 @@ class AdminController {
 
   }
 
+  def convertTippCoverages() {
+    Job j = concurrencyManagerService.createJob {
+      cleanupService.addMissingCoverageObjects()
+    }.startOrQueue()
+
+    j.description = "Generate missing TIPPCoverageStatements"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def copyUploadedFile(inputfile, deposit_token) {
 
    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
@@ -252,10 +264,17 @@ class AdminController {
     result.cms = concurrencyManagerService
 
     result.jobs.each { k, j ->
-      if ( j.isDone() && !j.endTime && j.get()) {
-        def job_res = j.get()
-        log.debug("${job_res}")
-        j.endTime = j.get()
+      if ( j.isDone() && !j.endTime ) {
+
+        try {
+          def job_res = j.get()
+
+          if (job_res && job_res instanceof Date) {
+            j.endTime = j.get()
+          }
+        } catch (CancellationException e) {
+          log.debug("Cancelled")
+        }
       }
     }
 
@@ -267,6 +286,14 @@ class AdminController {
 
     log.debug("Return");
     result
+  }
+
+
+  def cancelJob() {
+    Job j = concurrencyManagerService.getJob(params.int('id'))
+
+    j?.forceCancel()
+    render(view: "logViewer", model: logViewer())
   }
 
   @Deprecated

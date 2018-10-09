@@ -417,6 +417,7 @@ where cp.owner = :c
   }
 
   static constraints = {
+    uuid    (nullable:true, blank:false, maxSize:2048)
     name    (nullable:true, blank:false, maxSize:2048)
     shortcode  (nullable:true, blank:false, maxSize:128)
     description  (nullable:true, blank:false)
@@ -1287,6 +1288,7 @@ where cp.owner = :c
     ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component",[component:this]);
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
+    ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component",[component:this]);
     this.delete(flush:true, failOnError:true)
     result;
   }

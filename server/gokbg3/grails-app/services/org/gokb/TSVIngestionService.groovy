@@ -14,7 +14,7 @@ import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
 
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
 import org.gokb.cred.TitleInstance
 // Only in ebooks branch -- import org.gokb.cred.BookInstance
@@ -641,9 +641,9 @@ class TSVIngestionService {
                    the_profile.platformUrl,
                    the_profile.source,
                    datafile_id,
-                   null,
-                   null,
                    job,
+                   null,
+                   the_profile.providerNamespace,
                    ip_id,
                    ingest_cfg,
                    'N',
@@ -671,7 +671,7 @@ class TSVIngestionService {
     long start_time = System.currentTimeMillis();
 
     // Read does no dirty checking
-    log.debug("Get Datafile");
+    log.debug("Get Datafile ${datafile_id}");
     def datafile = DataFile.read(datafile_id)
     log.debug("Got Datafile");
 
@@ -690,7 +690,7 @@ class TSVIngestionService {
                      defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.TitleInstance',
                      identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
                      defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
-                     providerIdentifierNamespace:providerIdentifierNamespace,
+                     providerIdentifierNamespace:providerIdentifierNamespace?.value,
                      inconsistent_title_id_behavior:'reject',
                      quoteChar:'"',
                      discriminatorColumn: kbart_cfg?.discriminatorColumn,

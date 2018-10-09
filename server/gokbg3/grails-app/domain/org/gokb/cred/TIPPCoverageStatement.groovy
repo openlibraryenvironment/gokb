@@ -41,4 +41,12 @@ class TIPPCoverageStatement {
     coverageNote (nullable:true, blank:true)
   }
 
+  def afterUpdate() {
+    this.owner.lastUpdateComment = "Coverage Statement ${this.id} updated"
+  }
+
+  def afterInsert() {
+    this.owner.lastUpdateComment = "Coverage Statement ${this.id} created"
+  }
+
 }
