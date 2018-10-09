@@ -46,7 +46,12 @@
             <td>${pkg.status?.value}</td>
             <td>
               <g:if test="${pkg?.userListVerifier}">
-                <g:link controller="resource" action="show" id="${pkg.userListVerifier.getClassName()+':'+pkg.userListVerifier.id}">${pkg.userListVerifier.displayName} </g:link>
+                <g:if test="${org.gokb.cred.User.isTypeReadable()}">
+                  <g:link controller="resource" action="show" id="${pkg.userListVerifier.getClassName()+':'+pkg.userListVerifier.id}">${pkg.userListVerifier.displayName ?: pkg.userListVerifier.username} </g:link>
+                </g:if>
+                <g:else>
+                  ${pkg.userListVerifier.displayName ?: pkg.userListVerifier.username}
+                </g:else>
               </g:if>
             </td>
             <td>${pkg.listVerifiedDate}</td>

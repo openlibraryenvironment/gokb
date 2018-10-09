@@ -225,7 +225,7 @@
 					</dt>
 					<dd>
 						<g:render template="/apptemplates/comboList"
-							model="${[d:d, property:'offices', cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
+							model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
 
 						<g:if test="${d.isEditable()}">
 							<button
