@@ -51,35 +51,34 @@
 
 <body>
 
-   <div class="container">
-       <div class="row">
-         <div class="col-md-12">
-           <g:form controller="public" class="form" role="form" action="index" method="get" params="${params}">
-             <div class="well form-horizontal">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <g:form controller="public" class="form" role="form" action="index" method="get" params="${params}">
+          <div class="well form-horizontal">
 
-               <label for="q">Search for packages...</label>
-               <div class="input-group">
-                 <input type="text" class="form-control" placeholder="Find package like..." value="${params.q}" name="q">
-                 <span class="input-group-btn">
-                   <button class="btn btn-primary" type="submit" value="yes" name="search"><span class="fa fa-search" aria-hidden="true">Search</span></button>
-                 </span>
-               </div>
-               Showing results ${firstrec} to ${lastrec} of ${resultsTotal}
+            <label for="q">Search for packages...</label>
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Find package like..." value="${params.q}" name="q">
+              <span class="input-group-btn">
+                <button class="btn btn-primary" type="submit" value="yes" name="search"><span class="fa fa-search" aria-hidden="true">Search</span></button>
+              </span>
+            </div>
+            Showing results ${firstrec} to ${lastrec} of ${resultsTotal}
 
-               <p>
-                 <g:each in="${['provider','curatoryGroups']}" var="facet">
-                   <g:each in="${params.list(facet)}" var="fv">
-                      <g:set var="kbc" value="${fv.startsWith('org.gokb.cred') ? org.gokb.cred.KBComponent.get(fv.split(':')[1].toLong()) : null}" />
-                     <span class="badge alert-info">${facet}:${kbc?.name ?: fv} &nbsp; <g:link controller="${controller}" action="index" params="${removeFacet(params,facet,fv)}"><i style="color:white" class="fa fa-times" aria-hidden="true"></i></g:link></span>
-                   </g:each>
-                 </g:each>
-               </p>
-             </div>
-           </g:form>
-
-         </div>
-       </div>
-   </div>
+            <p>
+              <g:each in="${['provider','curatoryGroups']}" var="facet">
+                <g:each in="${params.list(facet)}" var="fv">
+                    <g:set var="kbc" value="${fv.startsWith('org.gokb.cred') ? org.gokb.cred.KBComponent.get(fv.split(':')[1].toLong()) : null}" />
+                  <span class="badge alert-info">${facet}:${kbc?.name ?: fv} &nbsp; <g:link controller="${controller}" action="index" params="${removeFacet(params,facet,fv)}"><i style="color:white" class="fa fa-times" aria-hidden="true"></i></g:link></span>
+                </g:each>
+              </g:each>
+            </p>
+          </div>
+        </g:form>
+      </div>
+    </div>
+  </div>
 
 
   <div class="container">
