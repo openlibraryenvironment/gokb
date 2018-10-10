@@ -523,14 +523,6 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
-          baseClass:'org.gokb.refine.RefineProject',
-          prompt:'Project',
-          qparam:'qp_project',
-          placeholder:'Project',
-          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'refineProject']
-        ],
-        [
-          type:'lookup',
           baseClass:'org.gokb.cred.User',
           prompt:'Raised By',
           qparam:'qp_raisedby',
@@ -561,7 +553,6 @@ globalSearchTemplates = [
         [heading:'Raised By', property:'raisedBy?.username'],
         [heading:'Allocated To', property:'allocatedTo?.username'],
         [heading:'Timestamp', property:'dateCreated', sort:'dateCreated'],
-        [heading:'Project', property:'refineProject?.name', link:[controller:'resource', action:'show', id:'x.r.refineProject?.class?.name+\':\'+x.r.refineProject?.id']],
       ]
     ]
   ],

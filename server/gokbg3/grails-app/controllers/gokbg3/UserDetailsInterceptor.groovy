@@ -8,6 +8,7 @@ class UserDetailsInterceptor {
     matchAll().excludes(controller: 'auth')
               .excludes(controller: 'integration')
               .excludes(controller: 'api')
+              .excludes(controller: 'oai')
   }
 
 

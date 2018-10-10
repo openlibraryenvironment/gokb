@@ -212,7 +212,7 @@ class OaiController {
       query += ' and o.lastUpdated < ?'
       query_params.add(sdf.parse(params.until))
     }
-    def order_by_clause = 'order by o.id'
+    def order_by_clause = 'order by o.lastUpdated'
 
     def rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
     def records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:3])
@@ -424,7 +424,7 @@ class OaiController {
         query_params.add(params.set)
       }
 
-      def order_by_clause = 'order by o.id'
+      def order_by_clause = 'order by o.lastUpdated'
       log.debug("qry is: ${query}");
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
       def rec_count = Package.executeQuery("select count(distinct o) ${query}".toString(),query_params)[0];
