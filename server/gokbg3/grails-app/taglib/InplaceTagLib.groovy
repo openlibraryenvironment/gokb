@@ -5,6 +5,9 @@ import com.k_int.kbplus.*
 import org.gokb.cred.*;
 import com.k_int.ClassUtils
 
+import grails.core.GrailsClass
+import grails.core.GrailsApplication
+
 import org.hibernate.proxy.HibernateProxy
 
 class InplaceTagLib {
@@ -34,6 +37,25 @@ class InplaceTagLib {
     }
 
     tl_editable
+  }
+
+  private boolean checkViewable (attrs, body, out) {
+
+    // See if there is an baseClass attribute on the request - baseClass will be the domain class asking to be searched.
+    def user = springSecurityService.currentUser
+    def baseClass = attrs.baseClass ? grailsApplication.getArtefact("Domain", attrs.baseClass)?.clazz : null
+    def owner = attrs.owner ? ClassUtils.deproxy(attrs.owner) : null
+    def tl_viewable = false
+
+    tl_viewable = baseClass.isTypeReadable()
+
+    // If not editable then we should output as value only and return the value.
+    if (!tl_viewable) {
+      def content = (owner?."${attrs.field}" ? renderObjectValue (owner."${attrs.field}") : body()?.trim() )
+      out << "<span class='readonly${content ? '' : ' editable-empty'}' title='This ${baseClass?.respondsTo('getNiceName') ? baseClass.getNiceName() : 'component' } is not searchable.' >${content ?: 'Empty'}</span>"
+    }
+
+    tl_viewable
   }
 
   /**
@@ -292,7 +314,15 @@ class InplaceTagLib {
     
     // The check editable should output the read only version so we should just exit
     // if read only.
-    if (!checkEditable(attrs, body, out)) return;
+    def editable = true
+    def viewable = true
+
+    if (!checkViewable(attrs, body, out)) {
+      viewable = false
+    }
+    else if (!checkEditable(attrs, body, out)) {
+      editable = false
+    }
     
     def owner = ClassUtils.deproxy(attrs.owner)
     
@@ -302,25 +332,27 @@ class InplaceTagLib {
 
     def follow_link = null;
 
-    if ( owner != null && owner[attrs.field] != null ) {
+    if ( viewable && owner != null && owner[attrs.field] != null ) {
       def field_class = "${ClassUtils.deproxy(owner[attrs.field]).class.name}"
 
       follow_link = createLink(controller:'resource', action: 'show')
       follow_link = follow_link + '/' + field_class + ':' + owner[attrs.field].id;
     }
 
-    out << "<a href=\"#\" data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "
+    if ( viewable && editable ) {
+      out << "<a href=\"#\" data-domain=\"${attrs.baseClass}\" id=\"${id}\" class=\"xEditableManyToOneS2\" "
 
-    if ( ( attrs.filter1 != null ) && ( attrs.filter1.length() > 0 ) ) {
-      out << "data-filter1=\"${attrs.filter1}\" "
+      if ( ( attrs.filter1 != null ) && ( attrs.filter1.length() > 0 ) ) {
+        out << "data-filter1=\"${attrs.filter1}\" "
+      }
+
+      if ( owner?.id != null )
+        out << "data-pk=\"${oid}\" "
+
+      out << "data-type=\"select2\" data-name=\"${attrs.field}\" data-url=\"${update_link}\" >"
+      out << body()
+      out << "</a>";
     }
-
-    if ( owner?.id != null )
-      out << "data-pk=\"${oid}\" "
-
-    out << "data-type=\"select2\" data-name=\"${attrs.field}\" data-url=\"${update_link}\" >"
-    out << body()
-    out << "</a>";
     
     if( follow_link ){
       out << ' &nbsp; <a href="'+follow_link+'">Follow Link</a>'

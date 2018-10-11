@@ -419,6 +419,15 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'TitleInstance.Medium',
+          prompt:'Type',
+          qparam:'qp_medium',
+          placeholder:'Medium of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'title.medium'],
+        ],
+        [
+          type:'lookup',
           baseClass:'org.gokb.cred.Org',
           prompt:'Content Provider',
           qparam:'qp_cp',
@@ -889,6 +898,13 @@ globalSearchTemplates = [
           hide:true
         ],
         [
+          prompt:'Identifier',
+          qparam:'qp_identifier',
+          placeholder:'Identifier Value',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value'],
+          hide:false
+        ],
+        [
           type:'lookup',
           baseClass:'org.gokb.cred.Person',
           prompt:'Person',
@@ -904,15 +920,6 @@ globalSearchTemplates = [
           qparam:'qp_subject',
           placeholder:'Subject',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'subjects.subject'],
-          hide:true
-        ],
-        [
-          type:'lookup',
-          baseClass:'org.gokb.cred.Org',
-          prompt:'Content Provider',
-          qparam:'qp_prov_id',
-          placeholder:'Content Provider',
-          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'pkg.provider'],
           hide:true
         ],
       ],
@@ -947,7 +954,25 @@ globalSearchTemplates = [
           qparam:'qp_pub',
           placeholder:'Publisher',
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
-          hide:true
+          hide:false
+        ],
+        [
+          prompt:'Identifier',
+          qparam:'qp_identifier',
+          placeholder:'Identifier Value',
+          contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value'],
+          hide:false
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'KBComponent.Status',
+          prompt:'Status',
+          qparam:'qp_status',
+          placeholder:'Status of item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status'],
+          // II: Default not yet implemented
+          default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
         ],
       ],
       qbeGlobals:[

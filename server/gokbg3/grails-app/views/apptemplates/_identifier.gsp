@@ -8,6 +8,6 @@
   <dt> <g:annotatedLabel owner="${d}" property="identifiedComponents">Identified Components</g:annotatedLabel> </dt>
   <dd>
     <g:render template="/apptemplates/comboList"
-      model="${[d:d, property:'identifiedComponents', cols:[[expr:'name',colhead:'Name'],[expr:'status.value',colhead:'Status']]]}" />
+      model="${[d:d, property:'identifiedComponents', cols:[[expr:'name',colhead:'Name', action:'link'],[expr:'status.value',colhead:'Status']]]}" />
   </dd>
 </dl>

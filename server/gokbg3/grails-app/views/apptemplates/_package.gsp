@@ -155,7 +155,7 @@
         <g:render template="/apptemplates/combosByType"
                                 model="${[d:d, property:'ids', cols:[
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID']], cur: editable]}" />
+                  [expr:'toComponent.value', colhead:'ID', action:'link']], cur: editable]}" />
         <g:if test="${ editable }">
           <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
         </g:if>
