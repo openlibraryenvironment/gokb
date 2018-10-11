@@ -59,12 +59,7 @@
       <g:annotatedLabel owner="${d}" property="userListVerifier">List Verifier</g:annotatedLabel>
     </dt>
     <dd>
-      <g:if test="${org.gokb.cred.User.isTypeReadable()}">
-        <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier?.displayName ?: ''}</g:manyToOneReferenceTypedown>
-      </g:if>
-      <g:else>
-        ${d.userListVerifier ?: message(code:'default.empty', default:'Empty')}
-      </g:else>
+      <g:manyToOneReferenceTypedown owner="${d}" field="userListVerifier" baseClass="org.gokb.cred.User">${d.userListVerifier?.displayName ?: d.userListVerifier?.username}</g:manyToOneReferenceTypedown>
     </dd>
     <dt> <g:annotatedLabel owner="${d}" property="listVerifierDate">List Verifier Date</g:annotatedLabel> </dt>
     <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="listVerifiedDate" /> </dd>

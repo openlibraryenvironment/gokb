@@ -38,7 +38,7 @@ class FwkController {
 
         def events = getCombinedEvents(qry_params, result.max, result.offset )
 
-        log.debug("Fetch completed after ${System.currentTimeMillis() - query_start_time}");
+        log.debug("Fetch with combos completed after ${System.currentTimeMillis() - query_start_time}");
 
         def processed_events = processEvents(events)
         def skippedLastCall = processed_events.skipped
@@ -61,9 +61,13 @@ class FwkController {
       else {
         def query_start_time = System.currentTimeMillis();
 
-        result.historyLines = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid order by id desc", qry_params,[max:result.max,offset:result.offset]);
+        def events = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where e.className= :ocn and e.persistedObjectId= :oid order by id desc", qry_params,[max:result.max,offset:result.offset]);
 
-        log.debug("Fetch completed after ${System.currentTimeMillis() - query_start_time}");
+        def processed_events = processEvents(events)
+
+        result.historyLines = processed_events.historyLines
+
+        log.debug("Fetch without combos completed after ${System.currentTimeMillis() - query_start_time}");
       }
 
     }else{
@@ -92,21 +96,9 @@ class FwkController {
       def allOidEvents = AuditLogEvent.findAllByPersistedObjectId(evt.persistedObjectId)
       def skip = false
 
-      if ( evt.oldValue && evt.oldValue.startsWith("[id:org.gokb.cred") ) {
-        event.oldValue = getComboValueMaps(evt.oldValue)
-      }else if (evt.oldValue?.startsWith("[id:")) {
-        event.oldValue = evt.oldValue.split(']')[1]
-      }else {
-        event.oldValue = evt.oldValue
-      }
+      event.oldValue = getComboValueMaps(evt.oldValue)
 
-      if ( evt.newValue && evt.newValue.startsWith("[id:org.gokb.cred") ) {
-        event.newValue = getComboValueMaps(evt.newValue)
-      }else if (evt.newValue?.startsWith("[id:")) {
-        event.newValue = evt.newValue.split(']')[1]
-      }else {
-        event.newValue = evt.newValue
-      }
+      event.newValue = getComboValueMaps(evt.newValue)
 
       if ( evt.className == 'Combo' ) {
         def hasOwnerRef = allOidEvents.collect {( it.newValue?.contains(params.id) || it.oldValue?.contains(params.id)) && it.propertyName == evt.propertyName}.any { it == true }
@@ -146,17 +138,19 @@ class FwkController {
         if ( idx < stagingHistoryLines.size() - 1
           && hl.dateCreated >= stagingHistoryLines[idx+1].dateCreated - 1.second
           && hl.propertyName == stagingHistoryLines[idx+1].propertyName
-          && hl.eventName == 'INSERT'
-          && stagingHistoryLines[idx+1]?.eventName == 'DELETE'
+          && hl.oldValue == stagingHistoryLines[idx+1].newValue
+          && hl.eventName == 'DELETE'
+          && stagingHistoryLines[idx+1].eventName == 'INSERT'
         ) {
           hl.eventName = 'UPDATE'
-          hl.oldValue = stagingHistoryLines[idx+1].oldValue
+          hl.newValue = stagingHistoryLines[idx+1].newValue
           finalHistoryLines.add(hl)
         }
         else if ( idx > 0
           && hl.dateCreated <= stagingHistoryLines[idx-1].dateCreated + 1.second
-          && hl.eventName == 'DELETE'
           && hl.propertyName == stagingHistoryLines[idx-1].propertyName
+          && hl.eventName == 'INSERT'
+          && stagingHistoryLines[idx-1].eventName == 'UPDATE'
         ) {
           skippedLines++
         }
@@ -169,18 +163,32 @@ class FwkController {
     return [historyLines: finalHistoryLines, skipped: skippedLines]
   }
 
-  private List getComboValueMaps(String valueString) {
-    def allOids = valueString.substring(1).split(/,\[/)
-
+  private List getComboValueMaps(valueString) {
     def valueMaps = []
 
-    allOids.each { ao ->
-      def aot = ao.trim()
+    if (valueString) {
+      def allOids = null
 
-      if( aot.startsWith("id:org.gokb.cred") ) {
-        valueMaps.add([val: aot.split(']')[1], oid: aot.split(']')[0].substring(3)])
+      if ( valueString.startsWith('[id:') ) {
+        allOids = valueString.substring(1).split(/,\[/)
+      }
+      else {
+        valueMaps.add([val: valueString, oid: null])
+      }
+
+      if(valueMaps.size() == 0 && allOids) {
+        allOids.each { ao ->
+          def aot = ao.trim()
+          def oid_split = aot.split(']')
+
+          valueMaps.add([val: oid_split[1], oid: (oid_split[0].startsWith('id:org.gokb.cred') ? oid_split[0].substring(3) : null) ])
+        }
       }
     }
+    else {
+      valueMaps.add([val: "", oid: null])
+    }
+
     valueMaps
   }
 

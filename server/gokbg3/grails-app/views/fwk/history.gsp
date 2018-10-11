@@ -24,24 +24,24 @@
           <td style="white-space:nowrap;">${hl.eventName}</td>
           <td style="white-space:nowrap;">${hl.propertyName}</td>
           <td>
-            <g:if test="${!hl || hl.oldValue instanceof String}">
-              ${hl.oldValue}
-            </g:if>
-            <g:else>
-              <g:each in="${hl.oldValue}" var="ov">
+            <g:each in="${hl.oldValue}" var="ov">
+              <g:if test="${ov.oid}">
                 <div><g:link controller="resource" action="show" id="${ov.oid}">${ov.val ?: ov.oid}</g:link></div>
-              </g:each>
-            </g:else>
+              </g:if>
+              <g:else>
+                ${ov.val}
+              </g:else>
+            </g:each>
           </td>
           <td>
-            <g:if test="${!hl || hl.newValue instanceof String}">
-              ${hl.newValue}
-            </g:if>
-            <g:else>
-              <g:each in="${hl.newValue}" var="nv">
+            <g:each in="${hl.newValue}" var="nv">
+              <g:if test="${nv.oid}">
                 <div><g:link controller="resource" action="show" id="${nv.oid}">${nv.val ?: nv.oid}</g:link></div>
-              </g:each>
-            </g:else>
+              </g:if>
+              <g:else>
+                ${nv.val}
+              </g:else>
+            </g:each>
           </td>
         </tr>
       </g:each>
