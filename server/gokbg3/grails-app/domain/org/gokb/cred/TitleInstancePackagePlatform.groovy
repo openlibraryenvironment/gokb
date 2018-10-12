@@ -140,14 +140,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   def afterUpdate() {
-    KBComponent.withNewSession {
-      if(this.pkg){
-        this.pkg.lastUpdateComment = "TIPP ${this.id} updated"
-        this.pkg.listStatus = RefdataCategory.lookupOrCreate('Package.ListStatus','In Progress')
-        this.pkg.lastSeen = System.currentTimeMillis()
-        this.pkg.save(failOnError:true, flush:true)
-      }
-    }
   }
 
   /**

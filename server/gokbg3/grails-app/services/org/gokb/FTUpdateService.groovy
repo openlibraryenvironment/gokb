@@ -50,6 +50,7 @@ class FTUpdateService {
   
       updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
   
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
   
         result = [:]
@@ -63,6 +64,8 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
         
         result.status = kbc.status?.value
   
@@ -80,6 +83,7 @@ class FTUpdateService {
   
       updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
   
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
   
         result = [:]
@@ -93,6 +97,8 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
         
         result.status = kbc.status?.value
   
@@ -109,6 +115,7 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.DatabaseInstance.class) { kbc ->
 
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
 
         result = [:]
@@ -121,6 +128,8 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         result.status = kbc.status?.value
 
@@ -154,7 +163,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
         result.updater='pkg'
-        result.titleCount = ''+kbc.tipps?.size()
+        result.titleCount = "${kbc.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}"
 
         result.cpname = kbc.provider?.name
 
@@ -178,7 +187,10 @@ class FTUpdateService {
       }
 
       updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
+
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
@@ -187,6 +199,8 @@ class FTUpdateService {
         kbc.pkg?.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
         }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         result.tippPackage = kbc.pkg ? "${kbc.pkg?.class?.name}:${kbc.pkg?.id}" : ""
         result.tippTitle = kbc.title ? "${kbc.title?.class?.name}:${kbc.title?.id}" : ""
@@ -306,7 +320,12 @@ class FTUpdateService {
       log.debug("Query completed.. processing rows...");
 
       // while (results.next()) {
-      q.each { r_id ->
+      for (r_id in q) {
+        if ( Thread.currentThread().isInterrupted() ) {
+          log.debug("Job cancelling ..")
+          break;
+        }
+
         Object r = domain.get(r_id)
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}");
         def idx_record = recgen_closure(r)
@@ -329,6 +348,7 @@ class FTUpdateService {
 
         count++
         total++
+
         if ( count > 250 ) {
           count = 0;
           log.debug("interim:: processed ${++total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");

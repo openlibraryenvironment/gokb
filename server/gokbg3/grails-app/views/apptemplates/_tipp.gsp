@@ -172,20 +172,7 @@
               </g:each>
             </g:if>
             <g:else>
-              <tr>
-                <td><g:xEditable class="ipe" owner="${d}" type="date"
-                    field="startDate" /></td>
-                <td><g:xEditable class="ipe" owner="${d}"
-                    field="startVolume" /></td>
-                <td><g:xEditable class="ipe" owner="${d}"
-                    field="startIssue" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" type="date"
-                    field="endDate" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" field="endVolume" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" field="endIssue" /></td>
-                <td><g:xEditable class="ipe" owner="${d}" field="embargo" /></td>
-                <td></td>
-              </tr>
+              <tr><td colspan="8" style="text-align:center">${message(code:'tipp.coverage.empty', default:'No coverage defined')}</td></tr>
             </g:else>
           </tbody>
         </table>
