@@ -391,7 +391,7 @@ select tipp.id,
     log.debug("Query complete...");
     
     builder.'gokb' (attr) {
-      builder.'package' (['id':(id)]) {
+      builder.'package' (['id':(id), 'uuid':(uuid)]) {
         addCoreGOKbXmlFields(builder, attr)
         
         'scope' ( scope?.value )

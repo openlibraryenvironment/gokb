@@ -44,7 +44,7 @@ class User extends Party {
     username(blank: false, unique: true)
     password(blank: false)
     showQuickView(blank: true, nullable:true)
-    email(blank: true, nullable:true, unique: true)
+    email(blank: true, nullable:true)
     defaultPageSize(blank: true, nullable:true)
     curatoryGroups(blank: true, nullable:true)
     org(blank: false, nullable:true)

@@ -117,6 +117,7 @@ class OaiController {
           xml.'record'() {
             xml.'header'() {
               identifier(oid)
+              uuid(record.uuid)
               datestamp(sdf.format(record.lastUpdated))
             }
             buildMetadata(record, xml, result, params.metadataPrefix, prefixHandler)
@@ -234,6 +235,7 @@ class OaiController {
           records.each { rec ->
             mkp.'header'() {
               identifier("${rec.class.name}:${rec.id}")
+              uuid(rec.uuid)
               datestamp(sdf.format(rec.lastUpdated))
             }
           }

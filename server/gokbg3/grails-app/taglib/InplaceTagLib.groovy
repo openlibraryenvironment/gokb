@@ -26,8 +26,12 @@ class InplaceTagLib {
     // Default editable value.
     boolean tl_editable = cur  || (params.curationOverride == "true")
     
-    if (tl_editable && owner?.respondsTo("isEditable")) {
-      tl_editable = owner.isEditable() || ( owner == user )
+    if ( tl_editable && owner?.respondsTo("isEditable") ) {
+      tl_editable = owner.isEditable() || ( user.equals(owner) )
+    }
+
+    if ( !tl_editable && owner?.class?.name == 'org.gokb.cred.Combo' ) {
+      tl_editable = owner.fromComponent.isEditable()
     }
     
     // If not editable then we should output as value only and return the value.
