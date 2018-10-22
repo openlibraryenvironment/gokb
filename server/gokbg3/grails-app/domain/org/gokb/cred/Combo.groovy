@@ -27,8 +27,7 @@ class Combo implements Auditable {
   RefdataValue status
   RefdataValue type
   
-  // All Combos should have a start date.
-  Date startDate = new Date()
+  Date startDate
   
   // The Combos without an end date are the "current" values.
   Date endDate

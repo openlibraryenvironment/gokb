@@ -96,9 +96,13 @@
         class="badge badge-warning">
           ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
       </span></a></li>
-    <li><a href="#availability" data-toggle="tab">Availability <span
+    <li><a href="#availability" data-toggle="tab">Package Availability <span
         class="badge badge-warning">
           ${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} (${d.tipps?.size() ?: '0'})
+      </span></a></li>
+    <li><a href="#tipls" data-toggle="tab">Platforms <span
+        class="badge badge-warning">
+          ${d?.tipls?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} (${d.tipls?.size() ?: '0'})
       </span></a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span
         class="badge badge-warning">
@@ -209,12 +213,39 @@
 
     <div class="tab-pane" id="availability">
       <dt>
-        <g:annotatedLabel owner="${d}" property="availability">Availability</g:annotatedLabel>
+        <g:annotatedLabel owner="${d}" property="availability">Package Availability</g:annotatedLabel>
       </dt>
       <dd>
         <g:link class="display-inline" controller="search" action="index"
           params="[qbe:'g:3tipps', inline:true, refOid: d.getLogEntityId(), qp_title_id:d.id, hide:['qp_title_id', 'qp_title']]"
           id="">Availability of this Title</g:link>
+      </dd>
+
+    </div>
+
+    <div class="tab-pane" id="tipls">
+      <dt>
+        <g:annotatedLabel owner="${d}" property="tipls">Platforms</g:annotatedLabel>
+      </dt>
+      <dd>
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>Platform</th>
+              <th>Url</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <g:each in="${d.tipls}" var="tipl">
+              <tr>
+                <td><g:link controller="resource" action="show" id="${tipl.tiplHostPlatform.class.name}:${tipl.tiplHostPlatform.id}"> ${tipl.tiplHostPlatform.name} </g:link></td>
+                <td>${tipl.url}</td>
+                <td><g:xEditableRefData owner="${tipl}" field="status" config='KBComponent.Status' /></td>
+              </tr>
+            </g:each>
+          </tbody>
+        </table>
       </dd>
 
     </div>

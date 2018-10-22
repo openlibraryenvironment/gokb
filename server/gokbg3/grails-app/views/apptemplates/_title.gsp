@@ -96,7 +96,7 @@
         class="badge badge-warning">
           ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
       </span></a></li>
-    <li><a href="#availability" data-toggle="tab">Availability <span
+    <li><a href="#availability" data-toggle="tab">Package Availability <span
         class="badge badge-warning">
           ${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} (${d.tipps?.size() ?: '0'})
       </span></a></li>
@@ -207,7 +207,7 @@
 
     <div class="tab-pane" id="availability">
       <dt>
-        <g:annotatedLabel owner="${d}" property="availability">Availability</g:annotatedLabel>
+        <g:annotatedLabel owner="${d}" property="availability">Package Availability</g:annotatedLabel>
       </dt>
       <dd>
         <table class="table table-striped table-bordered">

@@ -133,7 +133,9 @@ class CleanupService {
 
     log.debug("Process delete candidates");
 
-    def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.status.value=:deletedStatus',[deletedStatus:'Deleted'])
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+
+    def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.status=:deletedStatus',[deletedStatus: status_deleted])
 
     def result = expungeByIds(delete_candidates)
 
@@ -160,15 +162,36 @@ class CleanupService {
           ctr++
         }
         catch(Exception e){
-          log.debug("Skip component id ${kbc_id}")
+          log.debug("ensureUuids :: Skip component id ${kbc_id}")
           log.debug("${e}")
           skipctr++
         }
       }
     }
-    log.debug("${ctr} components updated with uuid");
+    log.debug("ensureUuids :: ${ctr} components updated with uuid");
 
     if (skipctr > 0) log.debug("${skipctr} components skipped when updating with uuid");
+
+    return new Date();
+  }
+
+  @Transactional
+  def ensureTipls()  {
+    log.debug("GOKb missing tipl check..")
+
+    def ctr = 0
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+
+    KBComponent.withNewSession {
+      TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where tipp.status != ?", [status_deleted]).each { tipp ->
+        TitleInstancePlatform.ensure(tipp.title, tipp.hostPlatform, tipp.url)
+
+        if ( ctr++ % 100 == 0 ) {
+          log.debug("ensureTipls :: Processed ${ctr} TIPPs")
+        }
+      }
+      log.debug("ensureTipls finished (${ctr} TIPPs)")
+    }
 
     return new Date();
   }
@@ -309,13 +332,14 @@ class CleanupService {
           isNotNull('startVolume')
           isNotNull('endDate')
           isNotNull('endVolume')
+          isNotNull('embargo')
         }
       }
 
       tipps?.each { t ->
         log.debug("Adding statement for TIPP ${t.id}")
 
-        t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote)
+        t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote, embargo: t.embargo)
 
         t.save(flush:true, failOnError:true);
       }

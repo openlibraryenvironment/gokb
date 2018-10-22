@@ -147,13 +147,33 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   public static tiplAwareCreate(tipp_fields = [:]) {
 
-    def result = new TitleInstancePackagePlatform(tipp_fields)
-    result.title = tipp_fields.title
-    result.hostPlatform = tipp_fields.hostPlatform
-    result.pkg = tipp_fields.pkg
+//     def result = new TitleInstancePackagePlatform(tipp_fields)
+//     result.title = tipp_fields.title
+//     result.hostPlatform = tipp_fields.hostPlatform
+//     result.pkg = tipp_fields.pkg
     
-    // See if there is a TIPL
-    TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
+    def result = new TitleInstancePackagePlatform().save(failOnError: true)
+
+    if ( result ) {
+      def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+
+      def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+      def pkg_combo = new Combo(toComponent:result, fromComponent:tipp_fields.pkg, type:pkg_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+
+      def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+      def plt_combo = new Combo(toComponent:result, fromComponent:tipp_fields.hostPlatform, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+
+      def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+      def ti_combo = new Combo(toComponent:result, fromComponent:tipp_fields.title, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+
+      TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
+    }
+    else {
+      log.error("TIPP creation failed!")
+    }
+
+//     // See if there is a TIPL
+//     TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
 
     result
   }
@@ -239,7 +259,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           else if ( ret_tipps.size() > 0 ) {
             tipp = ret_tipps[0]
             
-            log.warn("found ${ret_tipps.size()} current TIPPs!")
+            log.warn("found ${ret_tipps.size()} retired TIPPs!")
           }
           else {
             log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
@@ -257,28 +277,30 @@ class TitleInstancePackagePlatform extends KBComponent {
 //         tipp.hostPlatform = plt;
 
         log.debug("Creating new TIPP..")
-        // tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': tipp_dto.url]).save(failOnError: true)
+        tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': tipp_dto.url]).save(failOnError: true)
         // Hibernate problem
 
-        tipp = new TitleInstancePackagePlatform().save(failOnError: true)
+//         tipp = new TitleInstancePackagePlatform().save(failOnError: true)
 
         if ( tipp ) {
-          def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-
-          def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-          def pkg_combo = new Combo(toComponent:tipp, fromComponent:pkg, type:pkg_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
-
-          def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
-          def plt_combo = new Combo(toComponent:tipp, fromComponent:plt, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
-
-          def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-          def ti_combo = new Combo(toComponent:tipp, fromComponent:ti, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+//           def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+//
+//           def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+//           def pkg_combo = new Combo(toComponent:tipp, fromComponent:pkg, type:pkg_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+//
+//           def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+//           def plt_combo = new Combo(toComponent:tipp, fromComponent:plt, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+//
+//           def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+//           def ti_combo = new Combo(toComponent:tipp, fromComponent:ti, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
 
           newTipp = true
         }
         else {
           log.error("TIPP creation failed!")
         }
+      } else {
+        TitleInstancePlatform.ensure(ti, plt, tipp_dto.url)
       }
 
       if ( tipp ) {

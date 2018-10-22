@@ -95,6 +95,7 @@ class TitleInstance extends KBComponent {
   static manyByCombo = [
     tipps : TitleInstancePackagePlatform,
     publisher : Org,
+    tipls : TitleInstancePlatform
     //        ids     :  Identifier
   ]
 
@@ -260,6 +261,7 @@ class TitleInstance extends KBComponent {
       def theIssuer = getIssuer()
       // def thePublisher = getPublisher()
       def publisher_combos = getCombosByPropertyName('publisher')
+      def people_combos = this.people ?: []
 
       // def identifiers = Combo.executeQuery('select c.toComponent from Combo as c where c.fromComponent=:t and c.type.value :idtype and c.status.value != :d',
       //                                      [t:this,idtype:'KBComponent.ids',d:'Deleted'])
@@ -270,6 +272,16 @@ class TitleInstance extends KBComponent {
         builder.'title' (['id':(id), 'uuid':(uuid)]) {
 
           addCoreGOKbXmlFields(builder, attr)
+
+          if( this.class.name == 'org.gokb.cred.BookInstance' ) {
+
+            builder.'editionNumber' (this.editionNumber)
+            builder.'editionDifferentiator' (this.editionDifferentiator)
+            builder.'editionStatement' (this.editionStatement)
+            builder.'volumeNumber' (this.volumeNumber)
+            builder.'dateFirstInPrint' (this.dateFirstInPrint)
+            builder.'dateFirstOnline' (this.dateFirstOnline)
+          }
           
           builder.'imprint' (imprint?.name)
           builder.'medium' (medium?.value)
@@ -277,7 +289,6 @@ class TitleInstance extends KBComponent {
           builder.'continuingSeries' (continuingSeries?.value)
           builder.'publishedFrom' (publishedFrom)
           builder.'publishedTo' (publishedTo)
-          builder.'issuer' (issuer?.name)
 
           builder.'publishers' {
             publisher_combos?.each { Combo pc ->
@@ -322,39 +333,45 @@ class TitleInstance extends KBComponent {
             }
           }
 
-          builder.history() {
-            history.each { he ->
-              builder.historyEvent(['id':he.id]) {
-                "date"(he.date)
-                he.from.each { hti ->
-                  if(hti){
-                    "from" {
-                      title(hti.name)
-                      uuid(hti.id)
-                      internalId(hti.id)
-                      "identifiers" {
-                        hti.ids?.each { tid ->
-                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
-                        }
-                        if ( grailsApplication.config.serverUrl ) {
-                          builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
+          if ( this.class.name == 'org.gokb.cred.BookInstance' ) {
+            builder.'firstAuthor' (people_combos.find { it.role?.value == 'Author' }?.person?.name)
+            builder.'firstEditor' (people_combos.find { it.role?.value == 'Editor' }?.person?.name)
+          }
+          else {
+            builder.history() {
+              history.each { he ->
+                builder.historyEvent(['id':he.id]) {
+                  "date"(he.date)
+                  he.from.each { hti ->
+                    if(hti){
+                      "from" {
+                        title(hti.name)
+                        uuid(hti.id)
+                        internalId(hti.id)
+                        "identifiers" {
+                          hti.ids?.each { tid ->
+                            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
+                          }
+                          if ( grailsApplication.config.serverUrl ) {
+                            builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
+                          }
                         }
                       }
                     }
                   }
-                }
-                he.to.each { hti ->
-                  if(hti){
-                    "to" {
-                      title(hti.name)
-                      uuid(hti.id)
-                      internalId(hti.id)
-                      "identifiers" {
-                        hti.ids?.each { tid ->
-                          builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
-                        }
-                        if ( grailsApplication.config.serverUrl ) {
-                          builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
+                  he.to.each { hti ->
+                    if(hti){
+                      "to" {
+                        title(hti.name)
+                        uuid(hti.id)
+                        internalId(hti.id)
+                        "identifiers" {
+                          hti.ids?.each { tid ->
+                            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                          }
+                          if ( grailsApplication.config.serverUrl ) {
+                            builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
+                          }
                         }
                       }
                     }
@@ -378,15 +395,35 @@ class TitleInstance extends KBComponent {
                   builder.'name' (platform?.name)
                 }
 
-                builder.'coverage'(
-                  startDate:(tipp.startDate ? sdf.format(tipp.startDate):null),
-                  startVolume:tipp.startVolume,
-                  startIssue:tipp.startIssue,
-                  endDate:(tipp.endDate ? sdf.format(tipp.endDate):null),
-                  endVolume:tipp.endVolume,
-                  endIssue:tipp.endIssue,
-                  coverageDepth:tipp.coverageDepth?.value,
-                  coverageNote:tipp.coverageNote)
+                def cov_statements = tipp.coverageStatements
+                if(cov_statements?.size() > 0){
+                  cov_statements.each { tcs ->
+                    'coverage'(
+                      startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
+                      startVolume:tcs.startVolume,
+                      startIssue:tcs.startIssue,
+                      endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
+                      endVolume:tcs.endVolume,
+                      endIssue:tcs.endIssue,
+                      coverageDepth:tipp.coverageDepth?.value,
+                      coverageNote:tcs.coverageNote,
+                      embargo: tcs.embargo
+                    )
+                  }
+                }
+                else{
+
+                  builder.'coverage'(
+                    startDate:(tipp.startDate ? sdf.format(tipp.startDate):null),
+                    startVolume:tipp.startVolume,
+                    startIssue:tipp.startIssue,
+                    endDate:(tipp.endDate ? sdf.format(tipp.endDate):null),
+                    endVolume:tipp.endVolume,
+                    endIssue:tipp.endIssue,
+                    coverageDepth:tipp.coverageDepth?.value,
+                    coverageNote:tipp.coverageNote,
+                    embargo:tipp.embargo)
+                }
                 if ( tipp.url != null ) { 'url'(tipp.url) }
               }
             }

@@ -28,6 +28,7 @@ class Platform extends KBComponent {
   static manyByCombo = [
     hostedTipps : TitleInstancePackagePlatform,
     linkedTipps : TitleInstancePackagePlatform,
+    hostedTitles : TitleInstancePlatform,
     curatoryGroups  : CuratoryGroup
   ]
 

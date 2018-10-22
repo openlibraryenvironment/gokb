@@ -100,6 +100,30 @@
               </table>
             </div>
           </div>
+
+          <div class="panel panel-default">
+            <div class="panel-heading clearfix">
+              <h3 class="panel-title">Curatorial groups you are a member of</h3>
+            </div>
+            <div class="panel-body">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Group Name</th>
+                    <th>Owner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <g:each in="${request.user.curatoryGroups}" var="ucg">
+                    <tr>
+                      <td><g:link controller="resource" action="show" id="org.gokb.cred.CuratoryGroup:${ucg.id}">${ucg.name}</g:link></td>
+                      <td>${ucg.owner?:''}</td>
+                    </tr>
+                  </g:each>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
       </div>

@@ -1029,7 +1029,7 @@ class TSVIngestionService {
               }
 
               log.debug("Adding Person");
-              if ( the_kbart.first_editor && the_kbart.first_author.trim().length() > 0 ) {
+              if ( the_kbart.first_editor && the_kbart.first_editor.trim().length() > 0 ) {
                 addPerson(the_kbart.first_editor, editor_role, title);
                 title.save(flush:true, failOnError:true);
               }

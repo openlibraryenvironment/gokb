@@ -150,6 +150,17 @@ class AdminController {
 
   }
 
+  def ensureTipls() {
+    Job j = concurrencyManagerService.createJob {
+      cleanupService.ensureTipls()
+    }.startOrQueue()
+
+    j.description = "Ensure TIPLs for all TIPPs"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def convertTippCoverages() {
     Job j = concurrencyManagerService.createJob {
       cleanupService.addMissingCoverageObjects()

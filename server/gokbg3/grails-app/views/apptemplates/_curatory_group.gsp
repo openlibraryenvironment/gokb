@@ -16,7 +16,7 @@
 		    <ul>
 		      <g:each var="u" in="${ d.users }" >
                         <sec:ifAnyGranted roles="ROLE_ADMIN">
-                          <li><a href="mailto:${ u.email }" ><i class="fa fa-envelope"></i> ${u.displayName ?: u.username}</a></li>
+                          <li><a href="mailto:${ u.email }" ><i class="fa fa-envelope"></i>&nbsp;</a><g:link controller="resource" action="show" id="${u.getLogEntityId()}">${u.displayName ?: u.username}</g:link></li>
                         </sec:ifAnyGranted>
                         <sec:ifNotGranted roles="ROLE_ADMIN">
                           <li>${u.displayName ?: u.username}</li>
