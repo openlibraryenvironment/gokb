@@ -64,6 +64,9 @@ class OaiController {
             listSets(result);
             break;
           default:
+            if(params.verb) {
+              badVerb(result);
+            }
             break;
         }
         log.debug("done");
@@ -724,6 +727,25 @@ class OaiController {
 
         // For now we are not supporting sets...
         'error'('code' : "noSetHierarchy", "This repository does not support sets" )
+      }
+    }
+
+    writer << xml.bind(resp)
+
+    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
+  }
+
+  def badVerb(result) {
+
+    def writer = new StringWriter()
+    def xml = new StreamingMarkupBuilder()
+    def resp =  { mkp ->
+      'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+      'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
+        'responseDate'( sdf.format(new Date()) )
+        'request'(request.requestURL)
+
+        'error'('code' : "badVerb", "Illegal OAI verb" )
       }
     }
 
