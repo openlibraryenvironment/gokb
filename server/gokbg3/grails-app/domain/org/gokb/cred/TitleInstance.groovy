@@ -235,6 +235,7 @@ class TitleInstance extends KBComponent {
     id:'titles',
     textDescription:'Title repository for GOKb',
     query:" from TitleInstance as o ",
+    statusFilter:['Expected'],
     pageSize:20
   ]
 

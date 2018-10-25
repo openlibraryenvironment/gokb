@@ -5,6 +5,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import groovy.xml.MarkupBuilder
 import groovy.xml.StreamingMarkupBuilder
+import java.text.ParseException
 
 class OaiController {
 
@@ -97,26 +98,69 @@ class OaiController {
 
     log.debug("getRecord - ${result}");
 
+    def errors = []
     def oid = params.identifier
-    def record = genericOIDService.resolveOID(oid);
+    def record = null
+    def returnAttrs = true
+    def request_map = params
+    request_map.keySet().removeAll(['controller','action','id'])
+
+    if (oid) {
+      record = genericOIDService.resolveOID(oid);
+    }
+    else {
+      errors.add([code:'badArgument', name: 'identifier', expl: 'The request is missing a mandatory argument.'])
+      returnAttrs = false
+    }
+
+    if (oid && !record) {
+
+      record = KBComponent.findByUuid(oid)
+
+
+      if( !record ) {
+        errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
+      }
+    }
 
     def writer = new StringWriter()
     def xml = new MarkupBuilder(writer)
 
+
     def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
+
+    log.debug("Using prefixHandler ${prefixHandler}")
+
+    if( !params.metadataPrefix || !prefixHandler ) {
+      errors.add([code:'badArgument', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
+      returnAttrs = false
+    }
 
     log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
 
-    if ( record && prefixHandler ) {
-      xml.'OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
-      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
-      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-        'responseDate'( sdf.format(new Date()) )
-        'request'('verb':'GetRecord', 'identifier':params.identifier, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+    xml.'OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
+    'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
+    'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+      'responseDate'( sdf.format(new Date()) )
+      if (errors) {
+        if (!returnAttrs) {
+          'request'(request_map, request.requestURL)
+        }
+        else {
+          'request'(request.requestURL)
+        }
+
+        errors.each { er ->
+          'error' (code: er.code, parameter: er.name, er.expl)
+        }
+      }
+      else{
+        'request'(request_map, request.requestURL)
+
         'GetRecord'() {
           xml.'record'() {
             xml.'header'() {
-              identifier(oid)
+              identifier("${record.class.name}:${record.id}")
               uuid(record.uuid)
               datestamp(sdf.format(record.lastUpdated))
             }
@@ -124,9 +168,6 @@ class OaiController {
           }
         }
       }
-    }
-    else {
-      // error response
     }
 
     log.debug("Created XML, write");
@@ -146,7 +187,7 @@ class OaiController {
     'xmlns:xsi'             : 'http://www.w3.org/2001/XMLSchema-instance',
     'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
       'responseDate'( sdf.format(new Date()) )
-      'request'('verb':'Identify', request.forwardURI+'?'+request.queryString)
+      'request'('verb':'Identify', request.requestURL)
       'Identify'() {
         'repositoryName'("GOKb ${result.oaiConfig.id}")
         'baseURL'(new URL(
@@ -181,48 +222,157 @@ class OaiController {
     def offset = 0;
     def resumption = null
     def metadataPrefix = null
+    def errors = []
+    def from = null
+    def until = null
+    def rec_count = null
+    def records = []
+    def order_by_clause = 'order by o.lastUpdated'
+    def returnAttrs = true
+    def request_map = params
+    request_map.keySet().removeAll(['controller','action','id'])
 
     if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
       def rtc = params.resumptionToken.split('\\|');
       log.debug("Got resumption: ${rtc}")
-      if ( rtc.length == 3 ) {
+      if ( rtc.length == 4 ) {
         if ( rtc[0].length() > 0 ) {
+          try {
+            from = sdf.parse(rtc[0])
+          }
+          catch (ParseException pe) {
+            errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+          }
         }
         if ( rtc[1].length() > 0 ) {
+          try {
+            until = sdf.parse(rtc[1])
+          }
+          catch (ParseException pe) {
+            errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+          }
         }
         if ( rtc[2].length() > 0 ) {
           offset=Long.parseLong(rtc[2]);
         }
+        if ( rtc[3].length() > 0 ) {
+          metadataPrefix=rtc[3];
+        }
         log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
       }
       else {
+        errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Unexpected number of components in resumption token'])
         log.error("Unexpected number of components in resumption token: ${rtc}");
       }
     }
+    else {
+      metadataPrefix = params.metadataPrefix
+    }
+
+    def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
+
+    if(!prefixHandler) {
+      errors.add([code: 'cannotDisseminateFormat', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
+    }
+
 
     // This bit of the query needs to come from the oai config in the domain class
     def query_params = []
     // def query = " from Package as p where p.status.value != 'Deleted'"
     def query = result.oaiConfig.query
+    def wClause = false
 
-    if ((params.from != null)&&(params.from.length()>0)) {
-      query += ' and o.lastUpdated > ?'
-      query_params.add(sdf.parse(params.from))
+    if(from){
+      if(!wClause){
+        query += 'where '
+        wClause = true
+      }
+      else{
+        query += ' and '
+      }
+      query += 'o.lastUpdated > ?'
+      query_params.add(from)
     }
-    if ((params.until != null)&&(params.until.length()>0)) {
-      query += ' and o.lastUpdated < ?'
-      query_params.add(sdf.parse(params.until))
+    else if ((params.from != null)&&(params.from.length()>0)) {
+      def fparam = params.from
+
+      if( params.from.length() == 10 ) {
+        fparam += 'T00:00:00Z'
+      }
+
+      try {
+        from = sdf.parse(fparam)
+
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
+          query += ' and '
+        }
+
+        query += 'o.lastUpdated > ?'
+
+        query_params.add(from)
+      }
+      catch (ParseException pe) {
+        errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
+        returnAttrs = false
+      }
     }
-    def order_by_clause = 'order by o.lastUpdated'
 
-    def rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
-    def records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:3])
+    if(until){
+      if(!wClause){
+        query += 'where '
+        wClause = true
+      }
+      else{
+        query += ' and '
+      }
+      query += 'o.lastUpdated < ?'
+      query_params.add(until)
+    }
+    else if ((params.until != null)&&(params.until.length()>0)) {
+      def uparam = params.until
 
-    log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
+      if( params.until.length() == 10 ) {
+        uparam += 'T00:00:00Z'
+      }
 
-    if ( offset + records.size() < rec_count ) {
-      // Query returns more records than sent, we will need a resumption token
-      resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}"
+      try {
+        until = sdf.parse(uparam)
+
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
+          query += ' and '
+        }
+
+        query += 'o.lastUpdated < ?'
+
+        query_params.add(until)
+      }
+      catch (ParseException pe) {
+        errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
+        returnAttrs = false
+      }
+    }
+
+    if(errors) {
+      log.debug("Request had errors .. not executing query!")
+    }
+    else {
+      rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
+      records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:params.int('max')?:100])
+
+      log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
+
+      if ( offset + records.size() < rec_count ) {
+        // Query returns more records than sent, we will need a resumption token
+        resumption = "${from?sdf.format(from):''}|${until?sdf.format(until):''}|${offset+records.size()}|${metadataPrefix}"
+      }
     }
 
     def resp =  { mkp ->
@@ -230,17 +380,35 @@ class OaiController {
       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
       'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
         'responseDate'( sdf.format(new Date()) )
-        'request'('verb':'ListIdentifiers', 'identifier':params.id, request.forwardURI+'?'+request.queryString)
-        'ListIdentifiers'() {
-          records.each { rec ->
-            mkp.'header'() {
-              identifier("${rec.class.name}:${rec.id}")
-              uuid(rec.uuid)
-              datestamp(sdf.format(rec.lastUpdated))
-            }
+
+        if (errors) {
+          if (returnAttrs) {
+            'request'(request_map, request.requestURL)
+          }else {
+            'request'(request.requestURL)
           }
-          if ( resumption != null ) {
-            'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption);
+
+          errors.each { er ->
+            'error' (code: er.code, parameter: er.name, er.expl)
+          }
+        }
+        else {
+          'request'(request_map, request.requestURL)
+          'ListIdentifiers'() {
+            records.each { rec ->
+              mkp.'header'() {
+                identifier("${rec.class.name}:${rec.id}")
+                uuid(rec.uuid)
+                datestamp(sdf.format(rec.lastUpdated))
+              }
+            }
+
+            if ( resumption != null ) {
+              'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption)
+            }
+            else if (params.resumptionToken) {
+              'resumptionToken'(completeListSize:rec_count, cursor:offset)
+            }
           }
         }
       }
@@ -262,7 +430,7 @@ class OaiController {
           'xmlns':'http://www.openarchives.org/OAI/2.0/',
           'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
             'responseDate'( sdf.format(new Date()) )
-            'request'('verb':'ListMetadataFormats', request.forwardURI+'?'+request.queryString)
+            'request'('verb':'ListMetadataFormats', request.requestURL)
             'ListMetadataFormats'() {
 
               result.oaiConfig.schemas.each { prefix, conf ->
@@ -294,19 +462,36 @@ class OaiController {
       def offset = 0;
       def resumption = null
       def metadataPrefix = null
+      def errors = []
       def from = null
       def until = null
       def max = result.oaiConfig.pageSize ?: 10
+      def rec_count = null
+      def records = []
+      def order_by_clause = 'order by o.lastUpdated'
+      def returnAttrs = true
+      def request_map = params
+      request_map.keySet().removeAll(['controller','action','id'])
 
-      if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
+      if ( params.resumptionToken && ( params.resumptionToken.length() > 0 ) ) {
         def rtc = params.resumptionToken.split('\\|');
         log.debug("Got resumption: ${rtc}")
         if ( rtc.length == 4 ) {
           if ( rtc[0].length() > 0 ) {
-            from=rtc[0]
+            try {
+              from = sdf.parse(rtc[0])
+            }
+            catch (ParseException pe) {
+              errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+            }
           }
           if ( rtc[1].length() > 0 ) {
-            until=rtc[1]
+            try {
+              until = sdf.parse(rtc[1])
+            }
+            catch (ParseException pe) {
+              errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+            }
           }
           if ( rtc[2].length() > 0 ) {
             offset=Long.parseLong(rtc[2]);
@@ -317,6 +502,7 @@ class OaiController {
           log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
         }
         else {
+          errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Unexpected number of components in resumption token'])
           log.error("Unexpected number of components in resumption token: ${rtc}");
         }
       }
@@ -325,6 +511,11 @@ class OaiController {
       }
 
       def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
+
+      if(!prefixHandler) {
+        errors.add([code: 'cannotDisseminateFormat', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
+      }
+
       def wClause = false
 
       // This bit of the query needs to come from the oai config in the domain class
@@ -355,9 +546,9 @@ class OaiController {
           }
 
           if (val instanceof String) {
-            query += 'o.status.value != ?'
+            query += 'o.status != ?'
             def qry_rdc = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, val)
-            query_params.add(val)
+            query_params.add(qry_rdc)
             wClause = true
           }
           else if (val instanceof org.gokb.cred.RefdataValue) {
@@ -371,7 +562,7 @@ class OaiController {
         }
       }
 
-      if ((params.from != null)&&(params.from.length()>0)) {
+      if(from){
         if(!wClause){
           query += 'where '
           wClause = true
@@ -380,19 +571,37 @@ class OaiController {
           query += ' and '
         }
         query += 'o.lastUpdated > ?'
-        query_params.add(sdf.parse(params.from))
-      }else if(from && from.length()>0){
-        if(!wClause){
-          query += 'where '
-          wClause = true
-        }
-        else{
-          query += ' and '
-        }
-        query += 'o.lastUpdated > ?'
-        query_params.add(sdf.parse(from))
+        query_params.add(from)
       }
-      if ((params.until != null)&&(params.until.length()>0)) {
+      else if ((params.from != null)&&(params.from.length()>0)) {
+        def fparam = params.from
+
+        if( params.from.length() == 10 ) {
+          fparam += 'T00:00:00Z'
+        }
+
+        try {
+          from = sdf.parse(fparam)
+
+          if(!wClause){
+            query += 'where '
+            wClause = true
+          }
+          else{
+            query += ' and '
+          }
+
+          query += 'o.lastUpdated > ?'
+
+          query_params.add(from)
+        }
+        catch (ParseException pe) {
+          errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
+          returnAttrs = false
+        }
+      }
+
+      if(until){
         if(!wClause){
           query += 'where '
           wClause = true
@@ -401,60 +610,74 @@ class OaiController {
           query += ' and '
         }
         query += 'o.lastUpdated < ?'
-        query_params.add(sdf.parse(params.until))
-      }else if(until && until.length()>0){
-        if(!wClause){
-          query += 'where '
-          wClause = true
+        query_params.add(until)
+      }
+      else if ((params.until != null)&&(params.until.length()>0)) {
+        def uparam = params.until
+
+        if( params.until.length() == 10 ) {
+          uparam += 'T00:00:00Z'
         }
-        else{
-          query += ' and '
+
+        try {
+          until = sdf.parse(uparam)
+
+          if(!wClause){
+            query += 'where '
+            wClause = true
+          }
+          else{
+            query += ' and '
+          }
+
+          query += 'o.lastUpdated < ?'
+
+          query_params.add(until)
         }
-        query += 'o.lastUpdated < ?'
-        query_params.add(sdf.parse(until))
+        catch (ParseException pe) {
+          errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
+          returnAttrs = false
+        }
       }
 
-      if ( params.set != null ) {
-        if(!wClause){
-          query += 'where '
-          wClause = true
-        }
-        else{
-          query += ' and '
-        }
-        query += 'o.identifier = ? '
-        query_params.add(params.set)
-      }
-
-      def order_by_clause = 'order by o.lastUpdated'
       log.debug("qry is: ${query}");
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
-      def rec_count = Package.executeQuery("select count(distinct o) ${query}".toString(),query_params)[0];
-      def records = Package.executeQuery("select distinct o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
 
-      log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
+      if (errors) {
+        log.debug("Request had errors .. not executing query!")
+      }
+      else {
+        rec_count = Package.executeQuery("select count(distinct o) ${query}".toString(),query_params)[0];
+        records = Package.executeQuery("select distinct o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
 
-      if ( offset + records.size() < rec_count ) {
-        // Query returns more records than sent, we will need a resumption token
+        log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
-        if(from && !params.from){
-          params.from = from
+        if ( offset + records.size() < rec_count ) {
+          // Query returns more records than sent, we will need a resumption token
+
+          resumption = "${from?sdf.format(from):''}|${until?sdf.format(until):''}|${offset+records.size()}|${metadataPrefix}"
         }
-        if(until && !params.until){
-          params.until = until
-        }
-
-        resumption="${params.from?:''}|${params.until?:''}|${offset+records.size()}|${metadataPrefix}"
       }
 
-      if ( prefixHandler ) {
-        log.debug("Calling prefix handler...");
-        def resp =  { mkp ->
-          'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
-          'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
-          'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-            'responseDate'( sdf.format(new Date()) )
-            'request'('verb':'ListRecords', 'identifier':params.id, 'metadataPrefix':params.metadataPrefix, request.forwardURI+'?'+request.queryString)
+      def resp =  { mkp ->
+        'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+        'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+        'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+          'responseDate'( sdf.format(new Date()) )
+
+          if(errors) {
+            if (returnAttrs) {
+              'request'(request_map, request.requestURL)
+            }else {
+              'request'(request.requestURL)
+            }
+
+            errors.each { er ->
+              'error' (code: er.code, parameter: er.name, er.expl)
+            }
+          }
+          else {
+            'request'(request_map, request.requestURL)
             'ListRecords'() {
               records.each { rec ->
                 mkp.'record'() {
@@ -462,20 +685,28 @@ class OaiController {
                     identifier("${rec.class.name}:${rec.id}")
                     uuid(rec.uuid)
                     datestamp(sdf.format(rec.lastUpdated))
+                    if (rec.status.value == 'Deleted') {
+                      status('deleted')
+                    }
                   }
-                  buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
+                  if(rec.status.value != 'Deleted') {
+                    buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
+                  }
                 }
               }
+
               if ( resumption != null ) {
-                'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption);
+                'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption)
+              }
+              else if (params.resumptionToken) {
+                'resumptionToken'(completeListSize:rec_count, cursor:offset)
               }
             }
           }
         }
-        log.debug("prefix handler complete..... write");
-
-        writer << xml.bind(resp)
       }
+
+      writer << xml.bind(resp)
 
       log.debug("Render");
     }
@@ -489,7 +720,7 @@ class OaiController {
       'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
         'responseDate'( sdf.format(new Date()) )
-        'request'('verb':'ListSets', request.forwardURI+'?'+request.queryString)
+        'request'('verb':'ListSets', request.requestURL)
 
         // For now we are not supporting sets...
         'error'('code' : "noSetHierarchy", "This repository does not support sets" )
@@ -500,5 +731,4 @@ class OaiController {
 
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
   }
-
 }
