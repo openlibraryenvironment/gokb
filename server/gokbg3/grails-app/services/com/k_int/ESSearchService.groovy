@@ -140,12 +140,17 @@ class ESSearchService{
 
       if ( params[mapping.key] != null ) {
 
-        if ( params[mapping.key].class == java.util.ArrayList) {
+        log.debug("Class is: ${params[mapping.key].class.name}")
+
+        if ( params[mapping.key] instanceof String[] ) {
           log.debug("mapping is an arraylist: ${mapping} ${mapping.key} ${params[mapping.key]}")
           if(sw.toString()) sw.write(" AND ");
 
           params[mapping.key].each { p ->  
             if ( p ) {
+                if (p == params[mapping.key].first()){
+                  sw.write(" ( ")
+                }
                 sw.write(mapping.value?.toString())
                 sw.write(":".toString())
 
@@ -153,7 +158,7 @@ class ESSearchService{
 
                 sw.write(p.toString())
                 if(p == params[mapping.key].last()) {
-                  sw.write(" ) ) ")
+                  sw.write(" ) ")
                 }else{
                   sw.write(" OR ")
                 }
