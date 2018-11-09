@@ -1049,6 +1049,8 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.ComponentWatch',
     title:'My Components',
     group:'Tertiary',
+    defaultSort:'component.lastUpdated',
+    defaultOrder:'desc',
     qbeConfig:[
       qbeForm:[
         [

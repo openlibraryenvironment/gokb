@@ -4,6 +4,7 @@ class Note {
   String ownerClass
   Long ownerId
   String note
+  RefdataValue locale
   User creator
   Date dateCreated
   Date lastUpdated 

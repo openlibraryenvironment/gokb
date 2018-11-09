@@ -1,0 +1,115 @@
+.navbar-inverse {
+  background-color: rgb(165, 20, 26);
+}
+
+.navbar-inverse .navbar-nav > li > a:hover {
+  background-color: #830007;
+}
+
+.navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
+  background-color: #830007;
+}
+
+.navbar-inverse .dropdown-menu {
+  background-color: #a5141b;
+  border: 1px solid #830007;
+}
+
+.navbar-inverse .dropdown-menu > li > a:hover, .navbar-inverse .dropdown-menu > .active > a, .navbar-inverse .dropdown-menu > .active > a:hover {
+  background-color: #830007;
+}
+
+.dropdown-menu {
+  background-color: rgb(165, 20, 26);
+}
+
+.dropdown-menu:hover {
+  background-color: #830007;
+}
+
+.dropdown-menu li:hover, .dropdown-menu .active {
+  background-color: #830007;
+}
+
+.dropdown-menu .actions > li > a .selectedAction {
+  background-color: #830007;
+}
+
+.dropdown-menu .actions li {
+  border-top: 1px solid #830007;
+}
+
+.dropdown-menu .dropdown-user li {
+  border-top: 1px solid #222222;
+}
+
+a {
+  color: #a5141b;
+}
+
+a:hover {
+  color: #aaa;
+}
+
+a:focus {
+  color: #590004;
+}
+
+.btn-success, .btn-primary {
+  background-color: #333333;
+  border-color: #222222;
+}
+
+.btn-success:hover, .btn-primary:hover, .btn-success:focus, .btn-primary:focus, .btn-success:active, .btn-primary:active {
+  background-color: #666;
+  border-color: #222222;
+}
+
+.btn-danger {
+  background-color: rgb(165, 20, 26);
+  border-color: rgb(165, 20, 26);
+}
+.btn-danger:hover {
+  background-color: #cb2b33
+}
+
+.alert-warning {
+  background-color: #CF722C
+}
+
+.editable-click, a.editable-click, a.editable-click:hover {
+  border-bottom: dashed 1px #e1122a;
+}
+
+.editable-empty, .editable-empty:hover, .editable-empty:focus {
+  color: #cb2b33;
+}
+
+.btn {
+  font-weight:bold;
+}
+
+.editable:hover {
+  cursor:pointer;
+}
+
+select.input-sm {
+  height:2.8em;
+}
+.input-sm {
+  height:2.8em;
+}
+
+.editable-buttons > button.btn-sm {
+  padding: 0px 0px;
+  height:2.8em;
+  width: 50px;
+}
+
+.editable-buttons > button.btn-sm > i {
+  padding-top: 4px;
+}
+
+#side-menu > li > a {
+  font-weight: bold;
+}

@@ -42,10 +42,10 @@ class TitleInstancePlatform extends KBComponent {
               from TitleInstancePlatform as tipl,
               Combo as titleCombo,
               Combo as platformCombo
-              where titleCombo.fromComponent=tipl
-              and titleCombo.toComponent=?
-              and platformCombo.fromComponent=tipl
-              and platformCombo.toComponent=?
+              where titleCombo.toComponent=tipl
+              and titleCombo.fromComponent=?
+              and platformCombo.toComponent=tipl
+              and platformCombo.fromComponent=?
               ''',[title, platform])
 
       if ( r.size() == 0 ) {
@@ -66,7 +66,7 @@ class TitleInstancePlatform extends KBComponent {
           matched_tipl.url = url
         }
       } else {
-        log.warn("Found more than one TIPL for ${title.name} on ${platform.name}!")
+        log.warn("Found more than one TIPL for ${title} on ${platform}!")
       }
     }
   }

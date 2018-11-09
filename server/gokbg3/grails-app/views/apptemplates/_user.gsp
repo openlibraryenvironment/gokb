@@ -17,13 +17,14 @@
        <g:render template="/apptemplates/curatory_groups" model="${[d:d]}" />
     </dd>
 
-<%--     <dt><g:annotatedLabel owner="${d}" property="org">Home Org</g:annotatedLabel></dt>
+    <dt><g:annotatedLabel owner="${d}" property="org">Organisations</g:annotatedLabel></dt>
     <dd>
-      <g:manyToOneReferenceTypedown owner="${d}" field="org"
-                                baseClass="org.gokb.cred.UserOrganisation">
-                                ${d.org?.name}
-                        </g:manyToOneReferenceTypedown>
-    </dd> --%>
+      <ul>
+        <g:each in="${d.getGroupMemberships()}" var="oum">
+          <li>${oum.memberOf.displayName} – (${oum.role?.value ?: 'Not Set'})</li>
+        </g:each>
+      </ul>
+    </dd>
 
     <dt><g:annotatedLabel owner="${d}" property="last_alert_check">Last Alert Check</g:annotatedLabel></dt>
     <dd>

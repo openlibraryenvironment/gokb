@@ -28,7 +28,7 @@
         <input type="hidden" name="__newObjectClass" value="org.gokb.cred.KBComponentAdditionalProperty"/>
         <input type="hidden" name="__addToColl" value="additionalProperties"/>
         <td><g:simpleReferenceTypedown class="form-control" name="propertyDefn" baseClass="org.gokb.cred.AdditionalPropertyDefinition"/></td>
-        <td><input type="text" name="apValue"/></td>
+        <td><input type="text" class="input-sm" name="apValue"/></td>
         <td><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></td>
       </g:form>
     </tr>

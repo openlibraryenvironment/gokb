@@ -83,6 +83,10 @@ class User extends Party {
     UserOrganisation.executeQuery('select uo from UserOrganisation as uo where uo.owner = :owner',[owner:this])
   }
 
+  transient def getGroupMemberships() {
+    UserOrganisationMembership.executeQuery('select uo from UserOrganisationMembership as uo where uo.party = :owner',[owner:this])
+  }
+
   /**
    *  Return a list of all folders this user has access to
    */

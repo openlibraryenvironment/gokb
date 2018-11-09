@@ -15,9 +15,25 @@ class Identifier extends KBComponent {
       "${this.class.name}:${id}"
   }
 
+  private static nameSpaceRules = [
+    "issn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
+    "issnl" : "^\\d{4}\\-\\d{3}[\\dX]\$",
+    "eissn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
+    "isbn" : "^(97(8|9))?\\d{9}[\\dX]\$",
+    "zdb" : "^\\d+\\-[\\dX]\$"
+  ]
+
   static constraints = {
     namespace (nullable:false, blank:false)
-    value (nullable:false, blank:false)
+    value (validator: { val, obj ->
+      if (!val || val.trim().size() == 0) {
+        return ['notNull']
+      }
+
+      if (nameSpaceRules[obj.namespace.value] && val !=~ nameSpaceRules[obj.namespace.value]) {
+        return ['IllegalIDForm']
+      }
+    })
   }
 
   static mapping = {
@@ -57,6 +73,7 @@ class Identifier extends KBComponent {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = null;
     def namespaces = IdentifierNamespace.findAllByValue(ns.toLowerCase())
+
     switch ( namespaces.size() ) {
       case 0:
         namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
@@ -68,8 +85,16 @@ class Identifier extends KBComponent {
         throw new RuntimeException("Multiple Namespaces with value ${ns}");
         break;
     }
-    def identifier = Identifier.findByNamespaceAndNormname(namespace,Identifier.normalizeIdentifier(value)) ?: 
-                                    new Identifier(namespace:namespace, value:value).save(failOnError:true, flush:true)
+    def identifier = Identifier.findByNamespaceAndNormname(namespace,Identifier.normalizeIdentifier(value))
+
+    if (!identifier) {
+      def new_id = new Identifier(namespace:namespace, value:value)
+
+      if (new_id.validate()) {
+        identifier = new_id.save(flush:true, failOnError:true)
+      }
+    }
+
     identifier
   }
 

@@ -139,7 +139,9 @@
           </table>
 
           <g:if test="${resultsTotal?:0 > 0 }" >
-            <g:paginate  controller="public" action="index" params="${params}" next="Next" prev="Prev" max="${max}" total="${resultsTotal}" />
+            <div class="pagination">
+              <g:paginate controller="public" action="index" params="${params}" next="&raquo;" prev="&laquo;" max="${max}" total="${resultsTotal}" />
+            </div>
           </g:if>
 
          </div>

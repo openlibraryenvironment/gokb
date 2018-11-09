@@ -51,13 +51,13 @@
             <g:if test="${!params.hide || !params.hide.contains(c.qpEquiv)}">
               <g:set var="colVal" value="${groovy.util.Eval.x(r, 'x.' + c.property)}"/>
 
-              <td><g:if test="${colVal != null && c.link != null }">
+              <td><g:if test="${c.link != null }">
                   <g:link controller="${c.link.controller}" action="${c.link.action}" id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
                     params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">
-                    ${colVal ?: 'Empty'}
+                    ${colVal ?: '- Empty -'}
                   </g:link>
                 </g:if> <g:else>
-                  ${colVal ?: 'Empty'}
+                  ${colVal ?: '- Empty -'}
                 </g:else></td>
             </g:if>
           </g:each>

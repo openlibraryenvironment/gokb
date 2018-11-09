@@ -12,6 +12,7 @@ import grails.util.GrailsNameUtils
 import grails.core.GrailsClass
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
+import grails.validation.ValidationException
 
 class AjaxSupportController {
 
@@ -666,13 +667,20 @@ class AjaxSupportController {
       def owner = genericOIDService.resolveOID(params.__context)
       if ( ( ns != null ) && ( owner != null ) && owner.isEditable() ) {
         // Lookup or create Identifier
-        def identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
+        try {
+          def identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
 
-        log.debug("Got ID: ${identifier_instance}")
-        // Link if not existing
-        owner.ids.add(identifier_instance);
+          if (identifier_instance) {
 
-        owner.save(flush:true);
+            log.debug("Got ID: ${identifier_instance}")
+            // Link if not existing
+            owner.ids.add(identifier_instance);
+
+            owner.save(flush:true);
+          }
+        } catch (grails.validation.ValidationException ve) {
+          flash.message = message(code:'identifier.value.IllegalIDForm')
+        }
       }else{
         log.debug("could not create identifier!")
       }

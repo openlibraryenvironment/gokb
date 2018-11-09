@@ -15,6 +15,13 @@
   </dd>
 
   <dt>
+    <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
+  </dd>
+
+  <dt>
     <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
   </dt>
   <dd>

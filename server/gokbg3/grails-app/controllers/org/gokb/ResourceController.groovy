@@ -8,6 +8,7 @@ import org.apache.commons.io.IOUtils
 import org.apache.tika.Tika
 import org.apache.tika.metadata.Metadata
 import org.gokb.cred.*
+import grails.converters.JSON
 
 class ResourceController {
 
@@ -92,7 +93,14 @@ class ResourceController {
         result = [:]
       }
     }
-    result
+    withFormat {
+      html {
+        result
+      }
+      json {
+        render result as JSON
+      }
+    }
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

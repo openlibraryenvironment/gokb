@@ -81,7 +81,7 @@ class InplaceTagLib {
     def id = attrs.id ?: "${oid}:${attrs.field}"
     
     // Default the format.
-    attrs."data-format" = attrs."data-format" ?: 'yyyy/MM/dd' 
+    attrs."data-format" = attrs."data-format" ?: 'yyyy/MM/dd'
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''} ${attrs.type == 'date' ? 'date' : ''}\""
     
@@ -359,7 +359,7 @@ class InplaceTagLib {
     }
     
     if( follow_link ){
-      out << ' &nbsp; <a href="'+follow_link+'">Follow Link</a>'
+      out << ' &nbsp; <a href="'+follow_link+'" title="Jump to resource"><i class="fas fa-eye"></i></a>'
     }
   }
 

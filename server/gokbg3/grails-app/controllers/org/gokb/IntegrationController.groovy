@@ -755,7 +755,7 @@ class IntegrationController {
 
           if ( is_curator || !curated_pkg ) {
             if ( the_pkg.tipps?.size() > 0 ) {
-              existing_tipps = the_pkg.tipps.collect { it.id }
+              existing_tipps = the_pkg.tipps*.id
               log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
             }
 

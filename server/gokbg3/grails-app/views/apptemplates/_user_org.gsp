@@ -1,11 +1,12 @@
 <dl class="dl-horizontal">
 
-  <dt><g:annotatedLabel owner="${d}" property="name">User Organisation Name</g:annotatedLabel></dt>
+  <dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
   <dd><g:xEditable class="ipe" owner="${d}" field="displayName" /></dd>
 
   <g:if test="${d.id != null}">
   <g:set var="userIsOrgAdmin" value="${d.members.find { it.party == request.user && it.role?.value == 'Administrator' && it.status?.value == 'Approved'}}" />
-
+  <dt><g:annotatedLabel owner="${d}" property="owner">Owner</g:annotatedLabel></dt>
+  <dd>${d.owner}</dd>
   <dt><g:annotatedLabel owner="${d}" property="name">Members</g:annotatedLabel></dt>
   <dd>
     <table class="table table-bordered table-striped">
@@ -21,7 +22,12 @@
         <g:each in="${d.members}" var="m">
           <tr>
             <td>${m.party.displayName ?: m.party }</td>
-            <td>${m.status?.value}</td>
+            <td>
+              <g:if test="${ user.isAdmin() || userIsOrgAdmin }">
+                <g:xEditableRefData owner="${m}" field="status" config='MembershipStatus' />
+              </g:if>
+              <g:else>${m.status?.value}</g:else>
+            </td>
             <td>${m.role?.value}</td>
             <td>
               <g:if test="${user.isAdmin() || userIsOrgAdmin }">

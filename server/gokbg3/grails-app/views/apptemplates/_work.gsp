@@ -6,7 +6,7 @@
     <dt> <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel> </dt>
     <dd> <g:xEditableRefData owner="${d}" field="status" config="KBComponent.Status" /> </dd>
     <dt> <g:annotatedLabel owner="${d}" property="status">Instances</g:annotatedLabel> </dt>
-    <g:if test="${d.id != null}">
+    <g:if test="${d.id != null && d.instances}">
       <dd> 
         <table class="table table-striped">
           <thead>

@@ -20,7 +20,6 @@
 
     <div class="form-group">
       <div class="col-sm-12">
-        <h3>Active Filters</h3>
         <g:each in="${cfg.qbeGlobals}" var="glob">
           <g:if test="${(glob.qparam) && ( glob.prompt )}">
             <span>${glob.prompt}: <b>${params[glob.qparam] ?: glob.default}</b></span>

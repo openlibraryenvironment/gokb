@@ -726,8 +726,13 @@ select tipp.id,
       if(platformDTO){
         def np = Platform.upsertDTO(platformDTO)
         if ( np ) {
-          result.nominalPlatform = np;
-          changed = true
+          if ( result.nominalPlatform != np ) {
+            result.nominalPlatform = np;
+            changed = true
+          }
+          else {
+            log.debug("Platform already set")
+          }
         }
         else {
           log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
@@ -779,19 +784,30 @@ select tipp.id,
       def prov = Org.findByNormname(norm_prov_name)
 
       if ( prov ) {
-        result.provider = prov;
+        if ( result.provider != prov ) {
+          result.provider = prov;
 
-        log.debug("Provider ${prov.name} set.")
-        changed = true
+          log.debug("Provider ${prov.name} set.")
+          changed = true
+        }
+        else {
+          log.debug("No provider change")
+        }
       }else{
         def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.nominalProvider)
         def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status = ?",[variant_normname, status_deleted]);
 
         if ( candidate_orgs.size() == 1 ) {
-          result.provider = candidate_orgs[0]
 
-          log.debug("Provider ${candidate_orgs[0].name} set.")
-          changed = true
+          if ( result.provider != candidate_orgs[0] ) {
+            result.provider = candidate_orgs[0]
+
+            log.debug("Provider ${candidate_orgs[0].name} set.")
+            changed = true
+          }
+          else {
+            log.debug("No provider change")
+          }
         }
         else if ( candidate_orgs.size() == 0 ) {
 

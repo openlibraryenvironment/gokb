@@ -55,8 +55,8 @@
             <span class="icon-bar"></span>
             <span  class="icon-bar"></span>
         </button>
-        <g:link uri="/" class="navbar-brand">
-          <g:message code="gokb.appname" default="GOKb" /> v<g:meta name="info.app.version" />
+        <g:link uri="/" class="navbar-brand" style="font-weight:bold;">
+          <g:message code="gokb.appname" default="GOKb"/> v<g:meta name="info.app.version" />
         </g:link>
       </div>
       <!-- /.navbar-header -->
@@ -64,7 +64,7 @@
       <sec:ifLoggedIn>
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
-          	<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+          	<a class="dropdown-toggle" data-toggle="dropdown" href="#" style="font-weight:bold;">
             	<i class="fa fa-user fa-fw"></i>
             	${request.user?.displayName ?: request.user?.username}
               <i class="fa fa-caret-down fa-fw"></i>
@@ -210,7 +210,7 @@
               <li class="${params?.controller == "register" ? 'active' : ''}"><g:link controller="register"><i class="fa fa-edit fa-fw"></i> Register</g:link></li>
               <li class="${params?.controller == "login" ? 'active' : ''}"><g:link controller="login"><i class="fa fa-sign-in fa-fw"></i> Sign in</g:link></li>
             </sec:ifNotLoggedIn>
-            <li><a href="https://github.com/k-int/gokb-phase1/wiki/API"><i class="fa fa-cogs fa-fw"></i> API Documentation</a></li>
+            <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/API"><i class="fa fa-cogs fa-fw"></i> API Documentation</a></li>
           </ul>
         </div>
         <!-- /.sidebar-collapse -->

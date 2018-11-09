@@ -44,7 +44,7 @@
           <li><a data-toggle="modal" data-cache="false"
                 title="Show History"
                 data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}" params="[withCombos:true]"/>'
-                data-target="#modal"><i class="fa fa-clock"></i></a></li>
+                data-target="#modal"><i class="fas fa-history"></i></a></li>
         </g:if>
         <li><a data-toggle="modal" data-cache="false"
               title="Show Notes"

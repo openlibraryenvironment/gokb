@@ -38,9 +38,9 @@
             <input type="hidden" name="__property" value="curatoryGroups"/>
               <div class="input-group" >
                 <g:simpleReferenceTypedown class="form-control" name="__relatedObject" baseClass="org.gokb.cred.CuratoryGroup" filter1="Current"/>
-                <div class="input-group-btn" >
-                  <button type="submit" class="btn btn-default btn-sm ">Link</button>
-                </div>
+                <span class="input-group-btn" style="padding: 0px 10px;vertical-align:top;">
+                  <button type="submit" class="btn btn-default btn-sm" style="height:2.8em;vertical-align:top;">Link</button>
+                </span>
               </div>
               <p><g:if test="${CuratoryGroup.isTypeCreatable(false)}"><g:link controller="create" params="${["tmpl": "org.gokb.cred.CuratoryGroup"]}">New Curatory Group</g:link></g:if></p>
           </td>

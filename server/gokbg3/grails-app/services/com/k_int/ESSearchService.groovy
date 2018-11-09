@@ -197,6 +197,10 @@ class ESSearchService{
       }
     }
 
+    if(!params['status']) {
+      sw.write(" AND NOT (status:Deleted)")
+    }
+
     def result = sw.toString();
     log.debug("Result of buildQuery is ${result}");
 

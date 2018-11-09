@@ -99,8 +99,8 @@
                 </g:else>
               </td>
               <td>
-  <g:link controller="resource" action="show" id="${rr.componentToReview?.getClassName()+':'+rr.componentToReview?.id}">${rr.componentToReview}</g:link>
-       </td>
+                <g:link controller="resource" action="show" id="${rr.componentToReview?.getClassName()+':'+rr.componentToReview?.id}">${rr.componentToReview}</g:link>
+              </td>
               <td>${rr.descriptionOfCause}</td>
               <td>${rr.reviewRequest}</td>
               <td>${rr.status}</td>

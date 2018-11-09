@@ -42,15 +42,16 @@ class FwkController {
 
         def processed_events = processEvents(events)
         def skippedLastCall = processed_events.skipped
-        def new_offset = result.offset
+        def new_offset = result.max
 
         result.historyLines = processed_events.historyLines
 
         while ( skippedLastCall > 0 ) {
+          log.debug("Last call skipped ${skippedLastCall} - new offset: ${new_offset}")
 
-          new_offset += skippedLastCall
           def added_events = getCombinedEvents(qry_params, skippedLastCall, new_offset)
 
+          new_offset += skippedLastCall
           processed_events = processEvents(added_events)
           skippedLastCall = processed_events.skipped
 
@@ -87,6 +88,8 @@ class FwkController {
 
   private LinkedHashMap processEvents(List events) {
 
+    log.debug("Process ${events.size()} events ..")
+
     def stagingHistoryLines = []
     def finalHistoryLines = []
     def skippedLines = 0
@@ -113,6 +116,7 @@ class FwkController {
               event.oldValue = getComboValueMaps(aoe.newValue)
             }
           }
+          event.className = 'Combo'
         }
         else {
           skip = true
@@ -134,25 +138,34 @@ class FwkController {
     }
 
     stagingHistoryLines.eachWithIndex { hl, idx ->
+      if(hl.className == 'Combo') {
+        log.debug("Combo line: ${hl}")
+      }
+
       use( TimeCategory ) {
         if ( idx < stagingHistoryLines.size() - 1
-          && hl.dateCreated >= stagingHistoryLines[idx+1].dateCreated - 1.second
+          && hl.className == 'Combo'
+          && stagingHistoryLines[idx+1].className == 'Combo'
+          && hl.dateCreated <= stagingHistoryLines[idx+1].dateCreated + 1.second
           && hl.propertyName == stagingHistoryLines[idx+1].propertyName
-          && hl.oldValue == stagingHistoryLines[idx+1].newValue
+          && stagingHistoryLines[idx+1].newValue[0].val
           && hl.eventName == 'DELETE'
           && stagingHistoryLines[idx+1].eventName == 'INSERT'
         ) {
           hl.eventName = 'UPDATE'
           hl.newValue = stagingHistoryLines[idx+1].newValue
           finalHistoryLines.add(hl)
+          log.debug("Combo delete line: ${hl}")
         }
         else if ( idx > 0
-          && hl.dateCreated <= stagingHistoryLines[idx-1].dateCreated + 1.second
+          && hl.className == 'Combo'
+          && hl.dateCreated >= stagingHistoryLines[idx-1].dateCreated - 1.second
           && hl.propertyName == stagingHistoryLines[idx-1].propertyName
           && hl.eventName == 'INSERT'
           && stagingHistoryLines[idx-1].eventName == 'UPDATE'
         ) {
           skippedLines++
+          log.debug("Skipped line: ${hl}")
         }
         else {
           finalHistoryLines.add(hl)

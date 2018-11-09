@@ -12,6 +12,7 @@
 
     <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
     <asset:stylesheet src="gokb/fontawesome.css" />
+    <asset:stylesheet src="gokb/application.css"/>
 
     <title><g:layoutTitle default="GOKb: Welcome" /></title>
 
@@ -39,12 +40,12 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="index.html"><g:message code="gokb.appname" default="GOKb" /></a>
+         <a class="navbar-brand" href="index.html" style="font-weight:bold;"><g:message code="gokb.appname" default="GOKb" /></a>
        </div>
 
        <div class="nav navbar-nav navbar-right">
-          <li><g:link controller="register" action="register">Register</g:link></li>
-          <li><g:link controller="home" action="index">Admin Home</g:link></li>
+          <li><g:link controller="register" action="register" style="font-weight:bold;">Register</g:link></li>
+          <li><g:link controller="home" action="index" style="font-weight:bold;">Admin Home</g:link></li>
        </div>
 
      </div>

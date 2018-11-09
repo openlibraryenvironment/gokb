@@ -36,7 +36,7 @@
               controller='ajaxSupport'
               action='delete'
               params="${['__context':combooid,'fragment':fragment]}"
-              class="confirm-click"
+              class="confirm-click btn-delete"
               data-confirm-message="Are you sure you wish to delete this ${row.toComponent.getNiceName()}?" >Delete</g:link>
           </g:if>
         </td>
