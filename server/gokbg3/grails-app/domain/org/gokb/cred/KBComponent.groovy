@@ -772,19 +772,19 @@ where cp.owner = :c
   public void deleteSoft (context) {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
-    save(failOnError:true)
+    save(flush:true, failOnError:true)
   }
 
   public void retire (def context = null) {
     log.debug("KBComponent::retire");
     // Set the status to retired.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
-    save(failOnError:true)
+    save(flush:true, failOnError:true)
   }
 
   public void setActive (context) {
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
-    save(failOnError:true)
+    save(flush:true, failOnError:true)
   }
 
   @Transient

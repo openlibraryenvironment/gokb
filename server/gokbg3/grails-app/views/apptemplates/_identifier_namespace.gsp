@@ -4,4 +4,7 @@
 
   <dt> <g:annotatedLabel owner="${d}" property="datatype">RDF Datatype</g:annotatedLabel> </dt>
   <dd> <g:xEditableRefData owner="${d}" field="datatype" config='RDFDataType' /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="family">Category</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="family" /> </dd>
 </dl>

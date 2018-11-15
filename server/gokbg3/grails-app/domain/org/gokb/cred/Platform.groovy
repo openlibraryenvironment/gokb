@@ -142,7 +142,8 @@ class Platform extends KBComponent {
 
   def availableActions() {
     [ 
-      [code:'platform::replacewith', label:'Replace platform with...'] 
+      [code:'platform::replacewith', label:'Replace platform with...'],
+      [code:'method::retire', label:'Retire Platform (with hosted TIPPs)']
     ]
   }
 
@@ -152,6 +153,35 @@ class Platform extends KBComponent {
    *    platformUrl:'platformUrl',
    *  }
    */
+
+
+  public void retire (context) {
+    log.debug("platform::retire");
+    // Call the delete method on the superClass.
+    log.debug("Updating platform status to retired");
+    this.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    this.save();
+
+    // Delete the tipps too as a TIPP should not exist without the associated,
+    // package.
+    log.debug("Retiring tipps");
+    def tipps = getHostedTipps()
+
+    tipps.each { def t ->
+      log.debug("deroxy ${t} ${t.class.name}");
+
+      // SO: There are 2 deproxy methods. One in the static context that takes in an argument and one,
+      // against an instance which attempts to deproxy this component. Calling deproxy(t) here will invoke the method
+      // against the current package. this.deproxy(t).
+      // So Package.deproxy(t) or t.deproxy() should work...
+      def tipp = Package.deproxy(t)
+      log.debug("Retiring tipp ${tipp.id}");
+      tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+      tipp.save()
+    }
+  }
+
+
   @Transient
   public static boolean validateDTO(platformDTO) {
     def result = true;

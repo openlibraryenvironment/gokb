@@ -30,8 +30,8 @@ class Identifier extends KBComponent {
         return ['notNull']
       }
 
-      if (nameSpaceRules[obj.namespace.value] && val !=~ nameSpaceRules[obj.namespace.value]) {
-        return ['IllegalIDForm']
+      if (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) {
+        return ['illegalIdForm.' + obj.namespace.value ]
       }
     })
   }

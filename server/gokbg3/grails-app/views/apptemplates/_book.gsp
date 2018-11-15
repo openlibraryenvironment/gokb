@@ -427,12 +427,13 @@
     </div>
 
     <div class="tab-pane" id="identifiers">
-    <div class="tab-pane" id="identifiers">
-      <g:render template="/apptemplates/simpleCombos"
+      <g:render template="/apptemplates/combosByType"
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                  [expr:'namespace.value', colhead:'Namespace'],
-                  [expr:'value', colhead:'ID', action:'link']]]}" />
-    </div>
+                  [expr:'toComponent.namespace.value', colhead:'Namespace'],
+                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+      <g:if test="${d.isEditable()}">
+        <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+      </g:if>
     </div>
 
     <div class="tab-pane" id="addprops">

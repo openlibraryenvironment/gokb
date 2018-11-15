@@ -675,10 +675,11 @@ class AjaxSupportController {
             log.debug("Got ID: ${identifier_instance}")
             // Link if not existing
             owner.ids.add(identifier_instance);
-
             owner.save(flush:true);
           }
         } catch (grails.validation.ValidationException ve) {
+
+          log.debug("${ve}")
           flash.message = message(code:'identifier.value.IllegalIDForm')
         }
       }else{

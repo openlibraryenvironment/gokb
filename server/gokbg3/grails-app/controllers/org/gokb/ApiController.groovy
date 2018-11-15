@@ -176,8 +176,16 @@ class ApiController {
   }
 
   def namespaces() {
-    def all_ns = IdentifierNamespace.findAll()
+
     def result = []
+    def all_ns = null
+
+    if (params.category && params.category?.trim().size() > 0) {
+      all_ns = IdentifierNamespace.findAllByFamily(params.category)
+    }
+    else {
+      all_ns = IdentifierNamespace.findAll()
+    }
 
     all_ns.each { ns ->
       result.add([value: ns.value, category: ns.family ?: ""])
