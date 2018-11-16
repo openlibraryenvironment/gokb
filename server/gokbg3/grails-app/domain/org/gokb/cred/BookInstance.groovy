@@ -69,8 +69,32 @@ class BookInstance extends TitleInstance {
     }
   }
 
+  @Override
+  protected def generateComponentHash() {
+
+    this.componentDiscriminator = generateBookDiscriminator(['volumeNumber':volumeNumber,'editionDifferentiator':editionDifferentiator])
+
+    // To try and find instances
+    this.componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);
+
+    // To find works
+    this.bucketHash = GOKbTextUtils.generateComponentHash([normname]);
+  }
+
   def afterInsert() {
     submitRemapWorkTask();
+  }
+
+  public static String generateBookDiscriminator (Map relevantFields) {
+    def result = null;
+
+    def normVolume = generateNormname(relevantFields.volumeNumber)
+    def normEdD = generateNormname(relevantFields.editionDifferentiator)
+
+    if(normVolume?.size() > 0 || normEdD?.size() > 0) {
+      result = "${normVolume ? 'v.'+normVolume : ''}${normEdD ? 'ed.'+normEdD : ''}".toString()
+    }
+    result
   }
 
   def submitRemapWorkTask() {

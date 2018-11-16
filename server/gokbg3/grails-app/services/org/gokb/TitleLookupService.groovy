@@ -171,14 +171,15 @@ class TitleLookupService {
             def identifiers, 
             def user = null, 
             def project = null,
-            def newTitleClassName = 'org.gokb.cred.JournalInstance' ) {
-    return find([title:title, publisher_name:publisher_name,identifiers:identifiers],user,project,newTitleClassName)
+            def newTitleClassName = 'org.gokb.cred.JournalInstance',
+            def uuid = null) {
+    return find([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
   }
 
   def find (Map metadata,
             def user = null, 
             def project = null,
-            def newTitleClassName = 'org.gokb.cred.JournalInstance' ) {
+            def newTitleClassName = 'org.gokb.cred.JournalInstance') {
 
     // The TitleInstance
     TitleInstance the_title = null
@@ -218,6 +219,10 @@ class TitleLookupService {
             the_title.ids = []
           }
 
+          if ( metadata.uuid && metadata.uuid.trim().size() > 0 ) {
+            the_title.uuid = metadata.uuid
+          }
+
         } else {
 
           // No class 1s supplied we should try and find a match on the title string.
@@ -228,7 +233,7 @@ class TitleLookupService {
           def target_hash = null;
 
           // Lookup using title string match only.
-          the_title = attemptBucketMatch (metadata.title)
+          the_title = attemptComponentMatch (metadata, newTitleClassName)
 
           if (the_title) {
             log.debug("TI ${the_title} matched by bucket.")
@@ -266,6 +271,10 @@ class TitleLookupService {
               the_title.name = metadata.title
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
+            }
+
+            if ( metadata.uuid && metadata.uuid.trim().size() > 0 ) {
+              the_title.uuid = metadata.uuid
             }
 
             ReviewRequest.raise(
@@ -380,11 +389,12 @@ class TitleLookupService {
                   def clazz = Class.forName(newTitleClassName)
                   the_title = clazz.newInstance()
                   the_title.name = metadata.title
-                  if ( metadata.uuid && metadata.uuid ==~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/ ) {
-                    the_title.uuid = metadata.uuid
-                  }
                   the_title.normname = KBComponent.generateNormname(metadata.title)
                   the_title.ids = []
+                }
+
+                if ( metadata.uuid && metadata.uuid.trim().size() > 0 ) {
+                  the_title.uuid = metadata.uuid
                 }
 
                 def additionalInfo = [:]
@@ -449,11 +459,12 @@ class TitleLookupService {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
               the_title.name = metadata.title
-              if ( metadata.uuid && metadata.uuid ==~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/ ) {
-                the_title.uuid = metadata.uuid
-              }
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
+            }
+
+            if ( metadata.uuid && metadata.uuid.trim().size() > 0 ) {
+              the_title.uuid = metadata.uuid
             }
 
             def additionalInfo = [:]
@@ -636,6 +647,40 @@ class TitleLookupService {
 
       t = TitleInstance.findByBucketHash(bucket_hash);
       log.debug("Result of findByBucketHash(\"${bucket_hash}\") for title ${title} : ${t}");
+    }
+
+    return t;
+  }
+
+  private TitleInstance attemptComponentMatch (def metadata, String className) {
+    def t = null;
+    def descriminator = null;
+    Class cl = null;
+
+    if (className) {
+      cl = Class.forName(className)
+    }else {
+      cl = Class.forName('org.gokb.cred.TitleInstance')
+    }
+
+    if ( metadata.title && ( metadata.title.length() > 0 ) ) {
+      def nname = GOKbTextUtils.norm2(metadata.title);
+
+      if (className == 'org.gokb.cred.BookInstance') {
+        descriminator = BookInstance.generateBookDiscriminator(metadata)
+      }
+
+      def component_hash = GOKbTextUtils.generateComponentHash([nname,descriminator]);
+
+      if (descriminator) {
+        t = cl.findByComponentHash(component_hash);
+      }
+
+      if (!t) {
+        t = cl.findByBucketHash(component_hash);
+      }
+
+      log.debug("Result of attempComponentMatch(\"${component_hash}\") for title ${metadata.title} : ${t}");
     }
 
     return t;

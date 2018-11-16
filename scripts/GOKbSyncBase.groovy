@@ -296,6 +296,10 @@ abstract class GOKbSyncBase extends Script {
           addTo['identifiers'] = ids
         }
       }
+
+      if (data.'@uuid' && data.'@uuid'.size() > 0) {
+        addTo['uuid'] = data.'@uuid'.text()
+      }
       
       // Additional properties.
       if (data.additionalProperties?.additionalProperty && data.additionalProperties?.additionalProperty.size() > 0) {

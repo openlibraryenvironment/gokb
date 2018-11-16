@@ -590,7 +590,8 @@ class TitleInstance extends KBComponent {
                                      titleDTO.identifiers,
                                      user,
                                      null,
-                                     type
+                                     type,
+                                     titleDTO.uuid
                                 )
     log.debug("Result of upsertDTO: ${result}");
     result;

@@ -1401,8 +1401,7 @@ class IntegrationController {
 
     bookStringAttrs.each {
       if(titleObj[it] && titleObj[it].toString().trim().length() > 0){
-        bi[it] = titleObj[it].toString().trim()
-        book_changed = true
+        book_changed |= ClassUtils.setStringIfDifferent(bi, it, titleObj[it])
       }
     }
 

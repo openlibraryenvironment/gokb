@@ -780,15 +780,11 @@ class ApiController {
     "macros"              : true,
   ]
 
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   def esconfig () {
 
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.
-    withCacheHeaders {
-      etag ( SERVER_VERSION_ETAG_DSL )
-      generate {
-        render (grailsApplication.config.searchApi as JSON)
-      }
-    }
+    render grailsApplication.config.searchApi as JSON
   }
 
   private static final Closure SERVER_VERSION_ETAG_DSL = {

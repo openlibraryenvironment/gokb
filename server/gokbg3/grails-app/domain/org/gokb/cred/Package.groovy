@@ -677,7 +677,13 @@ select tipp.id,
     if( !result ){
       log.debug("No existing package matched. Creating new package..")
 
-      result = new Package(name:packageHeaderDTO.name, normname:pkg_normname).save(flush:true, failOnError:true)
+      result = new Package(name:packageHeaderDTO.name, normname:pkg_normname)
+
+      if (packageHeaderDTO.uuid && packageHeaderDTO.uuid.trim().size() > 0) {
+        result.uuid = packageHeaderDTO.uuid
+      }
+
+      result.save(flush:true, failOnError:true)
     }
     else if ( user && result.curatoryGroups && result.curatoryGroups?.size() > 0 ) {
       def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)

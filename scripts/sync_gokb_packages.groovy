@@ -32,15 +32,18 @@ while ( moredata ) {
           
           // Coverage
           newtipp.coverage = []
-          newtipp.coverage.add([startDate: cleanText( xmltipp.coverage.'@startDate'.text()),
-                                startVolume: cleanText( xmltipp.coverage.'@startVolume'.text()),
-                                startIssue: cleanText( xmltipp.coverage.'@startIssue'.text()),
-                                endDate: cleanText( xmltipp.coverage.'@endDate'.text()),
-                                endVolume: cleanText( xmltipp.coverage.'@endVolume'.text()),
-                                endIssue: cleanText( xmltipp.coverage.'@endIssue'.text()),
-                                coverageDepth: cleanText( xmltipp.coverage.'@coverageDepth'.text()),
-                                coverageNote: cleanText( xmltipp.coverage.'@coverageNote'.text()),
-                                embargo: cleanText( xmltipp.coverage.'@embargo'.text() ) ])
+
+          xmltipp.coverage.each { tci ->
+            newtipp.coverage.add([startDate: cleanText( tci.'@startDate'.text()),
+                                  startVolume: cleanText( tci.'@startVolume'.text()),
+                                  startIssue: cleanText( tci.'@startIssue'.text()),
+                                  endDate: cleanText( tci.'@endDate'.text()),
+                                  endVolume: cleanText( tci.'@endVolume'.text()),
+                                  endIssue: cleanText( tci.'@endIssue'.text()),
+                                  coverageDepth: cleanText( tci.'@coverageDepth'.text()),
+                                  coverageNote: cleanText( tci.'@coverageNote'.text()),
+                                  embargo: cleanText( tci.'@embargo'.text() ) ])
+          }
           
           // Title.
           newtipp.title = addCoreItems ( xmltipp.title )
