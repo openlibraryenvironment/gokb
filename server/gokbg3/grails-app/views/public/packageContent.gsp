@@ -21,7 +21,10 @@
         <dt> Status </dt> <dd> ${pkg.status?.value} </dd>
         <dt> Description </dt> <dd> ${pkg.description}</dd>
         <dt> URL </dt> <dd> ${pkg.descriptionURL}</dd>
-
+        <div style="margin-top:10px">
+          <g:link controller="packages" action="kbart" id="${params.id}">KBart File</g:link> &nbsp;
+          <g:link controller="packages" action="packageTSVExport" id="${params.id}">GOKb File</g:link>
+        </div>
         <g:if test="${pkg.prices?.size() > 0}">
           <h2>Price Information</h2>
           <table class="table table-striped table-bordered">

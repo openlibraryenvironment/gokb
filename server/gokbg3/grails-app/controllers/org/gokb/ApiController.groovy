@@ -467,6 +467,7 @@ class ApiController {
       def tippTitleId = null
       def pkgListStatus = ""
       def pkgNameSort = false
+      def acceptedStatus = []
 
       params.each { k, v ->
         if ( k == 'componentType' && v instanceof String ) {
@@ -510,8 +511,8 @@ class ApiController {
           pkgListStatus = v
         }
 
-        else if (k == 'status' && v instanceof String) {
-          singleParams['status'] = v
+        else if (k == 'status') {
+          acceptedStatus = params.list(k)
         }
 
         else if (k == 'linkedTitle' && v instanceof String) {
@@ -523,9 +524,14 @@ class ApiController {
         }
 
         else if ((k == 'label' || k == "q") && v instanceof String) {
-          exactQuery.should(QueryBuilders.matchQuery('name', v))
-          exactQuery.should(QueryBuilders.matchQuery('altname', v))
-          exactQuery.minimumNumberShouldMatch(1)
+
+          QueryBuilder labelQuery = QueryBuilders.boolQuery()
+
+          labelQuery.should(QueryBuilders.matchQuery('name', v))
+          labelQuery.should(QueryBuilders.matchQuery('altname', v))
+          labelQuery.minimumNumberShouldMatch(1)
+
+          exactQuery.must(labelQuery)
         }
 
         else if (!params.label && k == "name" && v instanceof String) {
@@ -559,7 +565,7 @@ class ApiController {
       }
 
       if(unknown_fields.size() > 0){
-        errors['unknown_params'] = "${unknown_fields}"
+        errors['unknown_params'] = unknown_fields
       }
 
       if ( pkgListStatus ) {
@@ -569,6 +575,19 @@ class ApiController {
         else {
           errors['listStatus'] = "To filter by Package List Status, please add filter componentType=Package to the query"
         }
+      }
+
+      if ( acceptedStatus.size() > 0 ) {
+
+        QueryBuilder statusQuery = QueryBuilders.boolQuery()
+
+        acceptedStatus.each {
+          statusQuery.should(QueryBuilders.matchQuery('status', it))
+        }
+
+        statusQuery.minimumNumberShouldMatch(1)
+
+        exactQuery.must(statusQuery)
       }
 
       if ( orgRoleParam ) {

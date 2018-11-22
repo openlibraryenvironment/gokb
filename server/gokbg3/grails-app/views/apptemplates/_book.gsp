@@ -215,7 +215,7 @@
 
     <li><a href="#tipls" data-toggle="tab">Platforms <span
         class="badge badge-warning">
-          ${d?.tipls?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} (${d.tipls?.size() ?: '0'})
+          ${d?.tipls?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
       </span></a></li>
 
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span

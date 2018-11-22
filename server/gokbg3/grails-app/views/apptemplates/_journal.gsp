@@ -48,7 +48,9 @@
     <g:annotatedLabel owner="${d}" property="currentPubisher">Latest Publisher</g:annotatedLabel>
   </dt>
   <dd>
-    ${d.currentPublisher}&nbsp;
+    <g:if test="${d.currentPublisher}">
+      ${d.currentPublisher.name} <g:link controller="resource" action="show" id="org.gokb.cred.Org:${d.currentPublisher.id}"><i class="fas fa-eye"></i></g:link>
+    </g:if>
   </dd>
 
   <dt>
@@ -105,11 +107,11 @@
       </span></a></li>
     <li><a href="#availability" data-toggle="tab">Package Availability <span
         class="badge badge-warning">
-          ${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} (${d.tipps?.size() ?: '0'})
+          ${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
       </span></a></li>
     <li><a href="#tipls" data-toggle="tab">Platforms <span
         class="badge badge-warning">
-          ${d?.tipls?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} (${d.tipls?.size() ?: '0'})
+          ${d?.tipls?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
       </span></a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span
         class="badge badge-warning">

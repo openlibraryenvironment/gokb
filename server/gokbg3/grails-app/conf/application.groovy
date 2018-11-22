@@ -117,6 +117,17 @@ globalSearchTemplates = [
           placeholder:'SID for item',
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value']
         ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'KBComponent.Status',
+          prompt:'Status',
+          qparam:'qp_status',
+          placeholder:'Component Status',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status'],
+          // II: Default not yet implemented
+          default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
+        ],
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
@@ -206,6 +217,7 @@ globalSearchTemplates = [
         [heading:'Provider', property:'provider?.name'],
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name'],
+        [heading:'List Status', property:'listStatus?.value',sort:'listStatus'],
         [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
         [heading:'Status', property:'status?.value',sort:'status'],
       ],
@@ -313,7 +325,8 @@ globalSearchTemplates = [
           prompt:'Title Publisher ID',
           qparam:'qp_pub_id',
           placeholder:'Title Publisher ID',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'publisher.id', 'type' : 'java.lang.Long']
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'publisher.id', 'type' : 'java.lang.Long'],
+          hide:true
         ],
         [
           type:'lookup',
@@ -415,7 +428,8 @@ globalSearchTemplates = [
           prompt:'Title ID',
           qparam:'qp_title_id',
           placeholder:'Title ID',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.id', 'type' : 'java.lang.Long']
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.id', 'type' : 'java.lang.Long'],
+          hide:true
         ],
         [
           type:'lookup',
@@ -438,13 +452,15 @@ globalSearchTemplates = [
           prompt:'Title Publisher ID',
           qparam:'qp_pub_id',
           placeholder:'Title Publisher ID',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.publisher.id', 'type' : 'java.lang.Long']
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'title.publisher.id', 'type' : 'java.lang.Long'],
+          hide:true
         ],
         [
           prompt:'Package ID',
           qparam:'qp_pkg_id',
           placeholder:'Package ID',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long']
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'pkg.id', 'type' : 'java.lang.Long'],
+          hide:true
         ],
         [
           type:'lookup',
@@ -458,7 +474,8 @@ globalSearchTemplates = [
           prompt:'Platform ID',
           qparam:'qp_plat_id',
           placeholder:'Platform ID',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'hostPlatform.id', 'type' : 'java.lang.Long']
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'hostPlatform.id', 'type' : 'java.lang.Long'],
+          hide:true
         ],
         [
           type:'lookup',

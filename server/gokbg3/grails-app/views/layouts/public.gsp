@@ -45,6 +45,10 @@
        </div>
 
        <div class="nav navbar-nav navbar-right">
+          <g:if test="${grailsApplication.config.gokb.blogUrl}">
+            <li><a  style="font-weight:bold;" href ="${grailsApplication.config.gokb.blogUrl}">About GOKb</a></li>
+          </g:if>
+          <li><span style="width:15px"></span></li>
           <li><g:link controller="register" action="register" style="font-weight:bold;">Register</g:link></li>
           <li><g:link controller="home" action="index" style="font-weight:bold;">Admin Home</g:link></li>
        </div>

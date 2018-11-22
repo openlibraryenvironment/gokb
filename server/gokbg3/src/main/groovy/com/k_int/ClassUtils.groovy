@@ -31,7 +31,8 @@ class ClassUtils {
   public static boolean setDateIfPresent(String value, obj, prop) {
     def sdfs = [
       "yyyy-MM-dd' 'HH:mm:ss.SSS",
-      "yyyy-MM-dd'T'HH:mm:ss'Z'"
+      "yyyy-MM-dd'T'HH:mm:ss'Z'",
+      "yyyy-MM-dd"
     ]
     int num = 0
     SimpleDateFormat sdf = new SimpleDateFormat(sdfs[num])

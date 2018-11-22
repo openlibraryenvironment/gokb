@@ -39,10 +39,10 @@
           <li><a onClick="javascript:toggleWatch('${displayobj.class.name}:${displayobj.id}')"
                 id="watchToggleLink"
                 title="${user_watching ? 'You are watching this item' : 'You are not watching this item'}"
-                style="cursor:pointer;"
-                  ><i id="watchIcon" class="fa ${user_watching ? 'fa-eye' : 'fa-eye-slash'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
+                style="cursor:pointer;">
+                <i id="watchIcon" class="fa ${user_watching ? 'fa-eye' : 'fa-eye-slash'}"></i> <span id="watchCounter" class="badge badge-warning"> ${num_watch}</span></a></li>
           <li><a data-toggle="modal" data-cache="false"
-                title="Show History"
+                title="Show History (with Combos)"
                 data-remote='<g:createLink controller="fwk" action="history" id="${displayobj.class.name}:${displayobj.id}" params="[withCombos:true]"/>'
                 data-target="#modal"><i class="fas fa-history"></i></a></li>
         </g:if>
@@ -188,12 +188,13 @@
 
                     follow_link.attr('href', truncated_link + new_linked_oid);
                   }else {
-                    related_editable.after(" &nbsp; <a href=" + contextPath + "/resource/show/" + new_linked_oid + ">Follow Link</a>");
+                    var new_url = contextPath + "/resource/show/" + new_linked_oid;
+                    related_editable.after(' &nbsp; <a href="new_url"><i class="fas fa-eye"></i></a>');
                   }
                 } else if (follow_link.attr('href')) {
                   $(follow_link).remove();
                 }
-              }, 500);
+              }, 1000);
             });
           });
         });

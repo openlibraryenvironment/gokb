@@ -58,7 +58,7 @@
             <td>${pkg.lastUpdated}</td>
             <td style="white-space:nowrap;">${pkg.scope?.value}</td>
             <td style="white-space:nowrap;">${pkg.listStatus?.value}</td>
-            <td style="white-space:nowrap;">${titles} (${pkg.tipps.size()})</td>
+            <td style="white-space:nowrap;">${titles} (${pkg.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'})</td>
           </tr>
         </g:each>
       </tbody>

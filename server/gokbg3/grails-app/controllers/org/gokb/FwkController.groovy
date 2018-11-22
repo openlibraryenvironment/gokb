@@ -258,13 +258,13 @@ class FwkController {
     def result = [change:0]
 
     def displayobj = resolveOID2(params.oid)
-    def user = User.get(springSecurityService.principal.id)
+    def user = springSecurityService.currentUser
 
     if ( displayobj && user ) {
-      def watch = KBComponent.executeQuery("select n from ComponentWatch as n where n.component=? and n.user=?",[displayobj, user])
-      if ( watch.size() == 1 ) {
+      def watch = ComponentWatch.findByComponentAndUser(displayobj, user)
+      if (watch) {
         // watch exists
-        watch[0].delete();
+        watch.delete(flush:true);
         result.change = -1
       }
       else {

@@ -40,8 +40,7 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
       // Create the Combo.
       Combo combo = new Combo (
           status 		: (status),
-          type 		: (type),
-          startDate 	: new Date()
+          type 		: (type)
           )
 
       // Add to the 2 comboLists.
