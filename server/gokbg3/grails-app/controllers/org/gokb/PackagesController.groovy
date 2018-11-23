@@ -365,7 +365,7 @@ class PackagesController {
     def pkg = genericOIDService.resolveOID(params.id)
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new java.util.Date());
+    def export_date = sdf.format(new Date());
 
     def filename = "GOKb Export : ${pkg.name} : ${export_date}.tsv"
 
@@ -468,7 +468,7 @@ class PackagesController {
 
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new java.util.Date());
+    def export_date = sdf.format(new Date());
 
 
     def pkg = genericOIDService.resolveOID(params.id)

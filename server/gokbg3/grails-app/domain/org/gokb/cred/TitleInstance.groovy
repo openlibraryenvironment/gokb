@@ -347,7 +347,7 @@ class TitleInstance extends KBComponent {
                     if(hti){
                       "from" {
                         title(hti.name)
-                        uuid(hti.id)
+                        uuid(hti.uuid)
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
@@ -364,7 +364,7 @@ class TitleInstance extends KBComponent {
                     if(hti){
                       "to" {
                         title(hti.name)
-                        uuid(hti.id)
+                        uuid(hti.uuid)
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->

@@ -36,7 +36,7 @@ class FwkController {
 
         def query_start_time = System.currentTimeMillis();
 
-        def events = getCombinedEvents(qry_params, result.max, result.offset )
+        def events = getCombinedEvents(obj, qry_params, result.max, result.offset )
 
         log.debug("Fetch with combos completed after ${System.currentTimeMillis() - query_start_time}");
 
@@ -49,7 +49,7 @@ class FwkController {
         while ( skippedLastCall > 0 ) {
           log.debug("Last call skipped ${skippedLastCall} - new offset: ${new_offset}")
 
-          def added_events = getCombinedEvents(qry_params, skippedLastCall, new_offset)
+          def added_events = getCombinedEvents(obj, qry_params, skippedLastCall, new_offset)
 
           new_offset += skippedLastCall
           processed_events = processEvents(added_events)
@@ -80,8 +80,80 @@ class FwkController {
     }
   }
 
-  private List getCombinedEvents(LinkedHashMap qry_params, int max, int offset) {
-    def events = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where (e.className= :ocn and e.persistedObjectId= :oid) OR (e.persistedObjectId IN (:comboids) AND (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent') AND (e.newValue NOT LIKE :oidt OR e.newValue IS NULL) AND (e.oldValue NOT LIKE :oidt OR e.oldValue IS NULL)) order by id desc",qry_params,['max':max,'offset':offset]);
+  private List getCombinedEvents(def obj, LinkedHashMap qry_params, int max, int offset) {
+    def events = []
+    if(obj.class.simpleName == 'TitleInstancePackagePlatform') {
+      events = AuditLogEvent.executeQuery("select e from org.gokb.cred.AuditLogEvent as e where (e.className= :ocn and e.persistedObjectId= :oid) OR (e.persistedObjectId IN (:comboids) AND (e.propertyName = 'fromComponent' OR e.propertyName = 'toComponent') AND (e.newValue NOT LIKE :oidt OR e.newValue IS NULL) AND (e.oldValue NOT LIKE :oidt OR e.oldValue IS NULL)) order by id desc",qry_params,['max':max,'offset':offset]);
+    }
+    else {
+      def combo_rdc = RefdataCategory.findByLabel('Combo.Type')
+      def criteria = AuditLogEvent.createCriteria()
+
+      events = criteria.list ('max':max, 'offset':offset) {
+        order 'id', 'desc'
+        and {
+          or {
+            not {
+              isNull('oldValue')
+            }
+            not {
+              isNull('newValue')
+            }
+          }
+          or {
+            and {
+              eq('className', qry_params.ocn)
+              eq('persistedObjectId', qry_params.oid)
+            }
+            and {
+              'in'('persistedObjectId', qry_params.comboids)
+              or {
+                eq('propertyName', 'fromComponent')
+                eq('propertyName', 'toComponent')
+              }
+              or {
+                not {
+                  like('newValue', qry_params.oidt)
+                }
+                isNull('newValue')
+              }
+              or {
+                not {
+                  like('oldValue', qry_params.oidt)
+                }
+                isNull('oldValue')
+              }
+              or {
+                not {
+                  like('newValue', "[id:org.gokb.cred.TitleInstanceP%")
+                }
+                isNull('newValue')
+              }
+              or {
+                not {
+                  like('oldValue', "[id:org.gokb.cred.TitleInstanceP%")
+                }
+                isNull('oldValue')
+              }
+              if ( obj.class.simpleName == 'Platform' || obj.class.simpleName == 'Org') {
+                or {
+                  not {
+                    like('newValue', "[id:org.gokb.cred.Package%")
+                  }
+                  isNull('newValue')
+                }
+                or {
+                  not {
+                    like('oldValue', "[id:org.gokb.cred.Package%")
+                  }
+                  isNull('oldValue')
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     events
   }
@@ -183,7 +255,7 @@ class FwkController {
       def allOids = null
 
       if ( valueString.startsWith('[id:') ) {
-        allOids = valueString.substring(1).split(/,\[/)
+        allOids = valueString.substring(1).split(/,\s\[/)
       }
       else {
         valueMaps.add([val: valueString, oid: null])

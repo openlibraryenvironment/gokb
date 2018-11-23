@@ -166,6 +166,9 @@ class OaiController {
               identifier("${record.class.name}:${record.id}")
               uuid(record.uuid)
               datestamp(sdf.format(record.lastUpdated))
+              if (record.status.value == 'Deleted') {
+                status('deleted')
+              }
             }
             buildMetadata(record, xml, result, params.metadataPrefix, prefixHandler)
           }
@@ -692,9 +695,7 @@ class OaiController {
                       status('deleted')
                     }
                   }
-                  if(rec.status.value != 'Deleted') {
-                    buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
-                  }
+                  buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
                 }
               }
 

@@ -1463,7 +1463,7 @@ class WorkflowController {
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new java.util.Date());
+    def export_date = sdf.format(new Date());
 
     if ( packages_to_export.size() == 1 ) {
       filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
@@ -1584,7 +1584,7 @@ class WorkflowController {
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new java.util.Date());
+    def export_date = sdf.format(new Date());
 
     if ( packages_to_export.size() == 1 ) {
       filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
