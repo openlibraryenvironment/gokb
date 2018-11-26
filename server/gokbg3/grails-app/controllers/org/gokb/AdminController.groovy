@@ -335,6 +335,19 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def cleanupOrphanedTipps() {
+    Job j = concurrencyManagerService.createJob {
+      cleanupService.deleteOrphanedTipps()
+    }.startOrQueue()
+
+    log.debug("Triggering cleanup task. Started job #${j.id}")
+
+    j.description = "TIPP Cleanup"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def exportGroups () {
     def result = [:]
     CuratoryGroup.createCriteria().list ({

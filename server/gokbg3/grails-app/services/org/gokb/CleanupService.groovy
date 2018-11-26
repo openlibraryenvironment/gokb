@@ -127,6 +127,20 @@ class CleanupService {
     
     return result
   }
+
+  @Transactional
+  def deleteOrphanedTipps() {
+    log.debug("Expunging TIPPs with missing links")
+
+    def delete_candidates = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where not exists (from Combo as c where c.toComponent = tipp AND c.type.value = 'TitleInstance.Tipps')")
+
+    log.debug("Found ${delete_candidates.size()} erroneous TIPPs..")
+
+    def result = expungeByIds(delete_candidates)
+
+    log.debug("Done");
+    return new Date();
+  }
   
   @Transactional
   def expungeDeletedComponents() {

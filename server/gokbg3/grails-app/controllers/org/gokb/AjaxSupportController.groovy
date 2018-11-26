@@ -205,9 +205,32 @@ class AjaxSupportController {
 
           if(existing_variants){
             log.debug("found dupes!")
+            flash.message = message(code:'variantName.value.notUnique')
             errors = true
           }else{
             log.debug("create new variantName")
+          }
+        }
+
+        if(params.__newObjectClass == "org.gokb.cred.TitleInstancePackagePlatform") {
+          flash.message = []
+
+          if (!params.title || params.title.size() == 0) {
+            log.debug("missing title for TIPP creation")
+            flash.message.add(message(code:'tipp.title.nullable'))
+            errors = true
+          }
+
+          if (!params.hostPlatform || params.hostPlatform.size() == 0) {
+            flash.message.add(message(code:'tipp.hostPlatform.nullable'))
+            log.debug("missing platform for TIPP creation")
+            errors = true
+          }
+
+          if(!params.url || params.url.size() == 0) {
+            flash.message.add(message(code:'tipp.url.nullable'))
+            log.debug("missing url for TIPP creation")
+            errors = true
           }
         }
 
@@ -330,7 +353,9 @@ class AjaxSupportController {
         }
         else {
           log.debug("could not add to collection!")
-          flash.message = "Unable to add component!"
+          if(!flash.message) {
+            flash.message = "Unable to add component!"
+          }
         }
       }
       else if (!contextObj) {
