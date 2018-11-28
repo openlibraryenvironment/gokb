@@ -14,6 +14,10 @@ class DatabaseInstance extends TitleInstance {
     static constraints = {
     }
 
+    public String getNiceName() {
+      return "Database";
+    }
+
     /**
      * Auditable plugin, on change
      *

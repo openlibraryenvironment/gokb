@@ -41,7 +41,7 @@ class TitleInstance extends KBComponent {
   @Transient
   public title_status_properties = [:]
 
-  public void addVariantTitle (String title, String locale = null) {
+  public boolean addVariantTitle (String title, String locale = null) {
 
     // Check that the variant is not equal to the name of this title first.
     if (!title.equalsIgnoreCase(this.name)) {
@@ -73,12 +73,15 @@ class TitleInstance extends KBComponent {
               "variantName"	: (title)
             ])
             )
+          return true
       } else {
         log.debug ("Not adding variant title as it is the same as an existing variant.")
+        return false
       }
 
     } else {
       log.debug ("Not adding variant title as it is the same as the actual title.")
+      return false
     }
   }
 

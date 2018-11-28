@@ -183,6 +183,7 @@ class TitleLookupService {
 
     // The TitleInstance
     TitleInstance the_title = null
+    def title_created = false
 
     if (metadata.title == null) {
       log.error("Request to look up title with no title");
@@ -222,6 +223,7 @@ class TitleLookupService {
           if ( metadata.uuid && metadata.uuid.trim().size() > 0 ) {
             the_title.uuid = metadata.uuid
           }
+          title_created = true
 
         } else {
 
@@ -242,15 +244,18 @@ class TitleLookupService {
               log.debug("bucket match but \"${metadata.title}\" != \"${the_title.name}\" so add as a variant");
 
               // Add the variant.
-              the_title.addVariantTitle(metadata.title)
+              def added = the_title.addVariantTitle(metadata.title)
 
               // Raise a review request
-              ReviewRequest.raise(
-                  the_title,
-                  "'${metadata.title}' added as a variant of '${the_title.name}'.",
-                  "No 1st class ID supplied but reasonable match was made on the title name.",
-                  user, project
-                  )
+
+              if(added) {
+                ReviewRequest.raise(
+                    the_title,
+                    "'${metadata.title}' added as a variant of '${the_title.name}'.",
+                    "No 1st class ID supplied but reasonable match was made on the title name.",
+                    user, project
+                    )
+              }
 
               the_title.save(flush:true, failOnError:true);
             }
@@ -276,6 +281,8 @@ class TitleLookupService {
             if ( metadata.uuid && metadata.uuid.trim().size() > 0 ) {
               the_title.uuid = metadata.uuid
             }
+
+            title_created = true
 
             ReviewRequest.raise(
                 the_title,
@@ -397,6 +404,8 @@ class TitleLookupService {
                   the_title.uuid = metadata.uuid
                 }
 
+                title_created = true
+
                 def additionalInfo = [:]
 
                 additionalInfo.otherComponents = []
@@ -467,6 +476,8 @@ class TitleLookupService {
               the_title.uuid = metadata.uuid
             }
 
+            title_created = true
+
             def additionalInfo = [:]
 
             additionalInfo.otherComponents = []
@@ -527,10 +538,19 @@ class TitleLookupService {
         the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
       }
 
+      def derived_medium = 'Journal'
+
+      if (title_created && newTitleClassName == 'org.gokb.cred.BookInstance') {
+        derived_medium = 'Book'
+      }
+      else if (title_created && newTitleClassName == 'org.gokb.cred.DatabaseInstance') {
+        derived_medium = 'Database'
+      }
+
+      def medium_set = ClassUtils.setRefdataIfPresent(derived_medium, the_title, 'medium')
+
       // Add the publisher.
       addPublisher(metadata.publisher_name, the_title, user, project)
-
-      the_title.save(flush:true, failOnError:true);
 
       Set ids_to_add = []
       ids_to_add.addAll(results['ids'])
@@ -719,20 +739,22 @@ class TitleLookupService {
 
         // Good match. Need to add as alternate name.
         log.debug("Good distance match for TI. Add as variant.")
-        ti.addVariantTitle(title)
+        def added = ti.addVariantTitle(title)
         break
 
       default :
         // Bad match...
-        ti.addVariantTitle(title)
+        def added = ti.addVariantTitle(title)
 
         // Raise a review request
-        ReviewRequest.raise(
-            ti,
-            "'${title}' added as a variant of '${ti.name}'.",
-            "Match was made on 1st class identifier but title name seems to be very different.",
-            user, project
-            )
+        if(added) {
+          ReviewRequest.raise(
+              ti,
+              "'${title}' added as a variant of '${ti.name}'.",
+              "Match was made on 1st class identifier but title name seems to be very different.",
+              user, project
+              )
+        }
         break
     }
 

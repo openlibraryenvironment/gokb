@@ -245,14 +245,17 @@ class TSVIngestionService {
         if (the_title) {
           // log.debug("TI ${the_title} matched by name. Partial match")
           // Add the variant.
-          the_title.addVariantTitle(title)
+          def added_variant = the_title.addVariantTitle(title)
           // Raise a review request
-          ReviewRequest.raise(
-            the_title,
-            "'${title}' added as a variant of '${the_title.name}'.",
-            "No 1st class ID supplied but reasonable match was made on the title name.",
-            user, project
-            )
+
+          if(added_variant) {
+            ReviewRequest.raise(
+              the_title,
+              "'${title}' added as a variant of '${the_title.name}'.",
+              "No 1st class ID supplied but reasonable match was made on the title name.",
+              user, project
+              )
+          }
         } else {
           // log.debug("No TI could be matched by name. New TI, flag for review.")
           // Could not match on title either.
@@ -558,7 +561,7 @@ class TSVIngestionService {
       case {it >= threshold} :
         // Good match. Need to add as alternate name.
         log.debug("Good distance match for TI. Add as variant.")
-        ti.addVariantTitle(title)
+        def added_variant = ti.addVariantTitle(title)
         break
 
       default :
@@ -580,14 +583,16 @@ class TSVIngestionService {
           // NO match in title history -- depends what the import user wants us to do now.
           if ( inconsistent_title_id_behaviour == 'add_as_variant' ) {
             // Add as a variant title string to the identified title
-            ti.addVariantTitle(title)
+            def added_variant = ti.addVariantTitle(title)
             // Raise a review request
-            ReviewRequest.raise(
-              ti,
-              "'${title}' added as a variant of '${ti.name}'.",
-              "Match was made on 1st class identifier but title name seems to be very different.",
-              user, project
-              )
+            if(added_variant) {
+              ReviewRequest.raise(
+                ti,
+                "'${title}' added as a variant of '${ti.name}'.",
+                "Match was made on 1st class identifier but title name seems to be very different.",
+                user, project
+                )
+            }
           }
           else if ( inconsistent_title_id_behaviour == 'reject' ) {
             throw new InconsistentTitleIdentifierException("New title \"${title}\" matched via its identifiers ${identifiers} against title with internal ID [${ti.id}] but that title string is \"${ti.name}\". Radically different titles with the same identifier are usually different titles in the same title history group when the publisher has elected not to discover the correct identifier for a preceeding or succeeding item.", title, identifiers, ti.id, ti.name)
@@ -1897,7 +1902,7 @@ class TSVIngestionService {
                   log.debug("handle error case as variant name");
                   // exception properties:: proposed_title identifiers matched_title_id matched_title
                   def title = TitleInstance.get(itie.matched_title_id)
-                  title.addVariantTitle(itie.proposed_title)
+                  def added_variant = title.addVariantTitle(itie.proposed_title)
                   title.save(flush:true, failOnError:true)
                   break;
                 case 'newTitleInTHG':

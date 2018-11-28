@@ -944,7 +944,7 @@ class WorkflowController {
       def old_ti = genericOIDService.resolveOID2(oid)
       
       if( !old_ti.name.equals(new_ti.name) ) {
-        new_ti.addVariantTitle(old_ti.name)
+        def added = new_ti.addVariantTitle(old_ti.name)
       }
       
       if( merge_params['merge_ids'] ){

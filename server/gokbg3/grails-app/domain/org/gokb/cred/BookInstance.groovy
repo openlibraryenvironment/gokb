@@ -51,6 +51,12 @@ class BookInstance extends TitleInstance {
     return "Book";
   }
 
+  private static refdataDefaults = [
+    "medium"		: "Book",
+    "pureOA"		: "No",
+    "OAStatus"  : "Unknown"
+  ]
+
   /**
    * Auditable plugin, on change
    *
