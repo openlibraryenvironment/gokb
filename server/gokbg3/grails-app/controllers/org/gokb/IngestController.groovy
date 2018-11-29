@@ -95,7 +95,8 @@ class IngestController {
   
         if ( existing_file != null ) {
           log.debug("Found a match !")
-          redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
+
+          new_datafile_id = existing_file.id
         }
         else {
           log.debug("Create new datafile");
@@ -145,7 +146,7 @@ class IngestController {
         background_job.startOrQueue()
       }
       else {
-        log.debug("No datafile id!");
+        log.warn("No datafile id!");
       }
     }
     else {

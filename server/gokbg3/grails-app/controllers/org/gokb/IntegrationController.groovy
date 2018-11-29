@@ -868,7 +868,7 @@ class IntegrationController {
               TitleInstancePackagePlatform.withNewSession {
                 log.debug("Upsert tipp [${tippctr++}] ${tipp}")
 
-                def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp)
+                def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
                 log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
                 upserted_tipp.merge(flush: true)
 

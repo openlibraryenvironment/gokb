@@ -289,6 +289,7 @@ class TitleInstance extends KBComponent {
           
           builder.'imprint' (imprint?.name)
           builder.'medium' (medium?.value)
+          builder.'type' (this.class.simpleName)
           builder.'OAStatus' (OAStatus?.value)
           builder.'continuingSeries' (continuingSeries?.value)
           builder.'publishedFrom' (publishedFrom)

@@ -652,7 +652,7 @@ class TSVIngestionService {
                    ip_id,
                    ingest_cfg,
                    'N',
-                   'Local')
+                   ['curatoryGroup':'Local'])
   }
 
 
@@ -934,7 +934,7 @@ class TSVIngestionService {
     //first we need a platform:
     def platform = null; // handlePlatform(platform_url.host, source)
 
-    log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url?.host} title_url:${the_kbart.title_url}")
+    log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url} title_url:${the_kbart.title_url}")
 
     if ( the_kbart.title_url != null ) {
 
@@ -996,6 +996,19 @@ class TSVIngestionService {
           }
           else {
             identifiers << [type:'title_id', value:the_kbart.title_id]
+          }
+        }
+
+        the_kbart.each { k, v ->
+          if (k.startsWith('identifier_')) {
+            def ns_val = k.split('_', 2)[1]
+            log.debug("Found potential additional namespace ${ns_val}")
+            if (IdentifierNamespace.findByValue(ns_val)) {
+              identifiers << [type: ns_val, value:v]
+            }
+            else {
+              log.debug("Unknown additional identifier namespace ${ns_val}!")
+            }
           }
         }
 
@@ -1879,9 +1892,6 @@ class TSVIngestionService {
             if ( title && the_kbart.title_image && ( the_kbart.title_image != title.coverImage) ) {
               title.coverImage = the_kbart.title_image;
               title.save(flush:true, failOnError:true)
-            }
-            else {
-              log.warn("Lookup or create title returned null ${title} / ${identifiers}");
             }
 
             log.debug("Identifier match Preflight title : ${title}");

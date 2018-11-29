@@ -34,10 +34,10 @@ class GenericOIDService {
       }
 
       if ( result == null )
-        log.warn("Unable to locate instance of ${oid_components[0]} with id ${oid_components[1]}");
+        log.debug("Unable to locate instance of ${oid_components[0]} with id ${oid_components[1]}");
     }
     else {
-      log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");
+      log.debug("resolve OID failed to identify a domain class. Input was ${oid_components}");
     }
     result
   }
@@ -67,7 +67,7 @@ class GenericOIDService {
       }
     }
     else {
-      log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");
+      log.debug("resolve OID failed to identify a domain class. Input was ${oid_components}");
     }
     result
   }

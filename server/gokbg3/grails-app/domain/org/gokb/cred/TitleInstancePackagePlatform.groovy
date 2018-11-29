@@ -204,7 +204,7 @@ class TitleInstancePackagePlatform extends KBComponent {
    * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
    */ 
   @Transient
-  public static TitleInstancePackagePlatform upsertDTO(tipp_dto) {
+  public static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
     def result = null;
     def newTipp = false;
     log.debug("upsertDTO(${tipp_dto})");
@@ -312,7 +312,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           ReviewRequest.raise(
             tipp,
             "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! Please review the URL/Platform for validity.",
-            "Platform not marked as current."
+            "Platform not marked as current.",
+            user
           )
         }
         if (tipp_dto.status && tipp_dto.status == "Retired") {
@@ -324,7 +325,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           ReviewRequest.raise(
             tipp,
             "This TIPP was previously marked as Retired, but has now been set back to Current again.",
-            "Retired TIPP reenabled."
+            "Retired TIPP reenabled.",
+            user
           )
           
           if ( tipp.accessEndDate ) {
@@ -336,7 +338,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           ReviewRequest.raise(
             tipp,
             "Matched TIPP was marked as Deleted.",
-            "Check TIPP Status."
+            "Check TIPP Status.",
+            user
           )
         }
         

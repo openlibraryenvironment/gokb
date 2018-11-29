@@ -149,7 +149,6 @@ class CreateController {
           } else {
           
             log.debug("Saving..");
-            log.debug("Obj: ${result.newobj}")
             if ( !result.newobj.validate() ) {
               flash.message = []
 

@@ -435,6 +435,7 @@ select tipp.id,
               builder.'medium' (tipp[17]?.value)
               builder.'title' (['id':tipp[2],'uuid':tipp[22]]) {
                 builder.'name' (tipp[1]?.trim())
+                builder.'type' (getTitleClass(tipp[2]))
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
                     builder.'identifier'('namespace':tid[0], 'value':tid[1], 'datatype':tid[2])
@@ -488,6 +489,13 @@ select tipp.id,
   private static getTitleIds  (Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
     def result = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value from Identifier as i, Combo as c left join i.namespace.datatype as datatype where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
+    result
+  }
+
+  @Transient
+  private static getTitleClass  (Long title_id) {
+    def result = KBComponent.get(title_id)?.class.getSimpleName();
+
     result
   }
 
