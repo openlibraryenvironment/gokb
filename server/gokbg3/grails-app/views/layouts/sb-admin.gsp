@@ -90,7 +90,8 @@
         <div class="sidebar-nav navbar-collapse">
           <ul class="nav" id="side-menu">
             <sec:ifLoggedIn>
-              <li class="${params?.controller == "home" && (params?.action == 'index' || params?.action == 'dashboard') ? 'active' : ''}"><g:link controller="home"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
+              <li class="${params?.controller == "home" && (params?.action == 'index' || params?.action == 'dashboard') ? 'active' : ''}"><g:link controller="home"><i class="fa fa-dashboard fa-fw"></i> Statistics</g:link></li>
+              <li class="${params?.controller == "home" && (params?.action == 'userdash') ? 'active' : ''}"><g:link controller="home" action="userdash"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
               <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i> Search<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
                   <li class="sidebar-search">
@@ -161,12 +162,11 @@
                   </ul>
                 </li>
               </g:if>
-
-              <li class="${params?.controller == "savedItems" ? 'active' : ''}" ><g:link controller="savedItems" action="index"><i class="fa fa-folder fa-fw"></i> Saved Items</g:link></li>
-              <sec:ifAnyGranted roles="[ROLE_EDITOR, ROLE_CONTRIBUTOR, ROLE_ADMIN, ROLE_SUPERUSER]">
-              <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
-              </sec:ifAnyGranted>
               <g:if test="${grailsApplication.config.feature.directUpload}">
+                <li class="${params?.controller == "savedItems" ? 'active' : ''}" ><g:link controller="savedItems" action="index"><i class="fa fa-folder fa-fw"></i> Saved Items</g:link></li>
+                <sec:ifAnyGranted roles="ROLE_EDITOR, ROLE_CONTRIBUTOR, ROLE_ADMIN, ROLE_SUPERUSER">
+                <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
+                </sec:ifAnyGranted>
                 <li class="${params?.controller == "ingest" ? 'active' : ''}" ><g:link controller="ingest" action="index"><i class="fa fa-upload fa-fw"></i> Direct Ingest</g:link></li>
               </g:if>
 
@@ -192,16 +192,16 @@
                     <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
                     <li><g:link controller="admin" action="jobs"><i class="fa fa-angle-double-right fa-fw"></i> Manage Jobs</g:link></li>
                <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
-                    <li><g:link controller="user" action="search"><i class="fa fa-angle-double-right fa-fw"></i> User Management Console</g:link></li>
+                    <li><g:link controller="user" action="search"><i class="fa fa-angle-double-right fa-fw"></i> Security Management Console</g:link></li>
                     <!--
                     <li><g:link controller="api" action="downloadUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Get Refine Extension</g:link></li>
                     -->
                     <li class="divider"></li>
-                    <li><g:link controller="integration"><i class="fa fa-database fa-fw"></i> Integration API</g:link></li>
+                    <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/Integration-APIs:-Telling-GOKb-about-new-or-corresponding-resources-and-local-identifiers"><i class="fa fa-database fa-fw"></i> Integration API</a></li>
                   </ul></li>
                 <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Operating environment</g:link></li>
               </sec:ifAnyGranted>
-              <g:if test="${ grailsApplication.config.decisionSupport && user.hasRole('ROLE_EDITOR') }">
+              <g:if test="${ grailsApplication.config.gokb.decisionSupport && user.hasRole('ROLE_EDITOR') }">
                 <li><g:link controller="decisionSupport"><i class="fa fa-search fa-fw"></i> Decision Support Dashboard</g:link></li>
               </g:if>
 

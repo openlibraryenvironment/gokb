@@ -111,3 +111,34 @@ body .modal-dialog {
 .pagination > a:last-child, .pagination > span:last-child {
 /*  border-radius: 0px 6px 6px 0px;*/
 }
+
+.select2-container .select2-choice {
+  height:39px;
+}
+.select2-chosen{
+  height:39px;
+  padding: 8px 12px !important;
+  line-height:normal;
+}
+.form-control {
+  padding-top: 8px;
+}
+
+.dt-label {
+  padding-top:8px;
+}
+
+.control-label {
+  font-size:15px;
+}
+
+.search-page-index {
+  white-space: nowrap;
+  display: inline-block;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.search-page-index-input {
+  height:24px;
+}

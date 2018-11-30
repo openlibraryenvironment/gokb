@@ -85,10 +85,14 @@
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
         <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
       </a></li>
-      <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+      <g:if test="${grailsApplication.config.gokb.decisionSupport}">
+        <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+      </g:if>
       <li><a href="#activity" data-toggle="tab">Activity</a></li>
       <li><a href="#review" data-toggle="tab">Review Requests</a></li>
-      <li><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
+      <g:if test="${grailsApplication.config.gokb.costInfo}">
+        <li><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
+      </g:if>
     </ul>
 
     <div id="my-tab-content" class="tab-content">
@@ -126,15 +130,15 @@
               <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
               <input type="hidden" name="__addToColl" value="tipps" />
               <dl class="dl-horizontal">
-                <dt style="margin-top:0.5em;">Title</dt>
+                <dt class="dt-label">Title</dt>
                 <dd>
                   <g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.TitleInstance" />
                 </dd>
-                <dt style="margin-top:0.5em;">Platform</dt>
+                <dt class="dt-label">Platform</dt>
                 <dd>
                   <g:simpleReferenceTypedown class="form-control" name="hostPlatform" baseClass="org.gokb.cred.Platform" />
                 </dd>
-                <dt style="margin-top:0.5em;">URL</dt>
+                <dt class="dt-label">URL</dt>
                 <dd>
                   <input type="text" class="form-control" name="url" required />
                 </dd>

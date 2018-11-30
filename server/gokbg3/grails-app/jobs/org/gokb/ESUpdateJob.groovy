@@ -15,7 +15,7 @@ class ESUpdateJob {
   }
 
   def execute() {
-    if ( grailsApplication.config.ftupdate_enabled ) {
+    if ( grailsApplication.config.gokb.ftupdate_enabled ) {
       log.debug ("Beginning scheduled es update job.")
       FTUpdateService.updateFTIndexes();
       log.debug ("es update job completed.")

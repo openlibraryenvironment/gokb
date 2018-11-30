@@ -22,7 +22,7 @@
             <li class="divider-vertical"></li>
           </g:if>
 
-          <li><span class="navbar-text" style="white-space: nowrap; display:inline-block;"><g:form controller="${s_controller}" action="${s_action}" params="${withoutJump}" method="post">Page <input type="text" name="${jumpToPage}" size="5" value="${page}" style="color:#000000;" /> of ${page_max}</g:form></span></li>
+          <li><span class="navbar-text search-page-index"><g:form controller="${s_controller}" action="${s_action}" params="${withoutJump}" method="post">Page <input type="text" class="search-page-index-input" name="${jumpToPage}" size="5" value="${page}" style="color:#000000;" /> of ${page_max}</g:form></span></li>
         </g:if>
 
         <g:if test="${ page == 1 }">

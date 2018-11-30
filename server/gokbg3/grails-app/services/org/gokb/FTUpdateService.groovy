@@ -330,7 +330,7 @@ class FTUpdateService {
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}");
         def idx_record = recgen_closure(r)
 
-        def es_index = grailsApplication.config.gokb_es_index ?: "gokbg3"
+        def es_index = grailsApplication.config.gokb?.es?.index ?: "gokbg3"
 
         if ( idx_record != null ) {
           def recid = idx_record['_id'].toString()

@@ -183,6 +183,15 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'Package.Global',
+          prompt:'Availability',
+          qparam:'qp_global',
+          placeholder:'Availability',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'global'],
+        ],
+        [
+          type:'lookup',
           baseClass:'org.gokb.cred.Org',
           prompt:'Provider',
           qparam:'qp_provider',
@@ -217,6 +226,7 @@ globalSearchTemplates = [
         [heading:'Provider', property:'provider?.name'],
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name'],
+        [heading:'Availability', property:'global', sort:'global'],
         [heading:'List Status', property:'listStatus?.value',sort:'listStatus'],
         [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],
         [heading:'Status', property:'status?.value',sort:'status'],
@@ -646,6 +656,7 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name/Title', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Status', property:'status?.value',sort:'status'],
+        [heading:'Edit Status', property:'editStatus?.value', sort:'editStatus']
       ]
     ]
   ],

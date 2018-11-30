@@ -27,7 +27,7 @@
         </g:each>
 
         <div class="btn-group pull-right" role="group" aria-label="Search Buttons">
-          <button name="searchAction" type="submit" class="btn btn-success btn-sm" value="search">Full View</button>
+          <button name="searchAction" type="submit" class="btn btn-success btn-sm" value="search">Search View</button>
         </div>
       </div>
     </div>

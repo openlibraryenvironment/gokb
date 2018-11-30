@@ -31,10 +31,6 @@ class SearchController {
       result.init = true
     }
 
-    if( params.inline ) {
-      result.inline = true
-    }
-
     def cleaned_params = params.findAll { it.value && it.value != "" }
 
     log.debug("Cleaned: ${cleaned_params}");
@@ -47,6 +43,10 @@ class SearchController {
 
     result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
     result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+
+    if( params.inline && !params.max) {
+      result.max = 10
+    }
 
     if ( params.jumpToPage ) {
       result.offset = ( ( Integer.parseInt(params.jumpToPage) - 1 ) * result.max )

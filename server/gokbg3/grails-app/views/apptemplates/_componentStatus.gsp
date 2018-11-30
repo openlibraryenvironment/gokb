@@ -12,4 +12,8 @@
 	<dd>
 	  ${d?.lastUpdatedBy ? d?.lastUpdatedBy.displayName?: d?.lastUpdatedBy.username : ''}
 	</dd>
+	<dt><g:annotatedLabel owner="${d}" property="uuid">UUID</g:annotatedLabel></dt>
+	<dd>
+          ${d?.uuid?:''}
+	</dd>
 </dl>

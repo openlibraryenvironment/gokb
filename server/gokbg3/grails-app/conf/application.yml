@@ -137,6 +137,10 @@ environments:
                     springsecurity:
                         debug:
                             useFilter: true
+        gokb:
+            es:
+                index: gokbg3dev
+                cluster: gokbg3-dev
             mail:
                 port: 3025
     test:
@@ -159,6 +163,10 @@ environments:
                 testOnReturn: true
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+        gokb:
+            es:
+                index: gokbg3test
+                cluster: gokbg3-test
         grails:
             mail:
                 port: 3025
@@ -186,13 +194,16 @@ environments:
             plugin:
                 greenmail:
                     disabled: true
+        gokb:
+            es:
+                index: gokbg3
+                cluster: gokbg3-prod
 ---
 gokb:
     defaultCuratoryGroup: Local
+    ftupdate_enabled: true
+    decisionSupport: false
+    costInfo: false
 ---
 quartz:
     autoStartup: true
-
----
-ftupdate_enabled: true
-decisionSupport: true

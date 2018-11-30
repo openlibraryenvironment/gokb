@@ -30,9 +30,14 @@ class ResourceController {
 
     log.debug("ResourceController::show ${params}");
     def result = [:]
+    def oid = params.id
 
-    if ( params.id ) {
-      result.displayobj = genericOIDService.resolveOID(params.id)
+    if (params.type && params.id) {
+      oid = "org.gokb.cred." + params.type + ":" + params.id
+    }
+
+    if ( oid ) {
+      result.displayobj = genericOIDService.resolveOID(oid)
       
       if ( result.displayobj ) {
 
@@ -54,7 +59,7 @@ class ResourceController {
 
           def new_history_entry = new History(controller:params.controller,
           action:params.action,
-          actionid:params.id,
+          actionid:oid,
           owner:user,
           title:"View ${result.displayobj.toString()}").save()
 
@@ -74,7 +79,7 @@ class ResourceController {
           result.isComponent = (result.displayobj instanceof KBComponent)
           result.acl = gokbAclService.readAclSilently(result.displayobj)
 
-          def oid_components = params.id.split(':');
+          def oid_components = oid.split(':');
           def qry_params = [result.displayobjclassname,Long.parseLong(oid_components[1])];
           result.ownerClass = oid_components[0]
           result.ownerId = oid_components[1]

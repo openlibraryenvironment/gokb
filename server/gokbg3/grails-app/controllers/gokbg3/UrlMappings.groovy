@@ -10,6 +10,7 @@ class UrlMappings {
     static mappings = {
         // "/$controller/$action?/$id?(.$format)?"{
         "/oai/$id?" (controller: 'oai', action: 'index')
+        "/resource/show/$type/$id" (controller: 'resource', action:'show')
         "/$controller/$action?/$id?"{
             constraints {
                 // apply constraints here

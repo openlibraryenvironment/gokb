@@ -8,10 +8,10 @@
     <h1 class="page-header">${request.user?.displayName ?: request.user?.username}</h1>
     <div class="container-fluid">
       <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12">
           <div class="panel panel-default">
             <div class="panel-heading clearfix">
-              <h3 class="panel-title">Your Review Tasks</h3>
+              <h3 class="panel-title">Your Most Recent Review Tasks</h3>
             </div>
             <div class="panel-body">
               <g:link class="display-inline" controller="search" action="index"
@@ -58,7 +58,7 @@
           </g:if>
         </div>
 
-        <div class="col-md-4">
+<%--         <div class="col-md-4">
           <div class="panel panel-default">
             <div class="panel-heading clearfix">
               <h3 class="panel-title">Curatorial groups you are a member of</h3>
@@ -79,7 +79,7 @@
               </table>
             </div>
           </div>
-        </div>
+        </div> --%>
 
       </div>
     </div>
