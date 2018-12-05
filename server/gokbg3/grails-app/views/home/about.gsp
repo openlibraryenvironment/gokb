@@ -14,11 +14,10 @@
 				</h3>
 			</div>
 	  	<table class="table table-bordered">
-	      <tr><th>Build Number</th><td> <g:meta name="app.buildNumber"/></td></tr>
-	      <tr><th>Build Profile</th><td> <g:meta name="app.buildProfile"/></td></tr>
-              <tr><th>Git Branch</th><td> <g:meta name="git.branch"/></td></tr>
-              <tr><th>Git Commit</th><td> <g:meta name="git.commit.id"/></td></tr>
+              <tr><th>Git Branch</th><td> <g:meta name="build.git.branch"/></td></tr>
+              <tr><th>Git Commit</th><td> <g:meta name="build.git.revision"/></td></tr>
 	      <tr><th>App version</th><td> <g:meta name="info.app.version"/></td></tr>
+	      <tr><th>App name</th><td> <g:meta name="info.app.name"/></td></tr>
 	      <tr><th>Grails version</th><td> <g:meta name="info.app.grailsVersion"/></td></tr>
 	      <tr><th>Groovy version</th><td> ${GroovySystem.getVersion()}</td></tr>
 	      <tr><th>Environment</th><td> <g:meta name="grails.env" /></td></tr>

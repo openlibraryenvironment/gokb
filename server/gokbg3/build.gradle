@@ -78,8 +78,8 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-compress', version: '1.16.1'
     compile group: 'net.sf.opencsv', name: 'opencsv', version: '2.3'
     compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
-    compile 'org.elasticsearch:elasticsearch:5.2.0'
-    compile 'org.elasticsearch.client:transport:5.2.0'
+    compile 'org.elasticsearch:elasticsearch:5.6.10'
+    compile 'org.elasticsearch.client:transport:5.6.10'
     compile 'org.apache.logging.log4j:log4j-api:2.7'
     compile 'org.apache.logging.log4j:log4j-core:2.7'
     compile 'org.apache.tika:tika-core:1.17'
@@ -119,15 +119,11 @@ bootRun {
     addResources = true
 }
 
-gitProperties {
-    gitPropertiesDir = "${project.rootDir}/build/resources/main/META-INF"
-}
-
 buildProperties.doLast {
     // Find the right file
 
     File grailsBuildInfoFile = it.outputs.files.files.find { it.name == 'grails.build.info' }
-    File grailsGitInfoFile = it.outputs.files.files.find { it.name == 'git.properties' }
+    File grailsGitInfoFile = file("$buildDir/resources/main/git.properties")
     if(!grailsBuildInfoFile) {
       println "Build file not found!"
       return // No need to continue if the file is not there
@@ -141,10 +137,12 @@ buildProperties.doLast {
         properties.load(it)
     }
 
-    if (grailsGitInfoFile) {
-        gitProperties.load(it)
-    }else{
+    if (!grailsGitInfoFile) {
       println "Git file not found!"
+    }else {
+      grailsGitInfoFile.withInputStream {
+        gitProperties.load(it)
+      }
     }
 
     // Add new properties from various sources
@@ -156,7 +154,7 @@ buildProperties.doLast {
 
     Map<String, String> env = System.getenv()
     if(grailsGitInfoFile) {
-        properties.setProperty('build.git.revision', gitProperties.getProperty('git.commit.id'))
+        properties.setProperty('build.git.revision', gitProperties.getProperty('git.commit.id.abbrev'))
         properties.setProperty('build.git.branch', gitProperties.getProperty('git.branch'))
     }
     // Write the properties back to the file
