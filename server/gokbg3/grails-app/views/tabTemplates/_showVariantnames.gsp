@@ -51,17 +51,17 @@
               <input type="hidden" name="__newObjectClass"
                 value="org.gokb.cred.KBComponentVariantName" />
               <input type="hidden" name="__recip" value="owner" />
-              <dt>Variant Name</dt>
+              <dt class="dt-label">Variant Name</dt>
               <dd>
-                <input type="text" name="variantName" />
+                <input type="text" class="form-control" name="variantName" />
               </dd>
-              <dt>Locale</dt>
+              <dt class="dt-label">Locale</dt>
               <dd>
                 <g:simpleReferenceTypedown class="form-control" name="locale"
                   baseClass="org.gokb.cred.RefdataValue"
                   filter1="KBComponentVariantName.Locale" />
               </dd>
-              <dt>Variant Type</dt>
+              <dt class="dt-label">Variant Type</dt>
               <dd>
                 <g:simpleReferenceTypedown class="form-control" name="variantType"
                   baseClass="org.gokb.cred.RefdataValue"

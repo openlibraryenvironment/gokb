@@ -7,14 +7,14 @@
 
     <input type="hidden" name="__context" value="${ctxoid}" />
 
-    <dt>Identifier Namespace</dt>
+    <dt class="dt-label">Identifier Namespace</dt>
     <dd>
         <g:simpleReferenceTypedown class="form-control" name="identifierNamespace" baseClass="org.gokb.cred.IdentifierNamespace" />
     </dd>
 
-    <dt>Identifier Value</dt>
+    <dt class="dt-label">Identifier Value</dt>
     <dd>
-      <input type="text" name="identifierValue" />
+      <input type="text" class="form-control" name="identifierValue" />
     </dd>
 
     <dt></dt>

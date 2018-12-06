@@ -110,84 +110,12 @@
   <dt> <g:annotatedLabel owner="${d}" property="summaryOfContent">Summary of content</g:annotatedLabel> </dt>
   <dd> <g:xEditable class="ipe" owner="${d}" field="summaryOfContent" /> </dd>
 
-  <g:if test="${d.id != null}">
+  <g:if test="${d.id != null && d.titleHistory}">
     <dt>
       <g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel>
     </dt>
     <dd>
-      <table class="table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th>Event Date</th>
-            <th>Before</th>
-            <th>After</th>
-            <th>Actions</th>
-          <tr>
-        </thead>
-        <tbody>
-          <g:each in="${d.titleHistory}" var="he">
-            <tr>
-              <td><g:formatDate
-                  format="${session.sessionPreferences?.globalDateFormat}"
-                  date="${he.date}" /></td>
-              <td>
-                <ul>
-                  <g:each in="${he.from}" var="ft">
-                    <li><g:if test="${ft != null}">
-                        <g:if test="${ft.id == d.id}"><b></g:if>
-                        <g:link controller="resource" action="show"
-                          id="${ft?.class.name}:${ft.id}">
-                          ${ft.name}
-                        </g:link> 
-
-                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
-                         (
-                          <g:formatDate 
-                          format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
-                          <em>To</em>
-                          <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
-                          )
-                        </g:if> 
-                        
-                        <g:if test="${ft.id == d.id}"></b></g:if>
-                      </g:if> <g:else>From title not present</g:else>
-                    </li>
-                  </g:each>
-                </ul>
-              </td>
-              <td>
-                <ul>
-                  <g:each in="${he.to}" var="ft">
-                    <li>
-                    	<g:if test="${ft != null}">
-                        <g:if test="${ft.id == d.id}"><b></g:if>
-                        <g:link controller="resource" action="show"
-                          id="${ft.class.name}:${ft.id}">
-                          ${ft.name}
-                        </g:link> 
-                        <g:if test="${ft.publishedFrom ||ft.publishedTo }">
-                          (
-                          <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedFrom}" />
-                          <em>To</em>
-                          <g:formatDate
-                            format="${session.sessionPreferences?.globalDateFormat}" date="${ft.publishedTo}" /> 
-                          )
-                        </g:if>
-                        <g:if test="${ft.id == d.id}"></b></g:if>
-	                    </g:if>
-	                    <g:else>To title not present</g:else>
-                    </li>
-                  </g:each>
-                </ul>
-              </td>
-              <td><g:link controller="workflow"
-                  action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${he.id}">Delete</g:link></td>
-            </tr>
-          </g:each>
-        </tbody>
-      </table>
+      <g:render template="/apptemplates/fullth" model="${[d:d]}" />
     </dd>
   </g:if>
 </dl>
@@ -290,45 +218,44 @@
                 <tr>
                   <td><select name="beforeTitles" size="5" multiple
                     class="input-xxlarge" style="width: 500px;">
-                      <option value="org.gokb.cred.TitleInstance:${d.id}">
+                      <option value="org.gokb.cred.BookInstance:${d.id}">
                         ${d.name}
                       </option>
                   </select><br /></td>
-                  <td>
-                    <button type="button"
+                  <td style="text-align:center;">
+                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
                       onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">&gt;</button>
-                    <br />
-                    <button type="button"
+                    <div style="height:2px;"></div>
+                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
                       onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
-                    <br />
                   </td>
                   <td><select name="afterTitles" size="5" multiple="multiple"
                     class="input-xxlarge" style="width: 500px;" ></select></td>
                 </tr>
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
-                      baseClass="org.gokb.cred.TitleInstance" /> <br />
-                    <button type="button"
+                      baseClass="org.gokb.cred.BookInstance" /> <br />
+                    <button class="btn btn-sm" type="button"
                       onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
-                    <button type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
+                    <button class="btn btn-sm" type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
                   <td></td>
                   <td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
-                      baseClass="org.gokb.cred.TitleInstance" /> <br />
-                    <button type="button"
+                      baseClass="org.gokb.cred.BookInstance" /> <br />
+                    <button class="btn btn-sm" type="button"
                       onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
-                    <button type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
+                    <button class="btn btn-sm" type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
                 </tr>
               </table>
             </dd>
-            <dt>Event Date</dt>
+            <dt class="dt-label">Event Date</dt>
             <dd>
-              <input type="date" name="EventDate" />
+              <input type="date" class="form-control" name="EventDate" />
             </dd>
             <dt></dt>
             <dd>
-              <button
+              <button class="btn btn-default btn-primary"
                 onClick="submitTitleHistoryEvent(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">Add
-                Title History Event -&gt;</button>
+                Title History Event</button>
             </dd>
           </g:form>
         </dl>
@@ -376,7 +303,7 @@
 
     <div class="tab-pane" id="publishers">
 
-
+    <dl>
       <dt>
         <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
       </dt>
@@ -416,11 +343,13 @@
           <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
           <input type="hidden" name="__property" value="publisher" />
           <dt>Add Publisher:</td>
-          <dd>
-            <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+          <dd style="width:50%">
+            <g:simpleReferenceTypedown class="form-control" name="__relatedObject" baseClass="org.gokb.cred.Org" />
+            <button type="submit" class="btn btn-default btn-primary btn-sm " style="margin-top:10px;">Add</button>
           </dd>
         </g:form>
       </g:if>
+    </dl>
 
 
 

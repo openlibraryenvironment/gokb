@@ -37,7 +37,14 @@ class ResourceController {
     }
 
     if ( oid ) {
-      result.displayobj = genericOIDService.resolveOID(oid)
+      result.displayobj = KBComponent.findByUuid(oid)
+
+      if (!result.displayobj) {
+        result.displayobj = genericOIDService.resolveOID(oid)
+      }
+      else {
+        oid = "${result.displayobj?.class?.name}:${result.displayobj?.id}"
+      }
       
       if ( result.displayobj ) {
 

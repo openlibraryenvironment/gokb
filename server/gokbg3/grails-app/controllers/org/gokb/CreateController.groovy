@@ -185,8 +185,8 @@ class CreateController {
                 }
               }
               
-              result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
-            }else {
+              result.uri = createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
+            } else {
               result.newobj.save(flush:true)
               result.uri = createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
             }

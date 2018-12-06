@@ -20,7 +20,7 @@ class TitleInstance extends KBComponent {
   String coverImage
 
   private static refdataDefaults = [
-    "medium"		: "Journal",
+    "medium" : "Journal",
     "pureOA"		: "No",
     "OAStatus"  : "Unknown"
   ]
@@ -112,6 +112,11 @@ class TitleInstance extends KBComponent {
     publishedTo (nullable:true, blank:false)
     coverImage (nullable:true, blank:true)
     work (nullable:true, blank:false)
+    name (validator: { val, obj ->
+      if (!val) {
+        return ['notNull']
+      }
+    })
   }
 
   def availableActions() {
