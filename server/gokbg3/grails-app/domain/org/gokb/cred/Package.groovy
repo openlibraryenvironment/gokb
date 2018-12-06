@@ -329,7 +329,7 @@ select tipp.id,
   @Transient
   def availableActions() {
     [
-      [code:'method::deleteSoft', label:'Delete (with associated TIPPs)'],
+      [code:'method::deleteSoft', label:'Delete (with associated TIPPs)', perm:'delete'],
       [code:'method::retire', label:'Retire Package (with associated TIPPs)'],
       [code:'exportPackage', label:'TSV Export'],
       [code:'kbartExport', label:'KBART Export'],

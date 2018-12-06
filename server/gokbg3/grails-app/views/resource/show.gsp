@@ -87,7 +87,7 @@
                 <div class="input-group">
                   <select id="selectedAction" name="selectedBulkAction" class="form-control" >
                     <option value="">-- Select an action to perform --</option>
-                    <g:each var="action" in="${displayobj.availableActions()}">
+                    <g:each var="action" in="${displayobj.userAvailableActions()}">
                       <option value="${action.code}">
                         ${action.label}
                       </option>

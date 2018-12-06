@@ -117,7 +117,7 @@
               <td><g:if
                   test="${r.isEditable() && r.respondsTo('availableActions')}">
                   <g:set var="al"
-                    value="${new JSON(r.availableActions()).toString().encodeAsHTML()}" />
+                    value="${new JSON(r.userAvailableActions()).toString().encodeAsHTML()}" />
                   <input type="checkbox" name="bulk:${r?.class.name}:${r.id}"
                     data-actns="${al}" class="obj-action-ck-box" />
                 </g:if> <g:else>
