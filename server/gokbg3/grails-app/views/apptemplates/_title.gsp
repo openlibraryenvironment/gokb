@@ -76,12 +76,11 @@
     <g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" />
   </dd>
 
-  <g:if test="${d?.id != null}">
+  <g:if test="${d?.id != null && d.titleHistory}">
     <dt>
       <g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel>
     </dt>
     <dd>
-
       <g:render template="/apptemplates/fullth" model="${[d:d]}" />
     </dd>
   </g:if>
@@ -153,7 +152,8 @@
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
         <dl class="dl-horizontal">
-          <g:form name="AddHistoryForm" controller="workflow" action="createTitleHistoryEvent">
+          <g:form name="AddHistoryForm" controller="workflow"
+            action="createTitleHistoryEvent">
             <dt>
               Titles
               </dt>
@@ -171,13 +171,12 @@
                         ${d.name}
                       </option>
                   </select><br /></td>
-                  <td>
-                    <button type="button"
+                  <td style="text-align:center;">
+                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
                       onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">&gt;</button>
-                    <br />
-                    <button type="button"
+                    <div style="height:2px;"></div>
+                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
                       onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
-                    <br />
                   </td>
                   <td><select name="afterTitles" size="5" multiple="multiple"
                     class="input-xxlarge" style="width: 500px;" ></select></td>
@@ -185,27 +184,27 @@
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
                       baseClass="org.gokb.cred.TitleInstance" /> <br />
-                    <button type="button"
+                    <button class="btn btn-sm" type="button"
                       onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
-                    <button type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
+                    <button class="btn btn-sm" type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
                   <td></td>
                   <td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
                       baseClass="org.gokb.cred.TitleInstance" /> <br />
-                    <button type="button"
+                    <button class="btn btn-sm" type="button"
                       onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
-                    <button type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
+                    <button class="btn btn-sm" type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
                 </tr>
               </table>
             </dd>
-            <dt>Event Date</dt>
+            <dt class="dt-label">Event Date</dt>
             <dd>
-              <input type="date" name="EventDate" />
+              <input type="date" class="form-control" name="EventDate" />
             </dd>
             <dt></dt>
             <dd>
-              <button
+              <button class="btn btn-default btn-primary"
                 onClick="submitTitleHistoryEvent(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">Add
-                Title History Event -&gt;</button>
+                Title History Event</button>
             </dd>
           </g:form>
         </dl>

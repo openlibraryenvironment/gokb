@@ -20,7 +20,7 @@ class TitleInstance extends KBComponent {
   String coverImage
 
   private static refdataDefaults = [
-    "medium"		: "Journal",
+    "medium" : "Journal",
     "pureOA"		: "No",
     "OAStatus"  : "Unknown"
   ]
@@ -112,11 +112,17 @@ class TitleInstance extends KBComponent {
     publishedTo (nullable:true, blank:false)
     coverImage (nullable:true, blank:true)
     work (nullable:true, blank:false)
+    name (validator: { val, obj ->
+      if (!val) {
+        return ['notNull']
+      }
+    })
   }
 
   def availableActions() {
-    [ [code:'method::deleteSoft', label:'Delete'],
-      [code:'method::setActive', label:'Make Current'],
+    [ [code:'method::deleteSoft', label:'Delete', perm:'delete'],
+      [code:'method::retire', label:'Retire'],
+      [code:'method::setActive', label:'Set Current'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
       [code:'title::merge', label:'Title Merge']

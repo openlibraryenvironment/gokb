@@ -205,11 +205,20 @@ where cp.owner = :c
 
           // Add each property and value to the properties in the defaults.
           defaults.each { String property, values ->
+            def lone_property = property
+            def rdc = null
 
-            if (thisComponent."${property}" == null) {
+            if(lone_property.contains('.')) {
+              def split_prop = lone_property.split("\\.")
+
+              rdc = split_prop[0]
+              lone_property = split_prop[1]
+            }
+
+            if ( lone_property?.length() > 0 && (rdc || thisComponent."${lone_property}" == null) ) {
 
               // Get the type defined against the class.
-              PersistentProperty propertyDef = dClass.getPropertyByName(property)
+              PersistentProperty propertyDef = dClass.getPropertyByName(lone_property)
               String propType = propertyDef?.getType()?.getName()
   
               if (propType) {
@@ -217,8 +226,10 @@ where cp.owner = :c
                 switch (propType) {
                   case RefdataValue.class.getName() :
   
-                        final String ucProp = GrailsNameUtils.getClassName(property);
-                        final String key = "${className}.${ucProp}"
+                        final String ucProp = GrailsNameUtils.getClassName(lone_property);
+                        final String key = "${rdc ?: className}.${ucProp}"
+
+                        log.debug("Setting default with category ${key}, value ${values}")
     
                         if (values instanceof Collection) {
                           values.each { val ->
@@ -230,14 +241,17 @@ where cp.owner = :c
                           // Set the default.
                           def v = RefdataCategory.lookupOrCreate(key, values)
                           // log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
-                          thisComponent."${property}" = v
+                          thisComponent."${lone_property}" = v
                         }
                       break
                   default :
                     // Just treat as a normal prop
-                    thisComponent."${property}" = values
+                    thisComponent."${lone_property}" = values
                     break
                 }
+              }
+              else {
+                log.debug("Could not find property ${lone_property} for class ${dClass.getName()}")
               }
             }
           }
@@ -1442,5 +1456,26 @@ where cp.owner = :c
                                              endDate:null, 
                                              price:f).save(flush:true, failOnError:true);
     }
+  }
+  @Transient
+  public userAvailableActions() {
+    def user = springSecurityService.currentUser
+    def allActions = []
+    def result = []
+
+    if (this.respondsTo('availableActions')) {
+      allActions = this.availableActions()
+
+      allActions.each { ao ->
+        if (ao.perm == "delete" && !this.isDeletable()) {
+        }
+        else if (ao.perm == "admin" && !this.isAdministerable()) {
+        }
+        else {
+          result.add(ao)
+        }
+      }
+    }
+    result
   }
 }

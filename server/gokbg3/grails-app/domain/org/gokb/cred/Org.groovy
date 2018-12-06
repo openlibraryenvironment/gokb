@@ -11,7 +11,7 @@ class Org extends KBComponent {
     [
       [code:'org::deprecateReplace', label:'Replace Publisher With...'],
       [code:'org::deprecateDelete', label:'Remove Publisher name from title records...'],
-      // [code:'title::reconcile', label:'Title Reconcile']
+      [code:'org::deleteSoft', label:'Delete Publisher', perm:'delete']
     ]
   }
 

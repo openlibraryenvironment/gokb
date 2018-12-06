@@ -124,8 +124,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   def availableActions() {
     [ [code:'method::retire', label:'Retire'],
-      [code:'method::deleteSoft', label:'Delete'],
-      [code:'method::setActive', label:'Make Current'],
+      [code:'method::deleteSoft', label:'Delete', perm:'delete'],
+      [code:'method::setActive', label:'Make Current']
     ]
   }
 

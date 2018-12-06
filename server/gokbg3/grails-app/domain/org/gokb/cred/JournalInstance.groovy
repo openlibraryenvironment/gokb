@@ -9,6 +9,10 @@ import static grails.async.Promises.*
 @Log4j
 class JournalInstance extends TitleInstance {
 
+  private static refdataDefaults = [
+    "TitleInstance.medium"		: "Journal"
+  ]
+
   static mapping = {
     includes TitleInstance.mapping
   }

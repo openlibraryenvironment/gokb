@@ -21,6 +21,10 @@ class BookInstance extends TitleInstance {
   Date dateFirstOnline
   String summaryOfContent
 
+  private static refdataDefaults = [
+    "TitleInstance.medium"		: "Book"
+  ]
+
  static mapping = {
     includes TitleInstance.mapping
             editionNumber column:'bk_ednum'
@@ -50,12 +54,6 @@ class BookInstance extends TitleInstance {
   public String getNiceName() {
     return "Book";
   }
-
-  private static refdataDefaults = [
-    "medium"		: "Book",
-    "pureOA"		: "No",
-    "OAStatus"  : "Unknown"
-  ]
 
   /**
    * Auditable plugin, on change

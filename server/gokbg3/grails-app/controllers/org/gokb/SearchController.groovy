@@ -35,7 +35,7 @@ class SearchController {
 
     log.debug("Cleaned: ${cleaned_params}");
 
-    if ( params.refOid ) {
+    if ( params.refOid && !params.refOid.endsWith('null')) {
       result.refOid = params.refOid
 
       result.refName = KBComponent.get(Long.valueOf(params.refOid.split(':')[1])).name

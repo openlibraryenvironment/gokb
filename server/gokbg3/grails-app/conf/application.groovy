@@ -128,6 +128,15 @@ globalSearchTemplates = [
           // II: Default not yet implemented
           default:[ type:'query', query:'select r from RefdataValue where r.value=:v and r.owner.description=:o', params:['Current','KBComponent.Status'] ]
         ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'KBComponent.EditStatus',
+          prompt:'Edit Status',
+          qparam:'qp_editstatus',
+          placeholder:'Component Edit Status',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'editStatus']
+        ],
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
@@ -137,6 +146,7 @@ globalSearchTemplates = [
         [heading:'Type', property:'class.simpleName'],
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Status', property:'status?.value',sort:'status'],
+        [heading:'Edit Status', property:'editStatus?.value',sort:'editStatus'],
       ]
     ]
   ],

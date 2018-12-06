@@ -158,6 +158,21 @@ class CleanupService {
   }
 
   @Transactional
+  def expungeRejectedComponents() {
+
+    log.debug("Process rejected candidates");
+
+    def status_rejected = RefdataCategory.lookupOrCreate('KBComponent.EditStatus', 'Rejected')
+
+    def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.editStatus=:rejectedStatus',[rejectedStatus: status_rejected])
+
+    def result = expungeByIds(delete_candidates)
+
+    log.debug("Done");
+    return new Date();
+  }
+
+  @Transactional
   def ensureUuids()  {
     log.debug("GOKb missing uuid check..")
 
