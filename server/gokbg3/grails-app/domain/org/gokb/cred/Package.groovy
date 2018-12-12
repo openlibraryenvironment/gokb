@@ -108,12 +108,15 @@ class Package extends KBComponent {
 
   static def refdataFind(params) {
     def result = [];
+    def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def ql = null;
-    ql = Package.findAllByNameIlike("${params.q}%",params)
+    ql = Package.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 
     if ( ql ) {
       ql.each { t ->
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        if( !params.filter1 || t.status?.value == params.filter1 ){
+          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
+        }
       }
     }
 
@@ -121,7 +124,7 @@ class Package extends KBComponent {
   }
 
   @Transient
-  public getTitles(def onlyCurrent = true) {
+  public getTitles(def onlyCurrent = true, int max = 10, offset = 0) {
     def all_titles = null
 
     if (this.id) {
@@ -141,7 +144,7 @@ class Package extends KBComponent {
             and titleCombo.fromComponent=title
             and tipp.status = ?
             and title.status = ?'''
-            ,[this,refdata_current,refdata_current]);
+            ,[this,refdata_current,refdata_current],[max: max, offset: offset]);
       }
       else {
         all_titles = TitleInstance.executeQuery('''select distinct title
@@ -153,7 +156,7 @@ class Package extends KBComponent {
             and pkgCombo.fromComponent=?
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title'''
-            ,[this]);
+            ,[this],[max: max, offset: offset]);
       }
     }
 
@@ -414,9 +417,6 @@ select tipp.id,
             'name' (provider.name)
           }
         }
-
-        'listVerifier' ( listVerifier )
-        'userListVerifier' ( userListVerifier?.username )
         'listVerifiedDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
 
         builder.'curatoryGroups' {

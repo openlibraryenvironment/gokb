@@ -126,13 +126,14 @@ class Platform extends KBComponent {
 
   static def refdataFind(params) {
     def result = []; 
+    def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def ql = null;
-    ql = Platform.findAllByNameIlike("${params.q}%",params)
+    ql = Platform.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 
     if ( ql ) { 
       ql.each { t ->
         if( !params.filter1 || t.status.value == params.filter1 ){
-          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
         }
       }   
     }   

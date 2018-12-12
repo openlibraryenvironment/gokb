@@ -43,12 +43,15 @@ class Source extends KBComponent {
 
   static def refdataFind(params) {
     def result = [];
+    def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def ql = null;
-    ql = Source.findAllByNameIlike("${params.q}%",params)
+    ql = Source.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 
     if ( ql ) {
       ql.each { t ->
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        if( !params.filter1 || t.status.value == params.filter1 ){
+          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
+        }
       }
     }
 

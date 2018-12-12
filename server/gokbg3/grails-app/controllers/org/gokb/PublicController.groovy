@@ -28,7 +28,7 @@ class PublicController {
   def ESSearchService
   def sessionFactory
 
-  public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp  and c.type.value = ?';
+  public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp and c.type = ? and tipp.status = ?';
 
 
 
@@ -38,14 +38,16 @@ class PublicController {
     if ( params.id ) {
       def pkg_id_components = params.id.split(':');
       def pkg_id = pkg_id_components[1]
+      def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
+      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
       result.pkg = Package.get(pkg_id);
       result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id=?',[Long.parseLong(pkg_id)])
       result.pkgId = result.pkgData[0][0]
       result.pkgName = result.pkgData[0][1]
       log.debug("Tipp qry name: ${result.pkgName}");
 
-      result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, 'Package.Tipps'])[0]
-      result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, 'Package.Tipps'],[offset:params.offset?:0,max:10])
+      result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
+      result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?:0,max:10])
       log.debug("Tipp qry done ${result.tipps?.size()}");
     }
     result

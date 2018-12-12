@@ -66,12 +66,12 @@ class Combo implements Auditable {
       "${this.class.name}:${id}"
   }
   
-  public Date expire (Date endDate = null) {
-	
+  public Date expire (Date endDate = null, boolean replaced = false) {
+
 	if (endDate == null) endDate = new Date ()
-	
+
 	// Expire this combo...
-	setStatus (RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_SUPERSEDED))
+	setStatus (RefdataCategory.lookupOrCreate(Combo.RD_STATUS, (replaced ? Combo.STATUS_SUPERSEDED : Combo.STATUS_EXPIRED)))
 	setEndDate(endDate)
 	save()
 	endDate

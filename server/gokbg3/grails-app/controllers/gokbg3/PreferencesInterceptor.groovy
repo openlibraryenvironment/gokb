@@ -7,6 +7,7 @@ class PreferencesInterceptor {
       matchAll().excludes(controller:'api')
                 .excludes(controller:'integration')
                 .excludes(controller: 'oai')
+                .excludes(controller: 'ajaxSupport')
       // matchAll().excludes(controller: 'auth')
   }
 

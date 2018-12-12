@@ -80,7 +80,7 @@
 
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d?.titles ? d?.titles?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
+      <li><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d?.getTitles(true,0,0) ? d?.getTitles(true,0,0)?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.ids?.size() ?: '0'} </span></a></li>
       <li><a href="#altnames" data-toggle="tab">Alternate Names 
         <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
@@ -132,11 +132,11 @@
               <dl class="dl-horizontal">
                 <dt class="dt-label">Title</dt>
                 <dd>
-                  <g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.TitleInstance" />
+                  <g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.TitleInstance"/>
                 </dd>
                 <dt class="dt-label">Platform</dt>
                 <dd>
-                  <g:simpleReferenceTypedown class="form-control" name="hostPlatform" baseClass="org.gokb.cred.Platform" />
+                  <g:simpleReferenceTypedown class="form-control" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current"/>
                 </dd>
                 <dt class="dt-label">URL</dt>
                 <dd>

@@ -223,15 +223,16 @@ class TitleInstance extends KBComponent {
    */
   static def refdataFind(params) {
     def result = [];
+    def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
-    ql = TitleInstance.executeQuery("select t from TitleInstance as t where lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) )", ["${params.q?.toLowerCase()}%","${params.q}%"],[max:20]);
+    ql = TitleInstance.executeQuery("select t from TitleInstance as t where t.status <> ? and ( lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) ) )", [status_deleted, "${params.q?.toLowerCase()}%","${params.q}%"],[max:20]);
 
     if ( ql ) {
       ql.each { t ->
         if( !params.filter1 || t.status.value == params.filter1 ){
-          result.add([id:"${t.class.name}:${t.id}",text:"${t.name} "])
+          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
         }
       }
     }

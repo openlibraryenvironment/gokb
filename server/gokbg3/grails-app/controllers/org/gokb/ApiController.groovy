@@ -590,6 +590,10 @@ class ApiController {
         exactQuery.must(statusQuery)
       }
 
+      else {
+        exactQuery.must(QueryBuilders.matchQuery('status', 'Current'))
+      }
+
       if ( orgRoleParam ) {
         if ( singleParams['componentType'] && singleParams['componentType'] == 'Org') {
           singleParams['roles'] = orgRoleParam
@@ -600,7 +604,7 @@ class ApiController {
       }
 
       if ( tippPackageId ) {
-        if ( singleParams['componentType'] && singleParams['componentType'] == 'TIPP' ) {
+        if ( singleParams['componentType'] && singleParams['componentType'] == 'TitleInstancePackagePlatform' ) {
           singleParams['tippPackage'] = tippPackageId
         }
         else {
@@ -609,7 +613,7 @@ class ApiController {
       }
 
       if ( tippTitleId ) {
-        if ( singleParams['componentType'] && singleParams['componentType'] == 'TIPP' ) {
+        if ( singleParams['componentType'] && singleParams['componentType'] == 'TitleInstancePackagePlatform' ) {
           singleParams['tippTitle'] = tippTitleId
         }
         else {

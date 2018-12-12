@@ -46,12 +46,13 @@ class CuratoryGroup extends KBComponent {
   
   static def refdataFind(params) {
     def result = [];
+    def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def ql = null;
-    ql = CuratoryGroup.findAllByNameIlike("${params.q}%",params)
+    ql = CuratoryGroup.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted ,params)
 
     ql.each { t ->
       if( !params.filter1 || t.status?.value == params.filter1 ){
-        result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])
+        result.add([id:"${t.class.name}:${t.id}", text:"${t.name}", status:"${t.status?.value}"])
       }
     }
 
