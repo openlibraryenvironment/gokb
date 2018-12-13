@@ -115,6 +115,11 @@ body .modal-dialog {
 .select2-container .select2-choice {
   height:39px;
 }
+
+.select2-container{
+  min-width:200px;
+}
+
 .select2-chosen{
   height:39px;
   padding: 8px 12px !important;
@@ -141,4 +146,9 @@ body .modal-dialog {
 
 .search-page-index-input {
   height:24px;
+}
+
+#rr-tipp-status {
+  width:100px;
+  display:inline;
 }

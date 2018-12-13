@@ -34,12 +34,12 @@
       <div class="panel-body" >
 	      <g:form action="changePass">
 		      <dl class="dl-horizontal">
-		        <dt>Original Password :</dt>
-		        <dd><input name="origpass" type="password"/>
-		        <dt>New Password :</dt>
-		        <dd><input name="newpass" type="password"/>
-		        <dt>Repeat New Password :</dt>
-		        <dd><input name="repeatpass" type="password"/>
+		        <dt class="dt-label">Original Password :</dt>
+		        <dd><input class="form-control" name="origpass" type="password"/>
+		        <dt class="dt-label">New Password :</dt>
+		        <dd><input class="form-control" name="newpass" type="password"/>
+		        <dt class="dt-label">Repeat New Password :</dt>
+		        <dd><input class="form-control" name="repeatpass" type="password"/>
 		        <dt></dt><dd><button type="submit" class="btn btn-sm">Change Password</button></dd>
 		      </dl>
 		      <g:if test='${flash.message}'>

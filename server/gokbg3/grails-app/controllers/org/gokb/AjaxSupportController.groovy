@@ -381,7 +381,7 @@ class AjaxSupportController {
     log.debug("addToStdCollection(${params})");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
-    if ( contextObj && contextObj.isEditable()) {
+    if ( contextObj && (contextObj.isEditable() || springSecurityService.currentUser == contextObj)) {
       if (!contextObj["${params.__property}"].contains(resolveOID2(params.__relatedObject))) {
         contextObj["${params.__property}"].add (resolveOID2(params.__relatedObject))
         contextObj.save(flush:true, failOnError:true)
@@ -780,7 +780,7 @@ class AjaxSupportController {
     def note         = DSNote.get(params.note)
     if (note)
     {
-        if (note.criterion.user == user)
+        if (note.criterion.user?.id == user?.id)
             note.isDeleted       = true
         else
             result.status = '401'

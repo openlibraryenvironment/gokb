@@ -21,7 +21,7 @@
       <tbody>
         <g:each in="${d.members}" var="m">
           <tr>
-            <td>${m.party.displayName ?: m.party }</td>
+            <td>${m.party}</td>
             <td>
               <g:if test="${ user.isAdmin() || userIsOrgAdmin }">
                 <g:xEditableRefData owner="${m}" field="status" config='MembershipStatus' />

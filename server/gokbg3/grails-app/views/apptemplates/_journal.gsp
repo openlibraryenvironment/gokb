@@ -297,8 +297,8 @@
           <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
           <input type="hidden" name="__property" value="publisher" />
           <dt>Add Publisher:</td>
-          <dd style="width:50%">
-            <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm " style="margin-top:10px;">Add</button>
+          <dd>
+            <g:simpleReferenceTypedown class="form-control" style="max-width:350px;" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm " style="margin-top:10px;">Add</button>
           </dd>
         </g:form>
       </g:if>

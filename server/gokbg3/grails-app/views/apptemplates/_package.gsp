@@ -197,12 +197,12 @@
           <h3>Review Requests for connected Titles</h3>
           <div>
             <span style="margin-right:10px;">
-              <button id="rr-only-open">Load Open Requests</button>
-              <button id="rr-all">Load All Requests</button>
+              <button class="btn btn-default" id="rr-only-open">Load Open Requests</button>
+              <button class="btn btn-default" id="rr-all">Load All Requests</button>
             </span>
             <span style="white-space:nowrap;">
               <span>TIPP status restriction: </span>
-              <select id="rr-tipp-status">
+              <select class="form-control" id="rr-tipp-status">
                 <option>None</option>
                 <option>Current</option>
               </select>
