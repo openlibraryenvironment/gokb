@@ -310,6 +310,7 @@ class ApiController {
   def suggest() {
     def result = [:]
     def esclient = ESWrapperService.getClient()
+    def acceptedStatus = []
     def errors = [:]
     def offsetDefault = 0
     def maxDefault = 10
@@ -328,6 +329,27 @@ class ApiController {
           if( params.componentType == 'Org' && params.role ) {
             suggestQuery.must(QueryBuilders.matchQuery('roles', params.role))
           }
+        }
+
+        if ( params.status ) {
+          acceptedStatus = params.list('status')
+        }
+
+        if ( acceptedStatus.size() > 0 ) {
+
+          QueryBuilder statusQuery = QueryBuilders.boolQuery()
+
+          acceptedStatus.each {
+            statusQuery.should(QueryBuilders.matchQuery('status', it))
+          }
+
+          statusQuery.minimumNumberShouldMatch(1)
+
+          suggestQuery.must(statusQuery)
+        }
+
+        else {
+          suggestQuery.must(QueryBuilders.matchQuery('status', 'Current'))
         }
 
         SearchRequestBuilder es_request =  esclient.prepareSearch("suggest")
