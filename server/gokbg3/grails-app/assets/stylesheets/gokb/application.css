@@ -148,6 +148,10 @@ body .modal-dialog {
   height:24px;
 }
 
+.editable-click {
+  cursor:pointer;
+}
+
 #rr-tipp-status {
   width:100px;
   display:inline;

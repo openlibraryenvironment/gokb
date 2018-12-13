@@ -132,4 +132,26 @@ class ReviewRequest implements Auditable {
     }
     result;
   }
+
+  @Transient
+  public userAvailableActions() {
+    def user = springSecurityService.currentUser
+    def allActions = []
+    def result = []
+
+    if (this.respondsTo('availableActions')) {
+      allActions = this.availableActions()
+
+      allActions.each { ao ->
+        if (ao.perm == "delete" && !this.isDeletable()) {
+        }
+        else if (ao.perm == "admin" && !this.isAdministerable()) {
+        }
+        else {
+          result.add(ao)
+        }
+      }
+    }
+    result
+  }
 }

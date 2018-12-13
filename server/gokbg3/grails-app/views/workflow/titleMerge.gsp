@@ -29,9 +29,11 @@
             <div class="col-md-6">
               <h3>Title to replace them:</h3>
               <g:simpleReferenceTypedown class="form-control" name="newTitle" baseClass="org.gokb.cred.TitleInstance" />
+              <div style="margin-top:50px;">
+                <button type="submit" class="btn btn-default pull-right">Next</button>
+              </div>
             </div>
           </div>
-          <button type="submit" class="btn btn-default btn-sm pull-right">Next</button>
         </g:form>
       </div>
     </div>

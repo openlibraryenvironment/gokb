@@ -17,15 +17,15 @@
       <g:form name="AddHistoryForm" controller="workflow" action="startTitleChange" method="get">
         <div class="row">
           <div class="col-md-12">
-          <dl>
-            <dt>Change Type:</dt>
+          <dl class="dl-horizontal">
+            <dt class="dt-label">Change Type:</dt>
             <dd>
-              <select name="changeType">
+              <select class="form-control" style="max-width:350px;" name="changeType">
                 <option value="nameChange">Simple Name Change</option>
               </select>
             </dd>
 
-            <dt> Titles </dt>
+            <dt class="dt-label"> Titles </dt>
             <dd>
               <table>
                 <tr>
@@ -40,31 +40,30 @@
                     </g:each>
                   </select><br /></td>
                   <td>
-                    <button type="button" onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">&gt;</button>
-                    <br />
-                    <button type="button" onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
-                    <br />
+                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button" onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">&gt;</button>
+                    <div style="height:2px;"></div>
+                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button" onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
                   </td>
                   <td><select name="afterTitles" size="5" multiple="multiple"
                     class="input-xxlarge" style="width: 500px;" ></select></td>
                 </tr>
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle" baseClass="org.gokb.cred.TitleInstance" /> <br />
-                    <button type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
+                    <button class="btn btn-default" type="button" onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button></td>
                   <td></td>
                   <td><g:simpleReferenceTypedown class="form-control" name="ToTitle" baseClass="org.gokb.cred.TitleInstance" /> <br />
-                    <button type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
+                    <button class="btn btn-default" type="button" onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button></td>
                 </tr>
               </table>
             </dd>
-            <dt>Event Date</dt>
-            <dd> <input type="date" name="eventDate" /> </dd>
-            <dt></dt>
+            <dt class="dt-label">Event Date</dt>
+            <dd> <input type="date" class="form-control" name="eventDate" /> </dd>
+            <dt class="dt-label"></dt>
             <dd>
             </dd>
           </dl>
         </div>
-        <button class="btn btn-default btn-sm pull-right"
+        <button class="btn btn-default pull-right" style="margin-right:20px;"
                 onClick="submitTitleChangeRequest(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">Next</button>
       </g:form>
     </div>

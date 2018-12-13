@@ -194,7 +194,7 @@
                 } else if (follow_link.attr('href')) {
                   $(follow_link).remove();
                 }
-              }, 1000);
+              }, 500);
             });
           });
         });

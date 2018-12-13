@@ -79,19 +79,19 @@
   </dl>
 
     <ul id="tabs" class="nav nav-tabs">
-      <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d?.getTitles(true,0,0) ? d?.getTitles(true,0,0)?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.ids?.size() ?: '0'} </span></a></li>
-      <li><a href="#altnames" data-toggle="tab">Alternate Names 
+      <li role="presentation" class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
+      <li role="presentation"><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d?.getTitles(true,0,0) ? d?.getTitles(true,0,0)?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
+      <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.ids?.size() ?: '0'} </span></a></li>
+      <li role="presentation"><a href="#altnames" data-toggle="tab">Alternate Names
         <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
       </a></li>
       <g:if test="${grailsApplication.config.gokb.decisionSupport}">
-        <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+        <li role="presentation"><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
-      <li><a href="#activity" data-toggle="tab">Activity</a></li>
-      <li><a href="#review" data-toggle="tab">Review Requests</a></li>
+      <li role="presentation"><a href="#activity" data-toggle="tab">Activity</a></li>
+      <li role="presentation"><a href="#review" data-toggle="tab">Review Requests</a></li>
       <g:if test="${grailsApplication.config.gokb.costInfo}">
-        <li><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
+        <li role="presentation"><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
       </g:if>
     </ul>
 
