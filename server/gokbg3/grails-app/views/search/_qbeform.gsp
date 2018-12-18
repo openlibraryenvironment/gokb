@@ -80,10 +80,12 @@
       <div class="col-sm-10">
         <g:each in="${cfg.qbeGlobals}" var="glob">
           <g:if test="${(glob.qparam) && ( glob.prompt )}">
-            ${glob.prompt} : <select name="${glob.qparam}" value="${params[glob.qparam]}">
-              <option value="on" ${(params[glob.qparam] ?: glob.default ) == 'on' ? 'selected' : ''}>On</option>
-              <option value="off" ${(params[glob.qparam] ?: glob.default ) == 'off' ? 'selected' : ''}>Off</option>
-            </select>
+            <span>
+              ${glob.prompt} : <select class="form-control" style="display:inline;max-width:75px" name="${glob.qparam}" value="${params[glob.qparam]}">
+                <option value="on" ${(params[glob.qparam] ?: glob.default ) == 'on' ? 'selected' : ''}>On</option>
+                <option value="off" ${(params[glob.qparam] ?: glob.default ) == 'off' ? 'selected' : ''}>Off</option>
+              </select>
+            </span>
           </g:if>
         </g:each>
 

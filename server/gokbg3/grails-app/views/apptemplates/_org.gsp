@@ -241,39 +241,39 @@
 									<input type="hidden" name="__newObjectClass"
 										value="org.gokb.cred.Office" />
 									<input type="hidden" name="__addToColl" value="offices" />
-									<dt>Office Name</dt>
+									<dt class="dt-label">Office Name</dt>
 									<dd>
-										<input type="text" name="name" />
+										<input class="form-control" type="text" name="name" />
 									</dd>
-									<dt>Website</dt>
+									<dt class="dt-label">Website</dt>
 									<dd>
-										<input type="text" name="website" />
+										<input class="form-control" type="text" name="website" />
 									</dd>
-									<dt>Email</dt>
+									<dt class="dt-label">Email</dt>
 									<dd>
-										<input type="text" name="email" />
+										<input class="form-control" type="text" name="email" />
 									</dd>
-									<dt>Number</dt>
+									<dt class="dt-label">Number</dt>
 									<dd>
-										<input type="text" name="phoneNumber" />
+										<input class="form-control" type="text" name="phoneNumber" />
 									</dd>
-									<dt>Address 1</dt>
+									<dt class="dt-label">Address 1</dt>
 									<dd>
-										<input type="text" name="addressLine1" />
+										<input class="form-control" type="text" name="addressLine1" />
 									</dd>
-									<dt>Address 2</dt>
+									<dt class="dt-label">Address 2</dt>
 									<dd>
-										<input type="text" name="addressLine2" />
+										<input class="form-control" type="text" name="addressLine2" />
 									</dd>
-									<dt>City</dt>
+									<dt class="dt-label">City</dt>
 									<dd>
-										<input type="text" name="city" />
+										<input class="form-control" type="text" name="city" />
 									</dd>
-									<dt>Region</dt>
+									<dt class="dt-label">Region</dt>
 									<dd>
-										<input type="text" name="region" />
+										<input class="form-control" type="text" name="region" />
 									</dd>
-									<dt></dt>
+									<dt class="dt-label"></dt>
 									<dd>
 										<button type="submit"
 											class="btn btn-default btn-primary btn-sm ">Add</button>

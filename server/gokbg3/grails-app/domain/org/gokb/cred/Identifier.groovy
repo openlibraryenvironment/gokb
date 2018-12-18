@@ -19,7 +19,6 @@ class Identifier extends KBComponent {
     "issn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
     "issnl" : "^\\d{4}\\-\\d{3}[\\dX]\$",
     "eissn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "isbn" : "^(97(8|9))?\\d{9}[\\dX]\$",
     "zdb" : "^\\d+\\-[\\dX]\$"
   ]
 

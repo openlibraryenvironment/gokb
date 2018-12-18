@@ -49,8 +49,8 @@
     <input type="hidden" name="__newObjectClass" value="org.gokb.cred.Combo"/>
     <input type="hidden" name="__recip" value="${recip}"/>
     <input type="hidden" name="type" value="${org.gokb.cred.RefdataCategory.getOID('Combo.Type',d.getComboTypeValue(property))}"/>
-    Add To List : <g:simpleReferenceTypedown class="form-control" name="${comboprop}" baseClass="${targetClass}"/> 
-    <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+    Add To List : <g:simpleReferenceTypedown class="form-control" style="max-width:300px" name="${comboprop}" baseClass="${targetClass}"/>
+    <button type="submit" class="btn btn-default btn-primary btn-sm " style="margin-top:10px;">Add</button>
   </g:form>
 
 </g:if>
