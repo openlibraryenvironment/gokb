@@ -32,7 +32,10 @@
             var editable = $(this);
 
             // Add the parameter to the params object.
-            params[editable.attr("data-name")] = editable.text();
+            var eVal = editable.editable('getValue', true)
+            console.log(eVal)
+
+            params[editable.attr("data-name")] = eVal.id ? eVal.id : editable.text();
         });
 
         $('a.editable').not('.editable-empty').each (function(){

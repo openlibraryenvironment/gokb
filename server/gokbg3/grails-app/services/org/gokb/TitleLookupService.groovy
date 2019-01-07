@@ -436,6 +436,7 @@ class TitleLookupService {
         // Multiple matches.
         log.debug ("Title class one identifier lookup yielded ${matches.size()} matches - ${matches}.")
         def all_matched = []
+        RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
 
         matches.each { mti ->
 
@@ -452,7 +453,12 @@ class TitleLookupService {
           }
 
           if ( full_match ) {
-            all_matched.add(mti)
+            if ( mti.status != status_deleted ) {
+              all_matched.add(mti)
+            }
+            else {
+              log.debug("Skipping matched TI with status 'Deleted'!")
+            }
           }
 
         }
@@ -538,17 +544,6 @@ class TitleLookupService {
         the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
       }
 
-      def derived_medium = 'Journal'
-
-      if (title_created && newTitleClassName == 'org.gokb.cred.BookInstance') {
-        derived_medium = 'Book'
-      }
-      else if (title_created && newTitleClassName == 'org.gokb.cred.DatabaseInstance') {
-        derived_medium = 'Database'
-      }
-
-      def medium_set = ClassUtils.setRefdataIfPresent(derived_medium, the_title, 'medium')
-
       // Add the publisher.
       addPublisher(metadata.publisher_name, the_title, user, project)
 
@@ -560,7 +555,7 @@ class TitleLookupService {
 
       ids_to_add.each {
 
-        def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,the_title.id,id_combo_type.id]);
+        def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[it.id,the_title.id,id_combo_type.id]);
 
         if ( !dupes || dupes.size() == 0) {
 

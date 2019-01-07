@@ -68,14 +68,17 @@ class Identifier extends KBComponent {
     }
   }
 
-  static def lookupOrCreateCanonicalIdentifier(ns, value) {
+  static def lookupOrCreateCanonicalIdentifier(ns, value, def ns_create = true) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = null;
+    def namespace = null
+    def identifier = null
     def namespaces = IdentifierNamespace.findAllByValue(ns.toLowerCase())
 
     switch ( namespaces.size() ) {
       case 0:
-        namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
+        if (ns_create) {
+          namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
+        }
         break;
       case 1:
         namespace = namespaces[0]
@@ -84,18 +87,22 @@ class Identifier extends KBComponent {
         throw new RuntimeException("Multiple Namespaces with value ${ns}");
         break;
     }
-    def identifier = Identifier.findByNamespaceAndNormname(namespace,Identifier.normalizeIdentifier(value))
 
-    if (!identifier) {
-      def new_id = new Identifier(namespace:namespace, value:value)
+    if (namespace) {
+      identifier = Identifier.findByNamespaceAndNormname(namespace,Identifier.normalizeIdentifier(value))
 
-      if (new_id.validate()) {
-        identifier = new_id.save(flush:true, failOnError:true)
+      if (!identifier) {
+        def new_id = new Identifier(namespace:namespace, value:value)
+
+        if (new_id.validate()) {
+          identifier = new_id.save(flush:true, failOnError:true)
+        }
       }
     }
 
     identifier
   }
+
 
   @Override
   public boolean equals(Object obj) {

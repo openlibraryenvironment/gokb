@@ -12,8 +12,8 @@
 <div>
 	<div>
 		<ul class="jd_menu jd_menu_slate">
-			<s2ui:menu controller='user'/>
-			<sec:ifAllGranted roles='ROLE_SUPERUSER'>
+                        <sec:ifAllGranted roles='ROLE_SUPERUSER'>
+                          <s2ui:menu controller='user'/>
                           <s2ui:menu controller='role'/>
                           <g:if test='${securityConfig.securityConfigType?.toString() == 'Requestmap'}'><s2ui:menu controller='requestmap'/></g:if>
                           <g:if test='${securityConfig.rememberMe.persistent}'><s2ui:menu controller='persistentLogin' searchOnly='true'/></g:if>

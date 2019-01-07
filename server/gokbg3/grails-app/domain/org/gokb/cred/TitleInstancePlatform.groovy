@@ -21,6 +21,13 @@ class TitleInstancePlatform extends KBComponent {
     "gokb:TIPL:${tiplTitle?.id}:${tiplHostPlatform?.id}"
   }
 
+  def availableActions() {
+    [ [code:'method::retire', label:'Retire'],
+      [code:'method::deleteSoft', label:'Delete', perm:'delete'],
+      [code:'method::setActive', label:'Set Current']
+    ]
+  }
+
   static constraints = {
     url (nullable:true, blank:true)
   }
@@ -37,7 +44,7 @@ class TitleInstancePlatform extends KBComponent {
 
   @Transient
   public static ensure(title, platform, url) {
-    if ( ( title != null ) && ( platform != null ) ) {
+    if ( ( title != null ) && ( platform != null ) && ( url?.trim().length() > 0 ) ) {
       def r = TitleInstancePlatform.executeQuery('''select tipl
               from TitleInstancePlatform as tipl,
               Combo as titleCombo,

@@ -125,6 +125,14 @@ class ReviewRequest implements Auditable {
     }
   }
 
+  def beforeInsert() {
+    if ( !isDirty('status') ) {
+      setStatus(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'))
+    } else {
+      setStatus(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Needs Review'))
+    }
+  }
+
   def getAdditional() {
     def result = null
     if (additionalInfo && additionalInfo.length() > 0 ) {

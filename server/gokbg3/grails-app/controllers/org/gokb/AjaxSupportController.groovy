@@ -58,7 +58,7 @@ class AjaxSupportController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def getRefdata() {
 
-    def result = [:]
+    def result = []
 
     def config = refdata_config[params.id]
 
@@ -91,15 +91,18 @@ class AjaxSupportController {
       log.debug("Params: ${query_params}");
       log.debug("Count qry: ${config.countQry}");
       log.debug("Row qry: ${config.rowQry}");
+      log.debug("DOMAIN: ${config.domain}");
 
-      def cq = Org.executeQuery(config.countQry,query_params);
-      def rq = Org.executeQuery(config.rowQry,
+      GrailsClass dc = grailsApplication.getArtefact("Domain", 'org.gokb.cred.'+ config.domain)
+
+      def cq = dc.getClazz().executeQuery(config.countQry,query_params);
+      def rq = dc.getClazz().executeQuery(config.rowQry,
                                 query_params,
                                 [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0]);
 
       rq.each { it ->
         def o = ClassUtils.deproxy(it)
-        result["${o.class.name}:${o.id}"] = o[config.cols[0]];
+        result.add([id:"${o.class.name}:${o.id}", text: o[config.cols[0]], value:o[config.cols[0]]]);
       }
     }
 
@@ -170,6 +173,17 @@ class AjaxSupportController {
       rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       qryParams:[],
       rdvCat: "KBComponentVariantName.Locale",
+      cols:['value'],
+      format:'simple'
+    ],
+    'ReviewRequest.Status' : [
+      domain:'RefdataValue',
+      // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      qryParams:[],
+      rdvCat: "ReviewRequest.Status",
       cols:['value'],
       format:'simple'
     ]
@@ -544,7 +558,7 @@ class AjaxSupportController {
     def target_object = resolveOID2(params.pk)
     def user = springSecurityService.currentUser
     def errors = null
-    if ( target_object && ( target_object.isEditable() || user.equals(ClassUtils.deproxy(target_object)) ) ) {
+    if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.format ?: 'yyyy-MM-dd')
       }

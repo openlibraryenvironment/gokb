@@ -59,18 +59,6 @@
           <dd>
         </g:if>
         <dt>
-          <g:annotatedLabel owner="${d}" property="refineProject">Refine Project</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:if test="${d.refineProject != null}">
-            <g:link controller="resource" action="show"
-              id="${d.refineProject.class.name}:${d.refineProject.id}">
-              ${d.refineProject.name}
-            </g:link>
-          </g:if>
-          <g:else>N/A</g:else>
-        </dd>
-        <dt>
           <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
         </dt>
         <dd>
@@ -85,9 +73,6 @@
             ${d.dateCreated}&nbsp;
           </dd>
         </g:if>
-        <g:else>
-          &nbsp;Additional fields will be available once the record is saved
-        </g:else>
 
         <g:if test="${d.additional?.problems}">
           <g:form name="AddRules" controller="workflow" action="addToRulebase">

@@ -28,10 +28,12 @@
 		<s2ui:tab name='roles' height='275'>
 		<g:each var='entry' in='${roleMap}'>
 			<g:set var='roleName' value='${uiPropertiesStrategy.getProperty(entry.key, 'authority')}'/>
-			<div>
-				<g:checkBox name='${roleName}' value='${entry.value}'/>
-				<g:link controller='role' action='edit' id='${entry.key.id}'>${roleName}</g:link>
-			</div>
+			<g:if test="${roleName != 'ROLE_SUPERUSER' || user.hasRole('ROLE_SUPERUSER')}">
+                          <div>
+                                  <g:checkBox name='${roleName}' value='${entry.value}'/>
+                                  <g:link controller='role' action='edit' id='${entry.key.id}'>${roleName}</g:link>
+                          </div>
+                        </g:if>
 		</g:each>
 		</s2ui:tab>
 	</s2ui:tabs>

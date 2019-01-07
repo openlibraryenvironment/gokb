@@ -1052,9 +1052,14 @@ class IntegrationController {
     }
     else {
       result = []
+      def ctr = 0
 
       json.eachWithIndex{ e, i ->
         result <<  crossReferenceSingleTitle(e)
+
+        if( ctr++ > 50 ) {
+          cleanUpGorm()
+        }
       }
     }
     render result as JSON
