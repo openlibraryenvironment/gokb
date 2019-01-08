@@ -215,7 +215,7 @@ where cp.owner = :c
               lone_property = split_prop[1]
             }
 
-            if ( lone_property?.length() > 0 && (rdc || thisComponent."${lone_property}" == null) ) {
+            if ( lone_property?.length() > 0 && thisComponent."${lone_property}" == null ) {
 
               // Get the type defined against the class.
               PersistentProperty propertyDef = dClass.getPropertyByName(lone_property)

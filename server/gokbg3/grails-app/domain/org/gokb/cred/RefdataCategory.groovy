@@ -40,8 +40,51 @@ class RefdataCategory {
       "${this.class.name}:${id}"
   }
 
+  static def lookup(category_name, value, def sortkey = null) {
+
+    // log.debug("lookupOrCreate(${category_name}, ${value}, ${sortkey})");
+
+    if ( ( value == null ) || ( category_name == null ) )
+      throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");
+
+    def result = null;
+
+    def rdv_cache_key = category_name+':'+value+':'+sortkey
+    def rdv_id  = rdv_cache[rdv_cache_key]
+    if ( rdv_id && rdv_id instanceof Long) {
+      result = RefdataValue.get(rdv_id);
+    }
+    else if (!rdv_id instanceof Long) {
+      throw new RuntimeException("Got a string value from rdv_cache for ${category_name}, ${value}!");
+    }
+    else {
+      // The category.
+      def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where c.desc = ?',category_name);
+      def cat = null;
+
+      if ( cats.size() == 0 ) {
+        return result
+      }
+      else if ( cats.size() == 1 ) {
+        cat = cats[0]
+        // log.debug("Found existing category for ${category_name} : ${cat}");
+        result = RefdataValue.findByOwnerAndValueIlike(cat, value)
+      }
+      else {
+        throw new RuntimeException("Multiple matching refdata category names");
+      }
+
+      if (result) {
+        rdv_cache[rdv_cache_key] = result.id
+      }
+    }
+
+    // return the refdata value.
+    result
+  }
+
   static RefdataValue lookupOrCreate(category_name, value) {
-    return lookupOrCreate(category_name,value,null);
+    return lookupOrCreate(category_name,value,null)
   }
 
   static RefdataValue lookupOrCreate(category_name, value, sortkey) {
@@ -80,7 +123,7 @@ class RefdataCategory {
               log.error("Problem: ${it}");
             }
           }
-  
+
           // log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
         }
         else if ( cats.size() == 1 ) {

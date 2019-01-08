@@ -90,7 +90,14 @@ class CreateController {
               if ( pprop instanceof Association ) {
                 if ( pprop instanceof OneToOne) {
                   log.debug("one-to-one");
-                  def related_item = genericOIDService.resolveOID(p.value);
+                  def related_item = null
+                  if (pprop.getType().name == 'org.gokb.cred.RefdataValue') {
+                    def rdc = classExaminationService.deriveCategoryForProperty(params.cls, p.key)
+                    related_item = RefdataCategory.lookup(rdc, p.value)
+                  }
+                  else {
+                    related_item = genericOIDService.resolveOID(p.value);
+                  }
                   result.newobj[p.key] = related_item
                   propertyWasSet = propertyWasSet || (related_item != null)
                 }

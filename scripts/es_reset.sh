@@ -35,26 +35,116 @@ curl -X PUT "localhost:9200/$INDEXNAME" -d '{
 echo Create component mapping
 curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
   "component" : {
+    "dynamic_templates": [
+      {
+        "provider": {
+          "match": "provider",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "cpname": {
+          "match": "cpname",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "publisher": {
+          "match": "publisher",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "listStatus": {
+          "match": "listStatus",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "package": {
+          "match": "tippPackage",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "title": {
+          "match": "tippTitle",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "hostPlatform": {
+          "match": "hostPlatform",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "roles": {
+          "match": "roles",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "curGroups": {
+          "match": "curatoryGroups",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      }
+    ],
     "properties" : {
       "name" : {
         "type" : "text",
 	"copy_to" : "suggest",
         "fields" : {
-          "name" : { "type" : "string", "analyzer" : "snowball" },
-          "altname" : { "type" : "string", "analyzer" : "snowball" }
+          "name" : { "type" : "text" },
+          "altname" : { "type" : "text" }
         }
       },
-      "componentType" : { 
-        "type":"string", 
-        "index":"not_analyzed" 
+      "identifiers" : {
+        "type" : "nested",
+        "properties": {
+          "namespace": { "type": "keyword"},
+          "value": { "type": "keyword"}
+        }
       },
-      "sortname" : { 
-        "type":"string", 
-        "index":"not_analyzed" 
+      "sortname" : {
+        "type": "keyword"
+      },
+      "componentType" : {
+        "type": "keyword"
+      },
+      "uuid" : {
+        "type": "keyword"
       },
       "status" : {
-        "type":"string",
-        "index":"not_analyzed"
+        "type": "keyword"
       },
       "suggest" : {
         "type" : "string",

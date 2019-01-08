@@ -242,7 +242,7 @@ class SecurityController {
                     }
                   }
                   else {
-                    log.error ("Allocation of ROLE_SUPERUSER forbidden for users without this role! (User ${springSecurityService.currentUser.id})")
+                    log.debug ("Allocation of ROLE_SUPERUSER forbidden for users without this role! (User ${springSecurityService.currentUser.id})")
                   }
 
                 } else {
@@ -252,7 +252,7 @@ class SecurityController {
             }
           }
         } else {
-          log.error ("User ${user.id} attempted to modify their own roles.")
+          log.debug ("User ${user.id} attempted to modify their own roles.")
         }
 
         if (request.isAjax()) {

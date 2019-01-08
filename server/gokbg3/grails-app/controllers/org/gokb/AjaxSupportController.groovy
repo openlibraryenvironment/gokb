@@ -57,6 +57,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def getRefdata() {
+    log.debug("AjaxController::getRefdata ${params}")
 
     def result = []
 

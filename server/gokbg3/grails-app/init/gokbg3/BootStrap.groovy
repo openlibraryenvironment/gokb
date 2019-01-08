@@ -123,6 +123,16 @@ class BootStrap {
             email: '',
             enabled: false).save(failOnError: true)
       }
+      def deletedUser = User.findByUsername('deleted')
+      if ( ! deletedUser ) {
+        log.error("No deleted user found, create")
+        deletedUser = new User(
+            username: 'deleted',
+            password: 'deleted',
+            display: 'Deleted User',
+            email: '',
+            enabled: false).save(failOnError: true)
+      }
 
 
       // Make sure admin user has all the system roles.

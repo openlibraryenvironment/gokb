@@ -183,8 +183,8 @@ class User extends Party {
     // ql = RefdataValue.findAllByValueIlikeOrDescriptionIlike("%${params.q}%","%${params.q}%",params)
     // ql = RefdataValue.findWhere("%${params.q}%","%${params.q}%",params)
 
-    def query = "from User as u where lower(u.username) like ? or lower(u.displayName) like ? or lower(u.email) like ?"
-    def query_params = ["%${params.q.toLowerCase()}%","%${params.q.toLowerCase()}%","%${params.q.toLowerCase()}%"]
+    def query = "from User as u where (lower(u.username) like ? or lower(u.displayName) like ?) and enabled is true"
+    def query_params = ["%${params.q.toLowerCase()}%","%${params.q.toLowerCase()}%"]
 
     ql = User.findAll(query, query_params, params)
 
