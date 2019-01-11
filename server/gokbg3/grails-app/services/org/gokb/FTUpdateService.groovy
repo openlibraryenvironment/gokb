@@ -31,10 +31,12 @@ class FTUpdateService {
     if ( running == false ) {
       running = true;
       doFTUpdate()
+      log.info("FTUpdate done.")
       return new Date();
     }
     else {
-      log.debug("FTUpdate already running");
+      log.info("FTUpdate already running")
+      return "Job cancelled – FTUpdate was already running!";
     }
   }
 
@@ -282,6 +284,7 @@ class FTUpdateService {
   def updateES(esclient, domain, recgen_closure) {
 
     log.info("updateES(${domain}...)");
+    cleanUpGorm();
 
     def count = 0;
     try {
@@ -399,13 +402,15 @@ class FTUpdateService {
 
   def clearDownAndInitES() {
     if ( running == false ) {
+      log.debug("Remove existing FTControl ..")
       FTControl.withTransaction {
         FTControl.executeUpdate("delete FTControl c");
       }
       updateFTIndexes();
     }
     else {
-      log.debug("FTUpdate already running");
+      log.info("FTUpdate already running")
+      return "Job cancelled – FTUpdate was already running!";
     }
   }
 

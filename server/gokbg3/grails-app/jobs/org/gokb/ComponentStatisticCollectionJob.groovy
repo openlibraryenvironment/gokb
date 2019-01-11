@@ -7,7 +7,7 @@ class ComponentStatisticCollectionJob {
   ComponentStatisticService componentStatisticService
 
   static triggers = {
-    cron name: 'ComponentStatisticCollectionJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:200000
+    cron name: 'ComponentStatisticCollectionJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:700000
   }
 
   def execute() {
