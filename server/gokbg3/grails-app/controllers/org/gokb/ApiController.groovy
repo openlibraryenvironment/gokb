@@ -481,7 +481,21 @@ class ApiController {
       def singleParams = [:]
       def unknown_fields = []
       def other_fields = ["controller","action","max","offset","from"]
-      def defined_types = ["Package", "Org", "JournalInstance", "BookInstance", "DatabaseInstance", "Platform", "TitleInstancePackagePlatform", "TIPP"]
+      def defined_types = [
+        "Package",
+        "Org",
+        "JournalInstance",
+        "Journal",
+        "BookInstance",
+        "Book",
+        "DatabaseInstance",
+        "Database",
+        "Platform",
+        "TitleInstancePackagePlatform",
+        "TIPP",
+        "TitleInstance",
+        "Title"
+      ]
       def id_params = [:]
       def orgRoleParam = ""
       def providerParam = ""
@@ -490,6 +504,7 @@ class ApiController {
       def pkgListStatus = ""
       def pkgNameSort = false
       def acceptedStatus = []
+      def component_type = null
 
       params.each { k, v ->
         if ( k == 'componentType' && v instanceof String ) {
@@ -501,8 +516,20 @@ class ApiController {
             if(v == 'TIPP') {
               final_type = 'TitleInstancePackagePlatform'
             }
+            else if (v == 'Book') {
+              final_type = 'BookInstance'
+            }
+            else if (v == 'Journal') {
+              final_type == 'JournalInstance'
+            }
+            else if (v == 'Database') {
+              final_type == 'DatabaseInstance'
+            }
+            else if (v == 'Title') {
+              final_type == 'TitleInstance'
+            }
 
-            singleParams['componentType'] = final_type
+            component_type = final_type
           }
           else {
             errors['componentType'] = "Requested component type ${v} does not exist"
@@ -591,7 +618,7 @@ class ApiController {
       }
 
       if ( pkgListStatus ) {
-        if ( singleParams['componentType'] && singleParams['componentType'] == 'Package' ) {
+        if ( component_type && component_type == 'Package' ) {
           singleParams['listStatus'] = pkgListStatus
         }
         else {
@@ -604,7 +631,7 @@ class ApiController {
         QueryBuilder statusQuery = QueryBuilders.boolQuery()
 
         acceptedStatus.each {
-          statusQuery.should(QueryBuilders.matchQuery('status', it))
+          statusQuery.should(QueryBuilders.termQuery('status', it))
         }
 
         statusQuery.minimumNumberShouldMatch(1)
@@ -613,11 +640,11 @@ class ApiController {
       }
 
       else {
-        exactQuery.must(QueryBuilders.matchQuery('status', 'Current'))
+        exactQuery.must(QueryBuilders.termQuery('status', 'Current'))
       }
 
       if ( orgRoleParam ) {
-        if ( singleParams['componentType'] && singleParams['componentType'] == 'Org') {
+        if ( component_type && component_type == 'Org') {
           singleParams['roles'] = orgRoleParam
         }
         else {
@@ -626,7 +653,7 @@ class ApiController {
       }
 
       if ( tippPackageId ) {
-        if ( singleParams['componentType'] && singleParams['componentType'] == 'TitleInstancePackagePlatform' ) {
+        if ( component_type && component_type == 'TitleInstancePackagePlatform' ) {
           singleParams['tippPackage'] = tippPackageId
         }
         else {
@@ -635,12 +662,27 @@ class ApiController {
       }
 
       if ( tippTitleId ) {
-        if ( singleParams['componentType'] && singleParams['componentType'] == 'TitleInstancePackagePlatform' ) {
+        if ( component_type && component_type == 'TitleInstancePackagePlatform' ) {
           singleParams['tippTitle'] = tippTitleId
         }
         else {
           errors['linkedTitle'] = "To filter by Title, please add filter componentType=TIPP to the query"
         }
+      }
+
+      if (component_type == "TitleInstance") {
+        QueryBuilder typeQuery = QueryBuilders.boolQuery()
+
+        typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
+        typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
+        typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
+
+        typeQuery.minimumNumberShouldMatch(1)
+
+        exactQuery.must(typeQuery)
+      }
+      else if (component_type) {
+        singleParams['componentType'] = component_type
       }
 
       if (singleParams) {
@@ -678,7 +720,7 @@ class ApiController {
 
         search_action = es_request.execute()
       }
-      else if (!singleParams && !params.label && !id_params){
+      else if ( !singleParams && !component_type && !params.label && !id_params){
         errors['params'] = "No valid parameters found"
       }
 
@@ -727,7 +769,7 @@ class ApiController {
     QueryBuilder idQuery = QueryBuilders.boolQuery()
 
     params.each { k,v ->
-      idQuery.must(QueryBuilders.matchQuery(k, v))
+      idQuery.must(QueryBuilders.termQuery(k, v))
     }
 
     return idQuery
