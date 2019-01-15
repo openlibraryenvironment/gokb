@@ -150,12 +150,12 @@ class WorkflowController {
           this."${action_config.method}"(result.objects_to_action);
           break;
         default:
-          flash.message="Invalid action type information: ${action_config.actionType}";
+          flash.message="Invalid action type information: ${action_config.actionType}".toString();
           break;
       }
     }
     else {
-      flash.message="Unable to locate action config for ${params.selectedBulkAction}";
+      flash.message="Unable to locate action config for ${params.selectedBulkAction}".toString();
       log.warn("Unable to locate action config for ${params.selectedBulkAction}");
       redirect(url: result.ref)
     }
@@ -1704,7 +1704,7 @@ class WorkflowController {
         // Updating all combo.fromComponent
         Combo.executeUpdate("update Combo set toComponent = ? where toComponent = ?",[neworg,otd]);
         Combo.executeUpdate("update Combo set fromComponent = ? where fromComponent = ?",[neworg,otd]);
-        flash.message="Org Deprecation Completed"
+        flash.message="Org Deprecation Completed".toString()
       }
     }
     result
