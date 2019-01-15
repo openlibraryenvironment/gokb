@@ -55,12 +55,14 @@ class ComponentStatisticService {
       for ( int i; i <= to_substract; i++ ) {
 
         def period_start_date = calendar.getTime()
+        def period_month = calendar.get(Calendar.MONTH)
+        def period_year = calendar.get(Calendar.YEAR)
         calendar.add(Calendar.MONTH, 1)
         def period_end_date = calendar.getTime()
 
-        def month_year_string = "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
+        def month_year_string = "${period_month}-${period_year}"
 
-        def existing_stats = ComponentStatistic.executeQuery("from ComponentStatistic where componentType = ? and month = ? and year = ?", [c, calendar.get(Calendar.MONTH), calendar.get(Calendar.YEAR)], [readOnly: true])
+        def existing_stats = ComponentStatistic.executeQuery("from ComponentStatistic where componentType = ? and month = ? and year = ?", [c, period_month, period_year], [readOnly: true])
 
         if ( !existing_stats || existing_stats.size() == 0 || ( offset == 0 && i == to_substract ) || force_update ) {
 
@@ -81,7 +83,7 @@ class ComponentStatisticService {
             if( existing_stats.size() == 1 ) {
               existing_stats[0].numTotal = stats_total_count
               existing_stats[0].numNew = stats_new_count
-              existing_stats[0].save()
+              existing_stats[0].save(failOnError: true, flush:true)
 
               stats_updated++
             }
@@ -90,7 +92,7 @@ class ComponentStatisticService {
             }
           }
           else {
-            def new_statsline = new ComponentStatistic(componentType: c, month: calendar.get(Calendar.MONTH), year: calendar.get(Calendar.YEAR), numTotal: stats_total_count, numNew: stats_new_count).save(failOnError: true, flush:true)
+            def new_statsline = new ComponentStatistic(componentType: c, month: period_month, year: period_year, numTotal: stats_total_count, numNew: stats_new_count).save(failOnError: true, flush:true)
 
             new_stats_created++
           }

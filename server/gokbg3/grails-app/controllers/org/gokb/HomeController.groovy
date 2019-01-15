@@ -116,15 +116,15 @@ class HomeController {
 
         log.debug("Period ${i}")
 
-        calendar.add(Calendar.MONTH, 1)
-
         // X-axis key and val.
         String xkey = result."${widget_name}"."xkey"
-        def xVal = "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
 
         def comp_stats = ComponentStatistic.executeQuery("from ComponentStatistic where componentType = ? and year = ? and month = ?", [component_name, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH)], [readOnly: true])[0]
         def ykeyAll = "${widget_element}all"
         def ykeyNew = "${widget_element}new"
+        def cur_month = calendar.get(Calendar.MONTH) + 1
+
+        def xVal = "${calendar.get(Calendar.YEAR)}-${cur_month < 10 ? '0'+ cur_month : cur_month}"
 
         result."${widget_name}".'ykeys' = [ykeyAll, ykeyNew]
         result."${widget_name}".'labels' = ["Total ${widget_name}", "New ${widget_name}"]
@@ -136,6 +136,8 @@ class HomeController {
           "${ykeyAll}" : comp_stats?.numTotal,
           "${ykeyNew}" : comp_stats?.numNew
         ]
+
+        calendar.add(Calendar.MONTH, 1)
 
         // Add to the data.
         wData."${xVal}".putAll(entry)
