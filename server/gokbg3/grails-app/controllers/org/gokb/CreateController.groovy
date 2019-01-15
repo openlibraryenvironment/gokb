@@ -91,13 +91,14 @@ class CreateController {
                 if ( pprop instanceof OneToOne) {
                   log.debug("one-to-one");
                   def related_item = null
-                  if (pprop.getType().name == 'org.gokb.cred.RefdataValue') {
+
+                  related_item = genericOIDService.resolveOID(p.value);
+
+                  if (!related_item && pprop.getType().name == 'org.gokb.cred.RefdataValue') {
                     def rdc = classExaminationService.deriveCategoryForProperty(params.cls, p.key)
                     related_item = RefdataCategory.lookup(rdc, p.value)
                   }
-                  else {
-                    related_item = genericOIDService.resolveOID(p.value);
-                  }
+
                   result.newobj[p.key] = related_item
                   propertyWasSet = propertyWasSet || (related_item != null)
                 }
@@ -126,26 +127,6 @@ class CreateController {
           if ( result.newobj.hasProperty('postCreateClosure') ) {
             log.debug("Created object has a post create closure.. call it");
             result.newobj.postCreateClosure.call([user:user])
-          }
-
-
-          log.debug("Setting combos..");
-
-          if (result.displayobj instanceof KBComponent) {
-            // The save completed OK.. if we want to be really cool, we can now loop through the properties
-            // and set any combos on the object
-            boolean changed=false
-            params.each { p ->
-              if ( combo_properties != null && combo_properties.contains(p.key) ) {
-                log.debug("Deal with a combo doodah ${p.key}:${p.value}");
-                if ( ( p.value != "") && ( p.value != null ) ) {
-                  def related_item = genericOIDService.resolveOID(p.value);
-                  result.newobj[p.key] = related_item
-                  changed = true
-                  propertyWasSet = propertyWasSet || (related_item != null)
-                }
-              }
-            }
           }
 
           // Add an error message here if no property was set via data sent through from the form.
@@ -188,6 +169,7 @@ class CreateController {
                 if (errorMessage) {
                   flash.message.add(errorMessage)
                 }else{
+                  flash.message.add("There has been an error creating the component. Please try again.")
                   log.debug("Found no message for error code ${eo}")
                 }
               }
@@ -195,6 +177,28 @@ class CreateController {
               result.uri = createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
             } else {
               result.newobj.save(flush:true)
+
+              log.debug("Setting combos..");
+
+              if (result.newobj instanceof KBComponent) {
+                // The save completed OK.. if we want to be really cool, we can now loop through the properties
+                // and set any combos on the object
+                boolean changed=false
+                params.each { p ->
+                  def combo_properties = result.newobj.getComboTypeValue(p.key)
+
+                  if ( combo_properties != null ) {
+                    log.debug("Deal with a combo doodah ${p.key}:${p.value}");
+                    if ( ( p.value != "") && ( p.value != null ) ) {
+                      def related_item = genericOIDService.resolveOID(p.value);
+                      result.newobj[p.key] = related_item
+                      changed = true
+                    }
+                  }
+                  result.newobj.save(flush:true)
+                }
+              }
+
               result.uri = createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
             }
           }
@@ -204,7 +208,7 @@ class CreateController {
         }
       }
     }
-    log.debug("CreateController::process return");
+    log.debug("CreateController::process return ${result}");
 
     render result as JSON
   }

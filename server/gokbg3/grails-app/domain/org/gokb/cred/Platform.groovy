@@ -144,7 +144,7 @@ class Platform extends KBComponent {
   def availableActions() {
     [ 
       [code:'platform::replacewith', label:'Replace platform with...', perm:'admin'],
-      [code:'platform::deleteSoft', label:'Delete Platform', perm:'delete'],
+      [code:'method::deleteSoft', label:'Delete Platform', perm:'delete'],
       [code:'method::retire', label:'Retire Platform (with hosted TIPPs)', perm:'admin']
     ]
   }
@@ -155,7 +155,6 @@ class Platform extends KBComponent {
    *    platformUrl:'platformUrl',
    *  }
    */
-
 
   public void retire (context) {
     log.debug("platform::retire");

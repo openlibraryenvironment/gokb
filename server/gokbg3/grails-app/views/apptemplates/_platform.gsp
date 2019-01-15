@@ -10,8 +10,13 @@
     <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditableRefData owner="${d}" field="status"
-      config="KBComponent.Status" />
+    <g:if test="${d.isDeletable()}">
+      <g:xEditableRefData owner="${d}" field="status"
+        config='KBComponent.Status' />
+    </g:if>
+    <g:else>
+      ${d.status}
+    </g:else>
   </dd>
 
   <dt> <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel> </dt>

@@ -36,7 +36,7 @@
       </thead>
       <tbody>
         <g:each in="${packages}" var="pkg">
-          <g:set var="titles" value="${pkg.getTitles().size()}" />
+          <g:set var="titles" value="${pkg.getTitles(true, 0).size()}" />
           <tr>
             <td>
               <g:link controller="resource" action="show" id="${pkg?.getClassName()+':'+pkg?.id}">
