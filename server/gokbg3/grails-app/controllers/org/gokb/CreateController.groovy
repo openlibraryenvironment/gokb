@@ -169,10 +169,15 @@ class CreateController {
                 if (errorMessage) {
                   flash.message.add(errorMessage)
                 }else{
-                  flash.message.add("There has been an error creating the component. Please try again.")
                   log.debug("Found no message for error code ${eo}")
                 }
               }
+
+              if ( flash.message.size() == 0 ) {
+                flash.message.add("There has been an error creating the component. Please try again.")
+              }
+
+              result.errors = flash.message
               
               result.uri = createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
             } else {

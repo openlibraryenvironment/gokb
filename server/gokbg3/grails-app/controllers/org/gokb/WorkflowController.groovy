@@ -27,6 +27,7 @@ class WorkflowController {
     'method::RRClose':[actionType:'simple' ],
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
     'title::merge':[actionType:'workflow', view:'titleMerge' ],
+    'tipp::retire':[actionType:'workflow', view:'tippRetire' ],
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
@@ -1164,7 +1165,7 @@ class WorkflowController {
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue,
                                    url:newtipp.url
-                                ]).save()
+                                ]).save(flush:true, failOnError:true)
 
         if ( newtipp.review == 'on' ) {
           log.debug("User requested a review request be generated for this new tipp");
@@ -1177,7 +1178,7 @@ class WorkflowController {
 
       if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
         log.debug("Retiring old tipp");
-        current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+        current_tipp.status = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
         if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
           ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
         }
@@ -1204,7 +1205,7 @@ class WorkflowController {
       current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue;
 
       log.debug("Saving current tipp");
-      current_tipp.save()
+      current_tipp.save(flush:true, failOnError:true)
     }
 
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
@@ -1242,6 +1243,32 @@ class WorkflowController {
       }
     }
     render view:'platformReplacementResult' , model:[result:result]
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def processTippRetire() {
+    log.debug("processTippRetire ${params}")
+    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
+    def result = [:]
+
+    params.list('beforeTipps').each { title_oid ->
+      log.debug("process ${title_oid}");
+
+      def tipp_obj = genericOIDService.resolveOID2(title_oid)
+
+      tipp_obj.status = retired_status
+
+      if ( params.endDateSelect == 'select' && params.selectedDate ) {
+        tipp_obj.accessEndDate = params.date('selectedDate', 'dd-MM-yyyy')
+      }
+      else if ( params.endDateSelect == 'now') {
+        tipp_obj.accessEndDate = new Date()
+      }
+
+      tipp_obj.save(flush:true, failOnError:true)
+    }
+
+    redirect(url: params.ref)
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
