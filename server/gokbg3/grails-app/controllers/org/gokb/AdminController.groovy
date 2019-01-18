@@ -283,6 +283,9 @@ class AdminController {
           if (job_res && job_res instanceof Date) {
             j.endTime = j.get()
           }
+          else if (job_res && j.messages.size() == 0) {
+            j.message(job_res)
+          }
         } catch (CancellationException e) {
           log.debug("Cancelled")
         }

@@ -31,11 +31,17 @@
             <g:if test="${v.isCancelled()}">
               Cancelled
             </g:if>
-            <g:elseif test="${v.isDone()}">
+            <g:elseif test="${v.isDone() && v.endTime}">
               Finished
             </g:elseif>
+            <g:elseif test="${v.isDone() && v.messages}">
+              Error
+            </g:elseif>
+            <g:elseif test="${v.isDone()}">
+              Done
+            </g:elseif>
             <g:else>
-              Running
+              Not Done
             </g:else>
           </td>
           <td>${v.endTime}</td>
@@ -46,7 +52,7 @@
             messages: 
             <ul>
               <g:each in="${v.messages}" var="m">
-                <li>${m.timestamp} ${m.message}</li>
+                <li>${m.message}</li>
               </g:each>
             </ul>
           </td>

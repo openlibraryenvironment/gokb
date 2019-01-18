@@ -74,6 +74,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/fwk/**',                  access: ['ROLE_USER']],
   [pattern: '/user/**',                 access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/user/search',             access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
+  [pattern: '/user/edit/**',            access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/role/**',                 access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/securityInfo/**',         access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/registrationCode/**',     access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
@@ -88,7 +89,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
 
 
 appDefaultPrefs {
-  globalDateFormat='dd MMMM yyyy'
+  globalDateFormat='yyyy-MM-dd'
 }
 
 globalSearchTemplates = [
@@ -1146,7 +1147,9 @@ globalSearchTemplates = [
 
 possible_date_formats = [
     new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('yyyy-MM-dd'),
     new SimpleDateFormat('dd/MM/yyyy'),
+    new SimpleDateFormat('dd.MM.yyyy'),
     new SimpleDateFormat('dd/MM/yy'),
     new SimpleDateFormat('yyyy/MM'),
     new SimpleDateFormat('yyyy')

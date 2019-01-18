@@ -3168,9 +3168,11 @@ $(function(){
                             $el.append(fillItems($('<optgroup>', attr), data[i].children)); 
                         } else {
                             attr.value = data[i].value;
+
                             if(data[i].disabled) {
                                 attr.disabled = true;
                             }
+
                             $el.append($('<option>', attr).text(data[i].text)); 
                         }
                     }

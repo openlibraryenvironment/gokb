@@ -409,10 +409,13 @@ class PackagesController {
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
+          def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
           query.setReadOnly(true)
           query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
-
+          query.setParameter('sd', status_deleted)
+          query.setParameter('ct', combo_tipps)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
 
@@ -501,9 +504,13 @@ class PackagesController {
                      'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
 
           def session = sessionFactory.getCurrentSession()
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
+          def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
           query.setReadOnly(true)
           query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
+          query.setParameter('sd', status_deleted)
+          query.setParameter('ct', combo_tipps)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
 

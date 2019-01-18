@@ -137,7 +137,7 @@ class TitleInstance extends KBComponent {
   public Org getCurrentPublisher() {
     def result = null;
     def publisher_combos = getCombosByPropertyName('publisher')
-    def highest_end_date = null;
+    def highest_end_date = null
 
     publisher_combos.each { Combo pc ->
       if ( ( pc.endDate == null ) ||
@@ -147,12 +147,16 @@ class TitleInstance extends KBComponent {
         if (isComboReverse('publisher')) {
           if ( pc.fromComponent.status?.value == 'Deleted' ) {
           }
+          else if (result && !highest_end_date) {
+          }
           else {
             highest_end_date = pc.endDate
             result = pc.fromComponent
           }
         } else {
           if ( pc.toComponent.status?.value == 'Deleted' ) {
+          }
+          else if (result && !highest_end_date) {
           }
           else {
             highest_end_date = pc.endDate
@@ -224,6 +228,12 @@ class TitleInstance extends KBComponent {
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def status_filter = null
+    
+    if(params.filter1) {
+      status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
+    }
+    
     def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
@@ -231,7 +241,7 @@ class TitleInstance extends KBComponent {
 
     if ( ql ) {
       ql.each { t ->
-        if( !params.filter1 || t.status.value == params.filter1 ){
+        if( !status_filter || t.status == status_filter ){
           result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
         }
       }

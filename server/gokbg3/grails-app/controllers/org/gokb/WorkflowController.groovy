@@ -27,6 +27,7 @@ class WorkflowController {
     'method::RRClose':[actionType:'simple' ],
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
     'title::merge':[actionType:'workflow', view:'titleMerge' ],
+    'tipp::retire':[actionType:'workflow', view:'tippRetire' ],
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
@@ -150,12 +151,12 @@ class WorkflowController {
           this."${action_config.method}"(result.objects_to_action);
           break;
         default:
-          flash.message="Invalid action type information: ${action_config.actionType}";
+          flash.message="Invalid action type information: ${action_config.actionType}".toString();
           break;
       }
     }
     else {
-      flash.message="Unable to locate action config for ${params.selectedBulkAction}";
+      flash.message="Unable to locate action config for ${params.selectedBulkAction}".toString();
       log.warn("Unable to locate action config for ${params.selectedBulkAction}");
       redirect(url: result.ref)
     }
@@ -169,6 +170,8 @@ class WorkflowController {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def combo_ti_tipps = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
     def titleChangeData = [:]
     titleChangeData.title_ids = []
@@ -196,11 +199,11 @@ class WorkflowController {
       titleChangeData.title_ids.add(title_obj.id)
 
       def tipps = TitleInstancePackagePlatform.executeQuery(
-                         'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ?',
-                         [title_obj, 'Deleted','TitleInstance.Tipps']);
+                         'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status <> ? and c.type = ?',
+                         [title_obj, status_deleted, combo_ti_tipps]);
       tipps.each { tipp ->
 
-        if ( ( tipp.status?.value != 'Deleted' ) && ( tipp.pkg.scope?.value != 'GOKb Master' ) ) {
+        if ( ( tipp.status != status_deleted ) && ( tipp.pkg.scope?.value != 'GOKb Master' ) ) {
 
           log.debug("Add tipp to discontinue ${tipp}");
 
@@ -1164,7 +1167,7 @@ class WorkflowController {
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue,
                                    url:newtipp.url
-                                ]).save()
+                                ]).save(flush:true, failOnError:true)
 
         if ( newtipp.review == 'on' ) {
           log.debug("User requested a review request be generated for this new tipp");
@@ -1177,7 +1180,7 @@ class WorkflowController {
 
       if ( params["oldtipp_close:${tipp_map_entry.key}"] == 'on' ) {
         log.debug("Retiring old tipp");
-        current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+        current_tipp.status = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
         if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
           ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
         }
@@ -1204,7 +1207,7 @@ class WorkflowController {
       current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue;
 
       log.debug("Saving current tipp");
-      current_tipp.save()
+      current_tipp.save(flush:true, failOnError:true)
     }
 
     activity_record.status = RefdataCategory.lookupOrCreate('Activity.Status', 'Complete')
@@ -1242,6 +1245,32 @@ class WorkflowController {
       }
     }
     render view:'platformReplacementResult' , model:[result:result]
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def processTippRetire() {
+    log.debug("processTippRetire ${params}")
+    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
+    def result = [:]
+
+    params.list('beforeTipps').each { title_oid ->
+      log.debug("process ${title_oid}");
+
+      def tipp_obj = genericOIDService.resolveOID2(title_oid)
+
+      tipp_obj.status = retired_status
+
+      if ( params.endDateSelect == 'select' && params.selectedDate ) {
+        tipp_obj.accessEndDate = params.date('selectedDate', 'yyyy-MM-dd')
+      }
+      else if ( params.endDateSelect == 'now') {
+        tipp_obj.accessEndDate = new Date()
+      }
+
+      tipp_obj.save(flush:true, failOnError:true)
+    }
+
+    redirect(url: params.ref)
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -1463,6 +1492,8 @@ class WorkflowController {
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     def export_date = sdf.format(new Date());
 
     if ( packages_to_export.size() == 1 ) {
@@ -1521,8 +1552,8 @@ class WorkflowController {
           // query.setParameter('c':'Package.Tipps',StringType.class)
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
-                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
-                         [pkg, 'Deleted', 'Package.Tipps'],[readOnly: true, fetchSize: 30]);
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status <> ? and c.type = ? order by tipp.id',
+                         [pkg, status_deleted, combo_pkg_tipps],[readOnly: true, fetchSize: 30]);
 
 
 
@@ -1584,6 +1615,8 @@ class WorkflowController {
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     def export_date = sdf.format(new Date());
 
     if ( packages_to_export.size() == 1 ) {
@@ -1615,8 +1648,8 @@ class WorkflowController {
                      'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
-                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
-                         [pkg, 'Deleted', 'Package.Tipps']);
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status <> ? and c.type = ? order by tipp.id',
+                         [pkg, status_deleted, combo_pkg_tipps]);
 
 
 
@@ -1704,7 +1737,7 @@ class WorkflowController {
         // Updating all combo.fromComponent
         Combo.executeUpdate("update Combo set toComponent = ? where toComponent = ?",[neworg,otd]);
         Combo.executeUpdate("update Combo set fromComponent = ? where fromComponent = ?",[neworg,otd]);
-        flash.message="Org Deprecation Completed"
+        flash.message="Org Deprecation Completed".toString()
       }
     }
     result

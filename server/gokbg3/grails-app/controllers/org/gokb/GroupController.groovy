@@ -58,12 +58,12 @@ class GroupController {
 
       def pkg_sort= params.pkg_sort?:'name'
       def pkg_sort_order = params.pkg_sort_order?:'asc'
+      def pkg_curgroup_rdv = RefdataCategory.lookup('Combo.Type', 'Package.CuratoryGroups')
 
+      def cg_packages_hql = " from Package as p where exists ( select c from p.outgoingCombos as c where c.toComponent = :cg and c.type = :ct)"
 
-      def cg_packages_hql = " from Package as p where exists ( select c from p.outgoingCombos as c where c.toComponent = ? and c.type.value = 'Package.CuratoryGroups')"
-
-      result.package_count = Package.executeQuery('select count(p) '+cg_packages_hql,[result.group])[0];
-      result.packages = Package.executeQuery('select p '+cg_packages_hql + " order by ${pkg_sort} ${pkg_sort_order}",[result.group],
+      result.package_count = Package.executeQuery('select count(p) '+cg_packages_hql,[cg: result.group, ct: pkg_curgroup_rdv])[0];
+      result.packages = Package.executeQuery('select p '+cg_packages_hql + " order by ${pkg_sort} ${pkg_sort_order}",[cg: result.group, ct: pkg_curgroup_rdv],
         [max:result.max,offset:result.pkg_offset]);
 
       result.pkg_page_max = (result.package_count / result.max).toInteger() + (result.package_count % result.max > 0 ? 1 : 0)

@@ -128,6 +128,7 @@ class OaiController {
 
     def writer = new StringWriter()
     def xml = new MarkupBuilder(writer)
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
 
     def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
@@ -166,7 +167,7 @@ class OaiController {
               identifier("${record.class.name}:${record.id}")
               uuid(record.uuid)
               datestamp(sdf.format(record.lastUpdated))
-              if (record.status.value == 'Deleted') {
+              if (record.status == status_deleted) {
                 status('deleted')
               }
             }
@@ -476,6 +477,7 @@ class OaiController {
       def records = []
       def order_by_clause = 'order by o.lastUpdated'
       def returnAttrs = true
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def request_map = params
       request_map.keySet().removeAll(['controller','action','id'])
 
@@ -691,7 +693,7 @@ class OaiController {
                     identifier("${rec.class.name}:${rec.id}")
                     uuid(rec.uuid)
                     datestamp(sdf.format(rec.lastUpdated))
-                    if (rec.status.value == 'Deleted') {
+                    if (rec.status == status_deleted) {
                       status('deleted')
                     }
                   }

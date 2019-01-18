@@ -75,7 +75,8 @@ class Office extends KBComponent {
   static def oaiConfig = [
     id:'offices',
     textDescription:'Office repository for GOKb',
-    query:" from Office as o where o.status.value != 'Deleted'",
+    query:" from Office as o ",
+    statusFilter: ["Deleted"],
     pageSize:20
   ]
 

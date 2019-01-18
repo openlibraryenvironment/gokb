@@ -57,6 +57,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def getRefdata() {
+    log.debug("AjaxController::getRefdata ${params}")
 
     def result = []
 
@@ -102,7 +103,7 @@ class AjaxSupportController {
 
       rq.each { it ->
         def o = ClassUtils.deproxy(it)
-        result.add([id:"${o.class.name}:${o.id}", text: o[config.cols[0]], value:o[config.cols[0]]]);
+        result.add([id:"${o.class.name}:${o.id}", text: o[config.cols[0]], value:"${o.class.name}:${o.id}"]);
       }
     }
 
@@ -209,7 +210,7 @@ class AjaxSupportController {
 
     if ( domain_class && (domain_class.getClazz().isTypeCreatable() || domain_class.getClazz().isTypeAdministerable()) ) {
 
-      if ( contextObj && contextObj.isEditable() ) {
+      if ( (contextObj && contextObj.isEditable()) || contextObj.id == springSecurityService.principal.id ) {
         log.debug("Create a new instance of ${params.__newObjectClass}");
 
         if(params.__newObjectClass == "org.gokb.cred.KBComponentVariantName"){
@@ -415,7 +416,7 @@ class AjaxSupportController {
     log.debug("unlinkManyToMany(${params})");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
-    if ( contextObj && contextObj.isEditable()) {
+    if ( (contextObj && contextObj.isEditable()) || contextObj.id == springSecurityService.principal.id ) {
       def item_to_remove = resolveOID2(params.__itemToRemove)
       if ( item_to_remove ) {
         if ( ( item_to_remove != null ) && ( item_to_remove.hasProperty('hasByCombo') ) && ( item_to_remove.hasByCombo != null ) ) {

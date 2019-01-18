@@ -96,8 +96,9 @@ class Package extends KBComponent {
     descriptionURL (nullable:true, blank:true)
     name (validator: { val, obj ->
       if (val) {
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def dupes = Package.findByNameIlike(val);
-        if ( dupes && dupes != obj ) {
+        if ( dupes && dupes != obj && dupes.status != status_deleted) {
           return ['notUnique']
         }
       } else {
@@ -109,12 +110,18 @@ class Package extends KBComponent {
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def status_filter = null
+    
+    if(params.filter1) {
+      status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
+    }
+    
     def ql = null;
     ql = Package.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 
     if ( ql ) {
       ql.each { t ->
-        if( !params.filter1 || t.status?.value == params.filter1 ){
+        if( !status_filter || t.status == status_filter ){
           result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
         }
       }
@@ -264,7 +271,8 @@ select tipp.id,
        tipp.lastUpdated,
        tipp.uuid,
        title.uuid,
-       plat.uuid
+       plat.uuid,
+       title.status
     from TitleInstancePackagePlatform as tipp, 
          Combo as hostPlatformCombo, 
          Combo as titleCombo,  
@@ -436,6 +444,7 @@ select tipp.id,
               builder.'title' (['id':tipp[2],'uuid':tipp[22]]) {
                 builder.'name' (tipp[1]?.trim())
                 builder.'type' (getTitleClass(tipp[2]))
+                builder.'status' (tipp[24])
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
                     builder.'identifier'('namespace':tid[0], 'value':tid[1], 'datatype':tid[2])

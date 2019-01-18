@@ -6,7 +6,7 @@ class ReviewRequestNotificationJob {
 
   // Every five minutes
   static triggers = {
-    cron name: 'ReviewRequestNotificationJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:60000
+    cron name: 'ReviewRequestNotificationJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:500000
   }
 
   def execute() {

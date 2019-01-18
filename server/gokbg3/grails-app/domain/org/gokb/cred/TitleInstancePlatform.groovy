@@ -45,6 +45,7 @@ class TitleInstancePlatform extends KBComponent {
   @Transient
   public static ensure(title, platform, url) {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim().length() > 0 ) ) {
+      def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       def r = TitleInstancePlatform.executeQuery('''select tipl
               from TitleInstancePlatform as tipl,
               Combo as titleCombo,
@@ -53,7 +54,8 @@ class TitleInstancePlatform extends KBComponent {
               and titleCombo.fromComponent=?
               and platformCombo.toComponent=tipl
               and platformCombo.fromComponent=?
-              ''',[title, platform])
+              and tipl.status=?
+              ''',[title, platform, status_current])
 
       if ( r.size() == 0 ) {
         def tipl = new TitleInstancePlatform(url:url).save()

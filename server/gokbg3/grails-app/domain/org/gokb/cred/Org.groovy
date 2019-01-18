@@ -11,7 +11,8 @@ class Org extends KBComponent {
     [
       [code:'org::deprecateReplace', label:'Replace Publisher With...'],
       [code:'org::deprecateDelete', label:'Remove Publisher name from title records...'],
-      [code:'org::deleteSoft', label:'Delete Publisher', perm:'delete']
+      [code:'method::deleteSoft', label:'Delete Org', perm:'delete'],
+      [code:'method::retire', label:'Retire Org', perm:'admin']
     ]
   }
 
@@ -83,12 +84,18 @@ class Org extends KBComponent {
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def status_filter = null
+    
+    if(params.filter1) {
+      status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
+    }
+    
     def ql = null;
     ql = Org.findAllByNameIlikeAndStatusNotEqual("${params.q}%",status_deleted, params)
 
     if ( ql ) {
       ql.each { t ->
-        if( !params.filter1 || t.status.value == params.filter1 ){
+        if( !status_filter || t.status == status_filter ){
           result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
         }
       }

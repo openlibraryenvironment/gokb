@@ -70,7 +70,14 @@ class IntegrationController {
       }
     }
 
-    group.save(flush: true, failOnError:true)
+    if( group.save(flush: true, failOnError:true) ) {
+      result.message = "Created/looked up group ${group}"
+      result.groupId = group.id
+    }
+    else {
+      result.message = "Could not reference group ${name}"
+      result.result = 'ERROR'
+    }
 
     render result as JSON
   }
@@ -115,7 +122,8 @@ class IntegrationController {
             if ( located_entries?.size() == 0 ) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
               def variant_normname = GOKbTextUtils.normaliseString( name )
-              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
+              def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
 
               if ( located_entries?.size() == 0 ) {
 
@@ -243,7 +251,7 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertOrg() {
     log.debug("assertOrg, request.json = ${request.JSON}");
-    def result=[:]
+    def result=[result: 'OK']
     result.status = true;
     def assert_errors = false;
 
@@ -257,6 +265,7 @@ class IntegrationController {
 
           // No match. One more attempt to match on norm_name only.
           def org_by_name = Org.findAllByNormname( orgNormName )
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
           if ( org_by_name.size() == 1 ) {
             located_or_new_org = org_by_name[0]
@@ -265,7 +274,7 @@ class IntegrationController {
           if ( located_or_new_org == null && org_by_name.size() == 0 ) {
 
             def variant_normname = GOKbTextUtils.normaliseString( orgName )
-            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
+            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
 
             if(candidate_orgs.size() == 1){
               located_or_new_org = candidate_orgs[0]
@@ -378,6 +387,8 @@ class IntegrationController {
 
       if ( located_or_new_org.save(flush:true, failOnError : true) ) {
         log.debug("Saved ok");
+        result.message = "Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
+        result.orgId = located_or_new_org.id
       }
       else {
         log.debug("Save failed ${located_or_new_org}");
@@ -390,13 +401,12 @@ class IntegrationController {
         return
       }
 
-      result.msg="Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
-
     }
     catch ( Exception e ) {
       log.error("Unexpected error importing org",e)
-      result.msg="ERROR: ${e}";
-      result.status=false
+      result.message ="ERROR: ${e}";
+      result.result = 'ERROR'
+      result.status = false
     }
     render result as JSON
   }
@@ -914,6 +924,7 @@ class IntegrationController {
             }
             log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
             result.message = "Created/Updated package ${request.JSON.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
+            result.pkgId = the_pkg.id
             log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
           }
           else {
@@ -937,6 +948,7 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
+    def created = false
     User user = springSecurityService.currentUser
     if ( ( request.JSON.platformUrl ) &&
          ( request.JSON.platformUrl.trim().length() > 0 ) &&
@@ -947,31 +959,48 @@ class IntegrationController {
       if ( p == null ) {
 
         // Attempt normname lookup.
-        p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) ) ?: new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true)
-      }
+        p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) )
 
-      log.debug("created or looked up platform ${p}!")
-
-      setAllRefdata ([
-        'software', 'service'
-      ], request.JSON, p)
-      ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
-
-      if (request?.JSON?.provider) {
-        def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
-        if (prov) {
-          p.provider = prov
+        if (!p) {
+          new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true)
+          created = true
         }
       }
 
-      // Add the core data.
-      ensureCoreData(p, request.JSON)
+      if (p) {
+        log.debug("created or looked up platform ${p}!")
 
-//      if ( changed ) {
-//        p.save(flush:true, failOnError:true);
-//      }
-      result.message = "Created/looked up platform ${p}"
-      result.platform_id = p.id;
+        setAllRefdata ([
+          'software', 'service'
+        ], request.JSON, p)
+        ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
+
+        if (request?.JSON?.provider) {
+          def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
+          if (prov) {
+            p.provider = prov
+          }
+        }
+
+        // Add the core data.
+        ensureCoreData(p, request.JSON)
+
+  //      if ( changed ) {
+  //        p.save(flush:true, failOnError:true);
+  //      }
+        if (created) {
+          result.message = "Created platform ${p}"
+        }
+        else {
+          result.message = "Looked up platform ${p}"
+        }
+
+        result.platformId = p.id;
+      }
+      else {
+        result.message = "Could not crossreference platform ${request.JSON}"
+        result.result = 'ERROR'
+      }
     }
     render result as JSON
   }
@@ -1250,9 +1279,16 @@ class IntegrationController {
 //         }
       }
     }
+    catch (grails.validation.ValidationException ve) {
+      log.error("Exception attempting to cross reference title",ve);
+      result.result="ERROR"
+      result.exception=ve.toString()
+      result.message=ve.getMessage()
+      result.baddata=titleObj
+      log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+    }
     catch ( Exception e ) {
       log.error("Exception attempting to cross reference title",e);
-      response.status = 400
       result.result="ERROR"
       result.message=e.toString()
       result.baddata=titleObj
@@ -1282,11 +1318,12 @@ class IntegrationController {
         // Lookup the publisher.
         def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
         Org publisher = Org.findByNormname(norm_pub_name)
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
 
-        if(!publisher || publisher.status.value == 'Deleted'){
+        if(!publisher || publisher.status == status_deleted){
           def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
 
           if(candidate_orgs.size() == 1){
             publisher = candidate_orgs[0]

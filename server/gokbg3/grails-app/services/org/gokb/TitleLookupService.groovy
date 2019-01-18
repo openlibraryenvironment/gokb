@@ -828,6 +828,8 @@ class TitleLookupService {
       Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
   
       def start_time = System.currentTimeMillis();
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def combo_id_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
   
       def bindvars = []
       StringWriter sw = new StringWriter()
@@ -860,8 +862,9 @@ class TitleLookupService {
   
   
       if ( ctr > 0 ) {
-        sw.write(" ) and c.type.value=?");
-        bindvars.add('KBComponent.Ids');
+        sw.write(" ) and c.type=? and c.fromComponent.status != ?");
+        bindvars.add(combo_id_type);
+        bindvars.add(status_deleted);
         def qry = sw.toString();
         log.debug("Run: ${qry} ${bindvars}");
         result = TitleInstance.executeQuery(qry,bindvars);
@@ -916,7 +919,9 @@ class TitleLookupService {
   }
 
   def getComponentsForIdentifier(identifier) {
+    
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     // was identifier.identifiedComponents
-    KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp',[id:identifier,tp:'KBComponent.Ids']);
+    KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp and c.fromComponent.status <> :del',[id:identifier,tp:'KBComponent.Ids', del: status_deleted]);
   }
 }

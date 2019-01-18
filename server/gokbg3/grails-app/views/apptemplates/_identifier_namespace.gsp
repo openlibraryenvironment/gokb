@@ -7,4 +7,7 @@
 
   <dt> <g:annotatedLabel owner="${d}" property="family">Category</g:annotatedLabel> </dt>
   <dd> <g:xEditable class="ipe" owner="${d}" field="family" /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="pattern">Pattern</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="pattern" /> </dd>
 </dl>

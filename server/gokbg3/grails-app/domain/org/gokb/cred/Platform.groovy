@@ -53,8 +53,9 @@ class Platform extends KBComponent {
     passwordAuthentication  (nullable:true, blank:false)
     name (validator: { val, obj ->
       if (val) {
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def dupes = Platform.findByNameIlike(val);
-        if ( dupes && dupes != obj ) {
+        if ( dupes && dupes != obj && dupes.status != status_deleted ) {
           return ['notUnique']
         }
       } else {
@@ -127,12 +128,18 @@ class Platform extends KBComponent {
   static def refdataFind(params) {
     def result = []; 
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def status_filter = null
+  
+    if(params.filter1) {
+      status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
+    }
+    
     def ql = null;
     ql = Platform.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 
     if ( ql ) { 
       ql.each { t ->
-        if( !params.filter1 || t.status.value == params.filter1 ){
+        if( !status_filter || t.status == status_filter ){
           result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
         }
       }   
@@ -144,7 +151,7 @@ class Platform extends KBComponent {
   def availableActions() {
     [ 
       [code:'platform::replacewith', label:'Replace platform with...', perm:'admin'],
-      [code:'platform::deleteSoft', label:'Delete Platform', perm:'delete'],
+      [code:'method::deleteSoft', label:'Delete Platform', perm:'delete'],
       [code:'method::retire', label:'Retire Platform (with hosted TIPPs)', perm:'admin']
     ]
   }
@@ -155,7 +162,6 @@ class Platform extends KBComponent {
    *    platformUrl:'platformUrl',
    *  }
    */
-
 
   public void retire (context) {
     log.debug("platform::retire");

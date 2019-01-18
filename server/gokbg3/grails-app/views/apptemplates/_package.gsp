@@ -31,7 +31,7 @@
     <dd>
       <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
     </dd>
-    <g:if test="${d.status}">
+    <g:if test="${d}">
       <dt>
         <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
       </dt>

@@ -5,12 +5,14 @@ class IdentifierNamespace {
 
   String value
   RefdataValue  datatype
+  String pattern
   String family
 
   static mapping = {
     value column:'idns_value'
     datatype column:'idns_datatype'
     family column:'idns_family'
+    pattern column:'idns_pattern'
   }
 
   static constraints = {
@@ -18,6 +20,7 @@ class IdentifierNamespace {
     value (nullable:true, blank:false, unique:true)
     datatype (nullable:true, blank:false)
     family (nullable:true, blank:false)
+    pattern (nullable:true, blank:false)
   }
 
   @Override
