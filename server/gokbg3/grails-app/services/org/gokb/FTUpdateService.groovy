@@ -170,6 +170,8 @@ class FTUpdateService {
         result.cpname = kbc.provider?.name
 
         result.provider = kbc.provider ? "${kbc.provider.class?.name}:${kbc.provider?.id}" : ""
+
+        result.platformName = kbc.nominalPlatform?.name
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
