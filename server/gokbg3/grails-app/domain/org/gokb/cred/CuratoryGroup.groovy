@@ -34,8 +34,9 @@ class CuratoryGroup extends KBComponent {
     owner (nullable:true, blank:false)
     name (validator: { val, obj ->
       if (val) {
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def dupes = CuratoryGroup.findByNameIlike(val);
-        if ( dupes && dupes != obj ) {
+        if ( dupes && dupes != obj && dupes.status != status_deleted) {
           return ['notUnique']
         }
       } else {

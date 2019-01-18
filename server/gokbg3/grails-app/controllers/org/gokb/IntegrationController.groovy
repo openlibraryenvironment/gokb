@@ -122,7 +122,8 @@ class IntegrationController {
             if ( located_entries?.size() == 0 ) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
               def variant_normname = GOKbTextUtils.normaliseString( name )
-              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
+              def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
 
               if ( located_entries?.size() == 0 ) {
 
@@ -264,6 +265,7 @@ class IntegrationController {
 
           // No match. One more attempt to match on norm_name only.
           def org_by_name = Org.findAllByNormname( orgNormName )
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
           if ( org_by_name.size() == 1 ) {
             located_or_new_org = org_by_name[0]
@@ -272,7 +274,7 @@ class IntegrationController {
           if ( located_or_new_org == null && org_by_name.size() == 0 ) {
 
             def variant_normname = GOKbTextUtils.normaliseString( orgName )
-            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
+            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
 
             if(candidate_orgs.size() == 1){
               located_or_new_org = candidate_orgs[0]
@@ -1277,9 +1279,16 @@ class IntegrationController {
 //         }
       }
     }
+    catch (grails.validation.ValidationException ve) {
+      log.error("Exception attempting to cross reference title",ve);
+      result.result="ERROR"
+      result.exception=ve.toString()
+      result.message=ve.getMessage()
+      result.baddata=titleObj
+      log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+    }
     catch ( Exception e ) {
       log.error("Exception attempting to cross reference title",e);
-      response.status = 400
       result.result="ERROR"
       result.message=e.toString()
       result.baddata=titleObj
@@ -1309,11 +1318,12 @@ class IntegrationController {
         // Lookup the publisher.
         def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
         Org publisher = Org.findByNormname(norm_pub_name)
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
 
-        if(!publisher || publisher.status.value == 'Deleted'){
+        if(!publisher || publisher.status == status_deleted){
           def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
 
           if(candidate_orgs.size() == 1){
             publisher = candidate_orgs[0]

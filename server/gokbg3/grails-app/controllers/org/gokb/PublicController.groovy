@@ -37,18 +37,20 @@ class PublicController {
     def result = [:]
     if ( params.id ) {
       def pkg_id_components = params.id.split(':');
-      def pkg_id = pkg_id_components[1]
-      def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
-      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-      result.pkg = Package.get(pkg_id);
-      result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id=?',[Long.parseLong(pkg_id)])
-      result.pkgId = result.pkgData[0][0]
-      result.pkgName = result.pkgData[0][1]
-      log.debug("Tipp qry name: ${result.pkgName}");
+      if ( pkg_id_components?.size() == 2 ) {
+        def pkg_id = pkg_id_components[1]
+        def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
+        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+        result.pkg = Package.get(pkg_id);
+        result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id=?',[Long.parseLong(pkg_id)])
+        result.pkgId = result.pkgData[0][0]
+        result.pkgName = result.pkgData[0][1]
+        log.debug("Tipp qry name: ${result.pkgName}");
 
-      result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
-      result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?:0,max:10])
-      log.debug("Tipp qry done ${result.tipps?.size()}");
+        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
+        result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?:0,max:10])
+        log.debug("Tipp qry done ${result.tipps?.size()}");
+      }
     }
     result
   }
@@ -149,9 +151,13 @@ class PublicController {
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
           query.setReadOnly(true)
           query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
+          query.setParameter('sd', status_deleted)
+          query.setParameter('ct', combo_pkg_tipps)
 
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
@@ -241,9 +247,13 @@ class PublicController {
                      'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
 
           def session = sessionFactory.getCurrentSession()
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status.value <> 'Deleted' and c.type.value = 'Package.Tipps' order by tipp.id")
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
           query.setReadOnly(true)
           query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
+          query.setParameter('sd', status_deleted)
+          query.setParameter('ct', combo_pkg_tipps)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
 

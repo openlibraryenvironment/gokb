@@ -86,7 +86,7 @@ class InplaceTagLib {
     def id = attrs.id ?: "${oid}:${attrs.field}"
     
     // Default the format.
-    attrs."data-format" = attrs."data-format" ?: 'yyyy/MM/dd'
+    attrs."data-format" = attrs."data-format" ?: 'yyyy-MM-dd'
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''} ${attrs.type == 'date' ? 'date' : ''}\""
     

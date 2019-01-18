@@ -19,7 +19,7 @@ class Identifier extends KBComponent {
     "issn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
     "issnl" : "^\\d{4}\\-\\d{3}[\\dX]\$",
     "eissn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "zdb" : "^\\d+\\-[\\dX]\$"
+    "zdb" : "^\\d+\\-[\\dxX]\$"
   ]
 
   static constraints = {

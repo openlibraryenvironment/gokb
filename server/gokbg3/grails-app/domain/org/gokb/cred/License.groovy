@@ -69,7 +69,8 @@ class License extends KBComponent {
   static def oaiConfig = [
     id:'licenses',
     textDescription:'Office repository for GOKb',
-    query:" from License as o where o.status.value != 'Deleted'",
+    query:" from License as o ",
+    statusFilter: ["Deleted"],
     pageSize:3
   ]
 

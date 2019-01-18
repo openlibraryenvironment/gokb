@@ -170,6 +170,8 @@ class WorkflowController {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def combo_ti_tipps = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
     def titleChangeData = [:]
     titleChangeData.title_ids = []
@@ -197,11 +199,11 @@ class WorkflowController {
       titleChangeData.title_ids.add(title_obj.id)
 
       def tipps = TitleInstancePackagePlatform.executeQuery(
-                         'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ?',
-                         [title_obj, 'Deleted','TitleInstance.Tipps']);
+                         'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status <> ? and c.type = ?',
+                         [title_obj, status_deleted, combo_ti_tipps]);
       tipps.each { tipp ->
 
-        if ( ( tipp.status?.value != 'Deleted' ) && ( tipp.pkg.scope?.value != 'GOKb Master' ) ) {
+        if ( ( tipp.status != status_deleted ) && ( tipp.pkg.scope?.value != 'GOKb Master' ) ) {
 
           log.debug("Add tipp to discontinue ${tipp}");
 
@@ -1259,7 +1261,7 @@ class WorkflowController {
       tipp_obj.status = retired_status
 
       if ( params.endDateSelect == 'select' && params.selectedDate ) {
-        tipp_obj.accessEndDate = params.date('selectedDate', 'dd-MM-yyyy')
+        tipp_obj.accessEndDate = params.date('selectedDate', 'yyyy-MM-dd')
       }
       else if ( params.endDateSelect == 'now') {
         tipp_obj.accessEndDate = new Date()
@@ -1490,6 +1492,8 @@ class WorkflowController {
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     def export_date = sdf.format(new Date());
 
     if ( packages_to_export.size() == 1 ) {
@@ -1548,8 +1552,8 @@ class WorkflowController {
           // query.setParameter('c':'Package.Tipps',StringType.class)
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
-                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
-                         [pkg, 'Deleted', 'Package.Tipps'],[readOnly: true, fetchSize: 30]);
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status <> ? and c.type = ? order by tipp.id',
+                         [pkg, status_deleted, combo_pkg_tipps],[readOnly: true, fetchSize: 30]);
 
 
 
@@ -1611,6 +1615,8 @@ class WorkflowController {
       return
 
     def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     def export_date = sdf.format(new Date());
 
     if ( packages_to_export.size() == 1 ) {
@@ -1642,8 +1648,8 @@ class WorkflowController {
                      'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
-                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',
-                         [pkg, 'Deleted', 'Package.Tipps']);
+                         'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status <> ? and c.type = ? order by tipp.id',
+                         [pkg, status_deleted, combo_pkg_tipps]);
 
 
 

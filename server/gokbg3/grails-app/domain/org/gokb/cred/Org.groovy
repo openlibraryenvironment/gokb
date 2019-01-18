@@ -84,12 +84,18 @@ class Org extends KBComponent {
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def status_filter = null
+    
+    if(params.filter1) {
+      status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
+    }
+    
     def ql = null;
     ql = Org.findAllByNameIlikeAndStatusNotEqual("${params.q}%",status_deleted, params)
 
     if ( ql ) {
       ql.each { t ->
-        if( !params.filter1 || t.status.value == params.filter1 ){
+        if( !status_filter || t.status == status_filter ){
           result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
         }
       }
