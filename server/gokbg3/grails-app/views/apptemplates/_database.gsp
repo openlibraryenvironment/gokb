@@ -18,7 +18,12 @@
     <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+    <sec:ifAnyGranted roles="ROLE_SUPERUSER">
+      <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+    </sec:ifAnyGranted>
+    <sec:ifNotGranted roles="ROLE_SUPERUSER">
+      ${d.status?.value ?: 'Not Set'}
+    </sec:ifNotGranted>
   </dd>
 
   <dt>

@@ -32,6 +32,7 @@ class WorkflowController {
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
     'method::setActive':[actionType:'simple' ],
+    'method::setExpected':[actionType:'simple'],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
     'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg'],
     'verifyTitleList':[actionType:'process', method:'verifyTitleList']

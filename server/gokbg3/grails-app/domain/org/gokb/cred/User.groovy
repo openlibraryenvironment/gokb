@@ -129,26 +129,26 @@ class User extends Party {
     return User.isTypeEditable (default_to)
   }
   
-  @Override
-  public boolean equals(Object obj) {
-
-    log.debug("USER::equals ${obj?.class?.name} :: ${obj}")
-    if ( obj != null ) {
-
-      def o = obj
-      
-      if ( o instanceof HibernateProxy) {
-        o = User.deproxy(o)
-      }
-      
-      if ( o instanceof User ) {
-        return getId() == obj.getId()
-      }
-    }
-
-    // Return false if we get here.
-    false
-  }
+//   @Override
+//   public boolean equals(Object obj) {
+//
+//     log.debug("USER::equals ${obj?.class?.name} :: ${obj}")
+//     if ( obj != null ) {
+//
+//       def o = obj
+//
+//       if ( o instanceof HibernateProxy) {
+//         o = User.deproxy(o)
+//       }
+//
+//       if ( o instanceof User ) {
+//         return getId() == obj.getId()
+//       }
+//     }
+//
+//     // Return false if we get here.
+//     false
+//   }
 
   def getUserOptions(GrailsApplication grailsApplication) {
     def userOptions = [:]

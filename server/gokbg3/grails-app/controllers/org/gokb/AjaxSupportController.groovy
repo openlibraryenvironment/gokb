@@ -205,7 +205,7 @@ class AjaxSupportController {
     log.debug("AjaxController::addToCollection ${params}");
     User user = springSecurityService.currentUser
     def contextObj = resolveOID2(params.__context)
-    def errors = false
+    def errors = []
     GrailsClass domain_class = grailsApplication.getArtefact('Domain',params.__newObjectClass)
 
     if ( domain_class && (domain_class.getClazz().isTypeCreatable() || domain_class.getClazz().isTypeAdministerable()) ) {
@@ -221,7 +221,7 @@ class AjaxSupportController {
           if(existing_variants){
             log.debug("found dupes!")
             flash.message = message(code:'variantName.value.notUnique')
-            errors = true
+            errors.add(message(code:'variantName.value.notUnique'))
           }else{
             log.debug("create new variantName")
           }
@@ -233,23 +233,23 @@ class AjaxSupportController {
           if (!params.title || params.title.size() == 0) {
             log.debug("missing title for TIPP creation")
             flash.message.add(message(code:'tipp.title.nullable'))
-            errors = true
+            errors.add(message(code:'tipp.title.nullable'))
           }
 
           if (!params.hostPlatform || params.hostPlatform.size() == 0) {
             flash.message.add(message(code:'tipp.hostPlatform.nullable'))
             log.debug("missing platform for TIPP creation")
-            errors = true
+            errors.add(message(code:'tipp.hostPlatform.nullable'))
           }
 
           if(!params.url || params.url.size() == 0) {
             flash.message.add(message(code:'tipp.url.nullable'))
             log.debug("missing url for TIPP creation")
-            errors = true
+            errors.add(message(code:'tipp.url.nullable'))
           }
         }
 
-        if(!errors) {
+        if(errors.size() == 0) {
           def new_obj = domain_class.getClazz().newInstance();
           PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(domain_class.fullName)
 
@@ -304,7 +304,8 @@ class AjaxSupportController {
             log.debug("Set reciprocal property ${params.__recip} to ${contextObj}");
             new_obj[params.__recip] = contextObj
             log.debug("Saving ${new_obj}");
-            if ( new_obj.save(flush:true) ) {
+            if ( new_obj.validate() ) {
+              new_obj.save(flush:true)
               log.debug("Saved OK");
               if (contextObj.respondsTo("lastUpdateComment")){
                 contextObj.lastUpdateComment = "Added new connected ${new_obj.class.simpleName}(ID: ${new_obj.id})."
@@ -312,43 +313,38 @@ class AjaxSupportController {
               contextObj.save(flush: true)
             }
             else {
-              new_obj.errors.each { e ->
-                log.debug("Problem ${e}");
-              }
+              errors.addAll(processErrors(new_obj.errors.allErrors))
             }
           }
           else if ( params.__addToColl ) {
             contextObj[params.__addToColl].add(new_obj)
             log.debug("Saving ${new_obj}");
 
-            if ( new_obj.save(flush:true) ) {
+            if ( new_obj.validate() ) {
+              new_obj.save(flush:true)
               log.debug("New Object Saved OK");
             }
             else {
-              new_obj.errors.each { e ->
-                log.debug("Problem ${e}");
-              }
+              errors.addAll(processErrors(new_obj.errors.allErrors))
             }
 
-            if ( contextObj.save(flush:true) ) {
+            if ( contextObj.validate() ) {
+                contextObj.save(flush:true)
               log.debug("Context Object Saved OK");
             }
             else {
-              contextObj.errors.each { e ->
-                log.debug("Problem ${e}");
-              }
+              errors.addAll(processErrors(contextObj.errors.allErrors))
             }
           }
           else {
             // Stand alone object.. Save it!
             log.debug("Saving stand alone reference object");
-            if ( new_obj.save(flush:true, failOnError:true) ) {
+            if ( new_obj.validate() ) {
+              new_obj.save(flush:true, failOnError:true)
               log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})");
             }
             else {
-              new_obj.errors.each { e ->
-                log.debug("Problem ${e}");
-              }
+              errors.addAll(processErrors(new_obj.errors.allErrors))
             }
           }
 
@@ -363,7 +359,12 @@ class AjaxSupportController {
                 new_obj[hbc] = resolveOID2(params[hbc])
               }
             }
-            new_obj.save(flush:true, failOnError:true)
+            if( new_obj.validate() ) {
+              new_obj.save(flush:true, failOnError:true)
+            }
+            else {
+              errors.addAll(processErrors(new_obj.errors.allErrors))
+            }
           }
         }
         else {
@@ -573,42 +574,7 @@ class AjaxSupportController {
         target_object.save(flush:true);
       }
       else {
-
-        errors = []
-
-        target_object.errors.allErrors.each { eo ->
-
-          String[] messageArgs = eo.getArguments()
-          def errorMessage = null
-
-          log.debug("Found error with args: ${messageArgs}")
-
-          eo.getCodes().each { ec ->
-
-            if (!errorMessage) {
-              log.debug("testing code -> ${ec}")
-
-              def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
-
-              if(msg && msg != ec) {
-                errorMessage = msg
-              }
-
-              if(!errorMessage) {
-                log.debug("Could not resolve message")
-              }else{
-                log.debug("found message: ${msg}")
-              }
-            }
-          }
-
-          if (errorMessage) {
-            errors.add(errorMessage)
-          }else{
-            log.debug("Found no message for error code ${eo}")
-          }
-        }
-
+        errors = processErrors(target_object.errors.allErrors)
       }
     }
     else {
@@ -626,6 +592,44 @@ class AjaxSupportController {
     }
     outs.flush()
     outs.close()
+  }
+
+  private List processErrors(errors) {
+    def result = []
+
+    target_object.errors.allErrors.each { eo ->
+
+      String[] messageArgs = eo.getArguments()
+      def errorMessage = null
+
+      log.debug("Found error with args: ${messageArgs}")
+
+      eo.getCodes().each { ec ->
+
+        if (!errorMessage) {
+          log.debug("testing code -> ${ec}")
+
+          def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
+
+          if(msg && msg != ec) {
+            errorMessage = msg
+          }
+
+          if(!errorMessage) {
+            log.debug("Could not resolve message")
+          }else{
+            log.debug("found message: ${msg}")
+          }
+        }
+      }
+
+      if (errorMessage) {
+        result.add(errorMessage)
+      }else{
+        result.add("Error code ${eo}")
+      }
+    }
+    result
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

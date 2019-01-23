@@ -803,6 +803,11 @@ where cp.owner = :c
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
     save(flush:true, failOnError:true)
   }
+  
+  public void setExpected (context) {
+    setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
+    save(flush:true, failOnError:true)
+  }
 
   @Transient
   public boolean isRetired () {
@@ -817,6 +822,11 @@ where cp.owner = :c
   @Transient
   public boolean isCurrent () {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
+  }
+  
+  @Transient
+  public boolean isExpected () {
+    return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
   }
 
   /**

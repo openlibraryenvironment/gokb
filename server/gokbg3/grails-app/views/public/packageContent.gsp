@@ -15,15 +15,20 @@
       <div class="well">
       <g:if test="${pkgName}">
 
-        <h1>Package: ${pkgName}</h1>
+        <h1>Package <span style="font-weight:bolder;">${pkgName}</span></h1>
+        <dl class="dl-horizontal" style="margin-left:-115px;">
+          <dt> Provider </dt> <dd> ${pkg.provider?.name} </dd>
+          <dt> Status </dt> <dd> ${pkg.status?.value} </dd>
+          <dt> Description </dt> <dd> ${pkg.description}</dd>
+          <dt> URL </dt> <dd> ${pkg.descriptionURL}</dd>
+        </dl>
+        <div style="clear:both;">
 
-        <dt> Provider </dt> <dd> ${pkg.provider?.name} </dd>
-        <dt> Status </dt> <dd> ${pkg.status?.value} </dd>
-        <dt> Description </dt> <dd> ${pkg.description}</dd>
-        <dt> URL </dt> <dd> ${pkg.descriptionURL}</dd>
-        <div style="margin-top:10px">
           <g:link controller="packages" action="kbart" id="${params.id}">KBart File</g:link> &nbsp;
           <g:link controller="packages" action="packageTSVExport" id="${params.id}">GOKb File</g:link>
+        </div>
+        <div style="margin-top:10px;">
+          <g:link controller="resource" action="show" id="${pkg.uuid}">Switch to editing view (Login required)</g:link>
         </div>
         <g:if test="${pkg.prices?.size() > 0}">
           <h2>Price Information</h2>

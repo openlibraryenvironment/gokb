@@ -121,8 +121,8 @@ class TitleInstance extends KBComponent {
 
   def availableActions() {
     [ [code:'method::deleteSoft', label:'Delete', perm:'delete'],
-      [code:'method::retire', label:'Retire'],
-      [code:'method::setActive', label:'Set Current'],
+      [code:'method::setActive', label:'Set Current', perm:'admin'],
+      [code:'method::setExpected', label:'Mark Expected'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
       [code:'title::merge', label:'Title Merge']
@@ -549,9 +549,6 @@ class TitleInstance extends KBComponent {
       }
     }
 
-    if ( result ) {  
-      result.title_status_properties.matched_by='Title In Title History'
-    }
     result
   }
 

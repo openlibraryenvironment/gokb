@@ -495,7 +495,7 @@ class TSVIngestionService {
 
             // Raise a review request, if needed.
             if (not_first && added) {
-              ReviewRequest.raise( ti, "Added '${publisher.name}' as a publisher on '${ti.name}'.",
+              ReviewRequest.raise( ti, "Added '${publisher[0].name}' as a publisher on '${ti.name}'.",
                   "Publisher supplied in ingested file is different to any already present on TI.", user, project)
             }
           } //!orgs.contains(publisher)
@@ -534,6 +534,17 @@ class TSVIngestionService {
       // Otherwise -- work out if they are roughly close enough to warrant a good matcg
       // log.debug("Comparing ${ti.getName()} and ${norm_title}");
       distance = GOKbTextUtils.cosineSimilarity(KBComponent.generateNormname(ti.getName()), norm_title) ?: 0
+    }
+
+    def short_dist = null
+
+    if ( distance < threshold && title.contains(': ') ) {
+      def shortened_norm = KBComponent.generateNormname(title.split(':')[0])
+      short_dist = GOKbTextUtils.cosineSimilarity(KBComponent.generateNormname(ti.getName()), shortened_norm) ?: 0
+
+      if( short_dist > distance ) {
+        distance = short_dist
+      }
     }
 
     // Check the distance.

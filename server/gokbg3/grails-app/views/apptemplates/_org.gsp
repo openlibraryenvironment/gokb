@@ -9,7 +9,12 @@
               <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
       </dt>
       <dd>
-              ${d.status}
+        <sec:ifAnyGranted roles="ROLE_SUPERUSER">
+          <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+        </sec:ifAnyGranted>
+        <sec:ifNotGranted roles="ROLE_SUPERUSER">
+          ${d.status?.value ?: 'Not Set'}
+        </sec:ifNotGranted>
       </dd>
       <dt>
               <g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel>
@@ -121,80 +126,82 @@
 					</dl>
 				</g:if>
 			</div>
-                        <div class="tab-pane" id="relationships">
-                                <g:if test="${d.id != null}">
-                                        <dl class="dl-horizontal">
-                                                <dt>
-                                                  <g:annotatedLabel owner="${d}" property="successor">Successor</g:annotatedLabel>
-                                                </dt>
-                                                <dd>
-                                                  <g:manyToOneReferenceTypedown owner="${d}" field="successor" baseClass="org.gokb.cred.Org">${d.successor?.name}</g:manyToOneReferenceTypedown>
-                                                </dd>
-                                                <dt>
-                                                  <g:annotatedLabel owner="${d}" property="successor">Predecessor(s)</g:annotatedLabel>
-                                                </dt>
-                                                <dd>
-                                                        <ul>
-                                                                <g:each in="${d.previous}" var="c">
-                                                                        <li><g:link controller="resource" action="show"
-                                                                                        id="${c.getClassName()+':'+c.id}">
-                                                                                        ${c.name}
-                                                                                </g:link></li>
-                                                                </g:each>
-                                                        </ul>
-                                                </dd>
-                                                <dt>
-                                                  <g:annotatedLabel owner="${d}" property="parent">Parent Org</g:annotatedLabel>
-                                                </dt>
-                                                <dd>
-                                                  <g:manyToOneReferenceTypedown owner="${d}" field="parent" baseClass="org.gokb.cred.Org">${d.parent?.name}</g:manyToOneReferenceTypedown>
-                                                </dd>
+            <div class="tab-pane" id="relationships">
+              <g:if test="${d.id != null}">
+                <dl class="dl-horizontal">
+                  <dt>
+                    <g:annotatedLabel owner="${d}" property="successor">Successor</g:annotatedLabel>
+                  </dt>
+                  <dd>
+                    <g:manyToOneReferenceTypedown owner="${d}" field="successor" baseClass="org.gokb.cred.Org">${d.successor?.name}</g:manyToOneReferenceTypedown>
+                  </dd>
+                  <dt>
+                    <g:annotatedLabel owner="${d}" property="successor">Predecessor(s)</g:annotatedLabel>
+                  </dt>
+                  <dd>
+                    <ul>
+                      <g:each in="${d.previous}" var="c">
+                        <li>
+                          <g:link controller="resource" action="show" id="${c.getClassName()+':'+c.id}">
+                            ${c.name}
+                          </g:link>
+                        </li>
+                      </g:each>
+                    </ul>
+                  </dd>
+                  <dt>
+                    <g:annotatedLabel owner="${d}" property="parent">Parent Org</g:annotatedLabel>
+                  </dt>
+                  <dd>
+                    <g:manyToOneReferenceTypedown owner="${d}" field="parent" baseClass="org.gokb.cred.Org">${d.parent?.name}</g:manyToOneReferenceTypedown>
+                  </dd>
 
-                                                <g:if test="${d.children?.size() > 0}">
-                                                        <dt>
-                                                                <g:annotatedLabel owner="${d}" property="children">Subsidiaries</g:annotatedLabel>
-                                                        </dt>
-                                                        <dd>
-                                                                <ul>
-                                                                        <g:each in="${d.children}" var="c">
-                                                                                <li><g:link controller="resource" action="show"
-                                                                                                id="${c.getClassName()+':'+c.id}">
-                                                                                                ${c.name}
-                                                                                        </g:link></li>
-                                                                        </g:each>
-                                                                </ul>
-                                                        </dd>
-                                                </g:if>
-                                                <dt>
-                                                  <g:annotatedLabel owner="${d}" property="imprints">Imprints</g:annotatedLabel>
-                                                </dt>
-                                                <dd>
-                                                  <table class="table table-striped table-bordered">
-                                                    <thead>
-                                                      <tr>
-                                                        <th>Imprint Name</th>
-                                                        <th>Combo Status</th>
-                                                        <th>Imprint From</th>
-                                                        <th>Imprint To</th>
-                                                        <th>Actions</th>
-                                                      </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                      <g:each in="${d.getCombosByPropertyName('ownedImprints')}" var="p">
-                                                        <tr>
-                                                          <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
-                                                          <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
-                                                          <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
-                                                          <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
-                                                          <td><g:link controller="workflow" action="deleteCombo" id="${p.id}">Delete</g:link></td>
-                                                        </tr>
-                                                      </g:each>
-                                                    </tbody>
-                                                  </table>
-                                                </dd>
-                                        </dl>
-                                </g:if>
-                        </div>
+                  <g:if test="${d.children?.size() > 0}">
+                    <dt>
+                      <g:annotatedLabel owner="${d}" property="children">Subsidiaries</g:annotatedLabel>
+                    </dt>
+                    <dd>
+                      <ul>
+                        <g:each in="${d.children}" var="c">
+                          <li>
+                            <g:link controller="resource" action="show" id="${c.getClassName()+':'+c.id}">
+                              ${c.name}
+                            </g:link>
+                          </li>
+                        </g:each>
+                      </ul>
+                    </dd>
+                  </g:if>
+                  <dt>
+                    <g:annotatedLabel owner="${d}" property="imprints">Imprints</g:annotatedLabel>
+                  </dt>
+                  <dd>
+                    <table class="table table-striped table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Imprint Name</th>
+                          <th>Combo Status</th>
+                          <th>Imprint From</th>
+                          <th>Imprint To</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <g:each in="${d.getCombosByPropertyName('ownedImprints')}" var="p">
+                          <tr>
+                            <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
+                            <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
+                            <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
+                            <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
+                            <td><g:link controller="workflow" action="deleteCombo" id="${p.id}">Delete</g:link></td>
+                          </tr>
+                        </g:each>
+                      </tbody>
+                    </table>
+                  </dd>
+                </dl>
+              </g:if>
+            </div>
 			<div class="tab-pane" id="addprops">
 				<dl>
 					<dt>

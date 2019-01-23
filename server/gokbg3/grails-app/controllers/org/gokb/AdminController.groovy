@@ -250,7 +250,9 @@ class AdminController {
 
   def clearBlockCache() {
     // clear the cache used by the blocks tag…
+    log.debug("Clearing block cache .. ")
     grailsCacheAdminService.clearBlocksCache()
+    recalculateStats()
     redirect(url: request.getHeader('referer'))
   }
 

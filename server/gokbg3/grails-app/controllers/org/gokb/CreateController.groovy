@@ -114,7 +114,14 @@ class CreateController {
               }
               else {
                 log.debug("Scalar property");
-                result.newobj[p.key] = p.value
+                if ( pprop.getType().name == 'java.lang.String' ) {
+                  result.newobj[p.key] = p.value
+                }
+                else if ( pprop.getType().name == 'java.lang.Date' ) {
+                  def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+
+                  result.newobj[p.key] = sdf.parse(p.value)
+                }
                 propertyWasSet = propertyWasSet || (p.value != null)
               }
             }

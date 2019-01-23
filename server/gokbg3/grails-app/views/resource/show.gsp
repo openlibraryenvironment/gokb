@@ -121,7 +121,7 @@
         </g:if>
       </g:if>
       <g:else>
-        <div class="alert alert-danger" style="display:inline-block;"><g:message code="component.notFound.label" args="[params.id]"/></div>
+        <div class="alert alert-danger" style="display:inline-block;font-weight:bolder;"><g:message code="component.notFound.label" args="[params.id]"/></div>
       </g:else>
     </div>
   </div>

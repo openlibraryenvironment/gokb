@@ -126,6 +126,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     [ [code:'method::retire', label:'Retire'],
       [code:'tipp::retire', label:'Retire (with Date)'],
       [code:'method::deleteSoft', label:'Delete', perm:'delete'],
+      [code:'method::setExpected', label:'Mark Expected'],
       [code:'method::setActive', label:'Set Current']
     ]
   }
@@ -345,8 +346,20 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
         
         if ( tipp_dto.paymentType && tipp_dto.paymentType.length() > 0 ) {
+
+          def payment_statement = null
+
+          if( tipp_dto.paymentType == 'P' ) {
+            payment_statement = 'Paid'
+          }
+          else if ( tipp_dto.paymentType == 'F' ) {
+            payment_statement = 'OA'
+          }
+          else {
+            payment_statement = tipp_dto.paymentType
+          }
           
-          def payment_ref = RefdataCategory.getOID("TitleInstancePackagePlatform.PaymentType", tipp_dto.paymentType)
+          def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
           
           if (payment_ref) tipp.paymentType = RefdataValue.get(payment_ref)
         }

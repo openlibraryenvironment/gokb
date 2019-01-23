@@ -34,7 +34,12 @@
     <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+    <sec:ifAnyGranted roles="ROLE_SUPERUSER">
+      <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+    </sec:ifAnyGranted>
+    <sec:ifNotGranted roles="ROLE_SUPERUSER">
+      ${d.status?.value ?: 'Not Set'}
+    </sec:ifNotGranted>
   </dd>
 
   <dt>
@@ -124,10 +129,6 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
-        
-    <g:if test="${ d.isEditable() }">
-      <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
-    </g:if>
 
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size() ?: '0'} </span></a></li>
 
@@ -155,12 +156,12 @@
         class="badge badge-warning">
           ${d.reviewRequests?.size() ?: '0'}
       </span></a></li>
-
-    <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
-
-    <li><a href="#people" data-toggle="tab">People <span class="badge badge-warning"> ${d.people?.size() ?: '0'} </span></a></li>
-
-    <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
+    <g:if test="${grailsApplication.config.gokb.decisionSupport}" >
+      <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+    </g:if>
+    <g:if test="${grailsApplication.config.gokb.handleSubjects}" >
+      <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
+    </g:if>
 
   </ul>
   <div id="my-tab-content" class="tab-content">
@@ -199,68 +200,6 @@
 
     <g:render template="/tabTemplates/showVariantnames"
       model="${[d:displayobj, showActions:true]}" />
-
-    <div class="tab-pane" id="history">
-      <g:if test="${d.id != null}">
-        <dl class="dl-horizontal">
-          <g:form name="AddHistoryForm" controller="workflow"
-            action="createTitleHistoryEvent">
-            <dt>
-              Titles
-              </dt>
-            <dd>
-              <table>
-                <tr>
-                  <th>Before</th>
-                  <th></th>
-                  <th>After</th>
-                </tr>
-                <tr>
-                  <td><select name="beforeTitles" size="5" multiple
-                    class="input-xxlarge" style="width: 500px;">
-                      <option value="org.gokb.cred.BookInstance:${d.id}">
-                        ${d.name}
-                      </option>
-                  </select><br /></td>
-                  <td style="text-align:center;">
-                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
-                      onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">&gt;</button>
-                    <div style="height:2px;"></div>
-                    <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
-                      onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
-                  </td>
-                  <td><select name="afterTitles" size="5" multiple="multiple"
-                    class="input-xxlarge" style="width: 500px;" ></select></td>
-                </tr>
-                <tr>
-                  <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
-                      baseClass="org.gokb.cred.BookInstance" /> <br />
-                    <button class="btn btn-sm" type="button"
-                      onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
-                    <button class="btn btn-sm" type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
-                  <td></td>
-                  <td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
-                      baseClass="org.gokb.cred.BookInstance" /> <br />
-                    <button class="btn btn-sm" type="button"
-                      onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
-                    <button class="btn btn-sm" type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
-                </tr>
-              </table>
-            </dd>
-            <dt class="dt-label">Event Date</dt>
-            <dd>
-              <input type="date" class="form-control" name="EventDate" />
-            </dd>
-            <dt></dt>
-            <dd>
-              <button class="btn btn-default btn-primary"
-                onClick="submitTitleHistoryEvent(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">Add
-                Title History Event</button>
-            </dd>
-          </g:form>
-        </dl>
-      </g:if>
-    </div>
 
     <div class="tab-pane" id="availability">
       <dt>
@@ -377,23 +316,6 @@
 
     <div class="tab-pane" id="ds">
       <g:render template="/apptemplates/dstab" model="${[d:d]}" />
-    </div>
-
-    <div class="tab-pane" id="people">
-
-     <dl>
-            <g:if test="${d.id}">
-              <dt>
-                    <g:annotatedLabel owner="${d}" property="people">Add People</g:annotatedLabel>
-              </dt>
-                  <dd>
-                    <!-- this bit could be better  -->
-                    <g:render template="/apptemplates/componentPerson"
-                                      model="${[d:d, property:'people', cols:[[expr:'person.name',colhead:'Name', action:'link-person'],
-                                                                                      [expr:'role.value', colhead: 'Role']], targetClass:'org.gokb.cred.Person',direction:'in']}" />
-                  </dd>
-            </g:if>
-	  </dl>
     </div>
 
     <div class="tab-pane" id="subjects">

@@ -36,7 +36,12 @@
         <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
       </dt>
       <dd>
-        <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+        <sec:ifAnyGranted roles="ROLE_SUPERUSER">
+          <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+        </sec:ifAnyGranted>
+        <sec:ifNotGranted roles="ROLE_SUPERUSER">
+          ${d.status?.value ?: 'Not Set'}
+        </sec:ifNotGranted>
       </dd>
     </g:if>
 
@@ -85,6 +90,7 @@
       <li role="presentation"><a href="#altnames" data-toggle="tab">Alternate Names
         <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
       </a></li>
+      <li><a href="#relationships" data-toggle="tab">Relations</a></li>
       <g:if test="${grailsApplication.config.gokb.decisionSupport}">
         <li role="presentation"><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
@@ -162,6 +168,56 @@
                   [expr:'toComponent.value', colhead:'ID', action:'link']], cur: editable]}" />
         <g:if test="${ editable }">
           <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+        </g:if>
+      </div>
+
+      <div class="tab-pane" id="relationships">
+        <g:if test="${d.id != null}">
+          <dl class="dl-horizontal">
+            <dt>
+              <g:annotatedLabel owner="${d}" property="successor">Successor</g:annotatedLabel>
+            </dt>
+            <dd>
+              <g:manyToOneReferenceTypedown owner="${d}" field="successor" baseClass="org.gokb.cred.Package">${d.successor?.name}</g:manyToOneReferenceTypedown>
+            </dd>
+            <dt>
+              <g:annotatedLabel owner="${d}" property="successor">Predecessor(s)</g:annotatedLabel>
+            </dt>
+            <dd>
+              <ul>
+                <g:each in="${d.previous}" var="c">
+                  <li>
+                    <g:link controller="resource" action="show" id="${c.getClassName()+':'+c.id}">
+                      ${c.name}
+                    </g:link>
+                  </li>
+                </g:each>
+              </ul>
+            </dd>
+            <dt>
+              <g:annotatedLabel owner="${d}" property="parent">Parent</g:annotatedLabel>
+            </dt>
+            <dd>
+              <g:manyToOneReferenceTypedown owner="${d}" field="parent" baseClass="org.gokb.cred.Package">${d.parent?.name}</g:manyToOneReferenceTypedown>
+            </dd>
+
+            <g:if test="${d.children?.size() > 0}">
+              <dt>
+                <g:annotatedLabel owner="${d}" property="children">Subsidiaries</g:annotatedLabel>
+              </dt>
+              <dd>
+                <ul>
+                  <g:each in="${d.children}" var="c">
+                    <li>
+                      <g:link controller="resource" action="show" id="${c.getClassName()+':'+c.id}">
+                        ${c.name}
+                      </g:link>
+                    </li>
+                  </g:each>
+                </ul>
+              </dd>
+            </g:if>
+          </dl>
         </g:if>
       </div>
 

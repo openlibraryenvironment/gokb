@@ -17,6 +17,8 @@ class BookInstance extends TitleInstance {
   String editionDifferentiator
   String editionStatement
   String volumeNumber
+  String firstAuthor
+  String firstEditor
   Date dateFirstInPrint
   Date dateFirstOnline
   String summaryOfContent
@@ -34,6 +36,8 @@ class BookInstance extends TitleInstance {
          dateFirstInPrint column:'bk_dateFirstInPrint'
           dateFirstOnline column:'bk_dateFirstOnline'
          summaryOfContent column:'bk_summaryOfContent'
+              firstAuthor column:'bk_firstAuthor'
+              firstEditor column:'bk_firstEditor'
   }
 
   static constraints = {
@@ -44,6 +48,8 @@ class BookInstance extends TitleInstance {
          dateFirstInPrint (nullable:true, blank:false)
           dateFirstOnline (nullable:true, blank:false)
          summaryOfContent (nullable:true, blank:false)
+              firstAuthor (nullable:true, blank:false)
+              firstEditor (nullable:true, blank:false)
   }
 
   @Override

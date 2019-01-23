@@ -40,7 +40,7 @@ class JournalInstance extends TitleInstance {
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
     if ( ( hasChanged('name') ) ||
          ( hasChanged('componentDiscriminator') )) {
-      submitRemapWorkTask();
+//       submitRemapWorkTask();
     }
   }
 
@@ -48,7 +48,7 @@ class JournalInstance extends TitleInstance {
   // audit plugin, onSave fires on a new item - we always want to map a work in this case, so directly call and wait
   def afterInsert() {
 
-    submitRemapWorkTask();
+//     submitRemapWorkTask();
   }
 
   def submitRemapWorkTask() {
