@@ -138,15 +138,15 @@
               <dl class="dl-horizontal">
                 <dt class="dt-label">Title</dt>
                 <dd>
-                  <g:simpleReferenceTypedown class="form-control" name="title" baseClass="org.gokb.cred.TitleInstance"/>
+                  <g:simpleReferenceTypedown class="form-control select-m" name="title" baseClass="org.gokb.cred.TitleInstance"/>
                 </dd>
                 <dt class="dt-label">Platform</dt>
                 <dd>
-                  <g:simpleReferenceTypedown class="form-control" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current"/>
+                  <g:simpleReferenceTypedown class="form-control select-m" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current"/>
                 </dd>
                 <dt class="dt-label">URL</dt>
                 <dd>
-                  <input type="text" class="form-control" name="url" required />
+                  <input type="text" class="form-control select-m" name="url" required />
                 </dd>
                 <dt></dt>
                 <dd>

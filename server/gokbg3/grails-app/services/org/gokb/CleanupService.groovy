@@ -210,19 +210,83 @@ class CleanupService {
 
     def ctr = 0
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def combo_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+    def combo_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipls')
 
-    KBComponent.withNewSession {
-      TitleInstancePackagePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where tipp.status != ?", [status_deleted]).each { tipp ->
-        TitleInstancePlatform.ensure(tipp.title, tipp.hostPlatform, tipp.url)
+    try {
 
-        if ( ctr++ % 100 == 0 ) {
-          log.debug("ensureTipls :: Processed ${ctr} TIPPs")
+      KBComponent.withNewTransaction {
+        def tipps = TitleInstancePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where tipp.status != ?", [status_deleted],[readonly:true])
+
+        for (tipp in tipps) {
+          if ( Thread.currentThread().isInterrupted() ) {
+            log.debug("Job cancelling ..")
+            break;
+          }
+
+          def tipls = checkForTipl(tipp.title, tipp.hostPlatform, tipp.url)
+          def final_tipl = null
+
+          if ( tipls?.size() == 0 ) {
+            final_tipl = new TitleInstancePlatform(url:tipp.url).save()
+
+            def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTitles')
+            def plt_combo = new Combo(toComponent:final_tipl, fromComponent:tipp.hostPlatform, type:plt_combo_type, status:combo_status_active).save();
+
+            def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipls')
+            def ti_combo = new Combo(toComponent:final_tipl, fromComponent:tipp.title, type:ti_combo_type, status:combo_status_active).save();
+
+
+          }
+          else if ( tipls?.size() == 1 ) {
+            final_tipl = tipls[0]
+
+            if (tipp.url && final_tipl.url != tipp.url) {
+              final_tipl.url = tipp.url
+            }
+
+          }
+          else {
+            log.warn("Found more than one TIPL for ${tipp.title} on ${tipp.hostPlatform}!")
+          }
+
+          log.debug("TIPL ${final_tipl}")
+
+
+          if ( ctr % 25 == 0 && ctr > 0 ) {
+            log.debug("ensureTipls :: Processed ${ctr} TIPPs")
+            cleanUpGorm()
+          }
+          ctr++
         }
       }
-      log.debug("ensureTipls finished (${ctr} TIPPs)")
+    }
+    catch ( Exception e ) {
+      log.error("Problem with ensure TIPLs",e);
+    }
+    finally {
+      log.debug("ensureTipls finished (${ctr} TIPPs)");
     }
 
     return new Date();
+  }
+
+  def checkForTipl(title, platform, url) {
+    if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
+      def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      def result = TitleInstancePlatform.executeQuery('''select tipl
+              from TitleInstancePlatform as tipl,
+              Combo as titleCombo,
+              Combo as platformCombo
+              where titleCombo.toComponent=tipl
+              and titleCombo.fromComponent=?
+              and platformCombo.toComponent=tipl
+              and platformCombo.fromComponent=?
+              and tipl.status=?
+              ''',[title, platform, status_current])
+      result
+    }
   }
   
   def housekeeping() {
@@ -375,5 +439,12 @@ class CleanupService {
     }
     log.debug("Done");
     return new Date();
+  }
+
+  def cleanUpGorm() {
+    log.debug("Clean up GORM");
+    def session = sessionFactory.currentSession
+    session.flush()
+    session.clear()
   }
 }

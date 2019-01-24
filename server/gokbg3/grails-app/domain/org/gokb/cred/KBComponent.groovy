@@ -1484,6 +1484,8 @@ where cp.owner = :c
         }
         else if (ao.perm == "admin" && !this.isAdministerable()) {
         }
+        else if (ao.perm == "su" && !user.hasRole('ROLE_SUPERUSER')) {
+        }
         else {
           result.add(ao)
         }

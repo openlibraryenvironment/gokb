@@ -168,8 +168,8 @@
             <dt>
               Titles
               </dt>
-            <dd>
-              <table>
+            <dd style="width:80%">
+              <table style="width:100%">
                 <tr>
                   <th>Before</th>
                   <th></th>
@@ -177,7 +177,7 @@
                 </tr>
                 <tr>
                   <td><select name="beforeTitles" size="5" multiple
-                    class="input-xxlarge" style="width: 500px;">
+                    class="input-xxlarge" style="width:100%">
                       <option value="org.gokb.cred.JournalInstance:${d.id}">
                         ${d.name}
                       </option>
@@ -190,7 +190,7 @@
                       onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
                   </td>
                   <td><select name="afterTitles" size="5" multiple="multiple"
-                    class="input-xxlarge" style="width: 500px;" ></select></td>
+                    class="input-xxlarge" style="width:100%"></select></td>
                 </tr>
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
@@ -267,13 +267,14 @@
         <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
       </dt>
       <div style="margin:5px 0px;">
-        <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers" params="${params.findAll{k, v -> k != 'publisher_status'}}">
-
-        Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
-        </g:form>
+        <g:form method="POST" controller="${controllerName}" action="${actionName}"  class="form-inline" fragment="publishers" params="${params.findAll{k, v -> k != 'publisher_status'}}">
+        <div class="form-group">
+          <span>Hide Deleted: </span><g:select name="publisher_status" class="form-control" id="pubStatusSwitch" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
+          </g:form>
+        </div>
       </div>
 
-     <dd>
+      <dd>
         <table class="table table-striped table-bordered">
           <thead>
             <tr>
@@ -301,9 +302,9 @@
         <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
           <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
           <input type="hidden" name="__property" value="publisher" />
-          <dt>Add Publisher:</td>
+          <dt></dt>
           <dd>
-            <g:simpleReferenceTypedown class="form-control" style="max-width:350px;" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm " style="margin-top:10px;">Add</button>
+            <g:simpleReferenceTypedown class="form-inline select-ml" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm " style="margin-left:10px">Add</button>
           </dd>
         </g:form>
       </g:if>

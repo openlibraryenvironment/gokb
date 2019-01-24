@@ -8,7 +8,7 @@
         id="${d.title?.class?.name+':'+d.title?.id}">
         ${(d.title?.name)?:'Empty'}
       </g:link>
-      (${d.title?.niceName})
+      <g:if test="${d.title}">(${d.title.niceName})</g:if>
     </dd>
 
     <dt>
@@ -77,7 +77,7 @@
       <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
     </a>
   </li>
-  <g:if test="${d.title.getNiceName() == 'Journal'}">
+  <g:if test="${d.title?.getNiceName() == 'Journal'}">
     <li>
       <a href="#tippcoverage" data-toggle="tab">Coverage</a>
     </li>

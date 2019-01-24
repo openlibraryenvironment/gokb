@@ -43,8 +43,8 @@ class TitleInstancePlatform extends KBComponent {
   }
 
   @Transient
-  public static ensure(title, platform, url) {
-    if ( ( title != null ) && ( platform != null ) && ( url?.trim().length() > 0 ) ) {
+  public static def ensure(title, platform, url) {
+    if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       def r = TitleInstancePlatform.executeQuery('''select tipl
               from TitleInstancePlatform as tipl,
@@ -58,7 +58,7 @@ class TitleInstancePlatform extends KBComponent {
               ''',[title, platform, status_current])
 
       if ( r.size() == 0 ) {
-        def tipl = new TitleInstancePlatform(url:url).save()
+        def tipl = new TitleInstancePlatform(url:url).save(flush:true, failOnError:true)
 
         def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
@@ -68,13 +68,18 @@ class TitleInstancePlatform extends KBComponent {
         def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipls')
         def ti_combo = new Combo(toComponent:tipl, fromComponent:title, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
 
+        return tipl
+
       } else if ( r.size() == 1 ) {
         def matched_tipl = r[0]
 
         if (url && matched_tipl.url != url) {
           matched_tipl.url = url
         }
+        return matched_tipl
+
       } else {
+        return null
         log.warn("Found more than one TIPL for ${title} on ${platform}!")
       }
     }

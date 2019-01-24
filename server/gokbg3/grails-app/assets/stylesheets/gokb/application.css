@@ -116,8 +116,12 @@ body .modal-dialog {
   height:39px;
 }
 
-.select2-container{
-  min-width:200px;
+.select-m {
+  width:300px !important;
+}
+
+.select-ml {
+  width:450px !important;
 }
 
 .select2-chosen{

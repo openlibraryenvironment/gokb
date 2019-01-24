@@ -168,7 +168,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
       def ti_combo = new Combo(toComponent:result, fromComponent:tipp_fields.title, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
 
-      TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
+      def tipl = TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
     }
     else {
       log.error("TIPP creation failed!")

@@ -53,7 +53,7 @@
               <input type="hidden" name="__recip" value="owner" />
               <dt class="dt-label">Variant Name</dt>
               <dd>
-                <input type="text" class="form-control" name="variantName" />
+                <input type="text" class="form-control select-m" name="variantName" />
               </dd>
               <dt class="dt-label">Locale</dt>
               <dd>
@@ -70,7 +70,7 @@
               <dt></dt>
               <dd>
                 <button type="submit"
-                  class="btn btn-default btn-primary btn-sm ">Add</button>
+                  class="btn btn-default btn-primary">Add</button>
               </dd>
             </g:form>
           </dl>

@@ -70,36 +70,36 @@
 							<g:xEditableRefData owner="${d}" field="mission"
 								config='Org.Mission' />
 						</dd>
-                                                <dt>
-                                                  <g:annotatedLabel owner="${d}" property="homepage">Homepage</g:annotatedLabel>
-                                                </dt>
-                                                <dd>
-                                                  <g:xEditable class="ipe" owner="${d}" field="homepage" />
-                                                </dd>
-						<dt>
+                        <dt>
+                          <g:annotatedLabel owner="${d}" property="homepage">Homepage</g:annotatedLabel>
+                        </dt>
+                        <dd>
+                          <g:xEditable class="ipe" owner="${d}" field="homepage" />
+                        </dd>
+						<dt class="dt-label">
 							<g:annotatedLabel owner="${d}" property="roles">Roles</g:annotatedLabel>
 						</dt>
 						<dd>
 							<g:if test="${d.id != null}">
-								<ul>
-									<g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
-										<li>
-											${t.value}
-										</li>
-									</g:each>
-								</ul>
-								<br />
+                                <g:if test="${d.roles}">
+                                  <ul>
+                                      <g:each in="${d.roles?.sort({"${it.value}"})}" var="t">
+                                          <li>
+                                              ${t.value}
+                                          </li>
+                                      </g:each>
+                                  </ul>
+                                </g:if>
 
 								<g:if test="${d.isEditable()}">
-									<g:form controller="ajaxSupport" action="addToStdCollection"
-										class="form-inline">
+									<g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
 										<input type="hidden" name="__context"
 											value="${d.class.name}:${d.id}" />
 										<input type="hidden" name="__property" value="roles" />
-										<g:simpleReferenceTypedown class="form-control" name="__relatedObject"
+										<g:simpleReferenceTypedown class="form-inline" name="__relatedObject"
 											baseClass="org.gokb.cred.RefdataValue" filter1="Org.Role" />
 										<input type="submit" value="Add..."
-											class="btn btn-default btn-primary btn-sm " />
+											class="btn btn-default btn-primary" />
 									</g:form>
 								</g:if>
 							</g:if>
@@ -235,7 +235,7 @@
 
 						<g:if test="${d.isEditable()}">
 							<button
-								class="hidden-license-details btn btn-default btn-sm btn-primary "
+								class="hidden-license-details btn btn-default btn-primary "
 								data-toggle="collapse" data-target="#collapseableAddOffice">
 								Add new <i class="fas fa-plus"></i>
 							</button>
@@ -282,7 +282,7 @@
 									<dt class="dt-label"></dt>
 									<dd>
 										<button type="submit"
-											class="btn btn-default btn-primary btn-sm ">Add</button>
+											class="btn btn-default btn-primary">Add</button>
 									</dd>
 								</g:form>
 							</dl>
