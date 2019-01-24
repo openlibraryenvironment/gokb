@@ -28,6 +28,17 @@ class RefdataValue implements Auditable {
     description(nullable:true, blank:true, maxSize:64)
     useInstead(nullable:true, blank:false)
     sortKey(nullable:true, blank:false)
+    value(validator: { val, obj ->
+      if (val) {
+        def dupe = RefdataCategory.lookup(obj.owner.desc, val)
+
+        if ( dupe && dupe != obj) {
+          return ['notUnique']
+        }
+      } else {
+        return ['notNull']
+      }
+    })
   }
 
   String getLogEntityId() {

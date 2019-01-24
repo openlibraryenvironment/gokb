@@ -66,21 +66,21 @@
             <input type="hidden" name="__newObjectClass"
               value="org.gokb.cred.RefdataValue" />
             <input type="hidden" name="__recip" value="owner" />
-            <dt>Refdata Value</dt>
+            <dt class="dt-label">Refdata Value</dt>
             <dd>
-              <input type="text" name="value" />
+              <input type="text" class="form-control" name="value" />
             </dd>
-            <dt>Display Class</dt>
+            <dt class="dt-label">Display Class</dt>
             <dd>
-              <input type="text" name="icon" />
+              <input type="text" class="form-control" name="icon" />
             </dd>
-            <dt>Sort Key</dt>
+            <dt class="dt-label">Sort Key</dt>
             <dd>
-              <input type="text" name="sortKey" />
+              <input type="text" class="form-control" name="sortKey" />
             </dd>
             <dt></dt>
             <dd>
-              <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+              <button type="submit" class="btn btn-default btn-primary">Add</button>
             </dd>
           </g:form>
         </dl>

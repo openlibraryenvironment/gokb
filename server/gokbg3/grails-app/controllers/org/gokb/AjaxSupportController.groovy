@@ -220,7 +220,6 @@ class AjaxSupportController {
 
           if(existing_variants){
             log.debug("found dupes!")
-            flash.message = message(code:'variantName.value.notUnique')
             errors.add(message(code:'variantName.value.notUnique'))
           }else{
             log.debug("create new variantName")
@@ -232,18 +231,15 @@ class AjaxSupportController {
 
           if (!params.title || params.title.size() == 0) {
             log.debug("missing title for TIPP creation")
-            flash.message.add(message(code:'tipp.title.nullable'))
             errors.add(message(code:'tipp.title.nullable'))
           }
 
           if (!params.hostPlatform || params.hostPlatform.size() == 0) {
-            flash.message.add(message(code:'tipp.hostPlatform.nullable'))
             log.debug("missing platform for TIPP creation")
             errors.add(message(code:'tipp.hostPlatform.nullable'))
           }
 
           if(!params.url || params.url.size() == 0) {
-            flash.message.add(message(code:'tipp.url.nullable'))
             log.debug("missing url for TIPP creation")
             errors.add(message(code:'tipp.url.nullable'))
           }
@@ -387,6 +383,10 @@ class AjaxSupportController {
       }else{
         log.error("Unable to create domain class ${params.__newObjectClass}");
       }
+    }
+
+    if (errors.size() > 0) {
+      flash.message = errors
     }
 
     redirect(url: request.getHeader('referer'))
@@ -597,7 +597,7 @@ class AjaxSupportController {
   private List processErrors(errors) {
     def result = []
 
-    target_object.errors.allErrors.each { eo ->
+    errors.each { eo ->
 
       String[] messageArgs = eo.getArguments()
       def errorMessage = null
