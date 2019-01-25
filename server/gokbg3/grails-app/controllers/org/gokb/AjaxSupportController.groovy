@@ -649,8 +649,8 @@ class AjaxSupportController {
       // bindData(target, binding_properties)
       target[params.name] = value
       log.debug("Saving... after assignment ${params.name} = ${target[params.name]}");
-      if ( target.save(flush:true) ) {
-
+      if ( target.validate() ) {
+        target.save(flush:true)
         if ( params.resultProp ) {
           result = value ? value[params.resultProp] : ''
         }
