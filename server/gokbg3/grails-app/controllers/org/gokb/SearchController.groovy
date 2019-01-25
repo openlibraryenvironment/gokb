@@ -181,6 +181,41 @@ class SearchController {
         }
         apiresponse.records.add(response_record);
       }
+    } else {
+      result.new_recset = []
+      log.debug("Create new recset..")
+      result.recset.each { r ->
+        def response_record = [:]
+        response_record.oid = "${r.class.name}:${r.id}"
+        response_record.obj = r
+        response_record.cols = []
+        result.qbetemplate.qbeConfig.qbeResults.each { rh ->
+          def ppath = rh.property.split(/\./)
+          def cobj = r
+          def final_oid = "${cobj.class.name}:${cobj.id}"
+
+          if (!params.hide || !params.hide.contains(rh.qpEquiv)) {
+
+            ppath.eachWithIndex { prop, idx ->
+              def sp = prop.minus('?')
+
+              if( cobj.class.name == 'org.gokb.cred.RefdataValue' ) {
+                cobj = cobj.value
+              }
+              else {
+                cobj = cobj[sp] ?: null
+
+                if (ppath.size() > 1 && idx == 0) {
+                  final_oid = "${cobj.class.name}:${cobj.id}"
+                }
+              }
+            }
+            response_record.cols.add([link: (rh.link ? final_oid : null), value: (cobj ?: '-Empty-')])
+          }
+        }
+        result.new_recset.add(response_record)
+      }
+      log.debug("Finished new recset!")
     }
 
     result.withoutJump = cleaned_params

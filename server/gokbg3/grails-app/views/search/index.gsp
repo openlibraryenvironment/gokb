@@ -37,7 +37,7 @@
 				<!-- panel-body -->
 				<g:if test="${recset && !init}">
 					<g:render template="qberesult"
-						model="${[qbeConfig:qbetemplate.qbeConfig, rows:recset, offset:offset, jumpToPage:'jumpToPage', det:det, page:page_current, page_max:page_total]}" />
+						model="${[qbeConfig:qbetemplate.qbeConfig, rows:new_recset, offset:offset, jumpToPage:'jumpToPage', det:det, page:page_current, page_max:page_total]}" />
 				</g:if>
 				<g:elseif test="${!init && !params.inline}">
 					<div class="panel-footer">

@@ -75,7 +75,7 @@ class BookInstance extends TitleInstance {
          ( hasChanged('editionStatement') ) ||
          ( hasChanged('componentDiscriminator')) ) {
       log.debug("Detected an update to properties for ${id} that might change the work mapping. Looking up");
-      submitRemapWorkTask();
+//       submitRemapWorkTask();
     }
   }
 
@@ -92,7 +92,7 @@ class BookInstance extends TitleInstance {
   }
 
   def afterInsert() {
-    submitRemapWorkTask();
+//     submitRemapWorkTask();
   }
 
   public static String generateBookDiscriminator (Map relevantFields) {
@@ -101,7 +101,7 @@ class BookInstance extends TitleInstance {
     def normVolume = generateNormname(relevantFields.volumeNumber)
     def normEdD = generateNormname(relevantFields.editionDifferentiator)
 
-    if(normVolume?.length() > 0 || normEdD?.length() > 0) {
+    if(normVolume?.size() > 0 || normEdD?.size() > 0) {
       result = "${normVolume ? 'v.'+normVolume : ''}${normEdD ? 'ed.'+normEdD : ''}".toString()
     }
     result

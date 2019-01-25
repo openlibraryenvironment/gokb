@@ -28,6 +28,7 @@ class TitleInstance extends KBComponent {
   static mapping = {
     // From TitleInstance
     includes KBComponent.mapping
+    medium column:'medium_id', index:'ti_medium_idx'
   }
 
   @Override

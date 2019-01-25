@@ -11,7 +11,7 @@
       <tr class="inline-nav">
         <g:each in="${qbeConfig.qbeResults}" var="c">
           <g:if test="${!params.hide || !params.hide.contains(c.qpEquiv)}">
-            <th>
+            <th style="white-space:nowrap;">
               <g:if test="${c.sort}">
                 <g:if test="${params.sort==c.sort && params.order=='asc'}">
                   <g:link params="${params+['sort':c.sort,order:'desc']}">
@@ -47,19 +47,20 @@
         <g:set var="r" value="${r}" />
         <tr class="${++counter==det ? 'success':''}">
           <!-- Row ${counter} -->
-          <g:each in="${qbeConfig.qbeResults}" var="c">
-            <g:if test="${!params.hide || !params.hide.contains(c.qpEquiv)}">
-              <g:set var="colVal" value="${groovy.util.Eval.x(r, 'x.' + c.property)}"/>
-
-              <td><g:if test="${c.link != null }">
-                  <g:link controller="${c.link.controller}" action="${c.link.action}" id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
-                    params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">
-                    ${colVal ?: '- Empty -'}
-                  </g:link>
-                </g:if> <g:else>
-                  ${colVal ?: '- Empty -'}
-                </g:else></td>
-            </g:if>
+          <g:each in="${r.cols}" var="c">
+            <td>
+              <g:if test="${c.link != null }">
+                <g:link controller="resource"
+                    action="show"
+                    id="${c.link}"
+                    params="${c.link_params!=null?groovy.util.Eval.x(pageScope,c.link_params):[]}">
+                    ${c.value}
+                </g:link>
+              </g:if>
+              <g:else>
+                ${c.value}
+              </g:else>
+            </td>
           </g:each>
         </tr>
       </g:each>
@@ -78,30 +79,32 @@
         <tr>
           <th></th>
           <g:each in="${qbeConfig.qbeResults}" var="c">
-            <th style="white-space:nowrap"><g:if test="${c.sort}">
-                <g:if test="${params.sort==c.sort && params.order=='asc'}">
-                  <g:link params="${params+['sort':c.sort,order:'desc']}">
-                    ${c.heading}
-                    <i class="fas fa-sort-up"></i>
-                  </g:link>
-                </g:if>
-                <g:else>
-                  <g:if test="${params.sort==c.sort && params.order=='desc'}">
-                    <g:link params="${params+['sort':c.sort,order:'asc']}">
+            <g:if test="${!params.hide || !params.hide.contains(c.qpEquiv)}">
+              <th style="white-space:nowrap"><g:if test="${c.sort}">
+                  <g:if test="${params.sort==c.sort && params.order=='asc'}">
+                    <g:link params="${params+['sort':c.sort,order:'desc']}">
                       ${c.heading}
-                      <i class="fas fa-sort-down"></i>
+                      <i class="fas fa-sort-up"></i>
                     </g:link>
                   </g:if>
                   <g:else>
-                    <g:link params="${params+['sort':c.sort,order:'desc']}">
-                      ${c.heading}
-                      <i class="fas fa-sort"></i>
-                    </g:link>
+                    <g:if test="${params.sort==c.sort && params.order=='desc'}">
+                      <g:link params="${params+['sort':c.sort,order:'asc']}">
+                        ${c.heading}
+                        <i class="fas fa-sort-down"></i>
+                      </g:link>
+                    </g:if>
+                    <g:else>
+                      <g:link params="${params+['sort':c.sort,order:'desc']}">
+                        ${c.heading}
+                        <i class="fas fa-sort"></i>
+                      </g:link>
+                    </g:else>
                   </g:else>
-                </g:else>
-              </g:if> <g:else>
-                ${c.heading}
-              </g:else></th>
+                </g:if> <g:else>
+                  ${c.heading}
+                </g:else></th>
+            </g:if>
           </g:each>
           <g:if test="${request.user?.showQuickView?.value=='Yes'}">
             <th></th>
@@ -111,32 +114,31 @@
       <tbody>
         <g:each in="${rows}" var="r">
           <g:if test="${r != null }">
-            <g:set var="r" value="${r}" />
+            <g:set var="row_obj" value="${r.obj}" />
             <tr class="${++counter==det ? 'success':''}">
               <!-- Row ${counter} -->
               <td><g:if
-                  test="${r.isEditable() && r.respondsTo('availableActions')}">
+                  test="${row_obj?.isEditable() && row_obj.respondsTo('availableActions')}">
                   <g:set var="al"
-                    value="${new JSON(r.userAvailableActions()).toString().encodeAsHTML()}" />
-                  <input type="checkbox" name="bulk:${r?.class.name}:${r.id}"
+                    value="${new JSON(row_obj?.userAvailableActions()).toString().encodeAsHTML()}" />
+                  <input type="checkbox" name="bulk:${r.oid}"
                     data-actns="${al}" class="obj-action-ck-box" />
                 </g:if> <g:else>
                   <input type="checkbox"
-                    title="${ !r.isEditable() ? 'Component is read only' : 'No actions available' }"
+                    title="${ !row_obj?.isEditable() ? 'Component is read only' : 'No actions available' }"
                     disabled="disabled" readonly="readonly" />
                 </g:else></td>
-              <g:each in="${qbeConfig.qbeResults}" var="c">
-                <g:set var="colVal" value="${groovy.util.Eval.x(r, 'x.' + c.property)}"/>
+              <g:each in="${r.cols}" var="c">
                 <td><g:if test="${ c.link != null }">
-                    <g:link controller="${c.link.controller}"
-                      action="${c.link.action}"
-                      id="${c.link.id!=null?groovy.util.Eval.x(pageScope,c.link.id):''}"
-                      params="${c.link.params!=null?groovy.util.Eval.x(pageScope,c.link.params):[]}">
-                      ${colVal?:'- Empty -'}
+                    <g:link controller="resource"
+                      action="show"
+                      id="${c.link}"
+                      params="${c.link_params!=null?groovy.util.Eval.x(pageScope,c.link_params):[]}">
+                      ${c.value}
                     </g:link>
                   </g:if>
                   <g:else>
-                    ${colVal?:'- Empty -'}
+                    ${c.value}
                   </g:else></td>
               </g:each>
               <g:if test="${request.user?.showQuickView?.value=='Yes'}">
