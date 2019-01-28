@@ -199,14 +199,20 @@ class SearchController {
             ppath.eachWithIndex { prop, idx ->
               def sp = prop.minus('?')
 
-              if( cobj.class.name == 'org.gokb.cred.RefdataValue' ) {
+              if( cobj?.class?.name == 'org.gokb.cred.RefdataValue' ) {
                 cobj = cobj.value
               }
               else {
-                cobj = cobj[sp] ?: null
+                if ( cobj && cobj[sp] != null ) {
+                  cobj = cobj[sp]
 
-                if (ppath.size() > 1 && idx == 0) {
-                  final_oid = "${cobj.class.name}:${cobj.id}"
+                  if (ppath.size() > 1 && idx == 0 && cobj) {
+                    final_oid = "${cobj.class.name}:${cobj.id}"
+                  }
+                }
+                else {
+                  cobj = null
+                  final_oid = null
                 }
               }
             }
