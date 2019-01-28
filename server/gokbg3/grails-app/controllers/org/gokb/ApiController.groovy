@@ -520,13 +520,13 @@ class ApiController {
               final_type = 'BookInstance'
             }
             else if (v == 'Journal') {
-              final_type == 'JournalInstance'
+              final_type = 'JournalInstance'
             }
             else if (v == 'Database') {
-              final_type == 'DatabaseInstance'
+              final_type = 'DatabaseInstance'
             }
             else if (v == 'Title') {
-              final_type == 'TitleInstance'
+              final_type = 'TitleInstance'
             }
 
             component_type = final_type
@@ -673,9 +673,9 @@ class ApiController {
       if (component_type == "TitleInstance") {
         QueryBuilder typeQuery = QueryBuilders.boolQuery()
 
-        typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
-        typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
-        typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
+        typeQuery.should(QueryBuilders.matchQuery('componentType', "JournalInstance"))
+        typeQuery.should(QueryBuilders.matchQuery('componentType', "DatabaseInstance"))
+        typeQuery.should(QueryBuilders.matchQuery('componentType', "BookInstance"))
 
         typeQuery.minimumNumberShouldMatch(1)
 
@@ -695,7 +695,7 @@ class ApiController {
         exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
       }
 
-      if( !errors && (singleParams || params.label || id_params) ) {
+      if( !errors && (singleParams || params.label || id_params || component_type) ) {
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
         es_request.setIndices(grailsApplication.config.globalSearch.indices)
