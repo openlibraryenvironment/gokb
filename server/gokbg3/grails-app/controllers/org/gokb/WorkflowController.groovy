@@ -1760,7 +1760,13 @@ class WorkflowController {
   @Secured(['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY'])
   def deleteCombo() {
     Combo c = Combo.get(params.id);
-    c.delete(flush:true);
+    if (c.fromComponent.isEditable()) {
+      log.debug("Delete combo..")
+      c.delete(flush:true);
+    }
+    else{
+      log.debug("Not deleting combo.. no edit permissions on fromComponent!")
+    }
     redirect(url: request.getHeader('referer'));
   }
 

@@ -525,10 +525,10 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'TIPP Persistent Id', property:'persistentId', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Title', qpEquiv:'qp_title_id', property:'title?.name', sort:'title?.name', link:[controller:'resource',action:'show',id:'x.r.title?.class?.name+\':\'+x.r.title?.id'] ],
+        [heading:'Title', qpEquiv:'qp_title_id', property:'title?.name', link:[controller:'resource',action:'show',id:'x.r.title?.class?.name+\':\'+x.r.title?.id'] ],
         [heading:'Type', qpEquiv:'qp_title_id', property:'title?.medium?.value'],
-        [heading:'Package', qpEquiv:'qp_pkg_id', property:'pkg?.name', sort:'pkg.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class?.name+\':\'+x.r.pkg?.id'] ],
-        [heading:'Platform', qpEquiv:'qp_plat_id', property:'hostPlatform?.name', sort:'platform.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
+        [heading:'Package', qpEquiv:'qp_pkg_id', property:'pkg?.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class?.name+\':\'+x.r.pkg?.id'] ],
+        [heading:'Platform', qpEquiv:'qp_plat_id', property:'hostPlatform?.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
         [heading:'Status', property:'status?.value', sort:'status']
       ]
     ]

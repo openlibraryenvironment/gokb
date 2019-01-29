@@ -137,7 +137,7 @@ class TitleInstance extends KBComponent {
 
   public Org getCurrentPublisher() {
     def result = null;
-    def publisher_combos = getCombosByPropertyName('publisher')
+    def publisher_combos = getCombosByPropertyNameAndStatus('publisher', 'Active')
     def highest_end_date = null
 
     publisher_combos.each { Combo pc ->
