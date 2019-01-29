@@ -1368,7 +1368,19 @@ class IntegrationController {
           boolean found = false
           for ( int i=0; !found && i<publisher_combos.size(); i++) {
             Combo pc = publisher_combos[i]
-            found = pc."${propName}".id == publisher.id
+            def idMatch = pc."${propName}".id == publisher.id
+
+            if (idMatch) {
+              if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
+              }
+              else if (pub_add_sd && pc.endDate && pub_add_sd != pc.endDate) {
+              }
+              else {
+                found = true
+              }
+            }
+
+
           }
 
           // Only add if we havn't found anything.
