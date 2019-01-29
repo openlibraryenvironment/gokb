@@ -204,27 +204,31 @@ class FTUpdateService {
           result.curatoryGroups.add(cg.name)
         }
 
+        result.titleType = kbc.title?.niceName ?: 'Unknown'
+
         result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         result.url = kbc.url
 
-        result.coverage = []
+        if (kbc.title?.niceName == 'Journal') {
+          result.coverage = []
 
-        ArrayList coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [kbc]
+          ArrayList coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [kbc]
 
-        coverage_src.each { tcs ->
-          def cst = [:]
+          coverage_src.each { tcs ->
+            def cst = [:]
 
-          cst.startDate = tcs.startDate ? sdf.format(tcs.startDate) : ""
-          cst.startVolume = tcs.startVolume ?: ""
-          cst.startIssue = tcs.startIssue ?: ""
-          cst.endDate = tcs.endDate ? sdf.format(tcs.endDate) : ""
-          cst.endVolume = tcs.endVolume ?: ""
-          cst.endIssue = tcs.endIssue ?: ""
-          cst.embargo = tcs.embargo ?: ""
-          cst.coverageNote = tcs.coverageNote ?: ""
+            cst.startDate = tcs.startDate ? sdf.format(tcs.startDate) : ""
+            cst.startVolume = tcs.startVolume ?: ""
+            cst.startIssue = tcs.startIssue ?: ""
+            cst.endDate = tcs.endDate ? sdf.format(tcs.endDate) : ""
+            cst.endVolume = tcs.endVolume ?: ""
+            cst.endIssue = tcs.endIssue ?: ""
+            cst.embargo = tcs.embargo ?: ""
+            cst.coverageNote = tcs.coverageNote ?: ""
 
-          result.coverage.add(cst)
+            result.coverage.add(cst)
+          }
         }
 
         result.tippPackage = kbc.pkg ? "${kbc.pkg?.class?.name}:${kbc.pkg?.id}" : ""
