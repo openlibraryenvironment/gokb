@@ -88,7 +88,7 @@ class ESSearchService{
           result.hits = search_hits.getHits()
           result.firstrec = params.offset + 1
           result.resultsTotal = search_hits.totalHits
-          result.lastrec = Math.min ( params.offset + params.max + 1, result.resultsTotal)
+          result.lastrec = Math.min ( params.offset + params.max, result.resultsTotal)
           
           if (search_results.getAggregations()) {
             result.facets = [:]
