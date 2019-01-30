@@ -285,7 +285,7 @@ class IntegrationController {
 
               log.debug("Create new org name will be \"${request.JSON.name}\" (${request.JSON.name?.length()})");
 
-              located_or_new_org = new Org(name:request.JSON.name, normname:orgNormName)
+              located_or_new_org = new Org(name:request.JSON.name, normname:orgNormName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null)
 
               log.debug("Attempt to save - validate: ${located_or_new_org}");
 
@@ -962,7 +962,7 @@ class IntegrationController {
         p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) )
 
         if (!p) {
-          new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName).save(flush:true, failOnError:true)
+          new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null).save(flush:true, failOnError:true)
           created = true
         }
       }
@@ -1111,7 +1111,8 @@ class IntegrationController {
         user,
         null,
         titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-          (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance')
+          (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+        titleObj.uuid
       );  // project
 
       if ( title ) {
@@ -1171,7 +1172,8 @@ class IntegrationController {
                   user,
                   null,
                   titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                    (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance')
+                    (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                  fhe.uuid
                 );
 
                 if ( p ) { inlist.add(p); } else { cont = false; }
@@ -1186,7 +1188,8 @@ class IntegrationController {
                   user,
                   null,
                   titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                    (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance')
+                    (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                  fhe.uuid
                 );
 
                 if ( p && !inlist.contains(p) ) { outlist.add(p); } else { cont = false; }

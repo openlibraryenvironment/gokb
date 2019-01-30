@@ -90,7 +90,8 @@ config.deferred.each { k, v ->
 private convertHistoryEvent(evt) {
   // convert the evt structure to a json object and add to lst
   def result = [
-    'title' : cleanText(evt.title[0].text()),
+    'title' : cleanText(evt.title.text()),
+    'uuid' : cleanText(evt.uuid.text())
     'identifiers' : evt.identifiers.identifier.collect { id ->
       [
         type: cleanText(id.'@namespace'.text()),
