@@ -206,17 +206,21 @@ class SearchController {
                 if ( cobj && cobj[sp] != null ) {
                   cobj = cobj[sp]
 
-                  if (ppath.size() > 1 && idx == 0 && cobj) {
-                    final_oid = "${cobj.class.name}:${cobj.id}"
+                  if (ppath.size() > 1 && idx == ppath.size()-2) {
+                    if (cobj && sp != 'class') {
+                      final_oid = "${cobj.class.name}:${cobj.id}"
+                    }
+                    else {
+                      final_oid = null
+                    }
                   }
                 }
                 else {
                   cobj = null
-                  final_oid = null
                 }
               }
             }
-            response_record.cols.add([link: (rh.link ? final_oid : null), value: (cobj ?: '-Empty-')])
+            response_record.cols.add([link: (rh.link ? (final_oid ?: response_record.oid ) : null), value: (cobj ?: '-Empty-')])
           }
         }
         result.new_recset.add(response_record)
