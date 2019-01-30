@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>Search</title>
+<title>Search <g:if test="${qbetemplate?.title}"></g:if>${qbetemplate?.title}</title>
 </head>
 <body>
 	<h1 class="page-header">${qbetemplate.title ?:''} <g:if test="${refOid}">for <g:link controller="resource" action="show" id="${refOid}">${refName ?: refOid}</g:link></g:if></h1>
