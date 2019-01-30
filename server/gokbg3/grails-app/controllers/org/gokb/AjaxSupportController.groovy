@@ -227,7 +227,6 @@ class AjaxSupportController {
         }
 
         if(params.__newObjectClass == "org.gokb.cred.TitleInstancePackagePlatform") {
-          flash.message = []
 
           if (!params.title || params.title.size() == 0) {
             log.debug("missing title for TIPP creation")
@@ -363,30 +362,28 @@ class AjaxSupportController {
             }
           }
         }
-        else {
-          log.debug("could not add to collection!")
-          if(!flash.message) {
-            flash.message = "Unable to add component!"
-          }
-        }
       }
       else if (!contextObj) {
         log.debug("Unable to locate instance of context class with oid ${params.__context}");
+        flash.error = "Context object could not be found!"
       }
       else {
         log.debug("Located instance of context class with oid ${params.__context} is not editable.");
+        flash.error = "Permission to add to this list was denied."
       }
     }
     else {
       if(!domain_class) {
         log.error("Unable to lookup domain class ${params.__newObjectClass}");
+        flash.error = "Could not find domain class ${params.__newObjectClass}. Please report this to an admin.".toString()
       }else{
-        log.error("Unable to create domain class ${params.__newObjectClass}");
+        flash.error = "No permission to create an object of domain class ${params.__newObjectClass}.".toString()
+        log.error("No permission to create an object of domain class ${params.__newObjectClass}");
       }
     }
 
     if (errors.size() > 0) {
-      flash.message = errors
+      flash.error = errors
     }
 
     redirect(url: request.getHeader('referer'))
@@ -403,11 +400,16 @@ class AjaxSupportController {
         contextObj.save(flush:true, failOnError:true)
         log.debug("Saved: ${contextObj.id}");
       }else{
+        flash.error = "Object is already present in this list!"
         log.debug("Tried to add the same object twice!")
       }
     }
+    else if (!contextObj) {
+      flash.error = "Context object could not be found!"
+    }
     else {
-      log.debug("context object not found, or not editable.")
+      flash.error = "Permission to add to this list was denied."
+      log.debug("context object not editable.")
     }
     redirect(url: request.getHeader('referer'))
   }
@@ -431,12 +433,12 @@ class AjaxSupportController {
                 log.debug("deleteParent()")
                 item_to_remove.deleteParent();
               }
-              log.debug("tried removal: "+item_to_remove[hbc]);
+              log.debug("tried removal: ${item_to_remove[hbc]}");
             }
           }
         }
         log.debug("${params}");
-        log.debug("removing: "+item_to_remove+" from "+params.__property+" for "+contextObj);
+        log.debug("removing: ${item_to_remove} from ${params.__property} for ${contextObj}");
 
         def remove_result = contextObj[params.__property].remove(item_to_remove);
 
@@ -445,9 +447,11 @@ class AjaxSupportController {
 
         def new_cobj = contextObj.save(flush: true, failOnError: true)
 
-        if (!new_cobj) {
-          log.debug("${contextObj.errors.allErrors()}")
+        if (!contextObj.validate()) {
+
+          flash.error = processErrors(contextObj.errors.allErrors())
         } else {
+          contextObj.save(flush: true, failOnError: true)
           log.debug("saved ok (${new_cobj[params.__property]})");
         }
 
@@ -463,8 +467,11 @@ class AjaxSupportController {
             item_to_remove[params.__otherEnd]=null; //this seems to fail
             log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
           }
-          if (item_to_remove.save()==false) {
-            log.debug("${item_to_remove.errors.allError()}");
+          if (item_to_remove.validate()) {
+            flash.error = processErrors(item_to_remove.errors.allError())
+          }
+          else {
+            item_to_remove.save()
           }
         }
       } else {
@@ -472,9 +479,11 @@ class AjaxSupportController {
       }
     }
     else if (!contextObj) {
+      flash.error = "Context object could not be found!"
       log.debug("Unable to locate instance of context class with oid ${params.__context}");
     }
     else {
+      flash.error = "No Permission to remove from this list."
       log.debug("Located instance of context class with oid ${params.__context} is not editable.");
     }
     redirect(url: request.getHeader('referer'))
@@ -489,9 +498,11 @@ class AjaxSupportController {
       contextObj.delete(flush:true)
     }
     else if (!contextObj) {
+      flash.error = "Could not locate item to delete!"
       log.debug("Unable to locate instance of context class with oid ${params.__context}");
     }
     else {
+      flash.error = "Permission to delete object denied."
       log.debug("Located instance of context class with oid ${params.__context} is not editable.");
     }
 
@@ -724,9 +735,10 @@ class AjaxSupportController {
         } catch (grails.validation.ValidationException ve) {
 
           log.debug("${ve}")
-          flash.message = message(code:'identifier.value.IllegalIDForm')
+          flash.error = message(code:'identifier.value.IllegalIDForm')
         }
       }else{
+        flash.error = "Could not create Identifier"
         log.debug("could not create identifier!")
       }
     }

@@ -207,14 +207,14 @@ class HomeController {
       if ( passwordEncoder.isPasswordValid(user.password, params.origpass, null) ) {
         user.password = params.newpass
         user.save(flush:true, failOnError:true);
-        flash.message = "Password Changed!"
+        flash.success = "Password Changed!"
       }
       else {
-        flash.message = "Existing password does not match: not changing"
+        flash.error = "Existing password does not match: not changing"
       }
     }
     else {
-      flash.message = "New password does not match repeat password: not changing"
+      flash.error = "New password does not match repeat password: not changing"
     }
     redirect(action:'profile')
   }

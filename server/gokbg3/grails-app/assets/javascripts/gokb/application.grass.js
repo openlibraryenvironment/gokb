@@ -143,7 +143,17 @@ window.gokb = {
     // If we have error messages then let's display them in a modal.
     var messages = $('#msg');
     if (messages.children().length > 0) {
-      bootbox.alert("<h2 class='text-danger' >Error</h2>" + messages.html());
+      bootbox.alert("<h2 class='text-info' >Info</h2>" + messages.html());
+    }
+
+    var errors = $('#error');
+    if (errors.children().length > 0) {
+      bootbox.alert("<h2 class='text-danger' >Error</h2>" + errors.html());
+    }
+
+    var success = $('#success');
+    if (success.children().length > 0) {
+      bootbox.alert("<h2 class='text-success' >Success</h2>" + success.html());
     }
     
     $('#modal').on('show.bs.modal', function () {

@@ -152,12 +152,12 @@ class WorkflowController {
           this."${action_config.method}"(result.objects_to_action);
           break;
         default:
-          flash.message="Invalid action type information: ${action_config.actionType}".toString();
+          flash.error="Invalid action type information: ${action_config.actionType}".toString();
           break;
       }
     }
     else {
-      flash.message="Unable to locate action config for ${params.selectedBulkAction}".toString();
+      flash.error="Unable to locate action config for ${params.selectedBulkAction}".toString();
       log.warn("Unable to locate action config for ${params.selectedBulkAction}");
       redirect(url: result.ref)
     }
@@ -1732,16 +1732,19 @@ class WorkflowController {
       def otd = Org.get(params.orgsToDeprecate)
       def neworg = genericOIDService.resolveOID2(params.neworg)
 
-      if ( otd && neworg ) {
+      if ( otd && neworg && otd.isEditable() ) {
         log.debug("Got org to deprecate and neworg...  Process now");
         // Updating all combo.toComponent
         // Updating all combo.fromComponent
         Combo.executeUpdate("update Combo set toComponent = ? where toComponent = ?",[neworg,otd]);
         Combo.executeUpdate("update Combo set fromComponent = ? where fromComponent = ?",[neworg,otd]);
-        flash.message="Org Deprecation Completed".toString()
+        flash.success="Org Deprecation Completed".toString()
       }
+      else {
+        flash.errors="Org Deprecation Failed!".toString()
+      }
+      redirect(controller:'resource', action:'show', id:"${otd.class.name}:${otd.id}")
     }
-    result
   }
 
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
