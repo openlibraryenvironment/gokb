@@ -285,10 +285,8 @@ class AdminController {
           if (job_res && job_res instanceof Date) {
             j.endTime = j.get()
           }
-          else if (job_res && j.messages.size() == 0) {
-            j.message(job_res)
-          }
-        } catch (CancellationException e) {
+        }
+        catch (CancellationException e) {
           log.debug("Cancelled")
         }
       }
@@ -328,8 +326,8 @@ class AdminController {
   }
   
   def cleanup() {
-    Job j = concurrencyManagerService.createJob {
-      cleanupService.expungeDeletedComponents()
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.expungeDeletedComponents(j)
     }.startOrQueue()
     
     log.debug "Triggering cleanup task. Started job #${j.id}"
@@ -341,8 +339,8 @@ class AdminController {
   }
 
   def cleanupRejected() {
-    Job j = concurrencyManagerService.createJob {
-      cleanupService.expungeRejectedComponents()
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.expungeRejectedComponents(j)
     }.startOrQueue()
 
     log.debug "Triggering cleanup task. Started job #${j.id}"

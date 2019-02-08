@@ -7,6 +7,7 @@ import org.gokb.cred.RefdataCategory
 import grails.util.GrailsClassUtils
 import org.gokb.ClassExaminationService
 import java.text.SimpleDateFormat
+import org.gokb.cred.KBComponent
 
 class ClassUtils {
 
@@ -63,19 +64,20 @@ class ClassUtils {
     result;
   }
 
-  public static boolean setRefdataIfPresent(value, obj, prop, cat = null) {
+  public static boolean setRefdataIfPresent(value, objid, prop, cat = null) {
     boolean result = false
     ClassExaminationService classExaminationService = grails.util.Holders.applicationContext.getBean('classExaminationService') as ClassExaminationService
+    def kbc = KBComponent.get(objid)
 
     if (!cat) {
-      cat = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
+      cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
     }
 
     if ( ( value ) && ( cat ) &&
          ( value.toString().trim().length() > 0 ) &&
-         ( ( obj[prop] == null ) || ( obj[prop].value != value.trim() ) ) ) {
+         ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
       def v = RefdataCategory.lookupOrCreate(cat,value)
-      obj[prop] = v
+      kbc[prop] = v
       result = true
     }
 

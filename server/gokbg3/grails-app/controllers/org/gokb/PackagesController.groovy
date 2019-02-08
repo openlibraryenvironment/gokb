@@ -157,7 +157,9 @@ class PackagesController {
     def result = [:]
     log.debug("deposit::${params}")
     def jobid = null;
+
     Job background_job = null;
+    User user = springSecurityService.currentUser
 
     if ( request.method=='POST') {
     

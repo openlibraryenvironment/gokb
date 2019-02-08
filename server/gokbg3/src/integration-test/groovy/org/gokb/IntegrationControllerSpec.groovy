@@ -289,5 +289,43 @@ class IntegrationControllerSpec extends Specification {
         matching_pkgs[0].provider?.name = "American Chemical Society"
     }
 
-
+    void "Test crossReferenceTitle (BOOK) Case 1"()
+      IntegrationController c = new IntegrationController()
+      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+        def json_record = [
+          "identifiers" : [
+            [
+              "type" : "isbn",
+              "value" : "987131223223X"
+            ],
+            [
+              "type" : "doi",
+              "value" : "10.1515/pdtc"
+            ]
+          ],
+          "name" : "Test Book 1",
+          "editionNumber" : "4",
+          "volumeNumber" : "3",
+          "firstAuthor" : "J. Smith",
+          "dateFirstOnline" : "2019-01-01 00:00:00.000"
+        ]
+      when: "Caller asks for this record to be cross referenced"
+        c.request.JSON = json_record
+        c.crossReferenceTitle()
+        log.debug(c.response.json)
+        def response = c.response.json
+        // Give the background updates time to complete
+        synchronized(this) {
+          Thread.sleep(4000)
+        }
+      then: "The item is created in the database because it does not exist"
+        response.message != null
+        response.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item and the discriminator is set correctly"
+        def ids = [ ['ns':'isbn', 'value':'987-13-12232-23-X']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids.size() == 1
+        matching_with_class_one_ids[0] == response.titleId
+        matching_with_class_one_ids[0].name == "Test Book 1"
+        matching_with_class_one_ids[0].componentDiscriminator == "v.3ed.4a:jsmith"
 }

@@ -34,14 +34,11 @@
             <g:elseif test="${v.isDone() && v.endTime}">
               Finished
             </g:elseif>
-            <g:elseif test="${v.isDone() && v.messages}">
-              Error
-            </g:elseif>
             <g:elseif test="${v.isDone()}">
               Done
             </g:elseif>
             <g:else>
-              Not Done
+              Not Done <g:if test="${v.progress}">(${v.progress})</g:if>
             </g:else>
           </td>
           <td>${v.endTime}</td>

@@ -179,6 +179,7 @@ class TitleInstance extends KBComponent {
     if ( new_publisher != null ) {
 
       def current_publisher = getCurrentPublisher()
+      def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
       if ( ( current_publisher != null ) && ( current_publisher.id==new_publisher.id ) ) {
         // no change... leave it be
@@ -196,7 +197,7 @@ class TitleInstance extends KBComponent {
         RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue('publisher'))
         Combo combo = new Combo(
             type    : (type),
-            status  : DomainClassExtender.getComboStatusActive(),
+            status  : combo_active,
             startDate : (null_start ? null : new Date())
             )
 
@@ -303,6 +304,8 @@ class TitleInstance extends KBComponent {
             builder.'volumeNumber' (this.volumeNumber)
             builder.'dateFirstInPrint' (this.dateFirstInPrint)
             builder.'dateFirstOnline' (this.dateFirstOnline)
+            builder.'firstEditor' (this.firstEditor)
+            builder.'firstAuthor' (this.firstAuthor)
           }
           
           builder.'imprint' (imprint?.name)
@@ -356,10 +359,6 @@ class TitleInstance extends KBComponent {
             }
           }
 
-          if ( this.class.name == 'org.gokb.cred.BookInstance' ) {
-            builder.'firstAuthor' (people_combos.find { it.role?.value == 'Author' }?.person?.name)
-            builder.'firstEditor' (people_combos.find { it.role?.value == 'Editor' }?.person?.name)
-          }
           else {
             builder.history() {
               history.each { he ->
@@ -570,6 +569,34 @@ class TitleInstance extends KBComponent {
     result &= titleDTO != null
     result &= titleDTO.name != null
     result &= titleDTO.identifiers != null
+
+    titleDTO.identifiers.each { idobj ->
+      if (idobj.type && idobj.value) {
+        def found_ns = IdentifierNamespace.findAllByValue(idobj.type.toLowerCase())
+        def final_val = idobj.value
+
+        if (found_ns) {
+          try {
+
+            if (found_ns.family == 'isxn') {
+              final_val = final_val.replaceAll("x","X")
+            }
+
+            if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
+              def test_id = new Identifier(namespace:found_ns, value:final_val).validate()
+            }
+          }
+          catch (grails.validation.ValidationException ve) {
+            log.warn("Validation for ${found_ns.value}:${final_val} failed!")
+            result = false
+          }
+        }
+      }
+      else {
+        log.warn("Missing information in id object ${idobj}")
+        result = false
+      }
+    }
 
     if ( !result ) {
       log.warn("Title Failed Validation ${titleDTO}");

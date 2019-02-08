@@ -4,6 +4,7 @@ import org.gokb.cred.*
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.delete.DeleteRequest
 import org.elasticsearch.client.Requests
+import com.k_int.ConcurrencyManagerService.Job
 
 class CleanupService {
   def sessionFactory
@@ -95,12 +96,12 @@ class CleanupService {
     }
   }
   
-  private def expungeByIds ( ids ) {
+  private def expungeByIds ( ids, Job j = null ) {
     
     def result = [report: []]
     def esclient = ESWrapperService.getClient()
     
-    ids.each { component_id ->
+    ids.eachWithIndex { component_id, idx ->
       try {
         KBComponent.withNewTransaction {
           log.debug("Expunging ${component_id}");
@@ -119,6 +120,7 @@ class CleanupService {
           log.debug("${es_response}")
           result.report.add(expunge_result)
         }
+        j?.setProgress(idx+1,ids.size())
       }
       catch ( Throwable t ) {
         log.error("problem",t);
@@ -129,36 +131,36 @@ class CleanupService {
   }
 
   @Transactional
-  def deleteOrphanedTipps() {
+  def deleteOrphanedTipps(Job j = null) {
     log.debug("Expunging TIPPs with missing links")
 
     def delete_candidates = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where not exists (from Combo as c where c.toComponent = tipp AND c.type.value = 'TitleInstance.Tipps')")
 
     log.debug("Found ${delete_candidates.size()} erroneous TIPPs..")
 
-    def result = expungeByIds(delete_candidates)
+    def result = expungeByIds(delete_candidates, j)
 
     log.debug("Done");
     return new Date();
   }
   
   @Transactional
-  def expungeDeletedComponents() {
+  def expungeDeletedComponents(Job j = null) {
 
     log.debug("Process delete candidates");
 
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
 
-    def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.status=:deletedStatus',[deletedStatus: status_deleted])
+    def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.status=:deletedStatus and kbc.duplicateOf IS NULL',[deletedStatus: status_deleted])
 
-    def result = expungeByIds(delete_candidates)
+    def result = expungeByIds(delete_candidates, j)
 
     log.debug("Done");
     return new Date();
   }
 
   @Transactional
-  def expungeRejectedComponents() {
+  def expungeRejectedComponents(Job j = null) {
 
     log.debug("Process rejected candidates");
 
@@ -166,7 +168,7 @@ class CleanupService {
 
     def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.editStatus=:rejectedStatus',[rejectedStatus: status_rejected])
 
-    def result = expungeByIds(delete_candidates)
+    def result = expungeByIds(delete_candidates, j)
 
     log.debug("Done");
     return new Date();
@@ -179,7 +181,7 @@ class CleanupService {
     def ctr = 0
     def skipctr = 0
     KBComponent.withNewSession {
-      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").each { kbc_id ->
+      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").eachWithIndex { kbc_id ->
         try {
           KBComponent comp = KBComponent.get(kbc_id)
           log.debug("Repair component with no uuid.. ${comp.class.name} ${comp.id} ${comp.name}")

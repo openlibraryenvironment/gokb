@@ -4,7 +4,10 @@ import org.gokb.cred.*
 
 import com.k_int.ClassUtils
 import grails.converters.JSON
+import grails.gorm.transactions.*
+import groovy.transform.Synchronized
 
+@Transactional
 class TitleLookupService {
 
   def grailsApplication
@@ -166,7 +169,8 @@ class TitleLookupService {
    * @param publisher_name
    * @param identifiers : map [ [ type: 'idtype', value:'idvalue' ], [ type:'idtype', value:'idvalue' ] ]
    */
-  def find (String title, 
+
+  def find (String title,
             String publisher_name, 
             def identifiers, 
             def user = null, 
@@ -176,6 +180,9 @@ class TitleLookupService {
     return find([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
   }
 
+  private final findLock = new Object()
+
+  @Synchronized("findLock")
   def find (Map metadata,
             def user = null, 
             def project = null,
@@ -257,7 +264,9 @@ class TitleLookupService {
                     )
               }
 
-              the_title.save(flush:true, failOnError:true);
+              if(the_title.validate()) {
+                the_title.save(flush:true, failOnError:true);
+              }
             }
 
           } else {
@@ -457,7 +466,12 @@ class TitleLookupService {
               all_matched.add(mti)
             }
             else {
-              log.debug("Skipping matched TI with status 'Deleted'!")
+              if (mti.duplicateof) {
+                all_matched.add(mti.duplicateof)
+              }
+              else {
+                log.debug("Skipping matched TI with status 'Deleted'!")
+              }
             }
           }
 
@@ -538,62 +552,68 @@ class TitleLookupService {
     if (the_title) {
 
       // Make sure we're all saved before looking up the publisher
-      the_title.save(flush:true, failOnError:true);
+      if(the_title.validate()) {
+        the_title.save(flush:true, failOnError:true);
       
-      if(the_title.name.startsWith("Unknown Title")){
-        the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
-      }
-
-      // Add the publisher.
-      addPublisher(metadata.publisher_name, the_title, user, project)
-
-      Set ids_to_add = []
-      ids_to_add.addAll(results['ids'])
-      ids_to_add.addAll(results['other_identifiers'])
-
-      def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-
-      ids_to_add.each {
-
-        def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[it.id,the_title.id,id_combo_type.id]);
-
-        if ( !dupes || dupes.size() == 0) {
-
-//           log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
-
-          // Double check the identifier we are about to add does not already exist attached to another item in the system
-          // Combo.Type : KBComponent.Ids
-
-//           def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
-
-//           if ( existing_identifier.size() > 0 ) {
-//             ReviewRequest.raise(
-//               the_title,
-//               "Identifier not unique",
-//               "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (component ${existing_identifier[0].fromComponent})",
-//               user,
-//               project
-//             )
-//           }
-          
-          log.debug("Adding new identifier ${it} to title ${the_title}");
-          Combo new_id = new Combo(toComponent:it, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
+        if(the_title.name.startsWith("Unknown Title")){
+          the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
         }
-        else {
-          log.debug("Identifier ${it} is already connected to the title!");
-        }
-      }
 
-      // Try and save the result now.
-      if ( the_title.isDirty() ) {
-        if ( the_title.save(failOnError:true, flush:true) ) {
-          log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
-        }
-        else {
-          the_title.errors.each { e ->
-            log.error("Problem saving title: ${e}");
+        // Add the publisher.
+        addPublisher(metadata.publisher_name, the_title, user, project)
+
+        Set ids_to_add = []
+        ids_to_add.addAll(results['ids'])
+        ids_to_add.addAll(results['other_identifiers'])
+
+        def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+
+        ids_to_add.each { ita ->
+
+          def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[ita.id,the_title.id,id_combo_type.id]);
+
+          if ( !dupes || dupes.size() == 0) {
+
+  //           log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
+
+            // Double check the identifier we are about to add does not already exist attached to another item in the system
+            // Combo.Type : KBComponent.Ids
+
+  //           def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
+
+  //           if ( existing_identifier.size() > 0 ) {
+  //             ReviewRequest.raise(
+  //               the_title,
+  //               "Identifier not unique",
+  //               "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (component ${existing_identifier[0].fromComponent})",
+  //               user,
+  //               project
+  //             )
+  //           }
+
+            log.debug("Adding new identifier ${ita} to title ${the_title}");
+//             Combo new_id = new Combo(toComponent:ita, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
+            the_title.ids.add(ita)
+          }
+          else {
+            log.debug("Identifier ${ita} is already connected to the title!");
           }
         }
+
+        // Try and save the result now.
+        if ( the_title.isDirty() ) {
+          if ( the_title.save(failOnError:true, flush:true) ) {
+            log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
+          }
+          else {
+            the_title.errors.each { e ->
+              log.error("Problem saving title: ${e}");
+            }
+          }
+        }
+      }
+      else {
+        log.error("title validation failed for ${the_title}!")
       }
     }
 
@@ -607,11 +627,11 @@ class TitleLookupService {
          ( publisher_name.trim().length() > 0 ) ) {
          
       log.debug("Add publisher \"${publisher_name}\"")
-      Org publisher = componentLookupService.lookupComponent(publisher_name)
+      Org publisher = Org.findByName(publisher_name)
+      def norm_pub_name = Org.generateNormname(publisher_name);
       
       if ( !publisher ) {
         // Lookup using norm name.
-        def norm_pub_name = Org.generateNormname(publisher_name);
         
         log.debug("Using normname \"${norm_pub_name}\" for lookup")
         publisher = Org.findByNormname(norm_pub_name)
@@ -635,6 +655,8 @@ class TitleLookupService {
       if (publisher) {
         log.debug("Found publisher ${publisher}");
         def orgs = ti.getPublisher()
+
+        log.debug("Check for dupes in ${orgs}")
 
         // Has the publisher ever existed in the list against this title.
         if (!orgs.contains(publisher)) {

@@ -232,7 +232,7 @@
                 <li>${flash.error}</li>
               </g:if>
               <g:else>
-                <g:each in="${flash.errors}" var="error">
+                <g:each in="${flash.error}" var="error">
                   <li>${error}</li>
                 </g:each>
               </g:else>

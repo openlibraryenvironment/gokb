@@ -413,7 +413,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
-            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
+            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp.id, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
           }
 
           def cs_match = false
