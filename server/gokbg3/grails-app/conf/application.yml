@@ -11,27 +11,6 @@ grails:
             # Whether to translate GORM events into Reactor events
             # Disabled by default for performance reasons
             events: false
-info:
-    app:
-        name: '@info.app.name@'
-        version: '@info.app.version@'
-        grailsVersion: '@info.app.grailsVersion@'
-
-spring:
-    main:
-        banner-mode: "off"
-    groovy:
-        template:
-            check-template-location: false
-
-# Spring Actuator Endpoints are Disabled by Default
-endpoints:
-    enabled: false
-    jmx:
-        enabled: true
-
----
-grails:
     mime:
         file:
             extensions: false
@@ -72,8 +51,8 @@ grails:
     controllers:
         defaultScope: singleton
         upload:
-          maxFileSize: 2000000
-          maxRequestSize: 2000000
+            maxFileSize: 2000000
+            maxRequestSize: 2000000
     converters:
         encoding: UTF-8
     views:
@@ -88,27 +67,36 @@ grails:
                 taglib: none
                 staticparts: none
     exceptionresolver:
-            params:
-                exclude:
-                    - password
-                    - password2
-                    - email
+        params:
+            exclude:
+                - password
+                - password2
+                - email
+info:
+    app:
+        name: '@info.app.name@'
+        version: '@info.app.version@'
+        grailsVersion: '@info.app.grailsVersion@'
+
+spring:
+    main:
+        banner-mode: "off"
+    groovy:
+        template:
+            check-template-location: false
+
+# Spring Actuator Endpoints are Disabled by Default
 endpoints:
+    enabled: false
     jmx:
+        enabled: true
         unique-names: true
 
----
 hibernate:
     cache:
         queries: false
         use_second_level_cache: false
         use_query_cache: false
-dataSource:
-    pooled: true
-    jmxExport: true
-    driverClassName: org.h2.Driver
-    username: sa
-    password: ''
 
 environments:
     development:
@@ -198,12 +186,12 @@ environments:
             es:
                 index: gokbg3
                 cluster: gokbg3-prod
----
+
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
     decisionSupport: false
     costInfo: false
----
+
 quartz:
     autoStartup: true
