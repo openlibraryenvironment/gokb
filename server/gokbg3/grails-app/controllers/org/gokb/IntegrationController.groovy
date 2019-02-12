@@ -769,6 +769,7 @@ class IntegrationController {
               log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
             }
 
+            // map platform names with ids seen while iterating over tipps:
             Map platform_cache = [:]
             log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
 
@@ -798,16 +799,16 @@ class IntegrationController {
 
                 if ( valid ) {
 
-                  def pl = null
-                  def pl_id
-                  if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
-                    pl = Platform.get(pl_id)
+                  def tippPlatform = null
+                  def tippPlatformId
+                  if (platform_cache.containsKey(tipp.platform.name) && (tippPlatformId = platform_cache[tipp.platform.name]) != null) {
+                    tippPlatform = Platform.get(tippPlatformId)
                   } else {
                     // Not in cache.
-                    pl = Platform.upsertDTO(tipp.platform, user);
+                    tippPlatform = Platform.upsertDTO(tipp.platform, user);
 
-                    if(pl){
-                      platform_cache[tipp.platform.name] = pl.id
+                    if(tippPlatform){
+                      platform_cache[tipp.platform.name] = tippPlatform.id
                     }else{
                       log.error("Could not find/create ${tipp.platform}")
                       errors.add(['code': 500, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
@@ -815,8 +816,8 @@ class IntegrationController {
                     }
                   }
 
-                  if ( pl && ( tipp.platform.internalId == null ) ) {
-                    tipp.platform.internalId = pl.id;
+                  if ( tippPlatform && ( tipp.platform.internalId == null ) ) {
+                    tipp.platform.internalId = tippPlatform.id;
                   }
                   else {
                     log.warn("No platform arising from ${tipp.platform}");
@@ -851,14 +852,18 @@ class IntegrationController {
           int tippctr=0;
           if ( valid ) {
             // If valid so far, validate tipps
-            log.debug("Validating tipps [${tippctr++}]");
+            log.debug("Validating tipps");
             request.JSON.tipps.each { tipp ->
               def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
-              if ( !validation_result) {
+              if (validation_result){
+                tippctr++
+              }
+              else {
                 log.error("TIPP Validation failed on ${tipp}")
                 valid = false
               }
             }
+            log.debug("Validated ${tippctr++} tipps");
           }
           else {
             log.warn("Not validating tipps - failed pre validation")

@@ -667,8 +667,7 @@ where cp.owner = :c
   }
 
   def beforeInsert() {
-    // log.debug("beforeInsert for ${this}")
-    // Generate the any necessary values.
+    // Generate any necessary values.
     generateShortcode()
     generateNormname()
     generateComponentHash()
