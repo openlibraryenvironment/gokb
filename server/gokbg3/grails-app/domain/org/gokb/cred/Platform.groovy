@@ -4,7 +4,7 @@ import javax.persistence.Transient
 import groovy.util.logging.*
 import org.gokb.GOKbTextUtils
 
-@Log4j
+@Slf4j
 class Platform extends KBComponent {
 
   String primaryUrl

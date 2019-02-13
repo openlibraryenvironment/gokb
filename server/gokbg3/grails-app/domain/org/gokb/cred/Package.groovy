@@ -1,7 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
-import groovy.util.logging.Log4j
+import groovy.util.logging.*
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
 import com.k_int.ClassUtils
@@ -10,7 +10,7 @@ import groovy.time.TimeCategory
 
 import org.gokb.refine.*
 
-@Log4j
+@Slf4j
 class Package extends KBComponent {
 
   // Owens defaults:

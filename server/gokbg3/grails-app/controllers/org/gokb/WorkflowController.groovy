@@ -1087,9 +1087,6 @@ class WorkflowController {
         }
       }
 
-      if(new_ti.duplicateOf == null) {
-        old_ti.duplicateOf = new_ti
-      }
       old_ti.status = status_deleted
     }
     

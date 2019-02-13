@@ -466,12 +466,7 @@ class TitleLookupService {
               all_matched.add(mti)
             }
             else {
-              if (mti.duplicateof) {
-                all_matched.add(mti.duplicateof)
-              }
-              else {
-                log.debug("Skipping matched TI with status 'Deleted'!")
-              }
+              log.debug("Skipping matched TI with status 'Deleted'!")
             }
           }
 
@@ -554,13 +549,8 @@ class TitleLookupService {
       // Make sure we're all saved before looking up the publisher
       if(the_title.validate()) {
         the_title.save(flush:true, failOnError:true);
-      
-        if(the_title.name.startsWith("Unknown Title")){
-          the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
-        }
 
         // Add the publisher.
-        addPublisher(metadata.publisher_name, the_title, user, project)
 
         Set ids_to_add = []
         ids_to_add.addAll(results['ids'])
@@ -594,11 +584,19 @@ class TitleLookupService {
             log.debug("Adding new identifier ${ita} to title ${the_title}");
 //             Combo new_id = new Combo(toComponent:ita, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
             the_title.ids.add(ita)
+
+            the_title.save(failOnError:true, flush:true)
           }
           else {
             log.debug("Identifier ${ita} is already connected to the title!");
           }
         }
+
+        if(the_title.name.startsWith("Unknown Title")){
+          the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
+        }
+
+        addPublisher(metadata.publisher_name, the_title, user, project)
 
         // Try and save the result now.
         if ( the_title.isDirty() ) {

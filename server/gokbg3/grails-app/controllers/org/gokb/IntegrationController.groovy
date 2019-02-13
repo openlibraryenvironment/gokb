@@ -12,8 +12,7 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import groovy.util.logging.*
 
-
-@Log4j
+@Slf4j
 class IntegrationController {
 
   def springSecurityService
@@ -1355,7 +1354,9 @@ class IntegrationController {
               result.baddata=titleObj
               log.error("Cross Reference Title failed: ${titleObj}");
               if(title) {
+                result.errors = []
                 title.errors?.allErrors?.each { er ->
+                  result.errors.add("${er.message}")
                   log.error("${er}")
                 }
               }

@@ -75,6 +75,14 @@ abstract class GOKbSyncBase extends Script {
     
     if ( cfg_file.exists() ) {
       config = new JsonSlurper().parseText(cfg_file.text)
+
+      if (config.sourceBase) {
+        sourceBase = config.sourceBase
+      }
+
+      if (config.targetBase) {
+        targetBase = config.targetBase
+      }
     }
     else {
       println("No config found please supply authentication details for the target ${targetBase}")
@@ -175,8 +183,10 @@ abstract class GOKbSyncBase extends Script {
           if (parameters['path']) {
             uri.path = parameters['path']
           }
-          
+
           uri.query = parameters['query']
+
+          println("${uri}")
           
           response.success = { resp, body ->
             
@@ -189,6 +199,10 @@ abstract class GOKbSyncBase extends Script {
               'result' : result,
               'status' : 'success'
             ]
+
+            body.error?.each { er ->
+              println("${er}")
+            }
             
             // Set the resumption token last...
             config.resumptionToken = body?.ListRecords?.resumptionToken?.text()

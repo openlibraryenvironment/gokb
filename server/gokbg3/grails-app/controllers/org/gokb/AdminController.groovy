@@ -252,8 +252,8 @@ class AdminController {
     // clear the cache used by the blocks tag…
     log.debug("Clearing block cache .. ")
     grailsCacheAdminService.clearBlocksCache()
-    recalculateStats()
-    redirect(url: request.getHeader('referer'))
+
+    forward(controller: 'home', action:'index', params: [reset: true])
   }
 
   def triggerEnrichments() {

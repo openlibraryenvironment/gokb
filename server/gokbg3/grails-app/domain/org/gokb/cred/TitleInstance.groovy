@@ -5,7 +5,7 @@ import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
 import groovy.util.logging.*
 
-@Log4j
+@Slf4j
 class TitleInstance extends KBComponent {
 
   // title is now NAME in the base component class...

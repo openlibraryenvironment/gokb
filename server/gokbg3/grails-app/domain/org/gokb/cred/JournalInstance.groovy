@@ -6,7 +6,7 @@ import org.gokb.DomainClassExtender
 import groovy.util.logging.*
 import static grails.async.Promises.*
 
-@Log4j
+@Slf4j
 class JournalInstance extends TitleInstance {
 
   private static refdataDefaults = [

@@ -81,7 +81,9 @@ class Identifier extends KBComponent {
     return findOrCreateId(ns, value, ns_create, lock)
   }
 
-  @Synchronized
+  private static final findLock = new Object()
+
+  @Synchronized("findLock")
   private static def findOrCreateId(ns, value, def ns_create = true, lock) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = null

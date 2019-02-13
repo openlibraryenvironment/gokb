@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import com.k_int.ClassUtils
 import groovy.util.logging.*
 
-@Log4j
+@Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
 
   Date startDate

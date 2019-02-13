@@ -7,7 +7,7 @@ import groovy.util.logging.*
 import static grails.async.Promises.*
 
 
-@Log4j
+@Slf4j
 class BookInstance extends TitleInstance {
 
   @Transient

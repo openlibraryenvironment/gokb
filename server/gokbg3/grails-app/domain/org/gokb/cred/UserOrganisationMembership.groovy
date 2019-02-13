@@ -1,12 +1,12 @@
 package org.gokb.cred
 
 import grails.plugin.springsecurity.SpringSecurityService
-import groovy.util.logging.Log4j;
+import groovy.util.logging.*
 import java.lang.reflect.Field
 import javax.persistence.Transient
 import org.hibernate.proxy.HibernateProxy
 
-@Log4j
+@Slf4j
 class UserOrganisationMembership {
 
   static belongsTo = [ party: Party, memberOf: UserOrganisation ]

@@ -3,7 +3,7 @@ package org.gokb.cred
 import groovy.util.logging.*
 
 
-@Log4j
+@Slf4j
 class WebHookEndpoint {
   String name
   String url
