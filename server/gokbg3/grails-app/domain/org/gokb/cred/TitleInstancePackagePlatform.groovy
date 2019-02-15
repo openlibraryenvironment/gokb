@@ -206,9 +206,8 @@ class TitleInstancePackagePlatform extends KBComponent {
    * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
    */ 
   @Transient
-  public static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
-    def result = null;
-    def newTipp = false;
+  static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
+    def result = null
     log.debug("upsertDTO(${tipp_dto})");
     def pkg = Package.get(tipp_dto.package?.internalId)
     def plt = Platform.get(tipp_dto.platform?.internalId)
@@ -266,49 +265,24 @@ class TitleInstancePackagePlatform extends KBComponent {
           else {
             log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
           }
-            
           break;
       }
 
       if ( !tipp ) {
-      
-//         log.debug("Creating new TIPP..")
-//         tipp=new TitleInstancePackagePlatform()
-//         tipp.pkg = pkg;
-//         tipp.title = ti;
-//         tipp.hostPlatform = plt;
-
         log.debug("Creating new TIPP..")
         tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': tipp_dto.url]).save(failOnError: true)
         // Hibernate problem
 
-//         tipp = new TitleInstancePackagePlatform().save(failOnError: true)
-
-        if ( tipp ) {
-//           def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-//
-//           def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-//           def pkg_combo = new Combo(toComponent:tipp, fromComponent:pkg, type:pkg_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
-//
-//           def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
-//           def plt_combo = new Combo(toComponent:tipp, fromComponent:plt, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
-//
-//           def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-//           def ti_combo = new Combo(toComponent:tipp, fromComponent:ti, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
-
-          newTipp = true
-        }
-        else {
+        if (!tipp){
           log.error("TIPP creation failed!")
         }
-      } else {
+      }
+      else {
         TitleInstancePlatform.ensure(ti, plt, tipp_dto.url)
       }
 
       if ( tipp ) {
-//         tipp.save(failOnError:true);
         def changed = false
-        
         if (plt.status != status_current) {
           log.warn("TIPP platform is marked as ${plt.status?.value}!")
           ReviewRequest.raise(

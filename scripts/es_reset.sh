@@ -1,12 +1,12 @@
 
 export INDEXNAME="${1:-gokb}"
 
-echo Reset ES indexes for index name $INDEXNAME
+echo Reset ES indexes for index name \"$INDEXNAME\"
 
 echo Drop old index
 curl -XDELETE "http://localhost:9200/$INDEXNAME"
 
-echo Create index
+echo \\nCreate index
 curl -X PUT "localhost:9200/$INDEXNAME" -d '{
   "settings": {
       "number_of_shards": 1, 
@@ -32,7 +32,7 @@ curl -X PUT "localhost:9200/$INDEXNAME" -d '{
   }
 }'
 
-echo Create component mapping
+echo \\nCreate component mapping
 curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
   "component" : {
     "dynamic_templates": [
@@ -154,3 +154,4 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
     }
   }
 }'
+echo \\n
