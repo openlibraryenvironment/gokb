@@ -361,7 +361,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           
           def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
           
-          if (payment_ref) tipp.paymentType = RefdataValue.get(payment_ref)
+          if (payment_ref) tipp.paymentType = payment_ref
         }
 
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)

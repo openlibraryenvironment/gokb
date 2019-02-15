@@ -756,235 +756,278 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
-    def errors = []
-    User user = springSecurityService.currentUser
-    if ( request.JSON.packageHeader.name ) {
-      def valid = Package.validateDTO(request.JSON.packageHeader)
-      if ( valid ) {
-        def the_pkg = Package.upsertDTO(request.JSON.packageHeader, user)
-        def existing_tipps = []
-        Boolean curated_pkg = false;
-        def is_curator = null;
-        if (the_pkg) {
-          if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
-            is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
-            curated_pkg = true;
-          }
+    def async = params.async ? true : false
+    def rjson = request.JSON
+    User request_user = springSecurityService.currentUser
 
-          if ( is_curator || !curated_pkg ) {
-            if ( the_pkg.tipps?.size() > 0 ) {
-              existing_tipps = the_pkg.tipps*.id
-              log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
-            }
+    if ( rjson.packageHeader.name ) {
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        def json = rjson
+        def job_result = [:]
+        def ctr = 0
+        def errors = []
 
-            Map platform_cache = [:]
-            log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
+        job_result.results = []
 
-            // Validate and upsert titles and platforms
-            request.JSON.tipps.eachWithIndex { tipp, idx ->
+        def valid = Package.validateDTO(json.packageHeader)
 
-              TitleInstance.withNewTransaction {
+        if ( valid ) {
+          Package.withNewSession {
+            def user = User.get(request_user.id)
 
-                def valid_ti = TitleInstance.validateDTO(tipp.title);
-                valid &= valid_ti
-
-                if ( !valid_ti ) {
-                  log.warn("Not valid after title validation ${tipp.title}");
-                  errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
+            try {
+              def the_pkg = Package.upsertDTO(json.packageHeader, user)
+              def existing_tipps = []
+              Boolean curated_pkg = false;
+              def is_curator = null;
+              if (the_pkg) {
+                if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
+                  is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+                  curated_pkg = true;
                 }
-                else {
-                  try {
-                    def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-                    if ( ti && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
-                      tipp.title.internalId = ti.id;
+                if ( is_curator || !curated_pkg ) {
+                  if ( the_pkg.tipps?.size() > 0 ) {
+                    existing_tipps = the_pkg.tipps*.id
+                    log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
+                  }
+
+                  Map platform_cache = [:]
+                  log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${json.packageHeader}");
+
+                  // Validate and upsert titles and platforms
+                  json.tipps.eachWithIndex { tipp, idx ->
+
+                    TitleInstance.withNewTransaction {
+
+                      def valid_ti = TitleInstance.validateDTO(tipp.title);
+                      valid &= valid_ti
+
+                      if ( !valid_ti ) {
+                        log.warn("Not valid after title validation ${tipp.title}");
+                        errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
+                      }
+                      else {
+                        try {
+                          def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+
+                          if ( ti && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+                            tipp.title.internalId = ti.id;
+                          }
+                        }
+                        catch (grails.validation.ValidationException ve) {
+                          log.error("ValidationException attempting to cross reference title",ve);
+                          valid_ti = null
+                          valid = false
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp])
+                        }
+
+                        if ( valid_ti && tipp.title.internalId == null ) {
+                          log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
+                          valid = false
+                          errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
+                        }
+                      }
+
+                      def valid_plt = Platform.validateDTO(tipp.platform);
+                      valid &= valid_plt;
+
+                      if ( !valid_plt ) {
+                        log.warn("Not valid after platform validation ${tipp.platform}");
+                        errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
+                      }
+
+                      if ( valid ) {
+
+                        def pl = null
+                        def pl_id
+                        if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                          pl = Platform.get(pl_id)
+                        } else {
+                          // Not in cache.
+                          pl = Platform.upsertDTO(tipp.platform, user);
+
+                          if(pl){
+                            platform_cache[tipp.platform.name] = pl.id
+                          }else{
+                            log.error("Could not find/create ${tipp.platform}")
+                            errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            valid = false
+                          }
+                        }
+
+                        if ( pl && ( tipp.platform.internalId == null ) ) {
+                          tipp.platform.internalId = pl.id;
+                        }
+                        else {
+                          log.warn("No platform arising from ${tipp.platform}");
+                        }
+                      }
+                      else {
+                        log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
+                      }
+          //
+          //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+                      if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
+                        tipp.package = [ internalId: the_pkg.id ]
+                      }
+                      else {
+                        log.warn("No package");
+                        errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                        valid = false
+                      }
+                    }
+
+                    if (idx % 50 == 0) {
+                      cleanUpGorm()
                     }
                   }
-                  catch (grails.validation.ValidationException ve) {
-                    log.error("ValidationException attempting to cross reference title",ve);
-                    valid_ti = null
-                    valid = false
-                    errors.add(['code': 400, 'message': "Validation failed for title ${tipp.title.name}!", 'data': tipp.title])
-                  }
-
-                  if ( valid_ti && tipp.title.internalId == null ) {
-                    log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
-                    valid = false
-                    errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
-                  }
+                }
+                else{
+                  valid = false
+                  log.warn("Package update denied!")
+                  job_result.result = 'ERROR'
+                  job_result.message = "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."
+                  return job_id
                 }
 
-                def valid_plt = Platform.validateDTO(tipp.platform);
-                valid &= valid_plt;
+        //        cleanUpGorm()
 
-                if ( !valid_plt ) {
-                  log.warn("Not valid after platform validation ${tipp.platform}");
-                  errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
+                int tippctr=0;
+                if ( valid ) {
+                  // If valid so far, validate tipps
+                  log.debug("Validating tipps [${tippctr++}]");
+                  json.tipps.eachWithIndex { tipp, idx ->
+                    def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
+                    if ( !validation_result) {
+                      log.error("TIPP Validation failed on ${tipp}")
+                      valid = false
+                      errors.add(['code': 400, 'message': "TIPP Validation for title ${tipp.title.name} failed."])
+                    }
+
+                    if (idx % 50 == 0) {
+                      cleanUpGorm()
+                    }
+                  }
+                }
+                else {
+                  log.warn("Not validating tipps - failed pre validation")
                 }
 
                 if ( valid ) {
+                  log.debug("\n\nupsert tipp data\n\n")
+                  tippctr=0
 
-                  def pl = null
-                  def pl_id
-                  if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
-                    pl = Platform.get(pl_id)
-                  } else {
-                    // Not in cache.
-                    pl = Platform.upsertDTO(tipp.platform, user);
+                  def tipps_to_delete = existing_tipps.clone()
+                  def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
 
-                    if(pl){
-                      platform_cache[tipp.platform.name] = pl.id
-                    }else{
-                      log.error("Could not find/create ${tipp.platform}")
-                      errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
-                      valid = false
+                  def tipp_upsert_start_time = System.currentTimeMillis()
+                  // If valid, upsert tipps
+                  json.tipps.eachWithIndex { tipp, idx ->
+                    TitleInstancePackagePlatform.withNewTransaction {
+                      log.debug("Upsert tipp [${tippctr++}] ${tipp}")
+
+                      def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
+                      log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
+                      upserted_tipp = upserted_tipp.merge(flush: true)
+
+                      if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
+                        log.debug("Existing TIPP matched!")
+                        tipps_to_delete.remove(upserted_tipp.id)
+                      }
+                    }
+
+                    if (idx % 50 == 0) {
+                      cleanUpGorm()
                     }
                   }
+                  def num_deleted_tipps = 0;
 
-                  if ( pl && ( tipp.platform.internalId == null ) ) {
-                    tipp.platform.internalId = pl.id;
+                  if ( existing_tipps.size() > 0 ) {
+
+
+                    tipps_to_delete.eachWithIndex { ttd, idx ->
+
+                      def to_retire = TitleInstancePackagePlatform.get(ttd)
+
+                      if ( to_retire?.isCurrent() ) {
+
+                        to_retire.retire()
+                        to_retire.save(failOnError: true)
+
+        //                 ReviewRequest.raise(
+        //                     to_retire,
+        //                     "TIPP retired.",
+        //                     "An update to this package did not contain this TIPP.",
+        //                     user
+        //                 )
+                        num_deleted_tipps++;
+                      }else{
+                        log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
+                      }
+
+                      if ( idx % 50 == 0 ) {
+                        cleanUpGorm()
+                      }
+                    }
+                    if( num_deleted_tipps > 0 ) {
+                      ReviewRequest.raise(
+                          the_pkg,
+                          "TIPPs retired.",
+                          "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
+                          user
+                      )
+                    }
                   }
-                  else {
-                    log.warn("No platform arising from ${tipp.platform}");
-                  }
+                  log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
+                  job_result.result = 'OK'
+                  job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
+                  job_result.pkgId = the_pkg.id
+                  log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
                 }
                 else {
-                  log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
+                  job_result.result = 'ERROR'
+                  job_result.message = "Package was created, but tipps have not been loaded because of validation errors!"
+                  log.warn("Not loading tipps - failed validation")
                 }
-    //
-    //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
-                if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-                  tipp.package = [ internalId: the_pkg.id ]
-                }
-                else {
-                  log.warn("No package");
-                  errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
-                  valid = false
-                }
-              }
-
-              if (idx % 50 == 0) {
-                cleanUpGorm()
+              }else{
+                job_result.result = 'ERROR'
+                errors.add(['code': 400, 'message': "Package could not be matched/created!"])
               }
             }
-          }
-          else{
-            valid = false
-            log.warn("Package update denied!")
-            response.status = 403
-            result['result'] = 'ERROR'
-            errors.add(['code': 403, 'message': "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."])
-          }
-
-  //        cleanUpGorm()
-
-          int tippctr=0;
-          if ( valid ) {
-            // If valid so far, validate tipps
-            log.debug("Validating tipps [${tippctr++}]");
-            request.JSON.tipps.eachWithIndex { tipp, idx ->
-              def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
-              if ( !validation_result) {
-                log.error("TIPP Validation failed on ${tipp}")
-                valid = false
-              }
-
-              if (idx % 50 == 0) {
-                cleanUpGorm()
-              }
+            catch (Exception e) {
+              log.debug("Package Crossref failed with Exception",e)
+              job_result.result = "ERROR"
+              job_result.message = "Package referencing failed with exception!"
+              job_result.exception = e.toString()
             }
           }
-          else {
-            log.warn("Not validating tipps - failed pre validation")
-          }
-
-
-          log.debug("\n\nupsert tipp data\n\n")
-          tippctr=0
-
-          def tipps_to_delete = existing_tipps.clone()
-          def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-
-          if ( valid ) {
-            def tipp_upsert_start_time = System.currentTimeMillis()
-            // If valid, upsert tipps
-            request.JSON.tipps.eachWithIndex { tipp, idx ->
-              TitleInstancePackagePlatform.withNewTransaction {
-                log.debug("Upsert tipp [${tippctr++}] ${tipp}")
-
-                def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
-                log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
-                upserted_tipp.merge(flush: true)
-
-                if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
-                  log.debug("Existing TIPP matched!")
-                  tipps_to_delete.remove(upserted_tipp.id)
-                }
-              }
-
-              if (idx % 50 == 0) {
-                cleanUpGorm()
-              }
-            }
-            def num_deleted_tipps = 0;
-
-            if ( existing_tipps.size() > 0 ) {
-
-
-              tipps_to_delete.eachWithIndex { ttd, idx ->
-
-                def to_retire = TitleInstancePackagePlatform.get(ttd)
-
-                if ( to_retire?.isCurrent() ) {
-
-                  to_retire.retire()
-                  to_retire.save(failOnError: true)
-
-  //                 ReviewRequest.raise(
-  //                     to_retire,
-  //                     "TIPP retired.",
-  //                     "An update to this package did not contain this TIPP.",
-  //                     user
-  //                 )
-                  num_deleted_tipps++;
-                }else{
-                  log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
-                }
-
-                if ( idx % 50 == 0 ) {
-                  cleanUpGorm()
-                }
-              }
-              if( num_deleted_tipps > 0 ) {
-                ReviewRequest.raise(
-                    the_pkg,
-                    "TIPPs retired.",
-                    "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
-                    user
-                )
-              }
-            }
-            log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
-            result.message = "Created/Updated package ${request.JSON.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
-            result.pkgId = the_pkg.id
-            log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
-          }
-          else {
-            result['result'] = 'ERROR'
-            response.status = 400
-            result.message = "Package was created, but tipps have not been loaded because of validation errors!"
-            log.warn("Not loading tipps - failed validation")
-          }
-        }else{
-          response.status = 400
-          result['result'] = 'ERROR'
-          errors.add(['code': 400, 'message': "Package could not be matched/created!"])
         }
-      }
 
+        job.message(job_result.message.toString())
+        job.endTime = new Date()
+        job_result.errors = errors
+
+        return job_result
+      }
+      log.debug("Starting job ${background_job}..")
+
+      background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
+      background_job.startOrQueue()
+      background_job.startTime = new Date()
+
+      if (async == false) {
+        result = background_job.get()
+      }
+      else {
+        result.job_id = background_job.id
+      }
     }
-    if( errors.size() > 0 ){
-      result['errors'] = errors
+    else {
+      log.debug("Not ingesting package without name!")
+      result.result = "ERROR"
+      result.errors = []
+      result.errors.add(['code': 400, 'message': "The provided package has no name."])
     }
 
     render result as JSON
@@ -1119,6 +1162,7 @@ class IntegrationController {
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
     def rjson = request.JSON
+    def async = params.async ? true : false
     def result
 
     if(org.grails.web.json.JSONArray != rjson.getClass()){
@@ -1128,11 +1172,11 @@ class IntegrationController {
     else {
       log.debug("Starting crossReferenceTitle Job")
       Job background_job = concurrencyManagerService.createJob { Job job ->
-          def json = rjson
-          def job_result = [:]
-          def ctr = 0
+        def json = rjson
+        def job_result = [:]
+        def ctr = 0
 
-          job_result.results = []
+        job_result.results = []
 
         for (e in json ) {
 
@@ -1147,9 +1191,9 @@ class IntegrationController {
           ctr++
           job.setProgress(ctr, json.size())
         }
-        job_result.endTime = new Date()
 
-        job.message("Finished processing ${job_result?.results?.size()} titles.")
+        job.endTime = new Date()
+        job.message("Finished processing ${job_result?.results?.size()} titles.".toString())
 
         return job_result
       }
@@ -1159,9 +1203,12 @@ class IntegrationController {
       background_job.description = "Title CrossRef"
       background_job.startTime = new Date()
 
-      def job_res = background_job.get()
-      background_job.endTime = job_res.endTime
-      result = job_res.results
+      if ( async == false) {
+        result = background_job.get()
+      }
+      else {
+        result.job_id = background_job.id
+      }
     }
 
     render result as JSON

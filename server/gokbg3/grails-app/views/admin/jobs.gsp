@@ -49,7 +49,12 @@
             messages: 
             <ul>
               <g:each in="${v.messages}" var="m">
-                <li>${m.message}</li>
+                <g:if test="${m instanceof String}">
+                  <li>${m}</li>
+                </g:if>
+                <g:else>
+                  <li>${m.message}</li>
+                </g:else>
               </g:each>
             </ul>
           </td>
