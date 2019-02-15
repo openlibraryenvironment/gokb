@@ -8,7 +8,7 @@ import com.k_int.TsvSuperlifterService
 import grails.converters.JSON
 import grails.util.GrailsNameUtils
 import grails.util.Holders
-import groovy.util.logging.Log4j
+import groovy.util.logging.*
 import org.elasticsearch.action.search.*
 import org.elasticsearch.index.query.*
 import org.elasticsearch.search.sort.*
@@ -29,7 +29,7 @@ import static java.util.UUID.randomUUID
  *
  * @author Steve Osguthorpe
  */
-@Log4j
+@Slf4j
 class ApiController {
 
   TsvSuperlifterService tsvSuperlifterService
