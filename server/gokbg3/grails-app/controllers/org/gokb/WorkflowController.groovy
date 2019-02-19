@@ -1749,7 +1749,7 @@ class WorkflowController {
             def existing_new = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[ctype, neworg, oc])
 
             if (existing_new?.size() == 0) {
-              ofc.fromComponent = neworg
+              oc.fromComponent = neworg
             }
           }
 
