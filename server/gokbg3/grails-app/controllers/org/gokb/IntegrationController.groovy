@@ -766,6 +766,8 @@ class IntegrationController {
         def job_result = [:]
         def ctr = 0
         def errors = []
+        
+        job_result.results = []
 
         def valid = Package.validateDTO(json.packageHeader)
 
