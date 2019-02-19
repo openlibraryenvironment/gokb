@@ -413,15 +413,15 @@ select tipp.id,
         'paymentType' ( paymentType?.value )
         'global' ( global?.value )
 
-        if (nominalPlatform) {
-          builder.'nominalPlatform' ([id: nominalPlatform.id]) {
+         if (nominalPlatform) {
+          builder.'nominalPlatform' ([id: nominalPlatform.id, uuid:nominalPlatform.uuid]) {
             'primaryUrl' (nominalPlatform.primaryUrl)
             'name' (nominalPlatform.name)
           }
         }
 
         if (provider) {
-          builder.'nominalProvider' ([id: provider.id]) {
+          builder.'nominalProvider' ([id: provider.id, uuid:provider.uuid]) {
             'name' (provider.name)
           }
         }
