@@ -220,7 +220,7 @@ class AjaxSupportController {
 
           if(existing_variants){
             log.debug("found dupes!")
-            errors.add(message(code:'variantName.value.notUnique'))
+            errors.add(message(code:'variantName.value.notUnique', default:'This variant is already present in this list'))
           }else{
             log.debug("create new variantName")
           }
@@ -230,17 +230,17 @@ class AjaxSupportController {
 
           if (!params.title || params.title.size() == 0) {
             log.debug("missing title for TIPP creation")
-            errors.add(message(code:'tipp.title.nullable'))
+            errors.add(message(code:'tipp.title.nullable', default:'Please provide a title for the TIPP'))
           }
 
           if (!params.hostPlatform || params.hostPlatform.size() == 0) {
             log.debug("missing platform for TIPP creation")
-            errors.add(message(code:'tipp.hostPlatform.nullable'))
+            errors.add(message(code:'tipp.hostPlatform.nullable', default:'Please provide a platform for the TIPP'))
           }
 
           if(!params.url || params.url.size() == 0) {
             log.debug("missing url for TIPP creation")
-            errors.add(message(code:'tipp.url.nullable'))
+            errors.add(message(code:'tipp.url.nullable', default:'Please provide an url for the TIPP'))
           }
         }
 
@@ -722,20 +722,23 @@ class AjaxSupportController {
       def owner = genericOIDService.resolveOID(params.__context)
       if ( ( ns != null ) && ( owner != null ) && owner.isEditable() ) {
         // Lookup or create Identifier
-        try {
-          def identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
+        Identifier.withNewTransaction {
+          try {
+              def identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
 
-          if (identifier_instance) {
+              if (identifier_instance && !identifier_instance.hasErrors()) {
 
-            log.debug("Got ID: ${identifier_instance}")
-            // Link if not existing
-            owner.ids.add(identifier_instance);
-            owner.save(flush:true);
+                log.debug("Got ID: ${identifier_instance}")
+                // Link if not existing
+                owner.ids.add(identifier_instance)
+                owner.save()
+              }
           }
-        } catch (grails.validation.ValidationException ve) {
+          catch (grails.validation.ValidationException ve) {
 
-          log.debug("${ve}")
-          flash.error = message(code:'identifier.value.IllegalIDForm')
+            log.debug("${ve}")
+            flash.error = message(code:'identifier.value.IllegalIDForm')
+          }
         }
       }else{
         flash.error = "Could not create Identifier"

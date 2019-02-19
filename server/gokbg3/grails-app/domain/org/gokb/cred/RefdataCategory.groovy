@@ -6,7 +6,7 @@ import grails.util.GrailsNameUtils
 import javax.persistence.Transient
 import org.grails.datastore.mapping.model.*
 
-@Log4j
+@Slf4j
 class RefdataCategory {
 
   public static rdv_cache = [:]

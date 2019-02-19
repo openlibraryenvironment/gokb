@@ -34,14 +34,11 @@
             <g:elseif test="${v.isDone() && v.endTime}">
               Finished
             </g:elseif>
-            <g:elseif test="${v.isDone() && v.messages}">
-              Error
-            </g:elseif>
             <g:elseif test="${v.isDone()}">
               Done
             </g:elseif>
             <g:else>
-              Not Done
+              Not Done <g:if test="${v.progress}">(${v.progress}%)</g:if>
             </g:else>
           </td>
           <td>${v.endTime}</td>
@@ -52,7 +49,12 @@
             messages: 
             <ul>
               <g:each in="${v.messages}" var="m">
-                <li>${m.message}</li>
+                <g:if test="${m instanceof String}">
+                  <li>${m}</li>
+                </g:if>
+                <g:else>
+                  <li>${m.message}</li>
+                </g:else>
               </g:each>
             </ul>
           </td>

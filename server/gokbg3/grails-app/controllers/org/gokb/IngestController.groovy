@@ -11,6 +11,7 @@ class IngestController {
   def concurrencyManagerService
   def genericOIDService
   def TSVIngestionService
+  def springSecurityService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -69,6 +70,7 @@ class IngestController {
     log.debug("profile")
 
     def result = [:]
+    User user = springSecurityService.currentUser
 
     result.ip = IngestionProfile.get(params.id);
     def ingestion_profile = result.ip
@@ -133,7 +135,7 @@ class IngestController {
         Job background_job = concurrencyManagerService.createJob { Job job ->
           // Create a new session to run the ingest.
           try {
-            TSVIngestionService.ingest(ingestion_profile_id, new_datafile_id, job)
+            TSVIngestionService.ingest(ingestion_profile_id, new_datafile_id, job, null, null, user)
           }
           catch ( Exception e ) {
             log.error("Problem",e)

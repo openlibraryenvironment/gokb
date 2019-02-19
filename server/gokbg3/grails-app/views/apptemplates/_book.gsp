@@ -77,6 +77,20 @@
   </dd>
 
   <dt>
+    <g:annotatedLabel owner="${d}" property="firstAuthor">First Author</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:xEditable class="ipe" owner="${d}" field="firstAuthor" />
+  </dd>
+
+  <dt>
+    <g:annotatedLabel owner="${d}" property="firstEditor">First Editor</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:xEditable class="ipe" owner="${d}" field="firstEditor" />
+  </dd>
+
+  <dt>
     <g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel>
   </dt>
   <dd>

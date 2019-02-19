@@ -1,13 +1,13 @@
 package org.gokb.cred
 
-import groovy.util.logging.Log4j;
+import groovy.util.logging.*
 import java.lang.reflect.Field
 import javax.persistence.Transient
 import org.hibernate.proxy.HibernateProxy
 import grails.core.GrailsApplication
 
 
-@Log4j
+@Slf4j
 class User extends Party {
 
   // Used in user import to bypass password encoding - used to directly load hashes instead of password
@@ -99,7 +99,7 @@ class User extends Party {
     def result = direct_ownership + via_group
 
     result.each {
-      log.debug(it)
+      log.debug("${it}")
     }
 
     return result

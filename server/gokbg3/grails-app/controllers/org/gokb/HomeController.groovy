@@ -19,14 +19,14 @@ class HomeController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def dashboard() {
-    if ( ( stats_timestamp == null )|| ( System.currentTimeMillis() - stats_timestamp > 3600000 ) ) {
+    if ( ( stats_timestamp == null )|| ( System.currentTimeMillis() - stats_timestamp > 3600000 ) || params.reset) {
       stats_timestamp = System.currentTimeMillis()
       // Initialise
       stats_cache = [widgets:[:]];
       stats_cache = calculate();
     }
     else {
-      log.debug("stats from cache...");
+      log.debug("stats from cache (${System.currentTimeMillis() - stats_timestamp})...");
     }
 
     return stats_cache

@@ -7,7 +7,7 @@ import groovy.util.logging.*
 import static grails.async.Promises.*
 
 
-@Log4j
+@Slf4j
 class BookInstance extends TitleInstance {
 
   @Transient
@@ -82,7 +82,7 @@ class BookInstance extends TitleInstance {
   @Override
   protected def generateComponentHash() {
 
-    this.componentDiscriminator = generateBookDiscriminator(['volumeNumber':volumeNumber,'editionDifferentiator':editionDifferentiator])
+    this.componentDiscriminator = generateBookDiscriminator(['volumeNumber':volumeNumber,'editionDifferentiator':editionDifferentiator, 'firstAuthor':firstAuthor])
 
     // To try and find instances
     this.componentHash = GOKbTextUtils.generateComponentHash([normname, componentDiscriminator]);
@@ -100,9 +100,10 @@ class BookInstance extends TitleInstance {
 
     def normVolume = generateNormname(relevantFields.volumeNumber)
     def normEdD = generateNormname(relevantFields.editionDifferentiator)
+    def normFirstAuthor = generateNormname(relevantFields.firstAuthor)
 
-    if(normVolume?.size() > 0 || normEdD?.size() > 0) {
-      result = "${normVolume ? 'v.'+normVolume : ''}${normEdD ? 'ed.'+normEdD : ''}".toString()
+    if(normVolume?.size() > 0 || normEdD?.size() > 0 || normFirstAuthor?.size() > 0) {
+      result = "${normVolume ? 'v.'+normVolume : ''}${normEdD ? 'ed.'+normEdD : ''}${normFirstAuthor ? 'a:'+normFirstAuthor : ''}".toString()
     }
     result
   }

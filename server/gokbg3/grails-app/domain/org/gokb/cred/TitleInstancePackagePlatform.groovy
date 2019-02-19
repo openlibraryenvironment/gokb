@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import com.k_int.ClassUtils
 import groovy.util.logging.*
 
-@Log4j
+@Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
 
   Date startDate
@@ -335,7 +335,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           
           def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
           
-          if (payment_ref) tipp.paymentType = RefdataValue.get(payment_ref)
+          if (payment_ref) tipp.paymentType = payment_ref
         }
 
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
@@ -387,7 +387,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
-            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
+            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp.id, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
           }
 
           def cs_match = false

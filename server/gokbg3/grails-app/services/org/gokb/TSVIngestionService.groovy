@@ -201,7 +201,8 @@ class TSVIngestionService {
                            ingest_cfg,
                            row_specific_config,
                            def user = null,
-                           def project = null) {
+                           def project = null,
+                           publication_type) {
     // The TitleInstance
     TitleInstance the_title = null
 
@@ -220,7 +221,12 @@ class TSVIngestionService {
     List< KBComponent> matches = results['matches'] as List
 
     // log.debug("Title matches ${matches?.size()} existing entries");
-    def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
+    def type = row_specific_config.defaultTypeName
+    if ( publication_type && publication_type.toLowerCase() == 'monograph' ) {
+      type = "BookInstance"
+    }
+
+    def new_inst_clazz = Class.forName(type)
 
     switch (matches.size()) {
     case 0 :
@@ -229,7 +235,7 @@ class TSVIngestionService {
       if (results['class_one']) {
         // Create the new TI.
         // the_title = new BookInstance(name:title)
-        log.debug("Creating new ${row_specific_config.defaultTypeName} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
+        log.debug("Creating new ${type} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
 
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
@@ -448,63 +454,52 @@ class TSVIngestionService {
 
   def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
 
-    if ( ( publisher_name != null ) && ( publisher_name.trim().length() > 0 ) ) {
+    if ( ( publisher_name != null ) &&
+         ( publisher_name.trim().length() > 0 ) ) {
 
-      def norm_pub_name = KBComponent.generateNormname(publisher_name)
+      log.debug("Add publisher \"${publisher_name}\"")
+      Org publisher = Org.findByName(publisher_name)
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def norm_pub_name = Org.generateNormname(publisher_name);
 
-      log.debug("Org lookup: ${publisher_name}/${norm_pub_name}");
-      def publisher = org.gokb.cred.Org.findAllByNormname(norm_pub_name)
-      // log.debug("this was found for publisher: ${publisher}");
+      if ( !publisher ) {
+        // Lookup using norm name.
+
+        log.debug("Using normname \"${norm_pub_name}\" for lookup")
+        publisher = Org.findByNormname(norm_pub_name)
+      }
+
+      if ( !publisher || publisher.status == status_deleted) {
+        def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
+        if ( candidate_orgs.size() == 1 ) {
+          publisher = candidate_orgs[0]
+        }
+        else if ( candidate_orgs.size() == 0 ) {
+          publisher = new Org(name:publisher_name, normname:norm_pub_name).save(flush:true, failOnError:true);
+        }
+        else {
+          log.error("Unable to match unique pub");
+        }
+      }
+
       // Found a publisher.
-      switch (publisher.size()) {
-        case 0:
-          log.debug ("Publisher ${publisher_name} lookup yielded no matches via norm search for ${norm_pub_name}.")
-          Org.withTransaction {
-            def the_publisher = new Org(name:publisher_name, normname:norm_pub_name)
-            if (the_publisher.save(failOnError:true, flush:true)) {
-              // log.debug("saved ${the_publisher.name}")
-              ReviewRequest.raise(
-                ti,
-                "'${the_publisher}' added as a publisher of '${ti.name}'.",
-                 "This publisher did not exist before, so has been newly created",
-                user, project)
-            } else {
-              the_publisher.errors.each { error ->
-                log.error("problem saving ${the_publisher.name}:${error}")
-              }
-            }
-          }
+      if (publisher) {
+        log.debug("Found publisher ${publisher}");
+        def orgs = ti.getPublisher()
 
-        //carry on...
-        case 1:
-          // log.debug("found a publisher")
-          def orgs = ti.getPublisher()
-          // log.debug("ti.getPublisher ${orgs}")
-          // Has the publisher ever existed in the list against this title.
+        // Has the publisher ever existed in the list against this title.
+        if (!orgs.contains(publisher)) {
 
-          if (!orgs?.contains(publisher[0])) {
-            // log.debug("orgs did not contain this publisher")
-            // First publisher added?
-            boolean not_first = orgs.size() > 0
-            // Added a publisher?
-            // log.debug("calling changepublisher")
-            boolean added = ti.changePublisher ( publisher[0], true)
+          // First publisher added?
+          boolean not_first = orgs.size() > 0
 
-            // log.debug("Not first : ${not_first}")
-            // log.debug("Added: ${added}");
+          // Added a publisher?
+          ti.changePublisher (publisher)
+        }
+      }
+    }
 
-            // Raise a review request, if needed.
-            if (not_first && added) {
-              ReviewRequest.raise( ti, "Added '${publisher[0].name}' as a publisher on '${ti.name}'.",
-                  "Publisher supplied in ingested file is different to any already present on TI.", user, project)
-            }
-          } //!orgs.contains(publisher)
-          break
-        default:
-          log.warn ("Publisher lookup yielded ${publisher.size()} matches. Not really sure which publisher to use, so not using any.")
-        break
-      }  //switch
-    } //publisher_name !=null
     ti
   }
 
@@ -638,7 +633,8 @@ class TSVIngestionService {
              datafile_id,
              job=null,
              ip_id=null,
-             ingest_cfg=null) {
+             ingest_cfg=null,
+             user=null) {
 
     if ( the_profile_id == null ) {
       log.error("No datafile ID passed in to ingest")
@@ -663,7 +659,8 @@ class TSVIngestionService {
                    ip_id,
                    ingest_cfg,
                    'N',
-                   ['curatoryGroup':'Local'])
+                   ['curatoryGroup':'Local'],
+                   user)
   }
 
 
@@ -678,7 +675,8 @@ class TSVIngestionService {
              ip_id=null,
              ingest_cfg=null,
              incremental=null,
-             other_params = null) {
+             other_params = null,
+             user=null) {
 
     log.debug("ingest2...");
     def result = [:]
@@ -690,6 +688,8 @@ class TSVIngestionService {
     log.debug("Get Datafile ${datafile_id}");
     def datafile = DataFile.read(datafile_id)
     log.debug("Got Datafile");
+    def src_id = source.id
+    def user_id = user.id
 
     def kbart_cfg = grailsApplication.config.kbart2.mappings[packageType?.value.toString()]
     log.debug("Looking up config for ${packageType} ${packageType?.class.name} : ${kbart_cfg ? 'Found' : 'Not Found'}");
@@ -703,7 +703,7 @@ class TSVIngestionService {
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
-                     defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.TitleInstance',
+                     defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.JournalInstance',
                      identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
                      defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
                      providerIdentifierNamespace:providerIdentifierNamespace?.value,
@@ -779,6 +779,8 @@ class TSVIngestionService {
 
             def author_role = RefdataValue.get(author_role_id)
             def editor_role = RefdataValue.get(editor_role_id)
+            def pkg_src = org.gokb.cred.Source.get(src_id)
+            def pkg_obj = Package.get(the_package_id)
 
             log.debug("**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
@@ -789,15 +791,16 @@ class TSVIngestionService {
             if ( validateRow(x, badrows, kbart_beans[x] ) ) {
               writeToDB(kbart_beans[x],
                         platformUrl,
-                        source,
+                        pkg_src,
                         ingest_date,
                         ingest_systime,
                         author_role,
                         editor_role,
-                        Package.get(the_package_id),
+                        pkg_obj,
                         ingest_cfg,
                         badrows,
-                        row_specific_cfg)
+                        row_specific_cfg,
+                        user_id)
             }
 
             log.debug("ROW ELAPSED : ${System.currentTimeMillis()-rowStartTime}");
@@ -883,7 +886,7 @@ class TSVIngestionService {
       }
       else {
 
-        preflight_result.source = source.id
+        preflight_result.source = src_id
 
         // Preflight failed
         job.message("Failed Preflight");
@@ -894,8 +897,8 @@ class TSVIngestionService {
           def writeable_datafile = DataFile.get(datafile.id)
           ReviewRequest req = new ReviewRequest (
               status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
-              raisedBy : null,
-              allocatedTo : null,
+              raisedBy : user,
+              allocatedTo : user,
               descriptionOfCause : "Ingest of datafile ${datafile.id} / ${datafile.name} failed preflight",
               reviewRequest : "Generate rules to handle error cases.",
               refineProject: null,
@@ -935,7 +938,8 @@ class TSVIngestionService {
                 the_package,
                 ingest_cfg,
                 badrows,
-                row_specific_config) {
+                row_specific_config,
+                user_id) {
 
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
@@ -944,6 +948,7 @@ class TSVIngestionService {
 
     //first we need a platform:
     def platform = null; // handlePlatform(platform_url.host, source)
+    def user = User.get(user_id)
 
     log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url} title_url:${the_kbart.title_url}")
 
@@ -1025,7 +1030,7 @@ class TSVIngestionService {
 
         if ( identifiers.size() > 0 ) {
 
-          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config)
+          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config, user, the_kbart.publication_type)
           // should be def title = titleLookupService.find([title:the_kbart.publication_title, 
           //                                                identifiers:identifiers,
           //                                                publisher_name:the_kbart.publisher_name],
@@ -1043,34 +1048,28 @@ class TSVIngestionService {
 
               log.debug("addOtherFieldsToTitle");
               addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
-              title.save(flush:true, failOnError:true);
 
               log.debug("Adding publisher");
               if ( the_kbart.publisher_name && the_kbart.publisher_name.length() > 0 ) {
                 addPublisher(the_kbart.publisher_name, title)
-                title.save(flush:true, failOnError:true);
               }
 
               log.debug("Adding first author");
               if ( the_kbart.first_author && the_kbart.first_author.trim().length() > 0 ) {
                 addPerson(the_kbart.first_author, author_role, title);
-                title.save(flush:true, failOnError:true);
               }
 
               log.debug("Adding Person");
               if ( the_kbart.first_editor && the_kbart.first_editor.trim().length() > 0 ) {
                 addPerson(the_kbart.first_editor, editor_role, title);
-                title.save(flush:true, failOnError:true);
               }
 
               log.debug("Adding subjects");
               addSubjects(the_kbart.subjects, title)
-	      title.save(flush:true, failOnError:true);
 
               log.debug("Adding additional authors");
               the_kbart.additional_authors.each { author ->
                 addPerson(author, author_role, title)
-                title.save(flush:true, failOnError:true);
               }
 
               title.source=source
@@ -1899,7 +1898,7 @@ class TSVIngestionService {
 
         if ( identifiers.size() > 0 ) {
           try {
-            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_cfg)
+            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_cfg, the_kbart.publication_type)
             if ( title && the_kbart.title_image && ( the_kbart.title_image != title.coverImage) ) {
               title.coverImage = the_kbart.title_image;
               title.save(flush:true, failOnError:true)

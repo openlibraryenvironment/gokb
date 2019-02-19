@@ -69,6 +69,7 @@ class ESWrapperService {
   @javax.annotation.PreDestroy
   def destroy() {
     log.debug("Destroy");
+    esclient.close()
   }
 
 }

@@ -1,7 +1,7 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
-import groovy.util.logging.Log4j
+import groovy.util.logging.*
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
 import com.k_int.ClassUtils
@@ -10,7 +10,7 @@ import groovy.time.TimeCategory
 
 import org.gokb.refine.*
 
-@Log4j
+@Slf4j
 class Package extends KBComponent {
 
   // Owens defaults:
@@ -713,15 +713,15 @@ select tipp.id,
 
     boolean changed = false;
 
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result, 'editStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result.id, 'listStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result.id, 'status')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result.id, 'editStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result.id, 'scope')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result.id, 'breakable')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result.id, 'consistent')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result.id, 'fixed')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result.id, 'paymentType')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result.id, 'global')
     changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
     changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate');

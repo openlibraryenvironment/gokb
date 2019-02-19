@@ -1,4 +1,5 @@
 package org.gokb.cred
+import groovy.transform.Synchronized
 
 class Identifier extends KBComponent {
 
@@ -27,6 +28,13 @@ class Identifier extends KBComponent {
     value (validator: { val, obj ->
       if (!val || val.trim().size() == 0) {
         return ['notNull']
+      }
+
+      def norm_id = Identifier.normalizeIdentifier(val)
+      def dupes = Identifier.findByNamespaceAndNormname(obj.namespace, norm_id)
+
+      if (dupes && dupes != obj) {
+        return ['notUnique']
       }
 
       if (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) {
@@ -69,6 +77,14 @@ class Identifier extends KBComponent {
   }
 
   static def lookupOrCreateCanonicalIdentifier(ns, value, def ns_create = true) {
+    def lock = true
+    return findOrCreateId(ns, value, ns_create, lock)
+  }
+
+  private static final findLock = new Object()
+
+  @Synchronized("findLock")
+  private static def findOrCreateId(ns, value, def ns_create = true, lock) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = null
     def identifier = null
@@ -89,14 +105,16 @@ class Identifier extends KBComponent {
     }
 
     if (namespace) {
-      identifier = Identifier.findByNamespaceAndNormname(namespace,Identifier.normalizeIdentifier(value))
+      def norm_id = Identifier.normalizeIdentifier(value)
+      identifier = Identifier.findByNamespaceAndNormname(namespace,norm_id)
 
+      def final_val = value
       if (!identifier) {
-        def new_id = new Identifier(namespace:namespace, value:value)
-
-        if (new_id.validate()) {
-          identifier = new_id.save(flush:true, failOnError:true)
+        if (namespace.family == 'isxn') {
+          final_val = final_val.replaceAll("x","X")
         }
+
+        identifier = new Identifier(namespace:namespace, value:final_val, normname:norm_id).save(flush:true, failOnError:true)
       }
     }
 

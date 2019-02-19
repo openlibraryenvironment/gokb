@@ -7,14 +7,17 @@ import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
 import java.text.SimpleDateFormat
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
 
 import groovy.util.logging.*
 
-
-@Log4j
+@Slf4j
 class IntegrationController {
 
   def springSecurityService
+  def concurrencyManagerService
+  def classExaminationService
   def titleLookupService
   def applicationEventService
   def sessionFactory
@@ -454,8 +457,8 @@ class IntegrationController {
           'software', 'service'
         ], data, located_or_new_source)
 
-        ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-        ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
+        setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+        setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
 
         ensureCoreData(located_or_new_source, data)
 
@@ -611,24 +614,29 @@ class IntegrationController {
     }
 
     // Identifiers
-    log.debug("Identifier processing ${data.identifiers}")
-    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
-    data.identifiers.each { ci ->
-      String testKey = "${ci.type}|${ci.value}".toString()
-      if (!ids.contains(testKey)) {
-        def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
-        log.debug("Checking identifiers of component ${component.id}")
-        def duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
-        if(duplicate.size() == 0){
-          log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-          component.ids.add(canonical_identifier)
-        }else{
-          log.debug("Identifier combo is already present, probably via titleLookupService.")
-        }
+    if (!component.hasProperty('work')) {
+      log.debug("Identifier processing ${data.identifiers}")
+      Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
+      data.identifiers.each { ci ->
+        String testKey = "${ci.type}|${ci.value}".toString()
+        if (!ids.contains(testKey)) {
+          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+          log.debug("Checking identifiers of component ${component.id}")
+          def duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+          if(duplicate.size() == 0){
+            log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
+            component.ids.add(canonical_identifier)
+          }else{
+            log.debug("Identifier combo is already present, probably via titleLookupService.")
+          }
 
-        // Add the value for comparison.
-        ids << testKey
+          // Add the value for comparison.
+          ids << testKey
+        }
       }
+    }
+    else {
+      log.debug("skipping identifier processing for title ..")
     }
 
     // Flags
@@ -748,203 +756,280 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
-    def errors = []
-    User user = springSecurityService.currentUser
-    if ( request.JSON.packageHeader.name ) {
-      def valid = Package.validateDTO(request.JSON.packageHeader)
-      if ( valid ) {
-        def the_pkg = Package.upsertDTO(request.JSON.packageHeader, user)
-        def existing_tipps = []
-        Boolean curated_pkg = false;
-        def is_curator = null;
-        if (the_pkg) {
-          if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
-            is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
-            curated_pkg = true;
-          }
+    def async = params.async ? true : false
+    def rjson = request.JSON
+    User request_user = springSecurityService.currentUser
 
-          if ( is_curator || !curated_pkg ) {
-            if ( the_pkg.tipps?.size() > 0 ) {
-              existing_tipps = the_pkg.tipps*.id
-              log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
-            }
+    if ( rjson.packageHeader.name ) {
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        def json = rjson
+        def job_result = [:]
+        def ctr = 0
+        def errors = []
+        
+        job_result.results = []
 
-            // map platform names with ids seen while iterating over tipps:
-            Map platform_cache = [:]
-            log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${request.JSON.packageHeader}");
+        def valid = Package.validateDTO(json.packageHeader)
 
-            // Validate and upsert titles and platforms
-            request.JSON.tipps.each { tipp ->
+        if ( valid ) {
+          Package.withNewSession {
+            def user = User.get(request_user.id)
 
-              TitleInstance.withNewSession {
-
-                valid &= TitleInstance.validateDTO(tipp.title);
-
-                if ( !valid )
-                  log.warn("Not valid after title validation ${tipp.title}");
-
-                def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
-
-                if ( ti && ( tipp.title.internalId == null ) ) {
-                  tipp.title.internalId = ti.id;
+            try {
+              def the_pkg = Package.upsertDTO(json.packageHeader, user)
+              def existing_tipps = []
+              Boolean curated_pkg = false;
+              def is_curator = null;
+              if (the_pkg) {
+                if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
+                  is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+                  curated_pkg = true;
                 }
 
-                if ( tipp.title.internalId == null ) {
-                  log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
+                if ( is_curator || !curated_pkg ) {
+                  if ( the_pkg.tipps?.size() > 0 ) {
+                    existing_tipps = the_pkg.tipps*.id
+                    log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
+                  }
+
+                  Map platform_cache = [:]
+                  log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${json.packageHeader}");
+
+                  // Validate and upsert titles and platforms
+                  json.tipps.eachWithIndex { tipp, idx ->
+
+                    TitleInstance.withNewTransaction {
+
+                      def valid_ti = TitleInstance.validateDTO(tipp.title);
+                      valid &= valid_ti
+
+                      if ( !valid_ti ) {
+                        log.warn("Not valid after title validation ${tipp.title}");
+                        errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
+                      }
+                      else {
+                        try {
+                          def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+
+                          if ( ti && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+                            tipp.title.internalId = ti.id;
+                          }
+                        }
+                        catch (grails.validation.ValidationException ve) {
+                          log.error("ValidationException attempting to cross reference title",ve);
+                          valid_ti = null
+                          valid = false
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp])
+                        }
+
+                        if ( valid_ti && tipp.title.internalId == null ) {
+                          log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
+                          valid = false
+                          errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
+                        }
+                      }
+
+                      def valid_plt = Platform.validateDTO(tipp.platform);
+                      valid &= valid_plt;
+
+                      if ( !valid_plt ) {
+                        log.warn("Not valid after platform validation ${tipp.platform}");
+                        errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
+                      }
+
+                      if ( valid ) {
+
+                        def pl = null
+                        def pl_id
+                        if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                          pl = Platform.get(pl_id)
+                        } else {
+                          // Not in cache.
+                          pl = Platform.upsertDTO(tipp.platform, user);
+
+                          if(pl){
+                            platform_cache[tipp.platform.name] = pl.id
+                          }else{
+                            log.error("Could not find/create ${tipp.platform}")
+                            errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            valid = false
+                          }
+                        }
+
+                        if ( pl && ( tipp.platform.internalId == null ) ) {
+                          tipp.platform.internalId = pl.id;
+                        }
+                        else {
+                          log.warn("No platform arising from ${tipp.platform}");
+                        }
+                      }
+                      else {
+                        log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
+                      }
+          //
+          //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+                      if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
+                        tipp.package = [ internalId: the_pkg.id ]
+                      }
+                      else {
+                        log.warn("No package");
+                        errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                        valid = false
+                      }
+                    }
+
+                    if (idx % 50 == 0) {
+                      cleanUpGorm()
+                    }
+                    job.setProgress(idx, json.tipps.size() * 2)
+                  }
+                }
+                else{
+                  valid = false
+                  log.warn("Package update denied!")
+                  job_result.result = 'ERROR'
+                  job_result.message = "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."
+                  return job_id
                 }
 
-                valid &= Platform.validateDTO(tipp.platform);
-                if ( !valid )
-                  log.warn("Not valid after platform validation ${tipp.platform}");
+        //        cleanUpGorm()
 
+                int tippctr=0;
                 if ( valid ) {
-
-                  def tippPlatform = null
-                  def tippPlatformId
-                  if (platform_cache.containsKey(tipp.platform.name) && (tippPlatformId = platform_cache[tipp.platform.name]) != null) {
-                    tippPlatform = Platform.get(tippPlatformId)
-                  } else {
-                    // Not in cache.
-                    tippPlatform = Platform.upsertDTO(tipp.platform, user);
-
-                    if(tippPlatform){
-                      platform_cache[tipp.platform.name] = tippPlatform.id
-                    }else{
-                      log.error("Could not find/create ${tipp.platform}")
-                      errors.add(['code': 500, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                  // If valid so far, validate tipps
+                  log.debug("Validating tipps [${tippctr++}]");
+                  json.tipps.eachWithIndex { tipp, idx ->
+                    def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
+                    if ( !validation_result) {
+                      log.error("TIPP Validation failed on ${tipp}")
                       valid = false
+                      errors.add(['code': 400, 'message': "TIPP Validation for title ${tipp.title.name} failed."])
+                    }
+                    
+                    if (idx % 50 == 0) {
+                      cleanUpGorm()
                     }
                   }
-
-                  if ( tippPlatform && ( tipp.platform.internalId == null ) ) {
-                    tipp.platform.internalId = tippPlatform.id;
-                  }
-                  else {
-                    log.warn("No platform arising from ${tipp.platform}");
-                  }
                 }
                 else {
-                  log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
+                  log.warn("Not validating tipps - failed pre validation")
                 }
-    //
-    //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
-                if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-                  tipp.package = [ internalId: the_pkg.id ]
+
+                if ( valid ) {
+                  log.debug("\n\nupsert tipp data\n\n")
+                  tippctr=0
+
+                  def tipps_to_delete = existing_tipps.clone()
+                  def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+
+                  def tipp_upsert_start_time = System.currentTimeMillis()
+                  // If valid, upsert tipps
+                  json.tipps.eachWithIndex { tipp, idx ->
+                    TitleInstancePackagePlatform.withNewTransaction {
+                      log.debug("Upsert tipp [${tippctr++}] ${tipp}")
+
+                      def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
+                      log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
+                      upserted_tipp = upserted_tipp.merge(flush: true)
+
+                      if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
+                        log.debug("Existing TIPP matched!")
+                        tipps_to_delete.remove(upserted_tipp.id)
+                      }
+                    }
+
+                    if (idx % 50 == 0) {
+                      cleanUpGorm()
+                    }
+                    job.setProgress(idx + json.tipps.size(), json.tipps.size() * 2)
+                  }
+                  def num_deleted_tipps = 0;
+
+                  if ( existing_tipps.size() > 0 ) {
+
+
+                    tipps_to_delete.eachWithIndex { ttd, idx ->
+
+                      def to_retire = TitleInstancePackagePlatform.get(ttd)
+
+                      if ( to_retire?.isCurrent() ) {
+
+                        to_retire.retire()
+                        to_retire.save(failOnError: true)
+
+        //                 ReviewRequest.raise(
+        //                     to_retire,
+        //                     "TIPP retired.",
+        //                     "An update to this package did not contain this TIPP.",
+        //                     user
+        //                 )
+                        num_deleted_tipps++;
+                      }else{
+                        log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
+                      }
+
+                      if ( idx % 50 == 0 ) {
+                        cleanUpGorm()
+                      }
+                    }
+                    if( num_deleted_tipps > 0 ) {
+                      ReviewRequest.raise(
+                          the_pkg,
+                          "TIPPs retired.",
+                          "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
+                          user
+                      )
+                    }
+                  }
+                  log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
+                  job_result.result = 'OK'
+                  job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
+                  job_result.pkgId = the_pkg.id
+                  log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
                 }
                 else {
-                  log.warn("No package");
-                  errors.add(['code': 500, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
-                  valid = false
+                  job_result.result = 'ERROR'
+                  job_result.message = "Package was created, but tipps have not been loaded because of validation errors!"
+                  log.warn("Not loading tipps - failed validation")
                 }
+              }else{
+                job_result.result = 'ERROR'
+                errors.add(['code': 400, 'message': "Package could not be matched/created!"])
               }
             }
-          }
-          else{
-            valid = false
-            log.warn("Package update denied!")
-            response.status = 403
-            result['result'] = 'ERROR'
-            errors.add(['code': 403, 'message': "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."])
-          }
-
-  //        cleanUpGorm()
-
-          int tippctr=0;
-          if ( valid ) {
-            // If valid so far, validate tipps
-            log.debug("Validating tipps");
-            request.JSON.tipps.each { tipp ->
-              def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
-              if (validation_result){
-                tippctr++
-              }
-              else {
-                log.error("TIPP Validation failed on ${tipp}")
-                valid = false
-              }
+            catch (Exception e) {
+              log.debug("Package Crossref failed with Exception",e)
+              job_result.result = "ERROR"
+              job_result.message = "Package referencing failed with exception!"
+              job_result.exception = e.toString()
             }
-            log.debug("Validated ${tippctr++} tipps");
           }
-          else {
-            log.warn("Not validating tipps - failed pre validation")
-          }
-
-
-          log.debug("\n\nupsert tipp data\n\n")
-          tippctr=0
-
-          def tipps_to_delete = existing_tipps.clone()
-          def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-
-          if ( valid ) {
-            def tipp_upsert_start_time = System.currentTimeMillis()
-            // If valid, upsert tipps
-            request.JSON.tipps.each { tipp ->
-              TitleInstancePackagePlatform.withNewSession {
-                log.debug("Upsert tipp [${tippctr++}] ${tipp}")
-
-                def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
-                log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
-                upserted_tipp.merge(flush: true)
-
-                if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
-                  log.debug("Existing TIPP matched!")
-                  tipps_to_delete.remove(upserted_tipp.id)
-                }
-              }
-            }
-            def num_deleted_tipps = 0;
-
-            if ( existing_tipps.size() > 0 ) {
-
-
-              tipps_to_delete.each { ttd ->
-
-                def to_retire = TitleInstancePackagePlatform.get(ttd)
-
-                if ( to_retire?.isCurrent() ) {
-
-                  to_retire.retire()
-                  to_retire.save(failOnError: true)
-
-  //                 ReviewRequest.raise(
-  //                     to_retire,
-  //                     "TIPP retired.",
-  //                     "An update to this package did not contain this TIPP.",
-  //                     user
-  //                 )
-                  num_deleted_tipps++;
-                }else{
-                  log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
-                }
-              }
-              if( num_deleted_tipps > 0 ) {
-                ReviewRequest.raise(
-                    the_pkg,
-                    "TIPPs retired.",
-                    "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
-                    user
-                )
-              }
-            }
-            log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
-            result.message = "Created/Updated package ${request.JSON.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
-            result.pkgId = the_pkg.id
-            log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
-          }
-          else {
-            log.warn("Not loading tipps - failed validation")
-          }
-        }else{
-          response.status = 400
-          result['result'] = 'ERROR'
-          errors.add(['code': 400, 'message': "Package could not be matched/created!"])
         }
-      }
 
+        job.message(job_result.message.toString())
+        job.endTime = new Date()
+        job_result.errors = errors
+
+        return job_result
+      }
+      log.debug("Starting job ${background_job}..")
+
+      background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
+      background_job.startOrQueue()
+      background_job.startTime = new Date()
+
+      if (async == false) {
+        result = background_job.get()
+      }
+      else {
+        result.job_id = background_job.id
+      }
     }
-    if( errors.size() > 0 ){
-      result['errors'] = errors
+    else {
+      log.debug("Not ingesting package without name!")
+      result.result = "ERROR"
+      result.errors = []
+      result.errors.add(['code': 400, 'message': "The provided package has no name."])
     }
 
     render result as JSON
@@ -978,7 +1063,7 @@ class IntegrationController {
         setAllRefdata ([
           'software', 'service'
         ], request.JSON, p)
-        ClassUtils.setRefdataIfPresent(request.JSON.authentication, p, 'authentication', 'Platform.AuthMethod')
+        setRefdataIfPresent(request.JSON.authentication, p.id, 'authentication', 'Platform.AuthMethod')
 
         if (request?.JSON?.provider) {
           def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
@@ -1013,7 +1098,7 @@ class IntegrationController {
   private boolean setAllRefdata (propNames, data, target) {
     boolean changed = false
     propNames.each { String prop ->
-      changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop)
+      changed |= setRefdataIfPresent(data[prop], target.id, prop)
     }
     changed
   }
@@ -1077,29 +1162,61 @@ class IntegrationController {
    */
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferenceTitle() {
+    User user = springSecurityService.currentUser
+    def rjson = request.JSON
+    def async = params.async ? true : false
     def result
-    def json = request.JSON
 
-    if(org.grails.web.json.JSONArray != json.getClass()){
+    if(org.grails.web.json.JSONArray != rjson.getClass()){
 
-      result = crossReferenceSingleTitle(json)
+      result = crossReferenceSingleTitle(rjson, user.id)
     }
     else {
-      result = []
-      def ctr = 0
+      log.debug("Starting crossReferenceTitle Job")
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        def json = rjson
+        def job_result = [:]
+        def ctr = 0
 
-      json.eachWithIndex{ e, i ->
-        result <<  crossReferenceSingleTitle(e)
+        job_result.results = []
 
-        if( ctr++ > 50 ) {
-          cleanUpGorm()
+        for (e in json ) {
+
+          if ( Thread.currentThread().isInterrupted() ) {
+            log.debug("Job cancelling ..")
+            job_result.status = "cancelled"
+            break;
+          }
+
+          job_result.results <<  crossReferenceSingleTitle(e, user.id)
+
+          ctr++
+          job.setProgress(ctr, json.size())
         }
+
+        job.endTime = new Date()
+        job.message("Finished processing ${job_result?.results?.size()} titles.".toString())
+
+        return job_result
+      }
+      log.debug("Starting job ${background_job}..")
+
+      background_job.startOrQueue()
+      background_job.description = "Title CrossRef"
+      background_job.startTime = new Date()
+
+      if ( async == false) {
+        result = background_job.get()
+      }
+      else {
+        result.job_id = background_job.id
       }
     }
+
     render result as JSON
   }
 
-  private crossReferenceSingleTitle(Object titleObj) {
+  private crossReferenceSingleTitle(Object titleObj, userid) {
 
     def result = [ 'result' : 'OK' ]
 
@@ -1107,204 +1224,217 @@ class IntegrationController {
 
     log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
 
-    try {
-      User user = springSecurityService.currentUser
-      def title = titleLookupService.find(
-        titleObj.name,
-        titleObj.publisher,
-        titleObj.identifiers,
-        user,
-        null,
-        titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-          (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-        titleObj.uuid
-      );  // project
+        TitleInstance.withNewSession {
+          User user = User.get(userid)
 
-      if ( title ) {
+          try {
+            def title = titleLookupService.find(
+              titleObj.name,
+              titleObj.publisher,
+              titleObj.identifiers,
+              user,
+              null,
+              titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
+                (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+              titleObj.uuid
+            );  // project
 
-//        if ( titleObj.variantNames?.size() > 0 ) {
-//          titleObj.variantNames.each { vn ->
-//            log.debug("Ensure variant name ${vn}");
-//            title.addVariantTitle(vn);
-//          }
-//        }
+            if ( title && !title.hasErrors() ) {
 
-        def title_changed = false;
+      //        if ( titleObj.variantNames?.size() > 0 ) {
+      //          titleObj.variantNames.each { vn ->
+      //            log.debug("Ensure variant name ${vn}");
+      //            title.addVariantTitle(vn);
+      //          }
+      //        }
 
-        if ( titleObj.imprint ) {
-          if ( title.imprint?.name == titleObj.imprint ) {
-            // Imprint already set
-          }
-          else {
-            def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name:titleObj.imprint).save(flush:true, failOnError:true);
-            title.imprint = imprint;
-            title_changed = true
-          }
-        }
+              def title_changed = false;
 
-        title_changed |= setAllRefdata ([
-              'OAStatus', 'medium',
-              'pureOA', 'continuingSeries',
-              'reasonRetired'
-        ], titleObj, title)
-
-        if (titleObj.type == 'Serial') {
-          title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
-          title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
-        }
-
-        title.save(flush:true, failOnError:true)
-
-        // Add the core data.
-        ensureCoreData(title, titleObj)
-
-        if ( titleObj.historyEvents?.size() > 0 ) {
-
-          titleObj.historyEvents.each { jhe ->
-                // 1971-01-01 00:00:00.0
-            log.debug("Handling title history");
-            try {
-              def inlist = []
-              def outlist = []
-              def cont = true
-
-              jhe.from.each { fhe ->
-
-                def p = titleLookupService.find(
-                  fhe.title,
-                  null,
-                  fhe.identifiers,
-                  user,
-                  null,
-                  titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                    (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                  fhe.uuid
-                );
-
-                if ( p ) { inlist.add(p); } else { cont = false; }
-              }
-
-              jhe.to.each { fhe ->
-
-                def p =  titleLookupService.find(
-                  fhe.title,
-                  null,
-                  fhe.identifiers,
-                  user,
-                  null,
-                  titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                    (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                  fhe.uuid
-                );
-
-                if ( p && !inlist.contains(p) ) { outlist.add(p); } else { cont = false; }
-              }
-
-              def first = true;
-              // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
-              def che_check_qry_sw  = new StringWriter();
-              def qparams = []
-
-              che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
-
-              inlist.each { fhe ->
-                if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-                che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-                qparams.add(fhe)
-              }
-
-              outlist.each { fhe ->
-                if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-                che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-                qparams.add(fhe)
-              }
-
-              def che_check_qry = che_check_qry_sw.toString()
-
-              log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
-
-              def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
-
-              if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
-                cont = false;
-
-              if ( cont ) {
-
-                def he = new ComponentHistoryEvent()
-
-                if ( jhe.date ) {
-                  he.eventDate = sdf.parse(jhe.date);
+              if ( titleObj.imprint ) {
+                if ( title.imprint?.name == titleObj.imprint ) {
+                  // Imprint already set
                 }
-
-                he.save(flush:true, failOnError:true);
-
-                inlist.each {
-                  def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
-                  hep.save(flush:true, failOnError:true);
-                }
-
-                outlist.each {
-                  def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
-                  hep.save(flush:true, failOnError:true);
+                else {
+                  def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name:titleObj.imprint).save(flush:true, failOnError:true);
+                  title.imprint = imprint;
+                  title_changed = true
                 }
               }
-              else {
-                // Matched an existing TH event, not creating a duplicate
+
+              title_changed |= setAllRefdata ([
+                    'OAStatus', 'medium',
+                    'pureOA', 'continuingSeries',
+                    'reasonRetired'
+              ], titleObj, title)
+
+              if (titleObj.type == 'Serial') {
+                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
+                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
               }
+
+              title.save(flush:true, failOnError:true)
+
+              // Add the core data.
+              ensureCoreData(title, titleObj)
+
+              if ( titleObj.historyEvents?.size() > 0 ) {
+
+                titleObj.historyEvents.each { jhe ->
+                      // 1971-01-01 00:00:00.0
+                  log.debug("Handling title history");
+                  try {
+                    def inlist = []
+                    def outlist = []
+                    def cont = true
+
+                    jhe.from.each { fhe ->
+
+                      def p = titleLookupService.find(
+                        fhe.title,
+                        null,
+                        fhe.identifiers,
+                        user,
+                        null,
+                        titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
+                          (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                        fhe.uuid
+                      );
+
+                      if ( p ) { inlist.add(p); } else { cont = false; }
+                    }
+
+                    jhe.to.each { fhe ->
+
+                      def p =  titleLookupService.find(
+                        fhe.title,
+                        null,
+                        fhe.identifiers,
+                        user,
+                        null,
+                        titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
+                          (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                        fhe.uuid
+                      );
+
+                      if ( p && !inlist.contains(p) ) { outlist.add(p); } else { cont = false; }
+                    }
+
+                    def first = true;
+                    // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
+                    def che_check_qry_sw  = new StringWriter();
+                    def qparams = []
+
+                    che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
+
+                    inlist.each { fhe ->
+                      if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+
+                      che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                      qparams.add(fhe)
+                    }
+
+                    outlist.each { fhe ->
+                      if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+
+                      che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                      qparams.add(fhe)
+                    }
+
+                    def che_check_qry = che_check_qry_sw.toString()
+
+                    log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
+
+                    def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
+
+                    if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
+                      cont = false;
+
+                    if ( cont ) {
+
+                      def he = new ComponentHistoryEvent()
+
+                      if ( jhe.date ) {
+                        he.eventDate = sdf.parse(jhe.date);
+                      }
+
+                      he.save(flush:true, failOnError:true);
+
+                      inlist.each {
+                        def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
+                        hep.save(flush:true, failOnError:true);
+                      }
+
+                      outlist.each {
+                        def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
+                        hep.save(flush:true, failOnError:true);
+                      }
+                    }
+                    else {
+                      // Matched an existing TH event, not creating a duplicate
+                    }
+                  }
+                  catch ( Exception e ) {
+                        log.error("Problem processing title history",e);
+                  }
+                }
+              }
+              if( title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph') ){
+
+                log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
+                def mg_change = addMonographFields(title, titleObj, sdf)
+
+                // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
+                if(mg_change){
+                  title_changed = true
+                }
+              }
+
+              title.save(flush:true, failOnError:true)
+
+              addPublisherHistory(title, titleObj.publisher_history, sdf)
+
+              result.message = "Created/looked up title ${title.id}"
+              result.cls = title.class.name
+              result.titleId = title.id
             }
-            catch ( Exception e ) {
-                  log.error("Problem processing title history",e);
+            else {
+              result.message = "Cross Reference Title failed: ${titleObj}";
+              result.result="ERROR"
+              result.baddata=titleObj
+              log.error("Cross Reference Title failed: ${titleObj}");
+              if(title) {
+                result.errors = []
+                title.errors?.allErrors?.each { er ->
+                  result.errors.add("${er.message}")
+                  log.error("${er}")
+                }
+              }
+              // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
+      //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
+      //               // Event callback closure
+      //         }
             }
           }
-        }
-        if( title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph') ){
-          
-          log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
-          def mg_change = addMonographFields(title, titleObj, sdf)
-
-          // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
-          if(mg_change){
-            title_changed = true
+          catch (grails.validation.ValidationException ve) {
+            log.error("ValidationException attempting to cross reference title",ve);
+            result.result="ERROR"
+            result.exception=ve.toString()
+            result.message=ve.getMessage()
+            result.baddata=titleObj
+            log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+          }
+          catch ( Exception e ) {
+            log.error("Exception attempting to cross reference title",e);
+            result.result="ERROR"
+            result.message="There was an error trying to reference title '${titleObj.name}'"
+            result.exception=e.toString()
+            result.baddata=titleObj
+            log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+          }
+          finally {
+            log.debug("Result of cross ref title: ${result}");
           }
         }
-
-        title.save(flush:true, failOnError:true)
-
-        addPublisherHistory(title, titleObj.publisher_history, sdf)
-
-        result.message = "Created/looked up title ${title.id}"
-        result.cls = title.class.name
-        result.titleId = title.id
-      }
-      else {
-        result.message = "No title for ${titleObj}";
-        log.error("Cross Reference Title failed :${titleObj}");
-        // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
-//         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
-//               // Event callback closure
-//         }
-      }
-    }
-    catch (grails.validation.ValidationException ve) {
-      log.error("Exception attempting to cross reference title",ve);
-      result.result="ERROR"
-      result.exception=ve.toString()
-      result.message=ve.getMessage()
-      result.baddata=titleObj
-      log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
-    }
-    catch ( Exception e ) {
-      log.error("Exception attempting to cross reference title",e);
-      result.result="ERROR"
-      result.message=e.toString()
-      result.baddata=titleObj
-      log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
-    }
-    finally {
-      log.debug("Result of cross ref title: ${result}");
-    }
 
     result
   }
@@ -1379,9 +1509,9 @@ class IntegrationController {
             def idMatch = pc."${propName}".id == publisher.id
 
             if (idMatch) {
-              if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
+              if (pub_add_sd && pc.startDate && sdf.format(pub_add_sd) != sdf.format(pc.startDate)) {
               }
-              else if (pub_add_sd && pc.endDate && pub_add_sd != pc.endDate) {
+              else if (pub_add_sd && pc.endDate && sdf.format(pub_add_sd) != sdf.format(pc.endDate)) {
               }
               else {
                 found = true
@@ -1458,7 +1588,7 @@ class IntegrationController {
 
     def bookStringAttrs = ["editionNumber","editionDifferentiator",
                             "editionStatement","volumeNumber",
-                            "summaryOfContent"]
+                            "summaryOfContent","firstAuthor","firstEditor"]
 
     bookStringAttrs.each {
       if(titleObj[it] && titleObj[it].toString().trim().length() > 0){
@@ -1603,5 +1733,40 @@ class IntegrationController {
     session.clear()
   }
 
+  private def boolean setRefdataIfPresent(value, objid, prop, cat = null) {
+    boolean result = false
+    def kbc = KBComponent.get(objid)
+
+    if (!cat) {
+      cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
+    }
+
+    if ( ( value ) && ( cat ) &&
+         ( value.toString().trim().length() > 0 ) &&
+         ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
+      def v = RefdataCategory.lookupOrCreate(cat,value)
+      kbc[prop] = v
+      result = true
+    }
+
+    result
+  }
+
+  private def boolean setStringIfDifferent(obj, prop, value) {
+    boolean result = false;
+
+    if ( ( obj != null ) && ( prop != null ) && ( value ) && ( value.toString().length() > 0 ) ) {
+
+      if ( obj[prop] == value ) {
+      }
+      else {
+        result = true
+        obj[prop] = value
+      }
+
+    }
+
+    result
+  }
 
 }

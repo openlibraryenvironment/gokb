@@ -4,7 +4,7 @@ import javax.persistence.Transient
 import groovy.util.logging.*
 import org.gokb.GOKbTextUtils
 
-@Log4j
+@Slf4j
 class Platform extends KBComponent {
 
   String primaryUrl
@@ -195,7 +195,7 @@ class Platform extends KBComponent {
     def result = true;
     result &= platformDTO != null
     result &= platformDTO.name != null
-    result &= platformDTO.name?.trim().length() > 0
+    result &= platformDTO.name?.trim()?.size() > 0
 
     if ( !result ) {
       log.error("platform failed validation ${platformDTO}");

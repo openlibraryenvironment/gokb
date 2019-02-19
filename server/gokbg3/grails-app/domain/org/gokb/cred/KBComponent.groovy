@@ -15,7 +15,7 @@ import org.gokb.GOKbTextUtils
  * Abstract base class for GoKB Components.
  */
 
-@Log4j
+@Slf4j
 @grails.gorm.dirty.checking.DirtyCheck
 abstract class KBComponent implements Auditable {
 
