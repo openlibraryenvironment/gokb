@@ -201,7 +201,8 @@ class TSVIngestionService {
                            ingest_cfg,
                            row_specific_config,
                            def user = null,
-                           def project = null) {
+                           def project = null,
+                           publication_type) {
     // The TitleInstance
     TitleInstance the_title = null
 
@@ -220,7 +221,12 @@ class TSVIngestionService {
     List< KBComponent> matches = results['matches'] as List
 
     // log.debug("Title matches ${matches?.size()} existing entries");
-    def new_inst_clazz = Class.forName(row_specific_config.defaultTypeName)
+    def type = row_specific_config.defaultTypeName
+    if ( publication_type && publication_type.toLowerCase() == 'monograph' ) {
+      type = "BookInstance"
+    }
+
+    def new_inst_clazz = Class.forName(type)
 
     switch (matches.size()) {
     case 0 :
@@ -229,7 +235,7 @@ class TSVIngestionService {
       if (results['class_one']) {
         // Create the new TI.
         // the_title = new BookInstance(name:title)
-        log.debug("Creating new ${row_specific_config.defaultTypeName} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
+        log.debug("Creating new ${type} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}");
 
         the_title = new_inst_clazz.newInstance()
         the_title.name=title
@@ -697,7 +703,7 @@ class TSVIngestionService {
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
-                     defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.TitleInstance',
+                     defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.JournalInstance',
                      identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
                      defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
                      providerIdentifierNamespace:providerIdentifierNamespace?.value,
@@ -1024,7 +1030,7 @@ class TSVIngestionService {
 
         if ( identifiers.size() > 0 ) {
 
-          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config, user)
+          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config, user, the_kbart.publication_type)
           // should be def title = titleLookupService.find([title:the_kbart.publication_title, 
           //                                                identifiers:identifiers,
           //                                                publisher_name:the_kbart.publisher_name],
@@ -1892,7 +1898,7 @@ class TSVIngestionService {
 
         if ( identifiers.size() > 0 ) {
           try {
-            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_cfg)
+            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_cfg, the_kbart.publication_type)
             if ( title && the_kbart.title_image && ( the_kbart.title_image != title.coverImage) ) {
               title.coverImage = the_kbart.title_image;
               title.save(flush:true, failOnError:true)

@@ -881,6 +881,7 @@ class IntegrationController {
                     if (idx % 50 == 0) {
                       cleanUpGorm()
                     }
+                    job.setProgress(idx, json.tipps.size() * 2)
                   }
                 }
                 else{
@@ -940,6 +941,7 @@ class IntegrationController {
                     if (idx % 50 == 0) {
                       cleanUpGorm()
                     }
+                    job.setProgress(idx + json.tipps.size(), json.tipps.size() * 2)
                   }
                   def num_deleted_tipps = 0;
 

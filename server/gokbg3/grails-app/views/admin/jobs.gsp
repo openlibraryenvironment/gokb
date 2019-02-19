@@ -38,7 +38,7 @@
               Done
             </g:elseif>
             <g:else>
-              Not Done <g:if test="${v.progress}">(${v.progress})</g:if>
+              Not Done <g:if test="${v.progress}">(${v.progress}%)</g:if>
             </g:else>
           </td>
           <td>${v.endTime}</td>

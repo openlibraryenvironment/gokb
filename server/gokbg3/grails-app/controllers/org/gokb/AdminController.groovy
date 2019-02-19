@@ -272,7 +272,7 @@ class AdminController {
     log.debug("Jobs");
     def result=[:]
     log.debug("Sort");
-    result.jobs = concurrencyManagerService.jobs.sort { it.key }
+    result.jobs = concurrencyManagerService.jobs.sort { a,b -> b.key <=> a.key }
     log.debug("concurrency manager service");
     result.cms = concurrencyManagerService
 
