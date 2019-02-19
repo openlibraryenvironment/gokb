@@ -767,8 +767,6 @@ class IntegrationController {
         def ctr = 0
         def errors = []
 
-        job_result.results = []
-
         def valid = Package.validateDTO(json.packageHeader)
 
         if ( valid ) {
@@ -905,7 +903,7 @@ class IntegrationController {
                       valid = false
                       errors.add(['code': 400, 'message': "TIPP Validation for title ${tipp.title.name} failed."])
                     }
-
+                    
                     if (idx % 50 == 0) {
                       cleanUpGorm()
                     }

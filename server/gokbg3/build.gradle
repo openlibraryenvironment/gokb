@@ -19,7 +19,7 @@ buildscript {
     }
 }
 
-version "8.0.12"
+version appVersion
 group "gokbg3"
 
 apply plugin:"eclipse"
@@ -86,7 +86,6 @@ dependencies {
     compile 'org.grails.plugins:grails-executor:0.4'
     compile 'org.grails.plugins:audit-logging:3.0.0'
     compile 'org.liquibase:liquibase-core:3.5.3'
-
 
     // This  is for rest integration tests -  see more at
     //  http://guides.grails.org/grails-controller-testing/guide/index.html
