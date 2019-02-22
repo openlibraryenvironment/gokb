@@ -170,8 +170,10 @@ class FTUpdateService {
         result.cpname = kbc.provider?.name
 
         result.provider = kbc.provider ? "${kbc.provider.class?.name}:${kbc.provider?.id}" : ""
+        result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
 
         result.platformName = kbc.nominalPlatform?.name
+        result.platformUuid = kbc.nominalPlatform?.name ? kbc.nominalPlatform?.uuid : ""
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -232,8 +234,13 @@ class FTUpdateService {
         }
 
         result.tippPackage = kbc.pkg ? "${kbc.pkg?.class?.name}:${kbc.pkg?.id}" : ""
+        result.tippPackageUuid = kbc.pkg ? kbc.pkg?.uuid : ""
+
         result.tippTitle = kbc.title ? "${kbc.title?.class?.name}:${kbc.title?.id}" : ""
+        result.tippTitleUuid = kbc.title ? kbc.title?.uuid : ""
+
         result.hostPlatform = kbc.hostPlatform ? "${kbc.hostPlatform?.class?.name}:${kbc.hostPlatform?.id}" : ""
+        result.hostPlatformUuid = kbc.hostPlatform ? kbc.hostPlatform?.uuid : ""
 
         result.status = kbc.status?.value
 
@@ -280,6 +287,7 @@ class FTUpdateService {
         result.cpname = kbc.provider?.name
 
         result.provider = kbc.provider ? "${kbc.provider.class?.name}:${kbc.provider?.id}" : ""
+        result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
 
         result.altname = []
         kbc.variantNames.each { vn ->
