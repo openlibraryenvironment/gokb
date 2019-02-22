@@ -599,18 +599,7 @@ class OaiController {
             query += ' and '
           }
 
-          query += 'o.lastUpdated > ? ' +
-                            'or exists (from TitleInstancePackagePlatform as tipp, \n' +
-                            'Combo as titleCombo,  \n' +
-                            'Combo as pkgCombo,\n' +
-                            'Platform as plat,\n' +
-                            'TitleInstance as title\n' +
-                            'where pkgCombo.toComponent=tipp \n' +
-                            'and pkgCombo.fromComponent= o ' +
-                            'and (tipp.lastUpdated > ? or plat.lastUpdated > ?))'
-
-                    query_params.add(from)
-                    query_params.add(from)
+          query += 'o.lastUpdated > ? '
                     query_params.add(from)
         }
         catch (ParseException pe) {
