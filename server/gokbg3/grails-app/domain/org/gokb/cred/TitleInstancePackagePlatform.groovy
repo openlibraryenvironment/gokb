@@ -214,6 +214,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     def ti = TitleInstance.get(tipp_dto.title?.internalId)
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
+    def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
 
     if ( pkg && plt && ti ) {
       log.debug("See if we already have a tipp");
@@ -227,8 +228,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         case 1:
           log.debug("found");
 
-          if( tipp_dto.url && tipp_dto.url.trim().size() > 0 ) {
-            if( !tipps[0].url || tipps[0].url == tipp_dto.url ){
+          if( trimmed_url && trimmed_url.size() > 0 ) {
+            if( !tipps[0].url || tipps[0].url == trimmed_url ){
               tipp = tipps[0]
             }
             else{
@@ -244,9 +245,9 @@ class TitleInstancePackagePlatform extends KBComponent {
           
           break;
         default:
-          if ( tipp_dto.url && tipp_dto.url.trim().size() > 0 ) {
-            tipps = tipps.findAll { !it.url || it.url == tipp_dto.url };
-            log.debug("found ${tipps.size()} tipps for URL ${tipp_dto.url}")
+          if ( trimmed_url && trimmed_url.size() > 0 ) {
+            tipps = tipps.findAll { !it.url || it.url == trimmed_url };
+            log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
           }
         
           def cur_tipps = tipps.findAll { it.status == status_current };
@@ -270,7 +271,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( !tipp ) {
         log.debug("Creating new TIPP..")
-        tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': tipp_dto.url]).save(failOnError: true)
+        tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': trimmed_url]).save(failOnError: true)
         // Hibernate problem
 
         if (!tipp){
@@ -278,7 +279,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
       }
       else {
-        TitleInstancePlatform.ensure(ti, plt, tipp_dto.url)
+        TitleInstancePlatform.ensure(ti, plt, trimmed_url)
       }
 
       if ( tipp ) {
@@ -338,7 +339,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           if (payment_ref) tipp.paymentType = payment_ref
         }
 
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', tipp_dto.url)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', trimmed_url)
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate,tipp,'accessStartDate')
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessEndDate')
 
@@ -400,6 +401,7 @@ class TitleInstancePackagePlatform extends KBComponent {
                 (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
             ) {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
+                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)

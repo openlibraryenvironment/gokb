@@ -1052,29 +1052,34 @@ class WorkflowController {
       old_ti.tipps.each { old_tipp ->
         
         if( merge_params['merge_tipps'] && old_tipp.status == status_current ){
-          def dupe = false
-          
-          new_ti.tipps.each { new_tipp ->
-            if ( new_tipp.pkg == old_tipp.pkg && new_tipp.hostPlatform == old_tipp.hostPlatform && new_tipp.url == old_tipp.url ) {
-              dupe = true
-            }
+
+          def tipp_dto = [:]
+
+          tipp_dto.package = ['internalId': old_tipp.pkg.id]
+          tipp_dto.platform = ['internalId':old_tipp.hostPlatform.id]
+          tipp_dto.title = ['internalId':new_ti.id]
+          if (old_tipp.paymentType?.value) tipp_dto.paymentType = old_tipp.paymentType?.value
+          tipp_dto.url = old_tipp.url ?: ""
+          tipp_dto.coverage = []
+
+          old_tipp.coverageStatements.each { otcs ->
+            def cst = [
+              'startVolume': otcs.startVolume ?: "",
+              'startIssue':otcs.startIssue ?: "",
+              'endVolume': otcs.endVolume ?: "",
+              'endIssue': otcs.endIssue ?: "",
+              'embargo':otcs.embargo ?: "",
+              'coverageNote': otcs.coverageNote ?: "",
+              'startDate': otcs.startDate ? sdf.format(otcs.startDate) : "",
+              'endDate': otcs.endDate ? sdf.format(otcs.endDate) : "",
+              'coverageDepth': old_tipp.coverageDepth?.value ?: ""
+            ]
+            tipp_dto.coverage.add(cst)
           }
-          
-          if ( !dupe ) {
-            def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
-                                    pkg:old_tipp.pkg,
-                                    hostPlatform:old_tipp.hostPlatform,
-                                    title:new_ti,
-                                    startDate:old_tipp.startDate,
-                                    startVolume:old_tipp.startVolume,
-                                    startIssue:old_tipp.startIssue,
-                                    endDate:old_tipp.endDate,
-                                    endVolume:old_tipp.endVolume,
-                                    endIssue:old_tipp.endIssue,
-                                    url:old_tipp.url,
-                                    ]).save()
-            log.debug("Added new TIPP ${new_tipp} to TI ${new_ti}")
-          }
+
+          def new_tipp = TitleInstancePackagePlatform.upsertDTO(tipp_dto, request.user)
+
+          log.debug("Added new TIPP ${new_tipp} to TI ${new_ti}")
         }
         old_tipp.status = status_deleted
       }
@@ -1772,7 +1777,7 @@ class WorkflowController {
           flash.errors="Org Deprecation Failed!".toString()
         }
       }
-      redirect(controller:'resource', action:'show', id:"${otd.class.name}:${otd.id}")
+      redirect(controller:'resource', action:'show', id:"${neworg.class.name}:${neworg.id}")
     }
   }
 
