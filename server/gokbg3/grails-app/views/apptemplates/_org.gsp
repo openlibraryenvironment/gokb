@@ -113,17 +113,12 @@
 			<g:render template="/tabTemplates/showVariantnames" model="${[d:d, showActions:true]}" />
 			<div class="tab-pane" id="ids">
 				<g:if test="${d.id != null}">
-					<dl>
-						<dt>
-							<g:annotatedLabel owner="${d}" property="ids">IDs</g:annotatedLabel>
-						</dt>
-						<dd>
-							<g:render template="/apptemplates/comboList"
-								model="${[d:d, property:'ids', cols:[[expr:'namespace.value',colhead:'Namespace'],[expr:'value',colhead:'Identifier']]]}" />
-                                                        <g:render template="/apptemplates/addIdentifier" model="${[d:d]}"/>
+                                    <g:render template="/apptemplates/combosByType"
+                                      model="${[d:d, property:'ids', fragment:'ids', cols:[
+                                                [expr:'toComponent.namespace.value', colhead:'Namespace'],
+                                                [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
 
-						</dd>
-					</dl>
+                                    <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#ids']}"/>
 				</g:if>
 			</div>
             <div class="tab-pane" id="relationships">
