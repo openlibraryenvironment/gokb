@@ -35,7 +35,7 @@
             <g:link
               controller='workflow'
               action='deleteCombo'
-              params="${['__context':combooid,'fragment':fragment]}"
+              params="${['id':row.id,'fragment':fragment]}"
               class="confirm-click btn-delete"
               data-confirm-message="Are you sure you wish to delete this ${row.toComponent.getNiceName()}?" >Delete</g:link>
           </g:if>
