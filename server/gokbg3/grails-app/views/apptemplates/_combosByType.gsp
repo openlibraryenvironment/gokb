@@ -33,9 +33,9 @@
         <td>
           <g:if test="${d.isEditable() && (d.respondsTo('curatoryGroups') ? (!d.curatoryGroups ? true : cur) : true)}">
             <g:link
-              controller='ajaxSupport'
-              action='delete'
-              params="${['__context':combooid,'fragment':fragment]}"
+              controller='workflow'
+              action='deleteCombo'
+              params="${['id':row.id,'fragment':fragment]}"
               class="confirm-click btn-delete"
               data-confirm-message="Are you sure you wish to delete this ${row.toComponent.getNiceName()}?" >Delete</g:link>
           </g:if>

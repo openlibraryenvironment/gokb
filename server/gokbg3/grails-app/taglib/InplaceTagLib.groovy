@@ -101,7 +101,7 @@ class InplaceTagLib {
     def data_link = null
     switch ( attrs.type ) {
       case 'date':
-        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date', format: (attrs."data-format"?:'yyyy-MM-dd')])
+        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date', dateFormat: (attrs."data-format"?:'yyyy-MM-dd')])
 //        out << " data-type='dateui' data-format='${attrs."data-format"?:'YYYY-MM-DD'}' data-datepicker='{minYear : 1900,smartDays:true}' data-viewformat='MM/DD/YYYY'"
 //        if (!attrs."data-value") {
 //          if (owner[attrs.field]) {

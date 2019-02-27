@@ -51,6 +51,7 @@
               <input type="hidden" name="__newObjectClass"
                 value="org.gokb.cred.KBComponentVariantName" />
               <input type="hidden" name="__recip" value="owner" />
+              <input type="hidden" name="fragment" value="altnames" />
               <dt class="dt-label">Variant Name</dt>
               <dd>
                 <input type="text" class="form-control select-m" name="variantName" />

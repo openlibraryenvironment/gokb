@@ -18,7 +18,7 @@
     ${d.currentOwner}&nbsp;
   </dd>
 
-  <dt>
+  <dt class="dt-label">
     <g:annotatedLabel owner="${d}" property="owners">Owners</g:annotatedLabel>
   </dt>
 
@@ -50,9 +50,9 @@
     <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
       <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
       <input type="hidden" name="__property" value="owners" />
-      <dt>Add Owner:</td>
+      <dt class="dt-label">Add Owner:</td>
       <dd>
-        <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" filter1="Current"/><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+        <g:simpleReferenceTypedown class="form-inline select-ml" name="__relatedObject" baseClass="org.gokb.cred.Org" filter1="Current"/>&nbsp;<button type="submit" class="btn btn-default btn-primary">Add</button>
       </dd>
     </g:form>
   </g:if>

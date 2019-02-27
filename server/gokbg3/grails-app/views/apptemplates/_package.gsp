@@ -135,6 +135,7 @@
               <input type="hidden" name="__context" value="${d.class?.name}:${d.id}" />
               <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
               <input type="hidden" name="__addToColl" value="tipps" />
+              <input type="hidden" name="__showNew" value="true" />
               <dl class="dl-horizontal">
                 <dt class="dt-label">Title</dt>
                 <dd>
