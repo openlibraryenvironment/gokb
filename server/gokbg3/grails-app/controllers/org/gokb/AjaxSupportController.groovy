@@ -23,7 +23,7 @@ class AjaxSupportController {
   def messageSource
 
 
-  @Transactional
+  @Deprecated
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def edit() {
     // edit [name:name, value:project:12, pk:org.gokb.cred.Package:2950, action:edit, controller:ajaxSupport]
@@ -56,6 +56,10 @@ class AjaxSupportController {
     render result as JSON
   }
 
+  /**
+   *  getRefdata : Used to retrieve a list of all RefdataValues for a specific category.
+   * @param id : The label of the RefdataCategory
+   */
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def getRefdata() {
@@ -424,6 +428,13 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  addToStdCollection : Used to add an existing object to a named collection that is not mapped through a join object.
+   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param __relatedObject : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object to be added to the list
+   * @param __property : The property name of the collection to which the object should be added
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToStdCollection() {
@@ -471,11 +482,18 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  unlinkManyToMany : Used to remove an object from a named collection.
+   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param __itemToRemove : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object to be removed from the list
+   * @param __property : The property name of the collection from which the object should be removed from
+   * @param __otherEnd : The property name from the side of the object to be removed
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def unlinkManyToMany() {
     log.debug("unlinkManyToMany(${params})");
-    // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
     def result = ['result': 'OK', 'params': params]
     if ( (contextObj && contextObj.isEditable()) || contextObj.id == springSecurityService.principal.id ) {
@@ -567,6 +585,11 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  delete : Used to delete a domain class object.
+   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def delete() {
@@ -575,7 +598,12 @@ class AjaxSupportController {
     def contextObj = resolveOID2(params.__context)
     def result = ['result': 'OK', 'params': params]
     if ( contextObj && contextObj.isDeletable()) {
-      contextObj.delete(flush:true)
+      if(contextObj.respondsTo('deleteSoft')) {
+        contextObj.deleteSoft()
+      }
+      else {
+        contextObj.delete(flush:true)
+      }
       log.debug("Item deleted.")
     }
     else if (!contextObj) {
@@ -611,7 +639,7 @@ class AjaxSupportController {
     }
   }
 
-  def resolveOID2(oid) {
+  private def resolveOID2(oid) {
     def oid_components = oid.split(':');
     def result = null;
     def domain_class=null;
@@ -631,6 +659,13 @@ class AjaxSupportController {
     result
   }
 
+  /**
+   *  lookup : Calls the refdataFind function of a specific class and returns a simple result list.
+   * @param baseClass : The class name to
+   * @param max : Number of results to return
+   * @param addEmpty : Add an empty row at the start of the list
+   * @param filter1 : A status value string which should be filtered out after the query has been executed
+   */
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
@@ -657,6 +692,15 @@ class AjaxSupportController {
 
     render result as JSON
   }
+
+  /**
+   *  editableSetValue : Used to set a primitive property value.
+   * @param pk : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param type : Used for date parsing with value 'date'
+   * @param dateFormat : Used for overriding the default date format ('yyyy-MM-dd')
+   * @param name : The name of the property to be changed
+   * @param value : The new value for the property
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -750,6 +794,13 @@ class AjaxSupportController {
     result
   }
 
+  /**
+   *  genericSetRel : Used to set a complex property value.
+   * @param pk : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param name : The name of the property to be changed
+   * @param value : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object to link
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def genericSetRel() {
@@ -819,6 +870,13 @@ class AjaxSupportController {
     result;
   }
 
+  /**
+   *  addIdentifier : Used to add an identifier to a list.
+   * @param __context : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param identifierNamespace : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the identifier namespace
+   * @param identifierValue : The value of the identifier to link
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addIdentifier() {
@@ -874,6 +932,13 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  appliedCriterion : Used to create an applied decision support criterion for the current user.
+   * @param comp : The id of the context object
+   * @param crit : The id of the used criterion
+   * @param val : The status value for the applied criterion ("r"|"a"|"g")
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def appliedCriterion() {
@@ -900,6 +965,12 @@ class AjaxSupportController {
     result.username = user.username
     render result as JSON
   }
+
+  /**
+   *  criterionComment : Used to create a decision support note for an applied criterion of the current user.
+   * @param comp : A combination of the component and criterion with format [component_id]_[criterion_id]
+   * @param comment : The text of the new note
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -931,6 +1002,10 @@ class AjaxSupportController {
     render result as JSON
   }
 
+  /**
+   *  criterionCommentDelete : Used to delete a decision support note for an applied criterion of the current user.
+   * @param note : The id of the note to delete
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -950,6 +1025,11 @@ class AjaxSupportController {
 
     render result as JSON
   }
+
+  /**
+   *  plusOne : Like or Unlike a component for the current user.
+   * @param object : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
