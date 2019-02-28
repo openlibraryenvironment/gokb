@@ -202,7 +202,7 @@ class AjaxSupportController {
 
   /**
    *  addToCollection : Used to create a form which will add a new object to a named collection within the target object.
-   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") Of the context object
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) Of the context object
    * @param __newObjectClass : The fully qualified class name of the instance to create
    * @param __recip : Optional - If set, then new_object.recip will point to __context
    * @param __addToColl : The name of the local set to which the new object should be added
@@ -430,8 +430,8 @@ class AjaxSupportController {
 
   /**
    *  addToStdCollection : Used to add an existing object to a named collection that is not mapped through a join object.
-   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
-   * @param __relatedObject : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object to be added to the list
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param __relatedObject : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the object to be added to the list
    * @param __property : The property name of the collection to which the object should be added
    */
 
@@ -484,8 +484,8 @@ class AjaxSupportController {
 
   /**
    *  unlinkManyToMany : Used to remove an object from a named collection.
-   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
-   * @param __itemToRemove : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object to be removed from the list
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param __itemToRemove : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the object to be removed from the list
    * @param __property : The property name of the collection from which the object should be removed from
    * @param __otherEnd : The property name from the side of the object to be removed
    */
@@ -587,7 +587,7 @@ class AjaxSupportController {
 
   /**
    *  delete : Used to delete a domain class object.
-   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
    */
 
   @Transactional
@@ -695,7 +695,7 @@ class AjaxSupportController {
 
   /**
    *  editableSetValue : Used to set a primitive property value.
-   * @param pk : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param pk : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
    * @param type : Used for date parsing with value 'date'
    * @param dateFormat : Used for overriding the default date format ('yyyy-MM-dd')
    * @param name : The name of the property to be changed
@@ -796,9 +796,9 @@ class AjaxSupportController {
 
   /**
    *  genericSetRel : Used to set a complex property value.
-   * @param pk : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param pk : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
    * @param name : The name of the property to be changed
-   * @param value : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object to link
+   * @param value : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the object to link
    */
 
   @Transactional
@@ -872,8 +872,8 @@ class AjaxSupportController {
 
   /**
    *  addIdentifier : Used to add an identifier to a list.
-   * @param __context : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
-   * @param identifierNamespace : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the identifier namespace
+   * @param __context : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param identifierNamespace : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the identifier namespace
    * @param identifierValue : The value of the identifier to link
    */
 
@@ -1028,7 +1028,7 @@ class AjaxSupportController {
 
   /**
    *  plusOne : Like or Unlike a component for the current user.
-   * @param object : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the context object
+   * @param object : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
    */
 
   @Transactional
