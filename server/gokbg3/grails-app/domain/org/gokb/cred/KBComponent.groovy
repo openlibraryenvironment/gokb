@@ -949,7 +949,7 @@ where cp.owner = :c
       'id',
       'outgoingCombos',
       'incomingCombos',
-      'reviewRequests',
+//      'reviewRequests',
       'tags',
       'systemOnly',
       'additionalProperties',
@@ -1005,6 +1005,100 @@ where cp.owner = :c
     }
 
     props
+  }
+
+  /**
+   * Get the list of all properties and ids.
+   */
+  @Transient
+  public Map getAllPropertiesWithLinks(boolean addCombos = true) {
+
+    def ignore_list = [
+      'id',
+      'outgoingCombos',
+      'incomingCombos',
+      'reviewRequests',
+      'tags',
+      'systemOnly',
+      'additionalProperties',
+//      'skippedTitles',
+//      'variantNames',
+      'ids',
+      'fileAttachments'
+    ]
+
+    // Get the domain class.
+    def domainClass = grailsApplication.getDomainClass(this."class".name)
+
+    // The map of current property names and values to be passed to the
+    // new constructor.
+    def props = [:]
+
+    // Add combo and persisted properties to the list.
+    def localProps = (domainClass?.persistentProperties?.collect { it.name }) ?: []
+
+    if (addCombos) {
+      localProps += allComboPropertyNames
+    }
+
+    localProps.each { prop ->
+
+      // Ignore the ones in the list.
+      if (prop in ignore_list) {
+        return
+      }
+
+      // println("Deproxy ${prop}");
+      def val = this."${prop}"
+
+      switch (val) {
+
+        case {it instanceof Collection} :
+          def newVals = []
+          for (el in val) {
+
+            // Deproxy the item in the list and then add.
+            def newVal = processPropVal(el)
+
+            newVals << newVal
+          }
+
+          props["${prop}"] = newVals
+          break
+        default :
+          props["${prop}"] = processPropVal(val)
+      }
+    }
+
+    props
+  }
+
+  private def processPropVal(el) {
+    def newVal = KBComponent.deproxy(el)
+    def result = null
+
+    if (newVal && grailsApplication.isDomainClass(newVal."class")) {
+      def obj_label = null
+
+      if (newVal.hasProperty('username')) {
+        obj_label = newVal.username
+      }
+      else if (newVal.hasProperty('name')) {
+        obj_label = newVal.name
+      }
+      else if (newVal.hasProperty('value')) {
+        obj_label = newVal.value
+      }
+      else if (newVal.hasProperty('variantName')) {
+        obj_label = newVal.variantName
+      }
+
+      result = ['oid': "${newVal.class.name}:${newVal.id}", 'label': obj_label]
+    }
+    else {
+      result = newVal
+    }
+    result
   }
 
   /**
