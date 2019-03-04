@@ -29,9 +29,9 @@
                 <td><g:xEditableRefData owner="${v}" field="locale" config='KBComponentVariantName.Locale' /></td>
                 <td>
                   <g:if test="${ editable && showActions }">
-                              <g:link controller="workflow" action="AuthorizeVariant" id="${v.id}">Make Authorized</g:link>,
-                              <g:link controller="workflow" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
-                                action="DeleteVariant" id="${v.id}" >Delete</g:link>
+                              <g:link controller="ajaxSupport" action="authorizeVariant" id="${v.id}">Make Authorized</g:link>,
+                              <g:link controller="ajaxSupport" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Variant?"
+                                action="deleteVariant" id="${v.id}" >Delete</g:link>
                   </g:if>
                 </td>
               </tr>

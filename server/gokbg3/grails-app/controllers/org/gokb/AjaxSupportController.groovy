@@ -23,7 +23,7 @@ class AjaxSupportController {
   def messageSource
 
 
-  @Transactional
+  @Deprecated
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def edit() {
     // edit [name:name, value:project:12, pk:org.gokb.cred.Package:2950, action:edit, controller:ajaxSupport]
@@ -56,6 +56,10 @@ class AjaxSupportController {
     render result as JSON
   }
 
+  /**
+   *  getRefdata : Used to retrieve a list of all RefdataValues for a specific category.
+   * @param id : The label of the RefdataCategory
+   */
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def getRefdata() {
@@ -98,7 +102,7 @@ class AjaxSupportController {
 
       GrailsClass dc = grailsApplication.getArtefact("Domain", 'org.gokb.cred.'+ config.domain)
 
-      if (dc.isTypeReadable()) {
+      if (dc?.getClazz()?.isTypeReadable()) {
         def cq = dc.getClazz().executeQuery(config.countQry,query_params);
         def rq = dc.getClazz().executeQuery(config.rowQry,
                                   query_params,
@@ -198,7 +202,7 @@ class AjaxSupportController {
 
   /**
    *  addToCollection : Used to create a form which will add a new object to a named collection within the target object.
-   * @param __context : the OID ("<FullyQualifiedClassName>:<PrimaryKey>") Of the context object
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) Of the context object
    * @param __newObjectClass : The fully qualified class name of the instance to create
    * @param __recip : Optional - If set, then new_object.recip will point to __context
    * @param __addToColl : The name of the local set to which the new object should be added
@@ -424,6 +428,13 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  addToStdCollection : Used to add an existing object to a named collection that is not mapped through a join object.
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param __relatedObject : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the object to be added to the list
+   * @param __property : The property name of the collection to which the object should be added
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToStdCollection() {
@@ -471,11 +482,18 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  unlinkManyToMany : Used to remove an object from a named collection.
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param __itemToRemove : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the object to be removed from the list
+   * @param __property : The property name of the collection from which the object should be removed from
+   * @param __otherEnd : The property name from the side of the object to be removed
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def unlinkManyToMany() {
     log.debug("unlinkManyToMany(${params})");
-    // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
     def result = ['result': 'OK', 'params': params]
     if ( (contextObj && contextObj.isEditable()) || contextObj.id == springSecurityService.principal.id ) {
@@ -567,6 +585,11 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  delete : Used to delete a domain class object.
+   * @param __context : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def delete() {
@@ -575,7 +598,12 @@ class AjaxSupportController {
     def contextObj = resolveOID2(params.__context)
     def result = ['result': 'OK', 'params': params]
     if ( contextObj && contextObj.isDeletable()) {
-      contextObj.delete(flush:true)
+      if(contextObj.respondsTo('deleteSoft')) {
+        contextObj.deleteSoft()
+      }
+      else {
+        contextObj.delete(flush:true)
+      }
       log.debug("Item deleted.")
     }
     else if (!contextObj) {
@@ -611,7 +639,7 @@ class AjaxSupportController {
     }
   }
 
-  def resolveOID2(oid) {
+  private def resolveOID2(oid) {
     def oid_components = oid.split(':');
     def result = null;
     def domain_class=null;
@@ -631,6 +659,13 @@ class AjaxSupportController {
     result
   }
 
+  /**
+   *  lookup : Calls the refdataFind function of a specific class and returns a simple result list.
+   * @param baseClass : The class name to
+   * @param max : Number of results to return
+   * @param addEmpty : Add an empty row at the start of the list
+   * @param filter1 : A status value string which should be filtered out after the query has been executed
+   */
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
@@ -657,6 +692,15 @@ class AjaxSupportController {
 
     render result as JSON
   }
+
+  /**
+   *  editableSetValue : Used to set a primitive property value.
+   * @param pk : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param type : Used for date parsing with value 'date'
+   * @param dateFormat : Used for overriding the default date format ('yyyy-MM-dd')
+   * @param name : The name of the property to be changed
+   * @param value : The new value for the property
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -750,6 +794,13 @@ class AjaxSupportController {
     result
   }
 
+  /**
+   *  genericSetRel : Used to set a complex property value.
+   * @param pk : the OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param name : The name of the property to be changed
+   * @param value : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the object to link
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def genericSetRel() {
@@ -819,6 +870,13 @@ class AjaxSupportController {
     result;
   }
 
+  /**
+   *  addIdentifier : Used to add an identifier to a list.
+   * @param __context : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param identifierNamespace : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the identifier namespace
+   * @param identifierValue : The value of the identifier to link
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addIdentifier() {
@@ -874,6 +932,13 @@ class AjaxSupportController {
     }
   }
 
+  /**
+   *  appliedCriterion : Used to create an applied decision support criterion for the current user.
+   * @param comp : The id of the context object
+   * @param crit : The id of the used criterion
+   * @param val : The status value for the applied criterion ("r"|"a"|"g")
+   */
+
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def appliedCriterion() {
@@ -900,6 +965,12 @@ class AjaxSupportController {
     result.username = user.username
     render result as JSON
   }
+
+  /**
+   *  criterionComment : Used to create a decision support note for an applied criterion of the current user.
+   * @param comp : A combination of the component and criterion with format [component_id]_[criterion_id]
+   * @param comment : The text of the new note
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -931,6 +1002,10 @@ class AjaxSupportController {
     render result as JSON
   }
 
+  /**
+   *  criterionCommentDelete : Used to delete a decision support note for an applied criterion of the current user.
+   * @param note : The id of the note to delete
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -950,6 +1025,11 @@ class AjaxSupportController {
 
     render result as JSON
   }
+
+  /**
+   *  plusOne : Like or Unlike a component for the current user.
+   * @param object : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   */
 
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -988,5 +1068,219 @@ class AjaxSupportController {
     }
     log.debug("result: ${result}");
     render result as JSON
+  }
+
+  /**
+   *  authorizeVariant : Used to replace the name of a component by one of its existing variant names.
+   * @param id : The id of the variant name
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def authorizeVariant() {
+    log.debug("${params}");
+    def result = ['result':'OK', 'params':params]
+    def variant = KBComponentVariantName.get(params.id)
+
+    if ( variant != null && variant.owner?.isEditable()) {
+      // Does the current owner.name exist in a variant? If not, we should create one so we don't loose the info
+      def current_name_as_variant = variant.owner.variantNames.find { it.variantName == variant.owner.name }
+
+      result.owner = "${variant.owner.class.name}:${variant.owner.id}"
+
+      if ( current_name_as_variant == null ) {
+        log.debug("No variant name found for current name: ${variant.owner.name} ")
+        def variant_name = variant.owner.getId();
+
+        if(variant.owner.name){
+          variant_name = variant.owner.name
+        }
+        else if (variant.owner?.respondsTo('getDisplayName') && variant.owner.getDisplayName()){
+          variant_name = variant.owner.getDisplayName()?.trim()
+        }
+        else if(variant.owner?.respondsTo('getName') ) {
+           variant_name = variant.owner?.getName()?.trim()
+        }
+
+        def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant_name).save(flush:true);
+
+      }else{
+          log.debug("Found existing variant name: ${current_name_as_variant}")
+      }
+
+      variant.variantType = RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Authorized')
+      variant.owner.name = variant.variantName
+
+      if (variant.owner.validate()) {
+        variant.owner.save(flush:true);
+        result.new_name = variant.owner.name
+      }
+      else {
+        result.result = 'ERROR'
+        result.code = 400
+        result.message = "This name already belongs to another component of the same type!"
+        flash.error = "This name already belongs to another component of the same type!"
+      }
+    }
+    else if (!variant) {
+      result.result = 'ERROR'
+      result.code = 404
+      result.message = "Could not find variant!"
+    }
+    else {
+      result.result = 'ERROR'
+      result.code = 403
+      result.message = "Owner object is not editable!"
+      flash.error = "Owner object is not editable!"
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deleteVariant : Used to delete a variant name of a component.
+   * @param id : The id of the variant name
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteVariant() {
+    log.debug("${params}");
+    def result = ['result':'OK', 'params': params]
+    def variant = KBComponentVariantName.get(params.id)
+
+    if ( variant != null && variantOwner.isEditable() ) {
+      def variantOwner = variant.owner
+      def variantName = variant.variantName
+
+      variant.delete()
+      variantOwner.lastUpdateComment = "Deleted Alternate Name ${variantName}."
+      variantOwner.save(flush: true)
+
+      result.owner_oid = "${variantOwner.class.name}:${variantOwner.id}"
+      result.deleted_variant = "${variantName}"
+    }
+    else if (!variant) {
+      result.result = 'ERROR'
+      result.code = 404
+      result.message = "Could not find variant!"
+    }
+    else {
+      result.result = 'ERROR'
+      result.code = 403
+      result.message = "Owner object is not editable!"
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deleteCoverageStatement : Used to delete a TIPPCoverageStatement.
+   * @param id : The id of the coverage statement object
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteCoverageStatement() {
+    log.debug("${params}");
+    def result = ['result':'OK', 'params': params]
+    def tcs = TIPPCoverageStatement.get(params.id)
+    def tipp = tcs.owner
+
+    if ( tcs != null && tipp.isEditable() ) {
+      tcs.delete()
+      tipp.lastUpdateComment = "Deleted Coverage Statement."
+      tipp.save(flush: true)
+    }
+    else if (!tcs) {
+      result.result = 'ERROR'
+      result.code = 404
+      result.message = "Could not find coverage statement!"
+    }
+    else {
+      result.result = 'ERROR'
+      result.code = 403
+      result.message = "This TIPP is not editable!"
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deleteCombo : Used to delete a combo object.
+   * @param id : The id of the combo object
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteCombo() {
+    Combo c = Combo.get(params.id);
+    if (c.fromComponent.isEditable()) {
+      log.debug("Delete combo..")
+      c.delete(flush:true);
+    }
+    else{
+      log.debug("Not deleting combo.. no edit permissions on fromComponent!")
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+
+        redirect(url: redirect_to);
+      }
+      json {
+        render result as JSON
+      }
+    }
   }
 }
