@@ -102,7 +102,7 @@ class AjaxSupportController {
 
       GrailsClass dc = grailsApplication.getArtefact("Domain", 'org.gokb.cred.'+ config.domain)
 
-      if (dc.isTypeReadable()) {
+      if (dc?.getClazz()?.isTypeReadable()) {
         def cq = dc.getClazz().executeQuery(config.countQry,query_params);
         def rq = dc.getClazz().executeQuery(config.rowQry,
                                   query_params,
@@ -1068,5 +1068,219 @@ class AjaxSupportController {
     }
     log.debug("result: ${result}");
     render result as JSON
+  }
+
+  /**
+   *  authorizeVariant : Used to replace the name of a component by one of its existing variant names.
+   * @param id : The id of the variant name
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def authorizeVariant() {
+    log.debug("${params}");
+    def result = ['result':'OK', 'params':params]
+    def variant = KBComponentVariantName.get(params.id)
+
+    if ( variant != null && variant.owner?.isEditable()) {
+      // Does the current owner.name exist in a variant? If not, we should create one so we don't loose the info
+      def current_name_as_variant = variant.owner.variantNames.find { it.variantName == variant.owner.name }
+
+      result.owner = "${variant.owner.class.name}:${variant.owner.id}"
+
+      if ( current_name_as_variant == null ) {
+        log.debug("No variant name found for current name: ${variant.owner.name} ")
+        def variant_name = variant.owner.getId();
+
+        if(variant.owner.name){
+          variant_name = variant.owner.name
+        }
+        else if (variant.owner?.respondsTo('getDisplayName') && variant.owner.getDisplayName()){
+          variant_name = variant.owner.getDisplayName()?.trim()
+        }
+        else if(variant.owner?.respondsTo('getName') ) {
+           variant_name = variant.owner?.getName()?.trim()
+        }
+
+        def new_variant = new KBComponentVariantName(owner:variant.owner,variantName:variant_name).save(flush:true);
+
+      }else{
+          log.debug("Found existing variant name: ${current_name_as_variant}")
+      }
+
+      variant.variantType = RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Authorized')
+      variant.owner.name = variant.variantName
+
+      if (variant.owner.validate()) {
+        variant.owner.save(flush:true);
+        result.new_name = variant.owner.name
+      }
+      else {
+        result.result = 'ERROR'
+        result.code = 400
+        result.message = "This name already belongs to another component of the same type!"
+        flash.error = "This name already belongs to another component of the same type!"
+      }
+    }
+    else if (!variant) {
+      result.result = 'ERROR'
+      result.code = 404
+      result.message = "Could not find variant!"
+    }
+    else {
+      result.result = 'ERROR'
+      result.code = 403
+      result.message = "Owner object is not editable!"
+      flash.error = "Owner object is not editable!"
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deleteVariant : Used to delete a variant name of a component.
+   * @param id : The id of the variant name
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteVariant() {
+    log.debug("${params}");
+    def result = ['result':'OK', 'params': params]
+    def variant = KBComponentVariantName.get(params.id)
+
+    if ( variant != null && variantOwner.isEditable() ) {
+      def variantOwner = variant.owner
+      def variantName = variant.variantName
+
+      variant.delete()
+      variantOwner.lastUpdateComment = "Deleted Alternate Name ${variantName}."
+      variantOwner.save(flush: true)
+
+      result.owner_oid = "${variantOwner.class.name}:${variantOwner.id}"
+      result.deleted_variant = "${variantName}"
+    }
+    else if (!variant) {
+      result.result = 'ERROR'
+      result.code = 404
+      result.message = "Could not find variant!"
+    }
+    else {
+      result.result = 'ERROR'
+      result.code = 403
+      result.message = "Owner object is not editable!"
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deleteCoverageStatement : Used to delete a TIPPCoverageStatement.
+   * @param id : The id of the coverage statement object
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteCoverageStatement() {
+    log.debug("${params}");
+    def result = ['result':'OK', 'params': params]
+    def tcs = TIPPCoverageStatement.get(params.id)
+    def tipp = tcs.owner
+
+    if ( tcs != null && tipp.isEditable() ) {
+      tcs.delete()
+      tipp.lastUpdateComment = "Deleted Coverage Statement."
+      tipp.save(flush: true)
+    }
+    else if (!tcs) {
+      result.result = 'ERROR'
+      result.code = 404
+      result.message = "Could not find coverage statement!"
+    }
+    else {
+      result.result = 'ERROR'
+      result.code = 403
+      result.message = "This TIPP is not editable!"
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deleteCombo : Used to delete a combo object.
+   * @param id : The id of the combo object
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deleteCombo() {
+    Combo c = Combo.get(params.id);
+    if (c.fromComponent.isEditable()) {
+      log.debug("Delete combo..")
+      c.delete(flush:true);
+    }
+    else{
+      log.debug("Not deleting combo.. no edit permissions on fromComponent!")
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+
+        redirect(url: redirect_to);
+      }
+      json {
+        render result as JSON
+      }
+    }
   }
 }
