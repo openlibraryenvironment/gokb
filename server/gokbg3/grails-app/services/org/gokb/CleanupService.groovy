@@ -181,7 +181,7 @@ class CleanupService {
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
 
-    def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL')
+    def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL and plt.status = ?', [status_current])
 
     delete_candidates.each { ptr ->
       def repl_crit = Platform.createCriteria()
