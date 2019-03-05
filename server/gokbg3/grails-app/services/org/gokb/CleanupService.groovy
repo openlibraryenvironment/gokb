@@ -175,6 +175,69 @@ class CleanupService {
   }
 
   @Transactional
+  def deleteNoUrlPlatforms(Job j = null) {
+    log.debug("Delete platforms without URL")
+
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+
+    def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL')
+
+    delete_candidates.each { ptr ->
+      def repl_crit = Platform.createCriteria()
+      def orig_plt = repl_crit.list () {
+        isNotNull('primaryUrl')
+        eq ('name', ptr.name)
+        eq ('status', status_current)
+      }
+
+      if ( orig_plt?.size() == 1 ) {
+        log.debug("Found replacement platform for ${ptr}")
+        def new_plt = orig_plt[0]
+
+        def old_from_combos = Combo.executeQuery("from Combo where fromComponent = ?", [ptr])
+        def old_to_combos = Combo.executeQuery("from Combo where toComponent = ?", [ptr])
+
+        old_from_combos.each { oc ->
+          def existing_new = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[oc.type, new_plt, oc.toComponent])
+
+          if (existing_new?.size() == 0 && oc.toComponent != new_plt) {
+            oc.fromComponent = new_plt
+            oc.save(flush:true)
+          }
+          else {
+            log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+            oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+            oc.save(flush:true)
+          }
+        }
+
+        old_to_combos.each { oc ->
+          def existing_new = Combo.executeQuery("from Combo where type = ? and toComponent = ? and fromComponent = ?",[oc.type, new_plt, oc.fromComponent])
+
+          if (existing_new?.size() == 0 && oc.fromComponent != new_plt) {
+            oc.toComponent = new_plt
+            oc.save(flush:true)
+          }
+          else {
+            log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+            oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+            oc.save(flush:true)
+          }
+        }
+
+        ptr.name = "${ptr.name} DELETED"
+        ptr.deleteSoft()
+      }
+      else {
+        log.debug("Could not find a valid replacement for platform ${ptr}")
+      }
+
+    }
+    return new Date();
+  }
+
+  @Transactional
   def ensureUuids()  {
     log.debug("GOKb missing uuid check..")
 
