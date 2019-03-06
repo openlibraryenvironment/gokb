@@ -364,6 +364,19 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def cleanupPlatforms() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.deleteNoUrlPlatforms(j)
+    }.startOrQueue()
+
+    log.debug("Triggering cleanup task. Started job #${j.id}")
+
+    j.description = "Platform Cleanup"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def exportGroups () {
     def result = [:]
     CuratoryGroup.createCriteria().list ({
