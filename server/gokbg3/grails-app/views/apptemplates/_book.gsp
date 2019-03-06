@@ -285,7 +285,7 @@
                 <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
                 <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
                 <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
-                <td><g:if test="${d.isEditable()}"><g:link controller="workflow" action="deleteCombo" id="${p.id}">Delete</g:link></g:if></td>
+                <td><g:if test="${d.isEditable()}"><g:link controller="ajaxSupport" action="deleteCombo" id="${p.id}">Delete</g:link></g:if></td>
               </tr>
             </g:each>
           </tbody>

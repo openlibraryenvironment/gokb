@@ -33,7 +33,7 @@
         <td>
           <g:if test="${d.isEditable() && (d.respondsTo('curatoryGroups') ? (!d.curatoryGroups ? true : cur) : true)}">
             <g:link
-              controller='workflow'
+              controller='ajaxSupport'
               action='deleteCombo'
               params="${['id':row.id,'fragment':fragment]}"
               class="confirm-click btn-delete"
