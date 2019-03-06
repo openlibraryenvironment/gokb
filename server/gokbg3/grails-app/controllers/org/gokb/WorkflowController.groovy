@@ -1739,37 +1739,42 @@ class WorkflowController {
 
       orgs.each { org_id ->
 
-        def otd = Org.get(org_id)
+        def old_org = Org.get(org_id)
 
-        if ( otd && neworg && otd.isEditable() ) {
+        if ( old_org && neworg && old_org.isEditable() ) {
           log.debug("Got org to deprecate and neworg...  Process now");
           // Updating all combo.toComponent
           // Updating all combo.fromComponent
-          def old_from_combos = Combo.executeQuery("from Combo where fromComponent = ?", [otd])
-          def old_to_combos = Combo.executeQuery("from Combo where toComponent = ?", [otd])
+          def old_from_combos = Combo.executeQuery("from Combo where fromComponent = ?", [old_org])
+          def old_to_combos = Combo.executeQuery("from Combo where toComponent = ?", [old_org])
 
           old_from_combos.each { oc ->
-            def ctype = oc.type
-            def other_end = oc.toComponent
-            def existing_new = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[ctype, neworg, oc])
+            def existing_new = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[oc.type, neworg, oc.toComponent])
 
-            if (existing_new?.size() == 0) {
+            if (existing_new?.size() == 0 && oc.toComponent != neworg) {
               oc.fromComponent = neworg
+              oc.save(flush:true)
+            }
+            else {
+              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+              oc.save(flush:true)
             }
           }
 
           old_to_combos.each { oc ->
-            def ctype = oc.type
-            def other_end = oc.fromComponent
-            def existing_new = Combo.executeQuery("from Combo where type = ? and toComponent = ? and fromComponent = ?",[ctype, neworg, oc])
+            def existing_new = Combo.executeQuery("from Combo where type = ? and toComponent = ? and fromComponent = ?",[oc.type, neworg, oc.fromComponent])
 
-            if (existing_new?.size() == 0) {
-              oc.fromComponent = neworg
+            if (existing_new?.size() == 0 && oc.fromComponent != neworg) {
+              oc.toComponent = neworg
+              oc.save(flush:true)
+            }
+            else {
+              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+              oc.save(flush:true)
             }
           }
-
-//           Combo.executeUpdate("update Combo set toComponent = ? where toComponent = ?",[neworg,otd]);
-//           Combo.executeUpdate("update Combo set fromComponent = ? where fromComponent = ?",[neworg,otd]);
 
           flash.success="Org Deprecation Completed".toString()
         }
