@@ -29,32 +29,35 @@ class ResourceController {
     User user = springSecurityService.currentUser
 
     log.debug("ResourceController::show ${params}");
-    def result = [:]
+    def result = ['params':params]
     def oid = params.id
+    def displayobj = null
+    def read_perm = false
 
     if (params.type && params.id) {
       oid = "org.gokb.cred." + params.type + ":" + params.id
     }
 
     if ( oid ) {
-      result.displayobj = KBComponent.findByUuid(oid)
+      displayobj = KBComponent.findByUuid(oid)
 
-      if (!result.displayobj) {
-        result.displayobj = genericOIDService.resolveOID(oid)
+      if (!displayobj) {
+        displayobj = genericOIDService.resolveOID(oid)
       }
       else {
-        oid = "${result.displayobj?.class?.name}:${result.displayobj?.id}"
+        oid = "${displayobj?.class?.name}:${displayobj?.id}"
       }
       
-      if ( result.displayobj ) {
+      if ( displayobj ) {
 
-        def read_perm = result.displayobj?.isTypeReadable()
+        read_perm = displayobj.isTypeReadable()
+
         if (read_perm) {
 
           // Need to figure out whether the current user has curatorial rights (or is an admin).
           // Defaults to true as not all components have curatorial groups defined.
 
-          def curatedObj = result.displayobj.respondsTo("getCuratoryGroups") ? result.displayobj : ( result.displayobj.hasProperty('pkg') ? result.displayobj.pkg : false )
+          def curatedObj = displayobj.respondsTo("getCuratoryGroups") ? displayobj : ( displayobj.hasProperty('pkg') ? displayobj.pkg : false )
 
           if (curatedObj && curatedObj.curatoryGroups && curatedObj.niceName != 'User') {
 
@@ -68,10 +71,10 @@ class ResourceController {
           action:params.action,
           actionid:oid,
           owner:user,
-          title:"View ${result.displayobj.toString()}").save()
+          title:"View ${displayobj.toString()}").save()
 
-          result.displayobjclassname = result.displayobj.class.name
-          result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
+          result.displayobjclassname = displayobj.class.name
+          result.__oid = "${result.displayobjclassname}:${displayobj.id}"
   
           log.debug("Looking up display template for ${result.displayobjclassname}");
 
@@ -81,10 +84,10 @@ class ResourceController {
 
           // Add any refdata property names for this class to the result.
           result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
-          result.displayobjclassname_short = result.displayobj.class.simpleName
+          result.displayobjclassname_short = displayobj.class.simpleName
 
-          result.isComponent = (result.displayobj instanceof KBComponent)
-          result.acl = gokbAclService.readAclSilently(result.displayobj)
+          result.isComponent = (displayobj instanceof KBComponent)
+          result.acl = gokbAclService.readAclSilently(displayobj)
 
           def oid_components = oid.split(':');
           def qry_params = [result.displayobjclassname,Long.parseLong(oid_components[1])];
@@ -92,8 +95,8 @@ class ResourceController {
           result.ownerId = oid_components[1]
           result.num_notes = KBComponent.executeQuery("select count(n.id) from Note as n where ownerClass=? and ownerId=?",qry_params)[0];
           // How many people are watching this object
-          result.num_watch = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=?",result.displayobj)[0];
-          result.user_watching = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=? and n.user=?",[result.displayobj, user])[0] == 1 ? true : false;
+          result.num_watch = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=?",displayobj)[0];
+          result.user_watching = KBComponent.executeQuery("select count(n.id) from ComponentWatch as n where n.component=? and n.user=?",[displayobj, user])[0] == 1 ? true : false;
         }
         else {
           response.setStatus(403)
@@ -102,14 +105,33 @@ class ResourceController {
       }
       else {
         log.debug("unable to resolve object")
-        result = [:]
+        result.status = 404
       }
     }
+
     withFormat {
       html {
+        if (displayobj && read_perm) {
+          result.displayobj = displayobj
+        }
         result
       }
       json {
+        if (displayobj && read_perm) {
+          if (result.isComponent) {
+
+            result.resource = displayobj.getAllPropertiesWithLinks(params.withCombos ? true : false)
+
+            result.resource.combo_props = displayobj.allComboPropertyNames
+          }
+          else if (displayobj.class.name == 'org.gokb.cred.User'){
+
+            result.resource = ['id': displayobj.id, 'username': displayobj.username, 'displayName': displayobj.displayName, 'curatoryGroups': displayobj.curatoryGroups]
+          }
+          else {
+            result.resource = displayobj
+          }
+        }
         render result as JSON
       }
     }
