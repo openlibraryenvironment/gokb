@@ -838,6 +838,51 @@ class ApiController {
     result;
   }
 
+  /**
+   * show : Returns a simplified JSON serialization of a domain class object
+   * @param oid : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object
+   * @param withCombos : Also return combo properties for KBComponents
+  **/
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def show() {
+    def result = ['result':'OK', 'params': params]
+    if (params.oid || params.id) {
+      def obj = genericOIDService.resolveOID(params.oid ?: params.id)
+
+      if ( obj?.isReadable() ) {
+
+        if(obj.class in KBComponent) {
+
+          result.resource = obj.getAllPropertiesWithLinks(params.withCombos ? true : false)
+
+          result.resource.combo_props = obj.allComboPropertyNames
+        }
+        else if (obj.class.name == 'org.gokb.cred.User'){
+
+          result.resource = ['id': obj.id, 'username': obj.username, 'displayName': obj.displayName, 'curatoryGroups': obj.curatoryGroups]
+        }
+        else {
+          result.resource = obj
+        }
+      }
+      else if (!obj) {
+        result.error = "Object ID could not be resolved!"
+        result.result = 'ERROR'
+      }
+      else {
+        result.error = "Access to object was denied!"
+        result.result = 'ERROR'
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.error = 'No object id supplied!'
+    }
+
+    render result as JSON
+  }
+
 
   def private doQuery (qbetemplate, params, result) {
     log.debug("doQuery ${result}");
@@ -1085,7 +1130,7 @@ class ApiController {
     long start = System.currentTimeMillis()
     String classType = GrailsNameUtils.getClassNameRepresentation(params.type)
     Class<? extends KBComponent> c = grailsApplication.getClassLoader().loadClass(
-      "org.gokb.cred.${classType}"
+      "org.gokb.cred.${params.type}"
     )
 
     // Get the "term" parameter for performing a search.
