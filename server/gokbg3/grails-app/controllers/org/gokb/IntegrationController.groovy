@@ -338,7 +338,7 @@ class IntegrationController {
 
       if ( request.JSON.mission ) {
         log.debug("Mission ${request.JSON.mission}");
-        located_or_new_org.mission = RefdataCategory.lookupOrCreate('Org.Mission',request.JSON.mission);
+        located_or_new_org.mission = RefdataCategory.lookup('Org.Mission',request.JSON.mission);
       }
 
       if ( request.JSON.homepage ) {
@@ -365,7 +365,7 @@ class IntegrationController {
         // Located a component.
         if ( ( located_component != null ) ) {
           def combo = new Combo(
-            type:RefdataCategory.lookupOrCreate('Combo.Type',c.linkType),
+            type:RefdataCategory.lookup('Combo.Type',c.linkType),
             fromComponent:located_or_new_org,
             toComponent:located_component,
             startDate:new Date()).save(flush:true,failOnError:true);
@@ -379,8 +379,11 @@ class IntegrationController {
       log.debug("Role Processing: ${request.JSON.roles}");
       request.JSON.roles.each { r ->
         log.debug("Adding role ${r}");
-        def role = RefdataCategory.lookupOrCreate("Org.Role", r)
-        located_or_new_org.addToRoles(role)
+        def role = RefdataCategory.lookup("Org.Role", r)
+
+        if (role) {
+          located_or_new_org.addToRoles(role)
+        }
       }
 
       // Core data...
@@ -920,7 +923,7 @@ class IntegrationController {
                   tippctr=0
 
                   def tipps_to_delete = existing_tipps.clone()
-                  def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+                  def status_current = RefdataCategory.lookup('KBComponent.Status','Current')
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
                   // If valid, upsert tipps
@@ -1744,9 +1747,19 @@ class IntegrationController {
     if ( ( value ) && ( cat ) &&
          ( value.toString().trim().length() > 0 ) &&
          ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
-      def v = RefdataCategory.lookupOrCreate(cat,value)
-      kbc[prop] = v
-      result = true
+
+      def v = null
+      if (RefdataValue.isTypeCreatable()) {
+        v = RefdataCategory.lookupOrCreate(cat,value)
+      }
+      else {
+        v = RefdataCategory.lookup(cat, value)
+      }
+
+      if (v) {
+        kbc[prop] = v
+        result = true
+      }
     }
 
     result
