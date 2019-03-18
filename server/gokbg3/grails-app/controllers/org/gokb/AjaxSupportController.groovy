@@ -1144,6 +1144,8 @@ class AjaxSupportController {
         else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
+
+        redirect(url: redirect_to);
       }
       json {
         render result as JSON
@@ -1162,9 +1164,9 @@ class AjaxSupportController {
     log.debug("${params}");
     def result = ['result':'OK', 'params': params]
     def variant = KBComponentVariantName.get(params.id)
+    def variantOwner = variant.owner
 
     if ( variant != null && variantOwner.isEditable() ) {
-      def variantOwner = variant.owner
       def variantName = variant.variantName
 
       variant.delete()
@@ -1195,6 +1197,8 @@ class AjaxSupportController {
         else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
+
+        redirect(url: redirect_to);
       }
       json {
         render result as JSON
@@ -1241,6 +1245,8 @@ class AjaxSupportController {
         else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
           redirect_to = "${redirect_to}#${params.fragment}"
         }
+
+        redirect(url: redirect_to);
       }
       json {
         render result as JSON
