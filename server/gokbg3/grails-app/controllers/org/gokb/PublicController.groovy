@@ -59,7 +59,7 @@ class PublicController {
       }
       else
       {
-        def pkg_id = ppkg_id_components[0]
+        def pkg_id = pkg_id_components[0]
         def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
         def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
         result.pkg = Package.findByUuid(pkg_id_components);
