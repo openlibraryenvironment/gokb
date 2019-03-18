@@ -37,31 +37,22 @@ class PublicController {
     def result = [:]
     if ( params.id ) {
       def pkg_id_components = params.id.split(':');
+      
       if ( pkg_id_components?.size() == 2 ) {
-        def pkg_id = pkg_id_components[1]
-        def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
-        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-        result.pkg = Package.get(pkg_id);
-        result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.id=?',[Long.parseLong(pkg_id)])
-        result.pkgId = result.pkgData[0][0]
-        result.pkgName = result.pkgData[0][1]
-        log.debug("Tipp qry name: ${result.pkgName}");
-
-        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
-        result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?:0,max:10])
-        log.debug("Tipp qry done ${result.tipps?.size()}");
+        result.pkg = Package.get(pkg_id_components[1]);
       }
-      else
-      {
-        def pkg_id = pkg_id_components[0]
+      else {
+        result.pkg = Package.findByUuid(params.id)
+      }
+      
+      if (result.pkg) {
         def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
         def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-        result.pkg = Package.findByUuid(pkg_id_components);
-        result.pkgData = Package.executeQuery('select p.id, p.name from Package as p where p.uuid=?',[pkg_id])
-        result.pkgId = result.pkgData[0][0]
-        result.pkgName = result.pkgData[0][1]
+        
+        result.pkgId = result.pkg.id
+        result.pkgName = result.pkg.name
         log.debug("Tipp qry name: ${result.pkgName}");
-
+        
         result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
         result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?:0,max:10])
         log.debug("Tipp qry done ${result.tipps?.size()}");
