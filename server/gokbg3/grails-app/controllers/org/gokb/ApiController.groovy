@@ -312,6 +312,7 @@ class ApiController {
     def result = [:]
     def esclient = ESWrapperService.getClient()
     def acceptedStatus = []
+    def component_type = null
     def errors = [:]
     def offsetDefault = 0
     def maxDefault = 10
@@ -325,10 +326,31 @@ class ApiController {
         suggestQuery.must(QueryBuilders.matchQuery('suggest', params.q))
 
         if ( params.componentType ) {
-          suggestQuery.must(QueryBuilders.matchQuery('componentType', params.componentType))
+          component_type = deriveComponentType(params.componentType)
 
-          if( params.componentType == 'Org' && params.role ) {
-            suggestQuery.must(QueryBuilders.matchQuery('roles', params.role))
+          if(component_type) {
+
+            if (component_type == "TitleInstance") {
+              QueryBuilder typeQuery = QueryBuilders.boolQuery()
+
+              typeQuery.should(QueryBuilders.matchQuery('componentType', "JournalInstance"))
+              typeQuery.should(QueryBuilders.matchQuery('componentType', "DatabaseInstance"))
+              typeQuery.should(QueryBuilders.matchQuery('componentType', "BookInstance"))
+
+              typeQuery.minimumNumberShouldMatch(1)
+
+              exactQuery.must(typeQuery)
+            }
+            else {
+              suggestQuery.must(QueryBuilders.matchQuery('componentType', component_type))
+            }
+
+            if( component_type == 'Org' && params.role ) {
+              suggestQuery.must(QueryBuilders.matchQuery('roles', params.role))
+            }
+          }
+          else {
+            errors['componentType'] = "Requested component type ${v} does not exist"
           }
         }
 
@@ -480,28 +502,15 @@ class ApiController {
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
 
       def singleParams = [:]
+      def linkedFieldParams = [:]
       def unknown_fields = []
       def other_fields = ["controller","action","max","offset","from"]
-      def defined_types = [
-        "Package",
-        "Org",
-        "JournalInstance",
-        "Journal",
-        "BookInstance",
-        "Book",
-        "DatabaseInstance",
-        "Database",
-        "Platform",
-        "TitleInstancePackagePlatform",
-        "TIPP",
-        "TitleInstance",
-        "Title"
-      ]
       def id_params = [:]
       def orgRoleParam = ""
       def providerParam = ""
-      def tippPackageId = null
-      def tippTitleId = null
+      def hostPlatformId = null
+      def nominalPlatformId = null
+      def genericPlatformId = null
       def pkgListStatus = ""
       def pkgNameSort = false
       def acceptedStatus = []
@@ -510,29 +519,9 @@ class ApiController {
       params.each { k, v ->
         if ( k == 'componentType' && v instanceof String ) {
 
-          def final_type = v
+          component_type = deriveComponentType(v)
 
-          if(v in defined_types) {
-
-            if(v == 'TIPP') {
-              final_type = 'TitleInstancePackagePlatform'
-            }
-            else if (v == 'Book') {
-              final_type = 'BookInstance'
-            }
-            else if (v == 'Journal') {
-              final_type = 'JournalInstance'
-            }
-            else if (v == 'Database') {
-              final_type = 'DatabaseInstance'
-            }
-            else if (v == 'Title') {
-              final_type = 'TitleInstance'
-            }
-
-            component_type = final_type
-          }
-          else {
+          if(!component_type) {
             errors['componentType'] = "Requested component type ${v} does not exist"
           }
         }
@@ -545,16 +534,32 @@ class ApiController {
           orgRoleParam = v
         }
 
-        else if (k == 'publisher' && v instanceof String) {
-          singleParams['publisher'] = v
+        else if ( (k == 'publisher' || k == 'currentPublisher') && v instanceof String) {
+          linkedFieldParams['publisher'] = v
         }
 
-        else if ( (k == 'provider' || k == 'cpname') && v instanceof String) {
+        else if ( k == 'cpname' && v instanceof String) {
           singleParams['cpname'] = v
         }
 
-        else if (k == 'linkedPackage' && v instanceof String) {
-          tippPackageId = v
+        else if ( k == 'provider' && v instanceof String) {
+          linkedFieldParams['provider'] = v
+        }
+
+        else if ( (k == 'linkedPackage' || k == 'tippPackage') && v instanceof String) {
+          linkedFieldParams['tippPackage'] = v
+        }
+
+        else if (k == 'hostPlatform' && v instanceof String) {
+          hostPlatformId = v
+        }
+
+        else if (k == 'nominalPlatform' && v instanceof String) {
+          nominalPlatformId = v
+        }
+
+        else if (k == 'platform' && v instanceof String) {
+          genericPlatformId = v
         }
 
         else if (k == 'listStatus' && v instanceof String) {
@@ -565,8 +570,8 @@ class ApiController {
           acceptedStatus = params.list(k)
         }
 
-        else if (k == 'linkedTitle' && v instanceof String) {
-          tippTitleId = v
+        else if ( (k == 'linkedTitle' || k == 'tippTitle') && v instanceof String) {
+          linkedFieldParams['tippTitle'] = v
         }
 
         else if (k == 'curatoryGroup' && v instanceof String) {
@@ -644,6 +649,16 @@ class ApiController {
         exactQuery.must(QueryBuilders.termQuery('status', 'Current'))
       }
 
+      linkedFieldParams.each { k, v ->
+        QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+        linkedFieldQuery.should(QueryBuilders.termQuery(k, v))
+        linkedFieldQuery.should(QueryBuilders.termQuery("${k}Uuid".toString(), v))
+        linkedFieldQuery.minimumNumberShouldMatch(1)
+
+        exactQuery.must(linkedFieldQuery)
+      }
+
       if ( orgRoleParam ) {
         if ( component_type && component_type == 'Org') {
           singleParams['roles'] = orgRoleParam
@@ -653,21 +668,65 @@ class ApiController {
         }
       }
 
-      if ( tippPackageId ) {
+      if ( hostPlatformId ) {
         if ( component_type && component_type == 'TitleInstancePackagePlatform' ) {
-          singleParams['tippPackage'] = tippPackageId
+          QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+          linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', hostPlatformId))
+          linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', hostPlatformId))
+          linkedFieldQuery.minimumNumberShouldMatch(1)
+
+          exactQuery.must(linkedFieldQuery)
         }
         else {
-          errors['package'] = "To filter by Package, please add filter componentType=TIPP to the query"
+          errors['hostPlatform'] = "To filter by Host Platform, please add filter componentType=TIPP to the query"
         }
       }
 
-      if ( tippTitleId ) {
-        if ( component_type && component_type == 'TitleInstancePackagePlatform' ) {
-          singleParams['tippTitle'] = tippTitleId
+      if ( nominalPlatformId ) {
+        if ( component_type && component_type == 'Package' ) {
+          QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+          linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', nominalPlatformId))
+          linkedFieldQuery.should(QueryBuilders.termQuery('platformUuid', nominalPlatformId))
+          linkedFieldQuery.minimumNumberShouldMatch(1)
+
+          exactQuery.must(linkedFieldQuery)
         }
         else {
-          errors['linkedTitle'] = "To filter by Title, please add filter componentType=TIPP to the query"
+          errors['nominalPlatform'] = "To filter by Package Platform, please add filter componentType=Package to the query"
+        }
+      }
+
+      if ( genericPlatformId ) {
+        if ( component_type ) {
+
+          if( component_type == 'TitleInstancePackagePlatform' ) {
+            QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+            linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', genericPlatformId))
+            linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', genericPlatformId))
+            linkedFieldQuery.minimumNumberShouldMatch(1)
+
+            exactQuery.must(linkedFieldQuery)
+          }
+
+          else if ( component_type == 'Package' ) {
+            QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+            linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', genericPlatformId))
+            linkedFieldQuery.should(QueryBuilders.termQuery('platformUuid', genericPlatformId))
+            linkedFieldQuery.minimumNumberShouldMatch(1)
+
+            exactQuery.must(linkedFieldQuery)
+          }
+
+          else {
+            errors['platform'] = "No platform context available for component type ${component_type}"
+          }
+        }
+        else {
+          errors['platform'] = "To filter by Platform, please add filter componentType=TIPP to the query"
         }
       }
 
@@ -765,6 +824,48 @@ class ApiController {
     render result as JSON
   }
 
+  private def deriveComponentType(String typeString) {
+    def result = null
+    def defined_types = [
+      "Package",
+      "Org",
+      "JournalInstance",
+      "Journal",
+      "BookInstance",
+      "Book",
+      "DatabaseInstance",
+      "Database",
+      "Platform",
+      "TitleInstancePackagePlatform",
+      "TIPP",
+      "TitleInstance",
+      "Title"
+    ]
+    def final_type = typeString.capitalize()
+
+    if(final_type in defined_types) {
+
+      if(final_type== 'TIPP') {
+        final_type = 'TitleInstancePackagePlatform'
+      }
+      else if (final_type == 'Book') {
+        final_type = 'BookInstance'
+      }
+      else if (final_type == 'Journal') {
+        final_type = 'JournalInstance'
+      }
+      else if (final_type == 'Database') {
+        final_type = 'DatabaseInstance'
+      }
+      else if (final_type == 'Title') {
+        final_type = 'TitleInstance'
+      }
+
+      result = final_type
+    }
+    result
+  }
+
   private def addIdQueries(params) {
 
     QueryBuilder idQuery = QueryBuilders.boolQuery()
@@ -844,7 +945,6 @@ class ApiController {
    * @param withCombos : Also return combo properties for KBComponents
   **/
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = ['result':'OK', 'params': params]
     if (params.oid || params.id) {

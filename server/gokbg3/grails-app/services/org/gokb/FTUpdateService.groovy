@@ -54,13 +54,16 @@ class FTUpdateService {
   
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
+        def current_pub = kbc.currentPublisher
   
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
 //         result.publisher = kbc.currentPublisher?.name
-        result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
         result.altname = []
         result.updater='book'
         kbc.variantNames.each { vn ->
@@ -87,6 +90,7 @@ class FTUpdateService {
   
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
+        def current_pub = kbc.currentPublisher
   
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
@@ -94,7 +98,9 @@ class FTUpdateService {
         result.name = kbc.name
         result.updater='journal'
         // result.publisher = kbc.currentPublisher?.name
-        result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -119,13 +125,16 @@ class FTUpdateService {
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
+        def current_pub = kbc.currentPublisher
 
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
         // result.publisher = kbc.currentPublisher?.name
-        result.publisher = kbc.currentPublisher ? "${kbc.currentPublisher.class.name}:${kbc.currentPublisher?.id}" : ""
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -169,11 +178,12 @@ class FTUpdateService {
 
         result.cpname = kbc.provider?.name
 
-        result.provider = kbc.provider ? "${kbc.provider.class?.name}:${kbc.provider?.id}" : ""
-        result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
+        result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
+        result.providerUuid = kbc.provider?.uuid ?: ""
 
+        result.nominalPlatform = kbc.nominalPlatform ? kbc.nominalPlatform.getLogEntityId() : ""
         result.platformName = kbc.nominalPlatform?.name
-        result.platformUuid = kbc.nominalPlatform?.name ? kbc.nominalPlatform?.uuid : ""
+        result.platformUuid = kbc.nominalPlatform?.uuid ?: ""
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -233,13 +243,13 @@ class FTUpdateService {
           }
         }
 
-        result.tippPackage = kbc.pkg ? "${kbc.pkg?.class?.name}:${kbc.pkg?.id}" : ""
+        result.tippPackage = kbc.pkg ? kbc.pkg.getLogEntityId() : ""
         result.tippPackageUuid = kbc.pkg ? kbc.pkg?.uuid : ""
 
-        result.tippTitle = kbc.title ? "${kbc.title?.class?.name}:${kbc.title?.id}" : ""
+        result.tippTitle = kbc.title ? kbc.title.getLogEntityId() : ""
         result.tippTitleUuid = kbc.title ? kbc.title?.uuid : ""
 
-        result.hostPlatform = kbc.hostPlatform ? "${kbc.hostPlatform?.class?.name}:${kbc.hostPlatform?.id}" : ""
+        result.hostPlatform = kbc.hostPlatform ? kbc.hostPlatform.getLogEntityId() : ""
         result.hostPlatformUuid = kbc.hostPlatform ? kbc.hostPlatform?.uuid : ""
 
         result.status = kbc.status?.value
@@ -286,7 +296,7 @@ class FTUpdateService {
 
         result.cpname = kbc.provider?.name
 
-        result.provider = kbc.provider ? "${kbc.provider.class?.name}:${kbc.provider?.id}" : ""
+        result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
 
         result.altname = []
