@@ -44,6 +44,11 @@ class CuratoryGroup extends KBComponent {
       }
     })
   }
+
+  @Override
+  public String getNiceName() {
+    return "Curatory Group";
+  }
   
   static def refdataFind(params) {
     def result = [];
