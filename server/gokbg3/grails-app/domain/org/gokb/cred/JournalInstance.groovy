@@ -25,6 +25,7 @@ class JournalInstance extends TitleInstance {
       "${this.class.name}:${id}"
   }
 
+  @Override
   public String getNiceName() {
     return "Journal";
   }
