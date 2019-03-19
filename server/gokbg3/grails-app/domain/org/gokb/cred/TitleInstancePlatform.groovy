@@ -38,6 +38,7 @@ class TitleInstancePlatform extends KBComponent {
     ]
   }
 
+  @Override
   public String getNiceName() {
 	return "TIPL";
   }
