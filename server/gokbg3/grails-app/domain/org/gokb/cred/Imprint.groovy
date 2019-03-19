@@ -29,10 +29,6 @@ class Imprint extends KBComponent {
 //     ]
 //   }
 
-  public String getNiceName() {
-    return "Imprint";
-  }
-
   public Org getCurrentOwner() {
     def result = null;
     def owner_combos = getCombosByPropertyName('owners')
