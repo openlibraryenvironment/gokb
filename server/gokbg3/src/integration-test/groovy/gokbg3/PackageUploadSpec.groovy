@@ -8,6 +8,8 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
+import org.springframework.beans.factory.annotation.*
+import org.springframework.web.context.WebApplicationContext
 
 
 @Integration
@@ -16,6 +18,9 @@ class PackageUploadSpec extends Specification {
 
     @Shared
     RestBuilder rest = new RestBuilder()
+
+    @Autowired
+    WebApplicationContext ctx
 
     def setup() {
     }

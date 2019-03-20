@@ -143,7 +143,7 @@ class AjaxSupportController {
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       qryParams:[['cat': "Package Type"]],
-      rdvCat: "${params.id}",
+      rdvCat: "Package.Scope",
       cols:['value'],
       format:'simple'
     ],

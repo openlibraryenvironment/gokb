@@ -1143,7 +1143,7 @@ class BootStrap {
               .field("type","keyword")
             .endObject()
             .startObject("suggest")
-              .field("type","string")
+              .field("type","text")
               .field("analyzer","autocomplete")
               .field("search_analyzer","standard")
             .endObject()

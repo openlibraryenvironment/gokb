@@ -1,9 +1,7 @@
 package org.gokb
 
-import grails.test.mixin.TestFor
 import spock.lang.Specification
 import org.gokb.cred.*
-import grails.test.spock.IntegrationSpec
 // For @Autowired
 import org.springframework.beans.factory.annotation.*
 
