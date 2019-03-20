@@ -2,6 +2,8 @@ package gokbg3
 
 import grails.testing.mixin.integration.Integration
 import grails.transaction.*
+import org.springframework.beans.factory.annotation.*
+import org.springframework.web.context.WebApplicationContext
 
 import geb.spock.*
 
@@ -15,6 +17,9 @@ import geb.report.*
 @Integration
 @Rollback
 class HomeSpec extends GebSpec {
+
+  @Autowired
+  WebApplicationContext ctx
 
   // def reporter = new CompositeReporter(new PageSourceReporter(), new ScreenshotReporter(), new FramesSourceReporter())
 

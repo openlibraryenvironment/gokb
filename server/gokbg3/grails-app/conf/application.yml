@@ -158,6 +158,8 @@ environments:
         grails:
             mail:
                 port: 3025
+        quartz:
+            pluginEnabled: false
     production:
         dataSource:
             dbCreate: update
