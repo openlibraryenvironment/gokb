@@ -116,6 +116,24 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
             "type": "keyword"
           }
         }
+      },
+      {
+        "nominalPlatform": {
+          "match": "nominalPlatform",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "otherUuids": {
+          "match": "*Uuid",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
       }
     ],
     "properties" : {
