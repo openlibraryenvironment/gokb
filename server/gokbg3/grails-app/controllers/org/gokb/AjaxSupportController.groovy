@@ -706,6 +706,7 @@ class AjaxSupportController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
+    def user = springSecurityService.currentUser
     def target_object = resolveOID2(params.pk)
     def result = ['result': 'OK', 'params': params]
     def errors = []

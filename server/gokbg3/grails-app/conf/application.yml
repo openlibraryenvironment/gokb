@@ -125,12 +125,12 @@ environments:
                     springsecurity:
                         debug:
                             useFilter: true
+            mail:
+                port: 3025
         gokb:
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
-            mail:
-                port: 3025
     test:
         dataSource:
             dbCreate: create-drop
