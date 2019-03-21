@@ -1165,9 +1165,9 @@ class AjaxSupportController {
     log.debug("${params}");
     def result = ['result':'OK', 'params': params]
     def variant = KBComponentVariantName.get(params.id)
-    def variantOwner = variant.owner
+    def variantOwner = variant?.owner ?: null
 
-    if ( variant != null && variantOwner.isEditable() ) {
+    if ( variant != null && variantOwner?.isEditable() ) {
       def variantName = variant.variantName
 
       variant.delete()
