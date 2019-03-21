@@ -57,6 +57,7 @@ class BookInstance extends TitleInstance {
       "${this.class.name}:${id}"
   }
 
+  @Override
   public String getNiceName() {
     return "Book";
   }

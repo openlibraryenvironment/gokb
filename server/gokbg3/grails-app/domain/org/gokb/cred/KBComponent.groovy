@@ -401,7 +401,7 @@ where cp.owner = :c
   static mapping = {
     tablePerHierarchy false
     id column:'kbc_id'
-    uuid column:'kbc_uuid', type:'text'
+    uuid column:'kbc_uuid', type:'text', index:'kbc_uuid_idx'
     version column:'kbc_version'
     name column:'kbc_name', type:'text', index:'kbc_name_idx'
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
@@ -926,6 +926,10 @@ where cp.owner = :c
 
   public String toString() {
     "${name?:''} (${getNiceName()} ${this.id})".toString()
+  }
+
+  public String getNiceName() {
+    "${this.class.getSimpleName()}"
   }
 
   /**

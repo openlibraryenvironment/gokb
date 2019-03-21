@@ -203,7 +203,7 @@ class SearchController {
                 cobj = cobj.value
               }
               else {
-                if ( cobj && cobj[sp] != null ) {
+                if ( cobj && KBComponent.has(cobj, sp)) {
                   cobj = cobj[sp]
 
                   if (ppath.size() > 1 && idx == ppath.size()-2) {

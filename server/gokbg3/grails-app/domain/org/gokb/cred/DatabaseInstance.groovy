@@ -18,6 +18,7 @@ class DatabaseInstance extends TitleInstance {
   static constraints = {
   }
 
+  @Override
   public String getNiceName() {
     return "Database";
   }
