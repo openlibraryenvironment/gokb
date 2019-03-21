@@ -146,9 +146,11 @@ class ESSearchService{
           log.debug("mapping is an arraylist: ${mapping} ${mapping.key} ${params[mapping.key]}")
           if(sw.toString()) sw.write(" AND ");
 
-          params[mapping.key].each { p ->  
-            if ( p ) {
-                if (p == params[mapping.key].first()){
+          def plist = params[mapping.key]
+
+          plist.eachWithIndex { p, idx ->
+            if (p) {
+                if (idx == 0){
                   sw.write(" ( ")
                 }
                 sw.write(mapping.value?.toString())
@@ -157,7 +159,7 @@ class ESSearchService{
                 p = p.replaceAll(":","\\\\:")
 
                 sw.write(p.toString())
-                if(p == params[mapping.key].last()) {
+                if(idx == plist.size()-1) {
                   sw.write(" ) ")
                 }else{
                   sw.write(" OR ")
