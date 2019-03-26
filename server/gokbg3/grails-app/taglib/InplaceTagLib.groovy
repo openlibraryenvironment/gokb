@@ -89,6 +89,10 @@ class InplaceTagLib {
     attrs."data-format" = attrs."data-format" ?: 'yyyy-MM-dd'
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''} ${attrs.type == 'date' ? 'date' : ''}\""
+
+    if (attrs.inputclass) {
+      out << " data-inputclass=\"${attrs.inputclass}\""
+    }
     
     if ( oid && ( oid != '' ) ) out << " data-pk=\"${oid}\""
     out << " data-name=\"${attrs.field}\""

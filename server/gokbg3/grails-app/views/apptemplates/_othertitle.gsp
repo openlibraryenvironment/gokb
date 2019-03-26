@@ -214,31 +214,8 @@
     </div>
 
     <div class="tab-pane" id="publishers">
-
-      <dt>
-        <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
-      </dt>
-
-     <dd>
-		<g:render template="/apptemplates/simpleCombos"
-        model="${[d:d, property:'publisher', fragment:'identifiers', delete:'true', cols:[
-                  [expr:'name', colhead:'name', action:'link'],
-                  [expr:'status', colhead:'status'],
-				  [expr:'startDate', colhead: 'from'],
-				  [expr:'endDate', colhead: 'to']]]}" />
-      </dd>
-
-        <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
-          <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
-          <input type="hidden" name="__property" value="publisher" />
-          <dt>Add Publisher:</td>
-          <dd>
-            <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" style="display:block;" />
-            <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
-          </dd>
-        </g:form>
-
-
+      <g:render template="/tabTemplates/showPublishers"
+      model="${[d:displayobj]}" />
     </div>
 
     <div class="tab-pane" id="identifiers">

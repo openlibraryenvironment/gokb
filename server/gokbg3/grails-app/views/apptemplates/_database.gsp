@@ -218,110 +218,21 @@
     </div>
 
     <div class="tab-pane" id="availability">
-      <dt>
-        <g:annotatedLabel owner="${d}" property="availability">Availability</g:annotatedLabel>
-      </dt>
-      <dd>
-        <table class="table table-striped table-bordered">
-          <thead>
-            <tr>
-              <th>TIPP</th>
-              <th>Status</th>
-              <th>Package</th>
-              <th>Platform</th>
-              <th>Start</th>
-              <th>End</th>
-              <th>Embargo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <g:each in="${d.tipps}" var="tipp">
-              <tr>
-                <td><g:if test="${tipp != null}"><g:link controller="resource" action="show"
-                    id="${tipp?.getClassName()+':'+tipp.id}">
-                    ${tipp.id}
-                  </g:link></g:if><g:else>ERROR</g:else></td>
-                <td>
-                  ${tipp.status?.value}
-                </td>
-                <td><g:if test="${tipp.pkg != null}"><g:link controller="resource" action="show"
-                    id="${tipp.pkg?.getClassName()+':'+tipp.pkg.id}">
-                    ${tipp.pkg.name}
-                  </g:link></g:if><g:else>ERROR</g:else></td>
-                <td><g:if test="${tipp.hostPlatform != null}"><g:link controller="resource" action="show"
-                    id="${tipp.hostPlatform?.getClassName()+':'+tipp.hostPlatform.id}">
-                    ${tipp.hostPlatform.name}
-                  </g:link></g:if><g:else>ERROR: hostPlatform is null</g:else></td>
-                <td>Date: <g:formatDate
-                    format="${session.sessionPreferences?.globalDateFormat}"
-                    date="${tipp.startDate}" /><br /> Volume: ${tipp.startVolume}<br />
-                  Issue: ${tipp.startIssue}
-                </td>
-                <td>Date: <g:formatDate
-                    format="${session.sessionPreferences?.globalDateFormat}"
-                    date="${tipp.endDate}" /><br /> Volume: ${tipp.endVolume}<br />
-                  Issue: ${tipp.endIssue}
-                </td>
-                <td>
-                  ${tipp.embargo}
-                </td>
-              </tr>
-            </g:each>
-          </tbody>
-        </table>
-      </dd>
-
+      <g:if test="${d.id}">
+        <dt>
+          <g:annotatedLabel owner="${d}" property="availability">Package Availability</g:annotatedLabel>
+        </dt>
+        <dd>
+          <g:link class="display-inline" controller="search" action="index"
+            params="[qbe:'g:3tipps', inline:true, refOid: d.getLogEntityId(), qp_title_id:d.id, hide:['qp_title_id', 'qp_title']]"
+            id="">Availability of this Title</g:link>
+        </dd>
+      </g:if>
     </div>
 
     <div class="tab-pane" id="publishers">
-
-      <dt>
-        <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
-      </dt>
-      <div style="margin:5px 0px;">
-        <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers" params="${params.findAll{k, v -> k != 'publisher_status'}}">
-
-        Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
-        </g:form>
-      </div>
-
-     <dd>
-        <table class="table table-striped table-bordered">
-          <thead>
-            <tr>
-              <th>Publisher Name</th>
-              <th>Combo Status</th>
-              <th>Publisher From</th>
-              <th>Publisher To</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <g:each in="${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)}" var="p">
-              <tr>
-                <td><g:link controller="resource" action="show" id="${p.toComponent.class.name}:${p.toComponent.id}"> ${p.toComponent.name} </g:link></td>
-                <td><g:xEditableRefData owner="${p}" field="status" config='Combo.Status' /></td>
-                <td><g:xEditable class="ipe" owner="${p}" field="startDate" type="date" /></td>
-                <td><g:xEditable class="ipe" owner="${p}" field="endDate" type="date" /></td>
-                <td><g:if test="${d.isEditable()}"><g:link controller="ajaxSupport" action="deleteCombo" id="${p.id}">Delete</g:link></g:if></td>
-              </tr>
-            </g:each>
-          </tbody>
-        </table>
-      </dd>
-      <g:if test="${d.isEditable()}">
-        <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
-          <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
-          <input type="hidden" name="__property" value="publisher" />
-          <dt>Add Publisher:</td>
-          <dd>
-            <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org"  style="display:block;" />
-            <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
-          </dd>
-        </g:form>
-      </g:if>
-
-
+      <g:render template="/tabTemplates/showPublishers"
+      model="${[d:displayobj]}" />
     </div>
 
     <div class="tab-pane" id="identifiers">
