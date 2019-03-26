@@ -83,29 +83,46 @@
 
   </dl>
 
+  <div id="content">
     <ul id="tabs" class="nav nav-tabs">
       <li role="presentation" class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
-      <li role="presentation"><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d?.getTitles(true,0,0) ? d?.getTitles(true,0,0)?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
-      <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.ids?.size() ?: '0'} </span></a></li>
-      <li role="presentation"><a href="#altnames" data-toggle="tab">Alternate Names
-        <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
-      </a></li>
-      <li><a href="#relationships" data-toggle="tab">Relations</a></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport}">
-        <li role="presentation"><a href="#ds" data-toggle="tab">Decision Support</a></li>
+      <g:if test="${d.id}">
+        <li role="presentation"><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${ d?.getTitles(true,0,0) ? d?.getTitles(true,0,0)?.size() : '0'}/${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'} </span></a></li>
+        <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.ids?.size() ?: '0'} </span></a></li>
+        <li role="presentation"><a href="#altnames" data-toggle="tab">Alternate Names
+          <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
+        </a></li>
+        <li><a href="#relationships" data-toggle="tab">Relations</a></li>
+        <g:if test="${grailsApplication.config.gokb.decisionSupport}">
+          <li role="presentation"><a href="#ds" data-toggle="tab">Decision Support</a></li>
+        </g:if>
+        <li role="presentation"><a href="#activity" data-toggle="tab">Activity</a></li>
+        <li role="presentation"><a href="#review" data-toggle="tab">Review Requests</a></li>
+        <g:if test="${grailsApplication.config.gokb.costInfo}">
+          <li role="presentation"><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
+        </g:if>
       </g:if>
-      <li role="presentation"><a href="#activity" data-toggle="tab">Activity</a></li>
-      <li role="presentation"><a href="#review" data-toggle="tab">Review Requests</a></li>
-      <g:if test="${grailsApplication.config.gokb.costInfo}">
-        <li role="presentation"><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
-      </g:if>
+      <g:else>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Titles/TIPPs </span></li>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Identifiers </span></li>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Relations </span></li>
+        <g:if test="${grailsApplication.config.gokb.decisionSupport}">
+          <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
+        </g:if>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Activity </span></li>
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Requests </span></li>
+        <g:if test="${grailsApplication.config.gokb.costInfo}">
+          <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Package Cost Info </span></li>
+        </g:if>
+      </g:else>
     </ul>
 
     <div id="my-tab-content" class="tab-content">
 
       <div class="tab-pane active" id="packagedetails">
         <dl class="dl-horizontal">
-          <g:render template="/apptemplates/refdataprops" 
+          <g:render template="/apptemplates/refdataprops"
             model="${[d:(d), rd:(rd), dtype:(dtype)]}" />
           <dt>
             <g:annotatedLabel owner="${d}" property="nominalPlatform">Nominal Platform</g:annotatedLabel>
@@ -121,55 +138,70 @@
 
       <div class="tab-pane" id="titledetails">
         <g:if test="${params.controller != 'create'}">
-          <g:link class="display-inline" controller="search" action="index"
-            params="[qbe:'g:3tipps', qp_pkg_id:d.id, inline:true, refOid: d.getLogEntityId(), hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id']]"
-            id="">Titles in this package</g:link>
-        </g:if>
-        <g:else>
-          TIPPs can be added after the creation process has been finished.
-        </g:else>
-        <g:if test="${ editable }">
-          <div class="panel-body">
-            <g:form controller="ajaxSupport" action="addToCollection"
-              class="form-inline">
-              <input type="hidden" name="__context" value="${d.class?.name}:${d.id}" />
-              <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
-              <input type="hidden" name="__addToColl" value="tipps" />
-              <input type="hidden" name="__showNew" value="true" />
-              <dl class="dl-horizontal">
-                <dt class="dt-label">Title</dt>
-                <dd>
-                  <g:simpleReferenceTypedown class="form-control select-m" name="title" baseClass="org.gokb.cred.TitleInstance"/>
-                </dd>
-                <dt class="dt-label">Platform</dt>
-                <dd>
-                  <g:simpleReferenceTypedown class="form-control select-m" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current"/>
-                </dd>
-                <dt class="dt-label">URL</dt>
-                <dd>
-                  <input type="text" class="form-control select-m" name="url" required />
-                </dd>
-                <dt></dt>
-                <dd>
-                  <button type="submit"
-                    class="btn btn-default btn-primary btn-sm ">Add</button>
-                </dd>
-              </dl>
-            </g:form>
-          </div>
+          <dl>
+            <dt><g:annotatedLabel owner="${d}" property="tipps">Titles/TIPPs</g:annotatedLabel></dt>
+            <dd>
+              <g:link class="display-inline" controller="search" action="index"
+                params="[qbe:'g:3tipps', qp_pkg_id:d.id, inline:true, refOid: d.getLogEntityId(), hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id']]"
+                id="">Titles in this package</g:link>
+              <g:if test="${ editable && params.controller != 'create' }">
+                <div class="panel-body">
+                  <h4>
+                    <g:annotatedLabel owner="${d}" property="addTipp">Add new TIPP</g:annotatedLabel>
+                  </h4>
+                  <g:form controller="ajaxSupport" action="addToCollection"
+                    class="form-inline">
+                    <input type="hidden" name="__context" value="${d.class?.name}:${d.id}" />
+                    <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
+                    <input type="hidden" name="__addToColl" value="tipps" />
+                    <input type="hidden" name="__showNew" value="true" />
+                    <dl class="dl-horizontal">
+                      <dt class="dt-label">Title</dt>
+                      <dd>
+                        <g:simpleReferenceTypedown class="form-control select-m" name="title" baseClass="org.gokb.cred.TitleInstance"/>
+                      </dd>
+                      <dt class="dt-label">Platform</dt>
+                      <dd>
+                        <g:simpleReferenceTypedown class="form-control select-m" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current"/>
+                      </dd>
+                      <dt class="dt-label">URL</dt>
+                      <dd>
+                        <input type="text" class="form-control select-m" name="url" required />
+                      </dd>
+                      <dt></dt>
+                      <dd>
+                        <button type="submit"
+                          class="btn btn-default btn-primary btn-sm ">Add</button>
+                      </dd>
+                    </dl>
+                  </g:form>
+                </div>
+              </g:if>
+            </dd>
+          </dl>
         </g:if>
       </div>
 
-     <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+      <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
 
       <div class="tab-pane" id="identifiers">
-        <g:render template="/apptemplates/combosByType"
-                                model="${[d:d, property:'ids', cols:[
-                  [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']], cur: editable]}" />
-        <g:if test="${ editable }">
-          <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
-        </g:if>
+        <dl>
+          <dt>
+            <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
+          </dt>
+          <dd>
+            <g:render template="/apptemplates/combosByType"
+              model="${[d:d, property:'ids', fragment:'identifiers', cols:[
+                        [expr:'toComponent.namespace.value', colhead:'Namespace'],
+                        [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+            <g:if test="${d.isEditable()}">
+              <h4>
+                <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
+              </h4>
+              <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+            </g:if>
+          </dd>
+        </dl>
       </div>
 
       <div class="tab-pane" id="relationships">
@@ -246,7 +278,7 @@
           </tbody>
         </table>
       </div>
-      
+
       <div class="tab-pane" id="review">
         <g:render template="/apptemplates/revreqtab" model="${[d:d]}" />
 
@@ -274,9 +306,11 @@
       </div>
 
     </div>
-
-    <g:render template="/apptemplates/componentStatus"
-      model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+    <g:if test="${d.id}">
+      <g:render template="/apptemplates/componentStatus"
+        model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+    </g:if>
+  </div>
 
     <g:javascript>
       $(document).ready(function(){
@@ -322,5 +356,3 @@
         });
       });
     </g:javascript>
-
-  </div>

@@ -131,6 +131,14 @@ body .modal-dialog {
 }
 .form-control {
   padding-top: 8px;
+  display:block;
+}
+
+.form-label {
+  display:inline-block;
+  vertical-align:middle;
+  height:39px;
+  padding-top:9px;
 }
 
 .dt-label {

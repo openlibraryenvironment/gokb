@@ -29,7 +29,7 @@
         <input type="hidden" name="__addToColl" value="additionalProperties"/>
         <td><g:simpleReferenceTypedown class="form-control" name="propertyDefn" baseClass="org.gokb.cred.AdditionalPropertyDefinition"/></td>
         <td><input type="text" class="form-control" name="apValue"/></td>
-        <td><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button></td>
+        <td><button type="submit" class="btn btn-default btn-primary">Add</button></td>
       </g:form>
     </tr>
     </g:if>

@@ -645,16 +645,21 @@ class AjaxSupportController {
     def domain_class=null;
     domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
     if ( domain_class ) {
-      if ( oid_components[1]=='__new__' ) {
-        result = domain_class.getClazz().refdataCreate(oid_components)
-        log.debug("Result of create ${oid} is ${result}");
+      if (oid_components.size() == 2 ) {
+        if ( oid_components[1]=='__new__' ) {
+          result = domain_class.getClazz().refdataCreate(oid_components)
+          log.debug("Result of create ${oid} is ${result}");
+        }
+        else {
+          result = domain_class.getClazz().get(oid_components[1])
+        }
       }
       else {
-        result = domain_class.getClazz().get(oid_components[1])
+        log.debug("Could not retrieve object. No ID provided.")
       }
     }
     else {
-      log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");
+      log.debug("resolve OID failed to identify a domain class. Input was ${oid_components}");
     }
     result
   }
@@ -770,7 +775,7 @@ class AjaxSupportController {
       eo.getCodes().each { ec ->
 
         if (!errorMessage) {
-          log.debug("testing code -> ${ec}")
+          // log.debug("testing code -> ${ec}")
 
           def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
 
@@ -779,7 +784,7 @@ class AjaxSupportController {
           }
 
           if(!errorMessage) {
-            log.debug("Could not resolve message")
+            // log.debug("Could not resolve message")
           }else{
             log.debug("found message: ${msg}")
           }
@@ -789,6 +794,7 @@ class AjaxSupportController {
       if (errorMessage) {
         result.add(errorMessage)
       }else{
+        log.debug("No message found for ${eo.getCodes()}")
         result.add("Error code ${eo}")
       }
     }

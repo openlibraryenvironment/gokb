@@ -88,34 +88,45 @@
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
+    <g:if test="${d.id != null}">
+      <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
 
-    <g:if test="${ d.isEditable() }">
-      <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
+      <g:if test="${ d.isEditable() }">
+        <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
+      </g:if>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span
+          class="badge badge-warning">
+            ${d.ids?.size() ?: '0'}
+        </span></a></li>
+      <li><a href="#publishers" data-toggle="tab">Publishers <span
+          class="badge badge-warning">
+            ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
+        </span></a></li>
+      <li><a href="#availability" data-toggle="tab">Availability <span
+          class="badge badge-warning">
+            ${d.tipps?.size() ?: '0'}
+        </span></a></li>
+      <li><a href="#addprops" data-toggle="tab">Custom Fields <span
+          class="badge badge-warning">
+            ${d.additionalProperties?.size() ?: '0'}
+        </span></a></li>
+      <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'} </span></a></li>
     </g:if>
-    <li><a href="#identifiers" data-toggle="tab">Identifiers <span
-        class="badge badge-warning">
-          ${d.ids?.size() ?: '0'}
-      </span></a></li>
-    <li><a href="#publishers" data-toggle="tab">Publishers <span
-        class="badge badge-warning">
-          ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
-      </span></a></li>
-    <li><a href="#availability" data-toggle="tab">Availability <span
-        class="badge badge-warning">
-          ${d.tipps?.size() ?: '0'}
-      </span></a></li>
-    <li><a href="#addprops" data-toggle="tab">Custom Fields <span
-        class="badge badge-warning">
-          ${d.additionalProperties?.size() ?: '0'}
-      </span></a></li>
-    <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'} </span></a></li>
+    <g:else>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
+      <g:if test="${ d.isEditable() }">
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Add to Title History </span></li>
+      </g:if>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Identifiers </span></li>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Publishers </span></li>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Availability </span></li>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Custom Fields </span></li>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
+    </g:else>
 
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
-
-      <g:if test="${d.id != null}">
 
         <dl class="dl-horizontal">
 
@@ -123,8 +134,13 @@
             <g:annotatedLabel owner="${d}" property="medium">Medium</g:annotatedLabel>
           </dt>
           <dd>
-            <g:xEditableRefData owner="${d}" field="medium"
-              config='TitleInstance.Medium' />
+            <g:if test="${d.id != null}">
+              <g:xEditableRefData owner="${d}" field="medium"
+                config='TitleInstance.Medium' />
+            </g:if>
+            <g:else>
+              Database
+            </g:else>
           </dd>
 
           <dt>
@@ -134,16 +150,7 @@
             <g:xEditableRefData owner="${d}" field="OAStatus"
               config='TitleInstance.OAStatus' />
           </dd>
-
-          <dt>
-            <g:annotatedLabel owner="${d}" property="continuingSeries">Continuing Series</g:annotatedLabel>
-          </dt>
-          <dd>
-            <g:xEditableRefData owner="${d}" field="continuingSeries"
-              config='TitleInstance.ContinuingSeries' />
-          </dd>
         </dl>
-      </g:if>
     </div>
 
     <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
@@ -308,7 +315,8 @@
           <input type="hidden" name="__property" value="publisher" />
           <dt>Add Publisher:</td>
           <dd>
-            <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org" /><button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
+            <g:simpleReferenceTypedown class="form-control input-xxlarge" name="__relatedObject" baseClass="org.gokb.cred.Org"  style="display:block;" />
+            <button type="submit" class="btn btn-default btn-primary btn-sm ">Add</button>
           </dd>
         </g:form>
       </g:if>
@@ -317,14 +325,23 @@
     </div>
 
     <div class="tab-pane" id="identifiers">
-      <g:render template="/apptemplates/combosByType"
-        model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                  [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-      <g:if test="${d.isEditable()}">
-        <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
-      </g:if>
-
+      <dl>
+        <dt>
+          <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
+        </dt>
+        <dd>
+          <g:render template="/apptemplates/combosByType"
+            model="${[d:d, property:'ids', fragment:'identifiers', cols:[
+                      [expr:'toComponent.namespace.value', colhead:'Namespace'],
+                      [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+          <g:if test="${d.isEditable()}">
+            <h4>
+              <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
+            </h4>
+            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+          </g:if>
+        </dd>
+      </dl>
     </div>
 
     <div class="tab-pane" id="addprops">
@@ -339,7 +356,9 @@
 
 
   </div>
-  <g:render template="/apptemplates/componentStatus" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  <g:if test="${d.id}">
+    <g:render template="/apptemplates/componentStatus" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  </g:if>
 </div>
 
 
