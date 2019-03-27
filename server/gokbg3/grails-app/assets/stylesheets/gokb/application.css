@@ -132,6 +132,7 @@ body .modal-dialog {
 .form-control {
   padding-top: 8px;
   display:block;
+  line-height:normal !important;
 }
 
 .form-label {

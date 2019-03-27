@@ -225,8 +225,6 @@ window.gokb = {
     
     results.each(function() {
 
-      var addEmpty = ($(this).data('required') ? 'N' : 'Y');
-
       var conf = {
         placeholder: "Search for...",
         allowClear: true,
@@ -241,7 +239,7 @@ window.gokb = {
               q: term,
               baseClass:$(this).data('domain'),
               filter1:$(this).data('filter1'),
-              addEmpty:addEmpty
+              addEmpty:($(this).data('require') ? 'N' : 'Y')
             };
           },
           results: function (data, page) {

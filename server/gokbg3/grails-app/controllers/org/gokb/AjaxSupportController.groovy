@@ -109,6 +109,10 @@ class AjaxSupportController {
                                   query_params,
                                   [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0]);
 
+        if (!config.required) {
+          result.add([id:'', text:'', value:'']);
+        }
+
         rq.each { it ->
           def o = ClassUtils.deproxy(it)
           result.add([id:"${o.class.name}:${o.id}", text: o[config.cols[0]], value:"${o.class.name}:${o.id}"]);
@@ -154,8 +158,19 @@ class AjaxSupportController {
       // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
       qryParams:[],
       rdvCat: "KBComponent.Status",
+      cols:['value'],
+      format:'simple'
+    ],
+    'KBComponent.EditStatus' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "KBComponent.EditStatus",
       cols:['value'],
       format:'simple'
     ],
@@ -196,7 +211,17 @@ class AjaxSupportController {
       rdvCat: "ReviewRequest.Status",
       cols:['value'],
       format:'simple'
-    ]
+    ],
+    'TitleInstance.Medium' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "TitleInstance.Medium",
+      cols:['value'],
+      format:'simple'
+    ],
   ]
 
 
@@ -698,9 +723,9 @@ class AjaxSupportController {
     //                 [id:'Person:22',text:'Jimmy'],
     //                 [id:'Person:3',text:'JimBob']]
 
-    if ( params.addEmpty=='Y' || params.addEmpty=='y' ) {
-      result.values.add(0, [id:'', text:'']);
-    }
+    //     if ( params.addEmpty=='Y' || params.addEmpty=='y' ) {
+    //       result.values.add(0, [id:'', text:'']);
+    //     }
 
     render result as JSON
   }

@@ -43,7 +43,7 @@
           <input type="hidden" name="fragment" value="#publishers" />
           <dt class="dt-label">Organization</dt>
           <dd>
-            <g:simpleReferenceTypedown class="form-control select-ml" name="__relatedObject" baseClass="org.gokb.cred.Org" style="display:block;" required="true"/>
+            <g:simpleReferenceTypedown class="form-control select-ml" name="__relatedObject" baseClass="org.gokb.cred.Org" style="display:block;" />
           </dd>
           <dt></dt>
           <dd>

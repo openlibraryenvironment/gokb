@@ -279,7 +279,7 @@
                       <input type="hidden" name="__addToColl" value="offices" />
                       <dt class="dt-label">Office Name</dt>
                       <dd>
-                        <input class="form-control" type="text" name="name" />
+                        <input class="form-control" type="text" name="name" required />
                       </dd>
                       <dt class="dt-label">Website</dt>
                       <dd>
