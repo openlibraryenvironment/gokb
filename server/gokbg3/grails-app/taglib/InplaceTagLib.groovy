@@ -316,9 +316,9 @@ class InplaceTagLib {
       out << "data-elastic=\"${attrs.elastic}\""
     }
 
-    if ( attrs.required )
-
+    if ( attrs.required ) {
       out << "data-required=\"true\" "
+    }
 
     if ( attrs.filter1 ) {
       out << "data-filter1=\"${attrs.filter1}\" "

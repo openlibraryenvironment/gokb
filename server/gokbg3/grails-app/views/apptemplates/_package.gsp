@@ -158,11 +158,11 @@
                     <dl class="dl-horizontal">
                       <dt class="dt-label">Title</dt>
                       <dd>
-                        <g:simpleReferenceTypedown class="form-control select-m" name="title" baseClass="org.gokb.cred.TitleInstance"/>
+                        <g:simpleReferenceTypedown class="form-control select-m" name="title" baseClass="org.gokb.cred.TitleInstance" required="true" />
                       </dd>
                       <dt class="dt-label">Platform</dt>
                       <dd>
-                        <g:simpleReferenceTypedown class="form-control select-m" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current"/>
+                        <g:simpleReferenceTypedown class="form-control select-m" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current" required="true" />
                       </dd>
                       <dt class="dt-label">URL</dt>
                       <dd>
@@ -171,7 +171,7 @@
                       <dt></dt>
                       <dd>
                         <button type="submit"
-                          class="btn btn-default btn-primary btn-sm ">Add</button>
+                          class="btn btn-default btn-primary">Add</button>
                       </dd>
                     </dl>
                   </g:form>

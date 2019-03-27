@@ -2,6 +2,7 @@ package org.gokb
 
 import grails.converters.JSON
 import java.text.SimpleDateFormat
+import java.text.MessageFormat
 
 import com.k_int.ClassUtils
 
@@ -399,7 +400,7 @@ class AjaxSupportController {
 
     withFormat {
       html {
-        if( params.showNew && errors.size() == 0) {
+        if( params.__showNew && errors.size() == 0) {
           redirect(controller:'resource', action:'show', id:"${new_obj.class.name}:${new_obj.id}");
         }
         else {
@@ -441,10 +442,11 @@ class AjaxSupportController {
     log.debug("addToStdCollection(${params})");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
+    def relatedObj = resolveOID2(params.__relatedObject)
     def result = ['result': 'OK', 'params': params]
-    if ( contextObj && (contextObj.isEditable() || springSecurityService.currentUser == contextObj)) {
-      if (!contextObj["${params.__property}"].contains(resolveOID2(params.__relatedObject))) {
-        contextObj["${params.__property}"].add (resolveOID2(params.__relatedObject))
+    if (relatedObj != null && contextObj != null && (contextObj.isEditable() || springSecurityService.currentUser == contextObj)) {
+      if (!contextObj["${params.__property}"].contains(relatedObj)) {
+        contextObj["${params.__property}"].add (relatedObj)
         contextObj.save(flush:true, failOnError:true)
         log.debug("Saved: ${contextObj.id}");
         result.context = contextObj
@@ -459,6 +461,11 @@ class AjaxSupportController {
       flash.error = "Context object could not be found!"
       result.result = 'ERROR'
       result.error = "Context object could not be found!"
+    }
+    else if (!relatedObj) {
+      flash.error = "Item to add could not be found!"
+      result.result = 'ERROR'
+      result.error = "Item to add could not be found!"
     }
     else {
       flash.error = "Permission to add to this list was denied."
@@ -767,10 +774,19 @@ class AjaxSupportController {
 
     errors.each { eo ->
 
-      String[] messageArgs = eo.getArguments()
+
+      def resolvedArgs = []
       def errorMessage = null
 
-      log.debug("Found error with args: ${messageArgs}")
+      eo.getArguments().each { ma ->
+        log.debug("${ma.class.name}")
+        String[] emptyArgs = []
+        def arg = messageSource.resolveCode(ma, request.locale).format(emptyArgs)
+
+        resolvedArgs.add(arg)
+      }
+
+      String[] messageArgs = resolvedArgs
 
       eo.getCodes().each { ec ->
 
@@ -794,8 +810,9 @@ class AjaxSupportController {
       if (errorMessage) {
         result.add(errorMessage)
       }else{
-        log.debug("No message found for ${eo.getCodes()}")
-        result.add("Error code ${eo}")
+        log.debug("No message found for ${eo.codes}")
+        log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")
+        result.add("${MessageFormat.format(eo.defaultMessage, messageArgs)}")
       }
     }
     result

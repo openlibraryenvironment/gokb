@@ -14,7 +14,7 @@
 
       <dt class="dt-label">Identifier Value</dt>
       <dd>
-        <input type="text" class="form-control" name="identifierValue" />
+        <input type="text" class="form-control" name="identifierValue" required />
       </dd>
 
       <dt></dt>

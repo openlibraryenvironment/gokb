@@ -224,7 +224,7 @@
             </dd>
             <dt class="dt-label" style="width:100px;">Event Date</dt>
             <dd>
-              <input type="date" class="form-control" name="EventDate" />
+              <input type="date" class="form-control" name="EventDate" required />
             </dd>
             <dt style="width:100px;"></dt>
             <dd>

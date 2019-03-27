@@ -40,9 +40,10 @@
         <g:form controller="ajaxSupport" action="addToStdCollection">
           <input type="hidden" name="__context" value="${d.class.name}:${d.id}" />
           <input type="hidden" name="__property" value="publisher" />
+          <input type="hidden" name="fragment" value="#publishers" />
           <dt class="dt-label">Organization</dt>
           <dd>
-            <g:simpleReferenceTypedown class="form-control select-ml" name="__relatedObject" baseClass="org.gokb.cred.Org" style="display:block;" />
+            <g:simpleReferenceTypedown class="form-control select-ml" name="__relatedObject" baseClass="org.gokb.cred.Org" style="display:block;" required="true"/>
           </dd>
           <dt></dt>
           <dd>
