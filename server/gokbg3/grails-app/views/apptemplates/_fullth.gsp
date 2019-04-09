@@ -5,7 +5,9 @@
       <th>On this date</th>
       <th>This/These titles</th>
       <th>Changed to This/These titles</th>
-      <th>Actions</th>
+      <g:if test="${d.isEditable()}">
+        <th>Actions</th>
+      </g:if>
     </tr>
   </thead>
   <tbody>
@@ -38,9 +40,11 @@
             </g:each>
           </ul>
         </td>
-        <td>
-          <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent?.id}">Delete</g:link>
-        </td>
+        <g:if test="${d.isEditable()}">
+          <td>
+              <g:link controller="workflow" action="DeleteTitleHistoryEvent" class="confirm-click" data-confirm-message="Are you sure you wish to delete this Title History entry?" id="${theevent?.id}">Delete</g:link>
+          </td>
+        </g:if>
       </tr>
     </g:each>
   </tbody>
