@@ -1004,7 +1004,6 @@ class IntegrationController {
               log.debug("Package Crossref failed with Exception",e)
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
-              job_result.exception = e.toString()
             }
           }
         }
@@ -1421,7 +1420,6 @@ class IntegrationController {
           catch (grails.validation.ValidationException ve) {
             log.error("ValidationException attempting to cross reference title",ve);
             result.result="ERROR"
-            result.exception=ve.toString()
             result.message=ve.getMessage()
             result.baddata=titleObj
             log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
@@ -1430,7 +1428,6 @@ class IntegrationController {
             log.error("Exception attempting to cross reference title",e);
             result.result="ERROR"
             result.message="There was an error trying to reference title '${titleObj.name}'"
-            result.exception=e.toString()
             result.baddata=titleObj
             log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
           }
@@ -1456,11 +1453,18 @@ class IntegrationController {
       // Go through each Org.
       for (def pub_to_add : publishers) {
 
+        Org publisher = null
         // Lookup the publisher.
+        if (pub_to_add.uuid) {
+          publisher = Org.findByUuid(pub_to_add.uuid)
+        }
+
         def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
-        Org publisher = Org.findByNormname(norm_pub_name)
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
+        if(!publisher) {
+          publisher = Org.findByNormname(norm_pub_name)
+        }
 
         if(!publisher || publisher.status == status_deleted){
           def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
