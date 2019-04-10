@@ -139,8 +139,8 @@ class AdminController {
 
   def ensureUuids() {
 
-    Job j = concurrencyManagerService.createJob {
-      cleanupService.ensureUuids()
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.ensureUuids(j)
     }.startOrQueue()
 
     j.description = "Ensure UUIDs for components"
@@ -151,8 +151,8 @@ class AdminController {
   }
 
   def ensureTipls() {
-    Job j = concurrencyManagerService.createJob {
-      cleanupService.ensureTipls()
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.ensureTipls(j)
     }.startOrQueue()
 
     j.description = "Ensure TIPLs for all TIPPs"
@@ -162,8 +162,8 @@ class AdminController {
   }
 
   def convertTippCoverages() {
-    Job j = concurrencyManagerService.createJob {
-      cleanupService.addMissingCoverageObjects()
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.addMissingCoverageObjects(j)
     }.startOrQueue()
 
     j.description = "Generate missing TIPPCoverageStatements"
@@ -302,6 +302,18 @@ class AdminController {
     result
   }
 
+  def cleanJobList() {
+    log.debug("clean job list..")
+    def jobs = concurrencyManagerService.jobs
+    def maxId = jobs.max { it.key }.key
+
+    jobs.each { k, j ->
+      if ( k < maxId - 5 && j.isDone()) {
+        jobs.remove(k)
+      }
+    }
+    redirect(url: request.getHeader('referer'))
+  }
 
   def cancelJob() {
     Job j = concurrencyManagerService.getJob(params.int('id'))
@@ -312,9 +324,8 @@ class AdminController {
 
   @Deprecated
   def housekeeping() {
-    Job j = concurrencyManagerService.createJob {
-      def et = cleanupService.housekeeping()
-      return et
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.housekeeping(j)
     }.startOrQueue()
     
     j.description = "Housekeeping"
@@ -352,8 +363,8 @@ class AdminController {
   }
 
   def cleanupOrphanedTipps() {
-    Job j = concurrencyManagerService.createJob {
-      cleanupService.deleteOrphanedTipps()
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.deleteOrphanedTipps(j)
     }.startOrQueue()
 
     log.debug("Triggering cleanup task. Started job #${j.id}")
