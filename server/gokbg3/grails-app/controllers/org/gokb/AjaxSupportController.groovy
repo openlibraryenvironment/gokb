@@ -2,6 +2,7 @@ package org.gokb
 
 import grails.converters.JSON
 import java.text.SimpleDateFormat
+import java.text.MessageFormat
 
 import com.k_int.ClassUtils
 
@@ -108,6 +109,10 @@ class AjaxSupportController {
                                   query_params,
                                   [max:params.iDisplayLength?:400,offset:params.iDisplayStart?:0]);
 
+        if (!config.required) {
+          result.add([id:'', text:'', value:'']);
+        }
+
         rq.each { it ->
           def o = ClassUtils.deproxy(it)
           result.add([id:"${o.class.name}:${o.id}", text: o[config.cols[0]], value:"${o.class.name}:${o.id}"]);
@@ -153,8 +158,19 @@ class AjaxSupportController {
       // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
       qryParams:[],
       rdvCat: "KBComponent.Status",
+      cols:['value'],
+      format:'simple'
+    ],
+    'KBComponent.EditStatus' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "KBComponent.EditStatus",
       cols:['value'],
       format:'simple'
     ],
@@ -195,7 +211,17 @@ class AjaxSupportController {
       rdvCat: "ReviewRequest.Status",
       cols:['value'],
       format:'simple'
-    ]
+    ],
+    'TitleInstance.Medium' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "TitleInstance.Medium",
+      cols:['value'],
+      format:'simple'
+    ],
   ]
 
 
@@ -399,7 +425,7 @@ class AjaxSupportController {
 
     withFormat {
       html {
-        if( params.showNew && errors.size() == 0) {
+        if( params.__showNew && errors.size() == 0) {
           redirect(controller:'resource', action:'show', id:"${new_obj.class.name}:${new_obj.id}");
         }
         else {
@@ -441,10 +467,11 @@ class AjaxSupportController {
     log.debug("addToStdCollection(${params})");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
+    def relatedObj = resolveOID2(params.__relatedObject)
     def result = ['result': 'OK', 'params': params]
-    if ( contextObj && (contextObj.isEditable() || springSecurityService.currentUser == contextObj)) {
-      if (!contextObj["${params.__property}"].contains(resolveOID2(params.__relatedObject))) {
-        contextObj["${params.__property}"].add (resolveOID2(params.__relatedObject))
+    if (relatedObj != null && contextObj != null && (contextObj.isEditable() || springSecurityService.currentUser == contextObj)) {
+      if (!contextObj["${params.__property}"].contains(relatedObj)) {
+        contextObj["${params.__property}"].add (relatedObj)
         contextObj.save(flush:true, failOnError:true)
         log.debug("Saved: ${contextObj.id}");
         result.context = contextObj
@@ -459,6 +486,11 @@ class AjaxSupportController {
       flash.error = "Context object could not be found!"
       result.result = 'ERROR'
       result.error = "Context object could not be found!"
+    }
+    else if (!relatedObj) {
+      flash.error = "Item to add could not be found!"
+      result.result = 'ERROR'
+      result.error = "Item to add could not be found!"
     }
     else {
       flash.error = "Permission to add to this list was denied."
@@ -645,16 +677,21 @@ class AjaxSupportController {
     def domain_class=null;
     domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
     if ( domain_class ) {
-      if ( oid_components[1]=='__new__' ) {
-        result = domain_class.getClazz().refdataCreate(oid_components)
-        log.debug("Result of create ${oid} is ${result}");
+      if (oid_components.size() == 2 ) {
+        if ( oid_components[1]=='__new__' ) {
+          result = domain_class.getClazz().refdataCreate(oid_components)
+          log.debug("Result of create ${oid} is ${result}");
+        }
+        else {
+          result = domain_class.getClazz().get(oid_components[1])
+        }
       }
       else {
-        result = domain_class.getClazz().get(oid_components[1])
+        log.debug("Could not retrieve object. No ID provided.")
       }
     }
     else {
-      log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");
+      log.debug("resolve OID failed to identify a domain class. Input was ${oid_components}");
     }
     result
   }
@@ -686,9 +723,9 @@ class AjaxSupportController {
     //                 [id:'Person:22',text:'Jimmy'],
     //                 [id:'Person:3',text:'JimBob']]
 
-    if ( params.addEmpty=='Y' || params.addEmpty=='y' ) {
-      result.values.add(0, [id:'', text:'']);
-    }
+    //     if ( params.addEmpty=='Y' || params.addEmpty=='y' ) {
+    //       result.values.add(0, [id:'', text:'']);
+    //     }
 
     render result as JSON
   }
@@ -762,15 +799,24 @@ class AjaxSupportController {
 
     errors.each { eo ->
 
-      String[] messageArgs = eo.getArguments()
+
+      def resolvedArgs = []
       def errorMessage = null
 
-      log.debug("Found error with args: ${messageArgs}")
+      eo.getArguments().each { ma ->
+        log.debug("${ma.class.name}")
+        String[] emptyArgs = []
+        def arg = messageSource.resolveCode(ma, request.locale).format(emptyArgs)
+
+        resolvedArgs.add(arg)
+      }
+
+      String[] messageArgs = resolvedArgs
 
       eo.getCodes().each { ec ->
 
         if (!errorMessage) {
-          log.debug("testing code -> ${ec}")
+          // log.debug("testing code -> ${ec}")
 
           def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
 
@@ -779,7 +825,7 @@ class AjaxSupportController {
           }
 
           if(!errorMessage) {
-            log.debug("Could not resolve message")
+            // log.debug("Could not resolve message")
           }else{
             log.debug("found message: ${msg}")
           }
@@ -789,7 +835,9 @@ class AjaxSupportController {
       if (errorMessage) {
         result.add(errorMessage)
       }else{
-        result.add("Error code ${eo}")
+        log.debug("No message found for ${eo.codes}")
+        log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")
+        result.add("${MessageFormat.format(eo.defaultMessage, messageArgs)}")
       }
     }
     result

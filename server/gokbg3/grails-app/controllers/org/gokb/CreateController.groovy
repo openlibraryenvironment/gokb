@@ -157,7 +157,7 @@ class CreateController {
                 eo.getCodes().each { ec ->
 
                   if (!errorMessage) {
-                    log.debug("testing code -> ${ec}")
+                    // log.debug("testing code -> ${ec}")
 
                     def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
 
@@ -166,7 +166,7 @@ class CreateController {
                     }
 
                     if(!errorMessage) {
-                      log.debug("Could not resolve message")
+                      // log.debug("Could not resolve message")
                     }else{
                       log.debug("found message: ${msg}")
                     }
@@ -176,7 +176,7 @@ class CreateController {
                 if (errorMessage) {
                   flash.error.add(errorMessage)
                 }else{
-                  log.debug("Found no message for error code ${eo}")
+                  log.debug("No message found for ${eo.getCodes()}")
                 }
               }
 
