@@ -72,11 +72,6 @@
 
 <ul id="tabs" class="nav nav-tabs">
   <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP Details</a></li>
-  <li>
-    <a href="#altnames" data-toggle="tab">Alternate Names 
-      <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
-    </a>
-  </li>
   <g:if test="${d.title?.getNiceName() == 'Journal'}">
     <li>
       <a href="#tippcoverage" data-toggle="tab">Coverage</a>
@@ -98,9 +93,6 @@
 
 
 <div id="my-tab-content" class="tab-content">
-    
-    <g:render template="/tabTemplates/showVariantnames" 
-      model="${[d:displayobj, showActions:true]}" />
 
   <div class="tab-pane active" id="tippdetails">
 

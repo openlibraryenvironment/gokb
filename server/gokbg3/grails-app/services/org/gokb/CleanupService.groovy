@@ -5,6 +5,7 @@ import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.delete.DeleteRequest
 import org.elasticsearch.client.Requests
 import com.k_int.ConcurrencyManagerService.Job
+import grails.gorm.DetachedCriteria
 
 class CleanupService {
   def sessionFactory
@@ -100,8 +101,17 @@ class CleanupService {
     
     def result = [report: []]
     def esclient = ESWrapperService.getClient()
+    def idx = 0
     
-    ids.eachWithIndex { component_id, idx ->
+    for (component_id in ids) {
+
+      if ( Thread.currentThread().isInterrupted() ) {
+        log.debug("Job cancelling ..")
+        break;
+      }
+
+      idx++
+
       try {
         KBComponent.withNewTransaction {
           log.debug("Expunging ${component_id}");
@@ -120,10 +130,11 @@ class CleanupService {
           log.debug("${es_response}")
           result.report.add(expunge_result)
         }
-        j?.setProgress(idx+1,ids.size())
+        j?.setProgress(idx,ids.size())
       }
       catch ( Throwable t ) {
         log.error("problem",t);
+        j?.message("Problem expunging component with id ${component_id}".toString())
       }
     }
     
@@ -155,8 +166,10 @@ class CleanupService {
 
     def result = expungeByIds(delete_candidates, j)
 
-    log.debug("Done");
-    return new Date();
+    log.debug("Done")
+    j.endTime = new Date()
+
+    return result
   }
 
   @Transactional
@@ -170,8 +183,10 @@ class CleanupService {
 
     def result = expungeByIds(delete_candidates, j)
 
-    log.debug("Done");
-    return new Date();
+    log.debug("Done")
+    j.endTime = new Date()
+
+    return result
   }
 
   @Transactional
@@ -234,15 +249,14 @@ class CleanupService {
       }
 
     }
-    return new Date();
+    j.endTime = new Date();
   }
 
   @Transactional
-  def ensureUuids()  {
+  def ensureUuids(Job j = null)  {
     log.debug("GOKb missing uuid check..")
-
     def ctr = 0
-    def skipctr = 0
+    def skipped = 0
     KBComponent.withNewSession {
       KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").eachWithIndex { kbc_id ->
         try {
@@ -258,22 +272,25 @@ class CleanupService {
         catch(Exception e){
           log.debug("ensureUuids :: Skip component id ${kbc_id}")
           log.debug("${e}")
-          skipctr++
+          result.skipped.add(kbc_id)
+          skipped++
         }
       }
     }
     log.debug("ensureUuids :: ${ctr} components updated with uuid");
 
-    if (skipctr > 0) log.debug("${skipctr} components skipped when updating with uuid");
+    if (skipped > 0) log.debug("${skipped} components skipped when updating with uuid");
 
-    return new Date();
+    j.endTime = new Date()
+    j.message("Finished adding missing uuids (total: ${ctr}, skipped: ${skipped})".toString())
   }
 
   @Transactional
-  def ensureTipls()  {
+  def ensureTipls(Job j = null)  {
     log.debug("GOKb missing tipl check..")
 
     def ctr = 0
+    def new_tipl = 0
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
@@ -281,14 +298,26 @@ class CleanupService {
 
     try {
 
-      KBComponent.withNewTransaction {
-        def tipps = TitleInstancePlatform.executeQuery("select tipp from TitleInstancePackagePlatform as tipp where tipp.status != ?", [status_deleted],[readonly:true])
+      log.debug("Getting count..")
+      def count = TitleInstancePackagePlatform.executeQuery("select count(tipp.id) from TitleInstancePackagePlatform as tipp where tipp.status != ?",[status_deleted])[0]
+      def tipp_crit = new DetachedCriteria(TitleInstancePackagePlatform).build{
+        ne('status', status_deleted)
+      }
+      log.debug("Got criteria..")
+
+      def batchsize = 50
+      def offset = 0
+
+      while (offset < count) {
+
+        if ( Thread.currentThread().isInterrupted() ) {
+          log.debug("Job cancelling ..")
+          break;
+        }
+
+        def tipps = tipp_crit.list (max: batchsize, offset: offset) {}
 
         for (tipp in tipps) {
-          if ( Thread.currentThread().isInterrupted() ) {
-            log.debug("Job cancelling ..")
-            break;
-          }
 
           def tipls = checkForTipl(tipp.title, tipp.hostPlatform, tipp.url)
           def final_tipl = null
@@ -302,7 +331,7 @@ class CleanupService {
             def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipls')
             def ti_combo = new Combo(toComponent:final_tipl, fromComponent:tipp.title, type:ti_combo_type, status:combo_status_active).save();
 
-
+            new_tipl++
           }
           else if ( tipls?.size() == 1 ) {
             final_tipl = tipls[0]
@@ -313,31 +342,35 @@ class CleanupService {
 
           }
           else {
-            log.warn("Found more than one TIPL for ${tipp.title} on ${tipp.hostPlatform}!")
+            log.debug("Found more than one TIPL for ${tipp.title} on ${tipp.hostPlatform}!")
           }
 
           log.debug("TIPL ${final_tipl}")
-
-
-          if ( ctr % 25 == 0 && ctr > 0 ) {
-            log.debug("ensureTipls :: Processed ${ctr} TIPPs")
-            cleanUpGorm()
-          }
+          j.setProgress(ctr, count)
           ctr++
         }
+        offset += batchsize
+        log.debug("ensureTipls :: Processed ${ctr} TIPPs")
+        Thread.yield()
+        cleanUpGorm()
       }
+
+      j.message("Finished checking for missing TIPLs, with ${new_tipl} newly created.".toString())
+      j.setProgress(100)
+
     }
     catch ( Exception e ) {
-      log.error("Problem with ensure TIPLs",e);
+      log.error("Problem with ensure TIPLs",e)
+      j.message("There was an error ensuring TIPLs.. check logs for info.".toString())
     }
     finally {
       log.debug("ensureTipls finished (${ctr} TIPPs)");
     }
 
-    return new Date();
+    j.endTime = new Date()
   }
 
-  def checkForTipl(title, platform, url) {
+  private def checkForTipl(title, platform, url) {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       def result = TitleInstancePlatform.executeQuery('''select tipl
@@ -354,8 +387,9 @@ class CleanupService {
     }
   }
   
-  def housekeeping() {
+  def housekeeping(Job j = null) {
     log.debug("Housekeeping")
+
     try {
       def ctr = 0
       def start_time = System.currentTimeMillis()
@@ -363,9 +397,11 @@ class CleanupService {
       // Find all identifier occurrences where the component attached also has an issn with the same value.
       // select combo from Combo as combo where combo.toComponent in (select identifier from Identifier as identifier where identifier.ns.ns = 'eissn' )
       //    and exists (
+      def ns_issn = IdentifierNamespace.findByValue('issn')
+      def ns_eissn = IdentifierNamespace.findByValue('eissn')
       log.debug("Query")
-      def q1 = Identifier.executeQuery('select i1 from Identifier as i1 where i1.namespace.value = :n1 and exists ( select i2 from Identifier as i2 where i2.namespace.value=:n2 and i2.value = i1.value )',
-                                       [n1:'issn', n2:'eissn'])
+      def q1 = Identifier.executeQuery('select i1 from Identifier as i1 where i1.namespace = :n1 and exists ( select i2 from Identifier as i2 where i2.namespace=:n2 and i2.value = i1.value )',
+                                       [n1:ns_issn, n2:ns_eissn])
       log.debug("Query complete, elapsed = ${System.currentTimeMillis() - start_time}")
       def id_combo_type = RefdataValue.findByValue('KBComponent.Ids')
       q1.each { issn ->
@@ -380,8 +416,10 @@ class CleanupService {
     }
     catch ( Exception e ) {
       e.printStackTrace()
+      j?.message = 'Housekeeping was aborted due to errors.'
     }
-    return new Date();
+
+    j?.endTime = new Date()
   }
   
   private final def duplicateIdentifierCleanup = {
@@ -478,8 +516,10 @@ class CleanupService {
   }
 
   @Transactional
-  def addMissingCoverageObjects() {
+  def addMissingCoverageObjects(Job j = null) {
     log.debug("Creating missing coverage statements..")
+    def ctr = 0
+    def errors = 0
 
     TitleInstancePackagePlatform.withNewSession {
       def tipp_crit = TitleInstancePackagePlatform.createCriteria()
@@ -494,16 +534,33 @@ class CleanupService {
         }
       }
 
-      tipps?.each { t ->
-        log.debug("Adding statement for TIPP ${t.id}")
+      for (t in tipps) {
 
-        t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote, embargo: t.embargo)
+        if ( Thread.currentThread().isInterrupted() ) {
+          log.debug("Job cancelling ..")
+          break;
+        }
 
-        t.save(flush:true, failOnError:true);
+        try {
+          t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote, embargo: t.embargo)
+
+          t.save(flush:true, failOnError:true);
+        }
+        catch (Exception e) {
+          log.error("Error while creating coverage statement", e)
+          errors++
+        }
+
+        if (ctr % 50 == 0) {
+          cleanUpGorm()
+        }
+
+        j.setProgress(ctr++, tipps.size())
       }
     }
     log.debug("Done");
-    return new Date();
+    j.message("Finished creating ${ctr} new statements (${errors} errors)".toString())
+    j.endTime = new Date()
   }
 
   def cleanUpGorm() {

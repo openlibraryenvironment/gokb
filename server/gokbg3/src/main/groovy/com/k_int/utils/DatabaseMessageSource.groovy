@@ -40,7 +40,7 @@ class DatabaseMessageSource extends AbstractMessageSource {
             } 
             catch ( Exception e ) {
               // Something went badly wrong, return the code as the messge and carry on.
-              System.err.println("Problem trying to lookup message with key ${cache_key}");
+              // System.err.println("Problem trying to lookup message with key ${cache_key}");
               format = new MessageFormat(code, locale)
             }
           }

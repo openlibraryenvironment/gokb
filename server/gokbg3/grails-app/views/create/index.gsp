@@ -5,24 +5,34 @@
 <title>GOKb: Create New ${displayobj?.getNiceName() ?: 'Component'}</title>
 </head>
 <body>
-	<h1 class="page-header">
-		Create New ${displayobj?.getNiceName() ?: 'Component'}
-	</h1>
-	<div id="mainarea" class="panel panel-default">
-		<div class="panel-body">
-			<g:if test="${displaytemplate != null}">
-				<g:if test="${displaytemplate.type=='staticgsp'}">
-					<g:render template="/apptemplates/messages"
-						model="${ ["preMessage" : "There were errors when attempting to create the new component." ]}" />
-					<g:render template="/apptemplates/${displaytemplate.rendername}"
-						model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
-					<button id="save-btn" class="btn btn-default pull-right btn-sm">Create and Edit &gt;&gt;</button>
+  <h1 class="page-header">
+          Create New ${displayobj?.getNiceName() ?: 'Component'}
+  </h1>
+  <div id="mainarea" class="panel panel-default">
+    <div class="panel-body">
+      <g:if test="${displaytemplate != null}">
+        <g:if test="${displaytemplate.type=='staticgsp'}">
+          <g:if test="${displaytemplate.noCreate}">
+            <div id="content">
+              <div style="padding:20px">
+                <span class="alert alert-danger" style="font-weight:bold;">Components of this type cannot be created in a standalone context.</span>
+              </div>
+            </div>
+          </g:if>
+          <g:else>
+            <g:set var="preMsg" value="${flash.error ? 'There were errors when attempting to create the new component.' : ''}" />
+            <g:render template="/apptemplates/messages"
+                      model="${ ["preMessage" : preMsg ]}" />
+            <g:render template="/apptemplates/${displaytemplate.rendername}"
+                      model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
+            <button id="save-btn" class="btn btn-default pull-right btn-sm">Create and Edit &gt;&gt;</button>
+          </g:else>
         </g:if>
-			</g:if>
-		</div>
-	</div>
+      </g:if>
+    </div>
+  </div>
 
-	<asset:script type="text/javascript">
+  <asset:script type="text/javascript">
 
       $('#save-btn').click(function() {
       
@@ -62,6 +72,18 @@
           })
 				;
       });
+
+      var hash = window.location.hash;
+      hash && $('ul.nav a[href="' + hash + '"]').tab('show');
+
+      $('.nav-tabs > li > a').not('.disabled').click(function (e) {
+        $(this).tab('show');
+        var scrollmem = $('body').scrollTop();
+        console.log("scrollTop");
+        window.location.hash = this.hash;
+        $('html,body').scrollTop(scrollmem);
+      });
+
     </asset:script>
 </body>
 </html>
