@@ -44,7 +44,7 @@
             // Add the parameter to the params object.
             var eVal = editable.editable('getValue', true)
 
-            params[editable.attr("data-name")] = eVal.id ? eVal.id : editable.text();
+            params[editable.attr("data-name")] = eVal ? eVal : editable.text();
         });
 
         $('a.editable').not('.editable-empty').each (function(){
