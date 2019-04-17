@@ -196,6 +196,9 @@ class TitleInstancePackagePlatform extends KBComponent {
     result &= tipp_dto.package?.internalId != null
     result &= tipp_dto.platform?.internalId != null
     result &= tipp_dto.title?.internalId != null
+    for(def coverage : tipp_dto.coverage){
+        result &= ["fulltext", "selected articles", "abstracts"].contains(coverage.coverageDepth.toLowerCase())
+    }
 
     if ( !result ) 
       log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId}");
@@ -418,7 +421,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (!cs_match) {
-            tipp.addToCoverageStatements('startVolume': c.startVolume, 'startIssue':c.startIssue, 'endVolume': c.endVolume, 'endIssue': c.endIssue, 'embargo':c.embargo, 'coverageNote': c.coverageNote, 'startDate': parsedStart, 'endDate': parsedEnd)
+            tipp.addToCoverageStatements('startVolume': c.startVolume, 'startIssue':c.startIssue, 'endVolume': c.endVolume, 'endIssue': c.endIssue, 'embargo':c.embargo, 'coverageDepth': c.coverageDepth, 'coverageNote': c.coverageNote, 'startDate': parsedStart, 'endDate': parsedEnd)
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
         }
