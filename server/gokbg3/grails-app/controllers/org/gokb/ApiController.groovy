@@ -1023,7 +1023,12 @@ class ApiController {
           }
           else {
             if ( cobj && KBComponent.has(cobj, sp)) {
-              cobj = cobj[sp]
+              if (sp == 'password' || sp = 'email') {
+                cobj = null
+              }
+              else {
+                cobj = cobj[sp]
+              }
 
               if (ppath.size() > 1 && idx == ppath.size()-2) {
                 if (cobj && sp != 'class') {
