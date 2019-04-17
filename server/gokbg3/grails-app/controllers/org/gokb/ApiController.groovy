@@ -1023,7 +1023,7 @@ class ApiController {
           }
           else {
             if ( cobj && KBComponent.has(cobj, sp)) {
-              if (sp == 'password' || sp = 'email') {
+              if (sp == 'password' || sp == 'email') {
                 cobj = null
               }
               else {
