@@ -197,7 +197,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     result &= tipp_dto.platform?.internalId != null
     result &= tipp_dto.title?.internalId != null
     for(def coverage : tipp_dto.coverage){
-        result &= ["fulltext", "selected articles", "abstracts"].contains(coverage.coverageDepth.toLowerCase())
+        result &= ['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth.toLowerCase())
     }
 
     if ( !result ) 
