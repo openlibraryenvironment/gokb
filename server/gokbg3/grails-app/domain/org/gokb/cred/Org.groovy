@@ -185,6 +185,16 @@ class Org extends KBComponent {
           builder.'mission' ( mission.value )
         }
         
+        if (providedPlatforms) {
+          'providedPlatforms' {
+            providedPlatforms.each { plat ->
+              builder.'platform' (['id':plat.id, 'uuid':plat.uuid]) {
+                builder.'name' (plat.name)
+              }
+            }
+          }
+        }
+        
 //         if (publishes) {
 //           'publishedTitles' {
 //             publishes.each { title ->
