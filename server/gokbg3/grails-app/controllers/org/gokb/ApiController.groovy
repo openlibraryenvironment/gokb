@@ -260,7 +260,7 @@ class ApiController {
   // this is used as an entrypoint for single page apps based on frameworks like angular.
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def search() {
-    def result = [result: 'OK']
+    def result = [:]
 
     User user = springSecurityService.currentUser
 
@@ -275,38 +275,25 @@ class ApiController {
 
         // Looked up a template from somewhere, see if we can execute a search
         if ( result.qbetemplate ) {
+          log.debug("Execute query");
+          def qresult = [max:result.max, offset:result.offset]
+          result.rows = doQuery(result.qbetemplate, params, qresult)
+          log.debug("Query complete");
+          result.lasthit = result.offset + result.max > qresult.reccount ? qresult.reccount : ( result.offset + result.max )
 
-          Class target_class = Class.forName(result.qbetemplate.baseclass);
-          def read_perm = target_class?.isTypeReadable()
-
-          if (read_perm) {
-            log.debug("Execute query");
-            def qresult = [max:result.max, offset:result.offset]
-            result.rows = doQuery(result.qbetemplate, params, qresult)
-            log.debug("Query complete");
-            result.lasthit = result.offset + result.max > qresult.reccount ? qresult.reccount : ( result.offset + result.max )
-
-            // Add the page information.
-            result.page_current = (result.offset / result.max) + 1
-            result.page_total = (qresult.reccount / result.max).toInteger() + (qresult.reccount % result.max > 0 ? 1 : 0)
-          }
-          else {
-            result.result = 'ERROR'
-            result.code = 403
-            result.message = "Insufficient permissions to view this resource."
-
-            log.debug("No permission to view this resource!")
-          }
+          // Add the page information.
+          result.page_current = (result.offset / result.max) + 1
+          result.page_total = (qresult.reccount / result.max).toInteger() + (qresult.reccount % result.max > 0 ? 1 : 0)
         }
         else {
-          log.debug("no template ${result?.qbetemplate}");
+          log.error("no template ${result?.qbetemplate}");
         }
     }
     else {
       log.debug("No request json");
     }
 
-    apiReturn(result)
+    render result as JSON
   }
 
   /**
@@ -955,7 +942,7 @@ class ApiController {
   /**
    * show : Returns a simplified JSON serialization of a domain class object
    * @param oid : The OID ("<FullyQualifiedClassName>:<PrimaryKey>") of the object
-   * @param withCombos : Also return all combos directly linked to the object
+   * @param withCombos : Also return combo properties for KBComponents
   **/
 
   def show() {
@@ -1011,35 +998,7 @@ class ApiController {
       response_row['__oid'] = rec.class.name+':'+rec.id
       response_row['__seq'] = seq++
       qbetemplate.qbeConfig.qbeResults.each { r ->
-        def ppath = r.property.split(/\./)
-        def cobj = rec
-        def final_oid = "${cobj.class.name}:${cobj.id}"
-
-        ppath.eachWithIndex { prop, idx ->
-          def sp = prop.minus('?')
-
-          if( cobj?.class?.name == 'org.gokb.cred.RefdataValue' ) {
-            cobj = cobj.value
-          }
-          else {
-            if ( cobj && KBComponent.has(cobj, sp)) {
-              cobj = cobj[sp]
-
-              if (ppath.size() > 1 && idx == ppath.size()-2) {
-                if (cobj && sp != 'class') {
-                  final_oid = "${cobj.class.name}:${cobj.id}"
-                }
-                else {
-                  final_oid = null
-                }
-              }
-            }
-            else {
-              cobj = null
-            }
-          }
-        }
-        response_row["${r.property}"] = [heading: r.heading, link: (r.link ? (final_oid ?: response_row.__oid ) : null), value: (cobj ?: '-Empty-')]
+        response_row[r.heading] = groovy.util.Eval.x(rec, 'x.' + r.property)
       }
       resultrows.add(response_row);
     }

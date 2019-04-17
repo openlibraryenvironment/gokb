@@ -92,7 +92,7 @@
             <sec:ifLoggedIn>
               <li class="${params?.controller == "home" && (params?.action == 'index' || params?.action == 'dashboard') ? 'active' : ''}"><g:link controller="home"><i class="fa fa-dashboard fa-fw"></i> Statistics</g:link></li>
               <li class="${params?.controller == "home" && (params?.action == 'userdash') ? 'active' : ''}"><g:link controller="home" action="userdash"><i class="fa fa-dashboard fa-fw"></i> My Dashboard</g:link></li>
-              <li class="${params?.controller == "search" || params?.controller == "globalSearch"  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i> Search<span class="fa arrow"></span></a>
+              <li class="${(params?.controller == "search" || params?.controller == "globalSearch")  ? 'active' : ''}"><a href="#"><i class="fa fa-search fa-fw"></i> Search<span class="fa arrow"></span></a>
                 <ul class="nav nav-second-level">
                   <li class="sidebar-search">
                     <g:form controller="globalSearch" action="index" method="get">
@@ -226,48 +226,6 @@
     <div id="page-wrapper" class="${ params.controller ?: 'default' }-display" >
       <div class="row" >
         <div id="page-content" class="col-lg-12">
-          <g:if test="${flash.error}">
-            <div id="error" style="display:none">
-              <ul>
-              <g:if test="${flash.error instanceof String}">
-                <li>${flash.error}</li>
-              </g:if>
-              <g:else>
-                <g:each in="${flash.error}" var="error">
-                  <li>${error}</li>
-                </g:each>
-              </g:else>
-              </ul>
-            </div>
-          </g:if>
-          <g:elseif test="${flash.success}">
-            <div id="success" style="display:none">
-              <ul>
-              <g:if test="${flash.success instanceof String}">
-                <li>${flash.success}</li>
-              </g:if>
-              <g:else>
-                <g:each in="${flash.success}" var="success">
-                  <li>${success}</li>
-                </g:each>
-              </g:else>
-              </ul>
-            </div>
-          </g:elseif>
-          <g:elseif test="${flash.message}">
-            <div id="msg" style="display:none">
-              <ul>
-              <g:if test="${flash.message instanceof String}">
-                <li>${flash.message}</li>
-              </g:if>
-              <g:else>
-                <g:each in="${flash.message}" var="msg">
-                  <li>${msg}</li>
-                </g:each>
-              </g:else>
-              </ul>
-            </div>
-          </g:elseif>
           <g:layoutBody />
         </div>
         <!-- /.col-lg-12 -->

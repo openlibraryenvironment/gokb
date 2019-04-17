@@ -25,14 +25,18 @@ class InplaceTagLib {
     boolean cur = request.curator != null ? request.curator.size() > 0 : true
     
     // Default editable value.
-    boolean tl_editable = cur || (params.curationOverride == "true")
-    
-    if ( tl_editable && owner?.respondsTo("isEditable") ) {
-      tl_editable = owner.isEditable() || ( user.equals(owner) )
+    boolean tl_editable = owner?.isEditable() ?: true 
+
+    if ( !tl_editable && owner?.class?.name == 'org.gokb.cred.User') {
+      tl_editable = user.equals(owner)
     }
 
-    if ( !tl_editable ) {
-      tl_editable = baseClass?.isTypeAdministerable()
+    if ( tl_editable && owner?.respondsTo('getCuratoryGroups')) {
+      tl_editable = (cur || params.curationOverride == "true")
+    }
+
+    if ( !tl_editable && !owner?.respondsTo('getCuratoryGroups') && baseClass?.isTypeAdministerable()) {
+      tl_editable = true
     }
 
     if ( !tl_editable && owner?.class?.name == 'org.gokb.cred.Combo' ) {
@@ -89,7 +93,10 @@ class InplaceTagLib {
     attrs."data-format" = attrs."data-format" ?: 'yyyy-MM-dd'
 
     out << "<span id=\"${id}\" class=\"xEditableValue ${attrs.class?:''} ${attrs.type == 'date' ? 'date' : ''}\""
-    
+
+    if (attrs.inputclass) {
+      out << " data-inputclass=\"${attrs.inputclass}\""
+    }
     if ( oid && ( oid != '' ) ) out << " data-pk=\"${oid}\""
     out << " data-name=\"${attrs.field}\""
     
@@ -312,9 +319,9 @@ class InplaceTagLib {
       out << "data-elastic=\"${attrs.elastic}\""
     }
 
-    if ( attrs.required )
-
-      out << "data-required=\"true\" "
+    if ( attrs.require ) {
+      out << "data-require=\"true\" "
+    }
 
     if ( attrs.filter1 ) {
       out << "data-filter1=\"${attrs.filter1}\" "

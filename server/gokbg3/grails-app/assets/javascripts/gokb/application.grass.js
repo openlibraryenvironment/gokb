@@ -239,7 +239,7 @@ window.gokb = {
               q: term,
               baseClass:$(this).data('domain'),
               filter1:$(this).data('filter1'),
-              addEmpty:'Y'
+              addEmpty:($(this).data('require') ? 'N' : 'Y')
             };
           },
           results: function (data, page) {
@@ -293,7 +293,7 @@ window.gokb = {
                 q: term,
                 baseClass:dom,
                 filter1:filter1,
-                addEmpty:'Y'
+                addEmpty:($(this).data('required') ? 'N' : 'Y')
               }
             },
             results: function (data, page) {

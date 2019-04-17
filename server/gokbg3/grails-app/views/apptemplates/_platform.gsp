@@ -36,16 +36,27 @@
 </dl>
 
 <div id="content">
-
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
-    <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps?.findAll{ it.status.value == 'Current'}?.size() ?: '0'}</span> </a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
-    <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
-    <li><a href="#review" data-toggle="tab">Review Tasks <span
-        class="badge badge-warning">
-          ${d.reviewRequests?.size() ?: '0'}
-      </span></a></li>
+    <g:if test="${d.id}">
+      <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps?.findAll{ it.status.value == 'Current'}?.size() ?: '0'}</span> </a></li>
+      <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
+      <g:if test="${grailsApplication.config.gokb.decisionSupport}">
+        <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+      </g:if>
+      <li><a href="#review" data-toggle="tab">Review Tasks <span
+          class="badge badge-warning">
+            ${d.reviewRequests?.size() ?: '0'}
+        </span></a></li>
+    </g:if>
+    <g:else>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Hosted TIPPs </span></li>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
+      <g:if test="${grailsApplication.config.gokb.decisionSupport}">
+        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
+      </g:if>
+      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
+    </g:else>
   </ul>
 
 
@@ -109,10 +120,10 @@
         TIPPs can be added after the creation process has been finished.
       </g:else>
     </div>
-        
+
     <g:render template="/tabTemplates/showVariantnames"
       model="${[d:displayobj, showActions:true]}" />
-            
+
     <div class="tab-pane" id="ds">
       <g:render template="/apptemplates/dstab" model="${[d:d]}" />
     </div>
@@ -124,7 +135,9 @@
 
 
   </div>
-  <g:render template="/apptemplates/componentStatus"
-    model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  <g:if test="${d.id}">
+    <g:render template="/apptemplates/componentStatus"
+      model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+  </g:if>
 
 </div>

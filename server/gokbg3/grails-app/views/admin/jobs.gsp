@@ -8,6 +8,12 @@
   <h1 class="page-header">
   <span class="pull-right">${cms.executorService.executor.activeCount} out of ${cms.executorService.executor.poolSize} threads In use</span>
   Jobs</h1>
+  <div style="margin:10px 0px;text-align:right">
+    <button style="margin-left:10px;" class="btn btn-default pull-right" value="Refresh Page" onClick="window.location.reload()">Reload <i class="fa fa-refresh" aria-hidden="true"></i></button>
+    <g:form controller="admin" action="cleanJobList">
+      <button onClick="clearList()" class="btn btn-default">Clean Job List</button>
+    </g:form>
+  </div>
   <table class="table table-bordered">
     <thead>
       <tr>
@@ -62,5 +68,10 @@
       </g:each>
     </tbody>
   </table>
+  <asset:script type="text/javascript" >
+    function clearList() {
+
+    }
+  </asset:script>
 </body>
 </html>

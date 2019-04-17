@@ -166,67 +166,71 @@ class SearchController {
       }
     }
 
-    def apiresponse = null
-    if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
-      apiresponse = [:]
-      apiresponse.count = result.reccount
-      apiresponse.max = result.max
-      apiresponse.offset = result.offset
-      apiresponse.records = []
-      result.recset.each { r ->
-        def response_record = [:]
-        response_record.oid = "${r.class.name}:${r.id}"
-        result.qbetemplate.qbeConfig.qbeResults.each { rh ->
-          response_record[rh.heading] = groovy.util.Eval.x(r, 'x.' + rh.property)
-        }
-        apiresponse.records.add(response_record);
-      }
-    } else {
-      result.new_recset = []
-      log.debug("Create new recset..")
-      result.recset.each { r ->
-        def response_record = [:]
-        response_record.oid = "${r.class.name}:${r.id}"
-        response_record.obj = r
-        response_record.cols = []
-        result.qbetemplate.qbeConfig.qbeResults.each { rh ->
-          def ppath = rh.property.split(/\./)
-          def cobj = r
-          def final_oid = "${cobj.class.name}:${cobj.id}"
+    def apiresponse = ['count': result.reccount, 'max': result.max, 'offset': result.offset, records: []]
 
-          if (!params.hide || !params.hide.contains(rh.qpEquiv)) {
+    result.new_recset = []
+    log.debug("Create new recset..")
+    result.recset.each { r ->
+      def response_record = [:]
+      response_record.oid = "${r.class.name}:${r.id}"
+      response_record.obj = r
+      response_record.cols = []
+      def api_record = ['oid': response_record.oid]
 
-            ppath.eachWithIndex { prop, idx ->
-              def sp = prop.minus('?')
+      result.qbetemplate.qbeConfig.qbeResults.each { rh ->
+        def ppath = rh.property.split(/\./)
+        def cobj = r
+        def final_oid = "${cobj.class.name}:${cobj.id}"
 
-              if( cobj?.class?.name == 'org.gokb.cred.RefdataValue' ) {
-                cobj = cobj.value
-              }
-              else {
-                if ( cobj && KBComponent.has(cobj, sp)) {
-                  cobj = cobj[sp]
+        if (!params.hide || !params.hide.contains(rh.qpEquiv)) {
 
-                  if (ppath.size() > 1 && idx == ppath.size()-2) {
-                    if (cobj && sp != 'class') {
-                      final_oid = "${cobj.class.name}:${cobj.id}"
-                    }
-                    else {
-                      final_oid = null
-                    }
+          ppath.eachWithIndex { prop, idx ->
+            def sp = prop.minus('?')
+
+            if( cobj?.class?.name == 'org.gokb.cred.RefdataValue' ) {
+              cobj = cobj.value
+            }
+            else {
+              if ( cobj && KBComponent.has(cobj, sp)) {
+                def oobj = cobj
+
+                cobj = cobj[sp]
+
+                if ( sp == 'name' && !cobj && oobj.respondsTo('getDisplayName')) {
+                  cobj = oobj.displayName
+                }
+
+                if (ppath.size() > 1 && idx == ppath.size()-2) {
+                  if (cobj && sp != 'class') {
+                    final_oid = "${cobj.class.name}:${cobj.id}"
+                  }
+                  else {
+                    final_oid = null
                   }
                 }
-                else {
-                  cobj = null
-                }
+              }
+              else {
+                cobj = null
               }
             }
+          }
+          if( response.format == 'json' || response.format == 'xml' ) {
+            api_record['oid'] = response_record.oid
+            api_record["${rh.heading}"] = cobj ?: null
+          }
+          else {
             response_record.cols.add([link: (rh.link ? (final_oid ?: response_record.oid ) : null), value: (cobj ?: '-Empty-')])
           }
         }
+      }
+      if( response.format == 'json' || response.format == 'xml' ) {
+        apiresponse.records.add(api_record)
+      }
+      else {
         result.new_recset.add(response_record)
       }
-      log.debug("Finished new recset!")
     }
+    log.debug("Finished new recset!")
 
     result.withoutJump = cleaned_params
     result.remove('jumpToPage');

@@ -77,16 +77,16 @@ class UserDetailsInterceptor {
                 }
               }
               // Add if creatable.
-              if ( tc.isTypeCreatable() && displayTemplateService.getTemplateInfo(d.dcName)?.size() > 0) {
-                if ( d.dcName == 'org.gokb.cred.TitleInstancePackagePlatform' ) {
-                  // Suppress for now.
-                  log.error ("TitleInstancePackagePlatform.isTypeCreatable() is testing true!!")
+              if ( tc.isTypeCreatable() ) {
+                def display_template = displayTemplateService.getTemplateInfo(d.dcName)
+
+                if ( display_template  && !display_template.noCreate) {
+                  menus["create"]["${d.type.value}"] << [
+                    text : d.displayName,
+                    link : ['controller' : 'create', 'action' : 'index', 'params' : [tmpl:d.dcName]],
+                    attr : ['title' : "New ${d.displayName}"]
+                  ]
                 }
-                menus["create"]["${d.type.value}"] << [
-                  text : d.displayName,
-                  link : ['controller' : 'create', 'action' : 'index', 'params' : [tmpl:d.dcName]],
-                  attr : ['title' : "New ${d.displayName}"]
-                ]
               }
             }
           }
