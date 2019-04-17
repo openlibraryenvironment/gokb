@@ -402,19 +402,19 @@ class AjaxSupportController {
       }
       else if (!contextObj) {
         log.debug("Unable to locate instance of context class with oid ${params.__context}");
-        flash.error = "Context object could not be found!"
+        flash.error = message(code:'component.context.notFound.label')
       }
       else {
         log.debug("Located instance of context class with oid ${params.__context} is not editable.");
-        flash.error = "Permission to add to this list was denied."
+        flash.error = message(code:'component.addToList.denied.label')
       }
     }
     else {
       if(!domain_class) {
         log.error("Unable to lookup domain class ${params.__newObjectClass}");
-        flash.error = "Could not find domain class ${params.__newObjectClass}. Please report this to an admin.".toString()
+        flash.error = message(code:'component.classNotFound.label', args:[params.__newObjectClass])
       }else{
-        flash.error = "No permission to create an object of domain class ${params.__newObjectClass}.".toString()
+        flash.error = message(code:'component.create.denied.label', args:[params.__newObjectClass])
         log.error("No permission to create an object of domain class ${params.__newObjectClass}");
       }
     }
@@ -483,17 +483,17 @@ class AjaxSupportController {
       }
     }
     else if (!contextObj) {
-      flash.error = "Context object could not be found!"
+      flash.error = message(code:'component.context.notFound.label')
       result.result = 'ERROR'
       result.error = "Context object could not be found!"
     }
     else if (!relatedObj) {
-      flash.error = "Item to add could not be found!"
+      flash.error = message(code:'component.listItem.notFound.label')
       result.result = 'ERROR'
-      result.error = "Item to add could not be found!"
+      result.error = "List item not found!"
     }
     else {
-      flash.error = "Permission to add to this list was denied."
+      flash.error = message(code:'component.list.add.denied.label')
       log.debug("context object not editable.")
       result.result = 'ERROR'
       result.error = "Permission to add to this list was denied."
@@ -583,16 +583,17 @@ class AjaxSupportController {
         }
       } else {
         log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
+        flash.error(code:'component.listItem.notFound.label')
       }
     }
     else if (!contextObj) {
-      flash.error = "Context object could not be found!"
+      flash.error = message(code:'component.context.notFound.label')
       log.debug("Unable to locate instance of context class with oid ${params.__context}");
       result.result = 'ERROR'
       result.code = 404
     }
     else {
-      flash.error = "No Permission to remove from this list."
+      flash.error = message(code:'component.list.remove.denied.label')
       log.debug("Located instance of context class with oid ${params.__context} is not editable.");
       result.result = 'ERROR'
       result.code = 403
@@ -639,11 +640,11 @@ class AjaxSupportController {
       log.debug("Item deleted.")
     }
     else if (!contextObj) {
-      flash.error = "Could not locate item to delete!"
+      flash.error = message(code:'component.notFound.label', args:[params.__context])
       log.debug("Unable to locate instance of context class with oid ${params.__context}");
     }
     else {
-      flash.error = "Permission to delete object denied."
+      flash.error = message(code:'component.delete.denied.label')
       log.debug("Located instance of context class with oid ${params.__context} is not editable.");
     }
 
@@ -750,6 +751,9 @@ class AjaxSupportController {
     if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.dateFormat ?: 'yyyy-MM-dd')
+      }
+      else if (params.name == 'uuid') {
+        errors.add("This property is not editable.")
       }
       else {
         def binding_properties = [:]
@@ -860,7 +864,7 @@ class AjaxSupportController {
     def target=genericOIDService.resolveOID(params.pk)
     def value=genericOIDService.resolveOID(params.value)
 
-    def result = null
+    def result = ['result':'OK']
 
     if ( target != null && target.isEditable()) {
       // def binding_properties = [ "${params.name}":value ]
@@ -881,23 +885,26 @@ class AjaxSupportController {
         }
         else {
           if ( value ) {
-            result = renderObjectValue(value);
+            result.objVal = renderObjectValue(value);
             // result = value.toString()
           }
         }
       }
       else {
         log.error("Problem saving.. ${target.errors}");
-        result="ERROR"
+        result.errors = processErrors(target.errors.allErrors)
+        result.result = "ERROR"
       }
     }
     else {
       log.error("no type (target=${params.pk}, value=${params.value}) or not editable");
+      result.result = "ERROR"
+      result.errors = ["Not able to edit this property!"]
     }
 
-    def resp = [ newValue: target[params.name] ]
-    log.debug("return ${resp}");
-    render resp as JSON
+    result.newValue = target[params.name]
+    log.debug("return ${result}");
+    render result as JSON
   }
 
   def renderObjectValue(value) {
@@ -957,7 +964,7 @@ class AjaxSupportController {
           flash.error = message(code:'identifier.value.IllegalIDForm')
         }
       }else{
-        flash.error = "Could not create Identifier"
+        flash.error = message(code:'identifier.create.error')
         log.debug("could not create identifier!")
       }
     }
@@ -973,7 +980,7 @@ class AjaxSupportController {
         }
         else {
           result.new_obj = identifier_instance
-          resutl.new_oid = "${identifier_instance.class.name}:${identifier_instance.id}"
+          result.new_oid = "${identifier_instance.class.name}:${identifier_instance.id}"
         }
 
         render result as JSON
@@ -1168,19 +1175,21 @@ class AjaxSupportController {
         result.result = 'ERROR'
         result.code = 400
         result.message = "This name already belongs to another component of the same type!"
-        flash.error = "This name already belongs to another component of the same type!"
+        flash.error = message(code:'variantName.authorize.notUnique')
       }
     }
     else if (!variant) {
       result.result = 'ERROR'
       result.code = 404
-      result.message = "Could not find variant!"
+      result.message = "Variant with id ${params.id} not found!".toString()
+      def vname = message(code:'variantName.label')
+      flash.message = message(code:'default.not.found.message', args:[vname, params.id])
     }
     else {
       result.result = 'ERROR'
       result.code = 403
-      result.message = "Owner object is not editable!"
-      flash.error = "Owner object is not editable!"
+      result.message = "No permission to edit variants for this object!"
+      flash.error = message(code:'variantName.owner.denied')
     }
 
     withFormat {
@@ -1228,12 +1237,15 @@ class AjaxSupportController {
     else if (!variant) {
       result.result = 'ERROR'
       result.code = 404
-      result.message = "Could not find variant!"
+      def vname = message(code:'variantName.label')
+      flash.error = message(code:'default.not.found.message', args:[vname, params.id])
+      result.message = "Variant with id ${params.id} not found!".toString()
     }
     else {
       result.result = 'ERROR'
       result.code = 403
-      result.message = "Owner object is not editable!"
+      result.message = "No permission to edit variants for this object!"
+      flash.error = message(code:'variantName.owner.denied')
     }
 
     withFormat {
@@ -1276,12 +1288,15 @@ class AjaxSupportController {
     else if (!tcs) {
       result.result = 'ERROR'
       result.code = 404
-      result.message = "Could not find coverage statement!"
+      def vname = message(code:'TIPPCoverageStatement.label')
+      result.message = "TIPPCoverageStatement with id ${params.id} not found!".toString()
+      flash.error = message(code:'default.not.found.message', args:[vname, params.id])
     }
     else {
       result.result = 'ERROR'
       result.code = 403
       result.message = "This TIPP is not editable!"
+      flash.error = message(code:'tipp.coverage.denied.label')
     }
 
     withFormat {
@@ -1311,12 +1326,18 @@ class AjaxSupportController {
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def deleteCombo() {
+    def result = ['result': "OK", 'params': params]
     Combo c = Combo.get(params.id);
-    if (c.fromComponent.isEditable()) {
+    if (c.fromComponent?.isEditable()) {
       log.debug("Delete combo..")
       c.delete(flush:true);
     }
     else{
+      def fcomp = (c.fromComponent?.logEntityId ?: "Combo ${params.id}")
+      result.code = 403
+      result.message = "Not deleting combo.. no edit permissions on ${fcomp}!".toString()
+      result.result = 'ERROR'
+      flash.error = message(code:'combo.fromComponent.denied.label', args:[fcomp])
       log.debug("Not deleting combo.. no edit permissions on fromComponent!")
     }
 
