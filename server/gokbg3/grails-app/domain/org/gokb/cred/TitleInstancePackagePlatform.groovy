@@ -104,7 +104,11 @@ class TitleInstancePackagePlatform extends KBComponent {
     startDate (nullable:true, blank:true)
     startVolume (nullable:true, blank:true)
     startIssue (nullable:true, blank:true)
-    endDate (nullable:true, blank:true)
+    endDate (validator: { val, obj ->
+      if(obj.startDate && val && obj.startDate > val) {
+        return ['endDate.endPriorToStart']
+      }
+    })
     endVolume (nullable:true, blank:true)
     endIssue (nullable:true, blank:true)
     embargo (nullable:true, blank:true)
@@ -118,7 +122,11 @@ class TitleInstancePackagePlatform extends KBComponent {
     primary (nullable:true, blank:true)
     paymentType (nullable:true, blank:true)
     accessStartDate (nullable:true, blank:false)
-    accessEndDate (nullable:true, blank:false)
+    accessEndDate (validator: { val, obj ->
+      if(obj.accessStartDate && val && obj.accessStartDate > val) {
+        return ['accessEndDate.endPriorToStart']
+      }
+    })
     url (nullable:true, blank:true)
   }
 
