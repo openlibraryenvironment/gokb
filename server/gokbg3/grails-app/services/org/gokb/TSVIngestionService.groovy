@@ -1140,7 +1140,7 @@ class TSVIngestionService {
     def tipp_values = [
       url:the_kbart.title_url?:'',
       embargo:the_kbart.embargo_info?:'',
-      coverageDepth:the_kbart.coverage_depth?:'',
+      coverageDepth:RefdataCategory.lookup('TitleInstancePackagePlatform.CoverageDepth', the_kbart.coverageDepth),
       coverageNote:the_kbart.coverage_note?:'',
       startDate:parseDate(the_kbart.date_first_issue_online),
       startVolume:the_kbart.num_first_vol_online,
