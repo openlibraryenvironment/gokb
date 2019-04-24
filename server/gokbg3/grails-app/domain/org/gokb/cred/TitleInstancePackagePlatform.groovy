@@ -421,7 +421,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (!cs_match) {
-            tipp.addToCoverageStatements('startVolume': c.startVolume, 'startIssue':c.startIssue, 'endVolume': c.endVolume, 'endIssue': c.endIssue, 'embargo':c.embargo, 'coverageDepth': c.coverageDepth, 'coverageNote': c.coverageNote, 'startDate': parsedStart, 'endDate': parsedEnd)
+            tipp.addToCoverageStatements('startVolume': c.startVolume, \
+             'startIssue':c.startIssue, \
+             'endVolume': c.endVolume, \
+             'endIssue': c.endIssue, \
+             'embargo':c.embargo, \
+//             'coverageDepth': c.coverageDepth, \
+             'coverageNote': c.coverageNote, \
+             'startDate': parsedStart, \
+             'endDate': parsedEnd)
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
         }
