@@ -11,6 +11,7 @@ class TIPPCoverageStatement {
   String startIssue
   String embargo
   String coverageNote
+  RefdataValue coverageDepth
   Date endDate
   String endVolume
   String endIssue
@@ -28,6 +29,7 @@ class TIPPCoverageStatement {
     endIssue column:'tipp_end_issue'
     embargo column:'tipp_embargo'
     coverageNote column:'tipp_coverage_note',type: 'text'
+    coverageDepth column:'tipp_coverage_depth'
   }
 
   static constraints = {
@@ -43,6 +45,7 @@ class TIPPCoverageStatement {
     endIssue (nullable:true, blank:true)
     embargo (nullable:true, blank:true)
     coverageNote (nullable:true, blank:true)
+    coverageDepth (nullable:true, blank:true)
   }
 
   def afterUpdate() {
