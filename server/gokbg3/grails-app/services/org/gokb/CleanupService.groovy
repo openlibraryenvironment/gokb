@@ -563,6 +563,79 @@ class CleanupService {
     j.endTime = new Date()
   }
 
+  def reviewDates(Job j = null) {
+    log.debug("Adding Reviews to components with inconsistent dates")
+    TitleInstancePackagePlatform.withNewSession {
+      def tippCoverageDates = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement where endDate < startDate",[readOnly: true])
+
+      log.debug("Found ${tippCoverageDates.size()} offending coverageStatements")
+      j.message("Found ${tippCoverageDates.size()} offending coverageStatements".toString())
+
+      tippCoverageDates.each { tcs ->
+        if (tcs.id){
+          KBComponent kbc = KBComponent.get(tcs.owner.id)
+
+          if (kbc) {
+            ReviewRequest.raise(
+              kbc,
+              "Please review coverage dates.",
+              "Found an end date before start date!."
+            )
+          }
+          else {
+            log.debug("Could not get KBComponent for ${tcs}!")
+          }
+        }
+      }
+
+      def tippAccessDates = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform where accessEndDate < accessStartDate",[readOnly: true])
+
+      log.debug("Found ${tippAccessDates.size()} offending tipp access dates")
+      j.message("Found ${tippAccessDates.size()} offending tipp access dates".toString())
+
+      tippAccessDates.each { tcs ->
+        if (tcs.id){
+          KBComponent kbc = KBComponent.get(tcs.id)
+
+          if (kbc) {
+            ReviewRequest.raise(
+              kbc,
+              "Please review coverage dates.",
+              "Found an end date before start date!."
+            )
+          }
+          else {
+            log.debug("Could not get KBComponent for ${tcs}!")
+          }
+        }
+      }
+
+      def titleDates = TitleInstance.executeQuery("from TitleInstance where publishedTo < publishedFrom",[readOnly: true])
+
+      log.debug("Found ${titleDates.size()} offending publishing dates")
+      j.message("Found ${titleDates.size()} offending publishing dates".toString())
+
+      titleDates.each { tcs ->
+        if (tcs.id){
+          KBComponent kbc = KBComponent.get(tcs.id)
+
+          if (kbc) {
+            ReviewRequest.raise(
+              kbc,
+              "Please review coverage dates.",
+              "Found an end date before start date!."
+            )
+          }
+          else {
+            log.debug("Could not get KBComponent for ${tcs}!")
+          }
+        }
+      }
+    }
+    log.debug("Done");
+    j.endTime = new Date()
+  }
+
   def cleanUpGorm() {
     log.debug("Clean up GORM");
     def session = sessionFactory.currentSession

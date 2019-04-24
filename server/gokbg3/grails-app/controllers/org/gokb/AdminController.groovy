@@ -172,6 +172,17 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def markInconsistentDates() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.reviewDates(j)
+    }.startOrQueue()
+
+    j.description = "Mark insonsistent date ranges"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def copyUploadedFile(inputfile, deposit_token) {
 
    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
@@ -288,6 +299,9 @@ class AdminController {
         }
         catch (CancellationException e) {
           log.debug("Cancelled")
+        }
+        catch (Exception e) {
+          j.message("There has been an exception processing this job! Please check the logs!")
         }
       }
     }
