@@ -65,7 +65,7 @@ dependencies {
     compile "org.grails.plugins:gsp"
     compile "org.grails.plugins:mail:2.0.0"
     compile 'org.grails.plugins:greenmail:2.0.0.RC2'
-    compile 'org.grails.plugins:cache-headers:2.0.1'
+    compile 'org.grails.plugins:cache-headers:2.0.2'
     compile 'org.grails.plugins:database-migration:3.0.3'
 
     compile 'org.grails.plugins:spring-security-core:3.2.1'
@@ -121,7 +121,7 @@ bootRun {
 buildProperties.doLast {
     // Find the right file
 
-    File grailsBuildInfoFile = it.outputs.files.files.find { it.name == 'grails.build.info' }
+    File grailsBuildInfoFile = (File) it.outputs.files.files.find { it.name == 'grails.build.info' }
     File grailsGitInfoFile = file("$buildDir/resources/main/git.properties")
     if(!grailsBuildInfoFile) {
       println "Build file not found!"
@@ -151,7 +151,6 @@ buildProperties.doLast {
     // Get the host name where the build was created
     // properties.setProperty('build.host', InetAddress.localHost.hostName)
 
-    Map<String, String> env = System.getenv()
     if(grailsGitInfoFile) {
         properties.setProperty('build.git.revision', gitProperties.getProperty('git.commit.id.abbrev'))
         properties.setProperty('build.git.branch', gitProperties.getProperty('git.branch'))
