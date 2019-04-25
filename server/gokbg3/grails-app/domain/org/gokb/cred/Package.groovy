@@ -618,9 +618,10 @@ select tipp.id,
     log.debug("Checking by normname ${pkg_normname} ..")
     def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ? ",[pkg_normname, status_deleted])
     def full_matches = []
-    def result = false;
+    def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
+    boolean changed = false;
 
-    if(name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0){
+    if(!result && name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0){
       log.debug("Got ${name_candidates.size()} matches by name. Checking against identifiers!")
       name_candidates.each { mp ->
         if(mp.ids.size() > 0){
@@ -652,18 +653,25 @@ select tipp.id,
         return result
       }
     }
-    else if (name_candidates.size() == 1) {
+    else if (!result && name_candidates.size() == 1) {
       log.debug("Matched package by name!")
       result = name_candidates[0]
+    }
+    else if (result && result.name != packageHeaderDTO.name) {
+      def current_name = result.name
+      changed |= ClassUtils.setStringIfDifferent(result, 'name', packageHeaderDTO.name)
+      if(!result.variantNames.find {it.variantName == current_name}) {
+        def new_variant = new KBComponentVariantName(owner: result, variantName: current_name).save(flush:true, failOnError:true)
+      }
     }
 
     if( !result ){
       log.debug("Did not find a match via name, trying existing variantNames..")
       def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
-      def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_normname, status_deleted]);
+      def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_normname, status_deleted]);
 
-      if ( candidate_pkgs.size() == 1 ){
-        result = candidate_pkgs[0]
+      if ( variant_candidates.size() == 1 ){
+        result = variant_candidates[0]
         log.debug("Package matched via existing variantName.")
       }
     }
@@ -680,11 +688,11 @@ select tipp.id,
           }else{
 
             def variant_normname = GOKbTextUtils.normaliseString(it)
-            def candidate_pkgs = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_normname, status_deleted]);
+            def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_normname, status_deleted]);
 
-            if ( candidate_pkgs.size() == 1 ){
+            if ( variant_candidates.size() == 1 ){
               log.debug("Found existing package variant name for variantName ${it}")
-              result = candidate_pkgs[0]
+              result = variant_candidates[0]
             }
           }
         }
@@ -709,9 +717,6 @@ select tipp.id,
         return result
       }
     }
-
-
-    boolean changed = false;
 
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result.id, 'listStatus')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result.id, 'status')
