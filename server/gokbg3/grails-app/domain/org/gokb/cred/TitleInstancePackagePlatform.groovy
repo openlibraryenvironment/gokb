@@ -196,16 +196,18 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   /**
-   * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
+   * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */ 
   @Transient
   public static boolean validateDTO(tipp_dto) {
     def result = true;
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS")
     result &= tipp_dto.package?.internalId != null
     result &= tipp_dto.platform?.internalId != null
     result &= tipp_dto.title?.internalId != null
     for(def coverage : tipp_dto.coverage){
         result &= ['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth.toLowerCase())
+        result &= !(coverage.startDate && coverage.endDate && (sdf.parse(coverage.endDate) < sdf.parse(coverage.startDate)))
     }
 
     if ( !result ) 
@@ -215,7 +217,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   /**
-   * Please see https://github.com/k-int/gokb-phase1/wiki/tipp_dto
+   * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */ 
   @Transient
   static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
