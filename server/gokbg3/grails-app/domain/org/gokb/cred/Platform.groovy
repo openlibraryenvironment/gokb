@@ -26,10 +26,15 @@ class Platform extends KBComponent {
   ]
   
   static manyByCombo = [
+    hostedPackages : Package,
     hostedTipps : TitleInstancePackagePlatform,
     linkedTipps : TitleInstancePackagePlatform,
     hostedTitles : TitleInstancePlatform,
     curatoryGroups  : CuratoryGroup
+  ]
+
+  static mappedByCombo = [
+    hostedPackages : 'nominalPlatform'
   ]
 
   static mapping = {

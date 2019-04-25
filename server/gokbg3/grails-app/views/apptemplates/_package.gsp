@@ -194,7 +194,7 @@
               model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                         [expr:'toComponent.namespace.value', colhead:'Namespace'],
                         [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-            <g:if test="${d.isEditable()}">
+            <g:if test="${editable}">
               <h4>
                 <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
               </h4>
