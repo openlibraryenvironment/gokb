@@ -44,7 +44,7 @@
           </a>
         </li>
         <li>
-          <a href="#ids" data-toggle="tab">
+          <a href="#identifiers" data-toggle="tab">
             IDs
             <span class="badge badge-warning"> ${d.ids?.size() ?: '0'}</span>
           </a>
@@ -133,7 +133,7 @@
 
         <g:render template="/tabTemplates/showVariantnames" model="${[d:d, showActions:true]}" />
 
-        <div class="tab-pane" id="ids">
+        <div class="tab-pane" id="identifiers">
           <dl>
             <dt>
               <g:annotatedLabel owner="${d}" property="ids">Identifiers</g:annotatedLabel>
