@@ -131,6 +131,9 @@ environments:
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
+        cache:
+            headers:
+                enabled: false
     test:
         dataSource:
             dbCreate: create-drop
@@ -160,6 +163,9 @@ environments:
                 port: 3025
         quartz:
             pluginEnabled: false
+        cache:
+            headers:
+                enabled: false
     production:
         dataSource:
             dbCreate: update

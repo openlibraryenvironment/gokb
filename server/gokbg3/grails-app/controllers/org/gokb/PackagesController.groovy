@@ -491,26 +491,24 @@ class PackagesController {
       def out = response.outputStream
       out.withWriter { writer ->
 
-        def sanitize = { it ? "${it}".trim() : "" }
-
-
+          def sanitize = { it ? "${it}".trim() : "" }
 
 
           // As per spec header at top of file / section
           writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
 
-          writer.write('TIPP ID	TIPP URL	Title ID	Title	TIPP Status	[TI] Publisher	[TI] Imprint	[TI] Published From	[TI] Published to	[TI] Medium	[TI] OA Status	'+
-                     '[TI] Continuing series	[TI] ISSN	[TI] EISSN	Package	Package ID	Package URL	Platform	'+
-                     'Platform URL	Platform ID	Reference	Edit Status	Access Start Date	Access End Date	Coverage Start Date	'+
-                     'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
-                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
+          writer.write('TIPP ID\tTIPP URL\tTitle ID\tTitle\tTIPP Status\t[TI] Publisher\t[TI] Imprint\t[TI] Published From\t[TI] Published to\t[TI] Medium\t[TI] OA Status\t' +
+                  '[TI] Continuing series\t[TI] ISSN\t[TI] EISSN\tPackage\tPackage ID\tPackage URL\tPlatform\t' +
+                  'Platform URL\tPlatform ID\tReference\tEdit Status\tAccess Start Date\tAccess End Date\tCoverage Start Date\t' +
+                  'Coverage Start Volume\tCoverage Start Issue\tCoverage End Date\tCoverage End Volume\tCoverage End Issue\t' +
+                  'Embargo\tCoverage depth\tCoverage note\tHost Platform URL\tFormat\tPayment Type\n');
 
           def session = sessionFactory.getCurrentSession()
           def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
           def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
           query.setReadOnly(true)
-          query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
+          query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
           query.setParameter('sd', status_deleted)
           query.setParameter('ct', combo_tipps)
 
@@ -518,31 +516,29 @@ class PackagesController {
 
           while (tipps.next()) {
 
-            def tipp_id = tipps.get(0);
-            TitleInstancePackagePlatform.withNewSession {
-              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+              def tipp_id = tipps.get(0);
+              TitleInstancePackagePlatform.withNewSession {
+                  TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
-              writer.write( sanitize( tipp.getId() ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.getId() ) + '\t' + sanitize( tipp.title.name ) + '\t' +
-                            sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
-                            sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.OAStatus?.value ) + '\t' +
-                            sanitize( tipp.title.continuingSeries?.value ) + '\t' +
-                            sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                            sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
-                            sanitize( pkg.name ) + '\t' + sanitize( pkg.getId() ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
-                            sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.getId() ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
-                            sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
-                            sanitize( tipp.endVolume ) + '\t' + sanitize( tipp.endIssue ) + '\t' + sanitize( tipp.embargo ) + '\t' + sanitize( tipp.coverageNote ) + '\t' + sanitize( tipp.hostPlatform.primaryUrl ) + '\t' +
-                            sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) +
-                            '\n');
-              tipp.discard();
-            }
+                  writer.write(sanitize(tipp.getId()) + '\t' + sanitize(tipp.url) + '\t' + sanitize(tipp.title.getId()) + '\t' + sanitize(tipp.title.name) + '\t' +
+                          sanitize(tipp.status.value) + '\t' + sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' + sanitize(tipp.title.imprint?.name) + '\t' + sanitize(tipp.title.publishedFrom) + '\t' +
+                          sanitize(tipp.title.publishedTo) + '\t' + sanitize(tipp.title.medium?.value) + '\t' + sanitize(tipp.title.OAStatus?.value) + '\t' +
+                          sanitize(tipp.title.continuingSeries?.value) + '\t' +
+                          sanitize(tipp.title.getIdentifierValue('ISSN')) + '\t' +
+                          sanitize(tipp.title.getIdentifierValue('eISSN')) + '\t' +
+                          sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' + '\t' + sanitize(tipp.hostPlatform.name) + '\t' +
+                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' + sanitize(tipp.hostPlatform.getId()) + '\t\t' + sanitize(tipp.status?.value) + '\t' + sanitize(tipp.accessStartDate) + '\t' +
+                          sanitize(tipp.accessEndDate) + '\t' + sanitize(tipp.startDate) + '\t' + sanitize(tipp.startVolume) + '\t' + sanitize(tipp.startIssue) + '\t' + sanitize(tipp.endDate) + '\t' +
+                          sanitize(tipp.endVolume) + '\t' + sanitize(tipp.endIssue) + '\t' + sanitize(tipp.embargo) + '\t' + sanitize(tipp.coverageDepth) + '\t' + sanitize(tipp.coverageNote) + '\t' + sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                          sanitize(tipp.format?.value) + '\t' + sanitize(tipp.paymentType?.value) +
+                          '\n');
+                  tipp.discard();
+              }
           }
-        }
-
-        tipps.close()
-        
-        writer.flush();
-        writer.close();
+          tipps.close()
+          writer.flush();
+          writer.close();
+      }
       out.close()
     }
     catch ( Exception e ) {
