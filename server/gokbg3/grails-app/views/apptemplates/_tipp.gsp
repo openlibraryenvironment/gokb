@@ -143,6 +143,7 @@
               <th>End Volume</th>
               <th>End Issue</th>
               <th>Embargo</th>
+              <th>Note</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -161,6 +162,7 @@
                   <td><g:xEditable class="ipe" owner="${cs}" field="endVolume" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="endIssue" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="embargo" /></td>
+                  <td><g:xEditable class="ipe" owner="${cs}" field="coverageNote" /></td>
                   <td><g:if test="${editable}"><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></g:if></td>
                 </tr>
               </g:each>

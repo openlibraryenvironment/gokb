@@ -808,11 +808,16 @@ class AjaxSupportController {
       def errorMessage = null
 
       eo.getArguments().each { ma ->
-        log.debug("${ma.class.name}")
-        String[] emptyArgs = []
-        def arg = messageSource.resolveCode(ma, request.locale).format(emptyArgs)
+        log.debug("message arg type is: ${ma?.class?.name ?: 'null'}")
+        if (ma && ma instanceof String) {
+          String[] emptyArgs = []
+          def arg = messageSource.resolveCode(ma, request.locale).format(emptyArgs)
 
-        resolvedArgs.add(arg)
+          resolvedArgs.add(arg)
+        }
+        else {
+          resolvedArgs.add(ma)
+        }
       }
 
       String[] messageArgs = resolvedArgs
