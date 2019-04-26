@@ -205,13 +205,10 @@ class TitleInstancePackagePlatform extends KBComponent {
     result &= tipp_dto.package?.internalId != null
     result &= tipp_dto.platform?.internalId != null
     result &= tipp_dto.title?.internalId != null
-<<<<<<< HEAD
     for(def coverage : tipp_dto.coverage){
         result &= ['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth.toLowerCase())
         result &= !(coverage.startDate && coverage.endDate && (sdf.parse(coverage.endDate) < sdf.parse(coverage.startDate)))
     }
-=======
->>>>>>> a458532... add coverageDepth to TIPPCoverageStatement
 
     if ( !result ) 
       log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId}");

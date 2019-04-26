@@ -364,59 +364,64 @@ class PackagesController {
   // @Transactional(readOnly = true)
   def kbart() {
 
-    def pkg = genericOIDService.resolveOID(params.id)
+    def pkg = Package.findByUuid(params.id)
 
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new Date());
+    if(!pkg) {
+      pkg = genericOIDService.resolveOID(params.id)
+    }
 
-    def filename = "GOKb Export : ${pkg.name} : ${export_date}.tsv"
+    if (pkg) {
+      def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+      def export_date = sdf.format(new Date());
 
-    try {
-      response.setContentType('text/tab-separated-values');
-      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
-      response.contentType = "text/tab-separated-values" // "text/tsv"
+      def filename = "GOKb Export : ${pkg.name} : ${export_date}.tsv"
 
-      def out = response.outputStream
-      out.withWriter { writer ->
+      try {
+        response.setContentType('text/tab-separated-values');
+        response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
+        response.contentType = "text/tab-separated-values" // "text/tsv"
 
-        def sanitize = { it ? "${it}".trim() : "" }
+        def out = response.outputStream
+        out.withWriter { writer ->
 
-          // As per spec header at top of file / section
-          // II: Need to add in preceding_publication_title_id
+          def sanitize = { it ? "${it}".trim() : "" }
+
+            // As per spec header at top of file / section
+            // II: Need to add in preceding_publication_title_id
           writer.write('publication_title\t'+
-                       'print_identifier\t'+
-                       'online_identifier\t'+
-                       'date_first_issue_online\t'+
-                       'num_first_vol_online\t'+
-                       'num_first_issue_online\t'+
-                       'date_last_issue_online\t'+
-                       'num_last_vol_online\t'+
-                       'num_last_issue_online\t'+
-                       'title_url\t'+
-                       'first_author\t'+
-                       'title_id\t'+
-                       'embargo_info\t'+
-                       'coverage_depth\t'+
-                       'coverage_notes\t'+
-                       'publisher_name\t'+
-                       'preceding_publication_title_id\t'+
-                       'date_monograph_published_print\t'+
-                       'date_monograph_published_online\t'+
-                       'monograph_volume\t'+
-                       'monograph_edition\t'+
-                       'first_editor\t'+
-                       'parent_publication_title_id\t'+
-                       'publication_type\t'+
-                       'access_type\n');
+                        'print_identifier\t'+
+                        'online_identifier\t'+
+                        'date_first_issue_online\t'+
+                        'num_first_vol_online\t'+
+                        'num_first_issue_online\t'+
+                        'date_last_issue_online\t'+
+                        'num_last_vol_online\t'+
+                        'num_last_issue_online\t'+
+                        'title_url\t'+
+                        'first_author\t'+
+                        'title_id\t'+
+                        'embargo_info\t'+
+                        'coverage_depth\t'+
+                        'coverage_notes\t'+
+                        'publisher_name\t'+
+                        'preceding_publication_title_id\t'+
+                        'date_monograph_published_print\t'+
+                        'date_monograph_published_online\t'+
+                        'monograph_volume\t'+
+                        'monograph_edition\t'+
+                        'first_editor\t'+
+                        'parent_publication_title_id\t'+
+                        'publication_type\t'+
+                        'access_type\n');
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
           def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
+          def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status = :sc and c.type = :ct order by tipp.id")
           query.setReadOnly(true)
           query.setParameter('p',pkg.getId(), StandardBasicTypes.LONG)
-          query.setParameter('sd', status_deleted)
+          query.setParameter('sc', status_current)
           query.setParameter('ct', combo_tipps)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
@@ -426,33 +431,67 @@ class PackagesController {
 
               TitleInstancePackagePlatform.withNewSession {
                 def tipp = TitleInstancePackagePlatform.get(tipp_id)
-                writer.write(
-                            sanitize( tipp.title.name ) + '\t' +
-                            sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                            sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
-                            sanitize( tipp.startDate ) + '\t' +
-                            sanitize( tipp.startVolume ) + '\t' +
-                            sanitize( tipp.startIssue ) + '\t' +
-                            sanitize( tipp.endDate ) + '\t' +
-                            sanitize( tipp.endVolume ) + '\t' +
-                            sanitize( tipp.endIssue ) + '\t' +
-                            sanitize( tipp.url ) + '\t' +
-                            '\t'+  // First Author
-                            sanitize( tipp.title.getId() ) + '\t' +
-                            sanitize( tipp.embargo ) + '\t' +
-                            sanitize( tipp.coverageDepth ) + '\t' +
-                            sanitize( tipp.coverageNote ) + '\t' +
-                            sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
-                            sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
-                            '\t' +  // date_monograph_published_print
-                            '\t' +  // date_monograph_published_online
-                            '\t' +  // monograph_volume
-                            '\t' +  // monograph_edition
-                            '\t' +  // first_editor
-                            '\t' +  // parent_publication_title_id
-                            sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                            sanitize( tipp.paymentType?.value ) +  // access_type
-                            '\n');
+
+                if (tipp.coverageStatements?.size() > 0) {
+                  tipp.coverageStatements.each { cst ->
+                    writer.write(
+                                sanitize( tipp.title.name ) + '\t' +
+                                (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
+                                (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
+                                sanitize( cst.startDate ) + '\t' +
+                                sanitize( cst.startVolume ) + '\t' +
+                                sanitize( cst.startIssue ) + '\t' +
+                                sanitize( cst.endDate ) + '\t' +
+                                sanitize( cst.endVolume ) + '\t' +
+                                sanitize( cst.endIssue ) + '\t' +
+                                sanitize( tipp.url ) + '\t' +
+                                (tipp.title.hasProperty('firstAuthor') ? sanitize( tipp.title.firstAuthor ) : '') + '\t'+
+                                sanitize( tipp.title.getId() ) + '\t' +
+                                sanitize( cst.embargo ) + '\t' +
+                                sanitize( cst.coverageDepth ) + '\t' +
+                                sanitize( cst.coverageNote ) + '\t' +
+                                sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
+                                sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
+                                (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.dateFirstInPrint ) : '') + '\t' +
+                                (tipp.title.hasProperty('dateFirstOnline') ? sanitize( tipp.title.dateFirstOnline ) : '') + '\t' +
+                                (tipp.title.hasProperty('volumeNumber') ? sanitize( tipp.title.volumeNumber ) : '') + '\t' +
+                                (tipp.title.hasProperty('editionStatement') ? sanitize( tipp.title.editionStatement ) : '') + '\t' +
+                                (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
+                                '\t' +  // parent_publication_title_id
+                                sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
+                                sanitize( tipp.paymentType?.value ) +  // access_type
+                                '\n');
+                  }
+                }
+                else {
+                    writer.write(
+                                sanitize( tipp.title.name ) + '\t' +
+                                (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
+                                (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
+                                sanitize( tipp.startDate ) + '\t' +
+                                sanitize( tipp.startVolume ) + '\t' +
+                                sanitize( tipp.startIssue ) + '\t' +
+                                sanitize( tipp.endDate ) + '\t' +
+                                sanitize( tipp.endVolume ) + '\t' +
+                                sanitize( tipp.endIssue ) + '\t' +
+                                sanitize( tipp.url ) + '\t' +
+                                (tipp.title.hasProperty('firstAuthor') ? sanitize( tipp.title.firstAuthor ) : '') + '\t'+
+                                sanitize( tipp.title.getId() ) + '\t' +
+                                sanitize( tipp.embargo ) + '\t' +
+                                sanitize( tipp.coverageDepth ) + '\t' +
+                                sanitize( tipp.coverageNote ) + '\t' +
+                                sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
+                                sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
+                                (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.dateFirstInPrint ) : '') + '\t' +
+                                (tipp.title.hasProperty('dateFirstOnline') ? sanitize( tipp.title.dateFirstOnline ) : '') + '\t' +
+                                (tipp.title.hasProperty('volumeNumber') ? sanitize( tipp.title.volumeNumber ) : '' + '\t') +
+                                (tipp.title.hasProperty('editionStatement') ? sanitize( tipp.title.editionStatement ) : '') + '\t' +
+                                (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
+                                '\t' +  // parent_publication_title_id
+                                sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
+                                sanitize( tipp.paymentType?.value ) +  // access_type
+                                '\n');
+                }
                 tipp.discard();
               }
           }
@@ -462,10 +501,14 @@ class PackagesController {
           writer.flush();
           writer.close();
         }
-      out.close()
+        out.close()
+      }
+      catch ( Exception e ) {
+        log.error("Problem with export",e);
+      }
     }
-    catch ( Exception e ) {
-      log.error("Problem with export",e);
+    else {
+      response.sendError(404, "No Package was not found for ${params.id}!".toString())
     }
   }
 
@@ -476,20 +519,22 @@ class PackagesController {
     def export_date = sdf.format(new Date());
 
 
-    def pkg = genericOIDService.resolveOID(params.id)
+    def pkg = Package.findByUuid(params.id)
 
-    if ( pkg == null )
-      return;
+    if(!pkg) {
+      pkg = genericOIDService.resolveOID(params.id)
+    }
 
-    def filename = "GoKBPackage-${params.id}.tsv";
+    if (pkg) {
+      def filename = "GoKBPackage-${params.id}.tsv";
 
-    try {
-      response.setContentType('text/tab-separated-values');
-      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
-      response.contentType = "text/tab-separated-values" // "text/tsv"
+      try {
+        response.setContentType('text/tab-separated-values');
+        response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
+        response.contentType = "text/tab-separated-values" // "text/tsv"
 
-      def out = response.outputStream
-      out.withWriter { writer ->
+        def out = response.outputStream
+        out.withWriter { writer ->
 
           def sanitize = { it ? "${it}".trim() : "" }
 
@@ -497,11 +542,47 @@ class PackagesController {
           // As per spec header at top of file / section
           writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
 
-          writer.write('TIPP ID\tTIPP URL\tTitle ID\tTitle\tTIPP Status\t[TI] Publisher\t[TI] Imprint\t[TI] Published From\t[TI] Published to\t[TI] Medium\t[TI] OA Status\t' +
-                  '[TI] Continuing series\t[TI] ISSN\t[TI] EISSN\tPackage\tPackage ID\tPackage URL\tPlatform\t' +
-                  'Platform URL\tPlatform ID\tReference\tEdit Status\tAccess Start Date\tAccess End Date\tCoverage Start Date\t' +
-                  'Coverage Start Volume\tCoverage Start Issue\tCoverage End Date\tCoverage End Volume\tCoverage End Issue\t' +
-                  'Embargo\tCoverage depth\tCoverage note\tHost Platform URL\tFormat\tPayment Type\n');
+          writer.write('TIPP ID\t'+
+                        'TIPP URL\t'+
+                        'Title ID\t'+
+                        'Title\t'+
+                        'TIPP Status\t'+
+                        '[TI] Publisher\t'+
+                        '[TI] Imprint\t'+
+                        '[TI] Published From\t'+
+                        '[TI] Published to\t'+
+                        '[TI] Medium\t'+
+                        '[TI] OA Status\t'+
+                        '[TI] Continuing series\t'+
+                        '[TI] ISSN\t'+
+                        '[TI] EISSN\t'+
+                        '[TI] ZDB-ID\t'+
+                        'Package\t'+
+                        'Package ID\t'+
+                        'Package URL\t'+
+                        'Platform\t'+
+                        'Platform URL\t'+
+                        'Platform ID\t'+
+                        'Reference\t'+
+                        'Edit Status\t'+
+                        'Access Start Date\t'+
+                        'Access End Date\t'+
+                        'Coverage Start Date\t'+
+                        'Coverage Start Volume\t'+
+                        'Coverage Start Issue\t'+
+                        'Coverage End Date\t'+
+                        'Coverage End Volume\t'+
+                        'Coverage End Issue\t'+
+                        'Embargo\t'+
+                        'Coverage depth\t'+
+                        'Coverage note\t'+
+                        'Host Platform URL\t'+
+                        'Format\t'+
+                        'Payment Type\t'+
+                        '[TI] DOI\t'+
+                        '[TI] ISBN\t'+
+                        '[TI] pISBN'+
+                        '\n');
 
           def session = sessionFactory.getCurrentSession()
           def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
@@ -516,33 +597,114 @@ class PackagesController {
 
           while (tipps.next()) {
 
-              def tipp_id = tipps.get(0);
-              TitleInstancePackagePlatform.withNewSession {
-                  TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+            def tipp_id = tipps.get(0);
+            TitleInstancePackagePlatform.withNewSession {
+              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
-                  writer.write(sanitize(tipp.getId()) + '\t' + sanitize(tipp.url) + '\t' + sanitize(tipp.title.getId()) + '\t' + sanitize(tipp.title.name) + '\t' +
-                          sanitize(tipp.status.value) + '\t' + sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' + sanitize(tipp.title.imprint?.name) + '\t' + sanitize(tipp.title.publishedFrom) + '\t' +
-                          sanitize(tipp.title.publishedTo) + '\t' + sanitize(tipp.title.medium?.value) + '\t' + sanitize(tipp.title.OAStatus?.value) + '\t' +
+              if(tipp.coverageStatements?.size() > 0) {
+                tipp.coverageStatements.each { tcs ->
+                  writer.write(
+                          sanitize(tipp.getId()) + '\t' +
+                          sanitize(tipp.url) + '\t' +
+                          sanitize(tipp.title.getId()) + '\t' +
+                          sanitize(tipp.title.name) + '\t' +
+                          sanitize(tipp.status.value) + '\t' +
+                          sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
+                          sanitize(tipp.title.imprint?.name) + '\t' +
+                          sanitize(tipp.title.publishedFrom) + '\t' +
+                          sanitize(tipp.title.publishedTo) + '\t' +
+                          sanitize(tipp.title.medium?.value) + '\t' +
+                          sanitize(tipp.title.OAStatus?.value) + '\t' +
                           sanitize(tipp.title.continuingSeries?.value) + '\t' +
                           sanitize(tipp.title.getIdentifierValue('ISSN')) + '\t' +
                           sanitize(tipp.title.getIdentifierValue('eISSN')) + '\t' +
-                          sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' + '\t' + sanitize(tipp.hostPlatform.name) + '\t' +
-                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' + sanitize(tipp.hostPlatform.getId()) + '\t\t' + sanitize(tipp.status?.value) + '\t' + sanitize(tipp.accessStartDate) + '\t' +
-                          sanitize(tipp.accessEndDate) + '\t' + sanitize(tipp.startDate) + '\t' + sanitize(tipp.startVolume) + '\t' + sanitize(tipp.startIssue) + '\t' + sanitize(tipp.endDate) + '\t' +
-                          sanitize(tipp.endVolume) + '\t' + sanitize(tipp.endIssue) + '\t' + sanitize(tipp.embargo) + '\t' + sanitize(tipp.coverageDepth) + '\t' + sanitize(tipp.coverageNote) + '\t' + sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
-                          sanitize(tipp.format?.value) + '\t' + sanitize(tipp.paymentType?.value) +
+                          sanitize(tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                          sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
+                          '\t' +
+                          sanitize(tipp.hostPlatform.name) + '\t' +
+                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                          sanitize(tipp.hostPlatform.getId()) + '\t' +
+                          '\t' +
+                          sanitize(tipp.editStatus?.value) + '\t' +
+                          sanitize(tipp.accessStartDate) + '\t' +
+                          sanitize(tipp.accessEndDate) + '\t' +
+                          sanitize(tcs.startDate) + '\t' +
+                          sanitize(tcs.startVolume) + '\t' +
+                          sanitize(tcs.startIssue) + '\t' +
+                          sanitize(tcs.endDate) + '\t' +
+                          sanitize(tcs.endVolume) + '\t' +
+                          sanitize(tcs.endIssue) + '\t' +
+                          sanitize(tcs.embargo) + '\t' +
+                          sanitize(tcs.coverageDepth) + '\t' +
+                          sanitize(tcs.coverageNote) + '\t' +
+                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                          sanitize(tipp.format?.value) + '\t' +
+                          sanitize(tipp.paymentType?.value) + '\t' +
+                          sanitize(tipp.title.getIdentifierValue('DOI')) + '\t' +
+                          sanitize(tipp.title.getIdentifierValue('ISBN')) + '\t' +
+                          sanitize(tipp.title.getIdentifierValue('pISBN')) +
                           '\n');
-                  tipp.discard();
+                }
               }
+              else {
+                writer.write(
+                        sanitize(tipp.getId()) + '\t' +
+                        sanitize(tipp.url) + '\t' +
+                        sanitize(tipp.title.getId()) + '\t' +
+                        sanitize(tipp.title.name) + '\t' +
+                        sanitize(tipp.status.value) + '\t' +
+                        sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
+                        sanitize(tipp.title.imprint?.name) + '\t' +
+                        sanitize(tipp.title.publishedFrom) + '\t' +
+                        sanitize(tipp.title.publishedTo) + '\t' +
+                        sanitize(tipp.title.medium?.value) + '\t' +
+                        sanitize(tipp.title.OAStatus?.value) + '\t' +
+                        sanitize(tipp.title.continuingSeries?.value) + '\t' +
+                        sanitize(tipp.title.getIdentifierValue('ISSN')) + '\t' +
+                        sanitize(tipp.title.getIdentifierValue('eISSN')) + '\t' +
+                        sanitize(tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                        sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
+                        '\t' +
+                        sanitize(tipp.hostPlatform.name) + '\t' +
+                        sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                        sanitize(tipp.hostPlatform.getId()) + '\t' +
+                        '\t' +
+                        sanitize(tipp.editStatus?.value) + '\t' +
+                        sanitize(tipp.accessStartDate) + '\t' +
+                        sanitize(tipp.accessEndDate) + '\t' +
+                        sanitize(tipp.startDate) + '\t' +
+                        sanitize(tipp.startVolume) + '\t' +
+                        sanitize(tipp.startIssue) + '\t' +
+                        sanitize(tipp.endDate) + '\t' +
+                        sanitize(tipp.endVolume) + '\t' +
+                        sanitize(tipp.endIssue) + '\t' +
+                        sanitize(tipp.embargo) + '\t' +
+                        sanitize(tipp.coverageDepth) + '\t' +
+                        sanitize(tipp.coverageNote) + '\t' +
+                        sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                        sanitize(tipp.format?.value) + '\t' +
+                        sanitize(tipp.paymentType?.value) + '\t' +
+                        sanitize(tipp.title.getIdentifierValue('DOI')) + '\t' +
+                        sanitize(tipp.title.getIdentifierValue('ISBN')) + '\t' +
+                        sanitize(tipp.title.getIdentifierValue('pISBN')) +
+                        '\n');
+              }
+              tipp.discard();
+            }
           }
           tipps.close()
+
           writer.flush();
           writer.close();
+        }
+        out.close()
       }
-      out.close()
+      catch ( Exception e ) {
+        log.error("Problem with export",e);
+      }
     }
-    catch ( Exception e ) {
-      log.error("Problem with export",e);
+    else {
+      response.sendError(404, "No Package was not found for ${params.id}!".toString())
     }
   }
 }

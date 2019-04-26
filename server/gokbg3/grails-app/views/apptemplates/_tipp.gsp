@@ -143,11 +143,8 @@
               <th>End Volume</th>
               <th>End Issue</th>
               <th>Embargo</th>
-<<<<<<< HEAD
               <th>Note</th>
-=======
               <th>Depth</th>
->>>>>>> a458532... add coverageDepth to TIPPCoverageStatement
               <th>Actions</th>
             </tr>
           </thead>
@@ -166,12 +163,9 @@
                   <td><g:xEditable class="ipe" owner="${cs}" field="endVolume" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="endIssue" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="embargo" /></td>
-<<<<<<< HEAD
                   <td><g:xEditable class="ipe" owner="${cs}" field="coverageNote" /></td>
-=======
                   <td><g:xEditableRefData owner="${cs}" field="coverageDepth" config="TIPPCoverageStatement.CoverageDepth" />
                   </td>
->>>>>>> a458532... add coverageDepth to TIPPCoverageStatement
                   <td><g:if test="${editable}"><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></g:if></td>
                 </tr>
               </g:each>
@@ -222,6 +216,10 @@
                     <dt>Embargo</dt>
                     <dd>
                       <input type="text" name="embargo" />
+                    </dd>
+                    <dt>Coverage Depth</dt>
+                    <dd>
+                      <g:simpleHiddenRefdata name="coverageDepth" refdataCategory="TIPPCoverageStatement.CoverageDepth" />
                     </dd>
                     <dt>Coverage Note</dt>
                     <dd>
