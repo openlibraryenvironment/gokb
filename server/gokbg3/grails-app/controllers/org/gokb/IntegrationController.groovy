@@ -1375,8 +1375,18 @@ class IntegrationController {
                       // Matched an existing TH event, not creating a duplicate
                     }
                   }
-                  catch ( Exception e ) {
-                        log.error("Problem processing title history",e);
+                  catch ( grails.validation.ValidationException veh ) {
+                        log.error("Problem processing title history",veh);
+                        result.result="ERROR"
+                        result.errors=veh.errors
+                        result.message="There was an error processing the title history of '${title.name}'."
+                        result.baddata=titleObj
+                  }
+                  catch ( Exception eh ) {
+                        log.error("Problem processing title history",eh);
+                        result.result="ERROR"
+                        result.message="There was an error processing the title history of '${title.name}'."
+                        result.baddata=titleObj
                   }
                 }
               }
@@ -1391,11 +1401,11 @@ class IntegrationController {
                 }
               }
 
-              title.save(flush:true, failOnError:true)
-
               addPublisherHistory(title, titleObj.publisher_history, sdf)
 
-              result.message = "Created/looked up title ${title.id}"
+              if (!result.message) {
+                result.message = "Created/looked up title ${title.id}"
+              }
               result.cls = title.class.name
               result.titleId = title.id
             }
@@ -1426,10 +1436,12 @@ class IntegrationController {
           }
           catch ( Exception e ) {
             log.error("Exception attempting to cross reference title",e);
-            result.result="ERROR"
-            result.message="There was an error trying to reference title '${titleObj.name}'"
-            result.baddata=titleObj
-            log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+            if (result.result != 'ERROR') {
+              result.result="ERROR"
+              result.message="There was an error trying to reference title '${titleObj.name}'"
+              result.baddata=titleObj
+              log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+            }
           }
           finally {
             log.debug("Result of cross ref title: ${result}");
@@ -1518,7 +1530,7 @@ class IntegrationController {
             if (idMatch) {
               if (pub_add_sd && pc.startDate && sdf.format(pub_add_sd) != sdf.format(pc.startDate)) {
               }
-              else if (pub_add_sd && pc.endDate && sdf.format(pub_add_sd) != sdf.format(pc.endDate)) {
+              else if (pub_add_ed && pc.endDate && sdf.format(pub_add_ed) != sdf.format(pc.endDate)) {
               }
               else {
                 found = true
