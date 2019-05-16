@@ -1415,11 +1415,8 @@ class IntegrationController {
               result.baddata=titleObj
               log.error("Cross Reference Title failed: ${titleObj}");
               if(title) {
-                result.errors = []
-                title.errors?.allErrors?.each { er ->
-                  result.errors.add("${er.message}")
-                  log.error("${er}")
-                }
+                result.errors = title.errors
+                log.error("${title.errors}")
               }
               // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
       //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
@@ -1430,7 +1427,8 @@ class IntegrationController {
           catch (grails.validation.ValidationException ve) {
             log.error("ValidationException attempting to cross reference title",ve);
             result.result="ERROR"
-            result.message=ve.getMessage()
+            result.message="Validation of title '${titleObj.name}' failed."
+            result.errors=ve.errors
             result.baddata=titleObj
             log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
           }
