@@ -432,7 +432,7 @@ class TitleInstance extends KBComponent {
                       endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
                       endVolume:tcs.endVolume,
                       endIssue:tcs.endIssue,
-                      coverageDepth:tcs.coverageDepth?.value,
+                      coverageDepth:tcs.coverageDepth?.value?:tipp.coverageDepth?.value,
                       coverageNote:tcs.coverageNote,
                       embargo: tcs.embargo
                     )
