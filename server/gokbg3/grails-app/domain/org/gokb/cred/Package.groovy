@@ -466,7 +466,7 @@ select tipp.id,
                     endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
                     endVolume:tcs.endVolume,
                     endIssue:tcs.endIssue,
-                    coverageDepth:tipp[11]?.value,
+                    coverageDepth:tcs.coverageDepth?.value?:tipp[11]?.value,
                     coverageNote:tcs.coverageNote,
                     embargo: tcs.embargo
                   )

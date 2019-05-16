@@ -542,7 +542,7 @@ class CleanupService {
         }
 
         try {
-          t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote, embargo: t.embargo)
+          t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageDepth: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', t.coverageDepth.value),coverageNote: t.coverageNote, embargo: t.embargo)
 
           t.save(flush:true, failOnError:true);
         }

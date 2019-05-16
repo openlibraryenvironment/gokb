@@ -431,12 +431,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (!cs_match) {
+
+            def cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+
             tipp.addToCoverageStatements('startVolume': c.startVolume, \
              'startIssue':c.startIssue, \
              'endVolume': c.endVolume, \
              'endIssue': c.endIssue, \
              'embargo':c.embargo, \
-//             'coverageDepth': c.coverageDepth, \
+             'coverageDepth': cov_depth, \
              'coverageNote': c.coverageNote, \
              'startDate': parsedStart, \
              'endDate': parsedEnd)
