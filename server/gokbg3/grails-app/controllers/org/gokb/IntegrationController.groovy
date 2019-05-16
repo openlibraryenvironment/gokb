@@ -988,6 +988,7 @@ class IntegrationController {
                   job_result.result = 'OK'
                   job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
                   job_result.pkgId = the_pkg.id
+                  job_result.uuid = the_pkg.uuid
                   log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
                 }
                 else {
@@ -1408,15 +1409,22 @@ class IntegrationController {
               }
               result.cls = title.class.name
               result.titleId = title.id
+              result.uuid = title.uuid
             }
             else {
               result.message = "Cross Reference Title failed: ${titleObj}";
               result.result="ERROR"
               result.baddata=titleObj
               log.error("Cross Reference Title failed: ${titleObj}");
-              if(title) {
-                result.errors = title.errors
-                log.error("${title.errors}")
+              if ( title?.id ) {
+                result.errors=title.errors
+                result.titleId=title.id
+                result.uuid=title.uuid
+                result.message="Title ${title.id} was matched, but could not be updated due to existing errors"
+                log.error("CrossReference Matched existing title (${title.id}) with errors: ${title.errors}")
+              }
+              else {
+                result.message = "Cross Reference Title failed: ${titleObj}";
               }
               // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
       //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
