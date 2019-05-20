@@ -21,6 +21,7 @@
           <dt> Status </dt> <dd> ${pkg.status?.value} </dd>
           <dt> Description </dt> <dd> ${pkg.description}</dd>
           <dt> URL </dt> <dd> ${pkg.descriptionURL}</dd>
+          <dt> UUID </dt> <dd> ${pkg.uuid} </dd>
         </dl>
         <div style="clear:both;">
 
