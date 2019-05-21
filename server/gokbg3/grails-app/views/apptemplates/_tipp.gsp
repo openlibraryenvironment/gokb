@@ -143,6 +143,8 @@
               <th>End Volume</th>
               <th>End Issue</th>
               <th>Embargo</th>
+              <th>Note</th>
+              <th>Depth</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -161,7 +163,10 @@
                   <td><g:xEditable class="ipe" owner="${cs}" field="endVolume" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="endIssue" /></td>
                   <td><g:xEditable class="ipe" owner="${cs}" field="embargo" /></td>
-                  <td><g:if test="${editable}"><g:link controller="workflow" action="deleteCoverageStatement" id="${cs.id}">Delete</g:link></g:if></td>
+                  <td><g:xEditable class="ipe" owner="${cs}" field="coverageNote" /></td>
+                  <td><g:xEditableRefData owner="${cs}" field="coverageDepth" config="TIPPCoverageStatement.CoverageDepth" />
+                  </td>
+                  <td><g:if test="${editable}"><g:link controller="ajaxSupport" action="deleteCoverageStatement" params="[id: cs.id, fragment:'tippcoverage']">Delete</g:link></g:if></td>
                 </tr>
               </g:each>
             </g:if>
@@ -178,7 +183,7 @@
                 </button>
                 <dl id="collapseableAddCoverageStatement" class="dl-horizontal collapse">
                   <g:form controller="ajaxSupport" action="addToCollection"
-                          class="form-inline">
+                          class="form-inline" params="[fragment:'tippcoverage']">
                     <input type="hidden" name="__context"
                             value="${d.class.name}:${d.id}" />
                     <input type="hidden" name="__newObjectClass"
@@ -211,6 +216,10 @@
                     <dt>Embargo</dt>
                     <dd>
                       <input type="text" name="embargo" />
+                    </dd>
+                    <dt>Coverage Depth</dt>
+                    <dd>
+                      <g:simpleHiddenRefdata name="coverageDepth" refdataCategory="TIPPCoverageStatement.CoverageDepth" />
                     </dd>
                     <dt>Coverage Note</dt>
                     <dd>

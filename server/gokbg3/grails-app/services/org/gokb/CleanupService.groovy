@@ -542,7 +542,7 @@ class CleanupService {
         }
 
         try {
-          t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageNote: t.coverageNote, embargo: t.embargo)
+          t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageDepth: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', t.coverageDepth.value),coverageNote: t.coverageNote, embargo: t.embargo)
 
           t.save(flush:true, failOnError:true);
         }
@@ -560,6 +560,75 @@ class CleanupService {
     }
     log.debug("Done");
     j.message("Finished creating ${ctr} new statements (${errors} errors)".toString())
+    j.endTime = new Date()
+  }
+
+  def reviewDates(Job j = null) {
+    log.debug("Adding Reviews to components with inconsistent dates")
+    TitleInstancePackagePlatform.withNewSession {
+      def tippCoverageDates = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement where endDate < startDate",[readOnly: true])
+
+      log.debug("Found ${tippCoverageDates.size()} offending coverageStatements")
+      j.message("Found ${tippCoverageDates.size()} offending coverageStatements".toString())
+
+      tippCoverageDates.each { tcs ->
+        KBComponent kbc = KBComponent.get(tcs.owner.id)
+
+        if (kbc) {
+          log.debug("Adding RR to TIPP ${kbc}")
+          def new_rr = ReviewRequest.raise(
+            kbc,
+            "Please review the coverage dates.",
+            "Found an end date earlier than the start date!."
+          ).save(flush:true)
+          log.debug("Created RR: ${new_rr}")
+        }
+        else {
+          log.debug("Could not get KBComponent for ${tcs}!")
+        }
+      }
+
+      def tippAccessDates = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform where accessEndDate < accessStartDate",[readOnly: true])
+
+      log.debug("Found ${tippAccessDates.size()} offending tipp access dates")
+      j.message("Found ${tippAccessDates.size()} offending tipp access dates".toString())
+
+      tippAccessDates.each { tcs ->
+        if (tcs){
+          log.debug("Adding RR to TIPP ${tcs}")
+          def new_rr = ReviewRequest.raise(
+            tcs,
+            "Please review the coverage dates.",
+            "Found an end date earlier than the start date!."
+          ).save(flush:true)
+          log.debug("Created RR: ${new_rr}")
+        }
+        else {
+          log.debug("Could not get KBComponent for ${tcs}!")
+        }
+      }
+
+      def titleDates = TitleInstance.executeQuery("from TitleInstance where publishedTo < publishedFrom",[readOnly: true])
+
+      log.debug("Found ${titleDates.size()} offending publishing dates")
+      j.message("Found ${titleDates.size()} offending publishing dates".toString())
+
+      titleDates.each { tcs ->
+        if (tcs){
+          log.debug("Adding RR to title ${tcs}")
+          def new_rr = ReviewRequest.raise(
+            tcs,
+            "Please review the publishing dates.",
+            "Found an end date earlier than the start date!."
+          ).save(flush:true)
+          log.debug("Created RR: ${new_rr}")
+        }
+        else {
+          log.debug("Could not get KBComponent for ${tcs}!")
+        }
+      }
+    }
+    log.debug("Done");
     j.endTime = new Date()
   }
 

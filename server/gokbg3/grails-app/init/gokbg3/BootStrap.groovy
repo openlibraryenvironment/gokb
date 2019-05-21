@@ -391,6 +391,10 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.CoverageDepth", "Selected Articles").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.CoverageDepth", "Abstracts").save(flush:true, failOnError:true)
 
+    RefdataCategory.lookupOrCreate("TIPPCoverageStatement.CoverageDepth", "Fulltext").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("TIPPCoverageStatement.CoverageDepth", "Selected Articles").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("TIPPCoverageStatement.CoverageDepth", "Abstracts").save(flush:true, failOnError:true)
+
     RefdataCategory.lookupOrCreate("Package.Scope", "Aggregator").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Scope", "Back File").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Scope", "Front File").save(flush:true, failOnError:true)

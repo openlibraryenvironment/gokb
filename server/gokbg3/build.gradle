@@ -152,7 +152,6 @@ buildProperties.doLast {
     // Get the host name where the build was created
     // properties.setProperty('build.host', InetAddress.localHost.hostName)
 
-    Map<String, String> env = System.getenv()
     if(grailsGitInfoFile) {
         properties.setProperty('build.git.revision', gitProperties.getProperty('git.commit.id.abbrev'))
         properties.setProperty('build.git.branch', gitProperties.getProperty('git.branch'))

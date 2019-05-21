@@ -110,7 +110,11 @@ class TitleInstance extends KBComponent {
     reasonRetired (nullable:true, blank:false)
     OAStatus (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
-    publishedTo (nullable:true, blank:false)
+    publishedTo  (validator: { val, obj ->
+      if(obj.publishedFrom && val && obj.publishedFrom > val) {
+        return ['endDate.endPriorToStart']
+      }
+    })
     coverImage (nullable:true, blank:true)
     work (nullable:true, blank:false)
     name (validator: { val, obj ->
@@ -428,7 +432,7 @@ class TitleInstance extends KBComponent {
                       endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
                       endVolume:tcs.endVolume,
                       endIssue:tcs.endIssue,
-                      coverageDepth:tipp.coverageDepth?.value,
+                      coverageDepth:tcs.coverageDepth?.value?:tipp.coverageDepth?.value,
                       coverageNote:tcs.coverageNote,
                       embargo: tcs.embargo
                     )
