@@ -1,205 +1,220 @@
 ---
 grails:
-    profile: web
-    codegen:
-        defaultPackage: gokbg3
-    spring:
-        transactionManagement:
-            proxies: false
-    gorm:
-        reactor:
-            # Whether to translate GORM events into Reactor events
-            # Disabled by default for performance reasons
-            events: false
-    mime:
-        file:
-            extensions: false
-        disable:
-            accept:
-                header:
-                    userAgents:
-                        - Gecko
-                        - WebKit
-                        - Presto
-                        - Trident
-        types:
-            all: '*/*'
-            atom: application/atom+xml
-            css: text/css
-            csv: text/csv
-            form: application/x-www-form-urlencoded
-            html:
-              - text/html
-              - application/xhtml+xml
-            js: text/javascript
-            json:
-              - application/json
-              - text/json
-            multipartForm: multipart/form-data
-            pdf: application/pdf
-            rss: application/rss+xml
-            text: text/plain
-            hal:
-              - application/hal+json
-              - application/hal+xml
-            xml:
-              - text/xml
-              - application/xml
-    urlmapping:
-        cache:
-            maxsize: 1000
-    controllers:
-        defaultScope: singleton
-        upload:
-            maxFileSize: 2000000
-            maxRequestSize: 2000000
-    converters:
-        encoding: UTF-8
-    views:
-        default:
-            codec: html
-        gsp:
-            encoding: UTF-8
-            htmlcodec: xml
-            codecs:
-                expression: html
-                scriptlets: html
-                taglib: none
-                staticparts: none
-    exceptionresolver:
-        params:
-            exclude:
-                - password
-                - password2
-                - email
+  profile: web
+  codegen:
+    defaultPackage: gokbg3
+  spring:
+    transactionManagement:
+      proxies: false
+  gorm:
+    reactor:
+      # Whether to translate GORM events into Reactor events
+      # Disabled by default for performance reasons
+      events: false
+
+  mime:
+    file:
+      extensions: false
+    disable:
+      accept:
+        header:
+          userAgents:
+            - Gecko
+            - WebKit
+            - Presto
+            - Trident
+    types:
+      all: '*/*'
+      atom: application/atom+xml
+      css: text/css
+      csv: text/csv
+      form: application/x-www-form-urlencoded
+      html:
+        - text/html
+        - application/xhtml+xml
+      js: text/javascript
+      json:
+        - application/json
+        - text/json
+      multipartForm: multipart/form-data
+      pdf: application/pdf
+      rss: application/rss+xml
+      text: text/plain
+      hal:
+        - application/hal+json
+        - application/hal+xml
+      xml:
+        - text/xml
+        - application/xml
+  urlmapping:
+    cache:
+      maxsize: 1000
+  controllers:
+    defaultScope: singleton
+    upload:
+      maxFileSize: 2000000
+      maxRequestSize: 2000000
+  converters:
+    encoding: UTF-8
+  views:
+    default:
+      codec: html
+    gsp:
+      encoding: UTF-8
+      htmlcodec: xml
+      codecs:
+        expression: html
+        scriptlets: html
+        taglib: none
+        staticparts: none
+  exceptionresolver:
+    params:
+      exclude:
+        - password
+        - password2
+        - email
 info:
-    app:
-        name: '@info.app.name@'
-        version: '@info.app.version@'
-        grailsVersion: '@info.app.grailsVersion@'
+  app:
+    name: '@info.app.name@'
+    version: '@info.app.version@'
+    grailsVersion: '@info.app.grailsVersion@'
 
 spring:
-    main:
-        banner-mode: "off"
-    groovy:
-        template:
-            check-template-location: false
+  main:
+    banner-mode: "off"
+  groovy:
+    template:
+      check-template-location: false
 
 # Spring Actuator Endpoints are Disabled by Default
 endpoints:
-    enabled: false
-    jmx:
-        enabled: true
-        unique-names: true
+  enabled: false
+  jmx:
+    enabled: true
+    unique-names: true
 
 hibernate:
-    cache:
-        queries: false
-        use_second_level_cache: false
-        use_query_cache: false
+  cache:
+    queries: false
+    use_second_level_cache: false
+    use_query_cache: false
 
 environments:
-    development:
-        dataSource:
-            dbCreate: update
-            url: jdbc:postgresql://pghost:5432/gokbg3dev
-            username: knowint
-            password: knowint
-            driverClassName: org.postgresql.Driver
-            dialect: org.hibernate.dialect.PostgreSQLDialect
-            defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
-            pooled: true
-            properties:
-                maxActive: 100
-                minEvictableIdleTimeMillis: 1800000
-                timeBetweenEvictionRunsMillis: 1800000
-                numTestsPerEvictionRun: 3
-                testOnBorrow: true
-                testWhileIdle: true
-                testOnReturn: true
-                validationQuery: select 1
-                defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
-        grails:
-            logging:
-                plugin:
-                    springsecurity:
-                        debug:
-                            useFilter: true
-            mail:
-                port: 3025
-        gokb:
-            es:
-                index: gokbg3dev
-                cluster: gokbg3-dev
-        cache:
-            headers:
-                enabled: false
-    test:
-        dataSource:
-            dbCreate: create-drop
-            url: jdbc:postgresql://pghost:5432/gokbg3test
-            username: knowint
-            password: knowint
-            driverClassName: org.postgresql.Driver
-            dialect: org.hibernate.dialect.PostgreSQLDialect
-            defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
-            pooled: true
-            properties:
-                maxActive: 100
-                minEvictableIdleTimeMillis: 1800000
-                timeBetweenEvictionRunsMillis: 1800000
-                numTestsPerEvictionRun: 3
-                testOnBorrow: true
-                testWhileIdle: true
-                testOnReturn: true
-                validationQuery: select 1
-                defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
-        gokb:
-            es:
-                index: gokbg3test
-                cluster: gokbg3-test
-        grails:
-            mail:
-                port: 3025
-        quartz:
-            pluginEnabled: false
-        cache:
-            headers:
-                enabled: false
-    production:
-        dataSource:
-            dbCreate: update
-            url: jdbc:postgresql://pghost:5432/gokbg3
-            username: knowint
-            password: knowint
-            driverClassName: org.postgresql.Driver
-            dialect: org.hibernate.dialect.PostgreSQLDialect
-            defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
-            pooled: true
-            properties:
-                maxActive: 100
-                minEvictableIdleTimeMillis: 1800000
-                timeBetweenEvictionRunsMillis: 1800000
-                numTestsPerEvictionRun: 3
-                testOnBorrow: true
-                testWhileIdle: true
-                testOnReturn: true
-                validationQuery: select 1
-                defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
-        grails:
-            plugin:
-                greenmail:
-                    disabled: true
-        gokb:
-            es:
-                index: gokbg3
-                cluster: gokbg3-prod
+  development:
+    dataSource:
+      dbCreate: update
+      url: jdbc:postgresql://localhost:5432/gokbg3
+      username: gokb
+      password: rotation
+      driverClassName: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+      defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+      pooled: true
+      properties:
+        maxActive: 100
+        minEvictableIdleTimeMillis: 1800000
+        timeBetweenEvictionRunsMillis: 1800000
+        numTestsPerEvictionRun: 3
+        testOnBorrow: true
+        testWhileIdle: true
+        testOnReturn: true
+        validationQuery: select 1
+        defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+    grails:
+      logging:
+        plugin:
+          springsecurity:
+            debug:
+              useFilter: true
+      mail:
+        port: 3025
+      plugin:
+        springsecurity:
+          rest:
+            token:
+              storage:
+                jwt:
+                  secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
+            login:
+              endpointUrl: /rest/login
+            logout:
+              endpointUrl: /rest/logout
+            validation:
+              endpointUrl: /rest/validate
+            active: true
+    gokb:
+      es:
+        index: gokbg3dev
+        cluster: gokbg3-dev
+    cache:
+      headers:
+        enabled: false
+  test:
+    dataSource:
+      dbCreate: create-drop
+      url: jdbc:postgresql://pghost:5432/gokbg3test
+      username: knowint
+      password: knowint
+      driverClassName: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+      defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+      pooled: true
+      properties:
+        maxActive: 100
+        minEvictableIdleTimeMillis: 1800000
+        timeBetweenEvictionRunsMillis: 1800000
+        numTestsPerEvictionRun: 3
+        testOnBorrow: true
+        testWhileIdle: true
+        testOnReturn: true
+        validationQuery: select 1
+        defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+    gokb:
+      es:
+        index: gokbg3test
+        cluster: gokbg3-test
+    grails:
+      mail:
+        port: 3025
+    quartz:
+      pluginEnabled: false
+    cache:
+      headers:
+        enabled: false
+  production:
+    dataSource:
+      dbCreate: update
+      url: jdbc:postgresql://pghost:5432/gokbg3
+      username: knowint
+      password: knowint
+      driverClassName: org.postgresql.Driver
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+      defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+      pooled: true
+      properties:
+        maxActive: 100
+        minEvictableIdleTimeMillis: 1800000
+        timeBetweenEvictionRunsMillis: 1800000
+        numTestsPerEvictionRun: 3
+        testOnBorrow: true
+        testWhileIdle: true
+        testOnReturn: true
+        validationQuery: select 1
+        defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+    grails:
+      plugin:
+        greenmail:
+          disabled: true
+    gokb:
+      es:
+        index: gokbg3
+        cluster: gokbg3-prod
 
 gokb:
-    defaultCuratoryGroup: Local
-    ftupdate_enabled: true
-    decisionSupport: false
-    costInfo: false
+  defaultCuratoryGroup: Local
+  ftupdate_enabled: true
+  decisionSupport: false
+  costInfo: false
 
 quartz:
-    autoStartup: true
+  autoStartup: true

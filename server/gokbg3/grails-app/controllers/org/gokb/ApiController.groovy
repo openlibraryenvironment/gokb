@@ -90,7 +90,7 @@ class ApiController {
       // Generate 6bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
       byte[] randomBytes = new byte[6]
       rand.nextBytes(randomBytes)
-      def ticket = Base64.encodeBase64String(randomBytes);
+      def ticket = randomBytes.encodeBase64();
 
       // Let's see if we have a throwable.
       if (result && result instanceof Throwable) {

@@ -10,6 +10,7 @@ class UserDetailsInterceptor {
               .excludes(controller: 'api')
               .excludes(controller: 'oai')
               .excludes(controller: 'ajaxSupport')
+              .excludes(controller: 'rest')
   }
 
 
