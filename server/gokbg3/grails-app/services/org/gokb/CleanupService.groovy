@@ -137,6 +137,7 @@ class CleanupService {
         j?.message("Problem expunging component with id ${component_id}".toString())
       }
     }
+    j?.message("Finished deleting ${idx} components.")
     
     return result
   }
@@ -196,7 +197,7 @@ class CleanupService {
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
 
-    def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL and plt.status = ?', [status_current])
+    def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL and plt.status <> ?', [status_deleted])
 
     delete_candidates.each { ptr ->
       def repl_crit = Platform.createCriteria()
