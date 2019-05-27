@@ -7,8 +7,8 @@ import org.elasticsearch.index.query.*
 
 class GlobalSearchController {
 
-  static def reversemap = ['subject':'subjectKw','componentType':'componentType']
-  static def non_analyzed_fields = ['componentType']
+  static def reversemap = ['subject':'subjectKw','componentType':'componentType','status':'status']
+  static def non_analyzed_fields = ['componentType','status']
 
 
   def ESWrapperService
@@ -89,8 +89,9 @@ class GlobalSearchController {
             entry.buckets.each { bucket ->
                 log.debug("Bucket: ${bucket}");
                 bucket.each { bi ->
+                  def displayTerm = (bi.getKey() != 'TitleInstancePackagePlatform' ? bi.getKey() : 'TIPP')
                   log.debug("Bucket item: ${bi} ${bi.getKey()} ${bi.getDocCount()}");
-                  facet_values.add([term:bi.getKey(),display:bi.getKey(),count:bi.getDocCount()])
+                  facet_values.add([term:bi.getKey(),display:displayTerm,count:bi.getDocCount()])
                   }
             }
             result.facets[entry.getName()] = facet_values
@@ -179,7 +180,15 @@ class GlobalSearchController {
               sw.write("\"${params[mapping.key]}\"")
             }
           }
+          else if (mapping.key == 'status') {
+                  sw.write(" AND ")
+                  sw.write("status:Current")
+          }
         }
+      }
+      else if (mapping.key == 'status') {
+        sw.write(" AND ")
+        sw.write("status:Current")
       }
     }
 
