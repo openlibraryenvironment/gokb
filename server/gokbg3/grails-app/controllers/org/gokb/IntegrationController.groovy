@@ -928,8 +928,9 @@ class IntegrationController {
                   def tipp_upsert_start_time = System.currentTimeMillis()
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
+                    tippctr++
                     TitleInstancePackagePlatform.withNewTransaction {
-                      log.debug("Upsert tipp [${tippctr++}] ${tipp}")
+                      log.debug("Upsert tipp [${tippctr}] ${tipp}")
 
                       def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
                       log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
@@ -1380,13 +1381,13 @@ class IntegrationController {
                         log.error("Problem processing title history",veh);
                         result.result="ERROR"
                         result.errors=veh.errors
-                        result.message="There was an error processing the title history of '${title.name}'."
+                        result.message="The title was created, but there was an error processing the title history of '${title.name}'."
                         result.baddata=titleObj
                   }
                   catch ( Exception eh ) {
                         log.error("Problem processing title history",eh);
                         result.result="ERROR"
-                        result.message="There was an error processing the title history of '${title.name}'."
+                        result.message="The title was created, but there was an error processing the title history of '${title.name}'."
                         result.baddata=titleObj
                   }
                 }
@@ -1411,25 +1412,30 @@ class IntegrationController {
               result.titleId = title.id
               result.uuid = title.uuid
             }
-            else {
-              result.message = "Cross Reference Title failed: ${titleObj}";
+            else if (title){
               result.result="ERROR"
               result.baddata=titleObj
               log.error("Cross Reference Title failed: ${titleObj}");
+              result.errors=title.errors
+
               if ( title?.id ) {
-                result.errors=title.errors
                 result.titleId=title.id
                 result.uuid=title.uuid
                 result.message="Title ${title.id} was matched, but could not be updated due to existing errors"
                 log.error("CrossReference Matched existing title (${title.id}) with errors: ${title.errors}")
               }
               else {
-                result.message = "Cross Reference Title failed: ${titleObj}";
+                result.message = "Cross Reference of title ${titleObj.name} failed";
               }
               // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
       //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
       //               // Event callback closure
       //         }
+            }
+            else {
+              result.result="ERROR"
+              result.baddata=titleObj
+              result.message = "There was an error while looking up title ${titleObj.name}. Please check the database for title IDs.";
             }
           }
           catch (grails.validation.ValidationException ve) {
@@ -1629,6 +1635,33 @@ class IntegrationController {
     }
 
     book_changed
+  }
+
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def getJobInfo() {
+    def result = [ 'result' : 'OK', 'params' : params ]
+    Job job = concurrencyManagerService.jobs.containsKey(params.int('id')) ? concurrencyManagerService.jobs[params.int('id')] : null
+
+    if ( job ) {
+      log.debug("${job}")
+      result.description = job.description
+      result.startTime = job.startTime
+
+      if ( job.endTime ) {
+        result.finished = true
+        result.endTime = job.endTime
+        result.job_result = job.get()
+      }
+      else {
+        result.finished = false
+        result.progress = job.progress
+      }
+    }
+    else {
+      result.result = "ERROR"
+      result.message = "Could not find job with ID ${params.id}."
+    }
+    render result as JSON
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
