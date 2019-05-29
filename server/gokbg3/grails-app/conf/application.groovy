@@ -37,6 +37,8 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/integration/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/packages/deposit',    filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/admin/bulkLoadUsers', filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/rest/**',             filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter'],
+        [pattern: '/oauth/**',            filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter'],
         [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'],
 ]
 
@@ -85,6 +87,8 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/aclEntry/**',             access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/oai',                     access: ['permitAll']],
   [pattern: '/oai/**',                  access: ['permitAll']],
+  [pattern: '/rest/**',                 access: ['permitAll']],
+  [pattern: '/oauth/**',                access: ['permitAll']],
   [pattern: '/coreference/**',          access: ['permitAll']]
 ]
 
