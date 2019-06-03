@@ -234,13 +234,20 @@ globalSearchTemplates = [
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'nominalPlatform'],
           hide:false
         ],
+        [
+          prompt:'Platform ID',
+          qparam:'qp_platform_id',
+          placeholder:'Platform ID',
+          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'nominalPlatform.id', 'type' : 'java.lang.Long'],
+          hide:true
+        ],
       ],
       qbeGlobals:[
         ['ctxtp':'filter', 'prop':'status', 'comparator' : 'eq', 'value':'Current', 'negate' : false, 'prompt':'Only Current',
          'qparam':'qp_onlyCurrent', 'default':'on', 'cat':'KBComponent.Status', 'type': 'java.lang.Object']
       ],
       qbeResults:[
-        [heading:'Provider', property:'provider?.name'],
+        [heading:'Provider', property:'provider?.name', link:true],
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name'],
         [heading:'Availability', property:'global', sort:'global'],
@@ -718,6 +725,7 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Username', property:'username', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Created', property:'dateCreated', sort:'dateCreated'],
         // [heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
       ]
     ]
