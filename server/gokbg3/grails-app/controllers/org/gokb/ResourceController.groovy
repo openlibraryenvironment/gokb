@@ -105,6 +105,7 @@ class ResourceController {
       }
       else {
         log.debug("unable to resolve object")
+        response.setStatus(404)
         result.status = 404
       }
     }

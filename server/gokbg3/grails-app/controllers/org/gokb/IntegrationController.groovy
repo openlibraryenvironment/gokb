@@ -1032,6 +1032,7 @@ class IntegrationController {
     else {
       log.debug("Not ingesting package without name!")
       result.result = "ERROR"
+      response.setStatus(400)
       result.errors = []
       result.errors.add(['code': 400, 'message': "The provided package has no name."])
     }
@@ -1093,6 +1094,7 @@ class IntegrationController {
       }
       else {
         result.message = "Could not crossreference platform ${request.JSON}"
+        response.setStatus(500)
         result.result = 'ERROR'
       }
     }
