@@ -6,6 +6,8 @@ class UserDetailsInterceptor {
 
   public UserDetailsInterceptor() {
     matchAll().excludes(controller: 'auth')
+              .excludes(controller: 'login')
+              .excludes(controller: 'rest')
               .excludes(controller: 'integration')
               .excludes(controller: 'api')
               .excludes(controller: 'oai')
@@ -108,8 +110,8 @@ class UserDetailsInterceptor {
         }
       }
       else {
+        log.debug("No user present..")
       }
-      log.debug("UserDetailsInterceptor::before(${params}) ${request.getRequestURL()}")
       log.debug("Return true");
       true 
     }
