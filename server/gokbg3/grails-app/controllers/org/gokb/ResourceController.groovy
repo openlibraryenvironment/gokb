@@ -100,13 +100,17 @@ class ResourceController {
         }
         else {
           response.setStatus(403)
-          result.status = 403
+          result.code = 403
+          result.result = "ERROR"
+          result.message = "You have no permission to view this resource."
         }
       }
       else {
         log.debug("unable to resolve object")
         response.setStatus(404)
         result.status = 404
+        result.result = "ERROR"
+        result.message = "Unable to find the requested resource."
       }
     }
 

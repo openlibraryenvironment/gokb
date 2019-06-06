@@ -34,6 +34,19 @@ class ErrorController {
       }
     }
   }
+  
+  def forbidden() {
+    def resp = [code: 403, message:'Forbidden']
+    withFormat {
+      html {
+        redirect (uri:'login/denied', params:[status:403])
+      }
+      json {
+        response.sendError(401)
+        render resp as JSON
+      }
+    }
+  }
 
   def unauthorized() {
     def resp = [code: 401, message:'Unauthorized']

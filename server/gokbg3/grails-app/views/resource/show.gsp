@@ -58,7 +58,10 @@
 </nav>
   <div id="mainarea" class="panel panel-default">
     <div class="panel-body">
-      <g:if test="${displayobj != null}">
+      <g:if test="${response.status == 403}">
+        <g:message code="springSecurity.denied.message" />
+      </g:if>
+      <g:elseif test="${displayobj != null}">
         <g:if test="${ (!displayobj.respondsTo("isEditable")) || displayobj.isEditable() }" >
           <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" >
             <div class="col-xs-3 pull-right well">
@@ -109,9 +112,6 @@
             </div>
           </g:elseif>
         </g:if>
-        <g:elseif test="${response.status == 403}">
-          <g:message code="springSecurity.denied.message" />
-        </g:elseif>
         <g:if test="${displaytemplate != null}">
           <!-- Using display template ${displaytemplate.rendername} -->
           <g:if test="${displaytemplate.type=='staticgsp'}">
@@ -119,7 +119,7 @@
                       model="${[d:displayobj, rd:refdata_properties, dtype:displayobjclassname_short]}" />
           </g:if>
         </g:if>
-      </g:if>
+      </g:elseif>
       <g:else>
         <div class="alert alert-danger" style="display:inline-block;font-weight:bolder;"><g:message code="component.notFound.label" args="[params.id]"/></div>
       </g:else>
