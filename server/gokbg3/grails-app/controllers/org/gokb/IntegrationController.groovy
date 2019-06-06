@@ -412,6 +412,8 @@ class IntegrationController {
       log.error("Unexpected error importing org",e)
       result.message ="ERROR: ${e}";
       result.result = 'ERROR'
+      result.code = 500
+      response.setStatus(500)
       result.status = false
     }
     render result as JSON

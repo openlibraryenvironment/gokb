@@ -433,9 +433,10 @@ class ApiController {
 
     }finally {
       if (errors) {
-        result.code = 400
         response.setStatus(400)
         result = [:]
+        result.result = "ERROR"
+        result.code = 400
         result.errors = errors
       }
     }
