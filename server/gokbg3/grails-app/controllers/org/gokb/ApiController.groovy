@@ -44,6 +44,7 @@ class ApiController {
     [
       "id"      : "${u.id}",
       "email"     : "${u.email}",
+      "username"    : "${u.username}",
       "displayName"   : "${u.displayName ?: u.username}"
     ]
   }
@@ -963,7 +964,7 @@ class ApiController {
     if (params.oid || params.id) {
       def obj = genericOIDService.resolveOID(params.oid ?: params.id)
 
-      if ( obj?.isReadable() ) {
+      if ( obj?.isReadable() || (obj?.class?.simpleName == 'User' && obj?.equals(springSecurityService.currentUser)) ) {
 
         if(obj.class in KBComponent) {
 
@@ -973,7 +974,13 @@ class ApiController {
         }
         else if (obj.class.name == 'org.gokb.cred.User'){
 
-          result.resource = ['id': obj.id, 'username': obj.username, 'displayName': obj.displayName, 'curatoryGroups': obj.curatoryGroups]
+          def cur_groups = []
+
+          obj.curatoryGroups?.each { cg ->
+            cur_groups.add([name: cg.name, id: cg.id])
+          }
+
+          result.resource = ['id': obj.id, 'username': obj.username, 'displayName': obj.displayName, 'curatoryGroups': cur_groups]
         }
         else {
           result.resource = obj

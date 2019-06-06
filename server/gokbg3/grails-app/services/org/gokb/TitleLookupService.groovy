@@ -134,10 +134,15 @@ class TitleLookupService {
                       ]
 
                       TitleInstance the_ti = (dproxied as TitleInstance)
+                      RefdataValue status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+                      def combo_active = Combo.executeQuery("from Combo as c where fromComponent = :ti and toComponent = :xcid and (status = :sa or status is null)", [ti: the_ti, xcid: xc_id, sa: status_active])
 
                       // Don't add repeated matches
                       if ( result['matches'].contains(the_ti) ) {
                         log.debug("Title already in list of matched instances");
+                      }
+                      else if ( combo_active.size() == 0 ) {
+                        log.debug("Matched combo has status 'Deleted'")
                       }
                       else {
                         result['matches'] << the_ti
@@ -377,12 +382,16 @@ class TitleLookupService {
                 }
 
                 def additionalInfo = [:]
+                def combo_ids = [the_title]
 
                 additionalInfo.otherComponents = []
 
                 matches.each { tlm ->
                   additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                  combo_ids.add(tlm.id)
                 }
+
+                additionalInfo.cstring = combo_ids.sort().join('_')
 
                 ReviewRequest.raise(
                   matches[0],
@@ -416,12 +425,16 @@ class TitleLookupService {
                 title_created = true
 
                 def additionalInfo = [:]
+                def combo_ids = [the_title]
 
                 additionalInfo.otherComponents = []
 
                 matches.each { tlm ->
                   additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                  combo_ids.add(tlm.id)
                 }
+
+                additionalInfo.cstring = combo_ids.sort().join('_')
 
 
                 ReviewRequest.raise(
@@ -494,12 +507,16 @@ class TitleLookupService {
             title_created = true
 
             def additionalInfo = [:]
+            def combo_ids = [the_title]
 
             additionalInfo.otherComponents = []
 
             matches.each { tlm ->
               additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+              combo_ids.add(tlm.id)
             }
+
+            additionalInfo.cstring = combo_ids.sort().join('_')
 
             ReviewRequest.raise(
               the_title,
@@ -586,6 +603,21 @@ class TitleLookupService {
             the_title.ids.add(ita)
 
             the_title.save(failOnError:true, flush:true)
+          }
+          else if (dupes?.size() == 1 && dupes[0].status == RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)) {
+
+            def combo_string = [the_title.id, ida].sort().join('_')
+            def additionalInfo = [otherComponents: [[oid:"${the_title.logEntityId}",name:"${the_title.name}"]], cstring: combo_string]
+            log.debug("Found a deleted identifier combo for ${ita} -> ${the_title}")
+
+            ReviewRequest.raise(
+              ida,
+              "Review ID status.",
+              "Identifier ${ita} was previously connected to title '${the_title}', but has since been manually removed.",
+              user,
+              project,
+              (additionalInfo as JSON).toString()
+            )
           }
           else {
             log.debug("Identifier ${ita} is already connected to the title!");

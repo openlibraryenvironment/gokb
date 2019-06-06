@@ -1195,7 +1195,7 @@ where cp.owner = :c
           KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
         }
         else {
-          log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+          log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
         }
 
       }
@@ -1413,13 +1413,15 @@ where cp.owner = :c
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component",[component:this]);
+    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component",[component:this])
+
     this.delete(flush:true, failOnError:true)
     result;
   }
 
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
-    def cids = this.ids ?: []
+    def cids = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value, family from Identifier as i, Combo as c left join i.namespace.datatype as datatype left join i.namespace.family as family where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
     String cName = this.class.name
     
     // Singel props.

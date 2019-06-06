@@ -44,10 +44,7 @@
           </a>
         </li>
         <li>
-          <a href="#identifiers" data-toggle="tab">
-            IDs
-            <span class="badge badge-warning"> ${d.ids?.size() ?: '0'}</span>
-          </a>
+          <a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a>
         </li>
         <li><a href="#relationships" data-toggle="tab">Relations</a></li>
         <li><a href="#licenses" data-toggle="tab">Licenses</a></li>
