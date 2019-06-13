@@ -1413,6 +1413,8 @@ where cp.owner = :c
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component",[component:this]);
+    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component",[component:this])
+
     this.delete(flush:true, failOnError:true)
     result;
   }
