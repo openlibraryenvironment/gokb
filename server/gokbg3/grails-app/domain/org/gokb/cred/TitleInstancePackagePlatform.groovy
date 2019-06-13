@@ -151,6 +151,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   def afterUpdate() {
+    this.pkg.lastSeen = new Date().getTime()
   }
 
   /**
@@ -163,7 +164,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 //     result.hostPlatform = tipp_fields.hostPlatform
 //     result.pkg = tipp_fields.pkg
     
-    def result = new TitleInstancePackagePlatform().save(failOnError: true)
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid).save(failOnError: true)
 
     if ( result ) {
       def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
@@ -285,7 +286,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( !tipp ) {
         log.debug("Creating new TIPP..")
-        tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': trimmed_url]).save(failOnError: true)
+        tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': trimmed_url, 'uuid': (tipp_dto.uuid ?: null)]).save(failOnError: true)
         // Hibernate problem
 
         if (!tipp){

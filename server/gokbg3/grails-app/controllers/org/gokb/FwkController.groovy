@@ -104,6 +104,7 @@ class FwkController {
             and {
               eq('className', qry_params.ocn)
               eq('persistedObjectId', qry_params.oid)
+              ne('propertyName', 'lastSeen')
             }
             and {
               'in'('persistedObjectId', qry_params.comboids)
