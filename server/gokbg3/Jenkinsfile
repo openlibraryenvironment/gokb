@@ -1,13 +1,12 @@
 node {
 
-
   stage('Test') {
-    sh './gradlew --no-daemon --console plain clean test-app'
+    sh 'server/gokbg3/gradlew --no-daemon --console plain clean test-app'
   }
 
   stage('Build') {
-    sh './gradlew --no-daemon --console plain clean war'
-    exports = findFiles glob: 'build/libs/*.jar'
+    sh 'server/gokbg3/gradlew --no-daemon --console plain clean war'
+    exports = findFiles glob: 'server/gokbg3/build/libs/*.jar'
   }
 
 }
