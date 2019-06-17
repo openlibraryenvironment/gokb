@@ -2,7 +2,7 @@ node {
 
   stage('Test') {
     dir ('server/gokbg3') {
-      sh 'pwd; la -l; ./gradlew --no-daemon --console plain clean test-app'
+      sh 'pwd; ls -la; ./gradlew --no-daemon --console plain clean test-app'
     }
   }
 
