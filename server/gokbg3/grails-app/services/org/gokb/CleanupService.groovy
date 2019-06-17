@@ -271,14 +271,14 @@ class CleanupService {
           ctr++
         }
         catch(grails.validation.ValidationException ve){
-          log.debug("ensureUuids :: Skip component id ${kbc_id} because of validation")
-          log.debug("${ve.errors}")
+          log.error("ensureUuids :: Skip component id ${kbc_id} because of validation")
+          log.error("${ve.errors}")
           skipped.add(kbc_id)
           skipped++
         }
         catch(Exception e){
-          log.debug("ensureUuids :: Skip component id ${kbc_id}")
-          log.debug("${e}")
+          log.error("ensureUuids :: Skip component id ${kbc_id}")
+          log.error("${e}")
           skipped.add(kbc_id)
           skipped++
         }
@@ -288,7 +288,7 @@ class CleanupService {
 
     j.message("Finished adding missing uuids (total: ${ctr}, skipped: ${skipped.size()})".toString())
 
-    if (skipped > 0) log.debug("ensureUuids :: ${skipped.size()} components skipped when updating with uuid");
+    if (skipped > 0) log.error("ensureUuids :: ${skipped.size()} components skipped when updating with uuid");
 
     j.endTime = new Date()
   }
