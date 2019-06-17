@@ -257,7 +257,7 @@ class CleanupService {
   def ensureUuids(Job j = null)  {
     log.debug("GOKb missing uuid check..")
     def ctr = 0
-    def skipped = 0
+    def skipped = []
     KBComponent.withNewSession {
       KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").eachWithIndex { kbc_id ->
         try {
@@ -270,20 +270,27 @@ class CleanupService {
           comp.discard()
           ctr++
         }
+        catch(grails.validation.ValidationException ve){
+          log.debug("ensureUuids :: Skip component id ${kbc_id} because of validation")
+          log.debug("${ve.errors}")
+          skipped.add(kbc_id)
+          skipped++
+        }
         catch(Exception e){
           log.debug("ensureUuids :: Skip component id ${kbc_id}")
           log.debug("${e}")
-          result.skipped.add(kbc_id)
+          skipped.add(kbc_id)
           skipped++
         }
       }
     }
     log.debug("ensureUuids :: ${ctr} components updated with uuid");
 
-    if (skipped > 0) log.debug("${skipped} components skipped when updating with uuid");
+    j.message("Finished adding missing uuids (total: ${ctr}, skipped: ${skipped.size()})".toString())
+
+    if (skipped > 0) log.debug("ensureUuids :: ${skipped.size()} components skipped when updating with uuid");
 
     j.endTime = new Date()
-    j.message("Finished adding missing uuids (total: ${ctr}, skipped: ${skipped})".toString())
   }
 
   @Transactional
