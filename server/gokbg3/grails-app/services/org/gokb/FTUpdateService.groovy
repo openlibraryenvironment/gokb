@@ -238,6 +238,7 @@ class FTUpdateService {
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
             cst.coverageNote = tcs.coverageNote ?: ""
+            cst.coverageDepth = tcs.coverageDepth ?: ""
 
             result.coverage.add(cst)
           }
