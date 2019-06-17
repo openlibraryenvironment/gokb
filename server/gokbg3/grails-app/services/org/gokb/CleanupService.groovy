@@ -259,7 +259,7 @@ class CleanupService {
     def ctr = 0
     def skipped = []
     KBComponent.withNewSession {
-      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").eachWithIndex { kbc_id ->
+      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").each { kbc_id ->
         try {
           KBComponent comp = KBComponent.get(kbc_id)
           log.debug("Repair component with no uuid.. ${comp.class.name} ${comp.id} ${comp.name}")
