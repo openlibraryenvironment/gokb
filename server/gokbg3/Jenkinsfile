@@ -13,6 +13,5 @@ node {
     dir ('server/gokbg3') {
       sh './gradlew --no-daemon --console plain clean war'
     }
-    exports = findFiles glob: 'build/libs/*.jar'
   }
 }
