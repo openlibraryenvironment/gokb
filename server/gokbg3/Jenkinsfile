@@ -12,6 +12,10 @@ node {
   stage('Build') {
     dir ('server/gokbg3') {
       sh './gradlew --no-daemon --console plain clean war'
+      sh 'ls -la'
     }
+  }
+
+  stage('Deploy') {
   }
 }
