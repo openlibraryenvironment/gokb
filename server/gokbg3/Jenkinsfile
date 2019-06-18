@@ -1,4 +1,6 @@
 node {
+  jdk = tool name: 'OracleJava8'
+  env.JAVA_HOME = "${jdk}"
 
   stage('Test') {
     checkout scm
