@@ -1,6 +1,7 @@
 node {
 
   stage('Test') {
+    checkout scm
     dir ('server/gokbg3') {
       sh './gradlew --no-daemon --console plain clean test'
     }
