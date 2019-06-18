@@ -150,7 +150,7 @@ globalSearchTemplates = [
          'qparam':'qp_onlyCurrent', 'default':'on', 'cat':'KBComponent.Status', 'type': 'java.lang.Object']
       ],
       qbeResults:[
-        [heading:'Type', property:'class.simpleName'],
+        [heading:'Type', property:'niceName'],
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Status', property:'status?.value',sort:'status'],
         [heading:'Edit Status', property:'editStatus?.value',sort:'editStatus'],
@@ -711,7 +711,9 @@ globalSearchTemplates = [
   'Users':[
     baseclass:'org.gokb.cred.User',
     title:'Users',
-    group:'Secondary',
+    group:'Admin',
+    defaultSort:'id',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
@@ -725,7 +727,11 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Username', property:'username', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Created', property:'dateCreated', sort:'dateCreated'],
+        [heading:'Enabled', property:'enabled'],
+        [heading:'Contributor', property:'contributorStatus'],
+        [heading:'Editor', property:'editorStatus'],
+        [heading:'API-User', property:'apiUserStatus'],
+        [heading:'Admin', property:'adminStatus']
         // [heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
       ]
     ]
