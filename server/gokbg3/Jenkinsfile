@@ -5,19 +5,19 @@ node {
   stage('Test') {
     checkout scm
     dir ('server/gokbg3') {
-      sh './gradlew --no-daemon --console plain clean test'
+      sh './gradlew --no-daemon --console plain test'
     }
   }
 
   stage('Build') {
     dir ('server/gokbg3') {
-      sh './gradlew --no-daemon --console plain clean war'
+      sh './gradlew --no-daemon --console plain war'
     }
   }
 
   stage('Deploy') {
      dir ('server/gokbg3') {
-        sh 'cp build/libs/gokbg3*.war ../../../../../default/webapps/gokb.war'
+        sh './gradlew --no-daemon --console plain bootRun'
      }
   }
 }
