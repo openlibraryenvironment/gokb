@@ -1552,7 +1552,7 @@ class WorkflowController {
 
     log.debug("createTitleHistoryEvent")
 
-    def result=[:]
+    def result=[result:'OK']
 
     try {
       if ( ( params.afterTitles != null ) && ( params.beforeTitles != null ) ) {
@@ -1585,13 +1585,29 @@ class WorkflowController {
     }
     catch ( Exception e ) {
       log.error("problem creating title history event",e)
+      result.result = "ERROR"
+      flash.error = "History event could not be created!"
+      result.message = "There was an error creating the event."
     }
     finally{
       log.debug("Completed createTitleHistoryEvent")
     }
 
-    result.ref=request.getHeader('referer')
-    redirect(url: result.ref)
+    withFormat {
+      html {
+        result.ref=request.getHeader('referer')
+        redirect(url: result.ref)
+      }
+      json {
+        result.params = (params)
+
+        if (result.result != "ERROR") {
+          result.message = "History event was sucessfully created."
+        }
+
+        render result as JSON
+      }
+    }
   }
 
   @Transactional

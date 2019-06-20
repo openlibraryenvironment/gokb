@@ -175,6 +175,8 @@ environments:
         cache:
             headers:
                 enabled: false
+        javamelody:
+            disabled: true
     production:
         dataSource:
             dbCreate: update
