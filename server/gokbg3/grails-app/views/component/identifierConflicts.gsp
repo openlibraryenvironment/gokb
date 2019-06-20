@@ -51,7 +51,7 @@
                   <td>
                     <ul>
                     <g:each in="${st.ids}" var="cid">
-                      <li>${cid.namespace.value}:${cid.value}</li>
+                      <li><span style="${cid.namespace.value == namespace.value ?'font-weight:bold;':''}">${cid.namespace.value}:${cid.value}</span></li>
                     </g:each>
                     </ul>
                   </td>
@@ -86,7 +86,7 @@
                     <td><g:link controller="resource" action="show" id="${did.uuid}"><span style="white-space:nowrap">${did.value}</span></g:link></td>
                     <td>
                       <g:each in="${did.identifiedComponents}" var="idc">
-                        <div><g:link controller="resource" action="show" id="${idc.uuid}">${idc.name}</g:link></div>
+                        <div><g:link controller="resource" action="show" id="${idc.uuid}">${idc.name} (${idc.status?.value ?: 'Unknown Status'})</g:link></div>
                       </g:each>
                     </td>
                   </tr>
