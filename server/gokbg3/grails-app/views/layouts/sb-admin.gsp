@@ -152,6 +152,9 @@
                           qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open').id))
                         ]}"><i class="fa fa-angle-double-right fa-fw"></i>
                         Data Review</g:link></li>
+                    <li><g:link controller="component" action="identifierConflicts">
+                        <i class="fa fa-angle-double-right fa-fw"></i>
+                        Identifier Review</g:link></li>
                   </ul>
               </li>
               </g:if>

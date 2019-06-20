@@ -56,5 +56,9 @@ class IdentifierNamespace {
     value = value.toLowerCase()
   }
 
+  public String toString() {
+    "${this.value}".toString()
+  }
+
 
 }
