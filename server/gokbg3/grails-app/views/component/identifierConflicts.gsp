@@ -33,7 +33,7 @@
   </div>
   <g:if test="${namespace}">
     <g:if test="${!ctype || ctype != 'di'}">
-      <h1 class="page-header">Ambiguously identified components for <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${singleTitles.size()})</h1>
+      <h1 class="page-header">Components with multiple IDs of namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${singleTitles.size()})</h1>
       <div id="mainarea" class="panel panel-default">
 
         <g:if test="${singleTitles.size() > 0}">
@@ -69,7 +69,7 @@
     </g:if>
 
     <g:if test="${!ctype || ctype != 'st'}">
-      <h1 class="page-header">Identifiers connected to multiple components for <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${dispersedIds.size()})</h1>
+      <h1 class="page-header">Identifiers connected to multiple components for namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${dispersedIds.size()})</h1>
       <div id="mainarea" class="panel panel-default">
 
         <g:if test="${dispersedIds.size() > 0}">
