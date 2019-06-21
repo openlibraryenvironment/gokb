@@ -47,7 +47,13 @@
             <tbody>
               <g:each in="${singleTitles}" var="st">
                 <tr>
-                  <td><g:link controller="resource" action="show" id="${st.uuid}">${st.name}</g:link></td>
+                  <td>
+                    <g:link controller="resource" action="show" id="${st.uuid}">${st.name}</g:link>
+                    <ul>
+                      <li>Edit Status: ${st.editStatus?.value ?: 'Not Set'}</li>
+                      <li>Latest Publisher: ${st.currentPublisher?.name ?: 'None'}</li>
+                    </ul>
+                  </td>
                   <td>
                     <ul>
                     <g:each in="${st.ids}" var="cid">
