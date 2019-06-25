@@ -79,30 +79,32 @@
         <tr>
           <th></th>
           <g:each in="${qbeConfig.qbeResults}" var="c">
+            <g:set var="colcode" value="${baseClass + '.' + c.heading}" />
+            <g:set var="colmsg" value="${message(code: colcode, default:c.heading)}" />
             <g:if test="${!params.hide || !params.hide.contains(c.qpEquiv)}">
               <th style="white-space:nowrap"><g:if test="${c.sort}">
                   <g:if test="${params.sort==c.sort && params.order=='asc'}">
                     <g:link params="${params+['sort':c.sort,order:'desc']}">
-                      ${c.heading}
+                      ${colmsg == colcode ? c.heading : colmsg}
                       <i class="fas fa-sort-up"></i>
                     </g:link>
                   </g:if>
                   <g:else>
                     <g:if test="${params.sort==c.sort && params.order=='desc'}">
                       <g:link params="${params+['sort':c.sort,order:'asc']}">
-                        ${c.heading}
+                        ${colmsg == colcode ? c.heading : colmsg}
                         <i class="fas fa-sort-down"></i>
                       </g:link>
                     </g:if>
                     <g:else>
                       <g:link params="${params+['sort':c.sort,order:'desc']}">
-                        ${c.heading}
+                        ${colmsg == colcode ? c.heading : colmsg}
                         <i class="fas fa-sort"></i>
                       </g:link>
                     </g:else>
                   </g:else>
                 </g:if> <g:else>
-                  ${c.heading}
+                  ${colmsg == colcode ? c.heading : colmsg}
                 </g:else></th>
             </g:if>
           </g:each>
@@ -117,7 +119,7 @@
             <g:set var="row_obj" value="${r.obj}" />
             <tr class="${++counter==det ? 'success':''}">
               <!-- Row ${counter} -->
-              <td><g:if
+              <td style="vertical-align:middle;"><g:if
                   test="${row_obj?.isEditable() && row_obj.respondsTo('availableActions')}">
                   <g:set var="al"
                     value="${new JSON(row_obj?.userAvailableActions()).toString().encodeAsHTML()}" />
@@ -129,7 +131,7 @@
                     disabled="disabled" readonly="readonly" />
                 </g:else></td>
               <g:each in="${r.cols}" var="c">
-                <td><g:if test="${ c.link != null }">
+                <td style="vertical-align:middle;"><g:if test="${ c.link != null }">
                     <g:link controller="resource"
                       action="show"
                       id="${c.link}"
@@ -137,6 +139,14 @@
                       ${c.value}
                     </g:link>
                   </g:if>
+                  <g:elseif test="${c.value instanceof Boolean}">
+                    <g:if test="${c.value}">
+                      <i class="fa fa-check-circle text-success fa-lg" title="${message(code:'default.boolean.true')}"></i>
+                    </g:if>
+                    <g:else>
+                      <i class="fa fa-times-circle text-danger fa-lg" title="${message(code:'default.boolean.false')}"></i>
+                    </g:else>
+                  </g:elseif>
                   <g:else>
                     ${c.value}
                   </g:else></td>
