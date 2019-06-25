@@ -1682,7 +1682,8 @@ class WorkflowController {
                       'first_editor\t'+
                       'parent_publication_title_id\t'+
                       'publication_type\t'+
-                      'access_type\n');
+                      'access_type\t'+
+                      'zdb_id\n');
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
@@ -1705,8 +1706,8 @@ class WorkflowController {
                 tipp.coverageStatements.each { cst ->
                   writer.write(
                               sanitize( tipp.title.name ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
                               sanitize( cst.startDate ) + '\t' +
                               sanitize( cst.startVolume ) + '\t' +
                               sanitize( cst.startIssue ) + '\t' +
@@ -1728,15 +1729,16 @@ class WorkflowController {
                               (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                               '\t' +  // parent_publication_title_id
                               sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                              sanitize( tipp.paymentType?.value ) +  // access_type
+                              sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
+                              sanitize( tipp.title.getIdentifierValue('ZDB') ) +
                               '\n');
                 }
               }
               else {
                   writer.write(
                               sanitize( tipp.title.name ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
                               sanitize( tipp.startDate ) + '\t' +
                               sanitize( tipp.startVolume ) + '\t' +
                               sanitize( tipp.startIssue ) + '\t' +
@@ -1758,7 +1760,8 @@ class WorkflowController {
                               (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                               '\t' +  // parent_publication_title_id
                               sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                              sanitize( tipp.paymentType?.value ) +  // access_type
+                              sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
+                              sanitize( tipp.title.getIdentifierValue('ZDB') ) +
                               '\n');
               }
               tipp.discard();
