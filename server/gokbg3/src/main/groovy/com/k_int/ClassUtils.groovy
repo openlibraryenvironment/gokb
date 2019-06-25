@@ -66,7 +66,7 @@ class ClassUtils {
 
   public static boolean setRefdataIfPresent(value, objid, prop, cat = null) {
     boolean result = false
-    ClassExaminationService classExaminationService = grails.util.Holders.applicationContext.getBean('classExaminationService') as ClassExaminationService
+    ClassExaminationService classExaminationService = grails.util.Holders.applicationContext.getBean('classExaminationService')
     def kbc = KBComponent.get(objid)
 
     if (!cat) {
