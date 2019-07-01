@@ -1,0 +1,55 @@
+These two script variants select all components (A: journals & B: databases) that possess multiple
+instances of identifiers of the same type.
+Please note that '<id>' has to be replaced by the internal identifier pointing to the identifier that
+has to be investigated.
+
+A: Journals:
+
+SELECT kbc1.kbc_id, tipp.kbc_id, pkg.kbc_id, cg.kbc_id, id1.kbc_id, id1.id_value
+FROM combo AS co1, combo AS co2, combo AS co3, combo AS co4, kbcomponent AS kbc1, package AS pkg, title_instance_package_platform as tipp, curatory_group AS cg, journal_instance AS ji1, identifier AS id1
+WHERE co1.combo_from_fk = kbc1.kbc_id
+AND co1.combo_to_fk = tipp.kbc_id
+AND co2.combo_from_fk = pkg.kbc_id
+AND co2.combo_to_fk = tipp.kbc_id
+AND co3.combo_from_fk = pkg.kbc_id
+AND co3.combo_to_fk = cg.kbc_id
+AND co4.combo_from_fk = kbc1.kbc_id
+AND co4.combo_to_fk = id1.kbc_id
+AND ji1.kbc_id = kbc1.kbc_id
+AND id1.id_namespace_fk = 41602
+AND kbc1.kbc_id = ANY (
+    SELECT kbc.kbc_id
+    FROM combo AS co, kbcomponent AS kbc, journal_instance AS ji, identifier AS id
+    WHERE co.combo_from_fk = kbc.kbc_id
+    AND co.combo_to_fk = id.kbc_id
+    AND ji.kbc_id = kbc.kbc_id
+    AND id.id_namespace_fk = <id>
+    GROUP BY kbc.kbc_id
+    HAVING COUNT(kbc.kbc_id) > 1
+);
+
+B: Databases:
+
+SELECT kbc1.kbc_id, tipp.kbc_id, pkg.kbc_id, cg.kbc_id, id1.kbc_id, id1.id_value
+FROM combo AS co1, combo AS co2, combo AS co3, combo AS co4, kbcomponent AS kbc1, package AS pkg, title_instance_package_platform as tipp, curatory_group AS cg, database_instance AS di1, identifier AS id1
+WHERE co1.combo_from_fk = kbc1.kbc_id
+AND co1.combo_to_fk = tipp.kbc_id
+AND co2.combo_from_fk = pkg.kbc_id
+AND co2.combo_to_fk = tipp.kbc_id
+AND co3.combo_from_fk = pkg.kbc_id
+AND co3.combo_to_fk = cg.kbc_id
+AND co4.combo_from_fk = kbc1.kbc_id
+AND co4.combo_to_fk = id1.kbc_id
+AND di1.kbc_id = kbc1.kbc_id
+AND id1.id_namespace_fk = 41602
+AND kbc1.kbc_id = ANY (
+    SELECT kbc.kbc_id
+    FROM combo AS co, kbcomponent AS kbc, database_instance AS di, identifier AS id
+    WHERE co.combo_from_fk = kbc.kbc_id
+    AND co.combo_to_fk = id.kbc_id
+    AND di.kbc_id = kbc.kbc_id
+    AND id.id_namespace_fk = <id>
+    GROUP BY kbc.kbc_id
+    HAVING COUNT(kbc.kbc_id) > 1
+);
+
