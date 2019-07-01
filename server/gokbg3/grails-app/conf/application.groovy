@@ -55,6 +55,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/register/**',             access: ['permitAll']],
   [pattern: '/packages/**',             access: ['permitAll']],
   [pattern: '/public/**',               access: ['permitAll']],
+  [pattern: '/component/identifierConflicts', access: ['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/public',                  access: ['permitAll']],
   [pattern: '/globalSearch/**',         access: ['ROLE_USER']],
   [pattern: '/home/**',                 access: ['ROLE_USER']],
