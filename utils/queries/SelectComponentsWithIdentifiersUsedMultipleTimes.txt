@@ -1,0 +1,51 @@
+These two script variants select all components (A: journals & B: databases) that share the same identifier.
+So, if e. g. an eISSN is shared by two components, they should be delivered in the statement's result.
+Please note that '<id>' has to be replaced by the internal identifier pointing to the identifier that
+has to be investigated.
+
+A: Journals:
+
+SELECT kbc1.kbc_id, tipp.kbc_id, pkg.kbc_id, cg.kbc_id, id1.kbc_id, id1.id_value
+FROM combo AS co1, combo AS co2, combo AS co3, combo AS co4, kbcomponent AS kbc1, package AS pkg, title_instance_package_platform as tipp, curatory_group AS cg, journal_instance AS ji, identifier AS id1
+WHERE co1.combo_from_fk = kbc1.kbc_id
+AND co1.combo_to_fk = tipp.kbc_id
+AND co2.combo_from_fk = pkg.kbc_id
+AND co2.combo_to_fk = tipp.kbc_id
+AND co3.combo_from_fk = pkg.kbc_id
+AND co3.combo_to_fk = cg.kbc_id
+AND co4.combo_from_fk = kbc1.kbc_id
+AND co4.combo_to_fk = id1.kbc_id
+AND ji.kbc_id = kbc1.kbc_id
+AND id1.kbc_id = ANY (
+SELECT id.kbc_id
+FROM combo AS co, identifier AS id, kbcomponent AS kbc
+WHERE co.combo_to_fk = id.kbc_id
+AND co.combo_from_fk = kbc.kbc_id
+AND id.id_namespace_fk = <id>
+GROUP BY id.kbc_id
+HAVING count(id.id_value) > 1
+);
+
+B: Databases:
+
+SELECT kbc1.kbc_id, tipp.kbc_id, pkg.kbc_id, cg.kbc_id, id1.kbc_id, id1.id_value
+FROM combo AS co1, combo AS co2, combo AS co3, combo AS co4, kbcomponent AS kbc1, package AS pkg, title_instance_package_platform as tipp, curatory_group AS cg, database_instance AS di, identifier AS id1
+WHERE co1.combo_from_fk = kbc1.kbc_id
+AND co1.combo_to_fk = tipp.kbc_id
+AND co2.combo_from_fk = pkg.kbc_id
+AND co2.combo_to_fk = tipp.kbc_id
+AND co3.combo_from_fk = pkg.kbc_id
+AND co3.combo_to_fk = cg.kbc_id
+AND co4.combo_from_fk = kbc1.kbc_id
+AND co4.combo_to_fk = id1.kbc_id
+AND di.kbc_id = kbc1.kbc_id
+AND id1.kbc_id = ANY (
+SELECT id.kbc_id
+FROM combo AS co, identifier AS id, kbcomponent AS kbc
+WHERE co.combo_to_fk = id.kbc_id
+AND co.combo_from_fk = kbc.kbc_id
+AND id.id_namespace_fk = <id>
+GROUP BY id.kbc_id
+HAVING count(id.id_value) > 1
+);
+
