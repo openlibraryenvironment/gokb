@@ -18,8 +18,8 @@ node {
   stage('Deploy') {
      dir ('server/gokbg3') {
         def props = readProperties file: 'gradle.properties'
-        sh 'echo ${props.appVersion}'
-        sh 'cp build/libs/gokbg3*.war /opt/laser/apache-tomcat/default/webapps/gokb_${BUILD_TAG}.war.bak'
+        sh "echo ${props.appVersion}"
+        sh "cp build/libs/gokbg3-${props.appVersion}.war /opt/laser/apache-tomcat/default/webapps/gokb.war.${props.appVersion}.bak'
      }
   }
 }
