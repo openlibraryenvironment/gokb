@@ -18,7 +18,6 @@ node {
   stage('Deploy') {
      dir ('server/gokbg3') {
         def props = readProperties file: 'gradle.properties'
-        writeJSON file: 'output.json', json: props
         sh 'echo ${props.appVersion}'
         sh 'cp build/libs/gokbg3*.war /opt/laser/apache-tomcat/default/webapps/gokb_${BUILD_TAG}.war.bak'
      }
