@@ -47,10 +47,21 @@
           <a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a>
         </li>
         <li><a href="#relationships" data-toggle="tab">Relations</a></li>
-        <li><a href="#licenses" data-toggle="tab">Licenses</a></li>
-        <li><a href="#packages" data-toggle="tab">Packages</a></li>
-        <li><a href="#titles" data-toggle="tab">Published Titles</a></li>
-        <li><a href="#platforms" data-toggle="tab">Platforms</a></li>
+        <li>
+          <a href="#packages" data-toggle="tab">Packages
+            <span class="badge badge-warning"> ${d.providedPackages?.size() ?: '0'}</span>
+          </a>
+        </li>
+        <li>
+          <a href="#titles" data-toggle="tab">Published Titles
+            <span class="badge badge-warning"> ${d.publishedTitles?.size() ?: '0'}</span>
+          </a>
+        </li>
+        <li>
+          <a href="#platforms" data-toggle="tab">Platforms
+            <span class="badge badge-warning"> ${d.providedPlatforms?.size() ?: '0'}</span>
+          </a>
+        </li>
         <li>
           <a href="#addprops" data-toggle="tab">
             Custom Fields
@@ -74,7 +85,6 @@
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">IDs </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Relations </span></li>
-        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Licenses </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Packages </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Published Titles </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Platforms </span></li>

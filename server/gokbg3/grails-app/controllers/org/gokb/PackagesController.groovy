@@ -412,7 +412,8 @@ class PackagesController {
                         'first_editor\t'+
                         'parent_publication_title_id\t'+
                         'publication_type\t'+
-                        'access_type\n');
+                        'access_type\t'+
+                        'zdb_id\n');
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
@@ -459,7 +460,8 @@ class PackagesController {
                                 (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                                 '\t' +  // parent_publication_title_id
                                 sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                                sanitize( tipp.paymentType?.value ) +  // access_type
+                                sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
+                                sanitize( tipp.title.getIdentifierValue('ZDB')) +
                                 '\n');
                   }
                 }
@@ -489,7 +491,8 @@ class PackagesController {
                                 (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                                 '\t' +  // parent_publication_title_id
                                 sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                                sanitize( tipp.paymentType?.value ) +  // access_type
+                                sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
+                                sanitize( tipp.title.getIdentifierValue('ZDB')) +
                                 '\n');
                 }
                 tipp.discard();

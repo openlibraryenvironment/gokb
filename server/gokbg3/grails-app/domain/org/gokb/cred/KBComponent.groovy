@@ -60,6 +60,7 @@ where cp.owner = :c
         'componentHash',
         'componentDiscriminator',
         'normname',
+        'lastSeen',
         'shortcode',
         'systemComponent',
         'insertBenchmark',

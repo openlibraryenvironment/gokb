@@ -38,27 +38,27 @@
 		<g:each var='entry' in='${roleMap}'>
 			<g:set var='roleName' value='${uiPropertiesStrategy.getProperty(entry.key, 'authority')}'/>
 			<g:if test="${su || ( roleName != 'ROLE_SUPERUSER' && !user.hasRole('ROLE_SUPERUSER') )}">
-                          <div>
-                                  <g:checkBox name='${roleName}' value='${entry.value}'/>
-                                  <g:if test="${su}">
-                                    <g:link controller='role' action='edit' id='${entry.key.id}'>${roleName}</g:link>
-                                  </g:if>
-                                  <g:else>
-                                    ${roleName}
-                                  </g:else>
-                          </div>
-                        </g:if>
-                        <g:else>
-                          <div>
-                                  <g:checkBox name='${roleName}' value='${entry.value}' disabled="true"/>
-                                  <g:if test="${su}">
-                                    <g:link controller='role' action='edit' id='${entry.key.id}'>${roleName}</g:link>
-                                  </g:if>
-                                  <g:else>
-                                    ${roleName}
-                                  </g:else>
-                          </div>
-                        </g:else>
+        <div>
+                <g:checkBox name='${roleName}' value='${entry.value}'/>
+                <g:if test="${su}">
+                  <g:link controller='role' action='edit' id='${entry.key.id}'>${roleName}</g:link>
+                </g:if>
+                <g:else>
+                  ${roleName}
+                </g:else>
+        </div>
+      </g:if>
+      <g:else>
+        <div>
+                <g:checkBox name='${roleName}' value='${entry.value}' disabled="true"/>
+                <g:if test="${su}">
+                  <g:link controller='role' action='edit' id='${entry.key.id}'>${roleName}</g:link>
+                </g:if>
+                <g:else>
+                  ${roleName}
+                </g:else>
+        </div>
+      </g:else>
 		</g:each>
 		</s2ui:tab>
 	</s2ui:tabs>

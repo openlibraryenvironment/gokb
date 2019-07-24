@@ -32,12 +32,12 @@ class User extends Party {
   RefdataValue send_alert_emails
   RefdataValue showQuickView
   RefdataValue showInfoIcon
-    
+
   static hasMany = [
     curatoryGroups : CuratoryGroup,
 
   ]
-  
+
   static mappedBy = [curatoryGroups: "users"]
 
   static constraints = {
@@ -64,11 +64,11 @@ class User extends Party {
   Set<Role> getAuthorities() {
     UserRole.findAllByUser(this).collect { it.role } as Set
   }
-  
+
   public transient boolean hasRole (String roleName) {
-    
+
     Role role = Role.findByAuthority("${roleName}")
-    
+
     if (role != null) {
       return getAuthorities().contains(role)
     } else {
@@ -104,31 +104,83 @@ class User extends Party {
 
     return result
   }
-  
+
   transient boolean isAdmin() {
     Role adminRole = Role.findByAuthority("ROLE_ADMIN")
-    
+
     if (adminRole != null) {
       return getAuthorities().contains(adminRole)
     } else {
       log.error( "Error loading admin role (ROLE_ADMIN)" )
     }
-    
+
     adminRole.save()
     false
-  } 
+  }
+
+  transient boolean getAdminStatus() {
+    Role role = Role.findByAuthority("ROLE_ADMIN")
+
+    if (role != null) {
+      return getAuthorities().contains(role)
+    } else {
+      log.error( "Error loading admin role (ROLE_EDITOR)" )
+    }
+
+    role.save()
+    false
+  }
+
+  transient boolean getEditorStatus() {
+    Role role = Role.findByAuthority("ROLE_EDITOR")
+
+    if (role != null) {
+      return getAuthorities().contains(role)
+    } else {
+      log.error( "Error loading admin role (ROLE_EDITOR)" )
+    }
+
+    role.save()
+    false
+  }
+
+  transient boolean getContributorStatus() {
+    Role role = Role.findByAuthority("ROLE_CONTRIBUTOR")
+
+    if (role != null) {
+      return getAuthorities().contains(role)
+    } else {
+      log.error( "Error loading admin role (ROLE_CONTRIBUTOR)" )
+    }
+
+    role.save()
+    false
+  }
+
+  transient boolean getApiUserStatus() {
+    Role role = Role.findByAuthority("ROLE_API")
+
+    if (role != null) {
+      return getAuthorities().contains(role)
+    } else {
+      log.error( "Error loading admin role (ROLE_API)" )
+    }
+
+    role.save()
+    false
+  }
 
   def beforeInsert() {
   }
 
   def beforeUpdate() {
   }
-  
-  public boolean isEditable(boolean default_to = true) {    
+
+  public boolean isEditable(boolean default_to = true) {
     // Users can edit themselves.
     return User.isTypeEditable (default_to)
   }
-  
+
 //   @Override
 //   public boolean equals(Object obj) {
 //
@@ -155,24 +207,24 @@ class User extends Party {
     userOptions.availableSearches = grailsApplication.config.globalSearchTemplates.sort{ it.value.title }
     userOptions
   }
-  
+
   transient def getUserPreferences() {
     def userPrefs = [:]
-    
+
     // Use the available meta methods to get a list of all the properties against the user.
     // If they are of type refdata/and are set then we add here. If they are null then we should omit.
     def props = User.declaredFields.grep { !it.synthetic }
     for (Field p : props) {
       if (p.type == RefdataValue.class) {
         // Let's get the value.
-        
+
         def val = this."${p.name}"
         if (val) {
           userPrefs["${p.name}"] = val.value?.equalsIgnoreCase("Yes") ? true : false
         }
       }
     }
-    
+
     // Return the prefs.
     userPrefs
   }
@@ -256,7 +308,7 @@ class User extends Party {
           whenPresent:[ [ type:'val', colname:'username', errorOnMissing:true] ],
           ref:'MainUserItem',
           cls:'org.gokb.cred.User',
-          creation : [ 
+          creation : [
             properties:[
               [ type:'val', property:'username', colname:'username' ],
               [ type:'val', property:'password', colname:'password' ],
@@ -304,5 +356,5 @@ class User extends Party {
       ]
     ]
   ]
-  
+
 }

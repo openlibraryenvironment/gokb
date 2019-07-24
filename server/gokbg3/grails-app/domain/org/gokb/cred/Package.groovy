@@ -133,11 +133,10 @@ class Package extends KBComponent {
   @Transient
   public getTitles(def onlyCurrent = true, int max = 10, offset = 0) {
     def all_titles = null
+    log.debug("getTitles :: current ${onlyCurrent} - max ${max} - offset ${offset}")
 
     if (this.id) {
       if (onlyCurrent) {
-        def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
-        def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
         def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
 
         all_titles = TitleInstance.executeQuery('''select distinct title
@@ -168,6 +167,37 @@ class Package extends KBComponent {
     }
 
     return all_titles;
+  }
+
+  @Transient
+  public getCurrentTitleCount() {
+    def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
+
+    int result = TitleInstance.executeQuery('''select count(title.id)
+      from TitleInstance as title,
+        Combo as pkgCombo,
+        Combo as titleCombo,
+        TitleInstancePackagePlatform as tipp
+      where pkgCombo.toComponent=tipp
+        and pkgCombo.fromComponent=?
+        and titleCombo.toComponent=tipp
+        and titleCombo.fromComponent=title
+        and tipp.status = ?
+        and title.status = ?'''
+        ,[this,refdata_current,refdata_current])[0];
+
+    result
+  }
+
+  @Transient
+  public getCurrentTippCount() {
+    def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
+    def combo_tipps = RefdataCategory.lookup('Combo.Type','Package.Tipps')
+
+    int result = Combo.executeQuery("select count(c.id) from Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent.status = ?"
+      ,[this, combo_tipps, refdata_current])[0]
+
+    result
   }
 
   @Transient
