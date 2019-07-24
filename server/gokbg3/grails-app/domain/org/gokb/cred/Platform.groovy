@@ -57,14 +57,16 @@ class Platform extends KBComponent {
     shibbolethAuthentication  (nullable:true, blank:false)
     passwordAuthentication  (nullable:true, blank:false)
     name (validator: { val, obj ->
-      if (val) {
-        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def dupes = Platform.findByNameIlike(val);
-        if ( dupes && dupes != obj && dupes.status != status_deleted ) {
-          return ['notUnique']
+      if (obj.hasChanged('name')) {
+        if (val) {
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def dupes = Platform.findByNameIlike(val);
+          if (dupes && dupes != obj && dupes.status != status_deleted ) {
+            return ['notUnique']
+          }
+        } else if (obj.hasChanged('name')) {
+          return ['notNull']
         }
-      } else {
-        return ['notNull']
       }
     })
   }

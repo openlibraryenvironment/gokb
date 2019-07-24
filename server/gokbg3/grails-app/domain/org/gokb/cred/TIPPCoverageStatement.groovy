@@ -37,7 +37,7 @@ class TIPPCoverageStatement {
     startVolume (nullable:true, blank:true)
     startIssue (nullable:true, blank:true)
     endDate (validator: { val, obj ->
-      if(obj.startDate && val && obj.startDate > val) {
+      if(obj.startDate && val && (obj.hasChanged('endDate') || obj.hasChanged('startDate')) && obj.startDate > val) {
         return ['endDate.endPriorToStart']
       }
     })
