@@ -620,16 +620,28 @@ class IntegrationController {
     if (!component.hasProperty('work')) {
       log.debug("Identifier processing ${data.identifiers}")
       Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
+      RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+
       data.identifiers.each { ci ->
         String testKey = "${ci.type}|${ci.value}".toString()
+
         if (!ids.contains(testKey)) {
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+
           log.debug("Checking identifiers of component ${component.id}")
-          def duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+
+          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+
           if(duplicate.size() == 0){
             log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-            component.ids.add(canonical_identifier)
-          }else{
+            def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
+          }
+          else if (duplicate.size() == 1 && duplicate[0].status != combo_active) {
+
+            log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
+          }
+          else {
             log.debug("Identifier combo is already present, probably via titleLookupService.")
           }
 
@@ -644,8 +656,10 @@ class IntegrationController {
 
     // Flags
     log.debug("Tag Processing: ${data.tags}");
+
     data.tags?.each { t ->
       log.debug("Adding tag ${t.type},${t.value}")
+
       component.addToTags(
         RefdataCategory.lookupOrCreate(t.type, t.value)
       )

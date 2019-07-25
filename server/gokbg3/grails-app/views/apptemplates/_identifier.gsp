@@ -7,7 +7,9 @@
 
   <dt> <g:annotatedLabel owner="${d}" property="identifiedComponents">Identified Components</g:annotatedLabel> </dt>
   <dd>
-    <g:render template="/apptemplates/comboList"
-      model="${[d:d, property:'identifiedComponents', cols:[[expr:'name',colhead:'Name', action:'link'],[expr:'status.value',colhead:'Status']]]}" />
+    <g:render template="/apptemplates/combosByType"
+      model="${[d:d, property:'identifiedComponents', combo_status: null, cols:[
+                [expr:'fromComponent.name', colhead:'Name', action:'link'],
+                [expr:'fromComponent.status.value', colhead: 'Status']]]}" />
   </dd>
 </dl>

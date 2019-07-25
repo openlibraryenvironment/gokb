@@ -75,8 +75,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
   
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
     
         result.componentType=kbc.class.simpleName
@@ -111,8 +111,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
   
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
   
         result.componentType=kbc.class.simpleName
@@ -145,8 +145,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName
@@ -193,8 +193,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName
@@ -279,8 +279,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName
@@ -309,8 +309,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
         
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName

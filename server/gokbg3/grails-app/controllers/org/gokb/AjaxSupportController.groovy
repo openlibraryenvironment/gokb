@@ -752,7 +752,7 @@ class AjaxSupportController {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.dateFormat ?: 'yyyy-MM-dd')
       }
-      else if (params.name == 'uuid') {
+      else if (params.name == 'uuid' || params.name == 'password') {
         errors.add("This property is not editable.")
       }
       else {
@@ -907,9 +907,25 @@ class AjaxSupportController {
       result.errors = ["Not able to edit this property!"]
     }
 
-    result.newValue = target[params.name]
-    log.debug("return ${result}");
-    render result as JSON
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+
+        redirect(url: redirect_to);
+      }
+      json {
+        result.newValue = target[params.name]
+        log.debug("return ${result}");
+        render result as JSON
+      }
+    }
   }
 
   def renderObjectValue(value) {
@@ -1335,7 +1351,14 @@ class AjaxSupportController {
     Combo c = Combo.get(params.id);
     if (c.fromComponent?.isEditable()) {
       log.debug("Delete combo..")
-      c.delete(flush:true);
+
+      if (params.keepLink) {
+        c.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+        c.fromComponent.lastSeen = new Date().getTime()
+      }
+      else{
+        c.delete(flush:true);
+      }
     }
     else{
       def fcomp = (c.fromComponent?.logEntityId ?: "Combo ${params.id}")

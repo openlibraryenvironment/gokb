@@ -527,7 +527,8 @@ select tipp.id,
   @Transient
   private static getTitleIds  (Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value from Identifier as i, Combo as c left join i.namespace.datatype as datatype where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value from Identifier as i, Combo as c left join i.namespace.datatype as datatype where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?",[title_id,refdata_ids,status_active],[readOnly:true]);
     result
   }
 
@@ -809,13 +810,11 @@ select tipp.id,
 
         if ( the_id ) {
           def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-          def existing_identifier = Combo.executeQuery("Select c.id from Combo as c where c.fromComponent.id = ? and c.type.id = ? and c.toComponent.id = ?",[result.id,id_combo_type.id,the_id.id]);
+          def combo_active = RefdataCategory.lookupOrCreate('Combo.Status', 'Active')
+          def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.fromComponent.id = ? and c.type.id = ? and c.toComponent.id = ?",[result.id,id_combo_type.id,the_id.id]);
 
-          if(existing_identifier.size() > 0){
-            log.debug("Identifier ${it} is already present for package!")
-          }
-          else{
-            Combo new_id = new Combo(toComponent:the_id, fromComponent:result, type:id_combo_type).save(flush:true, failOnError:true);
+          if(existing_identifier.size() == 0){
+            Combo new_id = new Combo(toComponent:the_id, fromComponent:result, type:id_combo_type, status:combo_active).save(flush:true, failOnError:true);
             if( new_id ){
               log.debug("Added new identifier combo succesfully!")
               changed = true
@@ -823,6 +822,17 @@ select tipp.id,
             else{
               log.error("Unable to create new identifier combo!")
             }
+          }
+          else if (existing_identifier.size() == 1 && existing_identifier[0].status != combo_active) {
+            ReviewRequest.raise(
+              result,
+              "Review ID status.",
+              "Identifier ${the_id} was previously connected to '${result}', but has since been manually removed.",
+              user
+            )
+          }
+          else {
+            log.debug("Identifier ${the_id} is already present for package!")
           }
         }
         else {

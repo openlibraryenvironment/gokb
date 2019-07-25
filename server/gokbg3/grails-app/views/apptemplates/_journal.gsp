@@ -102,10 +102,7 @@
       <g:if test="${ d.isEditable() }">
         <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
       </g:if>
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span
-          class="badge badge-warning">
-            ${d.ids?.size() ?: '0'}
-        </span></a></li>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
             ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
@@ -298,7 +295,7 @@
         </dt>
         <dd>
           <g:render template="/apptemplates/combosByType"
-            model="${[d:d, property:'ids', fragment:'identifiers', cols:[
+            model="${[d:d, property:'ids', fragment:'identifiers',combo_status:'Active', cols:[
                       [expr:'toComponent.namespace.value', colhead:'Namespace'],
                       [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
           <g:if test="${d.isEditable()}">
