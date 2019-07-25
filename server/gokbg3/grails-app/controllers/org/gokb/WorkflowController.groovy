@@ -29,6 +29,7 @@ class WorkflowController {
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
     'title::merge':[actionType:'workflow', view:'titleMerge' ],
     'tipp::retire':[actionType:'workflow', view:'tippRetire' ],
+    'tipp::move':[actionType:'workflow', view:'tippMove' ],
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
@@ -841,28 +842,19 @@ class WorkflowController {
 
         def new_title = TitleInstance.get(newtipp.title_id);
 
-        def parsed_start_date = null;
-        def parsed_end_date = null;
-        try {
-          parsed_start_date = ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null;
-          parsed_end_date = ( newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null;
-        }
-        catch ( Exception e ) {
-        }
-
         // def new_tipp = new TitleInstancePackagePlatform(
-        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
-                                   pkg:new_package,
-                                   hostPlatform:new_platform,
-                                   title:new_title,
-                                   startDate: parsed_start_date,
+        def new_tipp = TitleInstancePackagePlatform.upsertDTO([
+                                   package:['internalId':new_package.id],
+                                   platform:['internalId':new_platform.id],
+                                   title:['internalId':current_tipp.title.id],
+                                   startDate: newtipp.startDate,
                                    startVolume:newtipp.startVolume,
                                    startIssue:newtipp.startIssue,
-                                   endDate: parsed_end_date,
+                                   endDate: newtipp.endDate,
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue,
-                                   url:newtipp.url,
-                                   ]).save()
+                                   url:newtipp.url
+                                ], user).save(flush:true, failOnError:true)
 
         if ( newtipp.review == 'on' ) {
           ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
@@ -1106,6 +1098,7 @@ class WorkflowController {
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def user = springSecurityService.currentUser
 
     def publisher = Org.get(activity_data.newPublisherId);
 
@@ -1155,28 +1148,19 @@ class WorkflowController {
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
 
-        def parsed_start_date = null;
-        def parsed_end_date = null;
-        try {
-          parsed_start_date = ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null;
-          parsed_end_date = ( newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null;
-        }
-        catch ( Exception e ) {
-        }
-
         // def new_tipp = new TitleInstancePackagePlatform(
-        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
-                                   pkg:new_package,
-                                   hostPlatform:new_platform,
-                                   title:current_tipp.title,
-                                   startDate: parsed_start_date,
+        def new_tipp = TitleInstancePackagePlatform.upsertDTO([
+                                   package:['internalId':new_package.id],
+                                   platform:['internalId':new_platform.id],
+                                   title:['internalId':current_tipp.title.id],
+                                   startDate: newtipp.startDate,
                                    startVolume:newtipp.startVolume,
                                    startIssue:newtipp.startIssue,
-                                   endDate: parsed_end_date,
+                                   endDate: newtipp.endDate,
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue,
                                    url:newtipp.url
-                                ]).save(flush:true, failOnError:true)
+                                ], user).save(flush:true, failOnError:true)
 
         if ( newtipp.review == 'on' ) {
           log.debug("User requested a review request be generated for this new tipp");
@@ -1278,6 +1262,54 @@ class WorkflowController {
         tipp_obj.accessEndDate = new Date()
       }
 
+      tipp_obj.save(flush:true, failOnError:true)
+    }
+
+    redirect(url: params.ref)
+  }
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def processTippMove() {
+    log.debug("processTippMove ${params}")
+    def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    def user = springSecurityService.currentUser
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
+    def new_package = genericOIDService.resolveOID2(params.newpackage)
+    def new_platform = genericOIDService.resolveOID2(params.newplatform)
+    def tipps_to_action = params.list('beforeTipps')
+    def new_title = genericOIDService.resolveOID2(params.newtitle)
+
+    params.list('beforeTipps').each { tipp_oid ->
+      log.debug("process ${tipp_oid}")
+
+      def tipp_obj = genericOIDService.resolveOID2(tipp_oid)
+      def coverage = []
+
+      tipp_obj.coverageStatements.each { cst ->
+        coverage.add(['startVolume': cst.startVolume ?: "",
+                      'startIssue':cst.startIssue ?: "",
+                      'endVolume': cst.endVolume ?: "",
+                      'endIssue': cst.endIssue ?: "",
+                      'embargo':cst.embargo ?: "",
+                      'coverageNote': cst.coverageNote ?: "",
+                      'startDate': cst.startDate ? sdf.format(cst.startDate) : "",
+                      'endDate': cst.endDate ? sdf.format(cst.endDate) : "",
+                      'coverageDepth': cst.coverageDepth?.value ?: ""
+        ])
+      }
+
+      def new_tipp = TitleInstancePackagePlatform.upsertDTO([
+                                  package:['internalId':(new_package ? new_package.id : tipp_obj.pkg.id)],
+                                  platform:['internalId':(new_platform ? new_platform.id : tipp_obj.hostPlatform.id)],
+                                  title:['internalId':(new_title ? new_title.id: tipp_obj.title.id)],
+                                  coverage: coverage,
+                                  url:tipp_obj.url
+                              ], user).save(flush:true, failOnError:true)
+
+      log.debug("Created new TIPP ${new_tipp}");
+
+      tipp_obj.status = deleted_status
       tipp_obj.save(flush:true, failOnError:true)
     }
 

@@ -105,7 +105,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     startVolume (nullable:true, blank:true)
     startIssue (nullable:true, blank:true)
     endDate (validator: { val, obj ->
-      if(obj.startDate && val && obj.startDate > val) {
+      if(obj.startDate && val && (obj.hasChanged('endDate') || obj.hasChanged('startDate')) && obj.startDate > val) {
         return ['endDate.endPriorToStart']
       }
     })
@@ -123,7 +123,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     paymentType (nullable:true, blank:true)
     accessStartDate (nullable:true, blank:false)
     accessEndDate (validator: { val, obj ->
-      if(obj.accessStartDate && val && obj.accessStartDate > val) {
+      if(obj.accessStartDate && val && (obj.hasChanged('accessEndDate') || obj.hasChanged('accessStartDate')) && obj.accessStartDate > val) {
         return ['accessEndDate.endPriorToStart']
       }
     })
@@ -135,7 +135,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       [code:'tipp::retire', label:'Retire (with Date)'],
       [code:'method::deleteSoft', label:'Delete', perm:'delete'],
       [code:'method::setExpected', label:'Mark Expected'],
-      [code:'method::setActive', label:'Set Current']
+      [code:'method::setActive', label:'Set Current'],
+      [code:'tipp::move', label:'Move TIPP']
     ]
   }
 
@@ -370,7 +371,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
           def sdfs = [
               "yyyy-MM-dd' 'HH:mm:ss.SSS",
-              "yyyy-MM-dd'T'HH:mm:ss'Z'"
+              "yyyy-MM-dd'T'HH:mm:ss'Z'",
+              "yyyy-MM-dd"
           ]
 
           def parsedStart = null

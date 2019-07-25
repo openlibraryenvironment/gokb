@@ -111,14 +111,14 @@ class TitleInstance extends KBComponent {
     OAStatus (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo  (validator: { val, obj ->
-      if(obj.publishedFrom && val && obj.publishedFrom > val) {
+      if( obj.publishedFrom && val && (obj.hasChanged('publishedTo') || obj.hasChanged('publishedFrom')) && obj.publishedFrom > val ) {
         return ['endDate.endPriorToStart']
       }
     })
     coverImage (nullable:true, blank:true)
     work (nullable:true, blank:false)
     name (validator: { val, obj ->
-      if (!val) {
+      if ( !val && obj.hasChanged('name') ) {
         return ['notNull']
       }
     })
