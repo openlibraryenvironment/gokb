@@ -477,7 +477,7 @@ select tipp.id,
                 builder.'status' (tipp[24])
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
-                    builder.'identifier'('namespace':tid[0], 'value':tid[1], 'datatype':tid[2])
+                    builder.'identifier'('namespace':tid[0], 'value':tid[1], 'type':tid[2])
                   }
                 }
               }
@@ -526,9 +526,9 @@ select tipp.id,
 
   @Transient
   private static getTitleIds  (Long title_id) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids')
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.datatype.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?",[title_id,refdata_ids,status_active],[readOnly:true]);
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?",[title_id,refdata_ids,status_active],[readOnly:true]);
     result
   }
 
