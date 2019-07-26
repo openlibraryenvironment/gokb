@@ -1422,7 +1422,9 @@ where cp.owner = :c
 
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
-    def cids = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value, family from Identifier as i, Combo as c left join i.namespace.datatype as datatype left join i.namespace.family as family where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids')
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def cids = Identifier.executeQuery("select i.namespace.value, i.namespace.family, i.namespace.datatype.value from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?",[this.id,refdata_ids,status_active],[readOnly:true])
     String cName = this.class.name
     
     // Singel props.
