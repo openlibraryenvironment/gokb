@@ -41,7 +41,7 @@ class PackageUploadSpec extends Specification {
 
       when:
         // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
-        RestResponse resp = rest.post("http://localhost:${serverPort}/packages/deposit") {
+        RestResponse resp = rest.post("http://localhost:${serverPort}/gokb/packages/deposit") {
           auth 'admin', 'admin'
           contentType "multipart/form-data"
           // String properties

@@ -21,7 +21,7 @@ import org.springframework.mock.web.MockMultipartHttpServletRequest
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
  */
 @Integration
-class IntegrationControllerSpec extends Specification {
+class IntegrationSpec extends Specification {
 
     // Stop grails from rolling back the transaction at the end of each call
     static transactional = false

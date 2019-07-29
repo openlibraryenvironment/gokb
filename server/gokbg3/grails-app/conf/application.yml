@@ -170,6 +170,15 @@ environments:
         grails:
             mail:
                 port: 3025
+            plugin:
+                springsecurity:
+                    rest:
+                        token:
+                            storage:
+                                jwt:
+                                    secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
+                        login:
+                            endpointUrl: /rest/login
         quartz:
             pluginEnabled: false
         cache:
