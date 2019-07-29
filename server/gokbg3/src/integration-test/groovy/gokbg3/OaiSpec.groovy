@@ -10,7 +10,7 @@ import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.beans.factory.annotation.*
 import org.springframework.web.context.WebApplicationContext
-import groovy.util.XmlSlurper
+import grails.core.GrailsApplication
 import org.gokb.cred.*
 
 
@@ -18,6 +18,8 @@ import org.gokb.cred.*
 @Integration
 @Rollback
 class OaiSpec extends Specification {
+
+    GrailsApplication grailsApplication
 
     @Shared
     RestBuilder rest = new RestBuilder()
@@ -52,7 +54,7 @@ class OaiSpec extends Specification {
     void "test ListRecords response status"() {
       when:
         // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
-        RestResponse resp = rest.get("http://localhost:${serverPort}/gokb/oai/packages?verb=ListRecords&metadataPrefix=gokb")
+        RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/packages?verb=ListRecords&metadataPrefix=gokb")
 
       then:
         // println(resp.json)
@@ -61,7 +63,7 @@ class OaiSpec extends Specification {
 
     void "test ListRecords package response"() {
       when: 
-        RestResponse resp = rest.get("http://localhost:${serverPort}/gokb/oai/packages?verb=ListRecords&metadataPrefix=gokb")
+        RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/packages?verb=ListRecords&metadataPrefix=gokb")
 
       then:
 

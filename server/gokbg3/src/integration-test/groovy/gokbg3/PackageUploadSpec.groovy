@@ -10,11 +10,15 @@ import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.beans.factory.annotation.*
 import org.springframework.web.context.WebApplicationContext
+import grails.core.GrailsApplication
 
 
 @Integration
 @Rollback
 class PackageUploadSpec extends Specification {
+
+
+    GrailsApplication grailsApplication
 
     @Shared
     RestBuilder rest = new RestBuilder()
@@ -41,7 +45,7 @@ class PackageUploadSpec extends Specification {
 
       when:
         // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
-        RestResponse resp = rest.post("http://localhost:${serverPort}/gokb/packages/deposit") {
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/packages/deposit") {
           auth 'admin', 'admin'
           contentType "multipart/form-data"
           // String properties

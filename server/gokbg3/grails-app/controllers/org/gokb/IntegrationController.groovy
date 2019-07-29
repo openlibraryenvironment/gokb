@@ -50,10 +50,25 @@ class IntegrationController {
     def result = [result:'OK']
     def name = request.JSON.name
     def normname = CuratoryGroup.generateNormname(name)
-    def group = CuratoryGroup.findByNormname(normname) ?: new CuratoryGroup (name: name)
+    def group = CuratoryGroup.findByNormname(normname)
+
+    if ( !group ) {
+      group = new CuratoryGroup (name: name)
+
+      if ( group.validate() ) {
+        group.save(flush:true)
+      }
+      else {
+        result.message = "Could not reference group ${name}"
+        result.errors = group.errors
+        result.result = 'ERROR'
+
+        render result as JSON
+      }
+    }
 
     // Defaults first.
-    ensureCoreData(group, request.JSON)
+    // ensureCoreData(group, request.JSON)
 
     // Find by username but do not create missing entries.
     def owner = request.JSON.owner
@@ -73,7 +88,7 @@ class IntegrationController {
       }
     }
 
-    if( group.save(flush: true, failOnError:true) ) {
+    if( group ) {
       result.message = "Created/looked up group ${group}"
       result.groupId = group.id
     }
@@ -1070,7 +1085,7 @@ class IntegrationController {
         p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) )
 
         if (!p) {
-          new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null).save(flush:true, failOnError:true)
+          p = new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null).save(flush:true, failOnError:true)
           created = true
         }
       }

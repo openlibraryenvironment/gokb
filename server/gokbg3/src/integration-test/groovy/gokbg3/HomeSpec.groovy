@@ -4,6 +4,7 @@ import grails.testing.mixin.integration.Integration
 import grails.transaction.*
 import org.springframework.beans.factory.annotation.*
 import org.springframework.web.context.WebApplicationContext
+import grails.core.GrailsApplication
 
 import geb.spock.*
 
@@ -17,6 +18,8 @@ import geb.report.*
 @Integration
 @Rollback
 class HomeSpec extends GebSpec {
+
+  GrailsApplication grailsApplication
 
   @Autowired
   WebApplicationContext ctx
@@ -32,7 +35,7 @@ class HomeSpec extends GebSpec {
 
   void "Test public home page"() {
     when:"The home page is visited"
-      go '/public'
+      go "${grailsApplication.config.server.contextPath ?: ''}/public"
       browser.report("Public Home");
 
     then:"The title is correct"
