@@ -1,11 +1,11 @@
 package org.gokb
 
-import org.gokb.cred.*
+import com.k_int.ConcurrencyManagerService.Job
+import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.delete.DeleteRequest
 import org.elasticsearch.client.Requests
-import com.k_int.ConcurrencyManagerService.Job
-import grails.gorm.DetachedCriteria
+import org.gokb.cred.*
 
 class CleanupService {
   def sessionFactory
@@ -646,4 +646,26 @@ class CleanupService {
     session.flush()
     session.clear()
   }
+
+    def rejectWrongTitles(Job job) {
+        log.debug("GOKb mark wrong titles for deletion")
+        def ctr = 0
+        def tick=TitleInstance.withNewSession {
+            def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', KBComponent.STATUS_DELETED)
+            TitleInstance.executeQuery("from TitleInstance as title where title not in " +
+                    "(select fromComponent from Combo where type in " +
+                        "(from RefdataValue where value = 'TitleInstance.Tipps')" +
+                    ")" +
+                    " and title not in " +
+                    "(select participant from ComponentHistoryEventParticipant)").each {
+                title ->
+                log.info("title: ${title.name} history length: ${title.titleHistory.size()}")
+                title.status = deleted_status
+                title.save()
+            ctr++
+            }
+        }
+        job.message("${ctr} titles set to deleted")
+        job.endTime = new Date()
+    }
 }
