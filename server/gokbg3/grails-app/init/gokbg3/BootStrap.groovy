@@ -208,6 +208,7 @@ class BootStrap {
     def eissn_ns = IdentifierNamespace.findByValue('eissn') ?: new IdentifierNamespace(value:'eissn', family:'isxn').save(flush:true, failOnError:true);
     def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
     def doi_ns = IdentifierNamespace.findByValue('doi') ?: new IdentifierNamespace(value:'doi').save(flush:true, failOnError:true);
+    def zdb_ns = IdentifierNamespace.findByValue('zdb') ?: new IdentifierNamespace(value:'zdb').save(flush:true, failOnError:true);
 
     // log.info("Default batch loader config");
     // defaultBulkLoaderConfig();
