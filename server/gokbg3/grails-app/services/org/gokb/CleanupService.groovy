@@ -654,10 +654,10 @@ class CleanupService {
         def deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
         def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
-        def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds where title not in " +
-                "(select fromComponent from Combo where type = :tc)" +
-                " and title not in " +
-                "(select participant from ComponentHistoryEventParticipant)",[ds: deleted_status, tc: tipps_combo])
+        def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds where title.id not in " +
+                "(select fromComponent.id from Combo where type = :tc)" +
+                " and title.id not in " +
+                "(select participant.id from ComponentHistoryEventParticipant)",[ds: deleted_status, tc: tipps_combo])
 
         job.message("${res} titles set to deleted")
       }
