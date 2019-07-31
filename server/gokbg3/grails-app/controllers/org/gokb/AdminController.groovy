@@ -211,68 +211,68 @@ class AdminController {
   }
 
   private def validateUploadDir(path) {
-      File f = new File(path);
-      if (!f.exists()) {
-        log.debug("Creating upload directory path")
-        f.mkdirs();
-      }
+    File f = new File(path);
+    if (!f.exists()) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
+    }
   }
 
   def updateTextIndexes() {
-      log.debug("Call to update indexe");
+    log.debug("Call to update indexe");
 
-      Job j = concurrencyManagerService.createJob {
-        FTUpdateService.updateFTIndexes();
-      }.startOrQueue()
+    Job j = concurrencyManagerService.createJob {
+      FTUpdateService.updateFTIndexes();
+    }.startOrQueue()
 
-      j.description = "Update Free Text Indexes"
-      j.startTime = new Date()
+    j.description = "Update Free Text Indexes"
+    j.startTime = new Date()
 
-      render(view: "logViewer", model: logViewer())
+    render(view: "logViewer", model: logViewer())
   }
 
   def resetTextIndexes() {
-      log.debug("Call to update indexe")
-      Job j = concurrencyManagerService.createJob {
-        FTUpdateService.clearDownAndInitES()
-      }.startOrQueue()
+    log.debug("Call to update indexe")
+    Job j = concurrencyManagerService.createJob {
+      FTUpdateService.clearDownAndInitES()
+    }.startOrQueue()
 
-      j.description = "Reset Free Text Indexes"
-      j.startTime = new Date()
+    j.description = "Reset Free Text Indexes"
+    j.startTime = new Date()
 
-      render(view: "logViewer", model: logViewer())
+    render(view: "logViewer", model: logViewer())
   }
 
   def masterListUpdate() {
-      log.debug("Force master list update")
-      Job j = concurrencyManagerService.createJob {
-        packageService.updateAllMasters(true)
-      }.startOrQueue()
+    log.debug("Force master list update")
+    Job j = concurrencyManagerService.createJob {
+      packageService.updateAllMasters(true)
+    }.startOrQueue()
 
-      j.description = "Master List Update"
-      j.startTime = new Date()
+    j.description = "Master List Update"
+    j.startTime = new Date()
 
-      render(view: "logViewer", model: logViewer())
+    render(view: "logViewer", model: logViewer())
   }
 
   def clearBlockCache() {
-      // clear the cache used by the blocks tag…
-      log.debug("Clearing block cache .. ")
-      grailsCacheAdminService.clearBlocksCache()
+    // clear the cache used by the blocks tag…
+    log.debug("Clearing block cache .. ")
+    grailsCacheAdminService.clearBlocksCache()
 
-      forward(controller: 'home', action: 'index', params: [reset: true])
+    forward(controller: 'home', action: 'index', params: [reset: true])
   }
 
   def triggerEnrichments() {
-      Job j = concurrencyManagerService.createJob {
-        log.debug("manually trigger enrichment service");
-        titleAugmentService.doEnrichment();
-      }.startOrQueue()
+    Job j = concurrencyManagerService.createJob {
+      log.debug("manually trigger enrichment service");
+      titleAugmentService.doEnrichment();
+    }.startOrQueue()
 
-      j.description = "Enrichment Service"
-      j.startTime = new Date()
+    j.description = "Enrichment Service"
+    j.startTime = new Date()
 
-      render(view: "logViewer", model: logViewer())
+    render(view: "logViewer", model: logViewer())
   }
 
   def jobs() {
@@ -300,7 +300,7 @@ class AdminController {
           log.debug("${e}")
 
           if (j.messages?.size() == 0) {
-              j.message("There has been an exception processing this job! Please check the logs!")
+            j.message("There has been an exception processing this job! Please check the logs!")
           }
         }
       }
@@ -308,8 +308,8 @@ class AdminController {
 
     log.debug("Render");
     if (request.format == 'JSON') {
-        log.debug("JSON Render");
-        render result as JSON
+      log.debug("JSON Render");
+      render result as JSON
     }
 
     log.debug("Return");
