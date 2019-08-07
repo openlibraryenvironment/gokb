@@ -35,6 +35,10 @@ class WorkflowController {
     'method::retire':[actionType:'simple' ],
     'method::setActive':[actionType:'simple' ],
     'method::setExpected':[actionType:'simple'],
+    'setStatus::Retired':[actionType:'simple' ],
+    'setStatus::Current':[actionType:'simple' ],
+    'setStatus::Expected':[actionType:'simple'],
+    'setStatus::Deleted':[actionType:'simple'],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
     'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg'],
     'verifyTitleList':[actionType:'process', method:'verifyTitleList']
@@ -72,7 +76,6 @@ class WorkflowController {
 
             qresult.recset.each {
               def oid_to_action = "${it.class.name}:${it.id}"
-              log.debug("Action oid: ${oid_to_action}");
               result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
             }
           }
@@ -83,7 +86,6 @@ class WorkflowController {
         params.each { p ->
           if ( ( p.key.startsWith('bulk:') ) && ( p.value ) && ( p.value instanceof String ) ) {
             def oid_to_action = p.key.substring(5);
-            log.debug("Action oid: ${oid_to_action}");
             result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
           }
         }
@@ -140,6 +142,19 @@ class WorkflowController {
 
               result.objects_to_action.each {
                 log.debug("${it.status}")
+              }
+
+              break
+            
+            case "setStatus":
+              log.debug("SetStatus: ${method_config[1]}")
+              def status_to_set = RefdataCategory.lookup('KBComponent.Status', method_config[1])
+              // def ota_ids = result.objects_to_action.collect{ it.id }
+
+              if (status_to_set) {
+                def res = KBComponent.executeUpdate("update KBComponent as kbc set kbc.status = :st where kbc IN (:clist)",[st: status_to_set, clist: result.objects_to_action ])
+
+                log.debug("Updated status of ${res} components")
               }
 
               break
