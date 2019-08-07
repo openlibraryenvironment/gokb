@@ -13,6 +13,8 @@ import org.gokb.GOKbTextUtils
 
 import javax.servlet.http.HttpServletRequest
 
+import grails.plugin.springsecurity.acl.*
+
 import org.gokb.DomainClassExtender
 import org.gokb.ESWrapperService
 import org.gokb.ComponentStatisticService
@@ -304,13 +306,32 @@ class BootStrap {
 
   def registerDomainClasses() {
 
-    def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save(flush:true, failOnError:true)
+    log.debug("Register Domain Classes")
+
+    AclClass aclClass = AclClass.findByClassName('org.gokb.cred.KBDomainInfo') ?: new AclClass(className: 'org.gokb.cred.KBDomainInfo').save(flush:true)
+
+    AclSid sidAdmin = AclSid.findBySid('ROLE_ADMIN') ?: new AclSid(sid: 'ROLE_ADMIN', principal: false).save(flush:true)
+    AclSid sidSuperUser = AclSid.findBySid('ROLE_SUPERUSER') ?: new AclSid(sid: 'ROLE_SUPERUSER', principal: false).save(flush:true)
+    AclSid sidUser = AclSid.findBySid('ROLE_USER') ?: new AclSid(sid: 'ROLE_USER', principal: false).save(flush:true)
+    AclSid sidContributor = AclSid.findBySid('ROLE_CONTRIBUTOR') ?: new AclSid(sid: 'ROLE_CONTRIBUTOR', principal: false).save(flush:true)
+    AclSid sidEditor = AclSid.findBySid('ROLE_EDITOR') ?: new AclSid(sid: 'ROLE_EDITOR', principal: false).save(flush:true)
+    AclSid sidApi = AclSid.findBySid('ROLE_API') ?: new AclSid(sid: 'ROLE_API', principal: false).save(flush:true)
+
+    RefdataValue std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save(flush:true, failOnError:true)
     grailsApplication.domainClasses.each { dc ->
       // log.debug("Ensure ${dc.name} has entry in KBDomainInfo table");
-      def dcinfo = KBDomainInfo.findByDcName(dc.clazz.name)
+      KBDomainInfo dcinfo = KBDomainInfo.findByDcName(dc.clazz.name)
       if ( dcinfo == null ) {
         dcinfo = new KBDomainInfo(dcName:dc.clazz.name, displayName:dc.name, type:std_domain_type);
         dcinfo.save(flush:true);
+      }
+
+      if (dcinfo.dcName.startsWith('org.gokb.cred')) {
+        AclObjectIdentity oid
+
+        if (!AclObjectIdentity.findByObjectId(dcinfo.id)) {
+          oid = new AclObjectIdentity(objectId: dcinfo.id, aclClass: aclClass, owner: sidAdmin, entriesInheriting: false).save(flush:true)
+        }
       }
     }
   }
