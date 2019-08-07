@@ -425,7 +425,7 @@ class AjaxSupportController {
 
     withFormat {
       html {
-        if( params.__showNew && errors.size() == 0) {
+        if( new_obj && params.__showNew && errors.size() == 0) {
           redirect(controller:'resource', action:'show', id:"${new_obj.class.name}:${new_obj.id}");
         }
         else {
