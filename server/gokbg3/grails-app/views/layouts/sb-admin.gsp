@@ -200,6 +200,7 @@
                       <li><g:link controller="admin" action="ensureTipls" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Ensure TIPLs</g:link></li>
                       <li><g:link controller="admin" action="triggerEnrichments" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
                       <li><g:link controller="admin" action="rejectWrongTitles " onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Delete Titles w/o Package</g:link></li>
+                      <li><g:link controller="admin" action="setupAcl" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Setup ACL defaults</g:link></li>
                       <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
                 <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
                     </sec:ifAnyGranted>
