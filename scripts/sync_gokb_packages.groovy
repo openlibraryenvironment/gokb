@@ -19,7 +19,7 @@ while ( moredata ) {
         'global', 'listVerifier', 'userListVerifier', 'nominalProvider', 'listVerifiedDate'], addCoreItems ( data ) )
       ]
 
-      resourceFieldMap.nominalPlatform = [name: data.nominalPlatform.name.text(),
+      resourceFieldMap.packageHeader['nominalPlatform'] = [name: data.nominalPlatform.name.text(),
                                           primaryUrl: data.nominalPlatform.primaryUrl.text(),
                                           uuid: data.nominalPlatform.'@uuid'.text()]
       
@@ -30,7 +30,7 @@ while ( moredata ) {
         data.TIPPs.TIPP.each { xmltipp ->
           
           // TIPP.
-          def newtipp = directAddFields (data, ['medium', 'url'], addCoreItems ( xmltipp ))
+          def newtipp = directAddFields (xmltipp, ['medium', 'url'], addCoreItems ( xmltipp ))
           newtipp.accessStart = cleanText( xmltipp.access.'@start'.text() )
           newtipp.accessEnd = cleanText( xmltipp.access.'@end'.text() )
           
@@ -51,6 +51,7 @@ while ( moredata ) {
           
           // Title.
           newtipp.title = addCoreItems ( xmltipp.title )
+          newtipp.title.type = xmltipp.title.type
   
           newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
   
@@ -71,3 +72,5 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+println("Total: ${total}, Errors: ${errors}")

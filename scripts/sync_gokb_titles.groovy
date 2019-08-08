@@ -89,6 +89,8 @@ config.deferred.each { k, v ->
   Thread.sleep(25)
 }
 
+println("Total: ${total}, Errors: ${errors}")
+
 // Remove this here so we start from the beginning every time.
 // config.remove('resumptionToken')
 
