@@ -131,11 +131,11 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'method::retire', label:'Retire'],
+    [ [code:'setStatus::Retired', label:'Retire'],
       [code:'tipp::retire', label:'Retire (with Date)'],
-      [code:'method::deleteSoft', label:'Delete', perm:'delete'],
-      [code:'method::setExpected', label:'Mark Expected'],
-      [code:'method::setActive', label:'Set Current'],
+      [code:'setStatus::Deleted', label:'Delete', perm:'delete'],
+      [code:'setStatus::Expected', label:'Mark Expected'],
+      [code:'setStatus::Current', label:'Set Current'],
       [code:'tipp::move', label:'Move TIPP']
     ]
   }
@@ -203,13 +203,59 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   public static boolean validateDTO(tipp_dto) {
     def result = true;
+    def sdfs = [
+        "yyyy-MM-dd' 'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd"
+    ]
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS")
     result &= tipp_dto.package?.internalId != null
     result &= tipp_dto.platform?.internalId != null
     result &= tipp_dto.title?.internalId != null
     for(def coverage : tipp_dto.coverage){
+        def startDate = null
+        def endDate = null
+
+        if (coverage.startDate) {
+          sdfs.each { df -> 
+
+            if (!startDate) {
+              try {
+                SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+                startDate = sdfV.parse(coverage.startDate)
+              }
+              catch (java.text.ParseException pe) {
+              }
+            }
+          }
+
+          if (!startDate) {
+            result = false
+          }
+        }
+
+        if (coverage.endDate) {
+          sdfs.each { df -> 
+
+            if (!endDate) {
+             try {
+                SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+                endDate = sdfV.parse(coverage.endDate)
+              }
+              catch (java.text.ParseException pe) {
+              }
+            }
+          }
+
+          if (!endDate) {
+            result = false
+          }
+        }
+
         result &= ['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth.toLowerCase())
-        result &= !(coverage.startDate && coverage.endDate && (sdf.parse(coverage.endDate) < sdf.parse(coverage.startDate)))
+        result &= !(startDate && endDate && (endDate < startDate))
     }
 
     if ( !result ) 

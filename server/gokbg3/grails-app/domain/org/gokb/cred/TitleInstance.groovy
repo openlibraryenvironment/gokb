@@ -125,9 +125,9 @@ class TitleInstance extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'method::deleteSoft', label:'Delete', perm:'delete'],
-      [code:'method::setActive', label:'Set Current', perm:'admin'],
-      [code:'method::setExpected', label:'Mark Expected'],
+    [ [code:'setStatus::Deleted', label:'Delete', perm:'delete'],
+      [code:'setStatus::Current', label:'Set Current', perm:'admin'],
+      [code:'setStatus::Expected', label:'Mark Expected'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
       [code:'title::merge', label:'Title Merge']
