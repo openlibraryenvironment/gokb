@@ -649,6 +649,7 @@ select tipp.id,
     log.debug("Checking by normname ${pkg_normname} ..")
     def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ? ",[pkg_normname, status_deleted])
     def full_matches = []
+    def created = false
     def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
     boolean changed = false;
 
@@ -734,6 +735,8 @@ select tipp.id,
       log.debug("No existing package matched. Creating new package..")
 
       result = new Package(name:packageHeaderDTO.name, normname:pkg_normname)
+      
+      created = true
 
       if (packageHeaderDTO.uuid && packageHeaderDTO.uuid.trim().size() > 0) {
         result.uuid = packageHeaderDTO.uuid
@@ -799,48 +802,6 @@ select tipp.id,
       }
       else {
         log.warn("Could not extract platform information from JSON!")
-      }
-    }
-
-    packageHeaderDTO.identifiers?.each { it ->
-      if ( it.type && it.value && it.type != "originEditUrl") {
-        log.debug("Trying to add identifier ${it} to package ${result}");
-
-        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(it.type, it.value)
-
-        if ( the_id ) {
-          def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-          def combo_active = RefdataCategory.lookupOrCreate('Combo.Status', 'Active')
-          def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.fromComponent.id = ? and c.type.id = ? and c.toComponent.id = ?",[result.id,id_combo_type.id,the_id.id]);
-
-          if(existing_identifier.size() == 0){
-            Combo new_id = new Combo(toComponent:the_id, fromComponent:result, type:id_combo_type, status:combo_active).save(flush:true, failOnError:true);
-            if( new_id ){
-              log.debug("Added new identifier combo succesfully!")
-              changed = true
-            }
-            else{
-              log.error("Unable to create new identifier combo!")
-            }
-          }
-          else if (existing_identifier.size() == 1 && existing_identifier[0].status != combo_active) {
-            ReviewRequest.raise(
-              result,
-              "Review ID status.",
-              "Identifier ${the_id} was previously connected to '${result}', but has since been manually removed.",
-              user
-            )
-          }
-          else {
-            log.debug("Identifier ${the_id} is already present for package!")
-          }
-        }
-        else {
-          log.error("Error processing identifier ${it}!")
-        }
-      }
-      else {
-        log.error("Non-valid identifier provided!")
       }
     }
 
@@ -918,6 +879,11 @@ select tipp.id,
           result.curatoryGroups.add(cg)
           changed=true;
         }
+      }
+      else {
+        def new_cg = new CuratoryGroup(name:it).save(flush:true, failOnError:true)
+        result.curatoryGroups.add(new_cg)
+        changed = true
       }
     }
 
