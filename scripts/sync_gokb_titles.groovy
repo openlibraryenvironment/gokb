@@ -59,6 +59,11 @@ while ( moredata ) {
       } else {
         if ("${resourceFieldMap.name}" != "" && resourceFieldMap.name) {
           println("\tDefer processing of ${resourceFieldMap.name} due to lack of identifiers.")
+          def df_name = resourceFieldMap.name
+
+          if (!config.deferred) {
+            config.deferred = ["${df_name}": resourceFieldMap ]
+          }
           config.deferred[resourceFieldMap.name] = resourceFieldMap
         } else {
           println "\tIgnoring unnamed title."
@@ -91,7 +96,7 @@ private convertHistoryEvent(evt) {
   // convert the evt structure to a json object and add to lst
   def result = [
     'title' : cleanText(evt.title.text()),
-    'uuid' : cleanText(evt.uuid.text())
+    'uuid' : cleanText(evt.uuid.text()),
     'identifiers' : evt.identifiers.identifier.collect { id ->
       [
         type: cleanText(id.'@namespace'.text()),

@@ -301,7 +301,7 @@ abstract class GOKbSyncBase extends Script {
         data.identifiers?.identifier?.each {
           
           // Only include namespaces that are not 'originEditUrl'
-          if ( !['originEditUrl'].contains(cleanText(it.'@namespace'.text())) )
+          if ( cleanText(it.'@namespace'.text()).toLowerCase() != 'originediturl' )
             ids.add( [ type:it.'@namespace'.text(), value: cleanText(it.'@value'?.text()) ] )
         }
         
