@@ -820,6 +820,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTipps').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTitles').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipls').save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate('MembershipRole','Administrator').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('MembershipRole','Member').save(flush:true, failOnError:true)

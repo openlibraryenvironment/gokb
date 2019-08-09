@@ -774,6 +774,8 @@ class IntegrationController {
       for (String name : data.variantNames) {
         if (!variants.contains(name)) {
           // Add the variant name.
+          log.debug("Adding variantName ${name} to ${component} ..")
+
           def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
           new_variant_name.save(failOnError: true)
 
@@ -848,17 +850,23 @@ class IntegrationController {
                       try {
                         def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-                        if ( ti && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+                        if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
                           ensureCoreData(ti, tipp.title)
                           tipp.title.internalId = ti.id;
+                        }
+                        else {
+                          ti.discard()
+                          valid_ti = null
+                          valid = false
+                          errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'data': tipp])
                         }
                       }
                       catch (grails.validation.ValidationException ve) {
                         log.error("ValidationException attempting to cross reference title",ve);
                         valid_ti = null
                         valid = false
-                        errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp])
+                        errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
                       }
 
                       if ( valid_ti && tipp.title.internalId == null ) {
@@ -901,9 +909,6 @@ class IntegrationController {
                       else {
                         log.warn("No platform arising from ${tipp.platform}");
                       }
-                    }
-                    else {
-                      log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
                     }
         //
         //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
@@ -1312,8 +1317,6 @@ class IntegrationController {
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
               }
-
-              title.save(flush:true, failOnError:true)
 
               // Add the core data.
               ensureCoreData(title, titleObj)

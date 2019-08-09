@@ -51,7 +51,18 @@ while ( moredata ) {
           
           // Title.
           newtipp.title = addCoreItems ( xmltipp.title )
-          newtipp.title.type = xmltipp.title.type
+
+          def type = cleanText(data.type?.text())
+
+          if (!type || type == 'JournalInstance' || type == 'Serial') {
+            newtipp.title.type = 'Serial'
+          }
+          else if (type == 'DatabaseInstance') {
+            newtipp.title.type = 'Database'
+          }
+          else if (type == 'BookInstance'|| type == 'Monograph') {
+            newtipp.title.type = 'Book'
+          }
   
           newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
   

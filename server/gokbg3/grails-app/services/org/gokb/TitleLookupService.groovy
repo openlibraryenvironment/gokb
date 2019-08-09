@@ -578,7 +578,7 @@ class TitleLookupService {
 
         // Add the publisher.
 
-        addPublisher(metadata.publisher_name, the_title, user, project)
+        // addPublisher(metadata.publisher_name, the_title, user, project)
 
         // Try and save the result now.
         // if ( the_title.isDirty() ) {
@@ -714,7 +714,7 @@ class TitleLookupService {
     double threshold = grailsApplication.config.cosine.good_threshold
 
     // Work out the distance between the 2 title strings.
-    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), comparable_title)
+    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.name), comparable_title)
 
     // Check the distance.
     switch (distance) {
@@ -737,12 +737,13 @@ class TitleLookupService {
 
         // Good match. Need to add as alternate name.
         log.debug("Good distance match for TI. Add as variant.")
-        def added = ti.addVariantTitle(title)
+        def added = ti.ensureVariantName(title)
         break
 
       default :
         // Bad match...
-        def added = ti.addVariantTitle(title)
+        log.debug("Bad distance match for TI. Add variant and review.")
+        def added = ti.ensureVariantName(title)
 
         // Raise a review request
         if(added) {

@@ -683,4 +683,29 @@ class TitleInstance extends KBComponent {
       }
   }
 
+  @Override
+  @Transient
+  def ensureVariantName(String name) {
+
+    if (name.trim().size() != 0) {
+
+      // Variant names use different normalisation method.
+      def variant_normname = GOKbTextUtils.normaliseString(name)
+
+      // not already a name
+      // Make sure not already a variant name
+      def existing_variants = this.variantNames
+      if ( existing_variants.size() == 0 ) {
+        KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+      }
+      else {
+        log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+      }
+    }
+    else {
+      log.error("No viable variant name supplied!")
+    }
+
+  }
+
 }

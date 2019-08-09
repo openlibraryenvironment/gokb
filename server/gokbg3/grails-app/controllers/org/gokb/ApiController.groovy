@@ -772,7 +772,7 @@ class ApiController {
       if( !errors && (singleParams || params.label || id_params || component_type) ) {
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
-        es_request.setIndices(grailsApplication.config.globalSearch.indices)
+        es_request.setIndices(grailsApplication.config.gokb.es.index)
         es_request.setTypes(grailsApplication.config.globalSearch.types)
         es_request.setQuery(exactQuery)
 

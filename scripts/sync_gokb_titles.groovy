@@ -20,33 +20,51 @@ while ( moredata ) {
       println("Record ${index + 1}")
   
       // The basic record.
-      def resourceFieldMap = addCoreItems ( data, ['type': 'Serial'])
+      def resourceFieldMap = addCoreItems ( data )
+
+      def type = cleanText(data.type?.text())
+
+      if (!type || type == 'JournalInstance' || type == 'Serial') {
+        resourceFieldMap.type = 'Serial'
+      }
+      else if (type == 'DatabaseInstance') {
+        resourceFieldMap.type = 'Database'
+      }
+      else if (type == 'BookInstance'|| type == 'Monograph') {
+        resourceFieldMap.type = 'Book'
+      }
+
       
       // Identifier count should be calculated after the irrelevant ones have been stripped.
       int identifier_count = resourceFieldMap?.identifiers?.size() ?: 0
       
       
       directAddFields (data, ['defaultAccessURL', 'publishedFrom', 'publishedTo', 
-        'continuingSeries', 'OAStatus', 'imprint', 'issuer'], resourceFieldMap)
+        'continuingSeries', 'OAStatus', 'imprint', 'issuer',"editionNumber","editionDifferentiator", "editionStatement", "volumeNumber", "summaryOfContent", "firstAuthor", "firstEditor", "dateFirstInPrint", "dateFirstOnline"], resourceFieldMap)
 
       String medium = "${cleanText(data.medium?.text())}"
-      resourceFieldMap['medium'] = (medium != "" ? medium : 'Journal')
+      resourceFieldMap['medium'] = medium
 
       // Might be several publishers each with it's own from and to...
-      resourceFieldMap['publisher_history'] = data.publishers?.collect { pub ->
-        directAddFields (pub, ['name','startDate','endDate','status'])
+      resourceFieldMap['publisher_history'] = data.publishers?.publisher?.collect { pub ->
+        [
+          'name': cleanText(pub.name.text()),
+          'status': cleanText(pub.status.text()),
+          'startDate': cleanText(pub.startDate.text()),
+          'endDate': cleanText(pub.endDate.text())
+        ]
       } ?: []
+
+      println("Publishers: ${data.publishers} -> ${resourceFieldMap.publisher_history}")
       
       resourceFieldMap['historyEvents'] = data.history?.historyEvent?.collect { he ->
         println("\tHandle history event")
         [
           'date': cleanText(he.date.text()),
           'from': he?.from?.collect { fr ->
-            println("\tConvert from title in history event : ${fr}")
             convertHistoryEvent(fr)
           } ?: [],
           'to': he?.to?.collect { to ->
-            println("\tConvert to title in history event : ${to}")
             convertHistoryEvent(to)
           } ?: []
         ]

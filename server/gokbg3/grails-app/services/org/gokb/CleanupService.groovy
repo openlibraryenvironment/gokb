@@ -142,6 +142,15 @@ class CleanupService {
     return result
   }
 
+  def esDelete(oid) {
+    DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+          .type('component')
+          .id(oid)
+
+    def es_response = esclient.delete(req)
+    return es_response
+  }
+
   @Transactional
   def deleteOrphanedTipps(Job j = null) {
     log.debug("Expunging TIPPs with missing links")
