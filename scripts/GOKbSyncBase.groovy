@@ -40,6 +40,8 @@ abstract class GOKbSyncBase extends Script {
   
   // More data defaults to true.
   def moredata = true
+  def total = 0
+  def errors = 0
   
   /** None-config vals below **/
   private HTTPBuilder source
@@ -131,10 +133,16 @@ abstract class GOKbSyncBase extends Script {
           }
       
           response.success = { resp, data ->
-            println "Success! ${resp.status} ${data.message}"
+            println "${data.result ?: 'SUCCESS'} - ${resp.status} ${data.message}"
             if (successClosure) {
               successClosure (resp, data)
             }
+
+            if (data.result && data.result == "ERROR") {
+              errors++
+            }
+
+            total++
             
             returnData = [
               result : data,
@@ -277,7 +285,7 @@ abstract class GOKbSyncBase extends Script {
             addTo[f] = val;
           } 
           else if ( !val ) { 
-            println("skipping empty field ${f}")
+            // println("skipping empty field ${f}")
           }
           else if ( addTo[f] ) {
             println("skipping duplicate field ${f}")
@@ -301,7 +309,7 @@ abstract class GOKbSyncBase extends Script {
         data.identifiers?.identifier?.each {
           
           // Only include namespaces that are not 'originEditUrl'
-          if ( !['originEditUrl'].contains(cleanText(it.'@namespace'.text())) )
+          if ( cleanText(it.'@namespace'.text()).toLowerCase() != 'originediturl' )
             ids.add( [ type:it.'@namespace'.text(), value: cleanText(it.'@value'?.text()) ] )
         }
         

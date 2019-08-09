@@ -125,9 +125,9 @@ class TitleInstance extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'method::deleteSoft', label:'Delete', perm:'delete'],
-      [code:'method::setActive', label:'Set Current', perm:'admin'],
-      [code:'method::setExpected', label:'Mark Expected'],
+    [ [code:'setStatus::Deleted', label:'Delete', perm:'delete'],
+      [code:'setStatus::Current', label:'Set Current', perm:'admin'],
+      [code:'setStatus::Expected', label:'Mark Expected'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
       [code:'title::merge', label:'Title Merge']
@@ -681,6 +681,31 @@ class TitleInstance extends KBComponent {
             break;
         }
       }
+  }
+
+  @Override
+  @Transient
+  def ensureVariantName(String name) {
+
+    if (name.trim().size() != 0) {
+
+      // Variant names use different normalisation method.
+      def variant_normname = GOKbTextUtils.normaliseString(name)
+
+      // not already a name
+      // Make sure not already a variant name
+      def existing_variants = this.variantNames
+      if ( existing_variants.size() == 0 ) {
+        KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+      }
+      else {
+        log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+      }
+    }
+    else {
+      log.error("No viable variant name supplied!")
+    }
+
   }
 
 }

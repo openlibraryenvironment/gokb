@@ -16,8 +16,12 @@ while ( moredata ) {
       println("Record ${index + 1}")
       def resourceFieldMap = [
         packageHeader : directAddFields (data, ['scope', 'listStatus', 'breakable' ,'consistent', 'fixed', 'paymentType',
-        'global', 'listVerifier', 'userListVerifier', 'nominalPlatform', 'nominalProvider', 'listVerifiedDate'], addCoreItems ( data ) )
+        'global', 'listVerifier', 'userListVerifier', 'nominalProvider', 'listVerifiedDate'], addCoreItems ( data ) )
       ]
+
+      resourceFieldMap.packageHeader['nominalPlatform'] = [name: data.nominalPlatform.name.text(),
+                                          primaryUrl: data.nominalPlatform.primaryUrl.text(),
+                                          uuid: data.nominalPlatform.'@uuid'.text()]
       
       // TIPPs
       resourceFieldMap.tipps = []
@@ -26,7 +30,7 @@ while ( moredata ) {
         data.TIPPs.TIPP.each { xmltipp ->
           
           // TIPP.
-          def newtipp = directAddFields (data, ['medium', 'url'], addCoreItems ( xmltipp ))
+          def newtipp = directAddFields (xmltipp, ['medium', 'url'], addCoreItems ( xmltipp ))
           newtipp.accessStart = cleanText( xmltipp.access.'@start'.text() )
           newtipp.accessEnd = cleanText( xmltipp.access.'@end'.text() )
           
@@ -47,6 +51,18 @@ while ( moredata ) {
           
           // Title.
           newtipp.title = addCoreItems ( xmltipp.title )
+
+          def type = cleanText(data.type?.text())
+
+          if (!type || type == 'JournalInstance' || type == 'Serial') {
+            newtipp.title.type = 'Serial'
+          }
+          else if (type == 'DatabaseInstance') {
+            newtipp.title.type = 'Database'
+          }
+          else if (type == 'BookInstance'|| type == 'Monograph') {
+            newtipp.title.type = 'Book'
+          }
   
           newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
   
@@ -67,3 +83,5 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+println("Total: ${total}, Errors: ${errors}")

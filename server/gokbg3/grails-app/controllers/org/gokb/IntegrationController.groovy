@@ -632,14 +632,16 @@ class IntegrationController {
     }
 
     // Identifiers
-    if (!component.hasProperty('work')) {
-      log.debug("Identifier processing ${data.identifiers}")
-      Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
-      RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-      RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+    log.debug("Identifier processing ${data.identifiers}")
+    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
+    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
 
-      data.identifiers.each { ci ->
-        String testKey = "${ci.type}|${ci.value}".toString()
+    data.identifiers.each { ci ->
+      String testKey = "${ci.type}|${ci.value}".toString()
+
+      if ( ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
 
         if (!ids.contains(testKey)) {
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
@@ -652,9 +654,15 @@ class IntegrationController {
             log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
             def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
           }
-          else if (duplicate.size() == 1 && duplicate[0].status != combo_active) {
+          else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
             log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
+            ReviewRequest.raise(
+              component,
+              "Review ID status.",
+              "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
+              user
+            )
           }
           else {
             log.debug("Identifier combo is already present, probably via titleLookupService.")
@@ -664,9 +672,6 @@ class IntegrationController {
           ids << testKey
         }
       }
-    }
-    else {
-      log.debug("skipping identifier processing for title ..")
     }
 
     // Flags
@@ -769,6 +774,8 @@ class IntegrationController {
       for (String name : data.variantNames) {
         if (!variants.contains(name)) {
           // Add the variant name.
+          log.debug("Adding variantName ${name} to ${component} ..")
+
           def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
           new_variant_name.save(failOnError: true)
 
@@ -819,6 +826,8 @@ class IntegrationController {
                 }
 
                 if ( is_curator || !curated_pkg ) {
+                  ensureCoreData(the_pkg, json.packageHeader)
+
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
                     log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
@@ -830,84 +839,86 @@ class IntegrationController {
                   // Validate and upsert titles and platforms
                   json.tipps.eachWithIndex { tipp, idx ->
 
-                    TitleInstance.withNewTransaction {
+                    def valid_ti = TitleInstance.validateDTO(tipp.title);
+                    valid &= valid_ti
 
-                      def valid_ti = TitleInstance.validateDTO(tipp.title);
-                      valid &= valid_ti
+                    if ( !valid_ti ) {
+                      log.warn("Not valid after title validation ${tipp.title}");
+                      errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
+                    }
+                    else {
+                      try {
+                        def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-                      if ( !valid_ti ) {
-                        log.warn("Not valid after title validation ${tipp.title}");
-                        errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
-                      }
-                      else {
-                        try {
-                          def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+                        if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
-                          if ( ti && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
-                            tipp.title.internalId = ti.id;
-                          }
-                        }
-                        catch (grails.validation.ValidationException ve) {
-                          log.error("ValidationException attempting to cross reference title",ve);
-                          valid_ti = null
-                          valid = false
-                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp])
-                        }
-
-                        if ( valid_ti && tipp.title.internalId == null ) {
-                          log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
-                          valid = false
-                          errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
-                        }
-                      }
-
-                      def valid_plt = Platform.validateDTO(tipp.platform);
-                      valid &= valid_plt;
-
-                      if ( !valid_plt ) {
-                        log.warn("Not valid after platform validation ${tipp.platform}");
-                        errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
-                      }
-
-                      if ( valid ) {
-
-                        def pl = null
-                        def pl_id
-                        if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
-                          pl = Platform.get(pl_id)
-                        } else {
-                          // Not in cache.
-                          pl = Platform.upsertDTO(tipp.platform, user);
-
-                          if(pl){
-                            platform_cache[tipp.platform.name] = pl.id
-                          }else{
-                            log.error("Could not find/create ${tipp.platform}")
-                            errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
-                            valid = false
-                          }
-                        }
-
-                        if ( pl && ( tipp.platform.internalId == null ) ) {
-                          tipp.platform.internalId = pl.id;
+                          ensureCoreData(ti, tipp.title)
+                          tipp.title.internalId = ti.id;
                         }
                         else {
-                          log.warn("No platform arising from ${tipp.platform}");
+                          ti.discard()
+                          valid_ti = null
+                          valid = false
+                          errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'data': tipp])
                         }
                       }
-                      else {
-                        log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
-                      }
-          //
-          //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
-                      if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-                        tipp.package = [ internalId: the_pkg.id ]
-                      }
-                      else {
-                        log.warn("No package");
-                        errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                      catch (grails.validation.ValidationException ve) {
+                        log.error("ValidationException attempting to cross reference title",ve);
+                        valid_ti = null
                         valid = false
+                        errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
                       }
+
+                      if ( valid_ti && tipp.title.internalId == null ) {
+                        log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
+                        valid = false
+                        errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
+                      }
+                    }
+
+                    def valid_plt = Platform.validateDTO(tipp.platform);
+                    valid &= valid_plt;
+
+                    if ( !valid_plt ) {
+                      log.warn("Not valid after platform validation ${tipp.platform}");
+                      errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
+                    }
+
+                    if ( valid ) {
+
+                      def pl = null
+                      def pl_id
+                      if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                        pl = Platform.get(pl_id)
+                      } else {
+                        // Not in cache.
+                        pl = Platform.upsertDTO(tipp.platform, user);
+
+                        if(pl){
+                          platform_cache[tipp.platform.name] = pl.id
+                        }else{
+                          log.error("Could not find/create ${tipp.platform}")
+                          errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                          valid = false
+                        }
+                      }
+
+                      if ( pl && ( tipp.platform.internalId == null ) ) {
+                        tipp.platform.internalId = pl.id;
+                      }
+                      else {
+                        log.warn("No platform arising from ${tipp.platform}");
+                      }
+                    }
+        //
+        //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+                    if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
+                      tipp.package = [ internalId: the_pkg.id ]
+                    }
+                    else {
+                      log.warn("No package");
+                      errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                      valid = false
                     }
 
                     if (idx % 50 == 0) {
@@ -921,7 +932,7 @@ class IntegrationController {
                   log.warn("Package update denied!")
                   job_result.result = 'ERROR'
                   job_result.message = "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."
-                  return job_id
+                  return job_result
                 }
 
         //        cleanUpGorm()
@@ -958,17 +969,16 @@ class IntegrationController {
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
-                    TitleInstancePackagePlatform.withNewTransaction {
-                      log.debug("Upsert tipp [${tippctr}] ${tipp}")
+                    
+                    log.debug("Upsert tipp [${tippctr}] ${tipp}")
 
-                      def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
-                      log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
-                      upserted_tipp = upserted_tipp.merge(flush: true)
+                    def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
+                    log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
+                    upserted_tipp = upserted_tipp.merge(flush: true)
 
-                      if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
-                        log.debug("Existing TIPP matched!")
-                        tipps_to_delete.remove(upserted_tipp.id)
-                      }
+                    if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
+                      log.debug("Existing TIPP matched!")
+                      tipps_to_delete.remove(upserted_tipp.id)
                     }
 
                     if (idx % 50 == 0) {
@@ -1064,6 +1074,7 @@ class IntegrationController {
       result.errors = []
       result.errors.add(['code': 400, 'message': "The provided package has no name."])
     }
+    cleanUpGorm()
 
     render result as JSON
   }
@@ -1203,6 +1214,8 @@ class IntegrationController {
     if(org.grails.web.json.JSONArray != rjson.getClass()){
 
       result = crossReferenceSingleTitle(rjson, user.id)
+
+      cleanUpGorm()
     }
     else {
       log.debug("Starting crossReferenceTitle Job")
@@ -1304,8 +1317,6 @@ class IntegrationController {
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
               }
-
-              title.save(flush:true, failOnError:true)
 
               // Add the core data.
               ensureCoreData(title, titleObj)

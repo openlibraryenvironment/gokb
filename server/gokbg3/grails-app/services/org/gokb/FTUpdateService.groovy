@@ -174,7 +174,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
         result.updater='pkg'
-        result.titleCount = "${kbc.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}"
+        result.titleCount = kbc.currentTippCount
 
         result.cpname = kbc.provider?.name
 

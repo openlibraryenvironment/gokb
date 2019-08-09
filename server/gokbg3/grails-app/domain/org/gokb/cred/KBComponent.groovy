@@ -1201,7 +1201,7 @@ where cp.owner = :c
 
       }
       else {
-        log.error("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
+        log.debug("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
       }
     }
     else {

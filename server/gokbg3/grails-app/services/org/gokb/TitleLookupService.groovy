@@ -25,6 +25,7 @@ class TitleLookupService {
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
     def xcheck = grailsApplication.config.identifiers.cross_checks
+    RefdataValue status_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
 
     // Return the list of class 1 identifiers we have found or created, as well as the
     // list of matches
@@ -134,8 +135,7 @@ class TitleLookupService {
                       ]
 
                       TitleInstance the_ti = (dproxied as TitleInstance)
-                      RefdataValue status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-                      def combo_active = Combo.executeQuery("from Combo as c where fromComponent = :ti and toComponent = :xcid and (status = :sa or status is null)", [ti: the_ti, xcid: xc_id, sa: status_active])
+                      def combo_active = Combo.executeQuery("from Combo as c where fromComponent = :ti and toComponent = :xcid and status != :sa", [ti: the_ti, xcid: xc_id, sa: status_deleted])
 
                       // Don't add repeated matches
                       if ( result['matches'].contains(the_ti) ) {
@@ -156,7 +156,7 @@ class TitleLookupService {
           }
         }
       }
-      else {
+      else if (id_def.type.toLowerCase() != 'originediturl'){
         log.debug("Skipping problem ID ${id_def}");
         Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
         result['other_identifiers'] << the_id
@@ -270,7 +270,7 @@ class TitleLookupService {
               }
 
               if(the_title.validate()) {
-                the_title.save(flush:true, failOnError:true);
+                the_title = the_title.merge(flush:true, failOnError:true);
               }
             }
 
@@ -565,82 +565,33 @@ class TitleLookupService {
 
       // Make sure we're all saved before looking up the publisher
       if(the_title.validate()) {
-        the_title.save(flush:true, failOnError:true);
-
-        // Add the publisher.
-
-        Set ids_to_add = []
-        ids_to_add.addAll(results['ids'])
-        ids_to_add.addAll(results['other_identifiers'])
-
-        def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-
-        ids_to_add.each { ita ->
-
-          def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[ita.id,the_title.id,id_combo_type.id]);
-
-          if ( !dupes || dupes.size() == 0) {
-
-  //           log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
-
-            // Double check the identifier we are about to add does not already exist attached to another item in the system
-            // Combo.Type : KBComponent.Ids
-
-  //           def existing_identifier = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.type.id = ? and c.fromComponent.status.value <> 'Deleted'",[it.id,id_combo_type.id]);
-
-  //           if ( existing_identifier.size() > 0 ) {
-  //             ReviewRequest.raise(
-  //               the_title,
-  //               "Identifier not unique",
-  //               "The ingest file suggested an identifier (${it.id}) for a title which is already connected with another record in the system (component ${existing_identifier[0].fromComponent})",
-  //               user,
-  //               project
-  //             )
-  //           }
-
-            log.debug("Adding new identifier ${ita} to title ${the_title}");
-//             Combo new_id = new Combo(toComponent:ita, fromComponent:the_title, type:id_combo_type).save(flush:true, failOnError:true);
-            the_title.ids.add(ita)
-
-            the_title.save(failOnError:true, flush:true)
-          }
-          else if (dupes?.size() == 1 && dupes[0].status == RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)) {
-
-            def combo_string = [the_title.id, ida].sort().join('_')
-            def additionalInfo = [otherComponents: [[oid:"${the_title.logEntityId}",name:"${the_title.name}"]], cstring: combo_string]
-            log.debug("Found a deleted identifier combo for ${ita} -> ${the_title}")
-
-            ReviewRequest.raise(
-              ida,
-              "Review ID status.",
-              "Identifier ${ita} was previously connected to title '${the_title}', but has since been manually removed.",
-              user,
-              project,
-              (additionalInfo as JSON).toString()
-            )
-          }
-          else {
-            log.debug("Identifier ${ita} is already connected to the title!");
-          }
+        if(title_created) {
+          the_title.save(flush:true, failOnError:true);
+        }
+        else {
+          the_title = the_title.merge(flush:true)
         }
 
         if(the_title.name.startsWith("Unknown Title")){
           the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
         }
 
-        addPublisher(metadata.publisher_name, the_title, user, project)
+        // Add the publisher.
+
+        // addPublisher(metadata.publisher_name, the_title, user, project)
 
         // Try and save the result now.
-        if ( the_title.isDirty() ) {
-          if ( the_title.save(failOnError:true, flush:true) ) {
-            log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
-          }
-          else {
-            the_title.errors.each { e ->
-              log.error("Problem saving title: ${e}");
-            }
-          }
-        }
+        // if ( the_title.isDirty() ) {
+        //   if ( the_title.validate() ) {
+        //     the_title = the_title.merge(flush:true, failOnError:true)
+        //     log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
+        //   }
+        //   else {
+        //     the_title.errors.each { e ->
+        //       log.error("Problem saving title: ${e}");
+        //     }
+        //   }
+        // }
       }
       else {
         log.error("title validation failed for ${the_title}!")
@@ -763,7 +714,7 @@ class TitleLookupService {
     double threshold = grailsApplication.config.cosine.good_threshold
 
     // Work out the distance between the 2 title strings.
-    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.getName()), comparable_title)
+    double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.name), comparable_title)
 
     // Check the distance.
     switch (distance) {
@@ -786,12 +737,13 @@ class TitleLookupService {
 
         // Good match. Need to add as alternate name.
         log.debug("Good distance match for TI. Add as variant.")
-        def added = ti.addVariantTitle(title)
+        def added = ti.ensureVariantName(title)
         break
 
       default :
         // Bad match...
-        def added = ti.addVariantTitle(title)
+        log.debug("Bad distance match for TI. Add variant and review.")
+        def added = ti.ensureVariantName(title)
 
         // Raise a review request
         if(added) {

@@ -20,33 +20,51 @@ while ( moredata ) {
       println("Record ${index + 1}")
   
       // The basic record.
-      def resourceFieldMap = addCoreItems ( data, ['type': 'Serial'])
+      def resourceFieldMap = addCoreItems ( data )
+
+      def type = cleanText(data.type?.text())
+
+      if (!type || type == 'JournalInstance' || type == 'Serial') {
+        resourceFieldMap.type = 'Serial'
+      }
+      else if (type == 'DatabaseInstance') {
+        resourceFieldMap.type = 'Database'
+      }
+      else if (type == 'BookInstance'|| type == 'Monograph') {
+        resourceFieldMap.type = 'Book'
+      }
+
       
       // Identifier count should be calculated after the irrelevant ones have been stripped.
       int identifier_count = resourceFieldMap?.identifiers?.size() ?: 0
       
       
       directAddFields (data, ['defaultAccessURL', 'publishedFrom', 'publishedTo', 
-        'continuingSeries', 'OAStatus', 'imprint', 'issuer'], resourceFieldMap)
+        'continuingSeries', 'OAStatus', 'imprint', 'issuer',"editionNumber","editionDifferentiator", "editionStatement", "volumeNumber", "summaryOfContent", "firstAuthor", "firstEditor", "dateFirstInPrint", "dateFirstOnline"], resourceFieldMap)
 
       String medium = "${cleanText(data.medium?.text())}"
-      resourceFieldMap['medium'] = (medium != "" ? medium : 'Journal')
+      resourceFieldMap['medium'] = medium
 
       // Might be several publishers each with it's own from and to...
-      resourceFieldMap['publisher_history'] = data.publishers?.collect { pub ->
-        directAddFields (pub, ['name','startDate','endDate','status'])
+      resourceFieldMap['publisher_history'] = data.publishers?.publisher?.collect { pub ->
+        [
+          'name': cleanText(pub.name.text()),
+          'status': cleanText(pub.status.text()),
+          'startDate': cleanText(pub.startDate.text()),
+          'endDate': cleanText(pub.endDate.text())
+        ]
       } ?: []
+
+      println("Publishers: ${data.publishers} -> ${resourceFieldMap.publisher_history}")
       
       resourceFieldMap['historyEvents'] = data.history?.historyEvent?.collect { he ->
         println("\tHandle history event")
         [
           'date': cleanText(he.date.text()),
           'from': he?.from?.collect { fr ->
-            println("\tConvert from title in history event : ${fr}")
             convertHistoryEvent(fr)
           } ?: [],
           'to': he?.to?.collect { to ->
-            println("\tConvert to title in history event : ${to}")
             convertHistoryEvent(to)
           } ?: []
         ]
@@ -59,6 +77,11 @@ while ( moredata ) {
       } else {
         if ("${resourceFieldMap.name}" != "" && resourceFieldMap.name) {
           println("\tDefer processing of ${resourceFieldMap.name} due to lack of identifiers.")
+          def df_name = resourceFieldMap.name
+
+          if (!config.deferred) {
+            config.deferred = ["${df_name}": resourceFieldMap ]
+          }
           config.deferred[resourceFieldMap.name] = resourceFieldMap
         } else {
           println "\tIgnoring unnamed title."
@@ -84,6 +107,8 @@ config.deferred.each { k, v ->
   Thread.sleep(25)
 }
 
+println("Total: ${total}, Errors: ${errors}")
+
 // Remove this here so we start from the beginning every time.
 // config.remove('resumptionToken')
 
@@ -91,7 +116,7 @@ private convertHistoryEvent(evt) {
   // convert the evt structure to a json object and add to lst
   def result = [
     'title' : cleanText(evt.title.text()),
-    'uuid' : cleanText(evt.uuid.text())
+    'uuid' : cleanText(evt.uuid.text()),
     'identifiers' : evt.identifiers.identifier.collect { id ->
       [
         type: cleanText(id.'@namespace'.text()),
