@@ -772,7 +772,7 @@ class IntegrationController {
     if (data.variantNames) {
       Set<String> variants = component.variantNames.collect { "${it.variantName}".toString() }
       for (String name : data.variantNames) {
-        if (!variants.contains(name)) {
+        if (name?.trim().size() > 0 && !variants.contains(name)) {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 

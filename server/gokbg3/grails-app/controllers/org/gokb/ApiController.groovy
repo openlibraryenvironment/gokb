@@ -391,7 +391,7 @@ class ApiController {
 
         SearchRequestBuilder es_request =  esclient.prepareSearch("suggest")
 
-        es_request.setIndices(grailsApplication.config.globalSearch.indices)
+        es_request.setIndices(grailsApplication.config.gokb.es.index)
         es_request.setTypes(grailsApplication.config.globalSearch.types)
         es_request.setQuery(suggestQuery)
 
