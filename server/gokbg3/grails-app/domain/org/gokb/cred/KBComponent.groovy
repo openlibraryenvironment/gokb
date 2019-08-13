@@ -1357,16 +1357,15 @@ where cp.owner = :c
                   ac?.notes?.each { note ->
                     result[cat_code].comment_count++;
 
-                    def comment_user_is_curator = false
-                    if ( filter == 'curator' ) {
-                    }
+                    def comment_user_is_curator = note.criterion.user.curatoryGroups?.id.intersect(this.curatoryGroups?.id)
+                    def group_intersection = note.criterion.user.groupMemberships?.intersect(currentUser.groupMemberships)
 
                     // Control comment inclusion based on filter
                     if ( 
                            ( filter == null ) || ( filter=='all' ) || ( filter == '' ) ||                                // NO filter == everything
-                         ( ( filter == 'mylib' )    && (  note.criterion.user.org == currentUser.org ) ) ||              // User only wants comments from their own org
-                         ( ( filter == 'otherlib' ) && ( note.criterion.user.org != currentUser.org ) ) ||               // HEIs other than the users
-                         ( ( filter == 'vendor' )   && ( note.criterion.user.org?.mission?.value == 'Commercial' ) ) ||  // Filter to vendor comments
+                         ( ( filter == 'mylib' )    && ((  note.criterion.user.org == currentUser.org ) || group_intersection )) ||              // User only wants comments from their own org
+                         ( ( filter == 'otherlib' ) && ( note.criterion.user.org != currentUser.org ) && !group_intersection ) ||               // HEIs other than the users
+                         ( ( filter == 'vendor' )   && ( note.criterion.user.org?.mission?.value == 'Commercial' || note.criterion.user.groupMemberships?.collect { it.mission?.value == 'Commercial'} )) ||  // Filter to vendor comments
                          ( ( filter == 'curator' )  && comment_user_is_curator )                                         // User is a curator
                        ) { 
                       if (!note.isDeleted )

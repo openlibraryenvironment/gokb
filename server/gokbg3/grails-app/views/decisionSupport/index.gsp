@@ -18,13 +18,18 @@
               <table class="table table-striped table-bordered">
                 <thead>
                   <tr>
-                    <th rowspan="2">
-                      Browse&nbsp;:&nbsp;<select name="dimension">
-                        <option value="Platform">By Platform</option>
-                        <option value="Package">By Package</option>
-                        <option value="Title">By Title</option>
-                      </select><br/>
-                      Filter:<input name="q" type="text form-control" value="${params.q}"/>
+                    <th rowspan="2" style="min-width:250px;">
+                      <g:form method="get" class="form-horizontal" controller="decisionSupport" role="form">
+                        Browse&nbsp;:&nbsp;<select name="dimension" class="form-control">
+                          <option value="Platform">By Platform</option>
+                          <option value="Package">By Package</option>
+                        </select><br/>
+                        Filter:<input name="q" type="text" class="form-control" value="${params.q}"/>
+                        <hr/>
+                        <div class="btn-group pull-right" role="group" aria-label="Search Buttons">
+                          <button name="searchAction" type="submit" class="btn btn-default" value="search">Apply</button>
+                        </div>
+                      </g:form>
                     </th>
                     <g:each in="${matrix.criterion_heads}" var="ch">
                       <th colspan="${ch?.count}" style="background-color:${ch.color?:'none'};"><g:link controller="resource" action="show" id="org.gokb.cred.DSCategory:${ch.id}">${ch?.name}</g:link></th>

@@ -212,7 +212,7 @@
                   </ul></li>
                 <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Operating environment</g:link></li>
               </sec:ifAnyGranted>
-              <g:if test="${ grailsApplication.config.gokb.decisionSupport && user.hasRole('ROLE_EDITOR') }">
+              <g:if test="${ grailsApplication.config.gokb.decisionSupport?.active && user.hasRole('ROLE_EDITOR') }">
                 <li><g:link controller="decisionSupport"><i class="fa fa-search fa-fw"></i> Decision Support Dashboard</g:link></li>
               </g:if>
 
