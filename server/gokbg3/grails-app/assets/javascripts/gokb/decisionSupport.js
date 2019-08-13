@@ -54,7 +54,6 @@ function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
       }
 
       if ( !data.changedFrom || data.changedFrom != v ) {
-        console.log("Changing vote totals..");
         var selectedCount = target.parents(".DSVote").siblings(".otherVoters").find(".count-" + v);
         var addedNew = 1 + + selectedCount.text();
         

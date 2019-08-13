@@ -147,7 +147,7 @@
             dataType:"json"
           }).done(function(data) {
             if ( data.result == 'OK' ) {
-              console.log(data.item);
+              
               var uoTable = document.getElementById("uomembers");
               var newRow = uoTable.insertRow(-1);
               var newUser = newRow.insertCell(0);
