@@ -455,39 +455,41 @@ class IntegrationController {
     createOrUpdateSource ( request.JSON )
   }
 
-  private static def createOrUpdateSource( data ) {
+  private def createOrUpdateSource( data ) {
     log.debug("assertSource, data = ${data}");
     def result=[:]
+    def source_data = data;
     result.status = true;
 
     try {
       if ( data.name ) {
-        def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
 
-        ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
+        Source.withNewSession {
+          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
 
-        setAllRefdata ([
-          'software', 'service'
-        ], data, located_or_new_source)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
 
-        setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-        setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
+          setAllRefdata ([
+            'software', 'service'
+          ], source_data, located_or_new_source)
 
-        ensureCoreData(located_or_new_source, data)
+          setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+          setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
 
-        log.debug("Variant names processing: ${data.variantNames}")
+          log.debug("Variant names processing: ${data.variantNames}")
 
-        // variants
-        data.variantNames.each { vn ->
-          addVariantNameToComponent(located_or_new_source, vn)
+          // variants
+          data.variantNames.each { vn ->
+            addVariantNameToComponent(located_or_new_source, vn)
+          }
+
+          result['component'] = located_or_new_source
         }
-
-        result['component'] = located_or_new_source
       }
     }
     catch ( Exception e ) {
@@ -617,7 +619,7 @@ class IntegrationController {
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
 
-  private static def ensureCoreData ( KBComponent component, data ) {
+  private def ensureCoreData ( KBComponent component, data ) {
 
     // Set the name.
     if(!component.name && data.name) {
@@ -625,11 +627,9 @@ class IntegrationController {
     }
 
     // Core refdata.
-    if (!component.status) {
-      setAllRefdata ([
-        'status', 'editStatus',
-      ], data, component)
-    }
+    setAllRefdata ([
+      'status', 'editStatus',
+    ], data, component)
 
     // Identifiers
     log.debug("Identifier processing ${data.identifiers}")
@@ -738,9 +738,6 @@ class IntegrationController {
       }
     }
 
-    // Save the component so we have something to set the names against.
-    component.save(failOnError: true, flush:true)
-
     if (data.additionalProperties) {
       Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
       for (Map it : data.additionalProperties) {
@@ -784,6 +781,7 @@ class IntegrationController {
         }
       }
     }
+    component.save(flush:true)
   }
 
 
@@ -1083,21 +1081,30 @@ class IntegrationController {
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     def created = false
+    def platformJson = request.JSON
     User user = springSecurityService.currentUser
-    if ( ( request.JSON.platformUrl ) &&
-         ( request.JSON.platformUrl.trim().length() > 0 ) &&
-         ( request.JSON.platformName ) &&
-         ( request.JSON.platformName.trim().length() > 0 ) ) {
-      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl)
+
+    log.debug("crossReferencePlatform - ${platformJson}")
+    if ( ( platformJson.platformUrl ) &&
+         ( platformJson.platformUrl.trim().length() > 0 ) &&
+         ( platformJson.platformName ) &&
+         ( platformJson.platformName.trim().length() > 0 ) ) {
+      def p = Platform.findByPrimaryUrl(platformJson.platformUrl)
 
       if ( p == null ) {
 
         // Attempt normname lookup.
-        p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) )
+        p = Platform.findByNormname( Platform.generateNormname (platformJson.platformName) )
 
         if (!p) {
-          p = new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null).save(flush:true, failOnError:true)
-          created = true
+          try {
+            p = new Platform(primaryUrl:platformJson.platformUrl, name:platformJson.platformName, uuid: platformJson.uuid?.trim()?.size() > 0 ? platformJson.uuid : null).save(flush:true, failOnError:true)
+            created = true
+          }
+          catch (grails.validation.ValidationException ve) {
+            log.debug("Platform ${platformJson} failed validation!")
+            log.debug(ve)
+          }
         }
       }
 
@@ -1106,18 +1113,24 @@ class IntegrationController {
 
         setAllRefdata ([
           'software', 'service'
-        ], request.JSON, p)
-        setRefdataIfPresent(request.JSON.authentication, p.id, 'authentication', 'Platform.AuthMethod')
+        ], platformJson, p)
+        setRefdataIfPresent(platformJson.authentication, p.id, 'authentication', 'Platform.AuthMethod')
 
-        if (request?.JSON?.provider) {
-          def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
+        if (platformJson.provider) {
+          def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
           if (prov) {
+            log.debug("Adding Provider ${prov} to platform ${p}!")
             p.provider = prov
+          }
+          else {
+            log.debug("No provider found for ${platformJson.provider}!")
           }
         }
 
+        p.save(flush:true)
+
         // Add the core data.
-        ensureCoreData(p, request.JSON)
+        ensureCoreData(p, platformJson)
 
   //      if ( changed ) {
   //        p.save(flush:true, failOnError:true);
@@ -1132,7 +1145,8 @@ class IntegrationController {
         result.platformId = p.id;
       }
       else {
-        result.message = "Could not crossreference platform ${request.JSON}"
+        log.debug("No platform matched for ${platformJson}")
+        result.message = "Could not crossreference platform ${platformJson}"
         result.result = 'ERROR'
       }
     }

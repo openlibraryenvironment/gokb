@@ -247,7 +247,7 @@ class Platform extends KBComponent {
       }
     }
 
-    name_candidates = Platform.executeQuery("from Platform where name = ?", [platformDTO.name]);
+    name_candidates = Platform.executeQuery("from Platform where name = ? and status = ? ", [platformDTO.name, status_current]);
     
     if(platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0){
       try {

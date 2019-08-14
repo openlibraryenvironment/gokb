@@ -165,6 +165,7 @@ class Org extends KBComponent {
     def publishes = getPublishedTitles()
     def issues = getIssuedTitles()
     def provides = getProvidedPackages()
+    def platforms = getProvidedPlatforms()
     def identifiers = getIds()
     
     builder.'gokb' (attr) {
@@ -185,11 +186,12 @@ class Org extends KBComponent {
           builder.'mission' ( mission.value )
         }
         
-        if (providedPlatforms) {
+        if (platforms) {
           'providedPlatforms' {
-            providedPlatforms.each { plat ->
+            platforms.each { plat ->
               builder.'platform' (['id':plat.id, 'uuid':plat.uuid]) {
                 builder.'name' (plat.name)
+                builder.'primaryUrl' (plat.primaryUrl)
               }
             }
           }
