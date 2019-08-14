@@ -455,7 +455,7 @@ class IntegrationController {
     createOrUpdateSource ( request.JSON )
   }
 
-  private def createOrUpdateSource( data ) {
+  private static def createOrUpdateSource( data ) {
     log.debug("assertSource, data = ${data}");
     def result=[:]
     def source_data = data;
@@ -478,8 +478,8 @@ class IntegrationController {
             'software', 'service'
           ], source_data, located_or_new_source)
 
-          setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-          setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
+          ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+          ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
 
           log.debug("Variant names processing: ${data.variantNames}")
 
@@ -619,7 +619,7 @@ class IntegrationController {
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
 
-  private def ensureCoreData ( KBComponent component, data ) {
+  private static def ensureCoreData ( KBComponent component, data ) {
 
     // Set the name.
     if(!component.name && data.name) {
@@ -773,8 +773,7 @@ class IntegrationController {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 
-          def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
-          new_variant_name.save(failOnError: true)
+          def new_variant_name = component.ensureVariantName(name)
 
           // Add to collection.
           variants << name
@@ -1114,7 +1113,7 @@ class IntegrationController {
         setAllRefdata ([
           'software', 'service'
         ], platformJson, p)
-        setRefdataIfPresent(platformJson.authentication, p.id, 'authentication', 'Platform.AuthMethod')
+        ClassUtils.setRefdataIfPresent(platformJson.authentication, p.id, 'authentication', 'Platform.AuthMethod')
 
         if (platformJson.provider) {
           def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
@@ -1153,10 +1152,10 @@ class IntegrationController {
     render result as JSON
   }
 
-  private boolean setAllRefdata (propNames, data, target) {
+  private static boolean setAllRefdata (propNames, data, target, boolean createNew = false) {
     boolean changed = false
     propNames.each { String prop ->
-      changed |= setRefdataIfPresent(data[prop], target.id, prop)
+      changed |= ClassUtils.setRefdataIfPresent(data[prop], target.id, prop, createNew)
     }
     changed
   }
@@ -1517,7 +1516,7 @@ class IntegrationController {
     result
   }
 
-  private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
+  private static addPublisherHistory ( TitleInstance ti, publishers, sdf) {
 
     def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS","yyyy-MM-dd"]
 
@@ -1667,7 +1666,7 @@ class IntegrationController {
     }
   }
 
-  private addMonographFields ( BookInstance bi, titleObj, sdf ) {
+  private static addMonographFields ( BookInstance bi, titleObj, sdf ) {
 
     def book_changed = false
 
@@ -1844,51 +1843,4 @@ class IntegrationController {
     session.flush()
     session.clear()
   }
-
-  private def boolean setRefdataIfPresent(value, objid, prop, cat = null) {
-    boolean result = false
-    def kbc = KBComponent.get(objid)
-
-    if (!cat) {
-      cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
-    }
-
-    if ( ( value ) && ( cat ) &&
-         ( value.toString().trim().length() > 0 ) &&
-         ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
-
-      def v = null
-      if (RefdataValue.isTypeCreatable()) {
-        v = RefdataCategory.lookupOrCreate(cat,value)
-      }
-      else {
-        v = RefdataCategory.lookup(cat, value)
-      }
-
-      if (v) {
-        kbc[prop] = v
-        result = true
-      }
-    }
-
-    result
-  }
-
-  private def boolean setStringIfDifferent(obj, prop, value) {
-    boolean result = false;
-
-    if ( ( obj != null ) && ( prop != null ) && ( value ) && ( value.toString().length() > 0 ) ) {
-
-      if ( obj[prop] == value ) {
-      }
-      else {
-        result = true
-        obj[prop] = value
-      }
-
-    }
-
-    result
-  }
-
 }

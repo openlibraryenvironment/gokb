@@ -39,7 +39,7 @@
               <g:xEditableRefData owner="${row}" field="${c.expr}" config='Combo.Status' />
             </g:elseif>
             <g:else>
-              <span class="${row.status?.value == 'Active' ? '' : 'text-deleted'}" title="${row.status?.value == 'Deleted' ? 'This link has been marked as Deleted.' : ''}">
+              <span class="${row.status?.value == 'Deleted' ? 'text-deleted' : ''}" title="${row.status?.value == 'Deleted' ? 'This link has been marked as Deleted.' : ''}">
                 ${groovy.util.Eval.x(row, 'x.' + c.expr)}
               </span>
             </g:else>

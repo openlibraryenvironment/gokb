@@ -64,7 +64,7 @@ class ClassUtils {
     result;
   }
 
-  public static boolean setRefdataIfPresent(value, objid, prop, cat = null) {
+  public static boolean setRefdataIfPresent(value, objid, prop, cat = null, boolean create = false) {
     boolean result = false
     ClassExaminationService classExaminationService = grails.util.Holders.applicationContext.getBean('classExaminationService')
     def kbc = KBComponent.get(objid)
@@ -76,9 +76,14 @@ class ClassUtils {
     if ( ( value ) && ( cat ) &&
          ( value.toString().trim().length() > 0 ) &&
          ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
-      def v = RefdataCategory.lookupOrCreate(cat,value)
-      kbc[prop] = v
-      result = true
+
+      def v = null
+      if (create) {
+        v = RefdataCategory.lookupOrCreate(cat,value)
+      }
+      else {
+        v = RefdataCategory.lookup(cat, value)
+      }
     }
 
     result
