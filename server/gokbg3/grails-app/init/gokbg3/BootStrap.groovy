@@ -453,6 +453,11 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("Package.Global", "Global").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Global", "Other").save(flush:true, failOnError:true)
 
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Mixed").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Journal").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Book").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Database").save(flush:true, failOnError:true)
+
     RefdataCategory.lookupOrCreate("Platform.AuthMethod", "IP").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Platform.AuthMethod", "Shibboleth").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Platform.AuthMethod", "User Password").save(flush:true, failOnError:true)

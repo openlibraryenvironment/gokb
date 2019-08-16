@@ -140,6 +140,12 @@ abstract class GOKbSyncBase extends Script {
 
             if (data.result && data.result == "ERROR") {
               errors++
+
+              if (data.errors) {
+                data.errors.each { e ->
+                  println "       - ${e}"
+                }
+              }
             }
 
             total++

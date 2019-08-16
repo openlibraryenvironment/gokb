@@ -202,6 +202,16 @@ class TitleLookupService {
       return null
     }
 
+    if ( metadata.uuid ) {
+      the_title = TitleInstance.findByUuid(metadata.uuid)
+
+      if(the_title) {
+        log.debug("Found TitleInstance by Uuid, skipping Identifier matching ..")
+        the_title = singleTIMatch(metadata.title, the_title, user, project)
+        return the_title
+      }
+    }
+
     // Lookup any class 1 identifier matches
     def results = class_one_match (metadata.identifiers)
 
@@ -227,6 +237,8 @@ class TitleLookupService {
             def clazz = Class.forName(newTitleClassName)
             the_title = clazz.newInstance()
             the_title.name = metadata.title
+            the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
+            the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
             the_title.normname = KBComponent.generateNormname(metadata.title);
             // the_title.editStatus = 
             the_title.ids = []
@@ -288,6 +300,8 @@ class TitleLookupService {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
               the_title.name = metadata.title
+              the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
+              the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
             }
@@ -414,6 +428,8 @@ class TitleLookupService {
                   def clazz = Class.forName(newTitleClassName)
                   the_title = clazz.newInstance()
                   the_title.name = metadata.title
+                  the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
+                  the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
                   the_title.normname = KBComponent.generateNormname(metadata.title)
                   the_title.ids = []
                 }
@@ -496,6 +512,8 @@ class TitleLookupService {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
               the_title.name = metadata.title
+              the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
+              the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
             }

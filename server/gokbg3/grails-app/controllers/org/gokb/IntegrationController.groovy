@@ -465,7 +465,7 @@ class IntegrationController {
       if ( data.name ) {
 
         Source.withNewSession {
-          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
+          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name).save(flush:true, failOnError:true)
 
           ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
           ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
@@ -822,7 +822,7 @@ class IntegrationController {
                   curated_pkg = true;
                 }
 
-                if ( is_curator || !curated_pkg ) {
+                if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
                   ensureCoreData(the_pkg, json.packageHeader)
 
                   if ( the_pkg.tipps?.size() > 0 ) {
@@ -893,6 +893,8 @@ class IntegrationController {
 
                         if(pl){
                           platform_cache[tipp.platform.name] = pl.id
+
+                          ensureCoreData(pl, tipp.platform)
                         }else{
                           log.error("Could not find/create ${tipp.platform}")
                           errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
@@ -1030,7 +1032,7 @@ class IntegrationController {
                 }
                 else {
                   job_result.result = 'ERROR'
-                  job_result.message = "Package was created, but tipps have not been loaded because of validation errors!"
+                  job_result.message = "Package ${json.packageHeader.name} was created, but tipps have not been loaded because of validation errors!"
                   log.warn("Not loading tipps - failed validation")
                 }
               }else{
@@ -1043,6 +1045,7 @@ class IntegrationController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
             }
+            cleanUpGorm()
           }
         }
 
@@ -1320,6 +1323,9 @@ class IntegrationController {
                 }
               }
 
+              // Add the core data.
+              ensureCoreData(title, titleObj)
+
               title_changed |= setAllRefdata ([
                     'OAStatus', 'medium',
                     'pureOA', 'continuingSeries',
@@ -1330,9 +1336,6 @@ class IntegrationController {
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
               }
-
-              // Add the core data.
-              ensureCoreData(title, titleObj)
 
               if ( titleObj.historyEvents?.size() > 0 ) {
 

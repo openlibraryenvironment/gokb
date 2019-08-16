@@ -1,5 +1,8 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService.Job
+import grails.gorm.transactions.Transactional
+
 import org.gokb.cred.*
 import org.hibernate.Session
 
@@ -348,6 +351,60 @@ class PackageService {
 
     log.debug("Found ${results.size()} providers.")
     results
+  }
+
+  @Transactional
+  public def generatePackageTypes(Job j = null) {
+    log.debug("Generating missing package content types.")
+    def result = [book:0, db:0, journal:0, mixed:0, errors:0]
+    def pkg_list = Package.executeQuery("from Package where pkg.contentType is null")
+    def msg_list = []
+    def ctr = 0
+
+    for (pkg in pkg_list) {
+
+      if ( Thread.currentThread().isInterrupted() ) {
+        log.debug("Job cancelling ..")
+        break;
+      }
+
+      def has_db = pkg.tipps.title.find { it.class.name == 'org.gokb.cred.DatabaseInstance' }
+      def has_journal = pkg.tipps.title.find { it.class.name == 'org.gokb.cred.JournalInstance' }
+      def has_book = pkg.tipps.title.find { it.class.name == 'org.gokb.cred.BookInstance' }
+
+      if ( has_db && !has_journal && !has_book ) {
+        pkg.contentType = RefdataCategory.lookup('Package.ContentType', 'Database')
+        result.db++
+      }
+      else if ( has_journal && !has_db && !has_book ) {
+        pkg.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
+        result.journal++
+      }
+      else if ( has_book && !has_db && !has_journal ) {
+        pkg.contentType = RefdataCategory.lookup('Package.ContentType', 'Book')
+        result.book++
+      }
+      else if ( has_book && has_journal ) {
+        pkg.contentType = RefdataCategory.lookup('Package.ContentType', 'Mixed')
+        result.mixed++
+      }
+      else {
+        def msg = "Found illegal package composition for ${pkg.name} (journals: ${has_journal}, db: ${has_db}, book: ${has_book})!"
+        log.warn(msg)
+        result.errors++
+        msg_list.add(msg)
+      }
+      ctr++
+      j.progress(ctr, pkg_list.size())
+    }
+
+    j.message("Finished creating ${ctr} new types (${errors} errors).".toString())
+
+    msg_list.each {
+      j.message(it.toString())
+    }
+
+    j.endTime = new Date()
   }
 
   @javax.annotation.PreDestroy

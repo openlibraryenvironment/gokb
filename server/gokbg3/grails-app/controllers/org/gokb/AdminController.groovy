@@ -282,6 +282,18 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def addPackageTypes() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      log.debug("Generating missing package content types ..")
+      packageService.generatePackageTypes(j)
+    }.startOrQueue()
+
+    j.description = "Generate Package Types"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def jobs() {
     log.debug("Jobs");
     def result = [:]

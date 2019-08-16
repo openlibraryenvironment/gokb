@@ -25,6 +25,7 @@ class Package extends KBComponent {
   // Refdata
   RefdataValue scope
   RefdataValue listStatus
+  RefdataValue contentType
   RefdataValue breakable
   RefdataValue consistent
   RefdataValue fixed
@@ -442,6 +443,7 @@ select tipp.id,
         'fixed' ( fixed?.value )
         'paymentType' ( paymentType?.value )
         'global' ( global?.value )
+        'contentType' ( contentType?.value )
 
          if (nominalPlatform) {
           builder.'nominalPlatform' ([id: nominalPlatform.id, uuid:nominalPlatform.uuid]) {
@@ -858,12 +860,12 @@ select tipp.id,
       }
     }
 
-    packageHeaderDTO.variantNames?.each {
-      if ( it.trim().size() > 0 ) {
-        result.ensureVariantName(it)
-        changed=true
-      }
-    }
+    // packageHeaderDTO.variantNames?.each {
+    //   if ( it.trim().size() > 0 ) {
+    //     result.ensureVariantName(it)
+    //     changed=true
+    //   }
+    // }
 
     packageHeaderDTO.curatoryGroups?.each {
 

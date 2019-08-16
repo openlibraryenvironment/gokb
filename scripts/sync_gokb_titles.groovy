@@ -73,7 +73,7 @@ while ( moredata ) {
       if (identifier_count > 0) {
         // Process identified components now.
         resources.add(resourceFieldMap)
-        
+
       } else {
         if ("${resourceFieldMap.name}" != "" && resourceFieldMap.name) {
           println("\tDefer processing of ${resourceFieldMap.name} due to lack of identifiers.")
@@ -85,7 +85,7 @@ while ( moredata ) {
           config.deferred[resourceFieldMap.name] = resourceFieldMap
         } else {
           println "\tIgnoring unnamed title."
-        } 
+        }
       }
     }
   }
@@ -97,7 +97,7 @@ while ( moredata ) {
   // Save the config.
   println("Current config: ${config}")
   saveConfig()
-  Thread.sleep(1000)
+  Thread.sleep(100)
 }
 
 // Now that we have finished pulling down the titles we have a list of deferred "identifier-less" titles.

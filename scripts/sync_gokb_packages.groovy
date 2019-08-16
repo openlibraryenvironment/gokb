@@ -9,6 +9,8 @@ boolean includeTipps = true
 while ( moredata ) {
   
   def resources = []
+  def status = null
+
   fetchFromSource (path: '/gokb/oai/packages') { resp, body ->
 
     body?.'ListRecords'?.'record'.metadata.gokb.package.eachWithIndex { data, index ->
@@ -26,7 +28,7 @@ while ( moredata ) {
       // TIPPs
       resourceFieldMap.tipps = []
 
-      if (includeTipps) {
+      if (data.status != 'Deleted' && includeTipps) {
         data.TIPPs.TIPP.each { xmltipp ->
           
           // TIPP.
@@ -69,11 +71,10 @@ while ( moredata ) {
           resourceFieldMap['tipps'].add(newtipp);
         }
       }
-      
       resources.add(resourceFieldMap)
     }
   }
-  
+
   resources.each {
     sendToTarget (path: '/gokb/integration/crossReferencePackage', body: it)
   }
