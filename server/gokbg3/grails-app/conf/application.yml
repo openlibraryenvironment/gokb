@@ -1,5 +1,11 @@
 ---
 grails:
+    config:
+        locations:
+            - ~/.grails/gokb-config.groovy
+            - ~/.grails/gokb-config.yml
+            - ~/.grails/gokb-config.properties
+
     profile: web
     codegen:
         defaultPackage: gokbg3
@@ -189,8 +195,8 @@ environments:
     production:
         dataSource:
             dbCreate: update
-            url: jdbc:postgresql://pghost:5432/gokbg3
-            username: knowint
+            url: jdbc:postgresql://localhost:5432/gokbg3
+            username: gokb
             password: knowint
             driverClassName: org.postgresql.Driver
             dialect: org.hibernate.dialect.PostgreSQLDialect
