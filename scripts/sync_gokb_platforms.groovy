@@ -9,7 +9,9 @@ while ( moredata ) {
   def resources = []
   fetchFromSource (path: '/gokb/oai/platforms') { resp, body ->
 
-    body?.'ListRecords'?.'record'.metadata.gokb.platform.eachWithIndex { data, index ->
+    body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
+
+      def data = rec.metadata.gokb.platform
 
       println("Record ${index + 1}")
 
