@@ -237,8 +237,6 @@ class TitleLookupService {
             def clazz = Class.forName(newTitleClassName)
             the_title = clazz.newInstance()
             the_title.name = metadata.title
-            the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
-            the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
             the_title.normname = KBComponent.generateNormname(metadata.title);
             // the_title.editStatus = 
             the_title.ids = []
@@ -300,8 +298,6 @@ class TitleLookupService {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
               the_title.name = metadata.title
-              the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
-              the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
             }
@@ -428,8 +424,6 @@ class TitleLookupService {
                   def clazz = Class.forName(newTitleClassName)
                   the_title = clazz.newInstance()
                   the_title.name = metadata.title
-                  the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
-                  the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
                   the_title.normname = KBComponent.generateNormname(metadata.title)
                   the_title.ids = []
                 }
@@ -512,8 +506,6 @@ class TitleLookupService {
               def clazz = Class.forName(newTitleClassName)
               the_title = clazz.newInstance()
               the_title.name = metadata.title
-              the_title.status = RefdataCategory.lookup('KBComponent.Status', metadata.status)
-              the_title.editStatus = RefdataCategory.lookup('KBComponent.EditStatus', metadata.editStatus)
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
             }

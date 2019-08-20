@@ -736,7 +736,7 @@ select tipp.id,
     if( !result ){
       log.debug("No existing package matched. Creating new package..")
 
-      result = new Package(name:packageHeaderDTO.name, normname:pkg_normname, status: RefdataCategory.lookup("KBComponent.Status", packageHeaderDTO.status))
+      result = new Package(name:packageHeaderDTO.name, normname:pkg_normname)
       
       created = true
 
@@ -756,13 +756,7 @@ select tipp.id,
     }
 
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus')
-
-    log.debug("Status Update: ${result.status?.value ?: 'null'} -> ${packageHeaderDTO.status}")
-
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status')
-
-    log.debug("New status: ${result.status?.value ?: 'null'}")
-
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result, 'editStatus')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope')
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable')
@@ -896,7 +890,7 @@ select tipp.id,
       }
     }
 
-    result = result.merge(flush:true, failOnError:true);
+    result.save(flush:true, failOnError:true);
 
 
     result
