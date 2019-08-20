@@ -328,16 +328,10 @@ select tipp.id,
     
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
-    def tipps = getTipps()
-     
-    tipps.each { def tipp ->
-      
-      // Ensure they aren't the javassist type classes here, as we will get a NoSuchMethod exception
-      // thrown below if we don't.
-      tipp = KBComponent.deproxy(tipp)
-      
-      tipp.deleteSoft()
-    }
+    def tipps = getTipps()?.collect { it.id }
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipps])
   }
   
 
@@ -345,26 +339,16 @@ select tipp.id,
     log.debug("package::retire");
     // Call the delete method on the superClass.
     log.debug("Updating package status to retired");
-    this.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    this.status = retired_status
     this.save();
 
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     log.debug("Retiring tipps");
-    def tipps = getTipps()
+    def tipps = getTipps()?.collect { it.id }
 
-    tipps.each { def t ->
-      log.debug("deroxy ${t} ${t.class.name}");
-      
-      // SO: There are 2 deproxy methods. One in the static context that takes in an argument and one,
-      // against an instance which attempts to deproxy this component. Calling deproxy(t) here will invoke the method
-      // against the current package. this.deproxy(t).
-      // So Package.deproxy(t) or t.deproxy() should work...
-      def tipp = Package.deproxy(t)
-      log.debug("Retiring tipp ${tipp.id}");
-      tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
-      tipp.save()
-    }
+    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[del: retired_status, ttd:tipps])
   }
 
 
