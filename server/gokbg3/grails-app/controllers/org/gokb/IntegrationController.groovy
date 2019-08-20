@@ -478,8 +478,8 @@ class IntegrationController {
             'software', 'service'
           ], source_data, located_or_new_source)
 
-          ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-          ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
+          ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+          ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
 
           log.debug("Variant names processing: ${data.variantNames}")
 
@@ -1026,6 +1026,10 @@ class IntegrationController {
                   log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
                   job_result.result = 'OK'
                   job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
+
+                  if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+                    the_pkg.lastUpdateComment = job_result.message
+                  }
                   job_result.pkgId = the_pkg.id
                   job_result.uuid = the_pkg.uuid
                   log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
@@ -1116,7 +1120,7 @@ class IntegrationController {
         setAllRefdata ([
           'software', 'service'
         ], platformJson, p)
-        ClassUtils.setRefdataIfPresent(platformJson.authentication, p.id, 'authentication', 'Platform.AuthMethod')
+        ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
 
         if (platformJson.provider) {
           def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
@@ -1158,7 +1162,7 @@ class IntegrationController {
   private static boolean setAllRefdata (propNames, data, target, boolean createNew = false) {
     boolean changed = false
     propNames.each { String prop ->
-      changed |= ClassUtils.setRefdataIfPresent(data[prop], target.id, prop, createNew)
+      changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop, createNew)
     }
     changed
   }

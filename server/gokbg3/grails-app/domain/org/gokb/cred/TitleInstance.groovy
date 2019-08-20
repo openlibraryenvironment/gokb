@@ -579,7 +579,7 @@ class TitleInstance extends KBComponent {
     result &= titleDTO.name != null
     result &= titleDTO.identifiers != null
 
-    titleDTO.identifiers.each { idobj ->
+    titleDTO.identifiers?.each { idobj ->
       if (idobj.type && idobj.value) {
         def found_ns = IdentifierNamespace.findAllByValue(idobj.type.toLowerCase())
         def final_val = idobj.value

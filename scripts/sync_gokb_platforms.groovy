@@ -22,6 +22,8 @@ while ( moredata ) {
       directAddFields (data, ['authentication', 'software', 'service', 'provider'], resourceFieldMap)
       
       resources.add(resourceFieldMap)
+
+      config.lastTimestamp = rec.header.datestamp.text()
     }
   }
   
@@ -32,3 +34,6 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+config.lastRun = config.lastTimestamp
+saveConfig ()

@@ -210,6 +210,15 @@ globalSearchTemplates = [
         ],
         [
           type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'Package.ContentType',
+          prompt:'Content Type',
+          qparam:'qp_content',
+          placeholder:'Content Type',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'contentType'],
+        ],
+        [
+          type:'lookup',
           baseClass:'org.gokb.cred.Org',
           prompt:'Provider',
           qparam:'qp_provider',

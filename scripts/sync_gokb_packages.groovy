@@ -13,7 +13,9 @@ while ( moredata ) {
 
   fetchFromSource (path: '/gokb/oai/packages') { resp, body ->
 
-    body?.'ListRecords'?.'record'.metadata.gokb.package.eachWithIndex { data, index ->
+    body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
+
+      def data = rec.metadata.gokb.package
 
       println("Record ${index + 1}")
       def resourceFieldMap = [
@@ -71,6 +73,8 @@ while ( moredata ) {
           resourceFieldMap['tipps'].add(newtipp);
         }
       }
+      config.lastTimestamp = rec.header.datestamp.text()
+
       resources.add(resourceFieldMap)
     }
   }
@@ -84,5 +88,8 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+config.lastRun = config.lastTimestamp
+saveConfig ()
 
 println("Total: ${total}, Errors: ${errors}")

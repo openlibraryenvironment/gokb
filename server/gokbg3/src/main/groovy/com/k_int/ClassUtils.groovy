@@ -64,10 +64,9 @@ class ClassUtils {
     result;
   }
 
-  public static boolean setRefdataIfPresent(value, objid, prop, cat = null, boolean create = false) {
+  public static boolean setRefdataIfPresent(value, kbc, prop, cat = null, boolean create = false) {
     boolean result = false
     ClassExaminationService classExaminationService = grails.util.Holders.applicationContext.getBean('classExaminationService')
-    def kbc = KBComponent.get(objid)
 
     if (!cat) {
       cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
@@ -83,6 +82,11 @@ class ClassUtils {
       }
       else {
         v = RefdataCategory.lookup(cat, value)
+      }
+
+      if (v) {
+        kbc[prop] = v
+        result = true
       }
     }
 

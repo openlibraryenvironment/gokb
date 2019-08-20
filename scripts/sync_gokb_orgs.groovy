@@ -18,6 +18,7 @@ while ( moredata ) {
       directAddFields (data, ['homepage', 'mission'], resourceFieldMap)
       
       resources.add(resourceFieldMap)
+      config.lastTimestamp = rec.header.datestamp.text()
     }
   }
   
@@ -28,3 +29,6 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+config.lastRun = config.lastTimestamp
+saveConfig ()
