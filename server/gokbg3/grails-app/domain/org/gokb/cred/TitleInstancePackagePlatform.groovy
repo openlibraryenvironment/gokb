@@ -285,55 +285,68 @@ class TitleInstancePackagePlatform extends KBComponent {
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
                                           [pkg,plt,ti])
-      def tipp = null;
-      switch ( tipps.size() ) {
-        case 1:
-          log.debug("found");
+      def tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null;
 
-          if( trimmed_url && trimmed_url.size() > 0 ) {
-            if( !tipps[0].url || tipps[0].url == trimmed_url ){
+      if  ( !tipp ) {
+        switch ( tipps.size() ) {
+          case 1:
+            log.debug("found");
+
+            if( trimmed_url && trimmed_url.size() > 0 ) {
+              if( !tipps[0].url || tipps[0].url == trimmed_url ){
+                tipp = tipps[0]
+              }
+              else{
+                log.debug("matched tipp has a different url..")
+              }
+            }
+            else {
               tipp = tipps[0]
-            }
-            else{
-              log.debug("matched tipp has a different url..")
-            }
-          }
-          else {
-            tipp = tipps[0]
-          } 
-          break;
-        case 0:
-          log.debug("not found");
-          
-          break;
-        default:
-          if ( trimmed_url && trimmed_url.size() > 0 ) {
-            tipps = tipps.findAll { !it.url || it.url == trimmed_url };
-            log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
-          }
-        
-          def cur_tipps = tipps.findAll { it.status == status_current };
-          def ret_tipps = tipps.findAll { it.status == status_retired };
-          
-          if ( cur_tipps.size() > 0 ){
-            tipp = cur_tipps[0]
+            } 
+            break;
+          case 0:
+            log.debug("not found");
             
-            log.warn("found ${cur_tipps.size()} current TIPPs!")
-          }
-          else if ( ret_tipps.size() > 0 ) {
-            tipp = ret_tipps[0]
+            break;
+          default:
+            if ( trimmed_url && trimmed_url.size() > 0 ) {
+              tipps = tipps.findAll { !it.url || it.url == trimmed_url };
+              log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
+            }
+          
+            def cur_tipps = tipps.findAll { it.status == status_current };
+            def ret_tipps = tipps.findAll { it.status == status_retired };
             
-            log.warn("found ${ret_tipps.size()} retired TIPPs!")
-          }
-          else {
-            log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
-          }
-          break;
+            if ( cur_tipps.size() > 0 ){
+              tipp = cur_tipps[0]
+              
+              log.warn("found ${cur_tipps.size()} current TIPPs!")
+            }
+            else if ( ret_tipps.size() > 0 ) {
+              tipp = ret_tipps[0]
+              
+              log.warn("found ${ret_tipps.size()} retired TIPPs!")
+            }
+            else {
+              log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
+            }
+            break;
+        }
       }
 
       if ( !tipp ) {
         log.debug("Creating new TIPP..")
-        tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': trimmed_url, 'uuid': (tipp_dto.uuid ?: null)]).save(failOnError: true)
+        def tmap = [
+          'pkg': pkg,
+          'title': ti,
+          'hostPlatform': plt,
+          'url': trimmed_url,
+          'uuid': (tipp_dto.uuid ?: null),
+          'status': (tipp_dto.status ?: null),
+          'editStatus': (tipp_dto.editStatus ?: null)
+        ]
+
+        tipp = tiplAwareCreate(tmap)
         // Hibernate problem
 
         if (!tipp){
@@ -346,7 +359,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( tipp ) {
         def changed = false
-        if (plt.status != status_current) {
+        if ( tipp.status == status_current && plt.status != status_current ) {
           log.warn("TIPP platform is marked as ${plt.status?.value}!")
           ReviewRequest.raise(
             tipp,
@@ -355,11 +368,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             user
           )
         }
-        if (tipp_dto.status && tipp_dto.status == "Retired") {
-          tipp.retire()
-        }
-        else if ( tipp.isRetired() ) {
-          tipp.status = status_current
+
+        if ( tipp.isRetired() && tipp_dto.status == "Current" ) {
 
           ReviewRequest.raise(
             tipp,
@@ -373,7 +383,9 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           changed = true
-        }else if( tipp.isDeleted() ) {
+        }
+        else if( tipp.isDeleted() && tipp_dto.status != "Deleted" ) {
+          
           ReviewRequest.raise(
             tipp,
             "Matched TIPP was marked as Deleted.",
@@ -451,7 +463,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
-            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp.id, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
+            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
           }
 
           def cs_match = false

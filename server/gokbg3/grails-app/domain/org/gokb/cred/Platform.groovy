@@ -218,6 +218,7 @@ class Platform extends KBComponent {
     def result = false;
     Boolean skip = false;
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
     def name_candidates = []
     def url_candidates = [];
     Boolean viable_url = false;
@@ -247,7 +248,7 @@ class Platform extends KBComponent {
       }
     }
 
-    name_candidates = Platform.executeQuery("from Platform where name = ?", [platformDTO.name]);
+    name_candidates = Platform.executeQuery("from Platform where name = ? and status != ? ", [platformDTO.name, status_deleted]);
     
     if(platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0){
       try {

@@ -42,6 +42,7 @@ abstract class GOKbSyncBase extends Script {
   def moredata = true
   def total = 0
   def errors = 0
+  def params = [:]
   
   /** None-config vals below **/
   private HTTPBuilder source
@@ -140,6 +141,12 @@ abstract class GOKbSyncBase extends Script {
 
             if (data.result && data.result == "ERROR") {
               errors++
+
+              if (data.errors) {
+                data.errors.each { e ->
+                  println "       - ${e}"
+                }
+              }
             }
 
             total++
@@ -177,11 +184,15 @@ abstract class GOKbSyncBase extends Script {
   protected Map fetchFromSource(Map parameters = [:], def successClosure = null) {
 
     def returnData
+
+    println("${this.args}")
     
     if (!parameters.containsKey('query')) {
       parameters['query'] = [verb: 'ListRecords', metadataPrefix: 'gokb']
     }
     if (config.resumptionToken) parameters['query']['resumptionToken'] = config.resumptionToken
+
+    if (config.lastRun && (!config.resumptionToken || config.resumptionToken.size() == 0) && this.args?.size() > 0 && this.args.contains('--update') ) parameters['query']['from'] = config.lastRun
     
     boolean success = false // flag to terminate loop.
     while (!success) {

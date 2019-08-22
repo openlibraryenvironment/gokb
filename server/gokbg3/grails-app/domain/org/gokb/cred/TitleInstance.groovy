@@ -374,6 +374,7 @@ class TitleInstance extends KBComponent {
                       "from" {
                         title(hti.name)
                         uuid(hti.uuid)
+                        status(hti.status.value)
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
@@ -391,6 +392,7 @@ class TitleInstance extends KBComponent {
                       "to" {
                         title(hti.name)
                         uuid(hti.uuid)
+                        status(hti.status.value)
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
@@ -411,6 +413,8 @@ class TitleInstance extends KBComponent {
           builder.'TIPPs' (count:tipps?.size()) {
             tipps?.each { tipp ->
               builder.'TIPP' (['id':tipp.id, 'uuid':tipp.uuid]) {
+
+                status(tipp.status.value)
 
                 def pkg = tipp.pkg
                 builder.'package' (['id':pkg?.id, 'uuid':pkg?.uuid]) {
@@ -575,7 +579,7 @@ class TitleInstance extends KBComponent {
     result &= titleDTO.name != null
     result &= titleDTO.identifiers != null
 
-    titleDTO.identifiers.each { idobj ->
+    titleDTO.identifiers?.each { idobj ->
       if (idobj.type && idobj.value) {
         def found_ns = IdentifierNamespace.findAllByValue(idobj.type.toLowerCase())
         def final_val = idobj.value

@@ -9,7 +9,9 @@ while ( moredata ) {
   def resources = []
   fetchFromSource (path: '/gokb/oai/platforms') { resp, body ->
 
-    body?.'ListRecords'?.'record'.metadata.gokb.platform.eachWithIndex { data, index ->
+    body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
+
+      def data = rec.metadata.gokb.platform
 
       println("Record ${index + 1}")
 
@@ -22,6 +24,8 @@ while ( moredata ) {
       directAddFields (data, ['authentication', 'software', 'service', 'provider'], resourceFieldMap)
       
       resources.add(resourceFieldMap)
+
+      config.lastTimestamp = rec.header.datestamp.text()
     }
   }
   
@@ -32,3 +36,6 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+config.lastRun = config.lastTimestamp
+saveConfig ()

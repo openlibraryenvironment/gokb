@@ -25,6 +25,7 @@ class Package extends KBComponent {
   // Refdata
   RefdataValue scope
   RefdataValue listStatus
+  RefdataValue contentType
   RefdataValue breakable
   RefdataValue consistent
   RefdataValue fixed
@@ -327,16 +328,10 @@ select tipp.id,
     
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
-    def tipps = getTipps()
-     
-    tipps.each { def tipp ->
-      
-      // Ensure they aren't the javassist type classes here, as we will get a NoSuchMethod exception
-      // thrown below if we don't.
-      tipp = KBComponent.deproxy(tipp)
-      
-      tipp.deleteSoft()
-    }
+    def tipps = getTipps()?.collect { it.id }
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipps])
   }
   
 
@@ -344,26 +339,16 @@ select tipp.id,
     log.debug("package::retire");
     // Call the delete method on the superClass.
     log.debug("Updating package status to retired");
-    this.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    this.status = retired_status
     this.save();
 
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     log.debug("Retiring tipps");
-    def tipps = getTipps()
+    def tipps = getTipps()?.collect { it.id }
 
-    tipps.each { def t ->
-      log.debug("deroxy ${t} ${t.class.name}");
-      
-      // SO: There are 2 deproxy methods. One in the static context that takes in an argument and one,
-      // against an instance which attempts to deproxy this component. Calling deproxy(t) here will invoke the method
-      // against the current package. this.deproxy(t).
-      // So Package.deproxy(t) or t.deproxy() should work...
-      def tipp = Package.deproxy(t)
-      log.debug("Retiring tipp ${tipp.id}");
-      tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
-      tipp.save()
-    }
+    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[del: retired_status, ttd:tipps])
   }
 
 
@@ -442,6 +427,7 @@ select tipp.id,
         'fixed' ( fixed?.value )
         'paymentType' ( paymentType?.value )
         'global' ( global?.value )
+        'contentType' ( contentType?.value )
 
          if (nominalPlatform) {
           builder.'nominalPlatform' ([id: nominalPlatform.id, uuid:nominalPlatform.uuid]) {
@@ -647,7 +633,7 @@ select tipp.id,
     def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
 
     log.debug("Checking by normname ${pkg_normname} ..")
-    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ? ",[pkg_normname, status_deleted])
+    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? ",[pkg_normname])
     def full_matches = []
     def created = false
     def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
@@ -744,23 +730,24 @@ select tipp.id,
 
       result.save(flush:true, failOnError:true)
     }
-    else if ( user && result.curatoryGroups && result.curatoryGroups?.size() > 0 ) {
+    else if ( user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0 ) {
       def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
       
       if (!cur) {
+        log.debug("No curator!")
         return result
       }
     }
 
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result.id, 'listStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result.id, 'status')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result.id, 'editStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result.id, 'scope')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result.id, 'breakable')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result.id, 'consistent')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result.id, 'fixed')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result.id, 'paymentType')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result.id, 'global')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result, 'editStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global')
     changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
     changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate');
@@ -858,12 +845,12 @@ select tipp.id,
       }
     }
 
-    packageHeaderDTO.variantNames?.each {
-      if ( it.trim().size() > 0 ) {
-        result.ensureVariantName(it)
-        changed=true
-      }
-    }
+    // packageHeaderDTO.variantNames?.each {
+    //   if ( it.trim().size() > 0 ) {
+    //     result.ensureVariantName(it)
+    //     changed=true
+    //   }
+    // }
 
     packageHeaderDTO.curatoryGroups?.each {
 

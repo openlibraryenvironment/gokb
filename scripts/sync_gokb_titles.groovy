@@ -15,7 +15,9 @@ while ( moredata ) {
   
     println("Cursor: ${body?.'ListRecords'?.'resumptionToken'?.'@cursor'} RT: ${body?.'ListRecords'?.'resumptionToken'?.text()} ")
 
-    body?.'ListRecords'?.'record'.metadata.gokb.title.eachWithIndex { data, index ->
+    body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
+
+      def data = rec.metadata.gokb.title
       
       println("Record ${index + 1}")
   
@@ -73,7 +75,7 @@ while ( moredata ) {
       if (identifier_count > 0) {
         // Process identified components now.
         resources.add(resourceFieldMap)
-        
+
       } else {
         if ("${resourceFieldMap.name}" != "" && resourceFieldMap.name) {
           println("\tDefer processing of ${resourceFieldMap.name} due to lack of identifiers.")
@@ -85,8 +87,10 @@ while ( moredata ) {
           config.deferred[resourceFieldMap.name] = resourceFieldMap
         } else {
           println "\tIgnoring unnamed title."
-        } 
+        }
       }
+
+      config.lastTimestamp = rec.header.datestamp.text()
     }
   }
   
@@ -97,8 +101,11 @@ while ( moredata ) {
   // Save the config.
   println("Current config: ${config}")
   saveConfig()
-  Thread.sleep(1000)
+  Thread.sleep(100)
 }
+
+config.lastRun = config.lastTimestamp
+saveConfig ()
 
 // Now that we have finished pulling down the titles we have a list of deferred "identifier-less" titles.
 // We can send them now.

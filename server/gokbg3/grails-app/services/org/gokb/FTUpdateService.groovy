@@ -163,6 +163,7 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
+        result.contentType = kbc.contentType?.value
         result.description = kbc.description
         result.descriptionURL = kbc.descriptionURL
         result.sortname = kbc.name

@@ -202,6 +202,16 @@ class TitleLookupService {
       return null
     }
 
+    if ( metadata.uuid ) {
+      the_title = TitleInstance.findByUuid(metadata.uuid)
+
+      if(the_title) {
+        log.debug("Found TitleInstance by Uuid, skipping Identifier matching ..")
+        the_title = singleTIMatch(metadata.title, the_title, user, project)
+        return the_title
+      }
+    }
+
     // Lookup any class 1 identifier matches
     def results = class_one_match (metadata.identifiers)
 

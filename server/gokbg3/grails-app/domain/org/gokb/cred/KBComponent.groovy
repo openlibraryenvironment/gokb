@@ -432,7 +432,7 @@ where cp.owner = :c
   }
 
   static constraints = {
-    uuid    (nullable:true, blank:false, maxSize:2048)
+    uuid    (nullable:true, unique:true, blank:false, maxSize:2048)
     name    (nullable:true, blank:false, maxSize:2048)
     shortcode  (nullable:true, blank:false, maxSize:128)
     description  (nullable:true, blank:false)

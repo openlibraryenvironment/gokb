@@ -458,36 +458,38 @@ class IntegrationController {
   private static def createOrUpdateSource( data ) {
     log.debug("assertSource, data = ${data}");
     def result=[:]
+    def source_data = data;
     result.status = true;
 
     try {
       if ( data.name ) {
-        def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
 
-        ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
+        Source.withNewSession {
+          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name).save(flush:true, failOnError:true)
 
-        setAllRefdata ([
-          'software', 'service'
-        ], data, located_or_new_source)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
 
-        setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-        setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
+          setAllRefdata ([
+            'software', 'service'
+          ], source_data, located_or_new_source)
 
-        ensureCoreData(located_or_new_source, data)
+          ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+          ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
 
-        log.debug("Variant names processing: ${data.variantNames}")
+          log.debug("Variant names processing: ${data.variantNames}")
 
-        // variants
-        data.variantNames.each { vn ->
-          addVariantNameToComponent(located_or_new_source, vn)
+          // variants
+          data.variantNames.each { vn ->
+            addVariantNameToComponent(located_or_new_source, vn)
+          }
+
+          result['component'] = located_or_new_source
         }
-
-        result['component'] = located_or_new_source
       }
     }
     catch ( Exception e ) {
@@ -625,11 +627,9 @@ class IntegrationController {
     }
 
     // Core refdata.
-    if (!component.status) {
-      setAllRefdata ([
-        'status', 'editStatus',
-      ], data, component)
-    }
+    setAllRefdata ([
+      'status', 'editStatus',
+    ], data, component)
 
     // Identifiers
     log.debug("Identifier processing ${data.identifiers}")
@@ -738,9 +738,6 @@ class IntegrationController {
       }
     }
 
-    // Save the component so we have something to set the names against.
-    component.save(failOnError: true, flush:true)
-
     if (data.additionalProperties) {
       Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
       for (Map it : data.additionalProperties) {
@@ -772,18 +769,18 @@ class IntegrationController {
     if (data.variantNames) {
       Set<String> variants = component.variantNames.collect { "${it.variantName}".toString() }
       for (String name : data.variantNames) {
-        if (!variants.contains(name)) {
+        if (name?.trim().size() > 0 && !variants.contains(name)) {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 
-          def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
-          new_variant_name.save(failOnError: true)
+          def new_variant_name = component.ensureVariantName(name)
 
           // Add to collection.
           variants << name
         }
       }
     }
+    component.save(flush:true)
   }
 
 
@@ -825,7 +822,7 @@ class IntegrationController {
                   curated_pkg = true;
                 }
 
-                if ( is_curator || !curated_pkg ) {
+                if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
                   ensureCoreData(the_pkg, json.packageHeader)
 
                   if ( the_pkg.tipps?.size() > 0 ) {
@@ -896,6 +893,8 @@ class IntegrationController {
 
                         if(pl){
                           platform_cache[tipp.platform.name] = pl.id
+
+                          ensureCoreData(pl, tipp.platform)
                         }else{
                           log.error("Could not find/create ${tipp.platform}")
                           errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
@@ -1027,13 +1026,17 @@ class IntegrationController {
                   log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
                   job_result.result = 'OK'
                   job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
+
+                  if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+                    the_pkg.lastUpdateComment = job_result.message
+                  }
                   job_result.pkgId = the_pkg.id
                   job_result.uuid = the_pkg.uuid
                   log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
                 }
                 else {
                   job_result.result = 'ERROR'
-                  job_result.message = "Package was created, but tipps have not been loaded because of validation errors!"
+                  job_result.message = "Package ${json.packageHeader.name} was created, but tipps have not been loaded because of validation errors!"
                   log.warn("Not loading tipps - failed validation")
                 }
               }else{
@@ -1046,6 +1049,7 @@ class IntegrationController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
             }
+            cleanUpGorm()
           }
         }
 
@@ -1083,21 +1087,30 @@ class IntegrationController {
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     def created = false
+    def platformJson = request.JSON
     User user = springSecurityService.currentUser
-    if ( ( request.JSON.platformUrl ) &&
-         ( request.JSON.platformUrl.trim().length() > 0 ) &&
-         ( request.JSON.platformName ) &&
-         ( request.JSON.platformName.trim().length() > 0 ) ) {
-      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl)
+
+    log.debug("crossReferencePlatform - ${platformJson}")
+    if ( ( platformJson.platformUrl ) &&
+         ( platformJson.platformUrl.trim().length() > 0 ) &&
+         ( platformJson.platformName ) &&
+         ( platformJson.platformName.trim().length() > 0 ) ) {
+      def p = Platform.findByPrimaryUrl(platformJson.platformUrl)
 
       if ( p == null ) {
 
         // Attempt normname lookup.
-        p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) )
+        p = Platform.findByNormname( Platform.generateNormname (platformJson.platformName) )
 
         if (!p) {
-          p = new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null).save(flush:true, failOnError:true)
-          created = true
+          try {
+            p = new Platform(primaryUrl:platformJson.platformUrl, name:platformJson.platformName, uuid: platformJson.uuid?.trim()?.size() > 0 ? platformJson.uuid : null).save(flush:true, failOnError:true)
+            created = true
+          }
+          catch (grails.validation.ValidationException ve) {
+            log.debug("Platform ${platformJson} failed validation!")
+            log.debug(ve)
+          }
         }
       }
 
@@ -1106,18 +1119,24 @@ class IntegrationController {
 
         setAllRefdata ([
           'software', 'service'
-        ], request.JSON, p)
-        setRefdataIfPresent(request.JSON.authentication, p.id, 'authentication', 'Platform.AuthMethod')
+        ], platformJson, p)
+        ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
 
-        if (request?.JSON?.provider) {
-          def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
+        if (platformJson.provider) {
+          def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
           if (prov) {
+            log.debug("Adding Provider ${prov} to platform ${p}!")
             p.provider = prov
+          }
+          else {
+            log.debug("No provider found for ${platformJson.provider}!")
           }
         }
 
+        p.save(flush:true)
+
         // Add the core data.
-        ensureCoreData(p, request.JSON)
+        ensureCoreData(p, platformJson)
 
   //      if ( changed ) {
   //        p.save(flush:true, failOnError:true);
@@ -1132,17 +1151,18 @@ class IntegrationController {
         result.platformId = p.id;
       }
       else {
-        result.message = "Could not crossreference platform ${request.JSON}"
+        log.debug("No platform matched for ${platformJson}")
+        result.message = "Could not crossreference platform ${platformJson}"
         result.result = 'ERROR'
       }
     }
     render result as JSON
   }
 
-  private boolean setAllRefdata (propNames, data, target) {
+  private static boolean setAllRefdata (propNames, data, target, boolean createNew = false) {
     boolean changed = false
     propNames.each { String prop ->
-      changed |= setRefdataIfPresent(data[prop], target.id, prop)
+      changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop, createNew)
     }
     changed
   }
@@ -1307,6 +1327,9 @@ class IntegrationController {
                 }
               }
 
+              // Add the core data.
+              ensureCoreData(title, titleObj)
+
               title_changed |= setAllRefdata ([
                     'OAStatus', 'medium',
                     'pureOA', 'continuingSeries',
@@ -1317,9 +1340,6 @@ class IntegrationController {
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
               }
-
-              // Add the core data.
-              ensureCoreData(title, titleObj)
 
               if ( titleObj.historyEvents?.size() > 0 ) {
 
@@ -1503,7 +1523,7 @@ class IntegrationController {
     result
   }
 
-  private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
+  private static addPublisherHistory ( TitleInstance ti, publishers, sdf) {
 
     def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS","yyyy-MM-dd"]
 
@@ -1653,7 +1673,7 @@ class IntegrationController {
     }
   }
 
-  private addMonographFields ( BookInstance bi, titleObj, sdf ) {
+  private static addMonographFields ( BookInstance bi, titleObj, sdf ) {
 
     def book_changed = false
 
@@ -1830,51 +1850,4 @@ class IntegrationController {
     session.flush()
     session.clear()
   }
-
-  private def boolean setRefdataIfPresent(value, objid, prop, cat = null) {
-    boolean result = false
-    def kbc = KBComponent.get(objid)
-
-    if (!cat) {
-      cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
-    }
-
-    if ( ( value ) && ( cat ) &&
-         ( value.toString().trim().length() > 0 ) &&
-         ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
-
-      def v = null
-      if (RefdataValue.isTypeCreatable()) {
-        v = RefdataCategory.lookupOrCreate(cat,value)
-      }
-      else {
-        v = RefdataCategory.lookup(cat, value)
-      }
-
-      if (v) {
-        kbc[prop] = v
-        result = true
-      }
-    }
-
-    result
-  }
-
-  private def boolean setStringIfDifferent(obj, prop, value) {
-    boolean result = false;
-
-    if ( ( obj != null ) && ( prop != null ) && ( value ) && ( value.toString().length() > 0 ) ) {
-
-      if ( obj[prop] == value ) {
-      }
-      else {
-        result = true
-        obj[prop] = value
-      }
-
-    }
-
-    result
-  }
-
 }
