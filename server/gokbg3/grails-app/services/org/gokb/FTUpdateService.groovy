@@ -263,6 +263,7 @@ class FTUpdateService {
   
       updateES(esclient, org.gokb.cred.Org.class) { kbc ->
         def result = [:]
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -271,6 +272,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         result.roles = []
         kbc.roles.each { role ->
@@ -291,6 +293,7 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
         def result = [:]
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -300,6 +303,7 @@ class FTUpdateService {
 
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         result.altname = []
         kbc.variantNames.each { vn ->
