@@ -25,7 +25,7 @@ order by c.id
     log.debug("DecisionSupportController::index");
     def dimension = params.dimension?:'Platform'
 
-    result.matrix = calculateMatrix(dimension, (params.q?:'')+'%', params);
+    result = calculateMatrix(dimension, (params.q?:'')+'%', params);
 
     result
   }
@@ -56,21 +56,24 @@ order by c.id
 
     switch (dimension) {
       case 'Package':
-        qry = 'select p from Package as p where p.name like :q';
+        qry = 'from Package as p where p.name like :q';
         break;
       case 'Title':
-        qry = 'select p from TitleInstance as p where p.name like :q';
+        qry = 'from TitleInstance as p where p.name like :q';
         break;
       case 'Platform':
       default:
-        qry = 'select p from Platform as p where p.name like :q';
+        qry = 'from Platform as p where p.name like :q';
         break;
     }
 
-    def qp = [ offset:params.offset?:0, count:params.count?:20 ]
+    def qp = [ offset:params.offset?:0, max:params.max?:20 ]
 
     def rowdata = []
-    KBComponent.executeQuery(qry,[q:q], qp).each { row ->
+
+    def count = KBComponent.executeQuery("select count(*) " + qry, [q:q])[0]
+
+    KBComponent.executeQuery("select p " + qry,[q:q], qp).each { row ->
       // Select all the criteria we need
       // log.debug("Process row: ${row.name}");
       def row_info = DSCriterion.executeQuery(CRITERIA_QUERY,[row.id]);
@@ -104,9 +107,14 @@ order by c.id
 
 
     [
-      criterion_heads: criterion_heads,
-      criterion:criterion,
-      rowdata:rowdata,
+      resultsTotal: count,
+      max: qp.max,
+      offset: qp.offset,
+      matrix: [
+        criterion_heads: criterion_heads,
+        criterion:criterion,
+        rowdata:rowdata,
+      ]
     ]
 
 

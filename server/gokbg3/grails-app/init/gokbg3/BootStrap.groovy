@@ -147,7 +147,7 @@ class BootStrap {
     }
 
 
-    if (  grailsApplication.config.decisionSupport ) {
+    if (  grailsApplication.config.gokb.decisionSupport ) {
       log.debug("Configuring default decision support parameters");
       DSConfig();
     }

@@ -60,6 +60,11 @@
                 </tbody>
               </table>
             </table>
+            <g:if test="${resultsTotal?:0 > 0 }" >
+              <div class="pagination">
+                <g:paginate controller="decisionSupport" action="index" params="${params}" next="&raquo;" prev="&laquo;" max="${max}" total="${resultsTotal}" />
+              </div>
+            </g:if>
           </div>
         </div>
       </g:form>
