@@ -39,12 +39,24 @@ order by c.id
 
     def criterion_heads = new ArrayList();
     def criterion = new ArrayList();
+    def cats = DSCategory.executeQuery('select cat from DSCategory as cat order by cat.id')
+    def selected_cats = params.list('show_head').collect { it -> it as Long } ?: []
 
-    DSCategory.executeQuery('select cat from DSCategory as cat order by cat.id').each { cat ->
+    cats.findAll { it.id in selected_cats }.each { cat ->
      def groupcount = 0
-      def ccqry = DSCriterion.executeQuery('select c from DSCriterion as c where c.owner.id = :owner order by c.id',[owner:cat.id]);
+      def ccqry = 'select c from DSCriterion as c where c.owner.id = :owner'
+      def ccparams = [owner:cat.id]
+
+      if (params.show_category) {
+        ccqry += " and c.id in (:sc)"
+        ccparams.sc = params.list('show_category').collect { it -> it as Long }
+      }
+
+      ccqry += " order by c.id"
+
+      def dscr = DSCriterion.executeQuery(ccqry, ccparams);
       // cat.criterion.each { crit ->
-      ccqry.each { crit ->
+      dscr.each { crit ->
         criterion.add([id:crit.id, title:crit.title, description:crit.description, explanation:crit.explanation, color:cat.colour])
         groupcount++
       }
@@ -110,6 +122,7 @@ order by c.id
       resultsTotal: count,
       max: qp.max,
       offset: qp.offset,
+      cats: cats,
       matrix: [
         criterion_heads: criterion_heads,
         criterion:criterion,
