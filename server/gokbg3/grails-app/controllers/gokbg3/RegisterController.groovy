@@ -104,35 +104,35 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     }
   }
 
-	def verifyRegistration() {
+  def verifyRegistration() {
 
-		String token = params.t
+    String token = params.t
 
-		RegistrationCode registrationCode = token ? RegistrationCode.findByToken(token) : null
-		if (!registrationCode) {
-			flash.error = message(code: 'spring.security.ui.register.badCode')
-			redirect uri: successHandlerDefaultTargetUrl
-			return
-		}
+    RegistrationCode registrationCode = token ? RegistrationCode.findByToken(token) : null
+    if (!registrationCode) {
+      flash.error = message(code: 'spring.security.ui.register.badCode')
+      redirect uri: successHandlerDefaultTargetUrl
+      return
+    }
 
-		def user = uiRegistrationCodeStrategy.finishRegistration(registrationCode)
+    def user = uiRegistrationCodeStrategy.finishRegistration(registrationCode)
 
-		if (!user) {
-			flash.error = message(code: 'spring.security.ui.register.badCode')
-			redirect uri: successHandlerDefaultTargetUrl
-			return
-		}
+    if (!user) {
+      flash.error = message(code: 'spring.security.ui.register.badCode')
+      redirect uri: successHandlerDefaultTargetUrl
+      return
+    }
 
-		if (user.hasErrors()) {
-			// expected to be handled already by ErrorsStrategy.handleValidationErrors
-			return
-		}
+    if (user.hasErrors()) {
+      // expected to be handled already by ErrorsStrategy.handleValidationErrors
+      return
+    }
 
     springSecurityService.reauthenticate user.username
 
-		flash.message = message(code: 'spring.security.ui.register.complete')
-		redirect uri: registerPostRegisterUrl ?: successHandlerDefaultTargetUrl
-	}
+    flash.message = message(code: 'spring.security.ui.register.complete')
+    redirect uri: registerPostRegisterUrl ?: successHandlerDefaultTargetUrl
+  }
 
   @Override
   protected void sendVerifyRegistrationMail(RegistrationCode registrationCode, user, String email) {
