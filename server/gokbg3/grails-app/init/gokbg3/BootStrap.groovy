@@ -147,7 +147,7 @@ class BootStrap {
     }
 
 
-    if (  grailsApplication.config.decisionSupport ) {
+    if (  grailsApplication.config.gokb.decisionSupport ) {
       log.debug("Configuring default decision support parameters");
       DSConfig();
     }
@@ -516,6 +516,11 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Org.Mission','Commercial').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Org.Mission','Community Agency').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Org.Mission','Consortium').save(flush:true, failOnError:true)
+
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Academic').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Commercial').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Community Agency').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Consortium').save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate('Org.Role','Licensor').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Org.Role','Licensee').save(flush:true, failOnError:true)

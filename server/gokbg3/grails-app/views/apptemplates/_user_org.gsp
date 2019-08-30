@@ -9,7 +9,7 @@
   <dd>${d.owner}</dd>
   <dt><g:annotatedLabel owner="${d}" property="name">Members</g:annotatedLabel></dt>
   <dd>
-    <table class="table table-bordered table-striped">
+    <table id="uomembers"class="table table-bordered table-striped">
       <thead>
         <tr>
           <td>User</td>
@@ -28,7 +28,12 @@
               </g:if>
               <g:else>${m.status?.value}</g:else>
             </td>
-            <td>${m.role?.value}</td>
+            <td>
+              <g:if test="${ user.isAdmin() || userIsOrgAdmin }">
+                <g:xEditableRefData owner="${m}" field="role" config='MembershipRole' />
+              </g:if>
+              <g:else>${m.role?.value}</g:else>
+            </td>
             <td>
               <g:if test="${user.isAdmin() || userIsOrgAdmin }">
                 <g:link controller="ajaxSupport"
@@ -73,6 +78,9 @@
         </g:if>
       </tfoot>
     </table>
+    <g:if test="${!d.members?.party?.contains(request.user)}">
+      <button id ="applyBtn" class="btn btn-default" onclick="applyForMembership(${d.id})">Apply for Membership</button>
+    </g:if>
   </dd>
 
 
@@ -131,5 +139,33 @@
     </dd>
     </g:if>
   </g:if>
+
+  <asset:script type="text/javascript" >
+    function applyForMembership(oid) {
+      $.ajax({
+            url: '/gokb/ajaxSupport/applyForUserorg/' + oid,
+            dataType:"json"
+          }).done(function(data) {
+            if ( data.result == 'OK' ) {
+              
+              var uoTable = document.getElementById("uomembers");
+              var newRow = uoTable.insertRow(-1);
+              var newUser = newRow.insertCell(0);
+              var newStatus = newRow.insertCell(1);
+              var newRole = newRow.insertCell(2);
+              var newActions = newRow.insertCell(3);
+
+              newUser.innerHTML = data.item.user;
+              newStatus.innerHTML = data.item.status;
+              newRole.innerHTML = data.item.role;
+
+              $('#applyBtn').hide();
+            }
+            else {
+              console.log(data.message);
+            }
+          });
+    }
+  </asset:script>
 
 </dl>

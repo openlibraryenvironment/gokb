@@ -25,7 +25,7 @@ order by c.id
     log.debug("DecisionSupportController::index");
     def dimension = params.dimension?:'Platform'
 
-    result.matrix = calculateMatrix(dimension, (params.q?:'')+'%', params);
+    result = calculateMatrix(dimension, (params.q?:'')+'%', params);
 
     result
   }
@@ -39,12 +39,24 @@ order by c.id
 
     def criterion_heads = new ArrayList();
     def criterion = new ArrayList();
+    def cats = DSCategory.executeQuery('select cat from DSCategory as cat order by cat.id')
+    def selected_cats = params.list('show_head').collect { it -> it as Long } ?: []
 
-    DSCategory.executeQuery('select cat from DSCategory as cat order by cat.id').each { cat ->
+    cats.findAll { it.id in selected_cats }.each { cat ->
      def groupcount = 0
-      def ccqry = DSCriterion.executeQuery('select c from DSCriterion as c where c.owner.id = :owner order by c.id',[owner:cat.id]);
+      def ccqry = 'select c from DSCriterion as c where c.owner.id = :owner'
+      def ccparams = [owner:cat.id]
+
+      if (params.show_category) {
+        ccqry += " and c.id in (:sc)"
+        ccparams.sc = params.list('show_category').collect { it -> it as Long }
+      }
+
+      ccqry += " order by c.id"
+
+      def dscr = DSCriterion.executeQuery(ccqry, ccparams);
       // cat.criterion.each { crit ->
-      ccqry.each { crit ->
+      dscr.each { crit ->
         criterion.add([id:crit.id, title:crit.title, description:crit.description, explanation:crit.explanation, color:cat.colour])
         groupcount++
       }
@@ -56,21 +68,24 @@ order by c.id
 
     switch (dimension) {
       case 'Package':
-        qry = 'select p from Package as p where p.name like :q';
+        qry = 'from Package as p where p.name like :q';
         break;
       case 'Title':
-        qry = 'select p from TitleInstance as p where p.name like :q';
+        qry = 'from TitleInstance as p where p.name like :q';
         break;
       case 'Platform':
       default:
-        qry = 'select p from Platform as p where p.name like :q';
+        qry = 'from Platform as p where p.name like :q';
         break;
     }
 
-    def qp = [ offset:params.offset?:0, count:params.count?:20 ]
+    def qp = [ offset:params.offset?:0, max:params.max?:20 ]
 
     def rowdata = []
-    KBComponent.executeQuery(qry,[q:q], qp).each { row ->
+
+    def count = KBComponent.executeQuery("select count(*) " + qry, [q:q])[0]
+
+    KBComponent.executeQuery("select p " + qry,[q:q], qp).each { row ->
       // Select all the criteria we need
       // log.debug("Process row: ${row.name}");
       def row_info = DSCriterion.executeQuery(CRITERIA_QUERY,[row.id]);
@@ -104,9 +119,15 @@ order by c.id
 
 
     [
-      criterion_heads: criterion_heads,
-      criterion:criterion,
-      rowdata:rowdata,
+      resultsTotal: count,
+      max: qp.max,
+      offset: qp.offset,
+      cats: cats,
+      matrix: [
+        criterion_heads: criterion_heads,
+        criterion:criterion,
+        rowdata:rowdata,
+      ]
     ]
 
 

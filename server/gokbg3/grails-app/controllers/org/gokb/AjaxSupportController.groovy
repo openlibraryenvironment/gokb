@@ -1032,12 +1032,20 @@ class AjaxSupportController {
     def current_applied = DSAppliedCriterion.findByUserAndAppliedToAndCriterion(user,component,crit);
     if ( current_applied == null ) {
       log.debug("Create new applied criterion");
+      result.changedFrom = null
       current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(flush: true, failOnError:true)
     }
     else {
-      log.debug("Update existing vote");
-      current_applied.value=rdv
-      current_applied.save(flush: true, failOnError:true)
+      if ( rdv != current_applied.value ) {
+        log.debug("Update existing vote");
+        result.changedFrom = lookup.find { it.value == current_applied.value.value }?.key
+
+        current_applied.value=rdv
+        current_applied.save(flush: true, failOnError:true)
+      }
+      else {
+        result.changedFrom = params.val
+      }
     }
     result.username = user.username
     render result as JSON
@@ -1052,12 +1060,11 @@ class AjaxSupportController {
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def criterionComment() {
-    log.debug('CRITERION COMMENT HAS BEEN CALLED!:'+params);
-    log.debug('criterionComment:'+params);
+    log.debug("criterionComment: ${params}");
     def result    = [:]
     result.status = 'OK'
     def idparts   = params.comp.split('_');
-    log.debug(idparts);
+    log.debug("${idparts}")
     if ( idparts.length == 2 ) {
       def component = KBComponent.get(idparts[0]);
       def crit      = DSCriterion.get(idparts[1]);
@@ -1074,7 +1081,7 @@ class AjaxSupportController {
       def note = new DSNote(criterion:current_applied, note:params.comment, isDeleted:false).save(failOnError:true);
       result.newNote  = note.id
       result.created  = note.dateCreated
-      log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
+      log.debug("Found applied criterion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
     }
     render result as JSON
   }
@@ -1386,5 +1393,34 @@ class AjaxSupportController {
         render result as JSON
       }
     }
+  }
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def applyForUserorg() {
+    def result = ['result': 'OK', 'params': params]
+    def user_org = UserOrganisation.get(params.id ?: params.userOrg)
+    def user = springSecurityService.currentUser
+    def pending_status = RefdataCategory.lookup('MembershipStatus', 'Pending')
+    def role_type = RefdataCategory.lookup('MembershipRole', 'Member')
+
+    if ( user_org && !user_org.members?.party?.contains(user) ) {
+      new UserOrganisationMembership(memberOf: user_org, party: user, role: role_type, status: pending_status).save(flush:true, failOnError:true)
+
+      result.item = [user:user.username, status: pending_status.value, role: role_type.value]
+    }
+    else {
+      result.result = 'ERROR'
+
+      if ( !user_org ) {
+        result.message = 'Could not find User Organisation with id ${params.userOrg}!'
+        result.code = 404
+      }
+      else {
+        result.message = 'This user is already a member of this group'
+      }
+    }
+
+    render result as JSON
   }
 }

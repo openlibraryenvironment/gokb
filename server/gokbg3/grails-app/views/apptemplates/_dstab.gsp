@@ -40,7 +40,7 @@
 
                     <div class="vote" style="white-space: nowrap;">
                         <g:if test="${c['yourVote'].isEmpty()}">
-                            <i id="${c['appliedTo']}_${id}_q_neutral" class="text-neutral"> <span class="fa fa-question-circle fa-2x"></span><span>&nbsp;&nbsp;Your Rating:</span></i></br></br>
+                            <span><b>Your Rating: Not Rated</b></span>
                         </g:if>
                         <g:elseif test="${c['yourVote'][0] == 'Unknown'}">
                             <span><b>You have commented without rating, please rate!</b></span>
@@ -48,17 +48,16 @@
                         <g:else>
                             <span><b>Your Rating </b></span>
                         </g:else>
-                        <div class="DSVote" id="currentVote${c['appliedTo']}_${id}">
-                            <a id="${c['appliedTo']}_${id}_r_negative" title="${c['voteCounter'][0] +  (c['voteCounter'][3]>0? ' Red vote(s) and ' + c['voteCounter'][3] + ' commented only':' Red vote(s)') }" href='#' ${c['yourVote'][0]=='Red'?'class=text-negative selected':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
+                        <div class="DSVote" id="currentVote${c['appliedTo']}_${id}" style="margin-bottom:15px;">
+                            <a id="${c['appliedTo']}_${id}_r_negative" title="${c['voteCounter'][0] +  (c['voteCounter'][3]>0? ' Red vote(s) and ' + c['voteCounter'][3] + ' commented only':' Red vote(s)') }" href='#' ${c['yourVote'][0]=='Red'?'class=text-negative selected':''} ><i class="fa fa-times-circle fa-2x"></i></a>&nbsp;
                             <a id="${c['appliedTo']}_${id}_a_contentious" title="${c['voteCounter'][1] +  (c['voteCounter'][3]>0? ' Amber vote(s) and ' + c['voteCounter'][3] + ' commented only':' Amber vote(s)') }" href='#' ${c['yourVote'][0]=='Amber'?'class=text-contentious selected':''} ><i class="fa fa-question-circle fa-2x"></i></a>&nbsp;
                             <a id="${c['appliedTo']}_${id}_g_positive" title="${c['voteCounter'][2] +  (c['voteCounter'][3]>0? ' Green vote(s) and ' + c['voteCounter'][3] + ' commented only':' Green vote(s)') }" href='#' ${c['yourVote'][0]=='Green' ? 'class=text-positive selected':''} ><i class="fa fa-check-circle fa-2x"></i></a>
                         </div>
-                    </br></br>
                         <g:if test="${c['otherVotes'].isEmpty()}">
                             No one else has rated yet
                         </g:if>
-                        <g:elseif test="${grailsApplication.config.feature.otherVoters}">
-                            <table id="otherVoters" style="margin: 0; padding: 0">
+                        <g:elseif test="${grailsApplication.config.gokb.decisionSupport.otherVoters}">
+                            <table class="otherVoters" style="margin: 0; padding: 0">
                                 <thead>
                                 <tr>
                                     <th>Other Ratings</th>
@@ -69,14 +68,14 @@
                                     <tr>
                                         <td>
                                             <p class="DSAuthor DSInlineBlock" title="${o[2]?.org?.name}">
-                                                ${o[2]?.displayName}
+                                                <span>${o[2]?.displayName ?: o[2].username}</span>
                                             </p>
                                         </td>
                                         <td>
                                             <p class="DSVote DSInlineBlock">
-                                                <span id="${c['appliedTo']}_${id}_r_negative" ${o[0]=='Red'?'class="text-negative"':''} ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;
-                                                <span id="${c['appliedTo']}_${id}_a_contentious"  ${o[0]=='Amber'?'class="text-contentious"':''} ><i class="fa fa-question-circle fa-2x"></i></span>&nbsp;
-                                                <span id="${c['appliedTo']}_${id}_g_positive" ${o[0]=='Green'?'class="text-positive"':''} ><i class="fa fa-check-circle fa-2x"></i></span>
+                                                <span id="${c['appliedTo']}_${id}_r_negative" class="${o[0]=='Red'?'text-negative':''}" ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;
+                                                <span id="${c['appliedTo']}_${id}_a_contentious" class="${o[0]=='Amber'?'text-contentious':''}" ><i class="fa fa-question-circle fa-2x"></i></span>&nbsp;
+                                                <span id="${c['appliedTo']}_${id}_g_positive" class="${o[0]=='Green'?'text-positive':''}" ><i class="fa fa-check-circle fa-2x"></i></span>
                                                 <g:if test="${o[0]=='Unknown'}"><i>(Commented only)</i></g:if>
                                             </p>
                                         </td>
@@ -86,11 +85,11 @@
                             </table>
                         </g:elseif>
                         <g:else>
-                            <div id="otherVoters">
+                            <div class="otherVoters">
                                 <table>
                                     <thead>
                                     <tr>
-                                        <th colspan="3">Other Ratings</th>
+                                        <th colspan="3">All Votes</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -100,9 +99,9 @@
                                         <td><a id="OtherGreen"  href='#' class="text-positive"><i class="fa fa-check-circle fa-2x"></i></a></td>
                                     </tr>
                                     <tr>
-                                        <td><span class="badge">${c['voteCounter'][0]}</span></td>
-                                        <td><span class="badge">${c['voteCounter'][1]}</span></td>
-                                        <td><span class="badge">${c['voteCounter'][2]}</span></td>
+                                        <td><span class="badge count-r">${c['voteCounter'][0]}</span></td>
+                                        <td><span class="badge count-a">${c['voteCounter'][1]}</span></td>
+                                        <td><span class="badge count-g">${c['voteCounter'][2]}</span></td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -142,11 +141,16 @@
                                           <strong>${note.criterion?.user?.org?.name} (${note.criterion?.user?.org?.mission?.value})</strong>
                                       </g:else>
                                     </g:if>
+                                    <g:elseif test="${note.criterion?.user.groupMemberships}">
+                                          <strong>${note.criterion?.user.groupMemberships[0].memberOf.displayName}</strong>
+                                    </g:elseif>
                                     <g:else>
                                       <g:link controller="home" action="profile">No user org</g:link>
                                     </g:else>
-                                   on <strong><g:if test="${note.lastUpdated == note.dateCreated}"><g:formatDate date="${note.dateCreated}" /></g:if>
-                                    <g:else>Edited: <g:formatDate date="${note.lastUpdated}" /></g:else></strong>
+                                   on <strong>
+                                        <g:if test="${note.lastUpdated == note.dateCreated}"><g:formatDate date="${note.dateCreated}" type="datetime" />
+                                        </g:if>
+                                        <g:else>Edited: <g:formatDate date="${note.lastUpdated}" type="datetime" /></g:else></strong>
 
                                   
                                 </div>

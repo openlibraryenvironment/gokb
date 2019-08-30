@@ -66,14 +66,13 @@ class TitleInstance extends KBComponent {
       }
 
       if (!existing) {
-        addToVariantNames(
-            new KBComponentVariantName([
-              "variantType"	: (title_type),
-              "locale"		: (locale_rd),
-              "status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
-              "variantName"	: (title)
-            ])
-            )
+          new KBComponentVariantName([
+            "variantType"	: (title_type),
+            "owner"     : this,
+            "locale"		: (locale_rd),
+            "status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+            "variantName"	: (title)
+          ])
           return true
       } else {
         log.debug ("Not adding variant title as it is the same as an existing variant.")

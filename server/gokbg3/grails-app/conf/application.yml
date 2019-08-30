@@ -224,7 +224,9 @@ environments:
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
-    decisionSupport: false
+    decisionSupport: 
+        active: false
+        otherVoters: false
     costInfo: false
 
 quartz:
