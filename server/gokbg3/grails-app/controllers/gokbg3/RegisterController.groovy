@@ -42,6 +42,8 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
   def sessionFactory
 
+  def springSecurityService
+
   @Override
   def register(RegisterCommand registerCommand) {
 
@@ -98,10 +100,41 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         [emailSent: true, registerCommand: registerCommand, noAddress: true]
       }
     } else {
-      super.redirectVerifyRegistration(uiRegistrationCodeStrategy.verifyRegistration(registrationCode.token))
+      redirectVerifyRegistration(uiRegistrationCodeStrategy.verifyRegistration(registrationCode.token))
     }
   }
 
+	def verifyRegistration() {
+
+		String token = params.t
+
+		RegistrationCode registrationCode = token ? RegistrationCode.findByToken(token) : null
+		if (!registrationCode) {
+			flash.error = message(code: 'spring.security.ui.register.badCode')
+			redirect uri: successHandlerDefaultTargetUrl
+			return
+		}
+
+		def user = uiRegistrationCodeStrategy.finishRegistration(registrationCode)
+
+		if (!user) {
+			flash.error = message(code: 'spring.security.ui.register.badCode')
+			redirect uri: successHandlerDefaultTargetUrl
+			return
+		}
+
+		if (user.hasErrors()) {
+			// expected to be handled already by ErrorsStrategy.handleValidationErrors
+			return
+		}
+
+    springSecurityService.reauthenticate user.username
+
+		flash.message = message(code: 'spring.security.ui.register.complete')
+		redirect uri: registerPostRegisterUrl ?: successHandlerDefaultTargetUrl
+	}
+
+  @Override
   protected void sendVerifyRegistrationMail(RegistrationCode registrationCode, user, String email) {
       String url = super.generateLink('verifyRegistration', [t: registrationCode.token])
 
@@ -187,6 +220,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
   protected static int passwordMinLength
   protected static String passwordValidationRegex
 
+  @Override
   void afterPropertiesSet() {
     super.afterPropertiesSet()
 
