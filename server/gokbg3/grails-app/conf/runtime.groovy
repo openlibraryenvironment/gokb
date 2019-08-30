@@ -503,6 +503,7 @@ grails.plugin.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
 grails.plugin.springsecurity.ui.register.defaultRoleNames = [
   "ROLE_USER"
 ]
+grails.plugin.springsecurity.ui.register.postRegisterUrl = '/home/index'
 // The following 2 entries make the app use basic auth by default
 grails.plugin.springsecurity.useBasicAuth = true
 grails.plugin.springsecurity.basic.realmName = "gokb"
