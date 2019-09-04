@@ -1364,7 +1364,13 @@ class IntegrationController {
                         fhe.uuid
                       );
 
-                      if ( p ) { inlist.add(p); } else { cont = false; }
+                      if ( p && !p.hasErrors() ) {
+                        ensureCoreData(p, fhe)
+                        inlist.add(p);
+                      }
+                      else {
+                        cont = false;
+                      }
                     }
 
                     jhe.to.each { fhe ->
@@ -1380,7 +1386,13 @@ class IntegrationController {
                         fhe.uuid
                       );
 
-                      if ( p && !inlist.contains(p) ) { outlist.add(p); } else { cont = false; }
+                      if ( p && !p.hasErrors() && !inlist.contains(p) ) {
+                        ensureCoreData(p, fhe)
+                        outlist.add(p);
+                      }
+                      else {
+                        cont = false;
+                      }
                     }
 
                     def first = true;
