@@ -231,3 +231,4 @@ gokb:
 
 quartz:
     autoStartup: true
+    waitForJobsToCompleteOnShutdown: false

@@ -201,17 +201,18 @@ class TitleInstancePackagePlatform extends KBComponent {
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */ 
   @Transient
-  public static boolean validateDTO(tipp_dto) {
-    def result = true;
+  public static def validateDTO(tipp_dto) {
+    def result = ['valid':true, 'errors':[]]
     def sdfs = [
         "yyyy-MM-dd' 'HH:mm:ss.SSS",
         "yyyy-MM-dd'T'HH:mm:ss'Z'",
         "yyyy-MM-dd"
     ]
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS")
-    result &= tipp_dto.package?.internalId != null
-    result &= tipp_dto.platform?.internalId != null
-    result &= tipp_dto.title?.internalId != null
+
+    result.valid &= tipp_dto.package?.internalId != null
+    result.valid &= tipp_dto.platform?.internalId != null
+    result.valid &= tipp_dto.title?.internalId != null
+
     for(def coverage : tipp_dto.coverage){
         def startDate = null
         def endDate = null
@@ -231,7 +232,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (!startDate) {
-            result = false
+            result.valid = false
+            result.errors.add("Unable to parse coverage start date ${coverage.endDate}!")
           }
         }
 
@@ -250,18 +252,27 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (!endDate) {
-            result = false
+            result.valid = false
+            result.errors.add("Unable to parse coverage end date ${coverage.endDate}!")
           }
         }
 
-        result &= ['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth.toLowerCase())
-        result &= !(startDate && endDate && (endDate < startDate))
+        if ( !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase()) ) {
+          result.valid = false
+          result.errors.add("Unrecognized value '${coverage.coverageDepth}' for coverage depth")
+        }
+
+        if (startDate && endDate && (endDate < startDate)) {
+          result.valid = false
+          result.errors.add("Coverage end date must not be prior to its start date!")
+        }
     }
 
-    if ( !result ) 
-      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId}");
+    if ( !result.valid )  {
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId} -- Errors: ${result.errors}");
+    }
 
-    result;
+    return result
   }
 
   /**
@@ -436,7 +447,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           def parsedStart = null
           def parsedEnd = null
 
-          if ( c.startDate?.trim().size() > 0 ) {
+          if ( c.startDate && c.startDate.trim().length() > 0 ) {
 
             sdfs.each { s ->
               try {
@@ -449,7 +460,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
           }
 
-          if ( c.endDate?.trim().size() > 0 ) {
+          if ( c.endDate && c.endDate.trim().length() > 0 ) {
 
             sdfs.each { s ->
               try {
