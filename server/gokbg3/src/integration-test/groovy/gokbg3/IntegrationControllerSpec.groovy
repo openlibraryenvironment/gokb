@@ -154,6 +154,82 @@ class IntegrationControllerSpec extends Specification {
         matching_with_class_one_ids[0] == resp.json.titleId
     }
 
+    void "Test crossReferenceTitle :: Journal with history"() {
+
+      when: "Caller asks for this record to be cross referenced"
+        def json_record = [
+          "identifiers" : [
+            [
+              "type" : "eissn",
+              "value" : "1549-960X"
+            ],
+            [
+              "type" : "zdb",
+              "value" : "1491237-5"
+            ]
+          ],
+          "name" : "Journal of chemical information and modeling",
+          "publishedFrom" : "1982-01-01 00:00:00.000",
+          "publishedTo" : "",
+          "historyEvents" : [
+            [
+              "date" : "1982-01-01 00:00:00.000",
+              "from" : [
+                [
+                  "title" : "Journal of chemical documentation",
+                  "identifiers" : [
+                    [
+                      "type" : "eissn",
+                      "value" : "1541-5732"
+                    ],
+                    [
+                      "type" : "zdb",
+                      "value" : "2096906-5"
+                    ]
+                  ]
+                ]
+              ],
+              "to" : [
+                [
+                  "title" : "Journal of chemical information and modeling",
+                  "identifiers" : [
+                    [
+                      "type" : "eissn",
+                      "value" : "1549-960X"
+                    ],
+                    [
+                      "type" : "zdb",
+                      "value" : "1491237-5"
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ],
+          "publisher_history" : [
+            [
+                "endDate" : "",
+                "name" : "American Chemical Society",
+                "startDate" : "1982-01-01 00:00:00.000",
+                "status" : ""
+            ]
+          ],
+          "type" : "Serial"
+        ]
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+          auth('admin', 'admin')
+          body(json_record as JSON)
+        }
+
+      then: "The item is created in the database because it does not exist"
+        resp.json.message != null
+        resp.json.message.startsWith('Created')
+      expect: "Find item by ID can now locate the history item"
+        def ids = [ ['ns':'eissn', 'value':'1541-5732']  ]
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids?.size() == 1
+    }
+
     void "Test crossReferencePackage :: Import new Package"() {
 
       when: "Caller asks for this record to be cross referenced"
