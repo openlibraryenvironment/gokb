@@ -350,9 +350,14 @@ select tipp.id,
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     log.debug("Retiring tipps");
-    def tipps = getTipps()?.collect { it.id }
 
-    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[del: retired_status, ttd:tipps])
+    def tipps = getTipps()
+
+    if ( tipps?.size() > 0) {
+      def tipp_ids = tipps?.collect { it.id }
+      
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids])
+    }
   }
 
 
