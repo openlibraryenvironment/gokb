@@ -9,6 +9,7 @@ import grails.plugin.springsecurity.ui.strategy.MailStrategy
 import grails.plugin.springsecurity.ui.strategy.PropertiesStrategy
 import grails.plugin.springsecurity.ui.strategy.RegistrationCodeStrategy
 import grails.plugin.springsecurity.ui.RegisterCommand
+import grails.plugin.springsecurity.ui.ForgotPasswordCommand
 import grails.plugin.springsecurity.ui.RegistrationCode
 import groovy.text.SimpleTemplateEngine
 import org.springframework.context.MessageSource
@@ -33,8 +34,8 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
   /** Dependency injection for the 'uiRegistrationCodeStrategy' bean. */
   RegistrationCodeStrategy uiRegistrationCodeStrategy
 
-  /** Dependency injection for the 'uiPropertiesStrategy' bean. */
-  PropertiesStrategy uiPropertiesStrategy
+	/** Dependency injection for the 'uiPropertiesStrategy' bean. */
+	PropertiesStrategy uiPropertiesStrategy
 
   String serverURL
 
@@ -43,6 +44,10 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
   def sessionFactory
 
   def springSecurityService
+
+	static final String EMAIL_LAYOUT = "/layouts/email"
+	static final String FORGOT_PASSWORD_TEMPLATE = "/register/_forgotPasswordMail"
+	static final String VERIFY_REGISTRATION_TEMPLATE = "/register/_verifyRegistrationMail"
 
   @Override
   def register(RegisterCommand registerCommand) {
@@ -203,6 +208,53 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     }
     result
   }
+
+  @Override
+	def forgotPassword(ForgotPasswordCommand forgotPasswordCommand) {
+
+		if (!request.post) {
+			return [forgotPasswordCommand: new ForgotPasswordCommand()]
+		}
+
+		if (forgotPasswordCommand.hasErrors()) {
+			return [forgotPasswordCommand: forgotPasswordCommand]
+		}
+
+		def user = findUserByUsername(forgotPasswordCommand.username)
+		if (!user) {
+			forgotPasswordCommand.errors.rejectValue 'username', 'spring.security.ui.forgotPassword.user.notFound'
+			return [forgotPasswordCommand: forgotPasswordCommand]
+		}
+
+		String email = uiPropertiesStrategy.getProperty(user, 'email')
+		if (!email) {
+			forgotPasswordCommand.errors.rejectValue 'username', 'spring.security.ui.forgotPassword.noEmail'
+			return [forgotPasswordCommand: forgotPasswordCommand]
+		}
+
+		uiRegistrationCodeStrategy.sendForgotPasswordMail(
+				forgotPasswordCommand.username, email) { String registrationCodeToken ->
+
+			String url = generateLink('resetPassword', [t: registrationCodeToken])
+			String body = forgotPasswordEmailBody
+
+			if (!body) {
+				body = renderEmail(
+						FORGOT_PASSWORD_TEMPLATE, EMAIL_LAYOUT,
+						[
+								url     : url,
+								username: user.username
+						]
+				)
+			} else if (body.contains('$')) {
+				body = evaluate(body, [user: user, url: url])
+			}
+
+			body
+		}
+
+		[emailSent: true, forgotPasswordCommand: forgotPasswordCommand]
+	}
 
   protected String forgotPasswordEmailBody
   protected Boolean requireForgotPassEmailValidation
