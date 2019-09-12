@@ -415,7 +415,20 @@ class AdminController {
 
     log.debug("Reject wrong titles. Started job #${j.id}")
 
-    j.description = "set Titles without package+history to rejected"
+    j.description = "Set status of TitleInstances without package+history to 'Deleted'"
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
+  def rejectNoIdTitles() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.rejectNoIdTitles(j)
+    }.startOrQueue()
+
+    log.debug("Reject wrong titles. Started job #${j.id}")
+
+    j.description = "Set status of TitleInstances without identifiers+tipps to 'Rejected'"
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
