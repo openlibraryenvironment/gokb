@@ -96,13 +96,13 @@ class Package extends KBComponent {
     lastProject    (nullable:true, blank:false)
     descriptionURL (nullable:true, blank:true)
     name (validator: { val, obj ->
-      if (val) {
+      if (val && obj.hasChanged('name')) {
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def dupes = Package.findByNameIlike(val);
-        if ( dupes && dupes != obj && dupes.status != status_deleted) {
+        def dupes = Package.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+        if ( dupes && dupes != obj ) {
           return ['notUnique']
         }
-      } else {
+      } else if (!val) {
         return ['notNull']
       }
     })
@@ -328,10 +328,14 @@ select tipp.id,
     
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
-    def tipps = getTipps()?.collect { it.id }
-    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def tipps = getTipps()
 
-    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipps])
+    if ( tipps?.size() > 0 ) {
+      def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def tipp_ids = tipps?.collect { it.id }
+
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+    }
   }
   
 
@@ -346,9 +350,14 @@ select tipp.id,
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     log.debug("Retiring tipps");
-    def tipps = getTipps()?.collect { it.id }
 
-    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[del: retired_status, ttd:tipps])
+    def tipps = getTipps()
+
+    if ( tipps?.size() > 0) {
+      def tipp_ids = tipps?.collect { it.id }
+      
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids])
+    }
   }
 
 

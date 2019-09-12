@@ -942,10 +942,11 @@ class IntegrationController {
                   log.debug("Validating tipps [${tippctr++}]");
                   json.tipps.eachWithIndex { tipp, idx ->
                     def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
-                    if ( !validation_result) {
-                      log.error("TIPP Validation failed on ${tipp}")
+
+                    if ( validation_result && !validation_result.valid ) {
+                      log.debug("TIPP Validation failed on ${tipp}")
                       valid = false
-                      errors.add(['code': 400, 'message': "TIPP Validation for title ${tipp.title.name} failed."])
+                      errors.add(['code': 400, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
                     }
                     
                     if (idx % 50 == 0) {
@@ -965,15 +966,33 @@ class IntegrationController {
                   def status_current = RefdataCategory.lookup('KBComponent.Status','Current')
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
+                  def tipp_fails = 0
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
                     
                     log.debug("Upsert tipp [${tippctr}] ${tipp}")
+                    def upserted_tipp = null
 
-                    def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
-                    log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
-                    upserted_tipp = upserted_tipp.merge(flush: true)
+                    try {
+                      upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
+                      log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
+                      upserted_tipp = upserted_tipp.merge(flush: true)
+                    }
+                    catch (grails.validation.ValidationException ve) {
+                      log.error("ValidationException attempting to cross reference TIPP",ve);
+                      valid = false
+                      tipp_fails++
+                      errors.add(['code': 400, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
+                      upserted_tipp.discard()
+                    }
+                    catch (Exception ge) {
+                      log.error("Exception attempting to cross reference TIPP:", ge)
+                      valid = false
+                      tipp_fails++
+                      errors.add(['code': 500, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'data': tipp])
+                      upserted_tipp.discard()
+                    }
 
                     if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
                       log.debug("Existing TIPP matched!")
@@ -985,54 +1004,56 @@ class IntegrationController {
                     }
                     job.setProgress(idx + json.tipps.size(), json.tipps.size() * 2)
                   }
-                  def num_deleted_tipps = 0;
 
-                  if ( existing_tipps.size() > 0 ) {
+                  if (!valid) {
+                    job_result.result = 'ERROR'
+                    job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
+                  }
+                  else {
+
+                    def num_deleted_tipps = 0;
+
+                    if ( existing_tipps.size() > 0 ) {
 
 
-                    tipps_to_delete.eachWithIndex { ttd, idx ->
+                      tipps_to_delete.eachWithIndex { ttd, idx ->
 
-                      def to_retire = TitleInstancePackagePlatform.get(ttd)
+                        def to_retire = TitleInstancePackagePlatform.get(ttd)
 
-                      if ( to_retire?.isCurrent() ) {
+                        if ( to_retire?.isCurrent() ) {
 
-                        to_retire.retire()
-                        to_retire.save(failOnError: true)
+                          to_retire.retire()
+                          to_retire.save(failOnError: true)
 
-        //                 ReviewRequest.raise(
-        //                     to_retire,
-        //                     "TIPP retired.",
-        //                     "An update to this package did not contain this TIPP.",
-        //                     user
-        //                 )
-                        num_deleted_tipps++;
-                      }else{
-                        log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
+                          num_deleted_tipps++;
+                        }else{
+                          log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
+                        }
+
+                        if ( idx % 50 == 0 ) {
+                          cleanUpGorm()
+                        }
                       }
-
-                      if ( idx % 50 == 0 ) {
-                        cleanUpGorm()
+                      if( num_deleted_tipps > 0 ) {
+                        ReviewRequest.raise(
+                            the_pkg,
+                            "TIPPs retired.",
+                            "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
+                            user
+                        )
                       }
                     }
-                    if( num_deleted_tipps > 0 ) {
-                      ReviewRequest.raise(
-                          the_pkg,
-                          "TIPPs retired.",
-                          "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
-                          user
-                      )
-                    }
-                  }
-                  log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
-                  job_result.result = 'OK'
-                  job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
+                    log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
+                    job_result.result = 'OK'
+                    job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
 
-                  if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
-                    the_pkg.lastUpdateComment = job_result.message
+                    if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+                      the_pkg.lastUpdateComment = job_result.message
+                    }
+                    job_result.pkgId = the_pkg.id
+                    job_result.uuid = the_pkg.uuid
+                    log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
                   }
-                  job_result.pkgId = the_pkg.id
-                  job_result.uuid = the_pkg.uuid
-                  log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
                 }
                 else {
                   job_result.result = 'ERROR'
@@ -1051,6 +1072,11 @@ class IntegrationController {
             }
             cleanUpGorm()
           }
+        }
+        else {
+          log.debug("Package validation failed!")
+          job_result.result = 'ERROR'
+          job_result.message = "Package validation failed!"
         }
 
         job.message(job_result.message.toString())
