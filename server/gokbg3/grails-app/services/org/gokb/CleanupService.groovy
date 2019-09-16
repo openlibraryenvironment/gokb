@@ -656,20 +656,38 @@ class CleanupService {
     session.clear()
   }
 
-    def rejectWrongTitles(Job job) {
-      log.debug("GOKb mark wrong titles for deletion")
-      def ctr = 0
-      def tick=TitleInstance.withNewSession {
-        def deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
-        def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+  def rejectWrongTitles(Job job) {
+    log.debug("GOKb mark wrong titles for deletion")
+    def ctr = 0
+    def tick=TitleInstance.withNewSession {
+      def deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+      def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
-        def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds where title.id not in " +
-                "(select fromComponent.id from Combo where type = :tc)" +
-                " and title.id not in " +
-                "(select participant.id from ComponentHistoryEventParticipant)",[ds: deleted_status, tc: tipps_combo])
+      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds where title.id not in " +
+              "(select fromComponent.id from Combo where type = :tc)" +
+              " and title.id not in " +
+              "(select participant.id from ComponentHistoryEventParticipant)",[ds: deleted_status, tc: tipps_combo])
 
-        job.message("${res} titles set to deleted")
-      }
-      job.endTime = new Date()
+      job.message("${res} titles set to deleted")
     }
+    job.endTime = new Date()
+  }
+
+  def rejectNoIdTitles(Job job) {
+    log.debug("GOKb mark titles without IDs & TIPPs for deletion")
+    def ctr = 0
+    def tick=TitleInstance.withNewSession {
+      def rejected_status = RefdataCategory.lookup('KBComponent.EditStatus', KBComponent.EDIT_STATUS_REJECTED)
+      def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+      def ids_combo = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+
+      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds where title.id not in " +
+              "(select fromComponent.id from Combo where type = :tc)" +
+              " and title.id not in " +
+              "(select fromComponent.id from Combo where type = :ic)",[ds: rejected_status, tc: tipps_combo, ic:ids_combo])
+
+      job.message("${res} titles set to deleted")
+    }
+    job.endTime = new Date()
+  }
 }
