@@ -11,7 +11,7 @@ config.deferred = config.deferred ?: [:]
 while ( moredata ) {
   
   def resources = []
-  fetchFromSource (path: '/gokb/oai/titles') { resp, body ->
+  fetchFromSource (path: "${sourceContext}/oai/titles") { resp, body ->
   
     println("Cursor: ${body?.'ListRecords'?.'resumptionToken'?.'@cursor'} RT: ${body?.'ListRecords'?.'resumptionToken'?.text()} ")
 
@@ -95,7 +95,7 @@ while ( moredata ) {
   }
   
   resources.each {
-    sendToTarget (path: '/gokb/integration/crossReferenceTitle', body: it)
+    sendToTarget (path: "${targetContext}/integration/crossReferenceTitle", body: it)
   }
   
   // Save the config.
@@ -110,7 +110,7 @@ saveConfig ()
 // Now that we have finished pulling down the titles we have a list of deferred "identifier-less" titles.
 // We can send them now.
 config.deferred.each { k, v ->
-  sendToTarget (path: '/gokb/integration/crossReferenceTitle', body: v)
+  sendToTarget (path: "${targetContext}/integration/crossReferenceTitle", body: v)
   Thread.sleep(25)
 }
 

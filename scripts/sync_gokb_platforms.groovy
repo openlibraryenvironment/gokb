@@ -7,7 +7,7 @@ import GOKbSyncBase
 while ( moredata ) {
   
   def resources = []
-  fetchFromSource (path: '/gokb/oai/platforms') { resp, body ->
+  fetchFromSource (path: "${sourceContext}/oai/platforms") { resp, body ->
 
     body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
 
@@ -30,7 +30,7 @@ while ( moredata ) {
   }
   
   resources.each {
-    sendToTarget (path: '/gokb/integration/crossReferencePlatform', body: it)
+    sendToTarget (path: "${targetContext}/integration/crossReferencePlatform", body: it)
   }
   
   // Save the config.

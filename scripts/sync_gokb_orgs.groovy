@@ -7,7 +7,7 @@ import GOKbSyncBase
 while ( moredata ) {
   
   def resources = []
-  fetchFromSource (path: '/gokb/oai/orgs') { resp, body ->
+  fetchFromSource (path: "${sourceContext}/oai/orgs") { resp, body ->
 
     body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
 
@@ -23,7 +23,7 @@ while ( moredata ) {
   }
   
   resources.each {
-    sendToTarget (path: '/gokb/integration/assertOrg', body: it) 
+    sendToTarget (path: "${targetContext}/integration/assertOrg", body: it)
   }
   
   // Save the config.

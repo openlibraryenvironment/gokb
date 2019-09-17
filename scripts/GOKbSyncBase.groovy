@@ -36,6 +36,8 @@ abstract class GOKbSyncBase extends Script {
   def sourceResponseType = XML
   
   String targetBase = 'http://localhost:8080/'
+  String sourceContext = '/gokb'
+  String targetContext = '/gokb'
   def targetResponseType = JSON
   
   // More data defaults to true.
@@ -83,8 +85,16 @@ abstract class GOKbSyncBase extends Script {
         sourceBase = config.sourceBase
       }
 
+      if (config.sourceContext) {
+        sourceContext = config.sourceContext
+      }
+
       if (config.targetBase) {
         targetBase = config.targetBase
+      }
+
+      if (config.targetContext) {
+        targetContext = config.targetContext
       }
     }
     else {
@@ -132,6 +142,8 @@ abstract class GOKbSyncBase extends Script {
           if (parameters['body']) {
             body = parameters['body']
           }
+
+          println("${uri}")
       
           response.success = { resp, data ->
             println "${data.result ?: 'SUCCESS'} - ${resp.status} ${data.message}"
@@ -162,7 +174,7 @@ abstract class GOKbSyncBase extends Script {
               result : "Failed on http request to source (see stack trace)",
               status : 'error'
             ]
-            println(err)
+            println("ERROR: ${err.getStatus()} - ${err.getContentType() -- ${err.getData()}}")
           }
         }
       }

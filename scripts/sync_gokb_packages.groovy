@@ -11,7 +11,7 @@ while ( moredata ) {
   def resources = []
   def status = null
 
-  fetchFromSource (path: '/gokb/oai/packages') { resp, body ->
+  fetchFromSource (path: "${sourceContext}/oai/packages") { resp, body ->
 
     body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
 
@@ -80,7 +80,7 @@ while ( moredata ) {
   }
 
   resources.each {
-    sendToTarget (path: '/gokb/integration/crossReferencePackage', body: it)
+    sendToTarget (path: "${targetContext}/integration/crossReferencePackage", body: it)
   }
   
   Thread.sleep(1000)
