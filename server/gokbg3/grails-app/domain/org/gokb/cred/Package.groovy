@@ -98,7 +98,7 @@ class Package extends KBComponent {
     name (validator: { val, obj ->
       if (val && obj.hasChanged('name')) {
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def dupes = Package.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+        def dupes = Package.findByNameIlikeAndStatusNotEqual(val, status_deleted);
         if ( dupes && dupes != obj ) {
           return ['notUnique']
         }

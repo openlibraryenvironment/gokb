@@ -22,6 +22,7 @@
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
+  <asset:stylesheet src="gokb/gokb-brand.css"/>
 
 	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.16.0/polyfiller.js"></asset:script>
 	<asset:script>
@@ -167,7 +168,7 @@
                   </ul>
                 </li>
               </g:if>
-              <g:if test="${grailsApplication.config.feature.directUpload}">
+              <g:if test="${grailsApplication.config.feature?.directUpload}">
                 <li class="${params?.controller == "savedItems" ? 'active' : ''}" ><g:link controller="savedItems" action="index"><i class="fa fa-folder fa-fw"></i> Saved Items</g:link></li>
                 <sec:ifAnyGranted roles="ROLE_EDITOR, ROLE_CONTRIBUTOR, ROLE_ADMIN, ROLE_SUPERUSER">
                 <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
