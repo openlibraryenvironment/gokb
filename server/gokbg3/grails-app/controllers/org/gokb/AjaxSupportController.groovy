@@ -811,9 +811,13 @@ class AjaxSupportController {
         log.debug("message arg type is: ${ma?.class?.name ?: 'null'}")
         if (ma && ma instanceof String) {
           String[] emptyArgs = []
-          def arg = messageSource.resolveCode(ma, request.locale).format(emptyArgs)
+          def arg = messageSource.resolveCode(ma, request.locale)
+          
+          if (arg) {
+            arg.format(emptyArgs)
 
-          resolvedArgs.add(arg)
+            resolvedArgs.add(arg)
+          }
         }
         else {
           resolvedArgs.add(ma)

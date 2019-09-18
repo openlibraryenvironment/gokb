@@ -1066,9 +1066,10 @@ class IntegrationController {
               }
             }
             catch (Exception e) {
-              log.debug("Package Crossref failed with Exception",e)
+              log.error("Package Crossref failed with Exception",e)
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
+              errors.add([code:500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
             }
             cleanUpGorm()
           }
