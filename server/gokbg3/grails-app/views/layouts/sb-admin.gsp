@@ -22,7 +22,6 @@
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
-  <asset:stylesheet src="gokb/gokb-brand.css"/>
 
 	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.16.0/polyfiller.js"></asset:script>
 	<asset:script>
