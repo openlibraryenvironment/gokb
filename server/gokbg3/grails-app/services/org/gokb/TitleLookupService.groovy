@@ -683,6 +683,7 @@ class TitleLookupService {
   private TitleInstance attemptComponentMatch (def metadata, String className) {
     def t = null;
     def descriminator = null;
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     Class cl = null;
 
     if (className) {
@@ -701,11 +702,11 @@ class TitleLookupService {
       def component_hash = GOKbTextUtils.generateComponentHash([nname,descriminator]);
 
       if (descriminator) {
-        t = cl.findByComponentHash(component_hash);
+        t = cl.findByComponentHashAndStatusNotEqual(component_hash, status_deleted);
       }
 
       if (!t) {
-        t = cl.findByBucketHash(component_hash);
+        t = cl.findByBucketHashAndStatusNotEqual(component_hash, status_deleted);
       }
 
       log.debug("Result of attempComponentMatch(\"${component_hash}\") for title ${metadata.title} : ${t}");

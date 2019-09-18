@@ -681,7 +681,7 @@ class CleanupService {
       def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
       def ids_combo = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
-      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds where title.id not in " +
+      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.editStatus = :ds where title.id not in " +
               "(select fromComponent.id from Combo where type = :tc)" +
               " and title.id not in " +
               "(select fromComponent.id from Combo where type = :ic)",[ds: rejected_status, tc: tipps_combo, ic:ids_combo])
