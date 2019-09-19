@@ -668,7 +668,7 @@ class CleanupService {
               " and title.id not in " +
               "(select participant.id from ComponentHistoryEventParticipant)",[ds: deleted_status, tc: tipps_combo])
 
-      job.message("${res} titles set to deleted")
+      job.message("${res} titles set to status 'Deleted'")
     }
     job.endTime = new Date()
   }
@@ -686,7 +686,7 @@ class CleanupService {
               " and title.id not in " +
               "(select fromComponent.id from Combo where type = :ic)",[ds: rejected_status, tc: tipps_combo, ic:ids_combo])
 
-      job.message("${res} titles set to deleted")
+      job.message("${res} titles set to editStatus 'Rejected'")
     }
     job.endTime = new Date()
   }
