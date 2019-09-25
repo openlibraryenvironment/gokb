@@ -1,16 +1,15 @@
 package org.gokb
 
-import grails.converters.JSON
-import grails.gorm.transactions.Transactional
-import org.springframework.security.access.annotation.Secured;
-import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
-import java.text.SimpleDateFormat
-import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
+import grails.converters.JSON
+import grails.gorm.transactions.Transactional
+import groovy.util.logging.Slf4j
+import org.gokb.cred.*
+import org.springframework.security.access.annotation.Secured
 
-import groovy.util.logging.*
+import java.text.SimpleDateFormat
 
 @Slf4j
 class IntegrationController {
@@ -29,36 +28,34 @@ class IntegrationController {
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertJsonldPlatform() {
-    def result = [result:'OK']
+    def result = [result: 'OK']
     def name = request.JSON.'skos:prefLabel'
     def normname = GOKbTextUtils.norm2(name)
     def located_entries = KBComponent.findAllByNormname(normname)
     log.debug("assertJsonldPlatform ${name}/${normname}");
-    if ( located_entries.size() == 0 ) {
+    if (located_entries.size() == 0) {
       log.debug("No platform with normname ${normname} - create");
-      def new_platform = new org.gokb.cred.Platform(name:name, normname:normname).save()
-      result.message="Added new platform"
-    }
-    else {
-      result.message="Entity with that name already exists.."
+      def new_platform = new org.gokb.cred.Platform(name: name, normname: normname).save()
+      result.message = "Added new platform"
+    } else {
+      result.message = "Entity with that name already exists.."
     }
     render result as JSON
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertGroup() {
-    def result = [result:'OK']
+    def result = [result: 'OK']
     def name = request.JSON.name
     def normname = CuratoryGroup.generateNormname(name)
     def group = CuratoryGroup.findByNormname(normname)
 
-    if ( !group ) {
-      group = new CuratoryGroup (name: name)
+    if (!group) {
+      group = new CuratoryGroup(name: name)
 
-      if ( group.validate() ) {
-        group.save(flush:true)
-      }
-      else {
+      if (group.validate()) {
+        group.save(flush: true)
+      } else {
         result.message = "Could not reference group ${name}"
         result.errors = group.errors
         result.result = 'ERROR'
@@ -80,7 +77,7 @@ class IntegrationController {
     def memberNames = request.JSON.users
     if (memberNames) {
       def members = User.createCriteria().list {
-        'in' ('username', memberNames)
+        'in'('username', memberNames)
       }
 
       members.each {
@@ -88,11 +85,10 @@ class IntegrationController {
       }
     }
 
-    if( group ) {
+    if (group) {
       result.message = "Created/looked up group ${group}"
       result.groupId = group.id
-    }
-    else {
+    } else {
       result.message = "Could not reference group ${name}"
       result.result = 'ERROR'
     }
@@ -103,86 +99,76 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertJsonldOrg() {
     // log.debug("assertOrg, request.json = ${request.JSON}");
-    def result=[:]
+    def result = [:]
     result.status = true;
 
     try {
 
       def name = request.JSON.'skos:prefLabel'
 
-      if ( ( name != null ) && ( name.trim().length() > 0 ) ) {
+      if ((name != null) && (name.trim().length() > 0)) {
 
         log.debug("Trying to locate component with ID ${request.JSON.'@id'} name is \"${name}\"");
 
         // Try and match on primary ID
         def located_entries = KBComponent.lookupByIdentifierValue([request.JSON.'@id'.toString()] as String[]);
 
-        if ( located_entries?.size() == 1 ) {
+        if (located_entries?.size() == 1) {
           log.debug("Identified record..");
           enrichJsonLDOrg(located_entries[0], request.JSON)
-        }
-        else if ( located_entries?.size() == 0 ) {
+        } else if (located_entries?.size() == 0) {
 
           log.debug("Not identified - try sameAs relations");
 
-          if ( request.JSON.'owl:sameAs' != null ) {
+          if (request.JSON.'owl:sameAs' != null) {
             log.debug("Attempt lookup by sameAs : ${request.JSON.'owl:sameAs' as String[]} ");
             located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'owl:sameAs') as String[])
-          }
-          else {
+          } else {
             log.debug("No owl:sameAs entries found");
           }
 
-          if ( located_entries?.size() == 0 ) {
+          if (located_entries?.size() == 0) {
             log.debug("Failed to match on same-as. Attempting primary name match");
             def normname = GOKbTextUtils.norm2(name)
             located_entries = KBComponent.findAllByNormname(normname)
-            if ( located_entries?.size() == 0 ) {
+            if (located_entries?.size() == 0) {
               log.debug("No match on normalised name ${normname}.. Trying variant names");
-              def variant_normname = GOKbTextUtils.normaliseString( name )
+              def variant_normname = GOKbTextUtils.normaliseString(name)
               def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
+              located_entries = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?", [variant_normname, status_deleted]);
 
-              if ( located_entries?.size() == 0 ) {
+              if (located_entries?.size() == 0) {
 
                 createJsonLDOrg(request.JSON);
-              }
-              else if( located_entries?.size() == 1 ){
+              } else if (located_entries?.size() == 1) {
                 log.debug("Exact match on normalised variantname ${variant_normname} - good enough");
                 enrichJsonLDOrg(located_entries[0], request.JSON)
-              }
-              else{
+              } else {
                 log.error("Multiple matches on normalised variant name... abandon all hope");
               }
-            }
-            else if ( located_entries?.size() == 1 ) {
-               log.debug("Exact match on normalised name ${normname} - good enough");
-               enrichJsonLDOrg(located_entries[0], request.JSON)
-            }
-            else {
+            } else if (located_entries?.size() == 1) {
+              log.debug("Exact match on normalised name ${normname} - good enough");
+              enrichJsonLDOrg(located_entries[0], request.JSON)
+            } else {
               log.error("Multiple matches on normalised name... abandon all hope");
             }
 
-          }
-          else if ( located_entries?.size() == 1 ) {
-             log.debug("Located identifier");
-          }
-          else {
+          } else if (located_entries?.size() == 1) {
+            log.debug("Located identifier");
+          } else {
             log.error("set of SameAs identifiers locate more that one component");
           }
-        }
-        else {
+        } else {
           log.error("Unique identifier finds multiple components.");
         }
 
         result.status = 'OK'
-      }
-      else {
+      } else {
         log.error("skipping org [ ${request.JSON.'@id'}] due to null name");
       }
     }
-    catch ( Exception e ) {
-      log.error("Problem",e)
+    catch (Exception e) {
+      log.error("Problem", e)
       result.status = 'ERROR'
     }
     finally {
@@ -203,20 +189,19 @@ class IntegrationController {
     //         ] ,
     def name = request.JSON.'skos:prefLabel'
     def id = request.JSON.'@id'
-    def new_org = new Org(name:name)
+    def new_org = new Org(name: name)
 
-    def primary_identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',id)
+    def primary_identifier = Identifier.lookupOrCreateCanonicalIdentifier('global', id)
     new_org.ids.add(primary_identifier)
 
-    request.JSON.'owl:sameAs'?.each {  said ->
+    request.JSON.'owl:sameAs'?.each { said ->
 
       // Double check that this identifier is NOT already used
-      def existing_usage = KBComponent.lookupByIO('global',said)
-      if ( existing_usage == null ) {
-        def identifier = Identifier.lookupOrCreateCanonicalIdentifier('global',said)
+      def existing_usage = KBComponent.lookupByIO('global', said)
+      if (existing_usage == null) {
+        def identifier = Identifier.lookupOrCreateCanonicalIdentifier('global', said)
         new_org.ids.add(identifier)
-      }
-      else {
+      } else {
         log.error("Not adding identifer to a second item...");
       }
     }
@@ -230,17 +215,17 @@ class IntegrationController {
 
     new_org.save();
 
-    if ( request.JSON.'foaf:homepage' != null ) {
+    if (request.JSON.'foaf:homepage' != null) {
       new_org.homepage = request.JSON.'foaf:homepage'
     }
 
-    if ( new_org.save(flush:true, failOnError : true) ) {
+    if (new_org.save(flush: true, failOnError: true)) {
       log.debug("Saved ok");
-    }
-    else {
+    } else {
       log.error("Problem saving new org. ${new_org.errors}");
     }
   }
+
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def enrichJsonLDOrg(org, jsonld) {
     log.debug("Enrich existing..");
@@ -269,62 +254,55 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertOrg() {
     log.debug("assertOrg, request.json = ${request.JSON}");
-    def result=[result: 'OK']
+    def result = [result: 'OK']
     result.status = true;
     def assert_errors = false;
 
     try {
       def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.identifiers)
 
-      if ( located_or_new_org == null ) {
-        if ( request.JSON.name ) {
+      if (located_or_new_org == null) {
+        if (request.JSON.name) {
           String orgName = request.JSON.name
-          String orgNormName = Org.generateNormname (orgName)
+          String orgNormName = Org.generateNormname(orgName)
 
           // No match. One more attempt to match on norm_name only.
-          def org_by_name = Org.findAllByNormname( orgNormName )
+          def org_by_name = Org.findAllByNormname(orgNormName)
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-          if ( org_by_name.size() == 1 ) {
+          if (org_by_name.size() == 1) {
             located_or_new_org = org_by_name[0]
           }
 
-          if ( located_or_new_org == null && org_by_name.size() == 0 ) {
+          if (located_or_new_org == null && org_by_name.size() == 0) {
 
-            def variant_normname = GOKbTextUtils.normaliseString( orgName )
-            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
+            def variant_normname = GOKbTextUtils.normaliseString(orgName)
+            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?", [variant_normname, status_deleted]);
 
-            if(candidate_orgs.size() == 1){
+            if (candidate_orgs.size() == 1) {
               located_or_new_org = candidate_orgs[0]
 
               log.debug("Matched Org on variant name!");
-            }
-            else if( candidate_orgs.size() == 0 ){
+            } else if (candidate_orgs.size() == 0) {
 
               log.debug("Create new org name will be \"${request.JSON.name}\" (${request.JSON.name?.length()})");
 
-              located_or_new_org = new Org(name:request.JSON.name, normname:orgNormName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null)
+              located_or_new_org = new Org(name: request.JSON.name, normname: orgNormName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null)
 
               log.debug("Attempt to save - validate: ${located_or_new_org}");
 
-              if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+              if (located_or_new_org.save(flush: true, failOnError: true)) {
                 log.debug("Saved ok");
               } else {
                 assert_errors = true;
               }
-            }
-
-            else {
+            } else {
               log.debug("Multiple matches via variant name, skipping Org!");
               assert_errors = true;
             }
-          }
-
-          else if ( org_by_name.size == 1 ) {
+          } else if (org_by_name.size == 1) {
             log.debug("Matched Org by normname!")
-          }
-
-          else {
+          } else {
             log.debug("Multiple matches for org via normname!")
             assert_errors = true;
           }
@@ -336,27 +314,27 @@ class IntegrationController {
         log.debug("Located existing record.. Still update...");
       }
 
-      if(assert_errors){
+      if (assert_errors) {
         log.debug("Save failed ${located_or_new_org}");
         result.errors = []
         located_or_new_org.errors.each { e ->
-          log.error("Problem saving new org record",e);
+          log.error("Problem saving new org record", e);
           result.errors.add("${e}".toString());
         }
         result.status = false;
         return
       }
 
-      setAllRefdata ([
+      setAllRefdata([
         'software', 'service'
       ], request.JSON, located_or_new_org)
 
-      if ( request.JSON.mission ) {
+      if (request.JSON.mission) {
         log.debug("Mission ${request.JSON.mission}");
-        located_or_new_org.mission = RefdataCategory.lookup('Org.Mission',request.JSON.mission);
+        located_or_new_org.mission = RefdataCategory.lookup('Org.Mission', request.JSON.mission);
       }
 
-      if ( request.JSON.homepage ) {
+      if (request.JSON.homepage) {
         located_or_new_org.homepage = request.JSON.homepage
       }
 
@@ -364,7 +342,7 @@ class IntegrationController {
       if (request.JSON.parent) {
         def parentDef = request.JSON.parent;
         log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
-        def located_component = KBComponent.lookupByIO(parentDef.identifierType,parentDef.identifierValue)
+        def located_component = KBComponent.lookupByIO(parentDef.identifierType, parentDef.identifierValue)
         if (located_component) {
           located_or_new_org.parent = located_component
         }
@@ -375,17 +353,16 @@ class IntegrationController {
       // combos
       request.JSON.combos.each { c ->
         log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
-        def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
+        def located_component = KBComponent.lookupByIO(c.linkTo.identifierType, c.linkTo.identifierValue)
 
         // Located a component.
-        if ( ( located_component != null ) ) {
+        if ((located_component != null)) {
           def combo = new Combo(
-            type:RefdataCategory.lookup('Combo.Type',c.linkType),
-            fromComponent:located_or_new_org,
-            toComponent:located_component,
-            startDate:new Date()).save(flush:true,failOnError:true);
-        }
-        else {
+            type: RefdataCategory.lookup('Combo.Type', c.linkType),
+            fromComponent: located_or_new_org,
+            toComponent: located_component,
+            startDate: new Date()).save(flush: true, failOnError: true);
+        } else {
           log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
         }
       }
@@ -406,16 +383,15 @@ class IntegrationController {
 
       log.debug("Attempt to save - validate: ${located_or_new_org}");
 
-      if ( located_or_new_org.save(flush:true, failOnError : true) ) {
+      if (located_or_new_org.save(flush: true, failOnError: true)) {
         log.debug("Saved ok");
         result.message = "Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
         result.orgId = located_or_new_org.id
-      }
-      else {
+      } else {
         log.debug("Save failed ${located_or_new_org}");
         result.errors = []
         located_or_new_org.errors.each { e ->
-          log.error("Problem saving new org record",e);
+          log.error("Problem saving new org record", e);
           result.errors.add("${e}".toString());
         }
         result.status = false;
@@ -423,9 +399,9 @@ class IntegrationController {
       }
 
     }
-    catch ( Exception e ) {
-      log.error("Unexpected error importing org",e)
-      result.message ="ERROR: ${e}";
+    catch (Exception e) {
+      log.error("Unexpected error importing org", e)
+      result.message = "ERROR: ${e}";
       result.result = 'ERROR'
       result.status = false
     }
@@ -452,29 +428,29 @@ class IntegrationController {
    */
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def assertSource() {
-    createOrUpdateSource ( request.JSON )
+    createOrUpdateSource(request.JSON)
   }
 
-  private static def createOrUpdateSource( data ) {
+  private static def createOrUpdateSource(data) {
     log.debug("assertSource, data = ${data}");
-    def result=[:]
+    def result = [:]
     def source_data = data;
     result.status = true;
 
     try {
-      if ( data.name ) {
+      if (data.name) {
 
         Source.withNewSession {
-          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name).save(flush:true, failOnError:true)
+          def located_or_new_source = Source.findByNormname(Source.generateNormname(data.name)) ?: new Source(name: data.name).save(flush: true, failOnError: true)
 
-          ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'url', data.url)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'defaultAccessURL', data.defaultAccessURL)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'explanationAtSource', data.explanationAtSource)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'contextualNotes', data.contextualNotes)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'frequency', data.frequency)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'ruleset', data.ruleset)
 
-          setAllRefdata ([
+          setAllRefdata([
             'software', 'service'
           ], source_data, located_or_new_source)
 
@@ -492,7 +468,7 @@ class IntegrationController {
         }
       }
     }
-    catch ( Exception e ) {
+    catch (Exception e) {
       e.printStackTrace()
     }
     result
@@ -500,11 +476,11 @@ class IntegrationController {
 
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
-  @Transactional(readOnly=true)
+  @Transactional(readOnly = true)
   private resolveOrgUsingPrivateIdentifiers(idlist) {
     def located_or_new_org = null;
 
-    if (idlist?.size() ?:0 > 0) {
+    if (idlist?.size() ?: 0 > 0) {
       // Rewritten to perform this as a singel query.
       def crit = Org.createCriteria()
       def matched_orgs = crit.list {
@@ -545,7 +521,7 @@ class IntegrationController {
           // Matched one only! This is correct.
           located_or_new_org = Org.read(matched_orgs[0])
           break
-        case {it > 1} :
+        case { it > 1 }:
           log.error("**CONFLICT**")
           log.error("Identifiers ${idlist} matched multiple component IDs ${matched_orgs}!")
           break
@@ -603,12 +579,12 @@ class IntegrationController {
     // See if we can locate the variant name as a first class component
 
     Org variant_org = null;
-    if ( request.JSON.variantidns != null && request.JSON.variantidvalue != null ) {
-      variant_org = Org.lookupByIO(request.JSON.variantidns,request.JSON.variantidvalue)
+    if (request.JSON.variantidns != null && request.JSON.variantidvalue != null) {
+      variant_org = Org.lookupByIO(request.JSON.variantidns, request.JSON.variantidvalue)
       log.debug("Existing variant org[${request.JSON.variantidns}:${request.JSON.variantidvalue}]: ${variant_org}")
     }
 
-    Org org_to_update = Org.lookupByIO(request.JSON.idns,request.JSON.idvalue)
+    Org org_to_update = Org.lookupByIO(request.JSON.idns, request.JSON.idvalue)
     log.debug("Org to update[${request.JSON.idns}:${request.JSON.idvalue}]: ${org_to_update}")
 
     // Update any combos that point to the variant so that they now point to the authorized entry
@@ -616,18 +592,18 @@ class IntegrationController {
     // Delete any remaining variant org combox
     // Delete the variant org
 
-    render addVariantNameToComponent (org_to_update, request.JSON.name)
+    render addVariantNameToComponent(org_to_update, request.JSON.name)
   }
 
-  private static def ensureCoreData ( KBComponent component, data ) {
+  private static def ensureCoreData(KBComponent component, data) {
 
     // Set the name.
-    if(!component.name && data.name) {
+    if (!component.name && data.name) {
       component.name = data.name
     }
 
     // Core refdata.
-    setAllRefdata ([
+    setAllRefdata([
       'status', 'editStatus',
     ], data, component)
 
@@ -636,25 +612,24 @@ class IntegrationController {
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     data.identifiers.each { ci ->
       String testKey = "${ci.type}|${ci.value}".toString()
 
-      if ( ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
+      if (ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
 
         if (!ids.contains(testKey)) {
-          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type, ci.value)
 
           log.debug("Checking identifiers of component ${component.id}")
 
-          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?", [canonical_identifier.id, component.id])
 
-          if(duplicate.size() == 0){
+          if (duplicate.size() == 0) {
             log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-            def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
-          }
-          else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+            def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
+          } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
             log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
             ReviewRequest.raise(
@@ -663,8 +638,7 @@ class IntegrationController {
               "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
               user
             )
-          }
-          else {
+          } else {
             log.debug("Identifier combo is already present, probably via titleLookupService.")
           }
 
@@ -687,7 +661,7 @@ class IntegrationController {
 
     // handle the source.
     if (!component.source && data.source && data.source?.size() > 0) {
-      component.source = createOrUpdateSource (data.source)?.get('component')
+      component.source = createOrUpdateSource(data.source)?.get('component')
     }
 
     // Add each file upload too!
@@ -695,7 +669,7 @@ class IntegrationController {
 
       if (fa?.md5) {
 
-        DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile( guid: fa.guid, md5: fa.md5 )
+        DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile(guid: fa.guid, md5: fa.md5)
 
         // Single properties.
         file.with {
@@ -731,7 +705,7 @@ class IntegrationController {
           def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
           // Only add if we have the group already in the system.
           if (group) {
-            component.addToCuratoryGroups ( group )
+            component.addToCuratoryGroups(group)
             groups << name
           }
         }
@@ -739,22 +713,24 @@ class IntegrationController {
     }
 
     if (data.additionalProperties) {
-      Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
+      Set<String> props = component.additionalProperties.collect {
+        "${it.propertyDefn?.propertyName}|${it.apValue}".toString()
+      }
       for (Map it : data.additionalProperties) {
 
         if (it.name && it.value) {
           String testKey = "${it.name}|${it.value}".toString()
 
           if (!props.contains(testKey)) {
-            def pType = AdditionalPropertyDefinition.findByPropertyName (it.name)
+            def pType = AdditionalPropertyDefinition.findByPropertyName(it.name)
             if (!pType) {
-              pType = new AdditionalPropertyDefinition ()
+              pType = new AdditionalPropertyDefinition()
               pType.propertyName = it.name
               pType.save(failOnError: true)
             }
 
             component.refresh()
-            def prop = new KBComponentAdditionalProperty ()
+            def prop = new KBComponentAdditionalProperty()
             prop.propertyDefn = pType
             prop.apValue = it.value
             component.addToAdditionalProperties(prop)
@@ -780,34 +756,34 @@ class IntegrationController {
         }
       }
     }
-    component.save(flush:true)
+    component.save(flush: true)
   }
 
 
-  private static addVariantNameToComponent (KBComponent component, variant_name) {
+  private static addVariantNameToComponent(KBComponent component, variant_name) {
 
     component.ensureVariantName(variant_name)
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePackage() {
-    def result = [ 'result' : 'OK' ]
+    def result = ['result': 'OK']
     def async = params.async ? true : false
     def rjson = request.JSON
     User request_user = springSecurityService.currentUser
 
-    if ( rjson.packageHeader.name ) {
+    if (rjson.packageHeader.name) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
         def job_result = [:]
         def ctr = 0
         def errors = []
-        
+
         job_result.results = []
 
         def valid = Package.validateDTO(json.packageHeader)
 
-        if ( valid ) {
+        if (valid) {
           Package.withNewSession {
             def user = User.get(request_user.id)
 
@@ -817,15 +793,15 @@ class IntegrationController {
               Boolean curated_pkg = false;
               def is_curator = null;
               if (the_pkg) {
-                if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
+                if (the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0) {
                   is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
                   curated_pkg = true;
                 }
 
-                if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
+                if (is_curator || !curated_pkg || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
                   ensureCoreData(the_pkg, json.packageHeader)
 
-                  if ( the_pkg.tipps?.size() > 0 ) {
+                  if (the_pkg.tipps?.size() > 0) {
                     existing_tipps = the_pkg.tipps*.id
                     log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
                   }
@@ -839,34 +815,33 @@ class IntegrationController {
                     def valid_ti = TitleInstance.validateDTO(tipp.title);
                     valid &= valid_ti
 
-                    if ( !valid_ti ) {
+                    if (!valid_ti) {
                       log.warn("Not valid after title validation ${tipp.title}");
                       errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
-                    }
-                    else {
+                    } else {
                       try {
                         def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-                        if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+                        if (ti?.id && !ti.hasErrors() && (tipp.title.internalId == null)) {
 
                           ensureCoreData(ti, tipp.title)
                           tipp.title.internalId = ti.id;
-                        }
-                        else {
-                          ti.discard()
+                        } else {
+                          if (ti!=null)
+                            ti.discard()
                           valid_ti = null
                           valid = false
                           errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'data': tipp])
                         }
                       }
                       catch (grails.validation.ValidationException ve) {
-                        log.error("ValidationException attempting to cross reference title",ve);
+                        log.error("ValidationException attempting to cross reference title", ve);
                         valid_ti = null
                         valid = false
                         errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
                       }
 
-                      if ( valid_ti && tipp.title.internalId == null ) {
+                      if (valid_ti && tipp.title.internalId == null) {
                         log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
                         valid = false
                         errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
@@ -876,12 +851,12 @@ class IntegrationController {
                     def valid_plt = Platform.validateDTO(tipp.platform);
                     valid &= valid_plt;
 
-                    if ( !valid_plt ) {
+                    if (!valid_plt) {
                       log.warn("Not valid after platform validation ${tipp.platform}");
                       errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
                     }
 
-                    if ( valid ) {
+                    if (valid) {
 
                       def pl = null
                       def pl_id
@@ -891,30 +866,28 @@ class IntegrationController {
                         // Not in cache.
                         pl = Platform.upsertDTO(tipp.platform, user);
 
-                        if(pl){
+                        if (pl) {
                           platform_cache[tipp.platform.name] = pl.id
 
                           ensureCoreData(pl, tipp.platform)
-                        }else{
+                        } else {
                           log.error("Could not find/create ${tipp.platform}")
                           errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
                           valid = false
                         }
                       }
 
-                      if ( pl && ( tipp.platform.internalId == null ) ) {
+                      if (pl && (tipp.platform.internalId == null)) {
                         tipp.platform.internalId = pl.id;
-                      }
-                      else {
+                      } else {
                         log.warn("No platform arising from ${tipp.platform}");
                       }
                     }
-        //
-        //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
-                    if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-                      tipp.package = [ internalId: the_pkg.id ]
-                    }
-                    else {
+                    //
+                    //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+                    if ((tipp.package == null) && (the_pkg.id)) {
+                      tipp.package = [internalId: the_pkg.id]
+                    } else {
                       log.warn("No package");
                       errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
                       valid = false
@@ -925,8 +898,7 @@ class IntegrationController {
                     }
                     job.setProgress(idx, json.tipps.size() * 2)
                   }
-                }
-                else{
+                } else {
                   valid = false
                   log.warn("Package update denied!")
                   job_result.result = 'ERROR'
@@ -934,43 +906,42 @@ class IntegrationController {
                   return job_result
                 }
 
-        //        cleanUpGorm()
+                //        cleanUpGorm()
 
-                int tippctr=0;
-                if ( valid ) {
+                int tippctr = 0;
+                if (valid) {
                   // If valid so far, validate tipps
                   log.debug("Validating tipps [${tippctr++}]");
                   json.tipps.eachWithIndex { tipp, idx ->
                     def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
 
-                    if ( validation_result && !validation_result.valid ) {
+                    if (validation_result && !validation_result.valid) {
                       log.debug("TIPP Validation failed on ${tipp}")
                       valid = false
                       errors.add(['code': 400, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
                     }
-                    
+
                     if (idx % 50 == 0) {
                       cleanUpGorm()
                     }
                   }
-                }
-                else {
+                } else {
                   log.warn("Not validating tipps - failed pre validation")
                 }
 
-                if ( valid ) {
+                if (valid) {
                   log.debug("\n\nupsert tipp data\n\n")
-                  tippctr=0
+                  tippctr = 0
 
                   def tipps_to_delete = existing_tipps.clone()
-                  def status_current = RefdataCategory.lookup('KBComponent.Status','Current')
+                  def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
                   def tipp_fails = 0
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
-                    
+
                     log.debug("Upsert tipp [${tippctr}] ${tipp}")
                     def upserted_tipp = null
 
@@ -980,7 +951,7 @@ class IntegrationController {
                       upserted_tipp = upserted_tipp.merge(flush: true)
                     }
                     catch (grails.validation.ValidationException ve) {
-                      log.error("ValidationException attempting to cross reference TIPP",ve);
+                      log.error("ValidationException attempting to cross reference TIPP", ve);
                       valid = false
                       tipp_fails++
                       errors.add(['code': 400, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
@@ -994,7 +965,7 @@ class IntegrationController {
                       upserted_tipp.discard()
                     }
 
-                    if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
+                    if (existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id)) {
                       log.debug("Existing TIPP matched!")
                       tipps_to_delete.remove(upserted_tipp.id)
                     }
@@ -1008,38 +979,37 @@ class IntegrationController {
                   if (!valid) {
                     job_result.result = 'ERROR'
                     job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
-                  }
-                  else {
+                  } else {
 
                     def num_deleted_tipps = 0;
 
-                    if ( existing_tipps.size() > 0 ) {
+                    if (existing_tipps.size() > 0) {
 
 
                       tipps_to_delete.eachWithIndex { ttd, idx ->
 
                         def to_retire = TitleInstancePackagePlatform.get(ttd)
 
-                        if ( to_retire?.isCurrent() ) {
+                        if (to_retire?.isCurrent()) {
 
                           to_retire.retire()
                           to_retire.save(failOnError: true)
 
                           num_deleted_tipps++;
-                        }else{
+                        } else {
                           log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
                         }
 
-                        if ( idx % 50 == 0 ) {
+                        if (idx % 50 == 0) {
                           cleanUpGorm()
                         }
                       }
-                      if( num_deleted_tipps > 0 ) {
+                      if (num_deleted_tipps > 0) {
                         ReviewRequest.raise(
-                            the_pkg,
-                            "TIPPs retired.",
-                            "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
-                            user
+                          the_pkg,
+                          "TIPPs retired.",
+                          "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
+                          user
                         )
                       }
                     }
@@ -1047,34 +1017,32 @@ class IntegrationController {
                     job_result.result = 'OK'
                     job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
 
-                    if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+                    if (the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
                       the_pkg.lastUpdateComment = job_result.message
                     }
                     job_result.pkgId = the_pkg.id
                     job_result.uuid = the_pkg.uuid
-                    log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
+                    log.debug("Elapsed tipp processing time: ${System.currentTimeMillis() - tipp_upsert_start_time} for ${tippctr} records")
                   }
-                }
-                else {
+                } else {
                   job_result.result = 'ERROR'
                   job_result.message = "Package ${json.packageHeader.name} was created, but tipps have not been loaded because of validation errors!"
                   log.warn("Not loading tipps - failed validation")
                 }
-              }else{
+              } else {
                 job_result.result = 'ERROR'
                 errors.add(['code': 400, 'message': "Package could not be matched/created!"])
               }
             }
             catch (Exception e) {
-              log.error("Package Crossref failed with Exception",e)
+              log.error("Package Crossref failed with Exception", e)
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
-              errors.add([code:500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
+              errors.add([code: 500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
             }
             cleanUpGorm()
           }
-        }
-        else {
+        } else {
           log.debug("Package validation failed!")
           job_result.result = 'ERROR'
           job_result.message = "Package validation failed!"
@@ -1094,12 +1062,10 @@ class IntegrationController {
 
       if (async == false) {
         result = background_job.get()
-      }
-      else {
+      } else {
         result.job_id = background_job.id
       }
-    }
-    else {
+    } else {
       log.debug("Not ingesting package without name!")
       result.result = "ERROR"
       result.errors = []
@@ -1112,26 +1078,26 @@ class IntegrationController {
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferencePlatform() {
-    def result = [ 'result' : 'OK' ]
+    def result = ['result': 'OK']
     def created = false
     def platformJson = request.JSON
     User user = springSecurityService.currentUser
 
     log.debug("crossReferencePlatform - ${platformJson}")
-    if ( ( platformJson.platformUrl ) &&
-         ( platformJson.platformUrl.trim().length() > 0 ) &&
-         ( platformJson.platformName ) &&
-         ( platformJson.platformName.trim().length() > 0 ) ) {
+    if ((platformJson.platformUrl) &&
+      (platformJson.platformUrl.trim().length() > 0) &&
+      (platformJson.platformName) &&
+      (platformJson.platformName.trim().length() > 0)) {
       def p = Platform.findByPrimaryUrl(platformJson.platformUrl)
 
-      if ( p == null ) {
+      if (p == null) {
 
         // Attempt normname lookup.
-        p = Platform.findByNormname( Platform.generateNormname (platformJson.platformName) )
+        p = Platform.findByNormname(Platform.generateNormname(platformJson.platformName))
 
         if (!p) {
           try {
-            p = new Platform(primaryUrl:platformJson.platformUrl, name:platformJson.platformName, uuid: platformJson.uuid?.trim()?.size() > 0 ? platformJson.uuid : null).save(flush:true, failOnError:true)
+            p = new Platform(primaryUrl: platformJson.platformUrl, name: platformJson.platformName, uuid: platformJson.uuid?.trim()?.size() > 0 ? platformJson.uuid : null).save(flush: true, failOnError: true)
             created = true
           }
           catch (grails.validation.ValidationException ve) {
@@ -1144,40 +1110,37 @@ class IntegrationController {
       if (p) {
         log.debug("created or looked up platform ${p}!")
 
-        setAllRefdata ([
+        setAllRefdata([
           'software', 'service'
         ], platformJson, p)
         ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
 
         if (platformJson.provider) {
-          def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
+          def prov = Org.findByNormname(Org.generateNormname(platformJson.provider))
           if (prov) {
             log.debug("Adding Provider ${prov} to platform ${p}!")
             p.provider = prov
-          }
-          else {
+          } else {
             log.debug("No provider found for ${platformJson.provider}!")
           }
         }
 
-        p.save(flush:true)
+        p.save(flush: true)
 
         // Add the core data.
         ensureCoreData(p, platformJson)
 
-  //      if ( changed ) {
-  //        p.save(flush:true, failOnError:true);
-  //      }
+        //      if ( changed ) {
+        //        p.save(flush:true, failOnError:true);
+        //      }
         if (created) {
           result.message = "Created platform ${p}"
-        }
-        else {
+        } else {
           result.message = "Looked up platform ${p}"
         }
 
         result.platformId = p.id;
-      }
-      else {
+      } else {
         log.debug("No platform matched for ${platformJson}")
         result.message = "Could not crossreference platform ${platformJson}"
         result.result = 'ERROR'
@@ -1186,7 +1149,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  private static boolean setAllRefdata (propNames, data, target, boolean createNew = false) {
+  private static boolean setAllRefdata(propNames, data, target, boolean createNew = false) {
     boolean changed = false
     propNames.each { String prop ->
       changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop, createNew)
@@ -1196,13 +1159,13 @@ class IntegrationController {
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferenceLicense() {
-    def result = [ 'result' : 'OK' ]
+    def result = ['result': 'OK']
 
     // Add the license.
     def data = request.JSON
     if (data && data.name) {
       // Use the name to either match or create a Licence.
-      License l = License.findOrCreateByName( License.generateNormname (data.name) ) ?: new License (name: data.name)
+      License l = License.findOrCreateByName(License.generateNormname(data.name)) ?: new License(name: data.name)
 
       // Update the properties on the license.
       l.with {
@@ -1211,7 +1174,7 @@ class IntegrationController {
         summaryStatement = data.summaryStatement
       }
 
-      setAllRefdata ([
+      setAllRefdata([
         'type'
       ], data, l)
 
@@ -1231,13 +1194,11 @@ class IntegrationController {
    *
    *  Cross reference record::
    *
-   *  {
-   *    'title':'the_title',
+   *{*    'title':'the_title',
    *    'publisher':'the_publisher',
    *    'identifiers':[
-   *      {type:'namespace',value:'value'},
-   *      {type:'isbn', value:'1234-5678'}
-   *    ]
+   *{type:'namespace',value:'value'},
+   *{type:'isbn', value:'1234-5678'}*    ]
    *    'type':'Serial'|'Monograph',
    *    'variantNames':[
    *      'Array Of Strings - one for each variant name'
@@ -1249,8 +1210,7 @@ class IntegrationController {
    *    'status':'the_publisher',
    *    'historyEvents':[
    *    ]
-   *  }
-   */
+   *}*/
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
@@ -1258,13 +1218,12 @@ class IntegrationController {
     def async = params.async ? true : false
     def result
 
-    if(org.grails.web.json.JSONArray != rjson.getClass()){
+    if (org.grails.web.json.JSONArray != rjson.getClass()) {
 
       result = crossReferenceSingleTitle(rjson, user.id)
 
       cleanUpGorm()
-    }
-    else {
+    } else {
       log.debug("Starting crossReferenceTitle Job")
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
@@ -1273,15 +1232,15 @@ class IntegrationController {
 
         job_result.results = []
 
-        for (e in json ) {
+        for (e in json) {
 
-          if ( Thread.currentThread().isInterrupted() ) {
+          if (Thread.currentThread().isInterrupted()) {
             log.debug("Job cancelling ..")
             job_result.status = "cancelled"
             break;
           }
 
-          job_result.results <<  crossReferenceSingleTitle(e, user.id)
+          job_result.results << crossReferenceSingleTitle(e, user.id)
 
           ctr++
           job.setProgress(ctr, json.size())
@@ -1298,10 +1257,9 @@ class IntegrationController {
       background_job.description = "Title CrossRef"
       background_job.startTime = new Date()
 
-      if ( async == false) {
+      if (async == false) {
         result = background_job.get()
-      }
-      else {
+      } else {
         result.job_id = background_job.id
       }
     }
@@ -1311,265 +1269,266 @@ class IntegrationController {
 
   private crossReferenceSingleTitle(Object titleObj, userid) {
 
-    def result = [ 'result' : 'OK' ]
+    def result = ['result': 'OK']
 
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
 
-    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
+    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.name},${titleObj.identifiers}},...)");
 
-        TitleInstance.withNewSession {
-          User user = User.get(userid)
+    TitleInstance.withNewSession {
+      User user = User.get(userid)
 
-          try {
-            def title = titleLookupService.find(
-              titleObj.name,
-              titleObj.publisher,
-              titleObj.identifiers,
-              user,
-              null,
-              titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-              titleObj.uuid
-            );  // project
+      try {
+        def title = titleLookupService.find(
+          titleObj.name,
+          titleObj.publisher,
+          titleObj.identifiers,
+          user,
+          null,
+          titleObj.type == 'Serial' ? 'org.gokb.cred.JournalInstance' :
+            (titleObj.type == 'Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+          titleObj.uuid
+        );  // project
 
-            if ( title && !title.hasErrors() ) {
+        if (title && !title.hasErrors()) {
 
-      //        if ( titleObj.variantNames?.size() > 0 ) {
-      //          titleObj.variantNames.each { vn ->
-      //            log.debug("Ensure variant name ${vn}");
-      //            title.addVariantTitle(vn);
-      //          }
-      //        }
+          //        if ( titleObj.variantNames?.size() > 0 ) {
+          //          titleObj.variantNames.each { vn ->
+          //            log.debug("Ensure variant name ${vn}");
+          //            title.addVariantTitle(vn);
+          //          }
+          //        }
 
-              def title_changed = false;
+          def title_changed = false;
 
-              if ( titleObj.imprint ) {
-                if ( title.imprint?.name == titleObj.imprint ) {
-                  // Imprint already set
-                }
-                else {
-                  def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name:titleObj.imprint).save(flush:true, failOnError:true);
-                  title.imprint = imprint;
-                  title_changed = true
-                }
-              }
+          if (titleObj.imprint) {
+            if (title.imprint?.name == titleObj.imprint) {
+              // Imprint already set
+            } else {
+              def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name: titleObj.imprint).save(flush: true, failOnError: true);
+              title.imprint = imprint;
+              title_changed = true
+            }
+          }
 
-              // Add the core data.
-              ensureCoreData(title, titleObj)
+          // Add the core data.
+          ensureCoreData(title, titleObj)
 
-              title_changed |= setAllRefdata ([
-                    'OAStatus', 'medium',
-                    'pureOA', 'continuingSeries',
-                    'reasonRetired'
-              ], titleObj, title)
+          title_changed |= setAllRefdata([
+            'OAStatus', 'medium',
+            'pureOA', 'continuingSeries',
+            'reasonRetired'
+          ], titleObj, title)
 
-              if (titleObj.type == 'Serial') {
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
-              }
+          if (titleObj.type == 'Serial') {
+            title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
+            title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
+          }
 
-              if ( titleObj.historyEvents?.size() > 0 ) {
+          if (titleObj.historyEvents?.size() > 0) {
 
-                titleObj.historyEvents.each { jhe ->
-                      // 1971-01-01 00:00:00.0
-                  log.debug("Handling title history");
-                  try {
-                    def inlist = []
-                    def outlist = []
-                    def cont = true
+            titleObj.historyEvents.each { jhe ->
+              // 1971-01-01 00:00:00.0
+              log.debug("Handling title history");
+              try {
+                def inlist = []
+                def outlist = []
+                def cont = true
 
-                    jhe.from.each { fhe ->
+                jhe.from.each { fhe ->
 
-                      def p = titleLookupService.find(
-                        fhe.title,
-                        null,
-                        fhe.identifiers,
-                        user,
-                        null,
-                        titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                          (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                        fhe.uuid
-                      );
+                  def p = titleLookupService.find(
+                    fhe.title,
+                    null,
+                    fhe.identifiers,
+                    user,
+                    null,
+                    titleObj.type == 'Serial' ? 'org.gokb.cred.JournalInstance' :
+                      (titleObj.type == 'Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                    fhe.uuid
+                  );
 
-                      if ( p && !p.hasErrors() ) {
-                        ensureCoreData(p, fhe)
-                        inlist.add(p);
-                      }
-                      else {
-                        cont = false;
-                      }
-                    }
-
-                    jhe.to.each { fhe ->
-
-                      def p =  titleLookupService.find(
-                        fhe.title,
-                        null,
-                        fhe.identifiers,
-                        user,
-                        null,
-                        titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                          (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                        fhe.uuid
-                      );
-
-                      if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                        ensureCoreData(p, fhe)
-                        outlist.add(p);
-                      }
-                      else {
-                        cont = false;
-                      }
-                    }
-
-                    def first = true;
-                    // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
-                    def che_check_qry_sw  = new StringWriter();
-                    def qparams = []
-
-                    che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
-
-                    inlist.each { fhe ->
-                      if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-                      che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-                      qparams.add(fhe)
-                    }
-
-                    outlist.each { fhe ->
-                      if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-                      che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-                      qparams.add(fhe)
-                    }
-
-                    def che_check_qry = che_check_qry_sw.toString()
-
-                    log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
-
-                    def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
-
-                    if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
-                      cont = false;
-
-                    if ( cont ) {
-
-                      def he = new ComponentHistoryEvent()
-
-                      if ( jhe.date ) {
-                        he.eventDate = sdf.parse(jhe.date);
-                      }
-
-                      he.save(flush:true, failOnError:true);
-
-                      inlist.each {
-                        def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
-                        hep.save(flush:true, failOnError:true);
-                      }
-
-                      outlist.each {
-                        def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
-                        hep.save(flush:true, failOnError:true);
-                      }
-                    }
-                    else {
-                      // Matched an existing TH event, not creating a duplicate
-                    }
-                  }
-                  catch ( grails.validation.ValidationException veh ) {
-                        log.error("Problem processing title history",veh);
-                        result.result="ERROR"
-                        result.errors=veh.errors
-                        result.message="The title was created, but there was an error processing the title history of '${title.name}'."
-                        result.baddata=titleObj
-                  }
-                  catch ( Exception eh ) {
-                        log.error("Problem processing title history",eh);
-                        result.result="ERROR"
-                        result.message="The title was created, but there was an error processing the title history of '${title.name}'."
-                        result.baddata=titleObj
+                  if (p && !p.hasErrors()) {
+                    ensureCoreData(p, fhe)
+                    inlist.add(p);
+                  } else {
+                    cont = false;
                   }
                 }
-              }
-              if( title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph') ){
 
-                log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
-                def mg_change = addMonographFields(title, titleObj, sdf)
+                jhe.to.each { fhe ->
 
-                // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
-                if(mg_change){
-                  title_changed = true
+                  def p = titleLookupService.find(
+                    fhe.title,
+                    null,
+                    fhe.identifiers,
+                    user,
+                    null,
+                    titleObj.type == 'Serial' ? 'org.gokb.cred.JournalInstance' :
+                      (titleObj.type == 'Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                    fhe.uuid
+                  );
+
+                  if (p && !p.hasErrors() && !inlist.contains(p)) {
+                    ensureCoreData(p, fhe)
+                    outlist.add(p);
+                  } else {
+                    cont = false;
+                  }
+                }
+
+                def first = true;
+                // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
+                def che_check_qry_sw = new StringWriter();
+                def qparams = []
+
+                che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
+
+                inlist.each { fhe ->
+                  if (first) {
+                    first = false;
+                  } else {
+                    che_check_qry_sw.write(' AND ')
+                  }
+
+                  che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                  qparams.add(fhe)
+                }
+
+                outlist.each { fhe ->
+                  if (first) {
+                    first = false;
+                  } else {
+                    che_check_qry_sw.write(' AND ')
+                  }
+
+                  che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+                  qparams.add(fhe)
+                }
+
+                def che_check_qry = che_check_qry_sw.toString()
+
+                log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
+
+                def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
+
+                if (qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0)
+                  cont = false;
+
+                if (cont) {
+
+                  def he = new ComponentHistoryEvent()
+
+                  if (jhe.date) {
+                    he.eventDate = sdf.parse(jhe.date);
+                  }
+
+                  he.save(flush: true, failOnError: true);
+
+                  inlist.each {
+                    def hep = new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'in');
+                    hep.save(flush: true, failOnError: true);
+                  }
+
+                  outlist.each {
+                    def hep = new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'out');
+                    hep.save(flush: true, failOnError: true);
+                  }
+                } else {
+                  // Matched an existing TH event, not creating a duplicate
                 }
               }
-
-              addPublisherHistory(title, titleObj.publisher_history, sdf)
-
-              if (!result.message) {
-                result.message = "Created/looked up title ${title.id}"
+              catch (grails.validation.ValidationException veh) {
+                log.error("Problem processing title history", veh);
+                result.result = "ERROR"
+                result.errors = veh.errors
+                result.message = "The title was created, but there was an validation error in processing the title history of '${title.name}'."
+                result.baddata = titleObj
               }
-              result.cls = title.class.name
-              result.titleId = title.id
-              result.uuid = title.uuid
+              catch (Exception eh) {
+                log.error("Problem processing title history", eh);
+                result.result = "ERROR"
+                result.message = "The title was created, but there was an error processing the title history of '${title.name}'."
+                result.baddata = titleObj
+              }
             }
-            else if (title){
-              result.result="ERROR"
-              result.baddata=titleObj
-              log.error("Cross Reference Title failed: ${titleObj}");
-              result.errors=title.errors
+          }
+          if (title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph')) {
 
-              if ( title?.id ) {
-                result.titleId=title.id
-                result.uuid=title.uuid
-                result.message="Title ${title.id} was matched, but could not be updated due to existing errors"
-                log.error("CrossReference Matched existing title (${title.id}) with errors: ${title.errors}")
-              }
-              else {
-                result.message = "Cross Reference of title ${titleObj.name} failed";
-              }
-              // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
-      //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
-      //               // Event callback closure
-      //         }
-            }
-            else {
-              result.result="ERROR"
-              result.baddata=titleObj
-              result.message = "There was an error while looking up title ${titleObj.name}. Please check the database for title IDs.";
+            log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
+            def mg_change = addMonographFields(title, titleObj, sdf)
+
+            // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
+            if (mg_change) {
+              title_changed = true
             }
           }
-          catch (grails.validation.ValidationException ve) {
-            log.error("ValidationException attempting to cross reference title",ve);
-            result.result="ERROR"
-            result.message="Validation of title '${titleObj.name}' failed."
-            result.errors=ve.errors
-            result.baddata=titleObj
-            log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+
+          addPublisherHistory(title, titleObj.publisher_history, sdf)
+
+          if (!result.message) {
+            result.message = "Created/looked up title ${title.id}"
           }
-          catch ( Exception e ) {
-            log.error("Exception attempting to cross reference title",e);
-            if (result.result != 'ERROR') {
-              result.result="ERROR"
-              result.message="There was an error trying to reference title '${titleObj.name}'"
-              result.baddata=titleObj
-              log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
-            }
+          result.cls = title.class.name
+          result.titleId = title.id
+          result.uuid = title.uuid
+        } else if (title) {
+          result.result = "ERROR"
+          result.baddata = titleObj
+          log.error("Cross Reference Title failed: ${titleObj}");
+          result.errors = title.errors
+
+          if (title?.id) {
+            result.titleId = title.id
+            result.uuid = title.uuid
+            result.message = "Title ${title.id} was matched, but could not be updated due to existing errors"
+            log.error("CrossReference Matched existing title (${title.id}) with errors: ${title.errors}")
+          } else {
+            result.message = "Cross Reference of title ${titleObj.name} failed";
           }
-          finally {
-            log.debug("Result of cross ref title: ${result}");
-          }
+          // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
+          //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
+          //               // Event callback closure
+          //         }
+        } else {
+          result.result = "ERROR"
+          result.baddata = titleObj
+          result.message = "There was an error while looking up title ${titleObj.name}. Please check the database for title IDs.";
         }
+      }
+      catch (grails.validation.ValidationException ve) {
+        log.error("ValidationException attempting to cross reference title", ve);
+        result.result = "ERROR"
+        result.message = "${titleObj.name}: Validation of  ${ve.errors.target.namespace}: ${ve.errors.target.value}  failed!"
+        result.errors = ve.getErrors()
+        result.baddata = titleObj
+        log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+      }
+      catch (Exception e) {
+        log.error("Exception attempting to cross reference title", e);
+        if (result.result != 'ERROR') {
+          result.result = "ERROR"
+          result.message = "There was an error trying to reference title '${titleObj.name}'"
+          result.baddata = titleObj
+          log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+        }
+      }
+      finally {
+        log.debug("Result of cross ref title: ${result}");
+      }
+    }
 
     result
   }
 
-  private static addPublisherHistory ( TitleInstance ti, publishers, sdf) {
+  private static addPublisherHistory(TitleInstance ti, publishers, sdf) {
 
-    def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS","yyyy-MM-dd"]
+    def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS", "yyyy-MM-dd"]
 
     if (publishers && ti) {
 
       def publisher_combos = []
-      publisher_combos.addAll( ti.getCombosByPropertyName('publisher') )
+      publisher_combos.addAll(ti.getCombosByPropertyName('publisher'))
       String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
       String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
 
@@ -1585,15 +1544,15 @@ class IntegrationController {
         def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-        if(!publisher) {
+        if (!publisher) {
           publisher = Org.findByNormname(norm_pub_name)
         }
 
-        if(!publisher || publisher.status == status_deleted){
+        if (!publisher || publisher.status == status_deleted) {
           def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?", [variant_normname, status_deleted]);
 
-          if(candidate_orgs.size() == 1){
+          if (candidate_orgs.size() == 1) {
             publisher = candidate_orgs[0]
           }
         }
@@ -1603,7 +1562,7 @@ class IntegrationController {
           Date pub_add_sd = null
           Date pub_add_ed = null
 
-          if ( pub_to_add.startDate?.trim().size() > 0 ) {
+          if (pub_to_add.startDate?.trim().size() > 0) {
 
             sdfs.each { s ->
               if (!pub_add_sd) {
@@ -1618,7 +1577,7 @@ class IntegrationController {
             }
           }
 
-          if ( pub_to_add.endDate?.trim().size() > 0 ) {
+          if (pub_to_add.endDate?.trim().size() > 0) {
 
             sdfs.each { s ->
               if (!pub_add_ed) {
@@ -1634,16 +1593,14 @@ class IntegrationController {
           }
 
           boolean found = false
-          for ( int i=0; !found && i<publisher_combos.size(); i++) {
+          for (int i = 0; !found && i < publisher_combos.size(); i++) {
             Combo pc = publisher_combos[i]
             def idMatch = pc."${propName}".id == publisher.id
 
             if (idMatch) {
               if (pub_add_sd && pc.startDate && sdf.format(pub_add_sd) != sdf.format(pc.startDate)) {
-              }
-              else if (pub_add_ed && pc.endDate && sdf.format(pub_add_ed) != sdf.format(pc.endDate)) {
-              }
-              else {
+              } else if (pub_add_ed && pc.endDate && sdf.format(pub_add_ed) != sdf.format(pc.endDate)) {
+              } else {
                 found = true
               }
             }
@@ -1662,21 +1619,21 @@ class IntegrationController {
 
             if (propName == "toComponent") {
               combo = new Combo(
-                type            : (type),
-                status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                startDate       : pub_add_sd,
-                endDate         : pub_add_ed,
-                toComponent     : publisher,
-                fromComponent   : ti
+                type: (type),
+                status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                startDate: pub_add_sd,
+                endDate: pub_add_ed,
+                toComponent: publisher,
+                fromComponent: ti
               )
             } else {
               combo = new Combo(
-                type            : (type),
-                status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                startDate       : pub_add_sd,
-                endDate         : pub_add_ed,
-                fromComponent   : publisher,
-                toComponent     : ti
+                type: (type),
+                status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                startDate: pub_add_sd,
+                endDate: pub_add_ed,
+                fromComponent: publisher,
+                toComponent: ti
               )
             }
 
@@ -1689,10 +1646,10 @@ class IntegrationController {
 //            publisher.save()
 
             if (combo) {
-              combo.save(flush:true, failOnError:true)
+              combo.save(flush: true, failOnError: true)
 
               // Add the combo to our list to avoid adding duplicates.
-              publisher_combos.add ( combo )
+              publisher_combos.add(combo)
 
               log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
                 (combo.startDate ? ' from ' + combo.startDate : '') +
@@ -1712,16 +1669,16 @@ class IntegrationController {
     }
   }
 
-  private static addMonographFields ( BookInstance bi, titleObj, sdf ) {
+  private static addMonographFields(BookInstance bi, titleObj, sdf) {
 
     def book_changed = false
 
-    def bookStringAttrs = ["editionNumber","editionDifferentiator",
-                            "editionStatement","volumeNumber",
-                            "summaryOfContent","firstAuthor","firstEditor"]
+    def bookStringAttrs = ["editionNumber", "editionDifferentiator",
+                           "editionStatement", "volumeNumber",
+                           "summaryOfContent", "firstAuthor", "firstEditor"]
 
     bookStringAttrs.each {
-      if(titleObj[it] && titleObj[it].toString().trim().length() > 0){
+      if (titleObj[it] && titleObj[it].toString().trim().length() > 0) {
         book_changed |= ClassUtils.setStringIfDifferent(bi, it, titleObj[it])
       }
     }
@@ -1729,8 +1686,8 @@ class IntegrationController {
     book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint', sdf)
     book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstOnline, bi, 'dateFirstOnline', sdf)
 
-    if ( book_changed ) {
-      bi.save(flush: true, failOnError:true)
+    if (book_changed) {
+      bi.save(flush: true, failOnError: true)
     }
 
     book_changed
@@ -1738,25 +1695,23 @@ class IntegrationController {
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def getJobInfo() {
-    def result = [ 'result' : 'OK', 'params' : params ]
+    def result = ['result': 'OK', 'params': params]
     Job job = concurrencyManagerService.jobs.containsKey(params.int('id')) ? concurrencyManagerService.jobs[params.int('id')] : null
 
-    if ( job ) {
+    if (job) {
       log.debug("${job}")
       result.description = job.description
       result.startTime = job.startTime
 
-      if ( job.endTime ) {
+      if (job.endTime) {
         result.finished = true
         result.endTime = job.endTime
         result.job_result = job.get()
-      }
-      else {
+      } else {
         result.finished = false
         result.progress = job.progress
       }
-    }
-    else {
+    } else {
       result.result = "ERROR"
       result.message = "Could not find job with ID ${params.id}."
     }
@@ -1774,25 +1729,25 @@ class IntegrationController {
     def title_file = request.getFile("macros")?.inputStream
     char del = '\t'
     char quote = '"'
-    def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), del, quote )
+    def r = new CSVReader(new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8')), del, quote)
 
-    def col_positions = [ 'id':0, 'name':1, 'desc':2, 'transformations':3 ]
-    String [] nl = r.readNext()
+    def col_positions = ['id': 0, 'name': 1, 'desc': 2, 'transformations': 3]
+    String[] nl = r.readNext()
 
     int rowctr = 0
     def ret = [:]
-    while ( nl != null) {
-      rowctr ++
+    while (nl != null) {
+      rowctr++
       try {
-        if (nl.length >= col_positions.size() && cleanData (nl[col_positions.'name']) ) {
+        if (nl.length >= col_positions.size() && cleanData(nl[col_positions.'name'])) {
 
           String name = cleanData(nl[col_positions.'name'])
-          Macro m = Macro.findByNormname( Macro.generateNormname (name) ) ?: new Macro()
+          Macro m = Macro.findByNormname(Macro.generateNormname(name)) ?: new Macro()
 
           // Update
           m.name = name
-          m.description = cleanData (nl[col_positions.'desc'])
-          m.refineTransformations = cleanData (nl[col_positions.'transformations'])
+          m.description = cleanData(nl[col_positions.'desc'])
+          m.refineTransformations = cleanData(nl[col_positions.'transformations'])
 
           // Save to DB
           m.save(flush: true, failOnError: true)
@@ -1802,8 +1757,8 @@ class IntegrationController {
           log.error("Unable to parse row ${rowctr}..")
           ret["Row ${rowctr}"] = "Failed to parse"
         }
-      } catch ( Exception e ) {
-        log.error("Unable to process row ${rowctr}..",e)
+      } catch (Exception e) {
+        log.error("Unable to process row ${rowctr}..", e)
         ret["Row ${rowctr}"] = "Exception thrown ${e}"
       }
       nl = r.readNext()
@@ -1816,57 +1771,56 @@ class IntegrationController {
     def title_file = request.getFile("titleFile")?.inputStream
     char tab = '\t'
     char quote = '"'
-    def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), tab,quote )
+    def r = new CSVReader(new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8')), tab, quote)
 
-    def col_positions = [ 'identifier.pissn':-1, 'identifier.eissn':-1, 'title':-1 ]
+    def col_positions = ['identifier.pissn': -1, 'identifier.eissn': -1, 'title': -1]
 
-    String [] header = r.readNext()
+    String[] header = r.readNext()
     int ctr = 0
     header.each {
-      col_positions [ it.toLowerCase() ] = ctr++
+      col_positions[it.toLowerCase()] = ctr++
     }
 
-    if ( ( col_positions.'title' != -1 ) &&
-         ( ( col_positions.'identifier.pissn' != -1 ) ||
-           ( col_positions.'identifier.eissn' != -1 ) ) ) {
+    if ((col_positions.'title' != -1) &&
+      ((col_positions.'identifier.pissn' != -1) ||
+        (col_positions.'identifier.eissn' != -1))) {
 
       // So long as we have at least one identifier...
-      String [] nl = r.readNext()
+      String[] nl = r.readNext()
 
       int rowctr = 0;
 
-      while ( nl != null ) {
+      while (nl != null) {
         try {
           KBComponent.withNewTransaction() {
 
             def candidate_identifiers = []
 
-            if ( ( col_positions.'identifier.pissn' != -1 ) &&
-                 ( nl[col_positions.'identifier.pissn']?.length() > 0 ) &&
-                 ( nl[col_positions.'identifier.pissn'].toLowerCase() != 'null' ) ) {
-              candidate_identifiers.add([type:'issn', value:nl[col_positions.'identifier.pissn']]);
+            if ((col_positions.'identifier.pissn' != -1) &&
+              (nl[col_positions.'identifier.pissn']?.length() > 0) &&
+              (nl[col_positions.'identifier.pissn'].toLowerCase() != 'null')) {
+              candidate_identifiers.add([type: 'issn', value: nl[col_positions.'identifier.pissn']]);
             }
 
-            if ( ( col_positions.'identifier.eissn' != -1 ) &&
-                 ( nl[col_positions.'identifier.eissn']?.length() > 0 ) &&
-                 ( nl[col_positions.'identifier.eissn'].toLowerCase() != 'null' ) ) {
-              candidate_identifiers.add([type:'eissn', value:nl[col_positions.'identifier.eissn']]);
+            if ((col_positions.'identifier.eissn' != -1) &&
+              (nl[col_positions.'identifier.eissn']?.length() > 0) &&
+              (nl[col_positions.'identifier.eissn'].toLowerCase() != 'null')) {
+              candidate_identifiers.add([type: 'eissn', value: nl[col_positions.'identifier.eissn']]);
             }
 
-            if ( candidate_identifiers.size() > 0 ) {
+            if (candidate_identifiers.size() > 0) {
               log.debug("Looking up ${candidate_identifiers} - ${nl[col_positions.'title']}");
-              def existing_component = titleLookupService.find (nl[col_positions.'title'], null, candidate_identifiers)
-            }
-            else {
+              def existing_component = titleLookupService.find(nl[col_positions.'title'], null, candidate_identifiers)
+            } else {
               log.debug("No candidate identifiers: ${nl}");
             }
           }
         }
-        catch ( Exception e ) {
-          log.error("Unable to process..",e);
+        catch (Exception e) {
+          log.error("Unable to process..", e);
         }
 
-        if ( rowctr++ > 100 ) {
+        if (rowctr++ > 100) {
           log.debug("CleanUpGorm..");
           rowctr = 0;
           cleanUpGorm()
@@ -1876,7 +1830,7 @@ class IntegrationController {
       }
     }
     log.debug("Done");
-    redirect(action:'index');
+    redirect(action: 'index');
   }
 
   private def cleanUpGorm() {

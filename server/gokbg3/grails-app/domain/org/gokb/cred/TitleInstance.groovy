@@ -573,10 +573,10 @@ class TitleInstance extends KBComponent {
    */
   @Transient
   public static boolean validateDTO(titleDTO) {
-    def result = true;
-    result &= titleDTO != null
-    result &= titleDTO.name != null
-    result &= titleDTO.identifiers != null
+    def valid = true;
+    valid &= titleDTO != null
+    valid &= titleDTO.name != null
+    valid &= titleDTO.identifiers != null
 
     titleDTO.identifiers?.each { idobj ->
       if (idobj.type && idobj.value) {
@@ -596,21 +596,21 @@ class TitleInstance extends KBComponent {
           }
           catch (grails.validation.ValidationException ve) {
             log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-            result = false
+            valid &= false
           }
         }
       }
       else {
         log.warn("Missing information in id object ${idobj}")
-        result = false
+        valid &= false
       }
     }
 
-    if ( !result ) {
+    if ( !valid ) {
       log.warn("Title Failed Validation ${titleDTO}");
     }
 
-    result;
+    return valid
   }
 
   @Transient
