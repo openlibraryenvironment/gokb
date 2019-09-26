@@ -827,7 +827,7 @@ class IntegrationController {
                           ensureCoreData(ti, tipp.title)
                           tipp.title.internalId = ti.id;
                         } else {
-                          if (ti!=null)
+                          if (ti != null)
                             ti.discard()
                           valid_ti = null
                           valid = false
@@ -1410,7 +1410,10 @@ class IntegrationController {
 
                 log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
 
-                def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
+                def qr = []
+                if (qparams.size() > 0) {
+                  qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams)
+                }
 
                 if (qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0)
                   cont = false;
