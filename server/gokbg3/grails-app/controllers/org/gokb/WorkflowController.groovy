@@ -966,11 +966,13 @@ class WorkflowController {
 
         old_ti.ids.each { old_id ->
 
+          def old_combo = Combo.findByFromComponentAndToComponent(old_ti,old_id)
+
           def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[old_id.id,new_ti.id,id_combo_type.id]);
 
           if ( !dupes || dupes.size() == 0 ){
             log.debug("Adding Identifier ${old_id} to ${new_ti}")
-            Combo new_id = new Combo(toComponent:old_id, fromComponent:new_ti, type:id_combo_type).save(flush:true, failOnError:true);
+            Combo new_id = new Combo(toComponent:old_id, fromComponent:new_ti, type:id_combo_type, status:old_combo.status).save(flush:true, failOnError:true);
           }else{
             log.debug("Identifier ${old_id} is already connected to ${new_ti}..")
           }
