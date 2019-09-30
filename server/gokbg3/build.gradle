@@ -117,7 +117,7 @@ dependencies {
 }
 
 bootRun {
-    jvmArgs('-Dspring.output.ansi.enabled=always','-Xmx4G')
+    jvmArgs = ['-Dspring.output.ansi.enabled=always','-Xmx2g']
     addResources = true
 }
 
