@@ -105,8 +105,8 @@ abstract class GOKbSyncBase extends Script {
         println("The provided config file does not include user credentials!")
         println("Please enter your credentials for ${targetBase}")
 
-        config.uploadUser: System.console().readLine ('Enter your username: ').toString(),
-        config.uploadPass: System.console().readPassword ('Enter your password: ').toString()
+        config.uploadUser = System.console().readLine ('Enter your username: ').toString()
+        config.uploadPass = System.console().readPassword ('Enter your password: ').toString()
       }
     }
     else {
