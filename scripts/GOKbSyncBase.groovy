@@ -85,16 +85,28 @@ abstract class GOKbSyncBase extends Script {
         sourceBase = config.sourceBase
       }
 
-      if (config.sourceContext) {
+      if (config.sourceContext != null) {
         sourceContext = config.sourceContext
       }
+
+      println("Using source ${sourceBase} with context path '${sourceContext}'")
 
       if (config.targetBase) {
         targetBase = config.targetBase
       }
 
-      if (config.targetContext) {
+      if (config.targetContext != null) {
         targetContext = config.targetContext
+      }
+
+      println("Using target ${targetBase} with context path '${targetContext}'")
+
+      if (!config.uploadUser || !config.uploadPass) {
+        println("The provided config file does not include user credentials!")
+        println("Please enter your credentials for ${targetBase}")
+
+        config.uploadUser = System.console().readLine ('Enter your username: ').toString()
+        config.uploadPass = System.console().readPassword ('Enter your password: ').toString()
       }
     }
     else {
@@ -118,7 +130,7 @@ abstract class GOKbSyncBase extends Script {
     cfg_file.delete()
     config.remove('deferred')
     
-    cfg_file << toJson(config)
+    cfg_file << prettyPrint(toJson(config))
   }
   
   protected cleanText(String text) {
@@ -174,7 +186,7 @@ abstract class GOKbSyncBase extends Script {
               result : "Failed on http request to source (see stack trace)",
               status : 'error'
             ]
-            println("ERROR: ${err.getStatus()} - ${err.getContentType() -- ${err.getData()}}")
+            println("ERROR: ${err.getStatus()} - ${err.getContentType()} -- ${err.getData()}")
           }
         }
       }
