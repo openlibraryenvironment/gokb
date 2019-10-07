@@ -1061,7 +1061,7 @@ class IntegrationController {
                     }
                     log.debug("Found ${num_removed_tipps} TIPPS to delete/retire from the matched package!")
                     job_result.result = 'OK'
-                    job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Retired/Deleted: ${num_removed_tipps})"
+                    job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired/Deleted: ${num_removed_tipps})"
 
                     if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
                       the_pkg.lastUpdateComment = job_result.message
