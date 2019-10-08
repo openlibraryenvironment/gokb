@@ -18,6 +18,7 @@ while ( moredata ) {
       def resourceFieldMap = addCoreItems ( data )
       
       resourceFieldMap['platformName'] = cleanText(data.name.text())
+      resourceFieldMap['name'] = cleanText(data.name.text())
       resourceFieldMap['platformUrl'] = cleanText(data.primaryUrl.text())
       
       

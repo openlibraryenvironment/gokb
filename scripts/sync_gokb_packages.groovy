@@ -56,7 +56,7 @@ while ( moredata ) {
           // Title.
           newtipp.title = addCoreItems ( xmltipp.title )
 
-          def type = cleanText(data.type?.text())
+          String type = "${cleanText(xmltipp.title.type?.text())}"
 
           if (!type || type == 'JournalInstance' || type == 'Serial') {
             newtipp.title.type = 'Serial'
