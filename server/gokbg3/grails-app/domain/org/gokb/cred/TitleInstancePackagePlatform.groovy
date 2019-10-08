@@ -164,8 +164,9 @@ class TitleInstancePackagePlatform extends KBComponent {
 //     result.title = tipp_fields.title
 //     result.hostPlatform = tipp_fields.hostPlatform
 //     result.pkg = tipp_fields.pkg
-    
-    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid).save(failOnError: true)
+    def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
+    def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) :null
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus).save(failOnError: true)
 
     if ( result ) {
       def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)

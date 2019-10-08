@@ -963,7 +963,11 @@ class IntegrationController {
                   tippctr=0
 
                   def tipps_to_delete = existing_tipps.clone()
+                  def num_removed_tipps = 0;
                   def status_current = RefdataCategory.lookup('KBComponent.Status','Current')
+                  def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+                  def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+                  def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
                   def tipp_fails = 0
@@ -984,19 +988,35 @@ class IntegrationController {
                       valid = false
                       tipp_fails++
                       errors.add(['code': 400, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
-                      upserted_tipp.discard()
+
+                      if (upserted_tipp)
+                        upserted_tipp.discard()
                     }
                     catch (Exception ge) {
                       log.error("Exception attempting to cross reference TIPP:", ge)
                       valid = false
                       tipp_fails++
                       errors.add(['code': 500, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'data': tipp])
-                      upserted_tipp.discard()
+
+                      if (upserted_tipp)
+                        upserted_tipp.discard()
                     }
 
                     if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
                       log.debug("Existing TIPP matched!")
                       tipps_to_delete.remove(upserted_tipp.id)
+                    }
+
+                    if ( upserted_tipp && upserted_tipp?.status != status_deleted && tipp.status == "Deleted" ) {
+                      upserted_tipp.deleteSoft()
+                      num_removed_tipps++;
+                    }
+                    else if ( upserted_tipp && upserted_tipp?.status != status_retired && tipp.status == "Retired" ) {
+                      upserted_tipp.retire()
+                      num_removed_tipps++;
+                    }
+                    else if ( upserted_tipp && upserted_tipp.status != status_current && tipp.status == "Current" ) {
+                      upserted_tipp.setActive()
                     }
 
                     if (idx % 50 == 0) {
@@ -1010,9 +1030,6 @@ class IntegrationController {
                     job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
                   }
                   else {
-
-                    def num_deleted_tipps = 0;
-
                     if ( existing_tipps.size() > 0 ) {
 
 
@@ -1021,11 +1038,10 @@ class IntegrationController {
                         def to_retire = TitleInstancePackagePlatform.get(ttd)
 
                         if ( to_retire?.isCurrent() ) {
-
                           to_retire.retire()
                           to_retire.save(failOnError: true)
 
-                          num_deleted_tipps++;
+                          num_removed_tipps++;
                         }else{
                           log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
                         }
@@ -1034,18 +1050,18 @@ class IntegrationController {
                           cleanUpGorm()
                         }
                       }
-                      if( num_deleted_tipps > 0 ) {
+                      if( num_removed_tipps > 0 ) {
                         ReviewRequest.raise(
                             the_pkg,
                             "TIPPs retired.",
-                            "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
+                            "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
                             user
                         )
                       }
                     }
-                    log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
+                    log.debug("Found ${num_removed_tipps} TIPPS to delete/retire from the matched package!")
                     job_result.result = 'OK'
-                    job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
+                    job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Newly Retired/Deleted: ${num_removed_tipps})"
 
                     if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
                       the_pkg.lastUpdateComment = job_result.message
