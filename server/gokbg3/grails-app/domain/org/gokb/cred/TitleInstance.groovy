@@ -572,13 +572,32 @@ class TitleInstance extends KBComponent {
    * }
    */
   @Transient
-  public static boolean validateDTO(titleDTO) {
-    def result = true;
-    result &= titleDTO != null
-    result &= titleDTO.name != null
-    result &= titleDTO.identifiers != null
+  public static def validateDTO(titleDTO) {
+    def result = ['valid':true, 'errors':[]]
+    def sdfs = [
+        "yyyy-MM-dd' 'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd"
+    ]
 
-    titleDTO.identifiers?.each { idobj ->
+    if (titleDTO == null) {
+      result.valid = false
+      result.errors.add("No title information given!")
+    }
+
+    if (titleDTO.name == null || !titleDTO.name.trim()) {
+      result.valid = false
+      result.errors.add("Missing title name!")
+      return result
+    }
+
+    if (titleDTO.identifiers == null ) {
+      result.valid = false
+      result.errors.add("Title has no identifiers!")
+      return result
+    }
+
+    titleDTO.identifiers.each { idobj ->
       if (idobj.type && idobj.value) {
         def found_ns = IdentifierNamespace.findAllByValue(idobj.type.toLowerCase())
         def final_val = idobj.value
@@ -596,13 +615,15 @@ class TitleInstance extends KBComponent {
           }
           catch (grails.validation.ValidationException ve) {
             log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-            result = false
+            result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
+            result.valid = false
           }
         }
       }
       else {
         log.warn("Missing information in id object ${idobj}")
-        result = false
+        result.errors.add("Missing information for identifier object ${idobj}!")
+        result.valid = false
       }
     }
 
@@ -697,8 +718,7 @@ class TitleInstance extends KBComponent {
 
       // not already a name
       // Make sure not already a variant name
-      def existing_variants = this.variantNames
-      if ( existing_variants.size() == 0 ) {
+      if ( this.variantNames?.findByNormVariantName(variant_normname) ) {
         KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
       }
       else {
