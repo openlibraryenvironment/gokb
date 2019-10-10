@@ -841,7 +841,7 @@ class IntegrationController {
 
                     if ( title_validation && !title_validation.valid ) {
                       log.warn("Not valid after title validation ${tipp.title}");
-                      errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid!" + "${validation_result.errors}", baddata: tipp.title, errors:title_validation.errors])
+                      errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid!" + "${title_validation.errors}", baddata: tipp.title, errors:title_validation.errors])
                     }
                     else {
                       try {
