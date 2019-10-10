@@ -844,6 +844,8 @@ class IntegrationController {
                       errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid!" + "${title_validation.errors}", baddata: tipp.title, errors:title_validation.errors])
                     }
                     else {
+                      def valid_ti = true
+                      
                       try {
                         def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
@@ -854,14 +856,14 @@ class IntegrationController {
                         } else {
                           if (ti != null)
                             ti.discard()
-                          valid_ti = null
+                          valid_ti = false
                           valid = false
                           errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'data': tipp])
                         }
                       }
                       catch (grails.validation.ValidationException ve) {
                         log.error("ValidationException attempting to cross reference title",ve);
-                        valid_ti = null
+                        valid_ti = false
                         valid = false
                         errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
                       }

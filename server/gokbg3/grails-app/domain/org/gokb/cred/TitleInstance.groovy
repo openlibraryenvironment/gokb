@@ -719,7 +719,7 @@ class TitleInstance extends KBComponent {
 
       // not already a name
       // Make sure not already a variant name
-      if ( this.variantNames?.findByNormVariantName(variant_normname) ) {
+      if ( !KBComponentVariantName.findByOwnerAndNormVariantName(this, variant_normname) ) {
         KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
       }
       else {
