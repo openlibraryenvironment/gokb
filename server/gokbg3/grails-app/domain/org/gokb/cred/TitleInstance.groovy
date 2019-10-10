@@ -583,6 +583,7 @@ class TitleInstance extends KBComponent {
     if (titleDTO == null) {
       result.valid = false
       result.errors.add("No title information given!")
+      return result
     }
 
     if (titleDTO.name == null || !titleDTO.name.trim()) {
