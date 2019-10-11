@@ -8,8 +8,8 @@ export GOKB_HOST="http://localhost:8080"
 # echo 2. Sync user accounts
 # curl -vvv --user admin:admin -X POST --form users=@./users.tsv $GOKB_HOST/gokb/api/bulkLoadUsers
 
-# echo 3. Sync orgs
-# groovy ./sync_gokb_orgs.groovy
+echo 3. Sync orgs
+groovy ./sync_gokb_orgs.groovy
 
 # echo 4. Sync sources
 # groovy ./sync_gokb_sources.groovy

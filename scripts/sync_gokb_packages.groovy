@@ -30,13 +30,13 @@ while ( moredata ) {
       // TIPPs
       resourceFieldMap.tipps = []
 
-      if (data.status != 'Deleted' && includeTipps) {
+      if (includeTipps) {
         data.TIPPs.TIPP.each { xmltipp ->
           
           // TIPP.
           def newtipp = directAddFields (xmltipp, ['medium', 'url'], addCoreItems ( xmltipp ))
-          newtipp.accessStart = cleanText( xmltipp.access.'@start'.text() )
-          newtipp.accessEnd = cleanText( xmltipp.access.'@end'.text() )
+          newtipp.accessStartDate = cleanText( xmltipp.access.'@start'.text() )
+          newtipp.accessEndDate = cleanText( xmltipp.access.'@end'.text() )
           
           // Coverage
           newtipp.coverage = []
