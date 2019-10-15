@@ -104,7 +104,7 @@ while ( moredata ) {
   Thread.sleep(100)
 }
 
-config.lastRun = config.lastTimestamp
+setLastRun ()
 saveConfig ()
 
 // Now that we have finished pulling down the titles we have a list of deferred "identifier-less" titles.

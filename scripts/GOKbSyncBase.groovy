@@ -17,6 +17,7 @@ import groovy.json.JsonSlurper
 
 import com.gargoylesoftware.htmlunit.*
 
+import java.time.Instant
 
 import org.apache.http.entity.mime.content.StringBody
 
@@ -58,6 +59,9 @@ abstract class GOKbSyncBase extends Script {
       // Create the target.
       target = new HTTPBuilder(targetBase, targetResponseType)
       target.auth.basic config.uploadUser, config.uploadPass
+
+      target.getClient().getParams().setParameter("http.connection.timeout", 30000)
+      target.getClient().getParams().setParameter("http.socket.timeout", 1500000)
     }
     
     target
@@ -216,7 +220,9 @@ abstract class GOKbSyncBase extends Script {
     }
     if (config.resumptionToken) parameters['query']['resumptionToken'] = config.resumptionToken
 
-    if (config.lastRun && (!config.resumptionToken || config.resumptionToken.size() == 0) && this.args?.size() > 0 && this.args.contains('--update') ) parameters['query']['from'] = config.lastRun
+    if (config.lastRun && (!config.resumptionToken || config.resumptionToken.size() == 0) && this.args?.size() > 0 && this.args.contains('--update') ) {
+      parameters['query']['from'] = config.lastRun
+    }
     
     boolean success = false // flag to terminate loop.
     while (!success) {
@@ -344,8 +350,15 @@ abstract class GOKbSyncBase extends Script {
         data.identifiers?.identifier?.each {
           
           // Only include namespaces that are not 'originEditUrl'
-          if ( cleanText(it.'@namespace'.text()).toLowerCase() != 'originediturl' )
-            ids.add( [ type:it.'@namespace'.text(), value: cleanText(it.'@value'?.text()) ] )
+          if ( cleanText(it.'@namespace'.text()).toLowerCase() != 'originediturl' ) {
+            def final_val = cleanText(it.'@value'?.text())
+
+            if (it.'@namespace'.text() == 'zdb' && final_val?.trim() && !final_val.contains('-')) {
+              final_val = final_val.substring(0,final_val.length()-2) + "-" + final_val[-1..-1]
+            }
+
+            ids.add( [ type:it.'@namespace'.text(), value: final_val ] )
+          }
         }
         
         if (ids) {
@@ -399,6 +412,20 @@ abstract class GOKbSyncBase extends Script {
     }
     
     addTo
+  }
+
+  protected setLastRun() {
+
+    if (config.lastTimestamp) {
+      Instant lastTimestamp = Instant.parse(config.lastTimestamp)
+
+      if (config.lastRun && Instant.parse(config.lastRun) == lastTimestamp) {
+        config.lastRun = lastTimestamp.plusSeconds(1).toString()
+      }
+      else {
+        config.lastRun = config.lastTimestamp
+      }
+    }
   }
   
   private def cleanup() {

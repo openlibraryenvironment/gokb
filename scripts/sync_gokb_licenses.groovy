@@ -29,3 +29,8 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+setLastRun ()
+saveConfig ()
+
+println("Total: ${total}, Errors: ${errors}")

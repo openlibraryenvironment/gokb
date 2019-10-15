@@ -38,5 +38,7 @@ while ( moredata ) {
   saveConfig()
 }
 
-config.lastRun = config.lastTimestamp
+setLastRun ()
 saveConfig ()
+
+println("Total: ${total}, Errors: ${errors}")
