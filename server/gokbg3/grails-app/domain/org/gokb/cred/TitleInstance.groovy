@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import java.text.SimpleDateFormat
+import java.time.Instant
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
@@ -280,7 +282,6 @@ class TitleInstance extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     try {
       def tids = this.ids ?: []
@@ -429,10 +430,10 @@ class TitleInstance extends KBComponent {
                 if(cov_statements?.size() > 0){
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
+                      startDate:(tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
                       startVolume:tcs.startVolume,
                       startIssue:tcs.startIssue,
-                      endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
+                      endDate:(tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
                       endVolume:tcs.endVolume,
                       endIssue:tcs.endIssue,
                       coverageDepth:tcs.coverageDepth?.value?:tipp.coverageDepth?.value,
@@ -444,10 +445,10 @@ class TitleInstance extends KBComponent {
                 else{
 
                   builder.'coverage'(
-                    startDate:(tipp.startDate ? sdf.format(tipp.startDate):null),
+                    startDate:(tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
                     startVolume:tipp.startVolume,
                     startIssue:tipp.startIssue,
-                    endDate:(tipp.endDate ? sdf.format(tipp.endDate):null),
+                    endDate:(tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
                     endVolume:tipp.endVolume,
                     endIssue:tipp.endIssue,
                     coverageDepth:tipp.coverageDepth?.value,
@@ -596,6 +597,54 @@ class TitleInstance extends KBComponent {
       result.valid = false
       result.errors.add("Title has no identifiers!")
       return result
+    }
+
+    def startDate = null
+    def endDate = null
+
+    if (titleDTO.publishedFrom) {
+      sdfs.each { df ->
+
+        if (!startDate) {
+          try {
+            SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+            startDate = sdfV.parse(titleDTO.publishedFrom)
+          }
+          catch (java.text.ParseException pe) {
+          }
+        }
+      }
+
+      if (!startDate) {
+        result.valid = false
+        result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
+      }
+    }
+
+    if (titleDTO.publishedTo) {
+      sdfs.each { df ->
+
+        if (!endDate) {
+          try {
+            SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+            endDate = sdfV.parse(titleDTO.publishedTo)
+          }
+          catch (java.text.ParseException pe) {
+          }
+        }
+      }
+
+      if (!endDate) {
+        result.valid = false
+        result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
+      }
+    }
+
+    if (startDate && endDate && (endDate < startDate)) {
+      result.valid = false
+      result.errors.add("Publishing end date must not be prior to its start date!")
     }
 
     titleDTO.identifiers.each { idobj ->
