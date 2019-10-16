@@ -836,14 +836,16 @@ class IntegrationController {
                   // Validate and upsert titles and platforms
                   json.tipps.eachWithIndex { tipp, idx ->
 
-                    def valid_ti = TitleInstance.validateDTO(tipp.title);
-                    valid &= valid_ti
+                    def title_validation = TitleInstance.validateDTO(tipp.title);
+                    valid &= title_validation.valid
 
-                    if ( !valid_ti ) {
+                    if ( title_validation && !title_validation.valid ) {
                       log.warn("Not valid after title validation ${tipp.title}");
-                      errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
+                      errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid!" + "${title_validation.errors}", baddata: tipp.title, errors:title_validation.errors])
                     }
                     else {
+                      def valid_ti = true
+                      
                       try {
                         def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
@@ -854,14 +856,14 @@ class IntegrationController {
                         } else {
                           if (ti != null)
                             ti.discard()
-                          valid_ti = null
+                          valid_ti = false
                           valid = false
                           errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'data': tipp])
                         }
                       }
                       catch (grails.validation.ValidationException ve) {
                         log.error("ValidationException attempting to cross reference title",ve);
-                        valid_ti = null
+                        valid_ti = false
                         valid = false
                         errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
                       }
@@ -1134,70 +1136,61 @@ class IntegrationController {
     User user = springSecurityService.currentUser
 
     log.debug("crossReferencePlatform - ${platformJson}")
-    if ( ( platformJson.platformUrl ) &&
-         ( platformJson.platformUrl.trim().length() > 0 ) &&
-         ( platformJson.platformName ) &&
-         ( platformJson.platformName.trim().length() > 0 ) ) {
-      def p = Platform.findByPrimaryUrl(platformJson.platformUrl)
-
-      if ( p == null ) {
-
-        // Attempt normname lookup.
-        p = Platform.findByNormname( Platform.generateNormname (platformJson.platformName) )
-
-        if (!p) {
-          try {
-            p = new Platform(primaryUrl:platformJson.platformUrl, name:platformJson.platformName, uuid: platformJson.uuid?.trim()?.size() > 0 ? platformJson.uuid : null).save(flush:true, failOnError:true)
-            created = true
-          }
-          catch (grails.validation.ValidationException ve) {
-            log.debug("Platform ${platformJson} failed validation!")
-            log.debug(ve)
-          }
-        }
+    if ( platformJson?.platformUrl?.trim() && (platformJson?.name?.trim() || platformJson?.platformName?.trim()) ) {
+      if ( !platformJson.name?.trim() && platformJson.platformName) {
+        platformJson.name = platformJson.platformName
       }
 
-      if (p) {
-        log.debug("created or looked up platform ${p}!")
+      try {
+        def p = Platform.upsertDTO(platformJson)
 
-        setAllRefdata ([
-          'software', 'service'
-        ], platformJson, p)
-        ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
+        if (p) {
+          log.debug("created or looked up platform ${p}!")
 
-        if (platformJson.provider) {
-          def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
-          if (prov) {
-            log.debug("Adding Provider ${prov} to platform ${p}!")
-            p.provider = prov
+          setAllRefdata ([
+            'software', 'service'
+          ], platformJson, p)
+          ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
+
+          if (platformJson.provider) {
+            def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
+            if (prov) {
+              log.debug("Adding Provider ${prov} to platform ${p}!")
+              p.provider = prov
+            }
+            else {
+              log.debug("No provider found for ${platformJson.provider}!")
+            }
           }
-          else {
-            log.debug("No provider found for ${platformJson.provider}!")
-          }
-        }
 
-        p.save(flush:true)
+          p.save(flush:true)
 
-        // Add the core data.
-        ensureCoreData(p, platformJson)
+          // Add the core data.
+          ensureCoreData(p, platformJson)
 
-  //      if ( changed ) {
-  //        p.save(flush:true, failOnError:true);
-  //      }
-        if (created) {
-          result.message = "Created platform ${p}"
+    //      if ( changed ) {
+    //        p.save(flush:true, failOnError:true);
+    //      }
+          result.message = "Created/Updated platform ${p}"
+
+          result.platformId = p.id;
         }
         else {
-          result.message = "Looked up platform ${p}"
+          log.debug("No platform matched for ${platformJson}")
+          result.message = "Could not crossreference platform ${platformJson}"
+          result.result = 'ERROR'
         }
-
-        result.platformId = p.id;
       }
-      else {
-        log.debug("No platform matched for ${platformJson}")
-        result.message = "Could not crossreference platform ${platformJson}"
-        result.result = 'ERROR'
+      catch (Exception e) {
+        log.debug("Exception while looking up platform!", e)
+        result.message = "There was an error looking up platform ${platformJson}"
+        result.result = "ERROR"
       }
+    }
+    else {
+      log.debug("Missing Platform info for ${platformJson}")
+      result.message = "Platform ${platformJson} is missing required information ('name' or 'platformUrl')!"
+      result.result = "ERROR"
     }
     render result as JSON
   }

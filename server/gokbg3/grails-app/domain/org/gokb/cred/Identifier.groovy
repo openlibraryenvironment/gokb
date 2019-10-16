@@ -26,19 +26,21 @@ class Identifier extends KBComponent {
   static constraints = {
     namespace (nullable:false, blank:false)
     value (validator: { val, obj ->
-      if (!val || val.trim().size() == 0) {
-        return ['notNull']
-      }
+      if (obj.hasChanged('value')) {
+        if (!val || val.trim().size() == 0) {
+          return ['notNull']
+        }
 
-      def norm_id = Identifier.normalizeIdentifier(val)
-      def dupes = Identifier.findByNamespaceAndNormname(obj.namespace, norm_id)
+        def norm_id = Identifier.normalizeIdentifier(val)
+        def dupes = Identifier.findByNamespaceAndNormname(obj.namespace, norm_id)
 
-      if (dupes && dupes != obj) {
-        return ['notUnique']
-      }
+        if (dupes && dupes != obj) {
+          return ['notUnique']
+        }
 
-      if (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) {
-        return ['illegalIdForm.' + obj.namespace.value ]
+        if (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) {
+          return ['illegalIdForm.' + obj.namespace.value ]
+        }
       }
     })
   }

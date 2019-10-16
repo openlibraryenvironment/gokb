@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import java.text.SimpleDateFormat
+import java.time.Instant
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
@@ -280,7 +282,6 @@ class TitleInstance extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     try {
       def tids = this.ids ?: []
@@ -429,10 +430,10 @@ class TitleInstance extends KBComponent {
                 if(cov_statements?.size() > 0){
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
+                      startDate:(tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
                       startVolume:tcs.startVolume,
                       startIssue:tcs.startIssue,
-                      endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
+                      endDate:(tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
                       endVolume:tcs.endVolume,
                       endIssue:tcs.endIssue,
                       coverageDepth:tcs.coverageDepth?.value?:tipp.coverageDepth?.value,
@@ -444,10 +445,10 @@ class TitleInstance extends KBComponent {
                 else{
 
                   builder.'coverage'(
-                    startDate:(tipp.startDate ? sdf.format(tipp.startDate):null),
+                    startDate:(tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
                     startVolume:tipp.startVolume,
                     startIssue:tipp.startIssue,
-                    endDate:(tipp.endDate ? sdf.format(tipp.endDate):null),
+                    endDate:(tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
                     endVolume:tipp.endVolume,
                     endIssue:tipp.endIssue,
                     coverageDepth:tipp.coverageDepth?.value,
@@ -572,15 +573,83 @@ class TitleInstance extends KBComponent {
    * }
    */
   @Transient
-  public static boolean validateDTO(titleDTO) {
-    def result = true;
-    result &= titleDTO != null
-    result &= titleDTO.name != null
-    result &= titleDTO.identifiers != null
+  public static def validateDTO(titleDTO) {
+    def result = ['valid':true, 'errors':[]]
+    def sdfs = [
+        "yyyy-MM-dd' 'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd"
+    ]
 
-    titleDTO.identifiers?.each { idobj ->
+    if (titleDTO == null) {
+      result.valid = false
+      result.errors.add("No title information given!")
+      return result
+    }
+
+    if (titleDTO.name == null || !titleDTO.name.trim()) {
+      result.valid = false
+      result.errors.add("Missing title name!")
+      return result
+    }
+
+    if (titleDTO.identifiers == null ) {
+      result.valid = false
+      result.errors.add("Title has no identifiers!")
+      return result
+    }
+
+    def startDate = null
+    def endDate = null
+
+    if (titleDTO.publishedFrom) {
+      sdfs.each { df ->
+
+        if (!startDate) {
+          try {
+            SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+            startDate = sdfV.parse(titleDTO.publishedFrom)
+          }
+          catch (java.text.ParseException pe) {
+          }
+        }
+      }
+
+      if (!startDate) {
+        result.valid = false
+        result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
+      }
+    }
+
+    if (titleDTO.publishedTo) {
+      sdfs.each { df ->
+
+        if (!endDate) {
+          try {
+            SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+            endDate = sdfV.parse(titleDTO.publishedTo)
+          }
+          catch (java.text.ParseException pe) {
+          }
+        }
+      }
+
+      if (!endDate) {
+        result.valid = false
+        result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
+      }
+    }
+
+    if (startDate && endDate && (endDate < startDate)) {
+      result.valid = false
+      result.errors.add("Publishing end date must not be prior to its start date!")
+    }
+
+    titleDTO.identifiers.each { idobj ->
       if (idobj.type && idobj.value) {
-        def found_ns = IdentifierNamespace.findAllByValue(idobj.type.toLowerCase())
+        def found_ns = IdentifierNamespace.findByValue(idobj.type.toLowerCase())
         def final_val = idobj.value
 
         if (found_ns) {
@@ -596,13 +665,15 @@ class TitleInstance extends KBComponent {
           }
           catch (grails.validation.ValidationException ve) {
             log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-            result = false
+            result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
+            result.valid = false
           }
         }
       }
       else {
         log.warn("Missing information in id object ${idobj}")
-        result = false
+        result.errors.add("Missing information for identifier object ${idobj}!")
+        result.valid = false
       }
     }
 
@@ -697,8 +768,7 @@ class TitleInstance extends KBComponent {
 
       // not already a name
       // Make sure not already a variant name
-      def existing_variants = this.variantNames
-      if ( existing_variants.size() == 0 ) {
+      if ( !KBComponentVariantName.findByOwnerAndNormVariantName(this, variant_normname) ) {
         KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
       }
       else {

@@ -234,7 +234,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
           if (!startDate) {
             result.valid = false
-            result.errors.add("Unable to parse coverage start date ${coverage.endDate}!")
+            result.errors.add("Unable to parse coverage start date ${coverage.startDate}!")
           }
         }
 

@@ -167,9 +167,13 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         eo.getArguments().each { ma ->
           if (ma && ma instanceof String) {
             String[] emptyArgs = []
-            def arg = messageSource.resolveCode(ma, request.locale).format(emptyArgs)
+            def arg = messageSource.resolveCode(ma, request.locale)
 
-            resolvedArgs.add(arg)
+            if (arg) {
+              arg.format(emptyArgs)
+
+              resolvedArgs.add(arg)
+            }
           }
           else {
             resolvedArgs.add(ma)

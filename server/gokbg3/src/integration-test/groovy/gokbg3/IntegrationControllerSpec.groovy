@@ -101,7 +101,7 @@ class IntegrationControllerSpec extends Specification {
 
       then: "The item was created"
         resp.json.message != null
-        resp.json.message.startsWith('Created platform')
+        resp.json.result == "OK"
       expect: "Find item by name only returns one item"
         def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n',[n:json_record.platformName]);
         matching_platforms.size() == 1
