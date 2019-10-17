@@ -642,7 +642,7 @@ select tipp.id,
     def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
 
     log.debug("Checking by normname ${pkg_normname} ..")
-    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? ",[pkg_normname])
+    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?",[pkg_normname, status_deleted])
     def full_matches = []
     def created = false
     def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
