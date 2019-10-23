@@ -96,14 +96,17 @@ class Package extends KBComponent {
     lastProject    (nullable:true, blank:false)
     descriptionURL (nullable:true, blank:true)
     name (validator: { val, obj ->
-      if (val && obj.hasChanged('name')) {
-        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def dupes = Package.findByNameIlikeAndStatusNotEqual(val, status_deleted);
-        if ( dupes && dupes != obj ) {
-          return ['notUnique']
+      if (obj.hasChanged('name')) {
+        if (val && val.trim()) {
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def dupes = Package.findByNameIlikeAndStatusNotEqual(val, status_deleted);
+          if (dupes && dupes != obj) {
+            return ['notUnique']
+          }
         }
-      } else if (!val) {
-        return ['notNull']
+        else {
+          return ['notNull']
+        }
       }
     })
   }

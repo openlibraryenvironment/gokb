@@ -1,5 +1,6 @@
 package org.gokb.cred
 import groovy.transform.Synchronized
+import java.util.regex.Pattern
 
 class Identifier extends KBComponent {
 
@@ -33,12 +34,13 @@ class Identifier extends KBComponent {
 
         def norm_id = Identifier.normalizeIdentifier(val)
         def dupes = Identifier.findByNamespaceAndNormname(obj.namespace, norm_id)
+        def pattern = obj.namespace.pattern ? ~"${obj.namespace.pattern}" : null
 
         if (dupes && dupes != obj) {
           return ['notUnique']
         }
 
-        if (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) {
+        if ( (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) || (pattern && !(val ==~ pattern)) )  {
           return ['illegalIdForm.' + obj.namespace.value ]
         }
       }
